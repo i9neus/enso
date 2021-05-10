@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\dx12\DX12CudaSample.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\simpleD3D12.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="src\win\Main.cpp">
+      <Filter>win</Filter>
+    </ClCompile>
+    <ClCompile Include="src\win\Win32Application.cpp">
+      <Filter>win</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\dx12\d3dx12.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\DX12CudaSample.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\DXSampleHelper.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\simpleD3D12.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h">
+      <Filter>generic\thirdparty\nvidia</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h">
+      <Filter>generic\thirdparty\nvidia</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\Win32Application.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\ShaderStructs.h">
+      <Filter>kernels</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{41beddc3-b28f-45e4-bedd-e322be13cf8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12">
+      <UniqueIdentifier>{8863e2e8-e3e5-49f3-8cd9-fc79fcfef590}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic">
+      <UniqueIdentifier>{439db4d4-72ca-47c6-8a82-a225dfa92cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\thirdparty">
+      <UniqueIdentifier>{88aedecf-8137-454d-b8d8-685351c9c6ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\thirdparty\nvidia">
+      <UniqueIdentifier>{b04f9ba9-0423-442a-9bb4-ca681cc61ad5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="win">
+      <UniqueIdentifier>{d46ee08f-5440-4118-b4f2-a715b7332aa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels">
+      <UniqueIdentifier>{40d7abd6-ab81-4cd5-b3b8-3d3dc012ed71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\kernels\sinewave_cuda.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+  </ItemGroup>
+</Project>
