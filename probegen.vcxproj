@@ -14,16 +14,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\dx12\D3D12HelloTexture.cpp" />
     <ClCompile Include="src\dx12\DX12CudaSample.cpp" />
+    <ClCompile Include="src\dx12\DXSample.cpp" />
     <ClCompile Include="src\dx12\simpleD3D12.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\dx12\D3D12HelloTexture.h" />
     <ClInclude Include="src\dx12\d3dx12.h" />
     <ClInclude Include="src\dx12\DX12CudaSample.h" />
+    <ClInclude Include="src\dx12\DXSample.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\simpleD3D12.h" />
+    <ClInclude Include="src\generic\Includes.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h" />
     <ClInclude Include="src\kernels\ShaderStructs.h" />
@@ -34,6 +39,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\dx12\hlsl\cudashaders.hlsl">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="src\dx12\hlsl\helloshaders.hlsl">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{997E0757-EA74-4A4E-A0FC-47D8C8831A15}</ProjectGuid>
@@ -88,7 +103,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)/probegen.exe</OutputFile>
     </Link>

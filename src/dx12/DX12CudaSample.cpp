@@ -135,7 +135,7 @@ void DX12CudaSample::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1**
 void DX12CudaSample::SetCustomWindowText(const char* text)
 {
 	std::string windowText = m_title + text;
-	SetWindowText(Win32Application::GetHwnd(), windowText.c_str());
+	SetWindowText(Win32Application<DX12CudaSample>::GetHwnd(), windowText.c_str());
 }
 
 // Helper function for parsing any supplied command line args.

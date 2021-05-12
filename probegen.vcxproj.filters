@@ -13,6 +13,12 @@
     <ClCompile Include="src\win\Win32Application.cpp">
       <Filter>win</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\D3D12HelloTexture.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\DXSample.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -39,11 +45,17 @@
     <ClInclude Include="src\kernels\ShaderStructs.h">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\dx12\D3D12HelloTexture.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\DXSample.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Includes.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="common">
-      <UniqueIdentifier>{41beddc3-b28f-45e4-bedd-e322be13cf8b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="dx12">
       <UniqueIdentifier>{8863e2e8-e3e5-49f3-8cd9-fc79fcfef590}</UniqueIdentifier>
     </Filter>
@@ -62,6 +74,9 @@
     <Filter Include="kernels">
       <UniqueIdentifier>{40d7abd6-ab81-4cd5-b3b8-3d3dc012ed71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dx12\hlsl">
+      <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\sinewave_cuda.cu">
@@ -70,5 +85,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="src\dx12\hlsl\cudashaders.hlsl">
+      <Filter>dx12\hlsl</Filter>
+    </None>
+    <None Include="src\dx12\hlsl\helloshaders.hlsl">
+      <Filter>dx12\hlsl</Filter>
+    </None>
   </ItemGroup>
 </Project>

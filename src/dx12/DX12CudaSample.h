@@ -48,6 +48,7 @@ public:
 	virtual void OnInit() = 0;
 	virtual void OnRender() = 0;
 	virtual void OnDestroy() = 0;
+	virtual void OnUpdate() {}
 
 	// Samples override the event handlers to handle specific messages.
 	virtual void OnKeyDown(UINT8 /*key*/)   {}

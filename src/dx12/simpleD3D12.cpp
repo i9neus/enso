@@ -175,7 +175,7 @@ void DX12CudaInterop::LoadPipeline()
 	ComPtr<IDXGISwapChain1> swapChain;
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(
 		m_commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
-		Win32Application::GetHwnd(),
+		Win32Application<DX12CudaInterop>::GetHwnd(),
 		&swapChainDesc,
 		nullptr,
 		nullptr,
@@ -183,7 +183,7 @@ void DX12CudaInterop::LoadPipeline()
 		));
 
 	// This sample does not support fullscreen transitions.
-	ThrowIfFailed(factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
+	ThrowIfFailed(factory->MakeWindowAssociation(Win32Application<DX12CudaInterop>::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
 
 	ThrowIfFailed(swapChain.As(&m_swapChain));
 	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();

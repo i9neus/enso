@@ -37,18 +37,26 @@ The MIT License (MIT)
 #pragma once
 
 #include "dx12/DX12CudaSample.h"
+#include "dx12/DXSample.h"
 
 class DX12CudaSample;
+class DXSample;
 
+template<typename T>
 class Win32Application
 {
 public:
-	static int Run(DX12CudaSample* pSample, HINSTANCE hInstance, int nCmdShow);
-	static HWND GetHwnd() { return m_hwnd; }
+	static int Run(T* pSample, HINSTANCE hInstance, int nCmdShow);
+    static HWND& GetHwnd()
+    {
+        static HWND hwnd = nullptr;
+        return hwnd;
+    }
 
 protected:
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-private:
-	static HWND m_hwnd;
 };
+
+template class Win32Application<DX12CudaSample>;
+template class Win32Application<DXSample>;

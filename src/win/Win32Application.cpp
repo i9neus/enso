@@ -47,9 +47,8 @@ The MIT License (MIT)
 
 #include "Win32Application.h"
 
-HWND Win32Application::m_hwnd = nullptr;
-
-int Win32Application::Run(DX12CudaSample* pSample, HINSTANCE hInstance, int nCmdShow)
+template<typename T>
+int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 {
 	// Parse the command line parameters
 	int argc;
@@ -71,9 +70,9 @@ int Win32Application::Run(DX12CudaSample* pSample, HINSTANCE hInstance, int nCmd
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
 	// Create the window and store a handle to it.
-	m_hwnd = CreateWindow(
+	GetHwnd() = CreateWindow(
 		windowClass.lpszClassName,
-		pSample->GetTitle(),
+		"",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -87,7 +86,7 @@ int Win32Application::Run(DX12CudaSample* pSample, HINSTANCE hInstance, int nCmd
 	// Initialize the sample. OnInit is defined in each child-implementation of DXSample.
 	pSample->OnInit();
 
-	ShowWindow(m_hwnd, nCmdShow);
+	ShowWindow(GetHwnd(), nCmdShow);
 
 	// Main sample loop.
 	MSG msg = {};
@@ -108,9 +107,10 @@ int Win32Application::Run(DX12CudaSample* pSample, HINSTANCE hInstance, int nCmd
 }
 
 // Main message handler for the sample.
-LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+template<typename T>
+LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	DX12CudaSample* pSample = reinterpret_cast<DX12CudaSample*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
 	switch (message)
 	{
@@ -139,6 +139,7 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 	case WM_PAINT:
 		if (pSample)
 		{
+			pSample->OnUpdate();
 			pSample->OnRender();
 		}
 		return 0;
