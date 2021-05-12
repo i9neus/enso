@@ -1,12 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\dx12\DX12CudaSample.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\simpleD3D12.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
     <ClCompile Include="src\win\Main.cpp">
       <Filter>win</Filter>
     </ClCompile>
@@ -14,9 +8,18 @@
       <Filter>win</Filter>
     </ClCompile>
     <ClCompile Include="src\dx12\D3D12HelloTexture.cpp">
-      <Filter>dx12</Filter>
+      <Filter>dx12\hellotexturedemo</Filter>
     </ClCompile>
     <ClCompile Include="src\dx12\DXSample.cpp">
+      <Filter>dx12\hellotexturedemo</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\DX12CudaSample.cpp">
+      <Filter>dx12\cudademo</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\simpleD3D12.cpp">
+      <Filter>dx12\cudademo</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\D3DContainer.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
   </ItemGroup>
@@ -24,13 +27,7 @@
     <ClInclude Include="src\dx12\d3dx12.h">
       <Filter>dx12</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\DX12CudaSample.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
     <ClInclude Include="src\dx12\DXSampleHelper.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\simpleD3D12.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h">
@@ -45,14 +42,26 @@
     <ClInclude Include="src\kernels\ShaderStructs.h">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\D3D12HelloTexture.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\DXSample.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\Includes.h">
       <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\D3D12HelloTexture.h">
+      <Filter>dx12\hellotexturedemo</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\DXSample.h">
+      <Filter>dx12\hellotexturedemo</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\DX12CudaSample.h">
+      <Filter>dx12\cudademo</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\simpleD3D12.h">
+      <Filter>dx12\cudademo</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\D3DWindowInterface.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\D3DContainer.h">
+      <Filter>dx12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -76,6 +85,12 @@
     </Filter>
     <Filter Include="dx12\hlsl">
       <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\cudademo">
+      <UniqueIdentifier>{117b99e0-4b99-4639-ac17-edc49cd41aec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\hellotexturedemo">
+      <UniqueIdentifier>{0eb0b43a-2bb6-4256-a111-c45783fc947b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

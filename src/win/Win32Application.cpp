@@ -51,10 +51,10 @@ template<typename T>
 int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 {
 	// Parse the command line parameters
-	int argc;
+	/*int argc;
 	LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	pSample->ParseCommandLineArgs(argv, argc);
-	LocalFree(argv);
+	LocalFree(argv);*/
 
 	// Initialize the window class.
 	WNDCLASSEX windowClass = { 0 };

@@ -38,9 +38,11 @@ The MIT License (MIT)
 
 #include "dx12/DX12CudaSample.h"
 #include "dx12/DXSample.h"
+#include "dx12/D3DWindowInterface.h"
 
 class DX12CudaSample;
 class DXSample;
+class D3DWindowInterface;
 
 template<typename T>
 class Win32Application
@@ -60,3 +62,4 @@ protected:
 
 template class Win32Application<DX12CudaSample>;
 template class Win32Application<DXSample>;
+template class Win32Application<D3DWindowInterface>;
