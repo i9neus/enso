@@ -235,17 +235,6 @@
 	},
 	"buffers":
 	[
-		{
-			"contents": "import matplotlib.pyplot as plt\nimport json\nimg = plt.imread(\"encoded.png\")\n\nprint(\"Loded image: {} x {} x {}\\n\".format(len(img), len(img[0]), len(img[0][0])))\n\ngridX = gridY = gridZ = 10\nnumProbes = gridX * gridY * gridZ\nprobeIdx = 0\ncoeffIdx = 0\nsh = []\nvalidityCoeffs = []\nprobeCoeffs = []\n\nfor row in img:\n\tfor pixel in row:\n\t\t\n\t\tmantissa = float(int((int(pixel[0] * 255.0) << 8) | int(pixel[1] * 255.0)) - 0x7fff) / float(0x7fff)\n\t\texponent = float(int(pixel[2] * 255.0) - 0x7f)\n\t\tvalue = mantissa * pow(2.0, exponent)\n\n\t\tif coeffIdx < 12:\n\t\t\tsh.append(value)\t\n\t\t\t#print(\"{}: [{},{},{}] -> [{},{}] -> {}\".format(probeIdx, pixel[0], pixel[1], pixel[2], mantissa, exponent, value))\t\n\t\telif coeffIdx == 27:\n\t\t\tsh.append(value)\n\t\t\t#print(\"{}: [{},{},{}] -> [{},{}] -> {}\".format(probeIdx, pixel[0], pixel[1], pixel[2], mantissa, exponent, value))\t\n\t\t\n\t\tif coeffIdx == 29:\n\t\t\tprobeCoeffs.extend([sh[0], sh[1], sh[2], sh[3], sh[6], sh[9], sh[4], sh[7], sh[10], sh[5], sh[8], sh[11]])\n\t\t\tsh.clear()\n\t\t\tprobeIdx += 1\n\t\t\tcoeffIdx = 0\n\t\telse:\t\n\t\t\tcoeffIdx += 1\n\n\t\tif probeIdx == numProbes:\n\t\t\tbreak\n\tif probeIdx == numProbes:\n\t\tbreak\n\njsonDict = {\n\t\"description\": \"\",\n\t\"sampleNum\": 0,\n\t\"size\":\n\t{\n\t\t\"x\": 1.0, \"y\": 1.0, \"z\":1.0\n\t},\n\t\"resolution\":\n\t{\n\t\t\"x\": gridX, \"y\": gridY, \"z\": gridZ\n\t},\n\t\"coefficients\": probeCoeffs,\n\t\"dataValidity\": validityCoeffs\n}\n\nwith open('data.json', 'w') as jsonFile:\n    json.dump(jsonDict, jsonFile, indent=4)\n\nprint(\"Done! Exported {} of {} probes.\".format(probeIdx, numProbes))\n",
-			"file": "decoder/decoder.py",
-			"file_size": 1565,
-			"file_write_time": 132639217689605963,
-			"settings":
-			{
-				"buffer_size": 1505,
-				"line_ending": "Windows"
-			}
-		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -287,8 +276,8 @@
 	],
 	"file_history":
 	[
-		"/C/projects/probegen/decoder/data.json",
 		"/C/projects/probegen/decoder/decoder.py",
+		"/C/projects/probegen/decoder/data.json",
 		"/C/scratch/synthetic geometry/data/probes.json",
 		"/C/scenes/ML Probe Volumes/Assets/Scenes/Cornell/ProbeVolume1-0.asset",
 		"/C/scenes/ML Probe Volumes/Assets/Scenes/SampleScene/ProbeVolume-0.asset",
@@ -588,38 +577,8 @@
 	"groups":
 	[
 		{
-			"selected": 0,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"file": "decoder/decoder.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1505,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								996,
-								996
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				}
 			]
 		}
 	],

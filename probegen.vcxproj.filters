@@ -22,6 +22,9 @@
     <ClCompile Include="src\dx12\D3DContainer.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\SecurityAttributes.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -63,6 +66,15 @@
     <ClInclude Include="src\dx12\D3DContainer.h">
       <Filter>dx12</Filter>
     </ClInclude>
+    <ClInclude Include="src\dx12\SecurityAttributes.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaCompositor.h">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaCommonIncludes.h">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -95,6 +107,9 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\sinewave_cuda.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaCompositor.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

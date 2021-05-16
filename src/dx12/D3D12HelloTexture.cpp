@@ -308,7 +308,7 @@ void D3D12HelloTexture::LoadAssets()
 
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the Texture2D.
-        std::vector<UINT8> texture = GenerateTextureData();
+        std::vector<UINT8> texture = GenerateTextureData(); 
 
         D3D12_SUBRESOURCE_DATA textureData = {};
         textureData.pData = &texture[0];
@@ -480,3 +480,5 @@ void D3D12HelloTexture::WaitForPreviousFrame()
 
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
+
+

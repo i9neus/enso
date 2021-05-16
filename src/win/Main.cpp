@@ -15,6 +15,13 @@
 #include "dx12/D3D12HelloTexture.h"
 #include "dx12/D3DContainer.h"
 
+int main(int argc, char* argv[])
+{
+	std::printf("Testing...\n");
+	D3DContainer sample(1280, 720, "D3D12 Hello Texture");
+	return Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
+}
+
 _Use_decl_annotations_
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {

@@ -44,6 +44,7 @@ The MIT License (MIT)
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
+#include <iostream>
 
 #include "Win32Application.h"
 

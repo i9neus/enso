@@ -18,6 +18,7 @@
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\DX12CudaSample.cpp" />
     <ClCompile Include="src\dx12\DXSample.cpp" />
+    <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\dx12\simpleD3D12.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
@@ -30,14 +31,18 @@
     <ClInclude Include="src\dx12\DX12CudaSample.h" />
     <ClInclude Include="src\dx12\DXSample.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
+    <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\dx12\simpleD3D12.h" />
     <ClInclude Include="src\generic\Includes.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h" />
+    <ClInclude Include="src\kernels\CudaCommonIncludes.h" />
+    <ClInclude Include="src\kernels\CudaCompositor.h" />
     <ClInclude Include="src\kernels\ShaderStructs.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\kernels\CudaCompositor.cu" />
     <CudaCompile Include="src\kernels\sinewave_cuda.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -105,7 +110,7 @@
       <AdditionalIncludeDirectories>./;$(CudaToolkitDir)/include;../../common/inc;$(MSBuildProjectDirectory)/src;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)/probegen.exe</OutputFile>
