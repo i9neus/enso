@@ -2,7 +2,10 @@
 
 #include "D3DWindowInterface.h"
 #include "DXSampleHelper.h"
-#include "generic/Includes.h"
+
+#include "generic/StdIncludes.h"
+#include "generic/D3DIncludes.h"
+#include <cuda_runtime.h>
 
 namespace DX = DirectX;
 

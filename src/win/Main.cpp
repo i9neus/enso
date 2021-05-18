@@ -9,11 +9,10 @@
 *
 */
 
-#include "generic/Includes.h"
+#include "generic/StdIncludes.h"
 
-#include "dx12/simpleD3D12.h"
-#include "dx12/D3D12HelloTexture.h"
 #include "dx12/D3DContainer.h"
+#include "Win32Application.h"
 
 int main(int argc, char* argv[])
 {

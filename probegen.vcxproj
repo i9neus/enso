@@ -14,45 +14,31 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\dx12\D3D12HelloTexture.cpp" />
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
-    <ClCompile Include="src\dx12\DX12CudaSample.cpp" />
-    <ClCompile Include="src\dx12\DXSample.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
-    <ClCompile Include="src\dx12\simpleD3D12.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\dx12\D3D12HelloTexture.h" />
     <ClInclude Include="src\dx12\D3DWindowInterface.h" />
     <ClInclude Include="src\dx12\d3dx12.h" />
     <ClInclude Include="src\dx12\D3DContainer.h" />
-    <ClInclude Include="src\dx12\DX12CudaSample.h" />
-    <ClInclude Include="src\dx12\DXSample.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
-    <ClInclude Include="src\dx12\simpleD3D12.h" />
     <ClInclude Include="src\generic\Includes.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.h" />
     <ClInclude Include="src\kernels\CudaCompositor.h" />
-    <ClInclude Include="src\kernels\ShaderStructs.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaCompositor.cu" />
-    <CudaCompile Include="src\kernels\sinewave_cuda.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\dx12\hlsl\cudashaders.hlsl">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <FileType>Document</FileType>
-    </None>
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>

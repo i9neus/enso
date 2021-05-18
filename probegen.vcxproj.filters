@@ -7,18 +7,6 @@
     <ClCompile Include="src\win\Win32Application.cpp">
       <Filter>win</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\D3D12HelloTexture.cpp">
-      <Filter>dx12\hellotexturedemo</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\DXSample.cpp">
-      <Filter>dx12\hellotexturedemo</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\DX12CudaSample.cpp">
-      <Filter>dx12\cudademo</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\simpleD3D12.cpp">
-      <Filter>dx12\cudademo</Filter>
-    </ClCompile>
     <ClCompile Include="src\dx12\D3DContainer.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -42,23 +30,8 @@
     <ClInclude Include="src\win\Win32Application.h">
       <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\ShaderStructs.h">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\Includes.h">
       <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\D3D12HelloTexture.h">
-      <Filter>dx12\hellotexturedemo</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\DXSample.h">
-      <Filter>dx12\hellotexturedemo</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\DX12CudaSample.h">
-      <Filter>dx12\cudademo</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\simpleD3D12.h">
-      <Filter>dx12\cudademo</Filter>
     </ClInclude>
     <ClInclude Include="src\dx12\D3DWindowInterface.h">
       <Filter>dx12</Filter>
@@ -98,26 +71,17 @@
     <Filter Include="dx12\hlsl">
       <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dx12\cudademo">
-      <UniqueIdentifier>{117b99e0-4b99-4639-ac17-edc49cd41aec}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dx12\hellotexturedemo">
-      <UniqueIdentifier>{0eb0b43a-2bb6-4256-a111-c45783fc947b}</UniqueIdentifier>
+    <Filter Include="scheduler">
+      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\kernels\sinewave_cuda.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\CudaCompositor.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="src\dx12\hlsl\cudashaders.hlsl">
-      <Filter>dx12\hlsl</Filter>
-    </None>
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <Filter>dx12\hlsl</Filter>
     </None>

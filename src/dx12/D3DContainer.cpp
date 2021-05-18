@@ -1,7 +1,6 @@
 #include "D3DContainer.h"
 #include "SecurityAttributes.h"
 #include "win/Win32Application.h"
-#include "kernels/ShaderStructs.h"
 #include "kernels/CudaCompositor.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
 
@@ -156,11 +155,6 @@ void D3DContainer::InitCuda()
 	}
 }
 
-void D3DContainer::CreateSinewaveAssets()
-{
-
-}
-
 // Load the sample assets.
 void D3DContainer::LoadAssets()
 {
@@ -247,110 +241,20 @@ void D3DContainer::LoadAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_trianglePipelineState)));
 	}
 
-	// Create the pipeline state, which includes compiling and loading shaders.
-	{
-		ComPtr<ID3DBlob> vertexShader;
-		ComPtr<ID3DBlob> pixelShader;
-
-#if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-		{
-			std::wstring filePath = L"C:/projects/probegen/src/dx12/hlsl/cudashaders.hlsl";
-			LPCWSTR result = filePath.c_str();
-			ThrowIfFailed(D3DCompileFromFile(result, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-			ThrowIfFailed(D3DCompileFromFile(result, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
-
-			// Define the vertex input layout.
-			D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-			};
-
-			// Describe and create the graphics pipeline state object (PSO).
-			D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-			psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
-			psoDesc.pRootSignature = m_rootSignature.Get();
-			psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
-			psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
-			psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-			psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			psoDesc.SampleMask = UINT_MAX;
-			psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-			psoDesc.NumRenderTargets = 1;
-			psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-			psoDesc.SampleDesc.Count = 1;
-			ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
-		}
-	}
-
 	// Create the command list.
 	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
-
-	// Create the vertex buffer.
-	{
-		// Define the geometry for a triangle.
-		vertBufWidth = m_width / 2;
-		vertBufHeight = m_height / 2;
-		const UINT vertexBufferSize = sizeof(Vertex) * vertBufWidth * vertBufHeight;
-
-		ThrowIfFailed(m_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_SHARED,
-			&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-			nullptr,
-			IID_PPV_ARGS(&m_vertexBuffer)));
-
-		// Initialize the vertex buffer view.
-		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-		m_vertexBufferView.SizeInBytes = vertexBufferSize;
-
-		HANDLE sharedHandle;
-		WindowsSecurityAttributes windowsSecurityAttributes;
-		LPCWSTR name = NULL;
-		ThrowIfFailed(m_device->CreateSharedHandle(m_vertexBuffer.Get(), &windowsSecurityAttributes, GENERIC_ALL, name, &sharedHandle));
-
-		D3D12_RESOURCE_ALLOCATION_INFO d3d12ResourceAllocationInfo;
-		d3d12ResourceAllocationInfo = m_device->GetResourceAllocationInfo(m_nodeMask, 1, &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize));
-		size_t actualSize = d3d12ResourceAllocationInfo.SizeInBytes;
-		size_t alignment = d3d12ResourceAllocationInfo.Alignment;
-
-		cudaExternalMemoryHandleDesc externalMemoryHandleDesc;
-		memset(&externalMemoryHandleDesc, 0, sizeof(externalMemoryHandleDesc));
-
-		externalMemoryHandleDesc.type = cudaExternalMemoryHandleTypeD3D12Resource;
-		externalMemoryHandleDesc.handle.win32.handle = sharedHandle;
-		externalMemoryHandleDesc.size = actualSize;
-		externalMemoryHandleDesc.flags = cudaExternalMemoryDedicated;
-
-		checkCudaErrors(cudaImportExternalMemory(&m_externalMemory, &externalMemoryHandleDesc));
-
-		cudaExternalMemoryBufferDesc externalMemoryBufferDesc;
-		memset(&externalMemoryBufferDesc, 0, sizeof(externalMemoryBufferDesc));
-		externalMemoryBufferDesc.offset = 0;
-		externalMemoryBufferDesc.size = vertexBufferSize;
-		externalMemoryBufferDesc.flags = 0;
-
-		checkCudaErrors(cudaExternalMemoryGetMappedBuffer(&m_cudaDevVertptr, m_externalMemory, &externalMemoryBufferDesc));
-		RunSineWaveKernel(vertBufWidth, vertBufHeight, (Vertex*)m_cudaDevVertptr, m_streamToRun, 1.0f);
-		checkCudaErrors(cudaStreamSynchronize(m_streamToRun));
-	}
 
 	// Create the vertex buffer for the triangle
 	{
 		// Define the geometry for a triangle.
 		VertexUV triangleVertices[] =
 		{
-			{ { -0.2f, -0.2f * m_aspectRatio, 0.0f }, { 0.0f, 0.0f } },
-			{ { -0.2f, 0.2f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f } },
-			{ { 0.2f, -0.2f * m_aspectRatio, 0.0f }, { 1.0f, 0.0f } }
+			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } },
+			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } },
+			{ { 1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } },
+			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } },
+			{ { 1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } },
+			{ { 1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }
 		};
 
 		const UINT vertexBufferSize = sizeof(triangleVertices);
@@ -421,12 +325,12 @@ void D3DContainer::LoadAssets()
 
 		// Copy data to the intermediate upload heap and then schedule a copy 
 		// from the upload heap to the Texture2D.
-		std::vector<float> texture = GenerateTextureData();
+		/*std::vector<float> texture = GenerateTextureData();
 
 		D3D12_SUBRESOURCE_DATA textureData = {};
 		textureData.pData = &texture[0];
 		textureData.RowPitch = TextureWidth * TexturePixelSize;
-		textureData.SlicePitch = textureData.RowPitch * TextureHeight;
+		textureData.SlicePitch = textureData.RowPitch * TextureHeight;*/
 
 		// Describe and create a SRV for the texture.
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -436,7 +340,7 @@ void D3DContainer::LoadAssets()
 		srvDesc.Texture2D.MipLevels = 1;
 		m_device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
-		UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
+		//UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
 		HANDLE sharedHandle;
@@ -574,20 +478,11 @@ void D3DContainer::PopulateCommandList()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
-	m_commandList->SetPipelineState(m_pipelineState.Get());
-
-	// Record commands.
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	m_commandList->DrawInstanced(vertBufHeight * vertBufWidth, 1, 0, 0);
-
 	m_commandList->SetPipelineState(m_trianglePipelineState.Get());
 
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->IASetVertexBuffers(0, 1, &m_triangleVertexBufferView);
-	m_commandList->DrawInstanced(3, 1, 0, 0);
+	m_commandList->DrawInstanced(6, 1, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
@@ -623,7 +518,6 @@ void D3DContainer::MoveToNextFrame()
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_streamToRun));
 
 	m_AnimTime += 0.01f;
-	RunSineWaveKernel(vertBufWidth, vertBufHeight, (Vertex*)m_cudaDevVertptr, m_streamToRun, m_AnimTime);
 
 	Cuda::CompositeBuffers(TextureWidth, TextureHeight, m_cuSurface, m_AnimTime, m_streamToRun);
 
@@ -678,21 +572,4 @@ void D3DContainer::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** p
 	}
 
 	*ppAdapter = adapter.Detach();
-}
-
-// Generate a simple black and white checkerboard texture.
-std::vector<float> D3DContainer::GenerateTextureData()
-{
-	int pitch = TextureWidth * 4;
-	std::vector<float> data(TextureHeight * pitch);
-	for(int i = 0; i < data.size(); i+=4)
-	{
-		int x = (i % pitch) / 4;
-		int y = i / pitch;
-		
-		float L = float((x / 10 + y / 10) % 2); 
-		data[i] = data[i + 1] = data[i + 2] = L;
-		data[i + 3] = 1.0;
-	}
-	return data;
 }
