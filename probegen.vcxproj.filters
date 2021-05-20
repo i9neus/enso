@@ -13,6 +13,12 @@
     <ClCompile Include="src\dx12\SecurityAttributes.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="src\manager\RenderManager.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp">
+      <Filter>generic\thirdparty\lodepng</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -30,9 +36,6 @@
     <ClInclude Include="src\win\Win32Application.h">
       <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="src\generic\Includes.h">
-      <Filter>generic</Filter>
-    </ClInclude>
     <ClInclude Include="src\dx12\D3DWindowInterface.h">
       <Filter>dx12</Filter>
     </ClInclude>
@@ -47,6 +50,81 @@
     </ClInclude>
     <ClInclude Include="src\kernels\CudaCommonIncludes.h">
       <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\manager\RenderManager.h">
+      <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\D3DIncludes.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\StdIncludes.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\lodepng\lodepng.h">
+      <Filter>generic\thirdparty\lodepng</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\allocators.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\cursorstreamwrapper.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\document.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\encodedstream.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\encodings.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\filereadstream.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\filewritestream.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\fwd.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\istreamwrapper.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\memorybuffer.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\memorystream.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\ostreamwrapper.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\pointer.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\prettywriter.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\rapidjson.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\reader.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\schema.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\stream.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\stringbuffer.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\rapidjson\writer.h">
+      <Filter>generic\thirdparty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h">
+      <Filter>generic\thirdparty\tinyformat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -71,8 +149,17 @@
     <Filter Include="dx12\hlsl">
       <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scheduler">
+    <Filter Include="manager">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\thirdparty\lodepng">
+      <UniqueIdentifier>{8954364a-590f-4da2-ab53-ef1e20ebb316}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\thirdparty\rapidjson">
+      <UniqueIdentifier>{94e8fb6e-a611-4aa0-bc7c-6369ee52df2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\thirdparty\tinyformat">
+      <UniqueIdentifier>{dec6eb84-8a9a-4792-8968-4e19e419b6bd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

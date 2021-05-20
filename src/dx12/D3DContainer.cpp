@@ -1,8 +1,8 @@
 #include "D3DContainer.h"
 #include "SecurityAttributes.h"
 #include "win/Win32Application.h"
-#include "kernels/CudaCompositor.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
+#include "kernels/CudaCommonIncludes.h"
 
 D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 	D3DWindowInterface(width, height, name),
@@ -12,13 +12,12 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 	m_rtvDescriptorSize(0)
 {
 	m_viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height) };
-	m_AnimTime = 1.0f;
 }
 
 void D3DContainer::OnInit()
 {
 	LoadPipeline();
-	InitCuda();
+	m_manager.InitialiseCuda(m_dx12deviceluid);
 	LoadAssets();
 }
 
@@ -125,32 +124,6 @@ void D3DContainer::LoadPipeline()
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 
 			ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
-		}
-	}
-}
-
-void D3DContainer::InitCuda()
-{
-	int num_cuda_devices = 0;
-	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
-
-	if (!num_cuda_devices)
-	{
-		throw std::exception("No CUDA Devices found");
-	}
-	for (UINT devId = 0; devId < (UINT)num_cuda_devices; devId++)
-	{
-		cudaDeviceProp devProp;
-		checkCudaErrors(cudaGetDeviceProperties(&devProp, devId));
-
-		if ((memcmp(&m_dx12deviceluid.LowPart, devProp.luid, sizeof(m_dx12deviceluid.LowPart)) == 0) && (memcmp(&m_dx12deviceluid.HighPart, devProp.luid + sizeof(m_dx12deviceluid.LowPart), sizeof(m_dx12deviceluid.HighPart)) == 0))
-		{
-			checkCudaErrors(cudaSetDevice(devId));
-			m_cudaDeviceID = devId;
-			m_nodeMask = devProp.luidDeviceNodeMask;
-			checkCudaErrors(cudaStreamCreate(&m_streamToRun));
-			std::printf("CUDA Device Used [%d] %s\n", devId, devProp.name);
-			break;
 		}
 	}
 }
@@ -343,42 +316,7 @@ void D3DContainer::LoadAssets()
 		//UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		HANDLE sharedHandle;
-		WindowsSecurityAttributes windowsSecurityAttributes;
-		LPCWSTR name = NULL;
-		ThrowIfFailed(m_device->CreateSharedHandle(m_texture.Get(), &windowsSecurityAttributes, GENERIC_ALL, name, &sharedHandle));
-
-		D3D12_RESOURCE_ALLOCATION_INFO d3d12ResourceAllocationInfo;
-		d3d12ResourceAllocationInfo = m_device->GetResourceAllocationInfo(m_nodeMask, 1, &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32G32B32A32_FLOAT, TextureWidth, TextureHeight));
-
-		std::printf("d3d12ResourceAllocationInfo.SizeInBytes: %i\n", d3d12ResourceAllocationInfo.SizeInBytes);
-
-		cudaExternalMemoryHandleDesc externalMemoryHandleDesc;
-		memset(&externalMemoryHandleDesc, 0, sizeof(externalMemoryHandleDesc));
-
-		externalMemoryHandleDesc.type = cudaExternalMemoryHandleTypeD3D12Resource;
-		externalMemoryHandleDesc.handle.win32.handle = sharedHandle;
-		externalMemoryHandleDesc.size = d3d12ResourceAllocationInfo.SizeInBytes;
-		externalMemoryHandleDesc.flags = cudaExternalMemoryDedicated;
-
-		checkCudaErrors(cudaImportExternalMemory(&m_externalTextureMemory, &externalMemoryHandleDesc));
-
-		cudaExternalMemoryMipmappedArrayDesc cuExtmemMipDesc{};
-		cuExtmemMipDesc.extent = make_cudaExtent(TextureWidth, TextureHeight, 0);
-		cuExtmemMipDesc.formatDesc = cudaCreateChannelDesc<float4>();
-		cuExtmemMipDesc.numLevels = 1;
-		cuExtmemMipDesc.flags = cudaArraySurfaceLoadStore;
-
-		cudaMipmappedArray_t cuMipArray{};
-		checkCudaErrors(cudaExternalMemoryGetMappedMipmappedArray(&cuMipArray, m_externalTextureMemory, &cuExtmemMipDesc));
-
-		cudaArray_t cuArray{};
-		checkCudaErrors(cudaGetMipmappedArrayLevel(&cuArray, cuMipArray, 0));
-
-		cudaResourceDesc cuResDesc{};
-		cuResDesc.resType = cudaResourceTypeArray;
-		cuResDesc.res.array.array = cuArray;
-		checkCudaErrors(cudaCreateSurfaceObject(&m_cuSurface, &cuResDesc));
+		m_manager.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight);
 	}
 
 	// Close the command list and execute it to begin the initial GPU setup.
@@ -390,18 +328,7 @@ void D3DContainer::LoadAssets()
 	{
 		ThrowIfFailed(m_device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&m_fence)));
 
-		cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
-
-		memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
-		WindowsSecurityAttributes windowsSecurityAttributes;
-		LPCWSTR name = NULL;
-		HANDLE sharedHandle;
-		externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeD3D12Fence;
-		m_device->CreateSharedHandle(m_fence.Get(), &windowsSecurityAttributes, GENERIC_ALL, name, &sharedHandle);
-		externalSemaphoreHandleDesc.handle.win32.handle = (void*)sharedHandle;
-		externalSemaphoreHandleDesc.flags = 0;
-
-		checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
+		m_manager.LinkSynchronisationObjects(m_device, m_fence);
 
 		m_fenceValues[m_frameIndex]++;
 
@@ -436,7 +363,23 @@ void D3DContainer::OnRender()
 	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
 
-	MoveToNextFrame();
+	m_manager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);	
+
+	// Update the frame index.
+	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+
+	// If the next frame is not ready to be rendered yet, wait until it is ready.
+	if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
+	{
+		std::printf("%i is waiting for %i (%i)\n", m_frameIndex, m_fenceValues[m_frameIndex], currentFenceValue);
+		ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
+		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+	}
+
+	// Set the fence value for the next frame.
+	m_fenceValues[m_frameIndex] = currentFenceValue + 2;
+
+	//std::printf("Frame: %i\n", m_frameIndex);
 }
 
 void D3DContainer::OnDestroy()
@@ -444,8 +387,8 @@ void D3DContainer::OnDestroy()
 	// Ensure that the GPU is no longer referencing resources that are about to be
 	// cleaned up by the destructor.
 	WaitForGpu();
-	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
-	checkCudaErrors(cudaDestroyExternalMemory(m_externalMemory));
+	m_manager.Destroy();
+
 	CloseHandle(m_fenceEvent);
 }
 
@@ -503,46 +446,6 @@ void D3DContainer::WaitForGpu()
 
 	// Increment the fence value for the current frame.
 	m_fenceValues[m_frameIndex]++;
-}
-
-// Prepare to render the next frame.
-void D3DContainer::MoveToNextFrame()
-{
-	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
-	cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
-	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
-
-	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
-	externalSemaphoreWaitParams.flags = 0;
-
-	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_streamToRun));
-
-	m_AnimTime += 0.01f;
-
-	Cuda::CompositeBuffers(TextureWidth, TextureHeight, m_cuSurface, m_AnimTime, m_streamToRun);
-
-	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
-	memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
-	m_fenceValues[m_frameIndex] = currentFenceValue + 1;
-	externalSemaphoreSignalParams.params.fence.value = m_fenceValues[m_frameIndex];
-	externalSemaphoreSignalParams.flags = 0;
-
-	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_streamToRun));
-
-	// Update the frame index.
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
-
-	// If the next frame is not ready to be rendered yet, wait until it is ready.
-	if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
-	{
-		ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
-		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
-	}
-
-	// Set the fence value for the next frame.
-	m_fenceValues[m_frameIndex] = currentFenceValue + 2;
-
-	//std::printf("Frame: %i\n", m_frameIndex);
 }
 
 _Use_decl_annotations_

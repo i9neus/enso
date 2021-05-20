@@ -7,6 +7,8 @@
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
 
+#include "manager/RenderManager.h"
+
 namespace DX = DirectX;
 
 // Note that while ComPtr is used to manage the lifetime of resources on the CPU,
@@ -77,6 +79,7 @@ private:
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	CD3DX12_RECT m_scissorRect;
 	UINT m_rtvDescriptorSize;
+	LUID						 m_dx12deviceluid;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
@@ -93,18 +96,7 @@ private:
 	ComPtr<ID3D12Fence> m_fence;
 	UINT64 m_fenceValues[FrameCount];
 
-	// CUDA objects
-	cudaExternalMemory_t	     m_externalMemory;
-	cudaExternalMemory_t	     m_externalTextureMemory;
-	cudaExternalSemaphore_t      m_externalSemaphore;
-	cudaStream_t				 m_streamToRun;
-	LUID						 m_dx12deviceluid;
-	UINT						 m_cudaDeviceID;
-	UINT						 m_nodeMask;
-	float						 m_AnimTime;
-	void*						 m_cudaDevVertptr = NULL;
-	void*                        m_cudaTexturePtr = NULL;
-	cudaSurfaceObject_t          m_cuSurface;
+	RenderManager                m_manager;
 
 	void LoadPipeline();
 	void InitCuda();
