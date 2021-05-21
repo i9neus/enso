@@ -4,7 +4,7 @@
 #include "dx12/DXSampleHelper.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
 
-#include "kernels/CudaCompositor.h"
+#include "kernels/CudaCompositor.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt)
@@ -31,18 +31,42 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID)
 			checkCudaErrors(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
 			m_nodeMask = devProp.luidDeviceNodeMask;
-			checkCudaErrors(cudaStreamCreate(&m_streamToRun));
+			checkCudaErrors(cudaStreamCreate(&m_D3DStream));
+			checkCudaErrors(cudaStreamCreate(&m_renderStream));
 			std::printf("CUDA Device Used [%d] %s\n", devId, devProp.name);
 			break;
 		}
 	}
+
+	checkCudaErrors(cudaMalloc((void**)&c_compositeBufferState, sizeof(unsigned int)));
+	checkCudaErrors(cudaMemset((void*)c_compositeBufferState, 0, sizeof(unsigned int)));
+
+	m_compositeImage.create(100, 100);
+
+	//cudaEventCreate(&m_D3DTextureCopyEvent);
+}
+
+void RenderManager::Destroy()
+{
+	if (!m_managerThread.joinable()) { return; }
+
+	m_threadSignal.store(kHalt);
+	std::printf("Shutting down...\n");
+
+	m_managerThread.join();
+
+	//cudaEventDestroy(m_D3DTextureCopyEvent);
+	cudaFree(c_compositeBufferState);
+
+	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
+	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
 }
 
 void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight)
 {
-	m_outputWidth = textureWidth;
-	m_outputHeight = textureHeight;
-	
+	m_D3DTextureWidth = textureWidth;
+	m_D3DTextureHeight = textureHeight;
+
 	HANDLE sharedHandle;
 	WindowsSecurityAttributes windowsSecurityAttributes;
 	LPCWSTR name = NULL;
@@ -82,24 +106,26 @@ void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr
 }
 
 void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
-{
+{				
 	cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
 	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
 
 	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
 	externalSemaphoreWaitParams.flags = 0;
 
-	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_streamToRun));
+	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
-	Cuda::CompositeBuffers(m_outputWidth, m_outputHeight, m_cuSurface, m_AnimTime, m_streamToRun);
+	Cuda::CopyImageToD3DTexture(m_D3DTextureWidth, m_D3DTextureHeight, m_compositeImage, m_cuSurface, m_D3DStream, c_compositeBufferState);
+
+	//cudaEventRecord(m_D3DTextureCopyEvent, m_D3DStream);
 
 	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
-	memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
-	currentFenceValue++;
-	externalSemaphoreSignalParams.params.fence.value = currentFenceValue;
+	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
+
+	externalSemaphoreSignalParams.params.fence.value = ++currentFenceValue;
 	externalSemaphoreSignalParams.flags = 0;
 
-	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_streamToRun));
+	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));
 }
 
 void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence)
@@ -128,24 +154,16 @@ void RenderManager::Start()
 
 void RenderManager::Run()
 {	
+	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
+	
 	int ticks = 0;
 	while (m_threadSignal.load() == kRun)
 	{
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-
+		
+		
+		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
+		
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::printf("Tick: %i\n", ++ticks);
 	}
-}
-
-void RenderManager::Destroy()
-{
-	if (!m_managerThread.joinable()) { return; }
-	
-	m_threadSignal.store(kHalt);
-	std::printf("Shutting down...\n");
-
-	m_managerThread.join();
-
-	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
-	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
 }

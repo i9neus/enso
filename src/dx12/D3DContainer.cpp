@@ -2,7 +2,7 @@
 #include "SecurityAttributes.h"
 #include "win/Win32Application.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
-#include "kernels/CudaCommonIncludes.h"
+#include "kernels/CudaCommonIncludes.cuh"
 
 D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 	D3DWindowInterface(width, height, name),

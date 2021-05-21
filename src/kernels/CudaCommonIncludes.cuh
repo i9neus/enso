@@ -27,3 +27,15 @@ struct VertexUV
 	XMFLOAT3 position;
 	XMFLOAT2 uv;
 };
+
+struct CudaImage
+{
+	CudaImage() : m_width(0u), m_height(0u), c_data(nullptr) {}
+
+	void create(unsigned int width, unsigned int height);
+	void destroy();
+
+	unsigned int m_width;
+	unsigned int m_height;
+	float4*		 c_data;
+};

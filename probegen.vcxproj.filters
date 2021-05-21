@@ -13,11 +13,11 @@
     <ClCompile Include="src\dx12\SecurityAttributes.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="src\manager\RenderManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
     <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp">
       <Filter>generic\thirdparty\lodepng</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderer\RenderManager.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -44,15 +44,6 @@
     </ClInclude>
     <ClInclude Include="src\dx12\SecurityAttributes.h">
       <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\CudaCompositor.h">
-      <Filter>kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\CudaCommonIncludes.h">
-      <Filter>kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\RenderManager.h">
-      <Filter>manager</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
       <Filter>generic</Filter>
@@ -126,6 +117,15 @@
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h">
       <Filter>generic\thirdparty\tinyformat</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderer\RenderManager.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaCompositor.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -149,9 +149,6 @@
     <Filter Include="dx12\hlsl">
       <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
     </Filter>
-    <Filter Include="manager">
-      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="generic\thirdparty\lodepng">
       <UniqueIdentifier>{8954364a-590f-4da2-ab53-ef1e20ebb316}</UniqueIdentifier>
     </Filter>
@@ -161,9 +158,15 @@
     <Filter Include="generic\thirdparty\tinyformat">
       <UniqueIdentifier>{dec6eb84-8a9a-4792-8968-4e19e419b6bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="renderer">
+      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaCompositor.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaCommonIncludes.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
+#include "kernels/CudaCommonIncludes.cuh"
 
 class RenderManager
 {
@@ -27,7 +28,8 @@ private:
 	// CUDA objects
 	cudaExternalMemory_t	     m_externalTextureMemory;
 	cudaExternalSemaphore_t      m_externalSemaphore;
-	cudaStream_t				 m_streamToRun;
+	cudaStream_t				 m_D3DStream;
+	cudaStream_t				 m_renderStream;
 	LUID						 m_dx12deviceluid;
 	UINT						 m_cudaDeviceID;
 	UINT						 m_nodeMask;
@@ -35,6 +37,11 @@ private:
 	void*						 m_cudaTexturePtr = NULL;
 	cudaSurfaceObject_t          m_cuSurface;
 
-	uint32_t					 m_outputWidth;
-	uint32_t				     m_outputHeight;
+	uint32_t					 m_D3DTextureWidth;
+	uint32_t				     m_D3DTextureHeight;
+
+	std::atomic<bool>			 m_isFrameUpdated;
+	unsigned int*                c_compositeBufferState;
+
+	CudaImage                    m_compositeImage;
 };

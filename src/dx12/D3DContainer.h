@@ -7,7 +7,7 @@
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
 
-#include "manager/RenderManager.h"
+#include "renderer/RenderManager.h"
 
 namespace DX = DirectX;
 

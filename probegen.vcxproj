@@ -17,7 +17,7 @@
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp" />
-    <ClCompile Include="src\manager\RenderManager.cpp" />
+    <ClCompile Include="src\renderer\RenderManager.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
@@ -53,12 +53,13 @@
     <ClInclude Include="src\generic\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="src\generic\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
-    <ClInclude Include="src\kernels\CudaCommonIncludes.h" />
-    <ClInclude Include="src\kernels\CudaCompositor.h" />
-    <ClInclude Include="src\manager\RenderManager.h" />
+    <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
+    <ClInclude Include="src\kernels\CudaCompositor.cuh" />
+    <ClInclude Include="src\renderer\RenderManager.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\kernels\CudaCommonIncludes.cu" />
     <CudaCompile Include="src\kernels\CudaCompositor.cu" />
   </ItemGroup>
   <ItemGroup>
