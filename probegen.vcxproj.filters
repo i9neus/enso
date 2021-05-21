@@ -126,6 +126,18 @@
     <ClInclude Include="src\kernels\CudaCompositor.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaRay.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaImage.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Assert.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -167,6 +179,9 @@
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaCommonIncludes.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

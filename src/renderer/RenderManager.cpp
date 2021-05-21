@@ -41,7 +41,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID)
 	checkCudaErrors(cudaMalloc((void**)&c_compositeBufferState, sizeof(unsigned int)));
 	checkCudaErrors(cudaMemset((void*)c_compositeBufferState, 0, sizeof(unsigned int)));
 
-	m_compositeImage.create(100, 100);
+	c_compositeImage = Cuda::Image::Create(100, 100);
 
 	//cudaEventCreate(&m_D3DTextureCopyEvent);
 }
@@ -56,6 +56,8 @@ void RenderManager::Destroy()
 	m_managerThread.join();
 
 	//cudaEventDestroy(m_D3DTextureCopyEvent);
+	Cuda::Image::Destroy(c_compositeImage);
+
 	cudaFree(c_compositeBufferState);
 
 	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
@@ -115,7 +117,7 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
-	Cuda::CopyImageToD3DTexture(m_D3DTextureWidth, m_D3DTextureHeight, m_compositeImage, m_cuSurface, m_D3DStream, c_compositeBufferState);
+	Cuda::CopyImageToD3DTexture(m_D3DTextureWidth, m_D3DTextureHeight, c_compositeImage, m_cuSurface, m_D3DStream, c_compositeBufferState);
 
 	//cudaEventRecord(m_D3DTextureCopyEvent, m_D3DStream);
 

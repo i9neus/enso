@@ -7,3 +7,5 @@
 #include "dx12/d3dx12.h"
 #include <cuda_runtime.h>
 
+#include "Assert.h"
+

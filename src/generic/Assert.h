@@ -1,29 +1,11 @@
 #pragma once
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers.
-#endif
-
-#include <Windows.h>
-
-#include <string>
-#include <vector>
-#include <wrl.h>
-#include <shellapi.h>
-#include <thread>
-#include <functional>
-#include <atomic>
-#include <stdexcept>
-#include <condition_variable>
-#include "Assert.h"
-
-#include "thirdparty/tinyformat/tinyformat.h"
-
-using Microsoft::WRL::ComPtr;
-
 #define ASSERTS
 
 #ifdef ASSERTS
+
+#include <stdexcept>
+#include "thirdparty/tinyformat/tinyformat.h"
 
 #define Assert(condition) \
         if(!(condition)) {  \

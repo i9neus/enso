@@ -27,6 +27,7 @@
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
+    <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\thirdparty\lodepng\lodepng.h" />
@@ -55,12 +56,16 @@
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaCompositor.cuh" />
+    <ClInclude Include="src\kernels\CudaImage.cuh" />
+    <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
+    <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaCommonIncludes.cu" />
     <CudaCompile Include="src\kernels\CudaCompositor.cu" />
+    <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

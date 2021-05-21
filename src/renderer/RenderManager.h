@@ -3,7 +3,8 @@
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
-#include "kernels/CudaCommonIncludes.cuh"
+#include "kernels/CudaCompositor.cuh"
+#include "kernels/CudaImage.cuh"
 
 class RenderManager
 {
@@ -43,5 +44,5 @@ private:
 	std::atomic<bool>			 m_isFrameUpdated;
 	unsigned int*                c_compositeBufferState;
 
-	CudaImage                    m_compositeImage;
+	Cuda::Image*                 c_compositeImage;
 };
