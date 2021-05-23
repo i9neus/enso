@@ -56,8 +56,8 @@ private:
 	// It should be noted that excessive buffering of frames dependent on user input
 	// may result in noticeable latency in your app.
 	static const UINT FrameCount = 2;
-	static const UINT TextureWidth = 256;
-	static const UINT TextureHeight = 256;
+	static const UINT TextureWidth = 2048;
+	static const UINT TextureHeight = 1024;
 	static const UINT TexturePixelSize = 16;    // The number of bytes used to represent a pixel in the texture.
 	std::string shadersSrc = shaderstrs;
 

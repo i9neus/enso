@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 #include <cuda_runtime.h>
 #include "Assert.h"
+#include "generic/StdIncludes.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
 
 using namespace DirectX;

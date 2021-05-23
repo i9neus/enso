@@ -19,6 +19,8 @@ void D3DContainer::OnInit()
 	LoadPipeline();
 	m_manager.InitialiseCuda(m_dx12deviceluid);
 	LoadAssets();
+
+	m_manager.Start();
 }
 
 void D3DContainer::OnUpdate() {}
@@ -70,8 +72,8 @@ void D3DContainer::LoadPipeline()
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.BufferCount = FrameCount;
-	swapChainDesc.Width = m_width;
-	swapChainDesc.Height = m_height;
+	swapChainDesc.Width = m_clientWidth;
+	swapChainDesc.Height = m_clientHeight;
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -219,16 +221,21 @@ void D3DContainer::LoadAssets()
 
 	// Create the vertex buffer for the triangle
 	{
+		float uvX = float(D3DWindowInterface::GetClientWidth()) / float(TextureWidth);
+		float uvY = float(D3DWindowInterface::GetClientHeight()) / float(TextureHeight);
+		
 		// Define the geometry for a triangle.
 		VertexUV triangleVertices[] =
 		{
 			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } },
-			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } },
-			{ { 1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } },
-			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } },
-			{ { 1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } },
-			{ { 1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }
+			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, uvY } },
+			{ { 1.0f, -1.0f, 0.0f }, { uvX, 0.0f } },
+			{ { -1.0f, 1.0f, 0.0f }, { 0.0f, uvY } },
+			{ { 1.0f, 1.0f, 0.0f }, { uvX, uvY } },
+			{ { 1.0f, -1.0f, 0.0f }, { uvX, 0.0f } }
 		};
+
+		std::printf("Loading...\n");
 
 		const UINT vertexBufferSize = sizeof(triangleVertices);
 
@@ -316,7 +323,7 @@ void D3DContainer::LoadAssets()
 		//UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_manager.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight);
+		m_manager.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
 	}
 
 	// Close the command list and execute it to begin the initial GPU setup.
@@ -371,7 +378,7 @@ void D3DContainer::OnRender()
 	// If the next frame is not ready to be rendered yet, wait until it is ready.
 	if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
 	{
-		std::printf("%i is waiting for %i (%i)\n", m_frameIndex, m_fenceValues[m_frameIndex], currentFenceValue);
+		//std::printf("%i is waiting for %i (%i)\n", m_frameIndex, m_fenceValues[m_frameIndex], currentFenceValue);
 		ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
 		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 	}

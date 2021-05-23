@@ -67,7 +67,7 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 	windowClass.lpszClassName = "DX12CudaSampleClass";
 	RegisterClassEx(&windowClass);
 
-	RECT windowRect = { 0, 0, static_cast<LONG>(pSample->GetWidth()), static_cast<LONG>(pSample->GetHeight()) };
+	RECT windowRect = { 0, 0, static_cast<LONG>(pSample->GetClientWidth()), static_cast<LONG>(pSample->GetClientHeight()) };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
 	// Create the window and store a handle to it.

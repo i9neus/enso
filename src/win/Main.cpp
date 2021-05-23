@@ -21,15 +21,9 @@ int main(int argc, char* argv[])
 	return Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
 }
 
-_Use_decl_annotations_
+/*_Use_decl_annotations_
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {
 	D3DContainer sample(1280, 720, "D3D12 Hello Texture");
 	return Win32Application<D3DWindowInterface>::Run(&sample, hInstance, nCmdShow);
-	
-	//D3D12HelloTexture sample(1280, 720, L"D3D12 Hello Texture");
-	//return Win32Application<DXSample>::Run(&sample, hInstance, nCmdShow);
-	
-	//DX12CudaInterop sample(1280, 720, "D3D12 CUDA Interop");
-	//return Win32Application::Run(&sample, hInstance, nCmdShow);
-}
+}*/

@@ -2,9 +2,10 @@
 
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
+#include "generic/Math.h"
 #include <cuda_runtime.h>
-#include "kernels/CudaCompositor.cuh"
 #include "kernels/CudaImage.cuh"
+#include "kernels/CudaWavefrontTracer.cuh"
 
 class RenderManager
 {
@@ -13,7 +14,7 @@ public:
 
 	void InitialiseCuda(const LUID& dx12DeviceLUID);
 	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence);
-	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight);
+	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
 	void Start();
 	void Destroy();
@@ -40,9 +41,9 @@ private:
 
 	uint32_t					 m_D3DTextureWidth;
 	uint32_t				     m_D3DTextureHeight;
+	uint32_t				     m_clientWidth;
+	uint32_t                     m_clientHeight;
 
-	std::atomic<bool>			 m_isFrameUpdated;
-	unsigned int*                c_compositeBufferState;
-
-	Cuda::Image*                 c_compositeImage;
+	Cuda::HostImage              m_compositeImage;
+	Cuda::HostWavefrontTracer    m_wavefrontTracer;
 };

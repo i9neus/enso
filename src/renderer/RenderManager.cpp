@@ -4,8 +4,6 @@
 #include "dx12/DXSampleHelper.h"
 #include "generic/thirdparty/nvidia/helper_cuda.h"
 
-#include "kernels/CudaCompositor.cuh"
-
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt)
 {
@@ -38,12 +36,9 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID)
 		}
 	}
 
-	checkCudaErrors(cudaMalloc((void**)&c_compositeBufferState, sizeof(unsigned int)));
-	checkCudaErrors(cudaMemset((void*)c_compositeBufferState, 0, sizeof(unsigned int)));
+	m_compositeImage.Create(128, 128, m_renderStream);
 
-	c_compositeImage = Cuda::Image::Create(100, 100);
-
-	//cudaEventCreate(&m_D3DTextureCopyEvent);
+	m_wavefrontTracer.Initialise(&m_compositeImage);
 }
 
 void RenderManager::Destroy()
@@ -54,20 +49,21 @@ void RenderManager::Destroy()
 	std::printf("Shutting down...\n");
 
 	m_managerThread.join();
+	std::printf("Killed threads.\n");
 
 	//cudaEventDestroy(m_D3DTextureCopyEvent);
-	Cuda::Image::Destroy(c_compositeImage);
-
-	cudaFree(c_compositeBufferState);
+	m_compositeImage.Destroy();
 
 	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
 	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
 }
 
-void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight)
+void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight)
 {
 	m_D3DTextureWidth = textureWidth;
 	m_D3DTextureHeight = textureHeight;
+	m_clientWidth = math::min(clientWidth, textureWidth);
+	m_clientHeight = math::min(clientHeight, textureHeight);
 
 	HANDLE sharedHandle;
 	WindowsSecurityAttributes windowsSecurityAttributes;
@@ -117,7 +113,7 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
-	Cuda::CopyImageToD3DTexture(m_D3DTextureWidth, m_D3DTextureHeight, c_compositeImage, m_cuSurface, m_D3DStream, c_compositeBufferState);
+	m_compositeImage.CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
 
 	//cudaEventRecord(m_D3DTextureCopyEvent, m_D3DStream);
 
@@ -148,6 +144,8 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 
 void RenderManager::Start()
 {
+	std::printf("Start!\n");
+	
 	m_threadSignal = kRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
 
@@ -160,8 +158,8 @@ void RenderManager::Run()
 	
 	int ticks = 0;
 	while (m_threadSignal.load() == kRun)
-	{
-		
+	{		
+		m_wavefrontTracer.Iterate();
 		
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		

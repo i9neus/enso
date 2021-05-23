@@ -5,17 +5,16 @@
 
 namespace Cuda
 {
-	class WavefrontTracer
+	class HostWavefrontTracer
 	{
 	private:
-		Image*		cu_deviceImage;
+		HostImage* m_hostImage;
 
-	public:		
-		WavefrontTracer() = default;
+	public:
+		HostWavefrontTracer() = default;
 
-		void Initialise(Image* deviceImage);
+		void Initialise(HostImage* hostImage);
 
 		void Iterate();
-
 	};
 }
