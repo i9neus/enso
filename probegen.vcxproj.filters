@@ -138,6 +138,12 @@
     <ClInclude Include="src\generic\Math.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaMath.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Constants.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">

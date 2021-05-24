@@ -1,11 +1,16 @@
 ﻿#pragma once
 
 #include "CudaCommonIncludes.cuh"
+#include "CudaMath.cuh"
 
 //#define CudaImageBoundCheck
 
 namespace Cuda
 {		
+	__host__ __device__ inline float4 operator+(const float4& lhs, const float4& rhs) {
+		return lhs;
+	}
+	
 	class DeviceImage
 	{
 	public: 
@@ -55,7 +60,7 @@ namespace Cuda
 		__host__ cudaStream_t GetHostStream() const { return m_hostStream; }
 		__host__ DeviceImage* GetDeviceImage() const 
 		{ 
-			Assert(cu_deviceImage, "Image has not been initialised!");
+			AssertMsg(cu_deviceImage, "Image has not been initialised!");
 			return cu_deviceImage; 
 		}
 
