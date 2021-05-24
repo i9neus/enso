@@ -21,6 +21,8 @@
 
 using Microsoft::WRL::ComPtr;
 
+template<typename T> inline void echo(const char* str) { std::printf("%s\n", str); }
+
 #define ASSERTS
 
 #ifdef ASSERTS
