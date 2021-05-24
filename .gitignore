@@ -33,6 +33,7 @@
 
 .vs/*
 bin/*
+tests/x64/*
 x64/*
 *.png
 *.jpg

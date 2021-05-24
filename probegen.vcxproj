@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
+    <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
@@ -32,6 +33,7 @@
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
+    <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\thirdparty\lodepng\lodepng.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h" />

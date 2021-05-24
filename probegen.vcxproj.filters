@@ -19,6 +19,9 @@
     <ClCompile Include="src\renderer\RenderManager.cpp">
       <Filter>renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\StringUtils.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -142,6 +145,9 @@
       <Filter>kernels</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Constants.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\StringUtils.h">
       <Filter>generic</Filter>
     </ClInclude>
   </ItemGroup>
