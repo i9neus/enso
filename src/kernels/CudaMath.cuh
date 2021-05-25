@@ -7,6 +7,8 @@ namespace Cuda
 {
 	__host__ __device__ inline float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ inline float fract(const float& v) { return fmodf(v, 1.0f); }
+	
+	#define _det2(a, b, c, d) ((a) * (d) - (b) * (c))
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -17,6 +19,7 @@ namespace Cuda
 		union
 		{
 			struct { float x, y, z, w; };
+			struct { float i0, i1, i2, i3; };
 			float data[4];
 		};
 
@@ -67,6 +70,7 @@ namespace Cuda
 		union
 		{
 			struct { float x, y, z; };
+			struct { float i0, i1, i2; };
 			float data[3];
 		};
 		
@@ -121,6 +125,7 @@ namespace Cuda
 		union
 		{
 			struct { float x, y; };
+			struct { float i0, i1; };
 			float data[2];
 		};
 
@@ -173,12 +178,24 @@ namespace Cuda
 		union
 		{
 			struct { vec4 x, y, z, w; };
+			struct
+			{
+				float i00, i01, i02, i03;
+				float i10, i11, i12, i13;
+				float i20, i21, i22, i23;
+				float i30, i31, i32, i33;
+			};
 			vec4 data[4];
 		};
 
 		__host__ __device__  static mat4 indentity()
 		{
 			return mat4(vec4(1.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 1.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 1.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		}
+
+		__host__ __device__  static mat4 null()
+		{
+			return mat4(vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f));
 		}
 
 		mat4() = default;
@@ -199,52 +216,111 @@ namespace Cuda
 	__host__ __device__ inline mat4 operator *(const mat4& a, const mat4& b) 
 	{  
 		mat4 r;
-		r[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0] + a[0][3] * b[3][0];
-		r[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0] + a[1][2] * b[2][0] + a[1][3] * b[3][0];
-		r[2][0] = a[2][0] * b[0][0] + a[2][1] * b[1][0] + a[2][2] * b[2][0] + a[2][3] * b[3][0];
-		r[3][0] = a[3][0] * b[0][0] + a[3][1] * b[1][0] + a[3][2] * b[2][0] + a[3][3] * b[3][0];
-		r[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1] + a[0][3] * b[3][1];
-		r[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1] + a[1][2] * b[2][1] + a[1][3] * b[3][1];
-		r[2][1] = a[2][0] * b[0][1] + a[2][1] * b[1][1] + a[2][2] * b[2][1] + a[2][3] * b[3][1];
-		r[3][1] = a[3][0] * b[0][1] + a[3][1] * b[1][1] + a[3][2] * b[2][1] + a[3][3] * b[3][1];
-		r[0][2] = a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2] + a[0][3] * b[3][2];
-		r[1][2] = a[1][0] * b[0][2] + a[1][1] * b[1][2] + a[1][2] * b[2][2] + a[1][3] * b[3][2];
-		r[2][2] = a[2][0] * b[0][2] + a[2][1] * b[1][2] + a[2][2] * b[2][2] + a[2][3] * b[3][2];
-		r[3][2] = a[3][0] * b[0][2] + a[3][1] * b[1][2] + a[3][2] * b[2][2] + a[3][3] * b[3][2];
-		r[0][3] = a[0][0] * b[0][3] + a[0][1] * b[1][3] + a[0][2] * b[2][3] + a[0][3] * b[3][3];
-		r[1][3] = a[1][0] * b[0][3] + a[1][1] * b[1][3] + a[1][2] * b[2][3] + a[1][3] * b[3][3];
-		r[2][3] = a[2][0] * b[0][3] + a[2][1] * b[1][3] + a[2][2] * b[2][3] + a[2][3] * b[3][3];
-		r[3][3] = a[3][0] * b[0][3] + a[3][1] * b[1][3] + a[3][2] * b[2][3] + a[3][3] * b[3][3];
+		r.i00 = a.i00 * b.i00 + a.i01 * b.i10 + a.i02 * b.i20 + a.i03 * b.i30;
+		r.i10 = a.i10 * b.i00 + a.i11 * b.i10 + a.i12 * b.i20 + a.i13 * b.i30;
+		r.i20 = a.i20 * b.i00 + a.i21 * b.i10 + a.i22 * b.i20 + a.i23 * b.i30;
+		r.i30 = a.i30 * b.i00 + a.i31 * b.i10 + a.i32 * b.i20 + a.i33 * b.i30;
+		r.i01 = a.i00 * b.i01 + a.i01 * b.i11 + a.i02 * b.i21 + a.i03 * b.i31;
+		r.i11 = a.i10 * b.i01 + a.i11 * b.i11 + a.i12 * b.i21 + a.i13 * b.i31;
+		r.i21 = a.i20 * b.i01 + a.i21 * b.i11 + a.i22 * b.i21 + a.i23 * b.i31;
+		r.i31 = a.i30 * b.i01 + a.i31 * b.i11 + a.i32 * b.i21 + a.i33 * b.i31;
+		r.i02 = a.i00 * b.i02 + a.i01 * b.i12 + a.i02 * b.i22 + a.i03 * b.i32;
+		r.i12 = a.i10 * b.i02 + a.i11 * b.i12 + a.i12 * b.i22 + a.i13 * b.i32;
+		r.i22 = a.i20 * b.i02 + a.i21 * b.i12 + a.i22 * b.i22 + a.i23 * b.i32;
+		r.i32 = a.i30 * b.i02 + a.i31 * b.i12 + a.i32 * b.i22 + a.i33 * b.i32;
+		r.i03 = a.i00 * b.i03 + a.i01 * b.i13 + a.i02 * b.i23 + a.i03 * b.i33;
+		r.i13 = a.i10 * b.i03 + a.i11 * b.i13 + a.i12 * b.i23 + a.i13 * b.i33;
+		r.i23 = a.i20 * b.i03 + a.i21 * b.i13 + a.i22 * b.i23 + a.i23 * b.i33;
+		r.i33 = a.i30 * b.i03 + a.i31 * b.i13 + a.i32 * b.i23 + a.i33 * b.i33;
 		return r;
 	}
 
 	__host__ __device__ inline vec4 operator *(const mat4& a, const vec4& b)
 	{
 		vec4 r;
-		r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * b[3];
-		r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * b[3];
-		r[2] = a[2][0] * b[0] + a[2][1] * b[1] + a[2][2] * b[2] + a[2][3] * b[3];
-		r[3] = a[3][0] * b[0] + a[3][1] * b[1] + a[3][2] * b[2] + a[3][3] * b[3];
+		r.i0 = a.i00 * b.i0 + a.i01 * b.i1 + a.i02 * b.i2 + a.i03 * b[3];
+		r.i1 = a.i10 * b.i0 + a.i11 * b.i1 + a.i12 * b.i2 + a.i13 * b[3];
+		r.i2 = a.i20 * b.i0 + a.i21 * b.i1 + a.i22 * b.i2 + a.i23 * b[3];
+		r[3] = a.i30 * b.i0 + a.i31 * b.i1 + a.i32 * b.i2 + a.i33 * b[3];
 		return r;
 	}
 
 	__host__ __device__ inline vec4 operator *(const mat4& a, const vec3& b)
 	{
 		vec4 r;
-		r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3];
-		r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3];
-		r[2] = a[2][0] * b[0] + a[2][1] * b[1] + a[2][2] * b[2] + a[2][3];
-		r[3] = a[3][0] * b[0] + a[3][1] * b[1] + a[3][2] * b[2] + a[3][3];
+		r.i0 = a.i00 * b.i0 + a.i01 * b.i1 + a.i02 * b.i2 + a.i03;
+		r.i1 = a.i10 * b.i0 + a.i11 * b.i1 + a.i12 * b.i2 + a.i13;
+		r.i2 = a.i20 * b.i0 + a.i21 * b.i1 + a.i22 * b.i2 + a.i23;
+		r[3] = a.i30 * b.i0 + a.i31 * b.i1 + a.i32 * b.i2 + a.i33;
 		return r;
+	}
+
+	__host__ __device__ inline float trace(const mat4& m)
+	{
+		return m.i00 + m.i11 + m.i22 + m.i33;
 	}
 
 	__host__ __device__ inline mat4 transpose(const mat4& m)
 	{
 		mat4 r;
-		r[0][0] = m[0][0]; r[0][1] = m[1][0]; r[0][2] = m[2][0]; r[0][3] = m[3][0];
-		r[1][0] = m[0][1]; r[1][1] = m[1][1]; r[1][2] = m[2][1]; r[1][3] = m[3][1];
-		r[2][0] = m[0][2]; r[2][1] = m[1][2]; r[2][2] = m[2][2]; r[2][3] = m[3][2];
-		r[3][0] = m[0][3]; r[3][1] = m[1][3]; r[3][2] = m[2][3]; r[3][3] = m[3][3];
+		r.i00 = m.i00; r.i01 = m.i10; r.i02 = m.i20; r.i03 = m.i30;
+		r.i10 = m.i01; r.i11 = m.i11; r.i12 = m.i21; r.i13 = m.i31;
+		r.i20 = m.i02; r.i21 = m.i12; r.i22 = m.i22; r.i23 = m.i32;
+		r.i30 = m.i03; r.i31 = m.i13; r.i32 = m.i23; r.i33 = m.i33;
+		return r;
+	}
+
+	__host__ __device__ inline float det(const mat4& m)
+	{
+		// Laplace expansion 	
+		return (m.i00 * m.i11 - m.i10 * m.i01) * (m.i22 * m.i33 - m.i32 * m.i23) -
+			   (m.i00 * m.i12 - m.i10 * m.i02) * (m.i21 * m.i33 - m.i31 * m.i23) +
+			   (m.i00 * m.i13 - m.i10 * m.i03) * (m.i21 * m.i32 - m.i31 * m.i22) +
+			   (m.i01 * m.i12 - m.i11 * m.i02) * (m.i20 * m.i33 - m.i30 * m.i23) -
+			   (m.i01 * m.i13 - m.i11 * m.i03) * (m.i20 * m.i32 - m.i30 * m.i22) +
+			   (m.i02 * m.i13 - m.i12 * m.i03) * (m.i20 * m.i31 - m.i30 * m.i21);
+	}
+
+	__host__ __device__ inline mat4 inverse(const mat4& m)
+	{
+		constexpr float kInverseEpsilon = 1e-20f;
+
+		// Laplace expansion 
+		const float s0 = m.i00 * m.i11 - m.i10 * m.i01;
+		const float s1 = m.i00 * m.i12 - m.i10 * m.i02;
+		const float s2 = m.i00 * m.i13 - m.i10 * m.i03;
+		const float s3 = m.i01 * m.i12 - m.i11 * m.i02;
+		const float s4 = m.i01 * m.i13 - m.i11 * m.i03;
+		const float s5 = m.i02 * m.i13 - m.i12 * m.i03;
+		const float c5 = m.i22 * m.i33 - m.i32 * m.i23;
+		const float c4 = m.i21 * m.i33 - m.i31 * m.i23;
+		const float c3 = m.i21 * m.i32 - m.i31 * m.i22;
+		const float c2 = m.i20 * m.i33 - m.i30 * m.i23;
+		const float c1 = m.i20 * m.i32 - m.i30 * m.i22;
+		const float c0 = m.i20 * m.i31 - m.i30 * m.i21;
+
+		const float determinant = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+		if (abs(determinant) < kInverseEpsilon) { return mat4::null(); }
+
+		const float invDet = 1 / determinant;
+		mat4 r;
+		r.i00 = (m.i11 * c5 - m.i12 * c4 + m.i13 * c3) * invDet;
+		r.i01 = (-m.i01 * c5 + m.i02 * c4 - m.i03 * c3) * invDet;
+		r.i02 = (m.i31 * s5 - m.i32 * s4 + m.i33 * s3) * invDet;
+		r.i03 = (-m.i21 * s5 + m.i22 * s4 - m.i23 * s3) * invDet;
+		r.i10 = (-m.i10 * c5 + m.i12 * c2 - m.i13 * c1) * invDet;
+		r.i11 = (m.i00 * c5 - m.i02 * c2 + m.i03 * c1) * invDet;
+		r.i12 = (-m.i30 * s5 + m.i32 * s2 - m.i33 * s1) * invDet;
+		r.i13 = (m.i20 * s5 - m.i22 * s2 + m.i23 * s1) * invDet;
+		r.i20 = (m.i10 * c4 - m.i11 * c2 + m.i13 * c0) * invDet;
+		r.i21 = (-m.i00 * c4 + m.i01 * c2 - m.i03 * c0) * invDet;
+		r.i22 = (m.i30 * s4 - m.i31 * s2 + m.i33 * s0) * invDet;
+		r.i23 = (-m.i20 * s4 + m.i21 * s2 - m.i23 * s0) * invDet;
+		r.i30 = (-m.i10 * c3 + m.i11 * c1 - m.i12 * c0) * invDet;
+		r.i31 = (m.i00 * c3 - m.i01 * c1 + m.i02 * c0) * invDet;
+		r.i32 = (-m.i30 * s3 + m.i31 * s1 - m.i32 * s0) * invDet;
+		r.i33 = (m.i20 * s3 - m.i21 * s1 + m.i22 * s0) * invDet;
+
 		return r;
 	}
 
@@ -258,7 +334,13 @@ namespace Cuda
 		union
 		{
 			struct { vec3 x, y, z; };
-			vec3 data[4];
+			struct
+			{
+				float i00, i01, i02;
+				float i10, i11, i12;
+				float i20, i21, i22;
+			};
+			vec3 data[3];
 		};
 
 		mat3() = default;
@@ -289,27 +371,24 @@ namespace Cuda
 	__host__ __device__ inline mat3 operator *(const mat3& a, const mat3& b)
 	{
 		mat3 r;
-		r[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0];
-		r[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0] + a[1][2] * b[2][0];
-		r[2][0] = a[2][0] * b[0][0] + a[2][1] * b[1][0] + a[2][2] * b[2][0];
-		r[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1];
-		r[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1] + a[1][2] * b[2][1];
-		r[2][1] = a[2][0] * b[0][1] + a[2][1] * b[1][1] + a[2][2] * b[2][1];
-		r[0][2] = a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2];
-		r[1][2] = a[1][0] * b[0][2] + a[1][1] * b[1][2] + a[1][2] * b[2][2];
-		r[2][2] = a[2][0] * b[0][2] + a[2][1] * b[1][2] + a[2][2] * b[2][2];
-		r[0][3] = a[0][0] * b[0][3] + a[0][1] * b[1][3] + a[0][2] * b[2][3];
-		r[1][3] = a[1][0] * b[0][3] + a[1][1] * b[1][3] + a[1][2] * b[2][3];
-		r[2][3] = a[2][0] * b[0][3] + a[2][1] * b[1][3] + a[2][2] * b[2][3];
+		r.i00 = a.i00 * b.i00 + a.i01 * b.i10 + a.i02 * b.i20;
+		r.i10 = a.i10 * b.i00 + a.i11 * b.i10 + a.i12 * b.i20;
+		r.i20 = a.i20 * b.i00 + a.i21 * b.i10 + a.i22 * b.i20;
+		r.i01 = a.i00 * b.i01 + a.i01 * b.i11 + a.i02 * b.i21;
+		r.i11 = a.i10 * b.i01 + a.i11 * b.i11 + a.i12 * b.i21;
+		r.i21 = a.i20 * b.i01 + a.i21 * b.i11 + a.i22 * b.i21;
+		r.i02 = a.i00 * b.i02 + a.i01 * b.i12 + a.i02 * b.i22;
+		r.i12 = a.i10 * b.i02 + a.i11 * b.i12 + a.i12 * b.i22;
+		r.i22 = a.i20 * b.i02 + a.i21 * b.i12 + a.i22 * b.i22;		
 		return r;
 	}
 
 	__host__ __device__ inline vec3 operator *(const mat3& a, const vec3& b)
 	{
 		vec3 r;
-		r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2];
-		r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2];
-		r[2] = a[2][0] * b[0] + a[2][1] * b[1] + a[2][2] * b[2];
+		r[0] = a.i00 * b[0] + a.i01 * b[1] + a.i02 * b.i2;
+		r[1] = a.i10 * b[0] + a.i11 * b[1] + a.i12 * b.i2;
+		r.i2 = a.i20 * b[0] + a.i21 * b[1] + a.i22 * b.i2;
 		return r;
 	}
 
@@ -318,26 +397,29 @@ namespace Cuda
 		return mat3(a[0] * b, a[1] * b, a[2] * b);
 	}
 
+	__host__ __device__ inline float trace(const mat3& m)
+	{
+		return m.i00 + m.i11 + m.i22;
+	}
+
 	__host__ __device__ inline float det(const mat3& m)
 	{
-		return m[0][0] * m[1][1] * m[2][2] + 
-			   m[0][1] * m[1][2] * m[2][0] + 
-			   m[0][2] * m[1][0] * m[2][1] -
-			   m[0][2] * m[1][1] * m[2][0] - 
-			   m[0][1] * m[1][0] * m[2][2] - 
-			   m[0][0] * m[1][2] * m[2][1];
+		return m.i00 * m.i11 * m.i22 + 
+			   m.i01 * m.i12 * m.i20 + 
+			   m.i02 * m.i10 * m.i21 -
+			   m.i02 * m.i11 * m.i20 - 
+			   m.i01 * m.i10 * m.i22 - 
+			   m.i00 * m.i12 * m.i21;
 	}
 
 	__host__ __device__ inline mat3 transpose(const mat3& m)
 	{
 		mat3 r;
-		r[0][0] = m[0][0]; r[0][1] = m[1][0]; r[0][2] = m[2][0];
-		r[1][0] = m[0][1]; r[1][1] = m[1][1]; r[1][2] = m[2][1];
-		r[2][0] = m[0][2]; r[2][1] = m[1][2]; r[2][2] = m[2][2];
+		r.i00 = m.i00; r.i01 = m.i10; r.i02 = m.i20;
+		r.i10 = m.i01; r.i11 = m.i11; r.i12 = m.i21;
+		r.i20 = m.i02; r.i21 = m.i12; r.i22 = m.i22;
 		return r;
 	}
-
-#define _det2(a, b, c, d) ((a) * (d) - (b) * (c))
 
 	__host__ __device__ inline mat3 inverse(const mat3& m)
 	{
@@ -345,12 +427,12 @@ namespace Cuda
 		
 		const float determinant = det(m);
 		if (abs(determinant) < kInverseEpsilon) { return mat3::null(); }
+		const float invDet = 1 / determinant;
 
-		const mat3 adjugate = { { _det2(m[1][1], m[1][2], m[2][1], m[2][2]), -_det2(m[0][1], m[0][2], m[2][1], m[2][2]), _det2(m[0][1], m[0][2], m[1][1], m[1][2]) },
-								{ - _det2(m[1][0], m[1][2], m[2][0], m[2][2]), _det2(m[0][0], m[0][2], m[2][0], m[2][2]), - _det2(m[0][0], m[0][2], m[1][0], m[1][2])},
-								{ _det2(m[1][0], m[1][1], m[2][0], m[2][1]), -_det2(m[0][0], m[0][1], m[2][0], m[2][1]), _det2(m[0][0], m[0][1], m[1][0], m[1][1]) } };
-
-		return adjugate * (1 / determinant);
+		// The adjugate matrix divided by the determinant
+		return { { _det2(m.i11, m.i12, m.i21, m.i22) * invDet, -_det2(m.i01, m.i02, m.i21, m.i22) * invDet, _det2(m.i01, m.i02, m.i11, m.i12) * invDet},
+			     { -_det2(m.i10, m.i12, m.i20, m.i22) * invDet, _det2(m.i00, m.i02, m.i20, m.i22) * invDet, -_det2(m.i00, m.i02, m.i10, m.i12) * invDet},
+				 { _det2(m.i10, m.i11, m.i20, m.i21) * invDet, -_det2(m.i00, m.i01, m.i20, m.i21) * invDet, _det2(m.i00, m.i01, m.i10, m.i11) * invDet } };
 	}
 
 	__host__ __device__ inline bool operator ==(const mat3& a, const mat3& b)
