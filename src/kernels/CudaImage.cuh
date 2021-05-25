@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CudaCommonIncludes.cuh"
-#include "CudaMath.cuh"
+#include "math/CudaMath.cuh"
 
 //#define CudaImageBoundCheck
 

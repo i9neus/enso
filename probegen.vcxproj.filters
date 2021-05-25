@@ -141,14 +141,38 @@
     <ClInclude Include="src\generic\Math.h">
       <Filter>generic</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\CudaMath.cuh">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\Constants.h">
       <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\StringUtils.h">
       <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaVec2.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaVec3.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaVec4.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaMat4.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaMat3.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaMath.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaIVec3.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaIVec4.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaIVec2.cuh">
+      <Filter>kernels\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -184,6 +208,9 @@
     </Filter>
     <Filter Include="renderer">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\math">
+      <UniqueIdentifier>{683b4a22-8741-469d-bda7-497068883385}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -60,9 +60,17 @@
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaImage.cuh" />
-    <ClInclude Include="src\kernels\CudaMath.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\math\CudaIVec2.cuh" />
+    <ClInclude Include="src\kernels\math\CudaIVec3.cuh" />
+    <ClInclude Include="src\kernels\math\CudaIVec4.cuh" />
+    <ClInclude Include="src\kernels\math\CudaMat3.cuh" />
+    <ClInclude Include="src\kernels\math\CudaMat4.cuh" />
+    <ClInclude Include="src\kernels\math\CudaMath.cuh" />
+    <ClInclude Include="src\kernels\math\CudaVec2.cuh" />
+    <ClInclude Include="src\kernels\math\CudaVec3.cuh" />
+    <ClInclude Include="src\kernels\math\CudaVec4.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
