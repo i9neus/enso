@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
 #include "generic\StdIncludes.h"
-#include "kernels\CudaMath.cuh"
+#include "kernels\math\CudaMath.cuh"
 #include "generic\StringUtils.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -8,6 +8,30 @@ using namespace Cuda;
 
 namespace tests
 {
+	TEST_CLASS(CudaMathTests)
+	{
+	public:
+		template<typename T>
+		void CheckSize(size_t targetSize, const char* name)
+		{
+			Assert::IsTrue(sizeof(T) == targetSize,
+				Widen(tfm::format("%s is the wrong size: %i should be %i", name, sizeof(T), targetSize)).c_str());
+		}
+
+		TEST_METHOD(TestMathStructSizes)
+		{
+			CheckSize<vec2>(sizeof(float) * 2, "vec2");
+			CheckSize<vec3>(sizeof(float) * 3, "vec3");
+			CheckSize<vec4>(sizeof(float) * 4, "vec4");
+			CheckSize<ivec2>(sizeof(int) * 2, "vec2");
+			CheckSize<ivec3>(sizeof(int) * 3, "vec3");
+			CheckSize<ivec4>(sizeof(int) * 4, "vec4");
+			CheckSize<uvec2>(sizeof(unsigned int) * 2, "vec2");
+			CheckSize<uvec3>(sizeof(unsigned int) * 3, "vec3");
+			CheckSize<uvec4>(sizeof(unsigned int) * 4, "vec4");
+		}
+	};
+	
 	class MatrixTestUtils
 	{
 	public: 
