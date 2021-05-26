@@ -6,9 +6,10 @@
 namespace Cuda
 {
 	template<typename T>
-	struct __builtin_align__(8) _ivec2
+	struct __builtin_align__(8) _ivec2 : public VecBase<2>
 	{
 		enum _attrs : size_t { kDims = 2 };
+		using kType = T;
 
 		union
 		{
@@ -20,6 +21,8 @@ namespace Cuda
 		_ivec2() = default;
 		_ivec2(const T v) : x(v), y(v) {}
 		_ivec2(const T& x_, const T& y_) : x(x_), y(y_) {}
+		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<2>, S>::value>::type>
+		__host__ __device__ _ivec2(const S& other) : x(T(other.x)), y(T(other.y)) {}
 
 		__host__ __device__ inline const T& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline T& operator[](const unsigned int idx) { return data[idx]; }

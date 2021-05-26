@@ -2,12 +2,14 @@
 
 #include "../CudaCommonIncludes.cuh"
 #include "generic/Constants.h"
+#include "CudaVec2.cuh""
 
 namespace Cuda
 {
-	struct vec3
+	struct vec3 : public VecBase<3>
 	{
 		enum _attrs : size_t { kDims = 3 };
+		using kType = float;
 
 		union
 		{
@@ -16,10 +18,13 @@ namespace Cuda
 			float data[3];
 		};
 
-		vec3() = default;
-		vec3(const float v) : x(v), y(v), z(v) {}
-		vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
-		vec3(const vec3& other) : x(other.x), y(other.y), z(other.z) {}
+		__host__ __device__ vec3() = default;
+		__host__ __device__ vec3(const float v) : x(v), y(v), z(v) {}
+		__host__ __device__ vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
+		__host__ __device__ vec3(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
+		__host__ __device__ vec3(const vec3& other) : x(other.x), y(other.y), z(other.z) {}
+		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<3>, T>::value>::type>
+		__host__ __device__ vec3(const T& other) : x(float(other.x)), y(float(other.y)), z(float(other.z)) {}
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
@@ -46,7 +51,7 @@ namespace Cuda
 	}
 	__host__ __device__ inline float length2(const vec3& v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
 	__host__ __device__ inline float length(const vec3& v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
-	__host__ __device__ inline vec3 normalise(const vec3& v) { return v / length(v); }
+	__host__ __device__ inline vec3 normalize(const vec3& v) { return v / length(v); }
 	__host__ __device__ inline vec3 fmod(const vec3& a, const vec3& b) { return vec3(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z)); }
 	__host__ __device__ inline vec3 pow(const vec3& a, const vec3& b) { return vec3(powf(a.x, b.x), powf(a.y, b.y), powf(a.z, b.z)); }
 	__host__ __device__ inline vec3 exp(const vec3& a) { return vec3(expf(a.x), expf(a.y), expf(a.z)); }

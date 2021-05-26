@@ -19,7 +19,7 @@ namespace Cuda
 		pixel.z = 0.0f;
 		pixel.w = 1.0f;
 
-		*(image->at(kx, ky)) = pixel;
+		*(image->At(kx, ky)) = pixel;
 	}
 	
 	void HostWavefrontTracer::Initialise(HostImage* hostImage)

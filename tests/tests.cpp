@@ -8,33 +8,9 @@ using namespace Cuda;
 
 namespace tests
 {
-	TEST_CLASS(CudaMathTests)
-	{
-	public:
-		template<typename T>
-		void CheckSize(size_t targetSize, const char* name)
-		{
-			Assert::IsTrue(sizeof(T) == targetSize,
-				Widen(tfm::format("%s is the wrong size: %i should be %i", name, sizeof(T), targetSize)).c_str());
-		}
-
-		TEST_METHOD(TestMathStructSizes)
-		{
-			CheckSize<vec2>(sizeof(float) * 2, "vec2");
-			CheckSize<vec3>(sizeof(float) * 3, "vec3");
-			CheckSize<vec4>(sizeof(float) * 4, "vec4");
-			CheckSize<ivec2>(sizeof(int) * 2, "vec2");
-			CheckSize<ivec3>(sizeof(int) * 3, "vec3");
-			CheckSize<ivec4>(sizeof(int) * 4, "vec4");
-			CheckSize<uvec2>(sizeof(unsigned int) * 2, "vec2");
-			CheckSize<uvec3>(sizeof(unsigned int) * 3, "vec3");
-			CheckSize<uvec4>(sizeof(unsigned int) * 4, "vec4");
-		}
-	};
-	
 	class MatrixTestUtils
 	{
-	public: 
+	public:
 		template<typename T>
 		void TestIsEqual(const T& matBaseline, const T& matTest, const float kEpsilon)
 		{
@@ -45,6 +21,98 @@ namespace tests
 					Assert::IsTrue(std::abs(matBaseline[i][j] - matTest[i][j]) < kEpsilon,
 						Widen(tfm::format("Elements are not equal: [%i, %i] %.10f should be %.10f", i, j, matTest[i][j], matBaseline[i][j])).c_str());
 				}
+			}
+		}
+
+		template<typename T>
+		void CheckTypeSize(size_t targetSize, const char* name)
+		{
+			Assert::IsTrue(sizeof(T) == targetSize,
+				Widen(tfm::format("%s is the wrong size: %i should be %i", name, sizeof(T), targetSize)).c_str());
+		}
+	};
+	
+	TEST_CLASS(CudaMathTests), MatrixTestUtils
+	{
+	public:
+		TEST_METHOD(TestMathStructSizes)
+		{
+			CheckTypeSize<vec2>(sizeof(float) * 2, "vec2");
+			CheckTypeSize<vec3>(sizeof(float) * 3, "vec3");
+			CheckTypeSize<vec4>(sizeof(float) * 4, "vec4");
+			CheckTypeSize<ivec2>(sizeof(int) * 2, "ivec2");
+			CheckTypeSize<ivec3>(sizeof(int) * 3, "ivec3");
+			CheckTypeSize<ivec4>(sizeof(int) * 4, "ivec4");
+			CheckTypeSize<uvec2>(sizeof(unsigned int) * 2, "uvec2");
+			CheckTypeSize<uvec3>(sizeof(unsigned int) * 3, "uvec3");
+			CheckTypeSize<uvec4>(sizeof(unsigned int) * 4, "uvec4");
+		}
+		TEST_METHOD(TestMathOrthoBasis)
+		{
+			// Test the createBasis(n) function by checking that three orthogonal vectors, when transformed, are still orthogonal
+
+			const vec3 b0 = normalize(vec3(0.73571f, -1.2945f, 0.34517f));
+			const vec3 b1 = normalize(cross(b0, (abs(dot(b0, vec3(1.0, 0.0, 0.0))) < 0.5) ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
+			const vec3 b2 = cross(b1, b0);	
+
+			constexpr float kDotEpsilon = 1e-6f;
+			Assert::IsTrue(std::abs(dot(b0, b1)) < kDotEpsilon && std::abs(dot(b1, b2)) < kDotEpsilon && std::abs(dot(b2, b0)) < kDotEpsilon,
+				L"Test basis is not orthnormal.");
+
+			{
+				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
+
+				const mat4 onbTest = createBasis(n);
+				const vec3 t0 = onbTest * b0;
+				const vec3 t1 = onbTest * b1;
+				const vec3 t2 = onbTest * b2;
+
+				Assert::IsTrue(std::abs(dot(t0, t1)) < kDotEpsilon, Widen(tfm::format("t0 and t1 are not ortogonal: dot product = %f", dot(t0, t1))).c_str());
+				Assert::IsTrue(std::abs(dot(t1, t2)) < kDotEpsilon, Widen(tfm::format("t1 and t2 are not ortogonal: dot product = %f", dot(t1, t2))).c_str());
+				Assert::IsTrue(std::abs(dot(t2, t0)) < kDotEpsilon, Widen(tfm::format("t2 and t0 are not ortogonal: dot product = %f", dot(t2, t0))).c_str());
+			}
+
+			// Test the createBasis(n, up) function by checking that three orthogonal vectors, when transformed, are still orthogonal
+
+			{
+				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
+				const vec3 up = normalize(vec3(1.283508f, 0.7673658f, -0.38762f));
+
+				const mat4 onbTest = createBasis(n, up);
+				const vec3 s0 = onbTest * b0;
+				const vec3 s1 = onbTest * b1;
+				const vec3 s2 = onbTest * b2;
+
+				Assert::IsTrue(std::abs(dot(s0, s1)) < kDotEpsilon, Widen(tfm::format("s0 and s1 are not ortogonal: dot product = %f", dot(s0, s1))).c_str());
+				Assert::IsTrue(std::abs(dot(s1, s2)) < kDotEpsilon, Widen(tfm::format("s1 and s2 are not ortogonal: dot product = %f", dot(s1, s2))).c_str());
+				Assert::IsTrue(std::abs(dot(s2, s0)) < kDotEpsilon, Widen(tfm::format("s2 and s0 are not ortogonal: dot product = %f", dot(s2, s0))).c_str());
+			}
+		}
+
+		TEST_METHOD(TestMathVecCast)
+		{
+			{
+				ivec4 a(1, 2, 3, 4);
+				vec4 b(a);
+				ivec4 c(b);
+				Assert::IsTrue(a.x == c.x && a.y == c.y && a.z == c.z && a.w == c.w,
+					Widen(tfm::format("a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
+			}
+
+			{
+				ivec3 a(1, 2, 3);
+				vec3 b(a);
+				ivec3 c(b);
+				Assert::IsTrue(a.x == c.x && a.y == c.y && a.z == c.z,
+					Widen(tfm::format("a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
+			}
+
+			{
+				ivec2 a(1, 2);
+				vec2 b(a);
+				ivec2 c(b);
+				Assert::IsTrue(a.x == c.x && a.y == c.y,
+					Widen(tfm::format("a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
 			}
 		}
 	};

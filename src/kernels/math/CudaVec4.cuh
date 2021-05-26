@@ -2,12 +2,14 @@
 
 #include "../CudaCommonIncludes.cuh"
 #include "generic/Constants.h"
+#include "CudaVec3.cuh"
 
 namespace Cuda
-{
-	struct __builtin_align__(16) vec4
+{	
+	struct __builtin_align__(16) vec4 : public VecBase<4>
 	{
 		enum _attrs : size_t { kDims = 4 };
+		using kType = float;
 
 		union
 		{
@@ -16,10 +18,14 @@ namespace Cuda
 			float data[4];
 		};
 
-		vec4() = default;
-		vec4(const float v) : x(v), y(v), z(v), w(v) {}
-		vec4(const float& x_, const float& y_, const float& z_, const float& w_) : x(x_), y(y_), z(z_), w(w_) {}
-		vec4(const vec4 & other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
+		__host__ __device__ vec4() = default;
+		__host__ __device__ vec4(const float v) : x(v), y(v), z(v), w(v) {}
+		__host__ __device__ vec4(const float& x_, const float& y_, const float& z_, const float& w_) : x(x_), y(y_), z(z_), w(w_) {}
+		__host__ __device__ vec4(const vec3& v, const float& w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
+		__host__ __device__ vec4(const vec2& v, const float& z_, const float& w_) : x(v.x), y(v.y), z(z_), w(w_) {}
+		__host__ __device__ vec4(const vec4 & other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
+		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<4>, T>::value>::type> 
+		__host__ __device__ vec4(const T& other) : x(float(other.x)), y(float(other.y)), z(float(other.z)), w(float(other.w)) {}
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
@@ -34,15 +40,14 @@ namespace Cuda
 	__host__ __device__ inline vec4 operator *(const vec4& lhs, const float& rhs) { return vec4(lhs.x + rhs, lhs.y + rhs, lhs.z + rhs, lhs.w * rhs); }
 	__host__ __device__ inline vec4 operator *(const float& lhs, const vec4& rhs) { return vec4(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w); }
 	__host__ __device__ inline vec4 operator /(const vec4& lhs, const float& rhs) { return vec4(lhs.x / rhs, lhs.y / rhs, lhs.z / rhs, lhs.w / rhs); }
-	__host__ __device__ inline vec4& operator +=(vec4& lhs, const vec4& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; lhs.z += rhs.z; return lhs; }
-	__host__ __device__ inline vec4& operator -=(vec4& lhs, const vec4& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y; lhs.z -= rhs.z; return lhs; }
-	__host__ __device__ inline vec4& operator *=(vec4& lhs, const float& rhs) { lhs.x *= rhs; lhs.y *= rhs; lhs.z *= rhs; return lhs; }
-	__host__ __device__ inline vec4& operator /=(vec4& lhs, const float& rhs) { lhs.x /= rhs; lhs.y /= rhs; lhs.z /= rhs; return lhs; }
+	__host__ __device__ inline vec4& operator +=(vec4& lhs, const vec4& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; lhs.z += rhs.z; lhs.w += rhs.w; return lhs; }
+	__host__ __device__ inline vec4& operator -=(vec4& lhs, const vec4& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y; lhs.z -= rhs.z; lhs.w -= rhs.w; return lhs; }
+	__host__ __device__ inline vec4& operator *=(vec4& lhs, const float& rhs) { lhs.x *= rhs; lhs.y *= rhs; lhs.z *= rhs; lhs.w *= rhs; return lhs; }
 
-	__host__ __device__ inline float dot(const vec4& lhs, const vec4& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
-	__host__ __device__ inline float length2(const vec4& v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
-	__host__ __device__ inline float length(const vec4& v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
-	__host__ __device__ inline vec4 normalise(const vec4& v) { return v / length(v); }
+	__host__ __device__ inline float dot(const vec4& lhs, const vec4& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w; }
+	__host__ __device__ inline float length2(const vec4& v) { return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w; }
+	__host__ __device__ inline float length(const vec4& v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w); }
+	__host__ __device__ inline vec4 normalize(const vec4& v) { return v / length(v); }
 	__host__ __device__ inline vec4 fmod(const vec4& a, const vec4& b) { return vec4(fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z), fmodf(a.w, b.w)); }
 	__host__ __device__ inline vec4 pow(const vec4& a, const vec4& b) { return vec4(powf(a.x, b.x), powf(a.y, b.y), powf(a.z, b.z), powf(a.w, b.w)); }
 	__host__ __device__ inline vec4 exp(const vec4& a) { return vec4(expf(a.x), expf(a.y), expf(a.z), expf(a.w)); }

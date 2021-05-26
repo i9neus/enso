@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CudaCommonIncludes.cuh"
 #include "math/CudaMath.cuh"
 
 //#define CudaImageBoundCheck
@@ -24,7 +23,7 @@ namespace Cuda
 		__device__ float4* GetData() { return cu_data; }
 		__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
 
-		__device__ float4* at(int x, int y)
+		__device__ float4* At(int x, int y)
 		{
 #ifdef CudaImageBoundCheck
 			if (x < 0 || x >= m_width || y < 0 || y >= m_height) { return nullptr; }

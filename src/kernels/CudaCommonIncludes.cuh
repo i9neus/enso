@@ -10,9 +10,14 @@ using namespace DirectX;
 
 namespace Cuda
 {
+	using uint = unsigned int;
+	
 	__host__ __device__ inline float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ inline float fract(const float& v) { return fmodf(v, 1.0f); }
+	__host__ __device__ inline float sign(const float& v) { return copysign(1.0, v); }
 	template<typename T> __host__ inline void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
+
+	template<int T> struct VecBase {};
 }
 
 struct Vertex

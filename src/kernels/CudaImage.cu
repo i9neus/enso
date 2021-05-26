@@ -12,7 +12,7 @@ namespace Cuda
 	
 	//void Image::Clear(Image* image, cudaStream_t hostStream) { Clear << < 1, 1, 0, hostStream >> > (image); }
 
-	void HostImage::Create(unsigned int width, unsigned int height, cudaStream_t hostStream)
+	__host__ void HostImage::Create(unsigned int width, unsigned int height, cudaStream_t hostStream)
 	{
 		m_width = width;
 		m_height = height;
@@ -50,7 +50,7 @@ namespace Cuda
 
 		if (px < 0 || px >= image->Width() || py < 0 || py >= image->Height()) { return; }
 
-		surf2Dwrite(*(image->at(px, py)), cuSurface, kx * 16, ky);
+		surf2Dwrite(*(image->At(px, py)), cuSurface, kx * 16, ky);
 	}
 
 	// The host CPU Sinewave thread spawner

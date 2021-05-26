@@ -5,9 +5,10 @@
 
 namespace Cuda
 {
-	struct __builtin_align__(8) vec2
+	struct __builtin_align__(8) vec2 : public VecBase<2>
 	{
 		enum _attrs : size_t { kDims = 2 };
+		using kType = float;
 
 		union
 		{
@@ -16,10 +17,12 @@ namespace Cuda
 			float data[2];
 		};
 
-		vec2() = default;
-		vec2(const float v) : x(v), y(v) {}
-		vec2(const float& x_, const float& y_) : x(x_), y(y_) {}
-		vec2(const vec2 & other) : x(other.x), y(other.y) {}
+		__host__ __device__ vec2() = default;
+		__host__ __device__ vec2(const float v) : x(v), y(v) {}
+		__host__ __device__ vec2(const float& x_, const float& y_) : x(x_), y(y_) {}
+		__host__ __device__ vec2(const vec2 & other) : x(other.x), y(other.y) {}
+		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<2>, T>::value>::type>
+		__host__ __device__ vec2(const T& other) : x(float(other.x)), y(float(other.y)) {}
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
@@ -43,7 +46,7 @@ namespace Cuda
 	__host__ __device__ inline vec2 perpendicular(const vec2& lhs) { return vec2(-lhs.y, lhs.x); }
 	__host__ __device__ inline float length2(const vec2& v) { return v.x * v.x + v.y * v.y; }
 	__host__ __device__ inline float length(const vec2& v) { return sqrt(v.x * v.x + v.y * v.y); }
-	__host__ __device__ inline vec2 normalise(const vec2& v) { return v / length(v); }
+	__host__ __device__ inline vec2 normalize(const vec2& v) { return v / length(v); }
 	__host__ __device__ inline vec2 fmod(const vec2& a, const vec2& b) { return vec2(fmodf(a.x, b.x), fmodf(a.y, b.y)); }
 	__host__ __device__ inline vec2 pow(const vec2& a, const vec2& b) { return vec2(powf(a.x, b.x), powf(a.y, b.y)); }
 	__host__ __device__ inline vec2 exp(const vec2& a) { return vec2(expf(a.x), expf(a.y)); }

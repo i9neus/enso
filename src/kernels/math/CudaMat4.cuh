@@ -10,7 +10,7 @@ namespace Cuda
 	struct __builtin_align__(16) mat4
 	{
 		enum _attrs : size_t { kDims = 4 };
-		using VecType = vec4;
+		using kVecType = vec4;
 
 		union
 		{
@@ -82,13 +82,12 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline vec4 operator *(const mat4& a, const vec3& b)
+	__host__ __device__ inline vec3 operator *(const mat4& a, const vec3& b)
 	{
-		vec4 r;
+		vec3 r;
 		r.i0 = a.i00 * b.i0 + a.i01 * b.i1 + a.i02 * b.i2 + a.i03;
 		r.i1 = a.i10 * b.i0 + a.i11 * b.i1 + a.i12 * b.i2 + a.i13;
 		r.i2 = a.i20 * b.i0 + a.i21 * b.i1 + a.i22 * b.i2 + a.i23;
-		r[3] = a.i30 * b.i0 + a.i31 * b.i1 + a.i32 * b.i2 + a.i33;
 		return r;
 	}
 

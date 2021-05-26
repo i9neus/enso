@@ -12,7 +12,7 @@ namespace Cuda
 	struct mat3
 	{
 		enum _attrs : size_t { kDims = 3 };
-		using VecType = vec3;
+		using kVecType = vec3;
 
 		union
 		{
