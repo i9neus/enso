@@ -2,43 +2,22 @@
 
 namespace Cuda
 {
-	__global__ void SignalChange(DeviceImage* image, const unsigned int currentState, const unsigned int newState) { atomicCAS(image->AccessSignal(), currentState, newState); }
-	__global__ void Clear(DeviceImage* image) { memset(image->GetData(), 0, image->GetMemorySize()); }
-	
-	__host__ void HostImage::SignalSetRead(cudaStream_t hostStream) { SignalChange << < 1, 1, 0, hostStream >> > (cu_deviceImage, DeviceImage::kUnlocked, DeviceImage::kReadLocked); }
-	__host__ void HostImage::SignalUnsetRead(cudaStream_t hostStream) { SignalChange << < 1, 1, 0, hostStream >> > (cu_deviceImage, DeviceImage::kReadLocked, DeviceImage::kUnlocked); }
-	__host__ void HostImage::SignalSetWrite(cudaStream_t hostStream) { SignalChange << < 1, 1, 0, hostStream >> > (cu_deviceImage, DeviceImage::kUnlocked, DeviceImage::kWriteLocked); }
-	__host__ void HostImage::SignalUnsetWrite(cudaStream_t hostStream) { SignalChange << < 1, 1, 0, hostStream >> > (cu_deviceImage, DeviceImage::kWriteLocked, DeviceImage::kUnlocked); }
-	
-	//void Image::Clear(Image* image, cudaStream_t hostStream) { Clear << < 1, 1, 0, hostStream >> > (image); }
+	template<typename T>
+	__global__ void KernelSignalChange(Device::Image<T>* image, const unsigned int currentState, const unsigned int newState) { atomicCAS(image->AccessSignal(), currentState, newState); }
 
-	__host__ void HostImage::Create(unsigned int width, unsigned int height, cudaStream_t hostStream)
-	{
-		m_width = width;
-		m_height = height;
-		m_hostStream = hostStream;
+	template<typename T>
+	__global__ void KernelClear(Device::Image<T>* image, const T& value) 
+	{ 
+		if (*(image->AccessSignal()) != kImageWriteLocked) { return; }
 
-		checkCudaErrors(cudaMalloc((void**)&cu_data, sizeof(float4) * width * height));
-
-		checkCudaErrors(cudaMalloc((void**)&cu_deviceImage, sizeof(DeviceImage)));
-		checkCudaErrors(cudaMemcpy(cu_deviceImage, this, sizeof(DeviceImage), cudaMemcpyHostToDevice));
+		unsigned int kx = blockIdx.x * blockDim.x + threadIdx.x;
+		unsigned int ky = blockIdx.y * blockDim.y + threadIdx.y;
 	}
 
-	__host__ void HostImage::Destroy()
+	template<typename T>
+	__global__ void KernelCopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, Device::Image<T>* image, cudaSurfaceObject_t cuSurface)
 	{
-		if (!cu_deviceImage) { return; }
-		//Assert(cu_deviceImage, "Trying to destroy an image that has already been destroyed.");
-
-		checkCudaErrors(cudaFree((void*)cu_data));
-		checkCudaErrors(cudaFree((void*)cu_deviceImage));
-
-		std::printf("Destroyed image\n");
-		cu_deviceImage = nullptr;
-	}
-
-	__global__ void KernelCopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, DeviceImage* image, cudaSurfaceObject_t cuSurface)
-	{
-		if (*(image->AccessSignal()) != DeviceImage::kReadLocked) { return; }
+		if (*(image->AccessSignal()) != kImageReadLocked) { return; }
 
 		unsigned int kx = blockIdx.x * blockDim.x + threadIdx.x;
 		unsigned int ky = blockIdx.y * blockDim.y + threadIdx.y;
@@ -50,15 +29,57 @@ namespace Cuda
 
 		if (px < 0 || px >= image->Width() || py < 0 || py >= image->Height()) { return; }
 
-		surf2Dwrite(*(image->At(px, py)), cuSurface, kx * 16, ky);
+		surf2Dwrite(*reinterpret_cast<float4*>(image->At(px, py)), cuSurface, kx * 16, ky);
+	}
+
+	template<typename T>
+	__host__ Host::Image<T>::Image(unsigned int width, unsigned int height, cudaStream_t hostStream)
+	{
+		m_width = width;
+		m_height = height;
+		m_hostStream = hostStream;
+
+		m_block = dim3(16, 16, 1);
+		m_grid = dim3((m_width + 15) / 16, (m_height + 15) / 16, 1);
+
+		checkCudaErrors(cudaMalloc((void**)&cu_data, sizeof(T) * width * height));
+
+		checkCudaErrors(cudaMalloc((void**)&cu_deviceImage, sizeof(Device::Image<T>)));
+		checkCudaErrors(cudaMemcpy(cu_deviceImage, this, sizeof(Device::Image<T>), cudaMemcpyHostToDevice));
+	}
+
+	template<typename T>
+	__host__ void Host::Image<T>::SignalChange(cudaStream_t otherStream, const unsigned int currentState, const unsigned int newState)
+	{ 
+		cudaStream_t hostStream = otherStream ? otherStream : m_hostStream;
+		KernelSignalChange << < 1, 1, 0, hostStream >> > (cu_deviceImage, currentState, newState);
+	}	
+
+	template<typename T>
+	__host__ void Host::Image<T>::Clear(const T& value) 
+	{ 
+		KernelClear << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceImage, value);
+	}
+
+	template<typename T>
+	__host__ void Host::Image<T>::OnDestroyAsset()
+	{
+		if (!cu_deviceImage) { return; }
+		//Assert(cu_deviceImage, "Trying to destroy an image that has already been destroyed.");
+
+		checkCudaErrors(cudaFree((void*)cu_data));
+		checkCudaErrors(cudaFree((void*)cu_deviceImage));
+
+		cu_deviceImage = nullptr;
 	}
 
 	// The host CPU Sinewave thread spawner
-	__host__ void HostImage::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream)
+	template<typename T>
+	__host__ void Host::Image<T>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream)
 	{
 		dim3 block(16, 16, 1);
-		dim3 grid(clientWidth / 16, clientHeight / 16, 1);
-
+		dim3 grid((clientWidth + 15) / 16, (clientHeight + 15) / 16, 1);
+		
 		SignalSetRead(hostStream);
 		KernelCopyImageToD3DTexture << < grid, block, 0, hostStream >> > (clientWidth, clientHeight, cu_deviceImage, cuSurface);
 		SignalUnsetRead(hostStream);

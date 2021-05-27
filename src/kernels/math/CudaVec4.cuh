@@ -6,6 +6,12 @@
 
 namespace Cuda
 {	
+	template<int T, int S, int A, int B, int C, int D>
+	struct VecSwiz
+	{
+		float data[S];
+	};
+	
 	struct __builtin_align__(16) vec4 : public VecBase<4>
 	{
 		enum _attrs : size_t { kDims = 4 };
@@ -15,6 +21,8 @@ namespace Cuda
 		{
 			struct { float x, y, z, w; };
 			struct { float i0, i1, i2, i3; };
+			struct { vec3 xyz; float _0_w; };
+			struct { vec2 xy; vec2 zw; };
 			float data[4];
 		};
 
@@ -29,6 +37,7 @@ namespace Cuda
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
+		__host__ __device__ inline vec4& operator=(const float v) { x = y = z = w = v;  return *this; }
 
 		__host__ inline std::string format() const { return tfm::format("{%f, %f, %f, %f}", x, y, z, w); }
 	};

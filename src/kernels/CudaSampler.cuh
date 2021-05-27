@@ -18,7 +18,7 @@ namespace Cuda
     }
 
     // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
-    void pcgAdvance(PCGState& state)
+    vec4 pcgAdvance(PCGState& state)
     {
         state = state * 1664525u + 1013904223u;
 
@@ -45,7 +45,8 @@ namespace Cuda
 #define kPCGRandBias 0.999999
     vec4 rand(PCGState& state)
     {
-        return kPCGRandBias * vec4(pcgAdvance(state)) / float(0xffffffffu);
+        pcgAdvance(state);
+        return kPCGRandBias * vec4(state) / float(0xffffffffu);
     }
 
     // Generates a tuple of canonical random number and uses them to sample an input texture

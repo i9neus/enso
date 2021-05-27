@@ -16,9 +16,19 @@
 
 int main(int argc, char* argv[])
 {
-	std::printf("Testing...\n");
-	D3DContainer sample(1280, 720, "D3D12 Hello Texture");
-	return Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
+	std::shared_ptr<AssetBase> object;
+	
+	try
+	{
+		D3DContainer sample(1280, 720, "D3D12 Hello Texture");
+		return Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
+
+		GlobalAssetRegistry::Get().VerifyEmpty();
+	}
+	catch (const std::runtime_error& err)
+	{
+		std::printf("Runtime error: %s\n", err.what());
+	}
 }
 
 /*_Use_decl_annotations_

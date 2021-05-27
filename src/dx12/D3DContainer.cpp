@@ -17,7 +17,7 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 void D3DContainer::OnInit()
 {
 	LoadPipeline();
-	m_manager.InitialiseCuda(m_dx12deviceluid);
+	m_manager.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
 	LoadAssets();
 
 	m_manager.Start();

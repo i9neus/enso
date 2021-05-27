@@ -9,7 +9,7 @@ RenderManager::RenderManager() :
 {
 }
 
-void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID)
+void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
 {
 	int num_cuda_devices = 0;
 	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
@@ -36,9 +36,9 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID)
 		}
 	}
 
-	m_compositeImage.Create(128, 128, m_renderStream);
-
-	m_wavefrontTracer.Initialise(&m_compositeImage);
+	// Create some Cuda objects
+	m_compositeImage = Asset<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
+	m_wavefrontTracer = Asset<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 }
 
 void RenderManager::Destroy()
@@ -51,8 +51,10 @@ void RenderManager::Destroy()
 	m_managerThread.join();
 	std::printf("Killed threads.\n");
 
+	m_wavefrontTracer.DestroyAsset();
+	m_compositeImage.DestroyAsset();
+
 	//cudaEventDestroy(m_D3DTextureCopyEvent);
-	m_compositeImage.Destroy();
 
 	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
 	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
@@ -113,7 +115,7 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
-	m_compositeImage.CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
+	m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
 
 	//cudaEventRecord(m_D3DTextureCopyEvent, m_D3DStream);
 
@@ -159,7 +161,9 @@ void RenderManager::Run()
 	int ticks = 0;
 	while (m_threadSignal.load() == kRun)
 	{		
-		m_wavefrontTracer.Iterate();
+		m_wavefrontTracer->Iterate();
+
+		m_wavefrontTracer->Composite(m_compositeImage);
 		
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		

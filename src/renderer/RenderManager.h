@@ -12,7 +12,7 @@ class RenderManager
 public:
 	RenderManager();
 
-	void InitialiseCuda(const LUID& dx12DeviceLUID);
+	void InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
 	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence);
 	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
@@ -44,6 +44,6 @@ private:
 	uint32_t				     m_clientWidth;
 	uint32_t                     m_clientHeight;
 
-	Cuda::HostImage              m_compositeImage;
-	Cuda::HostWavefrontTracer    m_wavefrontTracer;
+	Asset<Cuda::Host::ImageRGBA>		m_compositeImage;
+	Asset<Cuda::Host::WavefrontTracer>  m_wavefrontTracer;
 };

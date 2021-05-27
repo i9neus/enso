@@ -27,6 +27,8 @@ namespace Cuda
 
 	struct PackedRay
 	{
+		PackedRay() : flags(0) {}
+		
 		RayBasic		ray;
 		float3			weight;
 		unsigned int    viewportXy;

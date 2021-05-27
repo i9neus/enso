@@ -4,9 +4,6 @@
 
 #ifdef ASSERTS
 
-#include <stdexcept>
-#include "thirdparty/tinyformat/tinyformat.h"
-
 #define Assert(condition) \
         if(!(condition)) {  \
             throw std::runtime_error(tfm::format("%s File %s, line %d.", #condition, __FILE__, __LINE__)); \

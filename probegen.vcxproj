@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
+    <ClCompile Include="src\generic\Asset.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
@@ -29,6 +30,7 @@
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
+    <ClInclude Include="src\generic\Asset.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
