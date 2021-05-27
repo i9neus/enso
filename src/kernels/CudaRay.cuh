@@ -4,6 +4,8 @@
 
 namespace Cuda
 {
+	#define kSpecularPdf  65000.0f;
+	
 	struct RayBasic
 	{	
 		vec3			o;
@@ -29,9 +31,16 @@ namespace Cuda
 	{
 		PackedRay() : flags(0) {}
 		
-		RayBasic		ray;
-		float3			weight;
-		unsigned int    viewportXy;
+		RayBasic		od;
+		vec3			weight;
+		half			pdf;
+		half			lambda;
+		struct
+		{
+			short		x;
+			short		y;
+		} 
+		viewport;
 		unsigned char	flags;
 	};
 }

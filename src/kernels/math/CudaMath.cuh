@@ -11,8 +11,10 @@
 #include "CudaMat3.cuh"
 
 namespace Cuda
-{    
-    __host__ __device__ inline float cubrt(float a)								{ return copysignf(1.0f, a) * powf(abs(a), 1.0f / 3.0f); }
+{    	
+	//__host__ __device__ template<typename T> inline T min(const T& a, const T& b) { return (a < b) ? a : b; }
+	//__host__ __device__ template<typename T> inline T max(const T& a, const T& b) { return (a > b) ? a : b; }
+	__host__ __device__ inline float cubrt(float a)								{ return copysignf(1.0f, a) * powf(abs(a), 1.0f / 3.0f); }
 	__host__ __device__ inline float toRad(float deg)								{ return kTwoPi * deg / 360; }
 	__host__ __device__ inline float toDeg(float rad)								{ return 360 * rad / kTwoPi; }
 	__host__ __device__ inline float sqr(float a)									{ return a * a; }
@@ -36,6 +38,9 @@ namespace Cuda
 	__host__ __device__ inline void swap(float& a, float& b)						{ float s = a; a = b; b = s; }
 	__host__ __device__ inline float max3(const float& a, const float& b, const float& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
 	__host__ __device__ inline float min3(const float& a, const float& b, const float& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
+	
+	template<typename T>
+	__host__ __device__ inline T mix(const T& a, const T& b, const float& v) { return T(float(a) * (1 - v) + float(b) * v); }
 
     #define kZero vec3(0.0f)
 	#define kZero4f vec4(0.0f)

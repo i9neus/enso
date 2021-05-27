@@ -18,10 +18,10 @@ namespace Cuda
 			T data[3];
 		};
 
-		_ivec3() = default;
-		_ivec3(const T v) : x(v), y(v), z(v) {}
-		_ivec3(const T & x_, const T & y_, const T& z_) : x(x_), y(y_), z(z_) {}
-		_ivec3(const _ivec2<T>& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
+		__host__ __device__ _ivec3() = default;
+		__host__ __device__ _ivec3(const T v) : x(v), y(v), z(v) {}
+		__host__ __device__ _ivec3(const T & x_, const T & y_, const T& z_) : x(x_), y(y_), z(z_) {}
+		__host__ __device__ _ivec3(const _ivec2<T>& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
 		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<3>, S>::value>::type>
 		__host__ __device__ _ivec3(const S& other) : x(T(other.x)), y(T(other.y)), z(T(other.z)) {}
 

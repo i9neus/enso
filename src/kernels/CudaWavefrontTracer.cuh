@@ -8,15 +8,17 @@ namespace Cuda
 	namespace Device
 	{
 		class WavefrontTracer
-		{
-		public:
-			Device::ImageRGBW*				m_deviceAccumBuffer;
-			Device::PackedRayBuffer*		m_devicePackedRayBuffer;
-
-			__device__ void Composite(unsigned int kx, unsigned int ky, Device::ImageRGBA* deviceOutputImage) const;
-
+		{		
 		protected:
 			__device__ WavefrontTracer() = default;
+
+			Device::ImageRGBW*			m_deviceAccumBuffer;
+			Device::PackedRayBuffer*	m_devicePackedRayBuffer;
+
+		public:
+			__device__ void Composite(const ivec2 fragCoord, Device::ImageRGBA* deviceOutputImage) const;
+
+			__device__ void SeedRayBuffer(ivec2 fragCoord);
 		};
 	}
 
@@ -36,7 +38,7 @@ namespace Cuda
 
 		public:
 			__host__ WavefrontTracer(cudaStream_t hostStream);
-			__host__ ~WavefrontTracer() { OnDestroyAsset();  }
+			__host__ ~WavefrontTracer() = default;
 
 			__host__ virtual void OnDestroyAsset() override final;
 

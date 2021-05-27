@@ -15,6 +15,7 @@ namespace Cuda
 		{
 			struct { float x, y, z; };
 			struct { float i0, i1, i2; };
+			struct { vec2 xy; float _z_0; };
 			float data[3];
 		};
 

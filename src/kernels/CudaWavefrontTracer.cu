@@ -22,31 +22,36 @@ namespace Cuda
 
 	__global__ void KernelSeedRayBuffer(Device::WavefrontTracer* tracer)
 	{
-
+		tracer->SeedRayBuffer(ivec2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y));
 	}
 
-	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* wavefrontTracer)
+	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
 	{
 		if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
 
-		wavefrontTracer->Composite(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y, deviceOutputImage);
+		tracer->Composite(ivec2(blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y), deviceOutputImage);
 	}
 
-	void Device::WavefrontTracer::Composite(unsigned int kx, unsigned int ky, Device::ImageRGBA* deviceOutputImage) const
+	void Device::WavefrontTracer::SeedRayBuffer(ivec2 fragCoord)
+	{
+
+	}
+
+	void Device::WavefrontTracer::Composite(const ivec2 fragCoord, Device::ImageRGBA* deviceOutputImage) const
 	{		
-		if (kx >= deviceOutputImage->Width() || ky >= deviceOutputImage->Height() ||
-			kx >= m_deviceAccumBuffer->Width() || ky >= m_deviceAccumBuffer->Height()) {
+		if (fragCoord.x >= deviceOutputImage->Width() || fragCoord.y >= deviceOutputImage->Height() ||
+			fragCoord.x >= m_deviceAccumBuffer->Width() || fragCoord.y >= m_deviceAccumBuffer->Height()) {
 			return;
 		}		
 
 		vec4 pixel;
-		float shade = ((kx / 10) + (ky / 10)) % 2;
-		pixel.x = shade * float(kx) / float(deviceOutputImage->Width());
-		pixel.y = shade * float(ky) / float(deviceOutputImage->Height());
+		float shade = ((fragCoord.x / 10) + (fragCoord.y / 10)) % 2;
+		pixel.x = shade * float(fragCoord.x) / float(deviceOutputImage->Width());
+		pixel.y = shade * float(fragCoord.y) / float(deviceOutputImage->Height());
 		pixel.z = 0.5f;
 		pixel.w = 1.0f;
 
-		*(deviceOutputImage->At(kx, ky)) += pixel;
+		*(deviceOutputImage->At(fragCoord.x, fragCoord.y)) += pixel;
 	}
 
 	void Host::WavefrontTracer::OnDestroyAsset()
@@ -88,6 +93,6 @@ namespace Cuda
 	void Host::WavefrontTracer::Iterate()
 	{
 		std::printf("Iterate!\n");
-		//KernelDrawTestPattern << < m_grid, m_block, 0, m_hostImage->GetHostStream() >> > (m_hostAccumBuffer->GetDeviceImage());
+		KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceTracer);
 	}
 }

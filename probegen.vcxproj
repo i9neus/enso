@@ -61,6 +61,7 @@
     <ClInclude Include="src\generic\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
+    <ClInclude Include="src\kernels\CudaCtx.cuh" />
     <ClInclude Include="src\kernels\CudaHash.cuh" />
     <ClInclude Include="src\kernels\CudaImage.cuh" />
     <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh" />
@@ -84,7 +85,6 @@
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
-    <CudaCompile Include="src\kernels\math\CudaMath.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

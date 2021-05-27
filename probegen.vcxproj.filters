@@ -189,6 +189,9 @@
     <ClInclude Include="src\generic\Asset.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaCtx.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -240,9 +243,6 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu">
       <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\math\CudaMath.cu">
-      <Filter>kernels\math</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
