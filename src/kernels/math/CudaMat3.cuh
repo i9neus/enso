@@ -26,8 +26,7 @@ namespace Cuda
 			vec3 data[3];
 		};
 
-		__host__ __device__ mat3() = default;
-		__host__ __device__ ~mat3() = default;
+		mat3() = default;
 		__host__ __device__ mat3(const vec3& x_, const vec3& y_, const vec3& z_) : x(x_), y(y_), z(z_) {}
 		__host__ __device__ mat3(const mat3& other) : x(other.x), y(other.y), z(other.z) {}
 

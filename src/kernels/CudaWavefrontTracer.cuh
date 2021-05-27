@@ -2,6 +2,7 @@
 
 #include "CudaCommonIncludes.cuh"
 #include "CudaImage.cuh"
+#include "CudaPerspectiveCamera.cuh"
 
 namespace Cuda
 {
@@ -10,10 +11,13 @@ namespace Cuda
 		class WavefrontTracer
 		{		
 		protected:
-			__device__ WavefrontTracer() = default;
+			WavefrontTracer() = default;
 
 			Device::ImageRGBW*			m_deviceAccumBuffer;
 			Device::PackedRayBuffer*	m_devicePackedRayBuffer;
+			ivec2                       m_viewportSize;
+
+			Device::PerspectiveCamera   m_camera;
 
 		public:
 			__device__ void Composite(const ivec2 fragCoord, Device::ImageRGBA* deviceOutputImage) const;
@@ -38,7 +42,6 @@ namespace Cuda
 
 		public:
 			__host__ WavefrontTracer(cudaStream_t hostStream);
-			__host__ ~WavefrontTracer() = default;
 
 			__host__ virtual void OnDestroyAsset() override final;
 

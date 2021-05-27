@@ -17,7 +17,7 @@ namespace Cuda
 			float data[2];
 		};
 
-		__host__ __device__ vec2() = default;
+		vec2() = default;
 		__host__ __device__ vec2(const float v) : x(v), y(v) {}
 		__host__ __device__ vec2(const float& x_, const float& y_) : x(x_), y(y_) {}
 		__host__ __device__ vec2(const vec2 & other) : x(other.x), y(other.y) {}

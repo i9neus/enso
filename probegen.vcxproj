@@ -81,7 +81,6 @@
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\kernels\CudaCommonIncludes.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
@@ -172,6 +171,7 @@
     <CudaCompile>
       <Runtime>MTd</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">

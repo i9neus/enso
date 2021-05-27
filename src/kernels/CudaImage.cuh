@@ -23,13 +23,23 @@ namespace Cuda
 			__device__ T* GetData() { return cu_data; }
 			__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
 
-			__device__ T* At(int x, int y)
+			__device__ T& At(int x, int y)
 			{
 #ifdef CudaImageBoundCheck
 				if (x < 0 || x >= m_width || y < 0 || y >= m_height) { return nullptr; }
 #endif
-				return &cu_data[y * m_height + x];
+				return cu_data[y * m_height + x];
 			}
+
+			__device__ T& At(const ivec2& xy)
+			{
+#ifdef CudaImageBoundCheck
+				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
+#endif
+				return cu_data[xy.y * m_height + xy.x];
+			}
+
+			__device__ void Clear(const ivec2& xy, const T& value);
 
 		protected:
 			Image() : m_width(0), m_height(0), cu_data(nullptr), m_accessSignal(kImageUnlocked) {}

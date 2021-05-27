@@ -17,12 +17,18 @@ namespace Cuda
         h = (h ^ ((i >> 24u) & 0xffu)) * kFNVPrime;
         return h;
     }
-    
+
     // Mix and combine two hashes
     __device__ inline uint hashCombine(uint a, uint b)
     {
         return (((a << (31u - (b & 31u))) | (a >> (b & 31u)))) ^
             ((b << (a & 31u)) | (b >> (31u - (a & 31u))));
+    }
+
+    template<typename... Vars>
+    __device__ inline uint hashOf(const uint& v0, const Vars&... var)
+    {
+        return hashCombine(hashOf(v0), hashOf(var...));
     }
 
     __device__ inline uint hashCombine(uint a, uint b, uint c) { return hashCombine(hashCombine(a, b), c); }

@@ -18,7 +18,7 @@ namespace Cuda
 			T data[4];
 		};
 
-		__host__ __device__ _ivec4() = default;
+		_ivec4() = default;
 		__host__ __device__ _ivec4(const T v) : x(v), y(v), z(v), w(v) {}
 		__host__ __device__ _ivec4(const T & x_, const T & y_, const T & z_, const T& w_) : x(x_), y(y_), z(z_), w(w_) {}
 		__host__ __device__ _ivec4(const _ivec3<T>& v, const float& w_) : x(v.x), y(v.y), w(w_) {}

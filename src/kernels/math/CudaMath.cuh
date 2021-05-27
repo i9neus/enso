@@ -26,8 +26,6 @@ namespace Cuda
 	__host__ __device__ inline int sum(ivec2 a)									{ return a.x + a.y; }
 	__host__ __device__ inline float luminance(vec3 v)								{ return v.x * 0.17691f + v.y * 0.8124f + v.z * 0.01063f; }
 	__host__ __device__ inline float mean(vec3 v)									{ return v.x / 3 + v.y / 3 + v.z / 3; }
-	//__host__ __device__ inline vec4 mul4(vec3 a, mat4 m)							{ return vec4(a, 1.0) * m; }
-	//__host__ __device__ inline vec3 mul3(vec3 a, mat4 m)							{ return (vec4(a, 1.0) * m).xyz; }
 	__host__ __device__ inline float sin01(float a)								{ return 0.5f * sin(a) + 0.5f; }
 	__host__ __device__ inline float cos01(float a)								{ return 0.5f * cos(a) + 0.5f; }
 	__host__ __device__ inline float saturate(float a)								{ return clamp(a, 0.0, 1.0); }

@@ -8,7 +8,7 @@
 #define kBladeCurvature           0.0f
 
 namespace Cuda
-{
+{    
     // Returns the polar distance r to the perimeter of an n-sided polygon
     __device__ float Ngon(float phi)
     {
@@ -19,7 +19,7 @@ namespace Cuda
         return mix(bladeRadius, 1.0f, kBladeCurvature);
     }
 
-    Device::PerspectiveCamera::PerspectiveCamera()
+    __device__ Device::PerspectiveCamera::PerspectiveCamera()
     {
         m_useHaltonSpectralSampler = false;
         m_cameraPos = vec2(0.3, 0.5);
@@ -28,13 +28,13 @@ namespace Cuda
         m_cameraFStop = vec2(0.5);
     }
     
-    PackedRay Device::PerspectiveCamera::Create(RenderCtx& renderCtx) const
+    __device__ PackedRay Device::PerspectiveCamera::CreateRay(RenderCtx& renderCtx) const
     {
         // Define our camera vectors and orthonormal basis
         #define kCameraUp vec3(0.0, 1.0, 0.0) 
 
         // Generate 4 random numbers efrom a continuous uniform distribution
-        vec4 xi = rand(renderCtx);
+        vec4 xi = renderCtx.pcg();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
@@ -81,15 +81,15 @@ namespace Cuda
             lensPos = xi.xy * 2.0 - vec2(1.0);
             float bladeDist = Ngon(atan2f(lensPos.y, lensPos.x) + kPi);
             if (length2(lensPos) < sqr(bladeDist)) { break; }
-            xi = rand(renderCtx);
+            xi = renderCtx.pcg();
         }
         lensPos *= 0.5 * focalLength / fStop;
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;
 
         // Assemble the ray
         PackedRay ray;
-        ray.od.o = basis * vec3(lensPos, d1);
-        ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
+        ray.od.o = basis* vec3(lensPos, d1);
+        ray.od.d = xi.xyz;// normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
         ray.od.o += cameraPos;
         ray.weight = 1.0f;
 

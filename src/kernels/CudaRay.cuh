@@ -29,7 +29,7 @@ namespace Cuda
 
 	struct PackedRay
 	{
-		PackedRay() : flags(0) {}
+		__device__ PackedRay() : flags(0) {}
 		
 		RayBasic		od;
 		vec3			weight;

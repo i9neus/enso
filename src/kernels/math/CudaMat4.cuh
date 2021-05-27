@@ -35,8 +35,7 @@ namespace Cuda
 			return mat4(vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f));
 		}
 
-		__host__ __device__ mat4() = default;
-		__host__ __device__ ~mat4() = default;
+		mat4() = default;
 		__host__ __device__ mat4(const vec4 & x_, const vec4 & y_, const vec4 & z_, const vec4 & w_) : x(x_), y(y_), z(z_), w(w_) {}
 		__host__ __device__ mat4(const mat4 & other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
 

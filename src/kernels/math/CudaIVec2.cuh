@@ -18,7 +18,7 @@ namespace Cuda
 			T data[2];
 		};
 
-		__host__ __device__ _ivec2() = default;
+		_ivec2() = default;
 		__host__ __device__ _ivec2(const T v) : x(v), y(v) {}
 		__host__ __device__ _ivec2(const T& x_, const T& y_) : x(x_), y(y_) {}
 		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<2>, S>::value>::type>

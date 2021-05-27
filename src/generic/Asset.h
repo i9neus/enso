@@ -5,11 +5,10 @@
 class AssetBase
 {
 private:
-    template<typename T, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type> friend class Asset;
     std::string     m_assetName;
 
 protected:
-    template<typename T, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type> friend class Asset;
+    template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class Asset;
 
     AssetBase() = default;
     AssetBase(const std::string& name) : m_assetName(name) {}
@@ -37,7 +36,7 @@ private:
     std::mutex                                                    m_mutex;
 };
 
-template<typename T, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type>
+template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
 class Asset
 {
 private:

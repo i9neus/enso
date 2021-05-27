@@ -2,7 +2,7 @@
 
 #include "../CudaCommonIncludes.cuh"
 #include "generic/Constants.h"
-#include "CudaVec2.cuh""
+#include "CudaVec2.cuh"
 
 namespace Cuda
 {
@@ -19,7 +19,7 @@ namespace Cuda
 			float data[3];
 		};
 
-		__host__ __device__ vec3() = default;
+		vec3() = default;
 		__host__ __device__ vec3(const float v) : x(v), y(v), z(v) {}
 		__host__ __device__ vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
 		__host__ __device__ vec3(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}

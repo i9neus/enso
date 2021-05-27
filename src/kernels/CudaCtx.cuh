@@ -1,15 +1,17 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
+#include "CudaSampler.cuh"
 
 namespace Cuda
 {
-	using PCGState = uvec4;
-	
-	struct RenderCtx
+	namespace Device
 	{
-		ivec2          viewportPos;
-		ivec2		   viewportSize;
-		PCGState       pcgState;
-	};
+		struct RenderCtx
+		{
+			ivec2          viewportPos;
+			ivec2		   viewportSize;
+			PCG            pcg;
+		};
+	}
 }
