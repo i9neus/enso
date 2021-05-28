@@ -3,6 +3,9 @@
 #include "CudaCommonIncludes.cuh"
 #include "CudaImage.cuh"
 #include "CudaPerspectiveCamera.cuh"
+#include "CudaCtx.cuh"
+#include "CudaTracable.cuh"
+#include "CudaArray.cuh"
 
 namespace Cuda
 {
@@ -13,16 +16,18 @@ namespace Cuda
 		protected:
 			WavefrontTracer();
 
-			Device::ImageRGBW*			m_deviceAccumBuffer;
-			Device::PackedRayBuffer*	m_devicePackedRayBuffer;
-			ivec2                       m_viewportDims;
+			Device::ImageRGBW*				m_deviceAccumBuffer;
+			Device::CompressedRayBuffer*	m_deviceCompressedRayBuffer;
 
-			Device::PerspectiveCamera   m_camera;
+			ivec2							m_viewportDims;
+			Device::PerspectiveCamera		m_camera;
 
 		public:
-			__device__ void Composite(const ivec2 fragCoord, Device::ImageRGBA* deviceOutputImage) const;
+			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 
-			__device__ void SeedRayBuffer(ivec2 fragCoord);
+			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
+			__device__ void Trace(const ivec2& viewportPos) const;
+			__device__ RenderCtx CreateRenderCtx(const ivec2& viewportPos, const uint depth) const;
 		};
 	}
 
@@ -33,11 +38,11 @@ namespace Cuda
 		private:
 			Device::WavefrontTracer*		cu_deviceTracer;
 
-			Asset<Host::ImageRGBW>			m_hostAccumBuffer;
-			Asset<Host::PackedRayBuffer>    m_hostPackedRayBuffer;
+			Asset<Host::ImageRGBW>					m_hostAccumBuffer;
+			Asset<Host::CompressedRayBuffer>		m_hostCompressedRayBuffer;
+			Asset<Host::Array<Device::Tracable*>>   m_hostTracables;
 
 			cudaStream_t			m_hostStream;
-
 			dim3                    m_block, m_grid;
 
 		public:

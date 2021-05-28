@@ -9,7 +9,22 @@
 
 #include "renderer/RenderManager.h"
 
+using namespace DirectX;
 namespace DX = DirectX;
+
+struct Vertex
+{
+	Vertex(const XMFLOAT3& p, const XMFLOAT4& c) : position(p), color(c) {}
+	XMFLOAT3 position;
+	XMFLOAT4 color;
+};
+
+struct VertexUV
+{
+	VertexUV(const XMFLOAT3& p, const XMFLOAT2& u) : position(p), uv(u) {}
+	XMFLOAT3 position;
+	XMFLOAT2 uv;
+};
 
 // Note that while ComPtr is used to manage the lifetime of resources on the CPU,
 // it has no understanding of the lifetime of resources on the GPU. Apps must account

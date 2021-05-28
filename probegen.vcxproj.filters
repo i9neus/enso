@@ -192,6 +192,12 @@
     <ClInclude Include="src\kernels\CudaCtx.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaTracable.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaArray.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -239,6 +245,9 @@
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaTracable.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

@@ -28,7 +28,7 @@ namespace Cuda
         m_cameraFStop = vec2(0.5);
     }
     
-    __device__ PackedRay Device::PerspectiveCamera::CreateRay(RenderCtx& renderCtx) const
+    __device__ void Device::PerspectiveCamera::CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const
     {
         // Define our camera vectors and orthonormal basis
         #define kCameraUp vec3(0.0, 1.0, 0.0) 
@@ -89,15 +89,14 @@ namespace Cuda
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;
 
         // Assemble the ray
-        PackedRay ray;
-        ray.od.o = basis * vec3(lensPos, d1);
-        ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
-        ray.od.o += cameraPos;
-        ray.weight = 1.0f;
+        newRay.od.o = basis * vec3(lensPos, d1);
+        newRay.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - newRay.od.o);
+        newRay.od.o += cameraPos;
+        newRay.weight = 1.0f;
+        newRay.depth = 0;
+        newRay.flags = 0;
 
         // Sample the wavelength (in Angstroms)  
-        ray.lambda = mix(3800.0f, 7000.0f, mu);
-
-        return ray;
+        newRay.lambda = mix(3800.0f, 7000.0f, mu);
     }
 }

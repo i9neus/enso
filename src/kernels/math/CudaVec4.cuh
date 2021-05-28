@@ -73,13 +73,13 @@ namespace Cuda
 
 	__host__ __device__ inline float cwiseMax(const vec4& v) 
 	{ 
-		float m = -std::numeric_limits<float>::max();
+		float m = -FLT_MAX;
 		for (int i = 0; i < 4; i++) { m = fmax(m, v[i]); }
 		return m;
 	}
 	__host__ __device__ inline float cwiseMin(const vec4& v)
 	{
-		float m = std::numeric_limits<float>::max();
+		float m = FLT_MAX;
 		for (int i = 0; i < 4; i++) { m = fmin(m, v[i]); }
 		return m;
 	}

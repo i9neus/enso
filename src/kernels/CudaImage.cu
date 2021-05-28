@@ -79,12 +79,8 @@ namespace Cuda
 	template<typename T>
 	__host__ void Host::Image<T>::OnDestroyAsset()
 	{
-		if (!cu_deviceImage) { return; }
-
-		checkCudaErrors(cudaFree((void*)cu_data));
-		checkCudaErrors(cudaFree((void*)cu_deviceImage));
-
-		cu_deviceImage = nullptr;
+		SafeFreeDeviceMemory(&cu_data);
+		SafeFreeDeviceMemory(&cu_deviceImage);
 	}
 
 	// The host CPU Sinewave thread spawner

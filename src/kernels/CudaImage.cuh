@@ -48,7 +48,7 @@ namespace Cuda
 
 			unsigned int	m_width;
 			unsigned int	m_height;
-			T* cu_data;
+			T*				cu_data;
 			unsigned int    m_accessSignal;
 		};
 
@@ -56,8 +56,8 @@ namespace Cuda
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
 
-		template class Image<PackedRay>;
-		using PackedRayBuffer = Image<PackedRay>;
+		template class Image<CompressedRay>;
+		using CompressedRayBuffer = Image<CompressedRay>;
 	}
 
 	namespace Host
@@ -80,7 +80,7 @@ namespace Cuda
 			__host__ virtual void OnDestroyAsset() override final;
 
 			__host__ cudaStream_t GetHostStream() const { return m_hostStream; }
-			__host__ Device::Image<T>* GetDeviceImage() const
+			__host__ Device::Image<T>* GetDeviceInstance() const
 			{
 				AssertMsg(cu_deviceImage, "Image has not been initialised!");
 				return cu_deviceImage;
@@ -100,7 +100,7 @@ namespace Cuda
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
 
-		template class Image<PackedRay>;
-		using PackedRayBuffer = Image<PackedRay>;
+		template class Image<CompressedRay>;
+		using CompressedRayBuffer = Image<CompressedRay>;
 	}
 }

@@ -12,7 +12,7 @@ namespace Cuda
 		{
 		public:
 			PerspectiveCamera();
-			__device__ PackedRay CreateRay(RenderCtx& renderCtx) const;
+			__device__ void CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const;
 
 		private:
 			bool		m_useHaltonSpectralSampler;
