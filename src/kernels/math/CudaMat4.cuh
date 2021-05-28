@@ -49,6 +49,9 @@ namespace Cuda
 		}
 	};
 
+	template<typename T>
+	__host__ __device__ inline void cast(const mat4& m, T v[4]) { v[0] = cast<T>(m[0]); v[1] = cast<T>(m[1]); v[2] = cast<T>(m[2]); v[3] = cast<T>(m[3]); }
+
 	__host__ __device__ inline mat4 operator *(const mat4& a, const mat4& b)
 	{
 		mat4 r;
@@ -84,9 +87,9 @@ namespace Cuda
 	__host__ __device__ inline vec3 operator *(const mat4& a, const vec3& b)
 	{
 		vec3 r;
-		r.i0 = a.i00 * b.i0 + a.i01 * b.i1 + a.i02 * b.i2 + a.i03;
-		r.i1 = a.i10 * b.i0 + a.i11 * b.i1 + a.i12 * b.i2 + a.i13;
-		r.i2 = a.i20 * b.i0 + a.i21 * b.i1 + a.i22 * b.i2 + a.i23;
+		r.x = a.i00 * b.x + a.i01 * b.y + a.i02 * b.z + a.i03;
+		r.y = a.i10 * b.x + a.i11 * b.y + a.i12 * b.z + a.i13;
+		r.z = a.i20 * b.x + a.i21 * b.y + a.i22 * b.z + a.i23;
 		return r;
 	}
 
@@ -135,7 +138,7 @@ namespace Cuda
 		const float c0 = m.i20 * m.i31 - m.i30 * m.i21;
 
 		const float determinant = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
-		if (abs(determinant) < kInverseEpsilon) { return mat4::null(); }
+		if (fabs(determinant) < kInverseEpsilon) { return mat4::null(); }
 
 		const float invDet = 1 / determinant;
 		mat4 r;

@@ -68,9 +68,9 @@ namespace Cuda
 	__host__ __device__ inline vec3 operator *(const mat3& a, const vec3& b)
 	{
 		vec3 r;
-		r[0] = a.i00 * b[0] + a.i01 * b[1] + a.i02 * b.i2;
-		r[1] = a.i10 * b[0] + a.i11 * b[1] + a.i12 * b.i2;
-		r.i2 = a.i20 * b[0] + a.i21 * b[1] + a.i22 * b.i2;
+		r.x = a.i00 * b.x + a.i01 * b.y + a.i02 * b.z;
+		r.y = a.i10 * b.x + a.i11 * b.y + a.i12 * b.z;
+		r.z = a.i20 * b.x + a.i21 * b.y + a.i22 * b.z;
 		return r;
 	}
 
@@ -108,7 +108,7 @@ namespace Cuda
 		constexpr float kInverseEpsilon = 1e-20f;
 
 		const float determinant = det(m);
-		if (abs(determinant) < kInverseEpsilon) { return mat3::null(); }
+		if (fabs(determinant) < kInverseEpsilon) { return mat3::null(); }
 		const float invDet = 1 / determinant;
 
 		// The adjugate matrix divided by the determinant

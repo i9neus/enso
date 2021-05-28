@@ -19,10 +19,12 @@ namespace Cuda
 		};
 
 		_ivec2() = default;
-		__host__ __device__ _ivec2(const T v) : x(v), y(v) {}
+		__host__ __device__ explicit _ivec2(const T v) : x(v), y(v) {}
 		__host__ __device__ _ivec2(const T& x_, const T& y_) : x(x_), y(y_) {}
 		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<2>, S>::value>::type>
 		__host__ __device__ _ivec2(const S& other) : x(T(other.x)), y(T(other.y)) {}
+
+		__host__ __device__ _ivec2& operator=(const T& v) { x = v; y = v; return *this; }
 
 		__host__ __device__ inline const T& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline T& operator[](const unsigned int idx) { return data[idx]; }
@@ -49,6 +51,8 @@ namespace Cuda
 	template<typename T, typename S = int> __host__ __device__ inline S length2(const _ivec2<T>& v) { return S(v.x * v.x + v.y * v.y); }
 	template<typename T, typename S = float> __host__ __device__ inline S length(const _ivec2<T>& v) { return sqrt(S(v.x * v.x + v.y * v.y)); }
 	template<typename T> __host__ __device__ inline _ivec2<T> clamp(const _ivec2<T>& v, const _ivec2<T>& a, const _ivec2<T>& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y) }; }
+	template<typename T> __host__ __device__ inline _ivec2<T> abs(const _ivec2<T>& a) { return _ivec2<T>(abs(a.x), abs(a.y)); }
+	template<typename T> __host__ __device__ inline T sum(const _ivec2<T>& a) { return a.x + a.y; }
 
 	using ivec2 = _ivec2<int>;
 	using uvec2 = _ivec2<unsigned int>;

@@ -32,7 +32,7 @@ namespace tests
 		}
 	};
 	
-	TEST_CLASS(CudaMathTests), MatrixTestUtils
+	TEST_CLASS(CudaVecTests), MatrixTestUtils
 	{
 	public:
 		TEST_METHOD(TestMathStructSizes)
@@ -114,6 +114,89 @@ namespace tests
 				Assert::IsTrue(a.x == c.x && a.y == c.y,
 					Widen(tfm::format("a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
 			}
+		}
+
+		TEST_METHOD(TestVec3Arithmetic)
+		{
+			const vec3 a = {1.4521684705132136f, -0.6657411666062907f, 1.3685779839015542f };
+			const vec3 b = {-0.2759170976270484f, -0.8027837214736566f, 0.626739861528872f };
+			const vec3 c = {0.188018244645761f, 1.1014213458267346f, -0.3645220628376178f };
+			const vec3 d = { 0.26855194801984617f, -0.2575156574079758f, 1.9315152852223294f };
+			const float e = 1.775825603536588f;
+			const float f = 0.7341684559831378;
+
+			const vec3 arithBaseline = { 3.0399700612483183f, -2.5112281028785945f, -17.784401459345407f };
+			vec3 r;
+
+			r = a + b;
+			r = r - c;
+			r = -r;
+			r = r * d;
+			r = r * e;
+			r += a;
+			r -= b;
+			r *= e;
+			r /= f;
+
+			constexpr float kEpsilon = 1e-6f;
+			Assert::IsTrue(cwiseMax(abs(arithBaseline - r)) < kEpsilon,
+				Widen(tfm::format("Elements are not equal: %s should be %s", r.format(), arithBaseline.format())).c_str());
+		}		
+
+		TEST_METHOD(TestVec3Products)
+		{
+			const vec3 a0 = {-0.2575156574079758, 1.9315152852223294, 1.475488818465541};
+			const vec3 b0 = {1.775825603536588, 0.7341684559831378, - 0.12139078960623273};
+			const float dotBaseline = 0.7816439441941685f;
+			const float dotTest = dot(a0, b0);
+
+			constexpr float kEpsilon = 1e-7f;
+			Assert::IsTrue(abs(dotBaseline - dotTest) < kEpsilon,
+				Widen(tfm::format("Elements are not equal: %.10f should be %.10f", dotBaseline, dotTest)).c_str());
+
+			const vec3 a1 = {1.775825603536588f, 0.7341684559831378f, - 0.12139078960623273f};
+			const vec3 b1 = {-0.37584680565822204f, 0.7414234438824758f, - 0.6135374960846884f};
+			const vec3 crossBaseline = {-0.36043789890279004f, 1.1351599347867507f, 1.5925736037050646f};
+			const vec3 crossTest = cross(a1, b1);
+
+			Assert::IsTrue(cwiseMax(abs(crossBaseline - crossTest)) < kEpsilon,
+				Widen(tfm::format("Elements are not equal: %s should be %s", crossTest.format(), crossBaseline.format())).c_str());
+		}
+
+		TEST_METHOD(TestVec4Arithmetic)
+		{
+			const vec4 a = {1.4521684705132136f, -0.6657411666062907f, 1.3685779839015542f, -0.4365905598819211f };
+			const vec4 b = {-0.2759170976270484f, - 0.8027837214736566f, 0.626739861528872f, - 0.30653647979191767f };
+			const vec4 c = {0.188018244645761f, 1.1014213458267346f, - 0.3645220628376178f, 1.2459706444488443f };
+			const vec4 d = { 0.26855194801984617f, -0.2575156574079758f, 1.9315152852223294f, 1.475488818465541f };
+			const float e = 1.775825603536588f;
+			const float f = 0.7341684559831378;
+
+			const vec4 arithBaseline = { 3.0399700612483183f, -2.5112281028785945f, -17.784401459345407f, 12.291991850318022f };
+			vec4 r;
+
+			r = a + b;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r = r - c;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r = -r;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r = r * d;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r = r * e;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r += a;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r -= b;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r *= e;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+			r /= f;
+			//Logger::WriteMessage(tfm::format("%s\n", r.format()).c_str());
+
+			constexpr float kEpsilon = 1e-6f;
+			Assert::IsTrue(cwiseMax(abs(arithBaseline - r)) < kEpsilon,
+				Widen(tfm::format("Elements are not equal: %s should be %s", r.format(), arithBaseline.format())).c_str());
 		}
 	};
 

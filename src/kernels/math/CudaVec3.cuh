@@ -15,22 +15,24 @@ namespace Cuda
 		{
 			struct { float x, y, z; };
 			struct { float i0, i1, i2; };
-			struct { vec2 xy; float _z_0; };
+			//struct { vec2 xy; };
 			float data[3];
 		};
 
 		vec3() = default;
-		__host__ __device__ vec3(const float v) : x(v), y(v), z(v) {}
+		__host__ __device__ explicit vec3(const float v) : x(v), y(v), z(v) {}
 		__host__ __device__ vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
-		__host__ __device__ vec3(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
-		__host__ __device__ vec3(const vec3& other) : x(other.x), y(other.y), z(other.z) {}
+		__host__ __device__ vec3(const vec2 & v, const float& z_) : x(v.x), y(v.y), z(z_) {}
+		__host__ __device__ vec3(const vec3 & other) : x(other.x), y(other.y), z(other.z) {}
 		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<3>, T>::value>::type>
-		__host__ __device__ vec3(const T& other) : x(float(other.x)), y(float(other.y)), z(float(other.z)) {}
+		__host__ __device__ vec3(const T & other) : x(float(other.x)), y(float(other.y)), z(float(other.z)) {}
+
+		__host__ __device__ vec3& operator=(const float& v) { x = v; y = v; z = v; return *this; }
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
 
-		__host__ inline std::string format() const { return tfm::format("{%f, %f, %f}", x, y, z); }
+		__host__ inline std::string format() const { return tfm::format("{%.10f, %.10f, %.10f}", x, y, z); }
 	};
 
 	__host__ __device__ inline vec3 operator +(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z); }
@@ -61,6 +63,14 @@ namespace Cuda
 	__host__ __device__ inline vec3 log2(const vec3& a) { return vec3(log2f(a.x), log2f(a.y), log2f(a.z)); }
 	__host__ __device__ inline vec3 clamp(const vec3& v, const vec3& a, const vec3& b) { return vec3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z)); }
 	__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b) { return vec3(clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f), clamp(v.z, 0.0f, 1.0f)); }
+	__host__ __device__ inline vec3 abs(const vec3& a) { return vec3(fabs(a.x), fabs(a.y), fabs(a.z)); }
+	__host__ __device__ inline float sum(const vec3& a) { return a.x + a.y + a.z; }
+
+	__host__ __device__ inline float cwiseMax(const vec3& v) { return (v.x > v.y) ? ((v.x > v.z) ? v.x : v.z) : ((v.y > v.z) ? v.y : v.z); }
+	__host__ __device__ inline float cwiseMin(const vec3& v) { return (v.x < v.y) ? ((v.x < v.z) ? v.x : v.z) : ((v.y < v.z) ? v.y : v.z); }
 	// FIXME: Cuda intrinsics aren't working. Why is this?
 	//__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
+
+	template<typename T>
+	__host__ __device__ inline T cast(const vec3& v) { T r; r.x = v.x; r.y = v.y; r.z = v.z; return r; }
 }
