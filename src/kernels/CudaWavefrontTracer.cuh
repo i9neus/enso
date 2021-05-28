@@ -11,11 +11,11 @@ namespace Cuda
 		class WavefrontTracer
 		{		
 		protected:
-			WavefrontTracer() = default;
+			WavefrontTracer();
 
 			Device::ImageRGBW*			m_deviceAccumBuffer;
 			Device::PackedRayBuffer*	m_devicePackedRayBuffer;
-			ivec2                       m_viewportSize;
+			ivec2                       m_viewportDims;
 
 			Device::PerspectiveCamera   m_camera;
 

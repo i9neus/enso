@@ -10,7 +10,7 @@ namespace Cuda
 		struct RenderCtx
 		{
 			ivec2          viewportPos;
-			ivec2		   viewportSize;
+			ivec2		   viewportDims;
 			PCG            pcg;
 		};
 	}

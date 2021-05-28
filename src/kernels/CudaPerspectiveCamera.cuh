@@ -11,7 +11,7 @@ namespace Cuda
 		class PerspectiveCamera
 		{
 		public:
-			__device__ PerspectiveCamera();
+			PerspectiveCamera();
 			__device__ PackedRay CreateRay(RenderCtx& renderCtx) const;
 
 		private:

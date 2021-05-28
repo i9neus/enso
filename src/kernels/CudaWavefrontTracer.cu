@@ -18,6 +18,13 @@ namespace Cuda
 		tracer->Composite(KERNEL_COORDS_IVEC2, deviceOutputImage);
 	}
 
+	 Device::WavefrontTracer::WavefrontTracer()
+	{
+		m_deviceAccumBuffer = nullptr;
+		m_devicePackedRayBuffer = nullptr;
+		 
+	}
+
 	__device__ void Device::WavefrontTracer::SeedRayBuffer(ivec2 viewportPos)
 	{
 		int seed = int(hashOf(uint(viewportPos.x), uint(viewportPos.y)));
@@ -25,7 +32,7 @@ namespace Cuda
 		RenderCtx renderCtx;
 		renderCtx.pcg.Initialise(seed);
 		renderCtx.viewportPos = viewportPos;
-		renderCtx.viewportSize = m_viewportSize;
+		renderCtx.viewportDims = m_viewportDims;
 
 		PackedRay newRay = m_camera.CreateRay(renderCtx);
 
@@ -72,6 +79,8 @@ namespace Cuda
 		// Create the wavefront tracer structure on the device
 		m_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceImage();
 		m_devicePackedRayBuffer = m_hostPackedRayBuffer->GetDeviceImage();
+		m_viewportDims = m_hostAccumBuffer->Dimensions();
+
 		checkCudaErrors(cudaMalloc((void**)&cu_deviceTracer, sizeof(Device::WavefrontTracer)));
 		checkCudaErrors(cudaMemcpy(cu_deviceTracer, static_cast<Device::WavefrontTracer*>(this), sizeof(Device::WavefrontTracer), cudaMemcpyHostToDevice));
 		

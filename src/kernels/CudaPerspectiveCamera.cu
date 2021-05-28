@@ -19,7 +19,7 @@ namespace Cuda
         return mix(bladeRadius, 1.0f, kBladeCurvature);
     }
 
-    __device__ Device::PerspectiveCamera::PerspectiveCamera()
+    Device::PerspectiveCamera::PerspectiveCamera()
     {
         m_useHaltonSpectralSampler = false;
         m_cameraPos = vec2(0.3, 0.5);
@@ -46,11 +46,13 @@ namespace Cuda
         }
 
         float theta = kTwoPi * (m_cameraPos.x - 0.5f);
-        vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
+        //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
+        vec3 cameraPos(0.0f, 0.0f, -5.0f);
 
         float cameraOriginDist = length(cameraPos);
         vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
-        cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
+        //cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
+        cameraLookAt = vec3(0.0f);
 
         vec3 cameraForward = cameraLookAt - cameraPos;
         float focalDistance = length(cameraForward);
@@ -71,8 +73,8 @@ namespace Cuda
         // Generate a position on the sensor, the focal plane, and the lens. This lens will always have circular bokeh
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
         // but this doesn't really matter because the anti-aliasing kernel is so small that we won't notice the correlation 
-        vec2 sensorPos = vec2(xi.z, xi.x) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportSize.x, renderCtx.viewportSize.y) +
-            kCameraSensorSize * (renderCtx.viewportPos - vec2(renderCtx.viewportSize) * 0.5) / float(max(renderCtx.viewportSize.x, renderCtx.viewportSize.y));
+        vec2 sensorPos = vec2(xi.z, xi.x) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportDims.x, renderCtx.viewportDims.y) +
+            kCameraSensorSize * (renderCtx.viewportPos - vec2(renderCtx.viewportDims) * 0.5) / float(max(renderCtx.viewportDims.x, renderCtx.viewportDims.y));
         vec2 focalPlanePos = vec2(sensorPos.x, sensorPos.y) * d2 / d1;
 
         vec2 lensPos;
@@ -88,8 +90,8 @@ namespace Cuda
 
         // Assemble the ray
         PackedRay ray;
-        ray.od.o = basis* vec3(lensPos, d1);
-        ray.od.d = xi.xyz;// normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
+        ray.od.o = basis * vec3(lensPos, d1);
+        ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
         ray.od.o += cameraPos;
         ray.weight = 1.0f;
 

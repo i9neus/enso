@@ -15,10 +15,11 @@ namespace Cuda
 		class Image
 		{
 		public:
-			__host__ __device__ unsigned int GetArea() const { return m_width * m_height; }
-			__host__ __device__ unsigned int GetMemorySize() const { return m_width * m_height * sizeof(float4); }
-			__host__ __device__ unsigned int Width() const { return m_width; }
-			__host__ __device__ unsigned int Height() const { return m_height; }
+			__host__ __device__ inline unsigned int GetArea() const { return m_width * m_height; }
+			__host__ __device__ inline unsigned int GetMemorySize() const { return m_width * m_height * sizeof(float4); }
+			__host__ __device__ inline unsigned int Width() const { return m_width; }
+			__host__ __device__ inline unsigned int Height() const { return m_height; }
+			__host__ __device__ inline vec2 Dimensions() const { return vec2(m_width, m_height); }
 
 			__device__ T* GetData() { return cu_data; }
 			__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
