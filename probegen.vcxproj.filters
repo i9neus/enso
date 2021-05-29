@@ -195,7 +195,7 @@
     <ClInclude Include="src\kernels\CudaTracable.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\CudaArray.cuh">
+    <ClInclude Include="src\kernels\CudaAssetContainer.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
   </ItemGroup>

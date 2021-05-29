@@ -12,7 +12,7 @@ namespace Cuda
 	namespace Device
 	{		
 		template<typename T>
-		class Image
+		class Image : public ManagedPair<Device::Image<T>>
 		{
 		public:
 			__host__ __device__ inline unsigned int GetArea() const { return m_width * m_height; }

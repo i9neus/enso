@@ -7,19 +7,41 @@ namespace Cuda
 	#define kSpecularPdf  65000.0f;
 
 	#define kRayAlive 1
-	
-	struct RayBasic
-	{	
-		vec3			o;
-		vec3			d;
+
+	// The "full fat" ray objects that most methods will refer to
+	struct Ray
+	{
+		struct Basic
+		{
+			vec3			o;
+			vec3			d;
+			
+			Basic() = default;
+			Basic(const Basic& other) = default;
+			__device__ Basic(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
+
+			__device__ Ray::Basic ToObjectSpace(const mat4& matrix) const
+			{
+				Ray::Basic transformed;
+				transformed.d = matrix * (d + o);
+				transformed.o = matrix * o;
+				transformed.d = transformed.d - transformed.o;
+				return transformed;
+			}
+		};
+		
+		Basic	od;		
+		float   tNear;             // The parameterised intersection along the ray, defined in cartesian coordinates as o + d * tNear		
+		vec3	weight;            // The weight/throughput of the ray depending on context
+		float   pdf;               // The value of a probability density function incident to the intersection, depending on context
+		float   lambda;            // The wavelength of the ray used by the spectral integrator			
 	};
 
-	// The compressed ray object that's stored in the 
 	struct CompressedRay
 	{
 		__device__ CompressedRay() : flags(0) {}
 
-		RayBasic		od;
+		Ray::Basic		od;
 		vec3			weight;
 		half			pdf;
 		half			lambda;
@@ -37,29 +59,14 @@ namespace Cuda
 		__device__ bool IsAlive() { return flags & kRayAlive; }
 	};
 
-	// The "full fat" ray objects that most methods will refer to
-	struct Ray
+	__device__ inline Ray DeriveRay(const CompressedRay& comp)
 	{
-		RayBasic od;                // Origin/direction
-		float    tNear;             // The parameterised intersection along the ray, defined in cartesian coordinates as o + d * tNear
-
-		vec3	n;                 // Normal at the intersected surface
-		vec2	uv;                // UV parameterisation coordinate at the intersected surface
-		bool	backfacing;        // Whether the intersection with a forward- or backward-facing surface
-		vec3	weight;            // The weight/throughput of the ray depending on context
-		float   pdf;               // The value of a probability density function incident to the intersection, depending on context
-		float   kickoff;           // The degree to which extant rays should be displaced from the surface to prevent self-intersection
-		float   lambda;            // The wavelength of the ray used by the spectral integrator
-
-		__device__ Ray(const CompressedRay& comp) :
-			od(comp.od),
-			tNear(-FLT_MAX),
-			pdf(comp.pdf),
-			lambda(comp.lambda),
-			weight(comp.weight)
-		{
-		}
-	};
-
-	
+		Ray newRay;
+		newRay.od = comp.od;
+		newRay.tNear = -FLT_MAX;
+		newRay.pdf = comp.pdf;
+		newRay.lambda = comp.lambda;
+		newRay.weight = comp.weight;
+		return newRay;
+	}
 }

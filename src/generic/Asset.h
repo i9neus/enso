@@ -55,6 +55,14 @@ public:
         GlobalAssetRegistry::Get().Register(m_ptr);
     }
 
+    Asset(T* ptr, const std::string& assetName)
+    {
+        m_ptr.reset(ptr);
+        m_ptr->SetAssetName(assetName);
+
+        GlobalAssetRegistry::Get().Register(m_ptr);
+    }
+
     void DestroyAsset()
     {
         AssertMsgFmt(m_ptr.use_count() == 1, "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",

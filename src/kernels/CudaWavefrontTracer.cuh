@@ -5,19 +5,20 @@
 #include "CudaPerspectiveCamera.cuh"
 #include "CudaCtx.cuh"
 #include "CudaTracable.cuh"
-#include "CudaArray.cuh"
+#include "CudaAssetContainer.cuh"
 
 namespace Cuda
 {
 	namespace Device
 	{
-		class WavefrontTracer
+		class WavefrontTracer : public ManagedPair<Device::WavefrontTracer>
 		{		
 		protected:
 			WavefrontTracer();
 
-			Device::ImageRGBW*				m_deviceAccumBuffer;
-			Device::CompressedRayBuffer*	m_deviceCompressedRayBuffer;
+			Device::ImageRGBW*				cu_deviceAccumBuffer;
+			Device::CompressedRayBuffer*	cu_deviceCompressedRayBuffer;
+			Device::AssetContainer<Device::Tracable>* cu_deviceTracables;
 
 			ivec2							m_viewportDims;
 			Device::PerspectiveCamera		m_camera;
@@ -28,6 +29,13 @@ namespace Cuda
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const ivec2& viewportPos) const;
 			__device__ RenderCtx CreateRenderCtx(const ivec2& viewportPos, const uint depth) const;
+
+		protected:
+			__device__ inline bool IsValid(const ivec2& viewportPos) const
+			{
+				return viewportPos.x >= 0 && viewportPos.x < cu_deviceAccumBuffer->Width() &&
+					viewportPos.y >= 0 && viewportPos.y < cu_deviceAccumBuffer->Height();
+			}
 		};
 	}
 
@@ -40,7 +48,7 @@ namespace Cuda
 
 			Asset<Host::ImageRGBW>					m_hostAccumBuffer;
 			Asset<Host::CompressedRayBuffer>		m_hostCompressedRayBuffer;
-			Asset<Host::Array<Device::Tracable*>>   m_hostTracables;
+			Asset<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 
 			cudaStream_t			m_hostStream;
 			dim3                    m_block, m_grid;

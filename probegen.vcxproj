@@ -67,7 +67,7 @@
     <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaSampler.cuh" />
     <ClInclude Include="src\kernels\CudaTracable.cuh" />
-    <ClInclude Include="src\kernels\CudaArray.cuh" />
+    <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\math\CudaIVec2.cuh" />

@@ -95,4 +95,16 @@ namespace Cuda
 
 		return transpose(mat4(vec4(tangent, 0.0), vec4(cotangent, 0.0), vec4(n, 0.0), vec4(kZero, 1.0)));
 	}
+
+	// Finds the roots of a quadratic equation of the form a.x^2 + b.x + c = 0
+	__device__ inline bool quadraticSolve(float a, float b, float c, float& t0, float& t1)
+	{
+		float b2ac4 = b * b - 4 * a * c;
+		if (b2ac4 < 0) { return false; }
+
+		float sqrtb2ac4 = sqrt(b2ac4);
+		t0 = (-b + sqrtb2ac4) / (2 * a);
+		t1 = (-b - sqrtb2ac4) / (2 * a);
+		return true;
+	}
 }

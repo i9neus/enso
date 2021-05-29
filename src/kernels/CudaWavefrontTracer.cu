@@ -24,8 +24,8 @@ namespace Cuda
 
 	Device::WavefrontTracer::WavefrontTracer()
 	{
-		m_deviceAccumBuffer = nullptr;
-		m_deviceCompressedRayBuffer = nullptr;		 
+		cu_deviceAccumBuffer = nullptr;
+		cu_deviceCompressedRayBuffer = nullptr;		 
 	}
 
 	__device__ Device::RenderCtx Device::WavefrontTracer::CreateRenderCtx(const ivec2& viewportPos, const uint depth) const
@@ -42,7 +42,9 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::SeedRayBuffer(const ivec2& viewportPos) const
 	{
-		CompressedRay& packedRay = m_deviceCompressedRayBuffer->At(viewportPos);
+		if (!IsValid(viewportPos)) { return; }
+		
+		CompressedRay& packedRay = cu_deviceCompressedRayBuffer->At(viewportPos);
 
 		if (!packedRay.IsAlive())
 		{
@@ -51,25 +53,26 @@ namespace Cuda
 			packedRay.SetAlive();
 		}
 
-		//m_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
+		//cu_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
 	}
 
 	__device__ void Device::WavefrontTracer::Trace(const ivec2& viewportPos) const
 	{
-		CompressedRay& packedRay = m_deviceCompressedRayBuffer->At(viewportPos);
-		Ray ray(packedRay);
+		if (!IsValid(viewportPos)) { return; }
+		
+		Ray ray = DeriveRay(cu_deviceCompressedRayBuffer->At(viewportPos));
 
-
+		int size = cu_deviceTracables->Size();
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
 	{		
 		if (viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
-			viewportPos.x >= m_deviceAccumBuffer->Width() || viewportPos.y >= m_deviceAccumBuffer->Height()) {
+			viewportPos.x >= cu_deviceAccumBuffer->Width() || viewportPos.y >= cu_deviceAccumBuffer->Height()) {
 			return;
 		}
 
-		vec4 texel = m_deviceAccumBuffer->At(viewportPos);
+		vec4 texel = cu_deviceAccumBuffer->At(viewportPos);
 		texel.xyz /= fmax(1.0f, texel.w);
 		texel.w = 1.0f;
 
@@ -82,6 +85,7 @@ namespace Cuda
 		
 		m_hostCompressedRayBuffer.DestroyAsset();
 		m_hostAccumBuffer.DestroyAsset();
+		m_hostTracables.DestroyAsset();
 
 		SafeFreeDeviceMemory(&cu_deviceTracer);
 	}
@@ -97,13 +101,18 @@ namespace Cuda
 		// Create the accumulation buffer
 		m_hostAccumBuffer = Asset<Host::ImageRGBW>("id_hostAccumBuffer", 512, 512, m_hostStream);
 
-		//m_hostTracables = Asset<Host::Array<Device::Tracable*>>("id_hostAccumBuffer");
+		m_hostTracables = Asset<Host::AssetContainer<Host::Tracable>>("id_tracableContainer");
+
+		Asset<Host::Tracable> newSphere(new Host::Sphere(vec3(0.0f), 1.0f), "id_sphere");
+		m_hostTracables->Push(newSphere);		
+		m_hostTracables->Sync();
 
 		checkCudaErrors(cudaDeviceSynchronize());
 
 		// Create the wavefront tracer structure on the device
-		m_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-		m_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+		cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+		cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+		cu_deviceTracables = m_hostTracables->GetDeviceInstance();
 		m_viewportDims = m_hostAccumBuffer->Dimensions();
 
 		checkCudaErrors(cudaMalloc((void**)&cu_deviceTracer, sizeof(Device::WavefrontTracer)));
@@ -125,5 +134,7 @@ namespace Cuda
 		std::printf("Iterate!\n");
 
 		KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceTracer);
+
+		KernelTrace << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceTracer);
 	}
 }
