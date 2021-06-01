@@ -1,56 +1,78 @@
 #pragma once
 
 #include "generic/StdIncludes.h"
+#include <memory>
 
 namespace Cuda
 {
+    template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>  class AssetHandle;
 
-    class AssetBase
+    template<typename HostType, typename DeviceType>
+    class AssetTags
     {
-    private:
-        std::string     m_assetName;
-
-    protected:
-        template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class Asset;
-
-        AssetBase() = default;
-        AssetBase(const std::string& name) : m_assetName(name) {}
-
-        virtual void OnDestroyAsset() = 0;
-        void SetAssetName(const std::string& name) { m_assetName = name; }
-
     public:
-        const std::string& GetAssetName() const { return m_assetName; }
+        using DeviceVariant = DeviceType;
+        using HostVariant = HostType;
     };
+    
+    namespace Device
+    { 
+        class Asset
+        {
+
+        };
+    }
+    
+    namespace Host
+    {
+        class Asset
+        {
+        private:
+            std::string     m_assetName;
+
+        protected:
+            template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
+
+            Asset() = default;
+            __host__ Asset(const std::string& name) : m_assetName(name) {}
+
+            __host__ virtual void OnDestroyAsset() = 0;
+            __host__ void SetAssetName(const std::string& name) { m_assetName = name; }
+
+        public:
+            __host__ const inline std::string& GetAssetName() const { return m_assetName; }
+        };
+    }
 
     class GlobalAssetRegistry
     {
     public:
         static GlobalAssetRegistry& Get();
 
-        void Register(std::shared_ptr<AssetBase> object);
-        void Deregister(std::shared_ptr<AssetBase> object);
+        void Register(std::shared_ptr<Host::Asset> object);
+        void Deregister(std::shared_ptr<Host::Asset> object);
         void VerifyEmpty();
+        void Report();
 
     private:
         GlobalAssetRegistry() = default;
 
-        std::unordered_map<AssetBase*, std::weak_ptr<AssetBase>>      m_assetMap;
-        std::mutex                                                    m_mutex;
+        std::unordered_map<std::string, std::weak_ptr<Host::Asset>>     m_assetMap;
+        std::mutex                                                      m_mutex;
     };
 
     template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
-    class Asset
+    class AssetHandle
     {
     private:
         std::shared_ptr<T>          m_ptr;
 
     public:
-        Asset() = default;
-        ~Asset() = default;
+        AssetHandle() = default;
+        ~AssetHandle() = default;
 
         template<typename... Pack>
-        Asset(const std::string& assetName, Pack... args)
+        AssetHandle(const std::string& assetName, Pack... args)
         {
             m_ptr.reset(new T(args...));
             m_ptr->SetAssetName(assetName);
@@ -58,7 +80,7 @@ namespace Cuda
             GlobalAssetRegistry::Get().Register(m_ptr);
         }
 
-        Asset(T* ptr, const std::string& assetName)
+        AssetHandle(T* ptr, const std::string& assetName)
         {
             m_ptr.reset(ptr);
             m_ptr->SetAssetName(assetName);
@@ -97,4 +119,5 @@ namespace Cuda
         }
     };
 
+    __host__ inline GlobalAssetRegistry& AR() { return Cuda::GlobalAssetRegistry::Get(); }
 }

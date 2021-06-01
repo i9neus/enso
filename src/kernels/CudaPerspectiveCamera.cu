@@ -19,13 +19,13 @@ namespace Cuda
         return mix(bladeRadius, 1.0f, kBladeCurvature);
     }
 
-    Device::PerspectiveCamera::PerspectiveCamera()
+    __device__ Device::PerspectiveCamera::PerspectiveCamera()
     {
         m_useHaltonSpectralSampler = false;
-        m_cameraPos = vec2(0.3, 0.5);
-        m_cameraLook = vec2(0.5, 0.2);
-        m_cameraFLength = vec2(0.45);
-        m_cameraFStop = vec2(0.5);
+        m_cameraPos = vec2(0.3f, 0.5f);
+        m_cameraLook = vec2(0.5f, 0.2f);
+        m_cameraFLength = vec2(0.45f);
+        m_cameraFStop = vec2(0.5f);
     }
     
     __device__ void Device::PerspectiveCamera::CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const

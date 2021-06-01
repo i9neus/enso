@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
+#include "kernels/CudaAsset.cuh"
 
 class RenderManager
 {
@@ -44,6 +45,6 @@ private:
 	uint32_t				     m_clientWidth;
 	uint32_t                     m_clientHeight;
 
-	Asset<Cuda::Host::ImageRGBA>		m_compositeImage;
-	Asset<Cuda::Host::WavefrontTracer>  m_wavefrontTracer;
+	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
+	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>  m_wavefrontTracer;
 };

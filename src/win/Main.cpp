@@ -15,15 +15,15 @@
 #include "Win32Application.h"
 
 int main(int argc, char* argv[])
-{
-	std::shared_ptr<AssetBase> object;
-	
+{	
 	try
 	{
 		D3DContainer sample(1280, 720, "D3D12 Hello Texture");
-		return Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
+		auto rValue = Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
 
-		GlobalAssetRegistry::Get().VerifyEmpty();
+		Cuda::AR().VerifyEmpty();
+
+		return rValue;
 	}
 	catch (const std::runtime_error& err)
 	{

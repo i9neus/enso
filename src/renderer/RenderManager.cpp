@@ -26,7 +26,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 		if ((memcmp(&dx12DeviceLUID.LowPart, devProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
 			(memcmp(&dx12DeviceLUID.HighPart, devProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
 		{
-			checkCudaErrors(cudaSetDevice(devId));
+			IsOk(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
 			m_nodeMask = devProp.luidDeviceNodeMask;
 			checkCudaErrors(cudaStreamCreate(&m_D3DStream));
@@ -36,14 +36,23 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 		}
 	}
 
+	constexpr size_t kCudaHeapSizeLimit = 128 * 1024 * 1024;
+
+	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
+
 	// Create some Cuda objects
-	m_compositeImage = Asset<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
-	m_wavefrontTracer = Asset<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
+	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
+	m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
+
+	IsOk(cudaDeviceSynchronize());
 }
 
 void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
+
+	std::printf("Shutting down and destroying %i managed assets:");
+	Cuda::AR().Report();
 
 	m_threadSignal.store(kHalt);
 	std::printf("Shutting down...\n");

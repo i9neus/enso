@@ -16,7 +16,6 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
-    <ClCompile Include="src\generic\Asset.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
@@ -29,8 +28,6 @@
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
-    <ClInclude Include="src\generic\Assert.h" />
-    <ClInclude Include="src\generic\Asset.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
@@ -60,6 +57,7 @@
     <ClInclude Include="src\generic\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="src\generic\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
+    <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaCtx.cuh" />
     <ClInclude Include="src\kernels\CudaHash.cuh" />
@@ -83,6 +81,7 @@
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaTracable.cu" />

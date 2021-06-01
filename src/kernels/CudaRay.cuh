@@ -39,7 +39,7 @@ namespace Cuda
 
 	struct CompressedRay
 	{
-		__device__ CompressedRay() : flags(0) {}
+		__host__ __device__ CompressedRay() : flags(0) {}
 
 		Ray::Basic		od;
 		vec3			weight;
@@ -63,7 +63,7 @@ namespace Cuda
 	{
 		Ray newRay;
 		newRay.od = comp.od;
-		newRay.tNear = -FLT_MAX;
+		newRay.tNear = FLT_MAX;
 		newRay.pdf = comp.pdf;
 		newRay.lambda = comp.lambda;
 		newRay.weight = comp.weight;

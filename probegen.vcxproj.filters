@@ -22,9 +22,6 @@
     <ClCompile Include="src\generic\StringUtils.cpp">
       <Filter>generic</Filter>
     </ClCompile>
-    <ClCompile Include="src\generic\Asset.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -138,9 +135,6 @@
     <ClInclude Include="src\kernels\CudaImage.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\generic\Assert.h">
-      <Filter>generic</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\Math.h">
       <Filter>generic</Filter>
     </ClInclude>
@@ -186,9 +180,6 @@
     <ClInclude Include="src\kernels\CudaHash.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\generic\Asset.h">
-      <Filter>generic</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\CudaCtx.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
@@ -196,6 +187,9 @@
       <Filter>kernels</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaAsset.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
   </ItemGroup>
@@ -248,6 +242,9 @@
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaTracable.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaAsset.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

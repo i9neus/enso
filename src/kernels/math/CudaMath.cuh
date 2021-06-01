@@ -47,19 +47,23 @@ namespace Cuda
 	#define kZero3u uvec3(0u)
 	#define kZero2u uvec2(0u)
 
+	#define kBlack vec3(0.0f)
+	#define kWhite vec3(1.0f)
+
+
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by
 	// Frisvad's original paper: http://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
 	__host__ __device__ inline mat4 createBasis(vec3 n)
 	{
 		float s = sign(n.z);
-		float a = -1.0 / (s + n.z);
+		float a = -1 / (s + n.z);
 		float b = n.x * n.y * a;
 
-		return transpose(mat4(vec4(1.0f + s * n.x * n.x * a, s * b, -s * n.x, 0.0),
-			vec4(b, s + n.y * n.y * a, -n.y, 0.0),
-			vec4(n, 0.0),
-			vec4(0.0, 0.0, 0.0, 1.0)));
+		return transpose(mat4(vec4(1 + s * n.x * n.x * a, s * b, -s * n.x, 0.0f),
+			vec4(b, s + n.y * n.y * a, -n.y, 0.0f),
+			vec4(n, 0.0f),
+			vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 	}
 	
 	/*__host__ __device__ inline mat4 createBasis(vec3 n)
@@ -82,13 +86,13 @@ namespace Cuda
 	__host__ __device__ inline mat4 createBasis(vec3 n, vec3 up)
 	{
 		float s = sign(n.z);
-		float a = -1.0 / (s + n.z);
+		float a = -1 / (s + n.z);
 		float b = n.x * n.y * a;
 
-		return transpose(mat4(vec4(1.0f + s * n.x * n.x * a, s * b, -s * n.x, 0.0),
-			vec4(b, s + n.y * n.y * a, -n.y, 0.0),
-			vec4(n, 0.0),
-			vec4(0.0, 0.0, 0.0, 1.0)));
+		return transpose(mat4(vec4(1 + s * n.x * n.x * a, s * b, -s * n.x, 0.0f),
+			vec4(b, s + n.y * n.y * a, -n.y, 0.0f),
+			vec4(n, 0.0f),
+			vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 
 		vec3 tangent = normalize(cross(n, up));
 		vec3 cotangent = cross(tangent, n);

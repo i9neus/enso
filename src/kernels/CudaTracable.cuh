@@ -5,65 +5,65 @@
 
 namespace Cuda
 {
+    namespace Host 
+    {  
+        class Tracable;
+        class Sphere;
+    }
+    
     namespace Device
     {
-        class Tracable : public ManagedPair<Device::Tracable>
+        class Tracable : public Device::Asset, public AssetTags<Host::Tracable, Device::Tracable>
         {
         public:
             Tracable() = default;
 
-            __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) = 0;
-
         protected:
+            __device__ Tracable(const mat4& matrix, const mat4& invMatrix) : m_matrix(matrix), m_invMatrix(invMatrix) {}
+            __device__ ~Tracable() = default;
+
             mat4            m_matrix; 
             mat4            m_invMatrix;
         };
 
-        class Sphere : virtual public Device::Tracable
+        class Sphere : public Device::Tracable
         {
+            friend Host::Sphere;
         protected:
+            Sphere() = default;           
+
             vec3            m_pos;
             float           m_radius;
 
         public:
-            Sphere() = default;
-            virtual ~Sphere() {}
+            __device__ Sphere(const mat4& matrix, const mat4& invMatrix, const vec3& pos, const float radius) :
+                Tracable(matrix, invMatrix), m_pos(pos), m_radius(radius) {}
+            __device__ ~Sphere() = default;
 
-            __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) override final;
+            __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
         };
     }
 
     namespace Host
     {
-        class Tracable : virtual public Device::Tracable, public AssetBase
+        class Tracable : public Host::Asset, public AssetTags<Host::Tracable, Device::Tracable>
         {
         public:
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
         };
         
-        class Sphere : public Host::Tracable, public Device::Sphere
+        class Sphere : public Host::Tracable
         {
         private:
-            Device::Tracable* cu_deviceSphere;
+            Device::Sphere* cu_deviceData;
+            Device::Sphere  m_hostData;
 
         public:
-            Sphere(const vec3& pos, const float radius) : cu_deviceSphere(nullptr)
-            {                
-                Device::Sphere::m_pos = pos;
-                Device::Sphere::m_radius = radius; 
-                Device::Tracable::m_matrix = mat4::indentity();
-                Device::Tracable::m_invMatrix = mat4::indentity();
-                
-                SafeCreateDeviceInstance(&cu_deviceSphere, static_cast<Device::Sphere*>(this));
-            }
-            virtual ~Sphere() {}
+            __host__ Sphere(const vec3& pos, const float radius);
+            __host__ virtual ~Sphere() { OnDestroyAsset(); }
+            __host__ virtual void OnDestroyAsset() override final;
 
-            __host__ virtual void OnDestroyAsset() override final
-            {
-                SafeFreeDeviceMemory(&cu_deviceSphere);
-            }
-
-            __host__ virtual Device::Tracable* GetDeviceInstance() const override final { return cu_deviceSphere; }
+            __host__ virtual Device::Sphere* GetDeviceInstance() const override final { return cu_deviceData; }
         };
     }
 }

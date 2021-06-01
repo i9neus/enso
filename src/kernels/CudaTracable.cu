@@ -2,7 +2,7 @@
 
 namespace Cuda
 {    
-    __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx)
+    __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
         Ray::Basic localRay = ray.od.ToObjectSpace(m_matrix);
 
@@ -44,5 +44,21 @@ namespace Cuda
         hitCtx.Set(normalize(nGlobal - hitGlobal), dot(localRay.o, localRay.o) < 1.0, vec2(0.0), 1e-5);
 
         return true;
+    }
+
+    __host__  Host::Sphere::Sphere(const vec3& pos, const float radius)
+        : cu_deviceData(nullptr)
+    {
+        m_hostData.m_matrix = mat4::indentity();
+        m_hostData.m_invMatrix = mat4::indentity();
+        m_hostData.m_pos = pos;
+        m_hostData.m_radius = radius;
+
+        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix, m_hostData.m_pos, m_hostData.m_radius);
+    }
+
+    __host__ void Host::Sphere::OnDestroyAsset()
+    {
+        DestroyOnDevice(&cu_deviceData);
     }
 }
