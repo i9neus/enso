@@ -29,7 +29,8 @@ namespace Cuda
 		vec4() = default;
 		__host__ __device__ explicit vec4(const float v) : x(v), y(v), z(v), w(v) {}
 		__host__ __device__ vec4(const float& x_, const float& y_, const float& z_, const float& w_) : x(x_), y(y_), z(z_), w(w_) {}
-		__host__ __device__ vec4(const vec3& v, const float& w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
+		__host__ __device__ vec4(const vec3& v, const float& w_) : x(v.x), y(v.y), z(v.z), w(w_) {} 
+		__host__ __device__ vec4(const float& x_, const vec3& v) : x(x_), y(v.x), z(v.y), w(v.z) {}
 		__host__ __device__ vec4(const vec2& v, const float& z_, const float& w_) : x(v.x), y(v.y), z(z_), w(w_) {}
 		__host__ __device__ vec4(const vec4 & other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
 		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<4>, T>::value>::type> 
@@ -45,7 +46,9 @@ namespace Cuda
 	};
 
 	__host__ __device__ inline vec4 operator +(const vec4& lhs, const vec4& rhs) { return vec4(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w); }
+	__host__ __device__ inline vec4 operator +(const vec4& lhs, const float& rhs) { return vec4(lhs.x + rhs, lhs.y + rhs, lhs.z + rhs, lhs.w + rhs); }
 	__host__ __device__ inline vec4 operator -(const vec4& lhs, const vec4& rhs) { return vec4(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, lhs.w - rhs.w); }
+	__host__ __device__ inline vec4 operator -(const vec4& lhs, const float& rhs) { return vec4(lhs.x - rhs, lhs.y - rhs, lhs.z - rhs, lhs.w - rhs); }
 	__host__ __device__ inline vec4 operator -(const vec4& lhs) { return vec4(-lhs.x, -lhs.y, -lhs.z, -lhs.w); }
 	__host__ __device__ inline vec4 operator *(const vec4& lhs, const vec4& rhs) { return vec4(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w); }
 	__host__ __device__ inline vec4 operator *(const vec4& lhs, const float& rhs) { return vec4(lhs.x * rhs, lhs.y * rhs, lhs.z * rhs, lhs.w * rhs); }
@@ -70,6 +73,9 @@ namespace Cuda
 	__host__ __device__ inline vec4 saturate(const vec4& v, const vec4& a, const vec4& b) { return vec4(clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f), clamp(v.z, 0.0f, 1.0f), clamp(v.w, 0.0f, 1.0f)); }
 	__host__ __device__ inline vec4 abs(const vec4& a) { return vec4(fabs(a.x), fabs(a.y), fabs(a.z), fabs(a.w)); }
 	__host__ __device__ inline float sum(const vec4& a) { return a.x + a.y + a.z + a.w; }
+	__host__ __device__ inline vec4 ceil(const vec4& v) { return vec4(ceilf(v.x), ceilf(v.y), ceilf(v.z), ceilf(v.w)); }
+	__host__ __device__ inline vec4 floor(const vec4& v) { return vec4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w)); }
+	__host__ __device__ inline vec4 sign(const vec4& v) { return vec4(sign(v.x), sign(v.y), sign(v.z), sign(v.w)); }
 
 	__host__ __device__ inline float cwiseMax(const vec4& v) 
 	{ 

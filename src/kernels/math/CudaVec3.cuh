@@ -36,7 +36,9 @@ namespace Cuda
 	};
 
 	__host__ __device__ inline vec3 operator +(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z); }
+	__host__ __device__ inline vec3 operator +(const vec3  lhs, const float& rhs) { return vec3(lhs.x + rhs, lhs.y + rhs, lhs.z + rhs); }
 	__host__ __device__ inline vec3 operator -(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z); }
+	__host__ __device__ inline vec3 operator -(const vec3& lhs, const float& rhs) { return vec3(lhs.x - rhs, lhs.y - rhs, lhs.z - rhs); }
 	__host__ __device__ inline vec3 operator -(const vec3& lhs) { return vec3(-lhs.x, -lhs.y, -lhs.z); }
 	__host__ __device__ inline vec3 operator *(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z); }
 	__host__ __device__ inline vec3 operator *(const vec3& lhs, const float& rhs) { return vec3(lhs.x * rhs, lhs.y * rhs, lhs.z * rhs); }
@@ -65,6 +67,9 @@ namespace Cuda
 	__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b) { return vec3(clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f), clamp(v.z, 0.0f, 1.0f)); }
 	__host__ __device__ inline vec3 abs(const vec3& a) { return vec3(fabs(a.x), fabs(a.y), fabs(a.z)); }
 	__host__ __device__ inline float sum(const vec3& a) { return a.x + a.y + a.z; }
+	__host__ __device__ inline vec3 ceil(const vec3& v) { return vec3(ceilf(v.x), ceilf(v.y), ceilf(v.z)); }
+	__host__ __device__ inline vec3 floor(const vec3& v) { return vec3(floorf(v.x), floorf(v.y), floorf(v.z)); }
+	__host__ __device__ inline vec3 sign(const vec3& v) { return vec3(sign(v.x), sign(v.y), sign(v.z)); }
 
 	__host__ __device__ inline float cwiseMax(const vec3& v) { return (v.x > v.y) ? ((v.x > v.z) ? v.x : v.z) : ((v.y > v.z) ? v.y : v.z); }
 	__host__ __device__ inline float cwiseMin(const vec3& v) { return (v.x < v.y) ? ((v.x < v.z) ? v.x : v.z) : ((v.y < v.z) ? v.y : v.z); }

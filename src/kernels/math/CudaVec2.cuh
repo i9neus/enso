@@ -32,7 +32,9 @@ namespace Cuda
 	};
 
 	__host__ __device__ inline vec2 operator +(const vec2& lhs, const vec2& rhs) { return vec2(lhs.x + rhs.x, lhs.y + rhs.y); }
+	__host__ __device__ inline vec2 operator +(const vec2& lhs, const float& rhs) { return vec2(lhs.x + rhs, lhs.y + rhs); }
 	__host__ __device__ inline vec2 operator -(const vec2& lhs, const vec2& rhs) { return vec2(lhs.x - rhs.x, lhs.y - rhs.y); }
+	__host__ __device__ inline vec2 operator -(const vec2& lhs, const float& rhs) { return vec2(lhs.x - rhs, lhs.y - rhs); }
 	__host__ __device__ inline vec2 operator -(const vec2& lhs) { return vec2(-lhs.x, -lhs.y); }
 	__host__ __device__ inline vec2 operator *(const vec2& lhs, const vec2& rhs) { return vec2(lhs.x * rhs.x, lhs.y * rhs.y); }
 	__host__ __device__ inline vec2 operator *(const vec2& lhs, const float& rhs) { return vec2(lhs.x * rhs, lhs.y * rhs); }
@@ -58,6 +60,9 @@ namespace Cuda
 	__host__ __device__ inline vec2 saturate(const vec2& v, const vec2& a, const vec2& b) { return vec2(clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f)); }
 	__host__ __device__ inline vec2 abs(const vec2& a) { return vec2(fabs(a.x), fabs(a.y)); }
 	__host__ __device__ inline float sum(const vec2& a) { return a.x + a.y; }
+	__host__ __device__ inline vec2 ceil(const vec2& v) { return vec2(ceilf(v.x), ceilf(v.y)); }
+	__host__ __device__ inline vec2 floor(const vec2& v) { return vec2(floorf(v.x), floorf(v.y)); }
+	__host__ __device__ inline vec2 sign(const vec2& v) { return vec2(sign(v.x), sign(v.y)); }
 
 	__host__ __device__ inline float cwiseMax(const vec2& v) { return (v.x > v.y) ? v.x : v.y; }
 	__host__ __device__ inline float cwiseMin(const vec2& v) { return (v.x < v.y) ? v.x : v.y; }
