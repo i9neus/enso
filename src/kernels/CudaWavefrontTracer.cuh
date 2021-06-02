@@ -4,7 +4,7 @@
 #include "CudaImage.cuh"
 #include "CudaPerspectiveCamera.cuh"
 #include "CudaCtx.cuh"
-#include "CudaTracable.cuh"
+#include "tracables/CudaSphere.cuh"
 #include "CudaAssetContainer.cuh"
 
 namespace Cuda

@@ -1,7 +1,7 @@
-﻿#include "CudaTracable.cuh"
+﻿#include "CudaSphere.cuh"
 
 namespace Cuda
-{    
+{
     __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
         Ray::Basic localRay = ray.od.ToObjectSpace(m_matrix);

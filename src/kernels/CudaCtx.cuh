@@ -11,6 +11,8 @@ namespace Cuda
 		{
 			ivec2          viewportPos;
 			ivec2		   viewportDims;
+			float		   frameTime;
+			int			   frameIdx;
 			PCG            pcg;
 		};
 

@@ -126,9 +126,6 @@
     <ClInclude Include="src\kernels\CudaCtx.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\CudaTracable.cuh">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
@@ -228,6 +225,12 @@
     <ClInclude Include="src\thirdparty\imgui\imstb_truetype.h">
       <Filter>thirdparty\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\tracables\CudaTracable.cuh">
+      <Filter>kernels\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\tracables\CudaSphere.cuh">
+      <Filter>kernels\tracables</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -269,6 +272,9 @@
     <Filter Include="thirdparty\tinyformat">
       <UniqueIdentifier>{d45a9f64-6ee4-42c5-9ec6-c3fdd18a827c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\tracables">
+      <UniqueIdentifier>{569b5b47-933a-44cf-9549-9e36ae128e54}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -280,11 +286,11 @@
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\CudaTracable.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\CudaAsset.cu">
       <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaSphere.cu">
+      <Filter>kernels\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
