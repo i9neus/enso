@@ -19,6 +19,10 @@
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\imgui.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
@@ -56,6 +60,12 @@
     <ClInclude Include="src\kernels\math\CudaVec3.cuh" />
     <ClInclude Include="src\kernels\math\CudaVec4.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
+    <ClInclude Include="src\thirdparty\imgui\imconfig.h" />
+    <ClInclude Include="src\thirdparty\imgui\imgui.h" />
+    <ClInclude Include="src\thirdparty\imgui\imgui_internal.h" />
+    <ClInclude Include="src\thirdparty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="src\thirdparty\imgui\imstb_textedit.h" />
+    <ClInclude Include="src\thirdparty\imgui\imstb_truetype.h" />
     <ClInclude Include="src\thirdparty\lodepng\lodepng.h" />
     <ClInclude Include="src\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="src\thirdparty\nvidia\helper_string.h" />

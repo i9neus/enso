@@ -2,6 +2,7 @@
 
 #include "D3DWindowInterface.h"
 #include "DXSampleHelper.h"
+#include "IMGUIContainer.h"
 
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
@@ -112,6 +113,7 @@ private:
 	UINT64 m_fenceValues[FrameCount];
 
 	RenderManager                m_manager;
+	IMGUIContainer				 m_imgui;
 
 	void LoadPipeline();
 	void InitCuda();
