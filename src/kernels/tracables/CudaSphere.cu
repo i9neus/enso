@@ -35,9 +35,8 @@ namespace Cuda
         }
         else { return false; }
 
-        const vec3 hitLocal = n;
         const vec3 nLocal = n * 2;
-        const vec3 hitGlobal = m_invMatrix * hitLocal;
+        const vec3 hitGlobal = m_invMatrix * n;
         const vec3 nGlobal = m_invMatrix * nLocal;
 
         ray.tNear = tNear;
@@ -46,15 +45,13 @@ namespace Cuda
         return true;
     }
 
-    __host__  Host::Sphere::Sphere(const vec3& pos, const float radius)
+    __host__  Host::Sphere::Sphere()
         : cu_deviceData(nullptr)
     {
         m_hostData.m_matrix = mat4::indentity();
         m_hostData.m_invMatrix = mat4::indentity();
-        m_hostData.m_pos = pos;
-        m_hostData.m_radius = radius;
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix, m_hostData.m_pos, m_hostData.m_radius);
+        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix);
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()

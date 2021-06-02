@@ -14,12 +14,9 @@ namespace Cuda
         protected:
             Sphere() = default;
 
-            vec3            m_pos;
-            float           m_radius;
-
         public:
-            __device__ Sphere(const mat4& matrix, const mat4& invMatrix, const vec3& pos, const float radius) :
-                Tracable(matrix, invMatrix), m_pos(pos), m_radius(radius) {}
+            __device__ Sphere(const mat4& matrix, const mat4& invMatrix) :
+                Tracable(matrix, invMatrix) {}
             __device__ ~Sphere() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
@@ -35,7 +32,7 @@ namespace Cuda
             Device::Sphere  m_hostData;
 
         public:
-            __host__ Sphere(const vec3& pos, const float radius);
+            __host__ Sphere();
             __host__ virtual ~Sphere() { OnDestroyAsset(); }
             __host__ virtual void OnDestroyAsset() override final;
 

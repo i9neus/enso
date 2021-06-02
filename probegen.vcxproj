@@ -58,6 +58,7 @@
     <ClInclude Include="src\kernels\math\CudaVec2.cuh" />
     <ClInclude Include="src\kernels\math\CudaVec3.cuh" />
     <ClInclude Include="src\kernels\math\CudaVec4.cuh" />
+    <ClInclude Include="src\kernels\tracables\CudaPlane.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
@@ -98,6 +99,7 @@
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
   </ItemGroup>
   <ItemGroup>

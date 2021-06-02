@@ -112,7 +112,7 @@ namespace Cuda
 
 		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("id_tracableContainer");
 
-		m_hostSphere = AssetHandle<Host::Sphere>(new Host::Sphere(vec3(0.0f), 1.0f), "id_sphere");
+		m_hostSphere = AssetHandle<Host::Sphere>(new Host::Sphere(), "id_sphere");
 		//m_hostTracables->Push(newSphere);		
 		//m_hostTracables->Sync();
 

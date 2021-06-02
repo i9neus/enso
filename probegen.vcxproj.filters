@@ -231,6 +231,9 @@
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh">
       <Filter>kernels\tracables</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\tracables\CudaPlane.cuh">
+      <Filter>kernels\tracables</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -290,6 +293,9 @@
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu">
+      <Filter>kernels\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaPlane.cu">
       <Filter>kernels\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
