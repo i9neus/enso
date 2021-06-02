@@ -124,6 +124,7 @@ private:
 	std::vector<float> GenerateTextureData();
 	void CreateSinewaveAssets();
 	void CreateTriangleAssets();
+	void CreateRootSignature();
 
 	void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
 };
