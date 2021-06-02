@@ -15,10 +15,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
+    <ClCompile Include="src\dx12\IMGUIContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
-    <ClCompile Include="src\generic\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
+    <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
@@ -27,36 +28,13 @@
     <ClInclude Include="src\dx12\d3dx12.h" />
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
+    <ClInclude Include="src\dx12\IMGUIContainer.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
-    <ClInclude Include="src\generic\thirdparty\lodepng\lodepng.h" />
-    <ClInclude Include="src\generic\thirdparty\nvidia\helper_cuda.h" />
-    <ClInclude Include="src\generic\thirdparty\nvidia\helper_string.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\allocators.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\cursorstreamwrapper.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\document.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\encodedstream.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\encodings.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\filereadstream.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\filewritestream.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\fwd.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\istreamwrapper.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\memorybuffer.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\memorystream.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\ostreamwrapper.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\pointer.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\prettywriter.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\rapidjson.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\reader.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\schema.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\stream.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\stringbuffer.h" />
-    <ClInclude Include="src\generic\thirdparty\rapidjson\writer.h" />
-    <ClInclude Include="src\generic\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaCtx.cuh" />
@@ -78,6 +56,30 @@
     <ClInclude Include="src\kernels\math\CudaVec3.cuh" />
     <ClInclude Include="src\kernels\math\CudaVec4.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
+    <ClInclude Include="src\thirdparty\lodepng\lodepng.h" />
+    <ClInclude Include="src\thirdparty\nvidia\helper_cuda.h" />
+    <ClInclude Include="src\thirdparty\nvidia\helper_string.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\allocators.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\cursorstreamwrapper.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\document.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\encodedstream.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\encodings.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\filereadstream.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\filewritestream.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\fwd.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\istreamwrapper.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\memorybuffer.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\memorystream.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\ostreamwrapper.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\pointer.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\prettywriter.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\rapidjson.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\reader.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\schema.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\stream.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\stringbuffer.h" />
+    <ClInclude Include="src\thirdparty\rapidjson\writer.h" />
+    <ClInclude Include="src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>

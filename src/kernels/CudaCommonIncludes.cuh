@@ -6,7 +6,7 @@
 #include "Assert.h"
 #include "CudaAsset.cuh"
 #include "generic/StdIncludes.h"
-#include "generic/thirdparty/nvidia/helper_cuda.h"
+#include "thirdparty/nvidia/helper_cuda.h"
 
 namespace Cuda
 {
