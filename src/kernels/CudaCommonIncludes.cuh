@@ -13,6 +13,7 @@ namespace Cuda
 #define IsOk checkCudaErrors
 	
 	using uint = unsigned int;
+	using uchar = unsigned char;
 
 	__host__ __device__ inline float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ inline float fract(const float& v) { return fmodf(v, 1.0f); }

@@ -44,6 +44,8 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
 	m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 
+	Cuda::VerifyTypeSizes();
+
 	IsOk(cudaDeviceSynchronize());
 }
 
@@ -160,6 +162,8 @@ void RenderManager::Start()
 	m_threadSignal = kRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
 
+	m_renderStartTime = std::chrono::high_resolution_clock::now();
+
 	Assert(m_managerThread.joinable());
 }
 
@@ -167,16 +171,18 @@ void RenderManager::Run()
 {	
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 	
-	int ticks = 0;
+	int frameIdx = 0;
 	while (m_threadSignal.load() == kRun)
 	{		
-		m_wavefrontTracer->Iterate();
+		std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+		
+		m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
 
 		m_wavefrontTracer->Composite(m_compositeImage);
 		
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		std::printf("Tick: %i\n", ++ticks);
+		std::printf("Tick: %i\n", ++frameIdx);
 	}
 }

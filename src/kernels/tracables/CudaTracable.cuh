@@ -18,12 +18,13 @@ namespace Cuda
         public:
             Tracable() = default;
 
+            __device__ inline void SetTransform(const BidirectionalTransform& transform) { m_transform = transform; }
+
         protected:
-            __device__ Tracable(const mat4& matrix, const mat4& invMatrix) : m_matrix(matrix), m_invMatrix(invMatrix) {}
+            __device__ Tracable(const BidirectionalTransform& transform) : m_transform(transform) {}
             __device__ ~Tracable() = default;
 
-            mat4            m_matrix; 
-            mat4            m_invMatrix;
+            BidirectionalTransform        m_transform;
         };
     }
 

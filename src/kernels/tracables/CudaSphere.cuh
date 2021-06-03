@@ -15,8 +15,7 @@ namespace Cuda
             Sphere() = default;
 
         public:
-            __device__ Sphere(const mat4& matrix, const mat4& invMatrix) :
-                Tracable(matrix, invMatrix) {}
+            __device__ Sphere(const BidirectionalTransform& transform) : Tracable(transform) {}
             __device__ ~Sphere() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;

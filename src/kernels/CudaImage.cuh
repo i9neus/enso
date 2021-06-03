@@ -51,9 +51,9 @@ namespace Cuda
 			}
 
 			template<typename = typename std::enable_if<std::is_same<T, vec4>::value>>
-			__device__ inline void Accumulate(const ivec2& xy, const vec3& value)
+			__device__ inline void Accumulate(const ivec2& xy, const vec3& value, const uchar depth)
 			{
-				cu_data[xy.y * m_height + xy.x] += vec4(value, 1.0f);
+				cu_data[xy.y * m_height + xy.x] += vec4(value, float(1 >> depth));
 			}
 
 			__device__ void Clear(const ivec2& xy, const T& value);

@@ -8,12 +8,11 @@
 #include "CudaVec4.cuh"
 #include "CudaMat3.cuh"
 #include "CudaMat4.cuh"
-#include "CudaMat3.cuh"
 
 namespace Cuda
 {    	
-	//__host__ __device__ template<typename T> inline T min(const T& a, const T& b) { return (a < b) ? a : b; }
-	//__host__ __device__ template<typename T> inline T max(const T& a, const T& b) { return (a > b) ? a : b; }
+	__host__ void VerifyTypeSizes();
+	
 	__host__ __device__ inline float cubrt(float a)								{ return copysignf(1.0f, a) * powf(fabs(a), 1.0f / 3.0f); }
 	__host__ __device__ inline float toRad(float deg)								{ return kTwoPi * deg / 360; }
 	__host__ __device__ inline float toDeg(float rad)								{ return 360 * rad / kTwoPi; }
@@ -36,6 +35,59 @@ namespace Cuda
 	template<typename T>
 	__host__ __device__ inline T mix(const T& a, const T& b, const float& v) { return T(float(a) * (1 - v) + float(b) * v); }
 
+	// Multi-purpose class describing a position and a direction vector
+	struct PosDir
+	{
+	public:		
+		union { vec3 o, p; };
+		union { vec3 d, n; };
+
+		__device__ PosDir() = default;
+		__device__ PosDir(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
+	};
+	
+	class BidirectionalTransform
+	{
+	public:
+		vec3 trans;
+		mat3 fwd;
+		mat3 inv;
+		mat3 nInv;
+
+		__host__ __device__ BidirectionalTransform() :
+			trans(0.0f),
+			fwd(mat3::indentity()),
+			inv(mat3::indentity()),
+			nInv(mat3::indentity()) {}
+
+		__host__ __device__ inline BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
+		{ 
+			inv = inverse(fwd);
+			nInv = transpose(inv);
+		}
+
+		__host__ __device__ inline void MakeIdentity()
+		{
+			trans = 0.0f;
+			fwd = inv = mat3::indentity();
+		}
+
+		__device__ inline PosDir RayToObjectSpace(const PosDir& world) const
+		{
+			PosDir object;
+			object.o = world.o - trans;
+			object.d = world.d + object.o;
+			object.o = fwd * object.o;
+			object.d = (fwd * object.d) - object.o;
+			return object;
+		}
+
+		__device__ inline PosDir HitToWorldSpace(const PosDir& object) const
+		{
+			return PosDir((inv * object.p) + trans, nInv * object.n);
+		}
+	};
+
     #define kZero vec3(0.0f)
 	#define kZero4f vec4(0.0f)
 	#define kZero3f vec3(0.0f)
@@ -50,6 +102,39 @@ namespace Cuda
 	#define kBlack vec3(0.0f)
 	#define kWhite vec3(1.0f)
 
+	__host__ __device__ inline mat3 ScaleMat3(const vec3 scale)
+	{
+		const vec3 invScale = vec3(1.0f) / scale;
+		return mat3(vec3(invScale.x, 0.0, 0.0),
+					vec3(0.0, invScale.y, 0.0),
+					vec3(0.0, 0.0, invScale.z));
+	}
+
+	__host__ __device__ inline mat3 RotXMat3(const float theta)
+	{
+		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
+		return mat3(vec3(1.0, 0.0, 0.0),
+					vec3(0.0, cosTheta, -sinTheta),
+					vec3(0.0, sinTheta, cosTheta));
+	}
+
+	__host__ __device__ inline mat3 RotYMat3(const float theta)
+	{
+		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
+		return mat3(vec3(cosTheta, 0.0, sinTheta),
+					vec3(0.0, 1.0, 0.0),
+					vec3(-sinTheta, 0.0, cosTheta));
+	}
+
+	__host__ __device__ inline mat3 RotZMat3(const float theta)
+	{
+		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
+		return mat3(vec3(cosTheta, -sinTheta, 0.0),
+					vec3(sinTheta, cosTheta, 0.0),
+					vec3(0.0, 0.0, 1.0));
+	}
+
+	__host__ __device__ BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f));
 
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by

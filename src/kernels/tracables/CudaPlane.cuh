@@ -17,8 +17,8 @@ namespace Cuda
             bool m_isBounded;
 
         public:
-            __device__ Plane(const mat4& matrix, const mat4& invMatrix, const bool isBounded) :
-                Tracable(matrix, invMatrix), m_isBounded(isBounded) {}
+            __device__ Plane(const BidirectionalTransform& transform, const bool isBounded) :
+                Tracable(transform), m_isBounded(isBounded) {}
             __device__ ~Plane() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;

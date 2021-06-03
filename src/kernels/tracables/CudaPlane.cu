@@ -4,7 +4,7 @@ namespace Cuda
 {
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 
-        Ray::Basic localRay = ray.od.ToObjectSpace(m_matrix);
+        RayBasic localRay = m_transform.RayToObjectSpace(ray.od);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
         if (fabs(localRay.d.z) < 1e-10) { return false; }
@@ -20,11 +20,11 @@ namespace Cuda
         // If we've hit the surface and it's the closest intersection, calculate the normal and UV coordinates
         // A more efficient way would be to defer this process to avoid unncessarily computing normals for occuluded surfaces.
         const vec3 hitLocal = localRay.o + localRay.d * t;
-        const vec3 hitGlobal = m_invMatrix * hitLocal;
-        const vec3 nGlobal = m_invMatrix * (vec3(0.0, 0.0, -1.0) + hitLocal);
+        const vec3 hitGlobal = m_transform.inv * hitLocal;
+        const vec3 nGlobal = m_transform.inv * (vec3(0.0, 0.0, -1.0) + hitLocal);
 
         ray.tNear = t;
-        hitCtx.Set(normalize(hitGlobal - nGlobal), false, vec2(u, v), 1e-5f);
+        //hitCtx.Set(normalize(hitGlobal - nGlobal), false, vec2(u, v), 1e-5f);
 
         return true;
     }
@@ -32,11 +32,10 @@ namespace Cuda
     __host__  Host::Plane::Plane(const bool isBounded)
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_matrix = mat4::indentity();
-        m_hostData.m_invMatrix = mat4::indentity();
+        m_hostData.m_transform.MakeIdentity();
         m_hostData.m_isBounded= isBounded;
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix, m_hostData.m_isBounded);
+        InstantiateOnDevice(&cu_deviceData, m_hostData.m_transform, m_hostData.m_isBounded);
     }
 
     __host__ void Host::Plane::OnDestroyAsset()

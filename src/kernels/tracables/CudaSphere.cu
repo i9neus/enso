@@ -4,7 +4,7 @@ namespace Cuda
 {
     __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        Ray::Basic localRay = ray.od.ToObjectSpace(m_matrix);
+        RayBasic localRay = m_transform.RayToObjectSpace(ray.od);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
         float a = dot(localRay.d, localRay.d);
@@ -36,11 +36,11 @@ namespace Cuda
         else { return false; }
 
         const vec3 nLocal = n * 2;
-        const vec3 hitGlobal = m_invMatrix * n;
-        const vec3 nGlobal = m_invMatrix * nLocal;
+        const vec3 hitGlobal = m_transform.inv * n;
+        const vec3 nGlobal = m_transform.inv * nLocal;
 
         ray.tNear = tNear;
-        hitCtx.Set(normalize(nGlobal - hitGlobal), dot(localRay.o, localRay.o) < 1.0, vec2(0.0), 1e-5);
+        //hitCtx.Set(normalize(nGlobal - hitGlobal), dot(localRay.o, localRay.o) < 1.0, vec2(0.0), 1e-5);
 
         return true;
     }
@@ -48,10 +48,9 @@ namespace Cuda
     __host__  Host::Sphere::Sphere()
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_matrix = mat4::indentity();
-        m_hostData.m_invMatrix = mat4::indentity();
+        m_hostData.m_transform.MakeIdentity();
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix);
+        InstantiateOnDevice(&cu_deviceData, m_hostData.m_transform);
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()

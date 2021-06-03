@@ -28,6 +28,9 @@ private:
 	std::thread m_managerThread;
 	std::atomic<int> m_threadSignal;
 
+	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+	TimePoint					m_renderStartTime;
+
 	// CUDA objects
 	cudaExternalMemory_t	     m_externalTextureMemory;
 	cudaExternalSemaphore_t      m_externalSemaphore;

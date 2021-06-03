@@ -8,6 +8,7 @@
 
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
+#include "tracables/CudaCornell.cuh"
 
 namespace Cuda
 {
@@ -23,10 +24,13 @@ namespace Cuda
 			Device::ImageRGBW*				cu_deviceAccumBuffer;
 			Device::CompressedRayBuffer*	cu_deviceCompressedRayBuffer;
 			//Device::AssetContainer<Device::Tracable>* cu_deviceTracables;
-			const Device::Sphere*			cu_sphere;
+			Device::Cornell*				cu_cornell;
 
 			ivec2							m_viewportDims;
 			Device::PerspectiveCamera		m_camera;
+
+			float							m_wallTime;
+			int								m_frameIdx;
 
 			WavefrontTracer();
 			__device__ inline bool IsValid(const ivec2& viewportPos) const
@@ -36,17 +40,19 @@ namespace Cuda
 			}
 
 		public:
-			__device__ WavefrontTracer(Device::ImageRGBW* deviceAccumBuffer, Device::CompressedRayBuffer* deviceCompressedRayBuffer, const Device::Sphere* sphere, const ivec2& viewportDims) :
+			__device__ WavefrontTracer(Device::ImageRGBW* deviceAccumBuffer, Device::CompressedRayBuffer* deviceCompressedRayBuffer, Device::Cornell* cornell, const ivec2& viewportDims) :
 				cu_deviceAccumBuffer(deviceAccumBuffer),
 				cu_deviceCompressedRayBuffer(deviceCompressedRayBuffer),
-				cu_sphere(sphere),
+				cu_cornell(cornell),
 				m_viewportDims(viewportDims) {}
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const ivec2& viewportPos) const;
-			__device__ RenderCtx CreateRenderCtx(const ivec2& viewportPos, const uint depth) const;
-			__device__ void test(const ivec2& xy);
+			__device__ RenderCtx CreateRenderCtx(const CompressedRay& compressed, const uint depth) const;
+			__device__ RenderCtx CreateRenderCtx(const ivec2 viewportPos) const;
+			__device__ void PreFrame(const float& wallTime, const int frameIdx);
+
 		};
 	}
 
@@ -61,7 +67,7 @@ namespace Cuda
 			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
-			AssetHandle<Host::Sphere>                           m_hostSphere;
+			AssetHandle<Host::Cornell>                          m_hostCornell;
 
 			cudaStream_t			m_hostStream;
 			dim3                    m_block, m_grid;
@@ -74,7 +80,7 @@ namespace Cuda
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 
-			__host__ void Iterate();
+			__host__ void Iterate(const float wallTime, const float frameIdx);
 		};
 	}
 }

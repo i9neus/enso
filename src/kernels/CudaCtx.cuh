@@ -11,21 +11,22 @@ namespace Cuda
 		{
 			ivec2          viewportPos;
 			ivec2		   viewportDims;
-			float		   frameTime;
+			float		   wallTime;
 			int			   frameIdx;
+			uchar          depth;
 			PCG            pcg;
 		};
 
 		struct HitCtx
 		{
-			vec3	n;                 // Normal at the intersected surface
+			Hit     hit;
 			vec2	uv;                // UV parameterisation coordinate at the intersected surface
 			bool	backfacing;        // Whether the intersection with a forward- or backward-facing surface
 			float   kickoff;           // The degree to which extant rays should be displaced from the surface to prevent self-intersection
 
-			__device__ void Set(const vec3& n_, bool back, const vec2& uv_, const float kick)
+			__device__ void Set(const Hit& hit_, bool back, const vec2& uv_, const float kick)
 			{
-				n = n_;
+				hit = hit_;
 				backfacing = back;
 				uv = uv_;
 				kickoff = kick;
