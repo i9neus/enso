@@ -56,20 +56,20 @@ namespace Cuda
 
 		__host__ __device__ BidirectionalTransform() :
 			trans(0.0f),
-			fwd(mat3::indentity()),
-			inv(mat3::indentity()),
-			nInv(mat3::indentity()) {}
+			fwd(mat3::Indentity()),
+			inv(mat3::Indentity()),
+			nInv(mat3::Indentity()) {}
 
 		__host__ __device__ inline BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
 		{ 
 			inv = inverse(fwd);
-			nInv = transpose(inv);
+			nInv = transpose(fwd);
 		}
 
 		__host__ __device__ inline void MakeIdentity()
 		{
 			trans = 0.0f;
-			fwd = inv = mat3::indentity();
+			fwd = inv = mat3::Indentity();
 		}
 
 		__device__ inline PosDir RayToObjectSpace(const PosDir& world) const
@@ -84,7 +84,10 @@ namespace Cuda
 
 		__device__ inline PosDir HitToWorldSpace(const PosDir& object) const
 		{
-			return PosDir((inv * object.p) + trans, nInv * object.n);
+			PosDir world;
+			world.p = inv * object.p;
+			world.n = nInv * object.n;
+			return world;
 		}
 	};
 
@@ -134,7 +137,19 @@ namespace Cuda
 					vec3(0.0, 0.0, 1.0));
 	}
 
-	__host__ __device__ BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f));
+	// Builds a composite matrix from three Euler angles, scale and translation vectors
+	__host__ __device__ inline BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f))
+	{
+		mat3 mat = mat3::Indentity();
+
+		if (scale != vec3(1.0)) { mat *= ScaleMat3(scale); }
+
+		if (theta.x != 0.0) { mat *= RotXMat3(theta.x); }
+		if (theta.y != 0.0) { mat *= RotYMat3(theta.y); }
+		if (theta.z != 0.0) { mat *= RotZMat3(theta.z); }
+
+		return BidirectionalTransform(translate, mat);
+	}
 
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by

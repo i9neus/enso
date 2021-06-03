@@ -406,7 +406,7 @@ namespace tests
 
 			const mat4 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(mat4::null(), invMatrixTest, 1e-5f);
+			TestIsEqual(mat4::Null(), invMatrixTest, 1e-5f);
 		}
 	};
 	
@@ -502,7 +502,35 @@ namespace tests
 
 			const mat3 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(mat3::null(), invMatrixTest, 1e-5f);
+			TestIsEqual(mat3::Null(), invMatrixTest, 1e-5f);
 		}
+
+		/*TEST_METHOD(TestMat3RotationalSymmetry)
+		{
+			mat3 rotXMat = RotXMat3(0.765190f);
+			Assert::IsTrue(rotXMat.IsSymmetric(), Widen(tfm::format("rotXMat is not symmetric: %s", rotXMat.format())).c_str());		
+
+			mat3 rotYMat = RotYMat3(1.265190f);
+			Assert::IsTrue(rotYMat.IsSymmetric(), Widen(tfm::format("rotYMat is not symmetric: %s", rotYMat.format())).c_str());
+
+			mat3 rotZMat = RotZMat3(-0.965190f);
+			Assert::IsTrue(rotZMat.IsSymmetric(), Widen(tfm::format("rotZMat is not symmetric: %s", rotZMat.format())).c_str());
+
+			mat3 productMat = mat3::Indentity();
+			productMat *= rotXMat;
+			productMat *= rotYMat;
+			productMat *= rotZMat;
+			Assert::IsTrue(productMat.IsSymmetric(), Widen(tfm::format("productMat is not symmetric: %s", productMat.format())).c_str());
+
+			mat3 transMat = transpose(productMat);
+			Assert::IsTrue(transMat == productMat, Widen(tfm::format("transMat and productMat are not equal: %s -> %s", productMat.format(), transMat.format())).c_str());
+		}
+
+		TEST_METHOD(TestMat3CompoundTransform)
+		{
+			BidirectionalTransform transform = CreateCompoundTransform(vec3(0.765190f, 1.265190f, -0.965190f));
+
+			Assert::IsTrue(transform.fwd.IsSymmetric(), Widen(tfm::format("Forward matrix is not symmetric: %s", transform.fwd.format())).c_str());
+		}*/
 	};
 }

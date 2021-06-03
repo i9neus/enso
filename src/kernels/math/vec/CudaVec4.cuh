@@ -4,13 +4,7 @@
 #include "CudaVec3.cuh"
 
 namespace Cuda
-{	
-	template<int T, int S, int A, int B, int C, int D>
-	struct VecSwiz
-	{
-		float data[S];
-	};
-	
+{		
 	struct __align__(16) vec4 : public VecBase<4>
 	{
 		enum _attrs : size_t { kDims = 4 };

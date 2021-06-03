@@ -22,25 +22,23 @@ namespace Cuda
         }
 
         float tNear = ray.tNear;
-        vec3 n;
+        Hit hit; 
         if (t0 > 0.0 && t0 < tNear)
         {
-            n = localRay.o + localRay.d * t0;
+            hit.n = localRay.o + localRay.d * t0;
             tNear = t0;
         }
         else if (t1 > 0.0 && t1 < tNear)
         {
-            n = localRay.o + localRay.d * t1;
+            hit.n = localRay.o + localRay.d * t1;
             tNear = t1;
         }
         else { return false; }
 
-        const vec3 nLocal = n * 2;
-        const vec3 hitGlobal = m_transform.inv * n;
-        const vec3 nGlobal = m_transform.inv * nLocal;
+        hit = m_transform.HitToWorldSpace(hit);
 
         ray.tNear = tNear;
-        //hitCtx.Set(normalize(nGlobal - hitGlobal), dot(localRay.o, localRay.o) < 1.0, vec2(0.0), 1e-5);
+        hitCtx.Set(hit, false, vec2(0.0f), 1e-5f);
 
         return true;
     }

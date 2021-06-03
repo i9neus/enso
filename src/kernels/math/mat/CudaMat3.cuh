@@ -28,14 +28,19 @@ namespace Cuda
 		__host__ __device__ mat3(const vec3& x_, const vec3& y_, const vec3& z_) : x(x_), y(y_), z(z_) {}
 		__host__ __device__ mat3(const mat3& other) : x(other.x), y(other.y), z(other.z) {}
 
-		__host__ __device__  static mat3 indentity()
+		__host__ __device__  static inline mat3 Indentity()
 		{
 			return mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f));
 		}
 
-		__host__ __device__  static mat3 null()
+		__host__ __device__  static inline mat3 Null()
 		{
 			return mat3(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f));
+		}
+
+		__host__ __device__ bool IsSymmetric() const
+		{
+			return i10 == i01 && i20 == i02 && i21 == i12;
 		}
 
 		__host__ __device__ inline const vec3& operator[](const unsigned int idx) const { return data[idx]; }
@@ -112,7 +117,7 @@ namespace Cuda
 		constexpr float kInverseEpsilon = 1e-20f;
 
 		const float determinant = det(m);
-		if (fabs(determinant) < kInverseEpsilon) { return mat3::null(); }
+		if (fabs(determinant) < kInverseEpsilon) { return mat3::Null(); }
 		const float invDet = 1 / determinant;
 
 		// The adjugate matrix divided by the determinant

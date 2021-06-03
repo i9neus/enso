@@ -2,20 +2,6 @@
 
 namespace Cuda
 {
-    // Builds a composite matrix from three Euler angles, scale and translation vectors
-    __host__ __device__ BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate, const vec3& scale)
-    {		
-		mat3 mat = mat3::indentity();
-
-        if (scale != vec3(1.0)) { mat *= ScaleMat3(scale); }
-
-        if (theta.x != 0.0) { mat *= RotXMat3(theta.x); }
-        if (theta.y != 0.0) { mat *= RotYMat3(theta.y); }
-        if (theta.z != 0.0) { mat *= RotZMat3(theta.z); }
-
-		return BidirectionalTransform(translate, mat);
-    }
-
 	struct TypeSizeTestResults
 	{
 		uint vec2Size;

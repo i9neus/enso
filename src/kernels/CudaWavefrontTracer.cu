@@ -17,7 +17,11 @@ namespace Cuda
 		m_wallTime = wallTime;
 		m_frameIdx = frameIdx;
 
-		cu_cornell->SetTransform(CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * wallTime));
+		auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * wallTime);
+		//transform.MakeIdentity();
+		
+		cu_cornell->SetTransform(transform);
+		cu_sphere->SetTransform(transform);
 	}
 
 	__device__ Device::RenderCtx Device::WavefrontTracer::CreateRenderCtx(const CompressedRay& compressed, const uint depth) const
@@ -76,14 +80,15 @@ namespace Cuda
 		
 		//for (int i = 0; i < cu_deviceTracables->Size(); i++)
 		{
-			if(cu_cornell->Intersect(ray, hitCtx))
+			if (cu_cornell->Intersect(ray, hitCtx))
+			//if(cu_sphere->Intersect(ray, hitCtx))
 			{
-				L += hitCtx.hit.n;
+				L += hitCtx.hit.n * 0.5f + vec3(0.5f);
 				//L += vec3(0.5f, 0.0f, 0.0f);
 			}
 		}
 
-		L += ray.od.d;
+		//L += ray.od.d;
 		cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
 		cu_deviceAccumBuffer->Accumulate(viewportPos, L, 0);
 		compressedRay.Kill();
@@ -129,6 +134,7 @@ namespace Cuda
 		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("id_tracableContainer");
 
 		m_hostCornell = AssetHandle<Host::Cornell>(new Host::Cornell(), "id_cornell");
+		m_hostSphere = AssetHandle<Host::Sphere>(new Host::Sphere(), "id_sphere");
 		//m_hostTracables->Push(newSphere);		
 		//m_hostTracables->Sync();
 
@@ -140,10 +146,12 @@ namespace Cuda
 		//cu_deviceTracables = m_hostTracables->GetDeviceInstance();
 		m_hostData.m_viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
 		m_hostData.cu_cornell = m_hostCornell->GetDeviceInstance();
+		m_hostData.cu_sphere = m_hostSphere->GetDeviceInstance();
 
 		InstantiateOnDevice(&cu_deviceData, m_hostData.cu_deviceAccumBuffer,
 								 			m_hostData.cu_deviceCompressedRayBuffer, 
 											m_hostData.cu_cornell,
+											m_hostData.cu_sphere,
 											m_hostData.m_viewportDims);
 		
 		m_block = dim3(16, 16, 1);

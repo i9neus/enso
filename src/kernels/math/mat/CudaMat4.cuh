@@ -23,12 +23,12 @@ namespace Cuda
 			vec4 data[4];
 		};
 
-		__host__ __device__  static mat4 indentity()
+		__host__ __device__  static mat4 Indentity()
 		{
 			return mat4(vec4(1.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 1.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 1.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 
-		__host__ __device__  static mat4 null()
+		__host__ __device__  static mat4 Null()
 		{
 			return mat4(vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f));
 		}
@@ -142,7 +142,7 @@ namespace Cuda
 		const float c0 = m.i20 * m.i31 - m.i30 * m.i21;
 
 		const float determinant = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
-		if (fabs(determinant) < kInverseEpsilon) { return mat4::null(); }
+		if (fabs(determinant) < kInverseEpsilon) { return mat4::Null(); }
 
 		const float invDet = 1 / determinant;
 		mat4 r;

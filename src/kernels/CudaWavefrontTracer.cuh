@@ -25,6 +25,7 @@ namespace Cuda
 			Device::CompressedRayBuffer*	cu_deviceCompressedRayBuffer;
 			//Device::AssetContainer<Device::Tracable>* cu_deviceTracables;
 			Device::Cornell*				cu_cornell;
+			Device::Sphere*					cu_sphere;
 
 			ivec2							m_viewportDims;
 			Device::PerspectiveCamera		m_camera;
@@ -40,10 +41,11 @@ namespace Cuda
 			}
 
 		public:
-			__device__ WavefrontTracer(Device::ImageRGBW* deviceAccumBuffer, Device::CompressedRayBuffer* deviceCompressedRayBuffer, Device::Cornell* cornell, const ivec2& viewportDims) :
+			__device__ WavefrontTracer(Device::ImageRGBW* deviceAccumBuffer, Device::CompressedRayBuffer* deviceCompressedRayBuffer, Device::Cornell* cornell, Device::Sphere* sphere, const ivec2& viewportDims) :
 				cu_deviceAccumBuffer(deviceAccumBuffer),
 				cu_deviceCompressedRayBuffer(deviceCompressedRayBuffer),
 				cu_cornell(cornell),
+				cu_sphere(sphere),
 				m_viewportDims(viewportDims) {}
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
@@ -68,6 +70,7 @@ namespace Cuda
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::Cornell>                          m_hostCornell;
+			AssetHandle<Host::Sphere>                           m_hostSphere;
 
 			cudaStream_t			m_hostStream;
 			dim3                    m_block, m_grid;
