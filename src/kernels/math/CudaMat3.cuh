@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 #include "CudaVec3.cuh"
 #include "CudaVec4.cuh"
 
@@ -63,6 +62,12 @@ namespace Cuda
 		r.i12 = a.i10 * b.i02 + a.i11 * b.i12 + a.i12 * b.i22;
 		r.i22 = a.i20 * b.i02 + a.i21 * b.i12 + a.i22 * b.i22;
 		return r;
+	}
+
+	__host__ __device__ inline mat3& operator *=(mat3& a, const mat3& b)
+	{
+		const mat3 r = a * b;
+		return a = r;
 	}
 
 	__host__ __device__ inline vec3 operator *(const mat3& a, const vec3& b)

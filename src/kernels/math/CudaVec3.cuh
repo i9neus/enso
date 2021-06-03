@@ -1,11 +1,10 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 #include "CudaVec2.cuh"
 
 namespace Cuda
-{
+{	
 	struct vec3 : public VecBase<3>
 	{
 		enum _attrs : size_t { kDims = 3 };
@@ -15,19 +14,36 @@ namespace Cuda
 		{
 			struct { float x, y, z; };
 			struct { float i0, i1, i2; };
-			//struct { vec2 xy; };
 			float data[3];
+
+			__vec_swizzle<float, 3, 3, 0, 0, 0> xxx; __vec_swizzle<float, 3, 3, 0, 0, 1> xxy; __vec_swizzle<float, 3, 3, 0, 0, 2> xxz;
+			__vec_swizzle<float, 3, 3, 0, 1, 0> xyx; __vec_swizzle<float, 3, 3, 0, 1, 1> xyy; __vec_swizzle<float, 3, 3, 0, 1, 2> xyz;
+			__vec_swizzle<float, 3, 3, 0, 2, 0> xzx; __vec_swizzle<float, 3, 3, 0, 2, 1> xzy; __vec_swizzle<float, 3, 3, 0, 2, 2> xzz;
+			__vec_swizzle<float, 3, 3, 1, 0, 0> yxx; __vec_swizzle<float, 3, 3, 1, 0, 1> yxy; __vec_swizzle<float, 3, 3, 1, 0, 2> yxz;
+			__vec_swizzle<float, 3, 3, 1, 1, 0> yyx; __vec_swizzle<float, 3, 3, 1, 1, 1> yyy; __vec_swizzle<float, 3, 3, 1, 1, 2> yyz;
+			__vec_swizzle<float, 3, 3, 1, 2, 0> yzx; __vec_swizzle<float, 3, 3, 1, 2, 1> yzy; __vec_swizzle<float, 3, 3, 1, 2, 2> yzz;
+			__vec_swizzle<float, 3, 3, 2, 0, 0> zxx; __vec_swizzle<float, 3, 3, 2, 0, 1> zxy; __vec_swizzle<float, 3, 3, 2, 0, 2> zxz;
+			__vec_swizzle<float, 3, 3, 2, 1, 0> zyx; __vec_swizzle<float, 3, 3, 2, 1, 1> zyy; __vec_swizzle<float, 3, 3, 2, 1, 2> zyz;
+			__vec_swizzle<float, 3, 3, 2, 2, 0> zzx; __vec_swizzle<float, 3, 3, 2, 2, 1> zzy; __vec_swizzle<float, 3, 3, 2, 2, 2> zzz;
+
+			__vec_swizzle<float, 3, 2, 0, 0> xx; __vec_swizzle<float, 3, 2, 0, 1> xy; __vec_swizzle<float, 3, 2, 0, 2> xz;
+			__vec_swizzle<float, 3, 2, 1, 0> yx; __vec_swizzle<float, 3, 2, 1, 1> yy; __vec_swizzle<float, 3, 2, 1, 2> yz;
+			__vec_swizzle<float, 3, 2, 2, 0> zx; __vec_swizzle<float, 3, 2, 2, 1> zy; __vec_swizzle<float, 3, 2, 2, 2> zz;
 		};
 
 		vec3() = default;
-		__host__ __device__ explicit vec3(const float v) : x(v), y(v), z(v) {}
-		__host__ __device__ vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
-		__host__ __device__ vec3(const vec2 & v, const float& z_) : x(v.x), y(v.y), z(z_) {}
-		__host__ __device__ vec3(const vec3 & other) : x(other.x), y(other.y), z(other.z) {}
-		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<3>, T>::value>::type>
-		__host__ __device__ vec3(const T & other) : x(float(other.x)), y(float(other.y)), z(float(other.z)) {}
+		vec3(const vec3&) = default;
+		__host__ __device__ inline explicit vec3(const float v) : x(v), y(v), z(v) {}
+		__host__ __device__ inline vec3(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
+		__host__ __device__ inline vec3(const vec2 & v, const float& z_) : x(v.x), y(v.y), z(z_) {}
 
-		__host__ __device__ vec3& operator=(const float& v) { x = v; y = v; z = v; return *this; }
+		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<3>, T>::value>::type>
+		__host__ __device__ inline vec3(const T & other) : x(float(other.x)), y(float(other.y)), z(float(other.z)) {}
+		
+		template<int ActualSize, int... In>
+		__host__ __device__ inline vec3(const __vec_swizzle<float, ActualSize, 3, In...>& swizzled) { swizzled.unpack(data); }
+
+		__host__ __device__ inline vec3& operator=(const float& v) { x = v; y = v; z = v; return *this; }
 
 		__host__ __device__ inline const float& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline float& operator[](const unsigned int idx) { return data[idx]; }
@@ -43,11 +59,24 @@ namespace Cuda
 	__host__ __device__ inline vec3 operator *(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z); }
 	__host__ __device__ inline vec3 operator *(const vec3& lhs, const float& rhs) { return vec3(lhs.x * rhs, lhs.y * rhs, lhs.z * rhs); }
 	__host__ __device__ inline vec3 operator *(const float& lhs, const vec3& rhs) { return vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+	__host__ __device__ inline vec3 operator /(const vec3& lhs, const vec3& rhs) { return vec3(lhs.x / rhs.x, lhs.y / rhs.y, lhs.z / rhs.z); }
 	__host__ __device__ inline vec3 operator /(const vec3& lhs, const float& rhs) { return vec3(lhs.x / rhs, lhs.y / rhs, lhs.z / rhs); }
+	
 	__host__ __device__ inline vec3& operator +=(vec3& lhs, const vec3& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; lhs.z += rhs.z; return lhs; }
 	__host__ __device__ inline vec3& operator -=(vec3& lhs, const vec3& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y; lhs.z -= rhs.z; return lhs; }
 	__host__ __device__ inline vec3& operator *=(vec3& lhs, const float& rhs) { lhs.x *= rhs; lhs.y *= rhs; lhs.z *= rhs; return lhs; }
 	__host__ __device__ inline vec3& operator /=(vec3& lhs, const float& rhs) { lhs.x /= rhs; lhs.y /= rhs; lhs.z /= rhs; return lhs; }
+
+	template<int ActualSize, int X, int Y, int Z>
+	__host__ __device__ inline  __vec_swizzle<float, ActualSize, 3, X, Y, Z>& operator +=(__vec_swizzle<float, ActualSize, 3, X, Y, Z>& lhs, const vec3& rhs)
+	{
+		lhs.data[X] += rhs.x; lhs.data[Y] += rhs.y; lhs.data[Z] += rhs.z; return lhs;
+	}
+	template<int ActualSize, int X, int Y, int Z>
+	__host__ __device__ inline  __vec_swizzle<float, ActualSize, 3, X, Y, Z>& operator -=(__vec_swizzle<float, ActualSize, 3, X, Y, Z>& lhs, const vec3& rhs)
+	{
+		lhs.data[X] -= rhs.x; lhs.data[Y] -= rhs.y; lhs.data[Z] -= rhs.z; return lhs;
+	}
 
 	__host__ __device__ inline float dot(const vec3& lhs, const vec3& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
 	__host__ __device__ inline vec3 cross(const vec3& lhs, const vec3& rhs)
@@ -73,6 +102,10 @@ namespace Cuda
 
 	__host__ __device__ inline float cwiseMax(const vec3& v) { return (v.x > v.y) ? ((v.x > v.z) ? v.x : v.z) : ((v.y > v.z) ? v.y : v.z); }
 	__host__ __device__ inline float cwiseMin(const vec3& v) { return (v.x < v.y) ? ((v.x < v.z) ? v.x : v.z) : ((v.y < v.z) ? v.y : v.z); }
+
+	__host__ __device__ inline bool operator==(const vec3& lhs, const vec3& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z; }
+	__host__ __device__ inline bool operator!=(const vec3& lhs, const vec3& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z; }
+
 	// FIXME: Cuda intrinsics aren't working. Why is this?
 	//__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
 

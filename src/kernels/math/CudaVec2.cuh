@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 
 namespace Cuda
 {
@@ -14,14 +13,22 @@ namespace Cuda
 			struct { float x, y; };
 			struct { float i0, i1; };
 			float data[2];
+
+			__vec_swizzle<float, 2, 2, 0, 0> xx;
+			__vec_swizzle<float, 2, 2, 0, 1> xy;
+			__vec_swizzle<float, 2, 2, 1, 0> yx;
+			__vec_swizzle<float, 2, 2, 1, 1> yy;
 		};
 
 		vec2() = default;
+		vec2(const vec2&) = default;
 		__host__ __device__ explicit vec2(const float v) : x(v), y(v) {}
 		__host__ __device__ vec2(const float& x_, const float& y_) : x(x_), y(y_) {}
-		__host__ __device__ vec2(const vec2 & other) : x(other.x), y(other.y) {}
 		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<2>, T>::value>::type>
 		__host__ __device__ vec2(const T& other) : x(float(other.x)), y(float(other.y)) {}
+
+		template<int ActualSize, int... In>
+		__host__ __device__ inline vec2(const __vec_swizzle<float, ActualSize, 2, In...>& swizzled) { swizzled.unpack(data); }
 
 		__host__ __device__ vec2& operator=(const float& v) { x = v; y = v; return *this; }
 
@@ -39,11 +46,24 @@ namespace Cuda
 	__host__ __device__ inline vec2 operator *(const vec2& lhs, const vec2& rhs) { return vec2(lhs.x * rhs.x, lhs.y * rhs.y); }
 	__host__ __device__ inline vec2 operator *(const vec2& lhs, const float& rhs) { return vec2(lhs.x * rhs, lhs.y * rhs); }
 	__host__ __device__ inline vec2 operator *(const float& lhs, const vec2& rhs) { return vec2(lhs * rhs.x, lhs * rhs.y); }
+	__host__ __device__ inline vec2 operator /(const vec2& lhs, const vec2& rhs) { return vec2(lhs.x / rhs.x, lhs.y / rhs.y); }
 	__host__ __device__ inline vec2 operator /(const vec2& lhs, const float& rhs) { return vec2(lhs.x / rhs, lhs.y / rhs); }
+
 	__host__ __device__ inline vec2& operator +=(vec2& lhs, const vec2& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; ; return lhs; }
 	__host__ __device__ inline vec2& operator -=(vec2& lhs, const vec2& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y;  return lhs; }
 	__host__ __device__ inline vec2& operator *=(vec2& lhs, const float& rhs) { lhs.x *= rhs; lhs.y *= rhs; return lhs; }
 	__host__ __device__ inline vec2& operator /=(vec2& lhs, const float& rhs) { lhs.x /= rhs; lhs.y /= rhs; return lhs; }
+
+	template<int ActualSize, int X, int Y>
+	__host__ __device__ inline  __vec_swizzle<float, ActualSize, 2, X, Y>& operator +=(__vec_swizzle<float, ActualSize, 2, X, Y>& lhs, const vec2& rhs)
+	{
+		lhs.data[X] += rhs.x; lhs.data[Y] += rhs.y; return lhs;
+	}
+	template<int ActualSize, int X, int Y>
+	__host__ __device__ inline  __vec_swizzle<float, ActualSize, 2, X, Y>& operator -=(__vec_swizzle<float, ActualSize, 2, X, Y>& lhs, const vec2& rhs)
+	{
+		lhs.data[X] -= rhs.x; lhs.data[Y] -= rhs.y; return lhs;
+	}
 
 	__host__ __device__ inline float dot(const vec2& lhs, const vec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 	__host__ __device__ inline vec2 perpendicular(const vec2& lhs) { return vec2(-lhs.y, lhs.x); }
@@ -66,6 +86,10 @@ namespace Cuda
 
 	__host__ __device__ inline float cwiseMax(const vec2& v) { return (v.x > v.y) ? v.x : v.y; }
 	__host__ __device__ inline float cwiseMin(const vec2& v) { return (v.x < v.y) ? v.x : v.y; }
+
+	__host__ __device__ inline bool operator==(const vec2& lhs, const vec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
+	__host__ __device__ inline bool operator!=(const vec2& lhs, const vec2& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y; }
+
 	// FIXME: Cuda intrinsics aren't working. Why is this?
 	//__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
 

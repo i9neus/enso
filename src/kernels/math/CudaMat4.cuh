@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 #include "CudaVec3.cuh"
 #include "CudaVec4.cuh"
 
@@ -49,8 +48,8 @@ namespace Cuda
 		}
 	};
 
-	template<typename T>
-	__host__ __device__ inline void cast(const mat4& m, T v[4]) { v[0] = cast<T>(m[0]); v[1] = cast<T>(m[1]); v[2] = cast<T>(m[2]); v[3] = cast<T>(m[3]); }
+	//template<typename T>
+	//__host__ __device__ inline void cast(const mat4& m, T v[4]) { v[0] = cast<T>(m[0]); v[1] = cast<T>(m[1]); v[2] = cast<T>(m[2]); v[3] = cast<T>(m[3]); }
 
 	__host__ __device__ inline mat4 operator *(const mat4& a, const mat4& b)
 	{
@@ -72,6 +71,12 @@ namespace Cuda
 		r.i23 = a.i20 * b.i03 + a.i21 * b.i13 + a.i22 * b.i23 + a.i23 * b.i33;
 		r.i33 = a.i30 * b.i03 + a.i31 * b.i13 + a.i32 * b.i23 + a.i33 * b.i33;
 		return r;
+	}
+
+	__host__ __device__ inline mat4& operator *=(mat4& a, const mat4& b)
+	{
+		const mat4 r = a * b;
+		return a = r;
 	}
 
 	__host__ __device__ inline vec4 operator *(const mat4& a, const vec4& b)

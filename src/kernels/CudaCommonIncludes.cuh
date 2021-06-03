@@ -19,8 +19,6 @@ namespace Cuda
 	__host__ __device__ inline float sign(const float& v) { return copysign(1.0f, v); }
 	template<typename T> __host__ inline void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 
-	template<int T> struct VecBase {};
-
 	#define KERNEL_COORDS_IVEC2 ivec2(blockIdx.x* blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y)
 
 	template<typename T>

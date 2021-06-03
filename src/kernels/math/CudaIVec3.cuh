@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 
 namespace Cuda
 {
@@ -19,13 +18,14 @@ namespace Cuda
 		};
 
 		_ivec3() = default;
+		_ivec3(const _ivec3&) = default;
 		__host__ __device__ explicit _ivec3(const T v) : x(v), y(v), z(v) {}
 		__host__ __device__ _ivec3(const T & x_, const T & y_, const T& z_) : x(x_), y(y_), z(z_) {}
 		__host__ __device__ _ivec3(const _ivec2<T>& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
 		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<3>, S>::value>::type>
 		__host__ __device__ _ivec3(const S& other) : x(T(other.x)), y(T(other.y)), z(T(other.z)) {}
 
-		__host__ __device__ _ivec3& operator=(const T& v) { x = v; y = v; z = v; return *this; }
+		__host__ __device__ inline _ivec3& operator=(const T& v) { x = y =  z = v; return *this; }
 
 		__host__ __device__ inline const T& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline T& operator[](const unsigned int idx) { return data[idx]; }
@@ -47,12 +47,26 @@ namespace Cuda
 	template<typename T> __host__ __device__ inline _ivec3<T>& operator %=(_ivec3<T>& lhs, const int& rhs) { lhs.x %= rhs; lhs.y %= rhs; lhs.z %= rhs; return lhs; }
 	template<typename T> __host__ __device__ inline _ivec3<T>& operator %=(_ivec3<T>& lhs, const _ivec3<T>& rhs) { return { lhs.x % rhs.x, lhs.y % rhs.y, lhs.z % rhs.z }; }
 
+	template<typename T, int ActualSize, int X, int Y, int Z>
+	__host__ __device__ inline  __vec_swizzle<T, ActualSize, 3, X, Y, Z>& operator +=(__vec_swizzle<T, ActualSize, 3, X, Y, Z>& lhs, const _ivec3<T>& rhs)
+	{
+		lhs.data[X] += rhs.x; lhs.data[Y] += rhs.y; lhs.data[Z] += rhs.z; return lhs;
+	}
+	template<typename T, int ActualSize, int X, int Y, int Z>
+	__host__ __device__ inline  __vec_swizzle<T, ActualSize, 3, X, Y, Z>& operator -=(__vec_swizzle<T, ActualSize, 3, X, Y, Z>& lhs, const _ivec3<T>& rhs)
+	{
+		lhs.data[X] -= rhs.x; lhs.data[Y] -= rhs.y; lhs.data[Z] -= rhs.z; return lhs;
+	}
+
 	template<typename T> __host__ __device__ inline int dot(const _ivec3<T>& lhs, const _ivec3<T>& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
 	template<typename T, typename S = int> __host__ __device__ inline S length2(const _ivec3<T>& v) { return S(v.x * v.x + v.y * v.y + v.z * v.z); }
 	template<typename T, typename S = float> __host__ __device__ inline S length(const _ivec3<T>& v) { return sqrt(S(v.x * v.x + v.y * v.y + v.z * v.z)); }
 	template<typename T> __host__ __device__ inline _ivec3<T> clamp(const _ivec3<T>& v, const _ivec3<T>& a, const _ivec3<T>& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z) }; }
 	template<typename T> __host__ __device__ inline _ivec3<T> abs(const _ivec3<T>& a) { return _ivec3<T>(abs(a.x), abs(a.y), abs(a.z)); }
 	template<typename T> __host__ __device__ inline T sum(const _ivec3<T>& a) { return a.x + a.y + a.z; }
+
+	template<typename T> __host__ __device__ inline bool operator==(const _ivec3<T>& lhs, const _ivec3<T>& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z; }
+	template<typename T> __host__ __device__ inline bool operator!=(const _ivec3<T>& lhs, const _ivec3<T>& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z; }
 
 	using ivec3 = _ivec3<int>;
 	using uvec3 = _ivec3<unsigned int>;

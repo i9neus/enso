@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
-#include "generic/Constants.h"
+#include "CudaVecBase.cuh"
 
 namespace Cuda
 {
@@ -19,6 +18,7 @@ namespace Cuda
 		};
 
 		_ivec4() = default;
+		_ivec4(const _ivec4&) = default;
 		__host__ __device__ explicit _ivec4(const T v) : x(v), y(v), z(v), w(v) {}
 		__host__ __device__ _ivec4(const T & x_, const T & y_, const T & z_, const T& w_) : x(x_), y(y_), z(z_), w(w_) {}
 		__host__ __device__ _ivec4(const _ivec3<T>& v, const float& w_) : x(v.x), y(v.y), w(w_) {}
@@ -26,7 +26,7 @@ namespace Cuda
 		template<typename S, typename = std::enable_if<std::is_base_of<VecBase<4>, S>::value>::type>
 		__host__ __device__ _ivec4(const S& other) : x(T(other.x)), y(T(other.y)), z(T(other.z)), w(T(other.w)) {}
 
-		__host__ __device__ _ivec4& operator=(const T& v) {	x = v; y = v; z = v; w = v; return *this; }
+		__host__ __device__ inline _ivec4& operator=(const T& v) {	x = y = z = w = v; return *this; }
 
 		__host__ __device__ inline const T& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ inline T& operator[](const unsigned int idx) { return data[idx]; }
@@ -58,12 +58,26 @@ namespace Cuda
 	template<typename T> __host__ __device__ inline _ivec4<T> operator <<(const _ivec4<T>& lhs, const T& rhs) { return { lhs.x << rhs, lhs.y << rhs, lhs.z << rhs, lhs.w << rhs }; }
 	template<typename T> __host__ __device__ inline _ivec4<T> operator >>(const _ivec4<T>& lhs, const T& rhs) { return { lhs.x >> rhs, lhs.y >> rhs, lhs.z >> rhs, lhs.w >> rhs }; }
 
+	template<typename T, int ActualSize, int X, int Y, int Z, int W>
+	__host__ __device__ inline  __vec_swizzle<T, ActualSize, 4, X, Y, Z, W>& operator +=(__vec_swizzle<T, ActualSize, 4, X, Y, Z, W>& lhs, const _ivec4<T>& rhs)
+	{
+		lhs.data[X] += rhs.x; lhs.data[Y] += rhs.y; lhs.data[Z] += rhs.z; lhs.data[W] += rhs.w; return lhs;
+	}
+	template<typename T, int ActualSize, int X, int Y, int Z, int W>
+	__host__ __device__ inline  __vec_swizzle<T, ActualSize, 4, X, Y, Z, W>& operator -=(__vec_swizzle<T, ActualSize, 4, X, Y, Z, W>& lhs, const _ivec4<T>& rhs)
+	{
+		lhs.data[X] -= rhs.x; lhs.data[Y] -= rhs.y; lhs.data[Z] -= rhs.z; lhs.data[W] -= rhs.w; return lhs;
+	}
+
 	template<typename T> __host__ __device__ inline int dot(const _ivec4<T>& lhs, const _ivec4<T>& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w; }
 	template<typename T, typename S = int> __host__ __device__ inline S length2(const _ivec4<T>& v) { return S(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w); }
 	template<typename T, typename S = float> __host__ __device__ inline S length(const _ivec4<T>& v) { return sqrt(S(v.x * v.x + v.y * v.y + v.z * v.z + v.z * v.w)); }
 	template<typename T> __host__ __device__ inline _ivec4<T> clamp(const _ivec4<T>& v, const _ivec4<T>& a, const _ivec4<T>& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w) }; }
 	template<typename T> __host__ __device__ inline _ivec4<T> abs(const _ivec4<T>& a) { return _ivec4<T>(abs(a.x), abs(a.y), abs(a.z), abs(a.w)); }
 	template<typename T> __host__ __device__ inline T sum(const _ivec4<T>& a) { return a.x + a.y + a.z + a.w; }
+
+	template<typename T> __host__ __device__ inline bool operator==(const _ivec4<T>& lhs, const _ivec4<T>& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w; }
+	template<typename T> __host__ __device__ inline bool operator!=(const _ivec4<T>& lhs, const _ivec4<T>& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w; }
 
 	using ivec4 = _ivec4<int>;
 	using uvec4 = _ivec4<unsigned int>;

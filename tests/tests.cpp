@@ -115,7 +115,111 @@ namespace tests
 					Widen(tfm::format("a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
 			}
 		}
+		TEST_METHOD(TestVec3Swizzle)
+		{
+			const vec3 a = {1.0f, 2.0f, 3.0f};
+			
+			{
+				const vec3 b = a.zyx;
+				const vec3 c = { 3.0f, 2.0f, 1.0f };
 
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z,
+					Widen(tfm::format("zyx: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec3 b = a.yzx;
+				const vec3 c = { 2.0f, 3.0f, 1.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z,
+					Widen(tfm::format("yzx: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec3 b = a.xxx;
+				const vec3 c = { 1.0f, 1.0f, 1.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z,
+					Widen(tfm::format("xxx: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec3 b = a.yyz;
+				const vec3 c = { 2.0f, 2.0f, 3.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z,
+					Widen(tfm::format("yyz: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+		}
+
+		TEST_METHOD(TestVec4Swizzle)
+		{
+			const vec4 a = { 1.0f, 2.0f, 3.0f, 4.0f };
+
+			{
+				const vec4 b = a.wzyx;
+				const vec4 c = { 4.0f, 3.0f, 2.0f, 1.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
+					Widen(tfm::format("wzyx: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}	
+
+			{
+				const vec4 b = a.yxwz;
+				const vec4 c = { 2.0f, 1.0f, 4.0f, 3.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
+					Widen(tfm::format("yxwz: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec4 b = a.zzyx;
+				const vec4 c = { 3.0f, 3.0f, 2.0f, 1.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
+					Widen(tfm::format("zzyx: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec4 b = a.wwww;
+				const vec4 c = { 4.0f, 4.0f, 4.0f, 4.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
+					Widen(tfm::format("wwww: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+		}
+
+		TEST_METHOD(TestVecSwizzleCast)
+		{
+			const vec4 a = { 1.0f, 2.0f, 3.0f, 4.0f };
+
+			{
+				const vec3 b = a.wzy;
+				const vec3 c = { 4.0f, 3.0f, 2.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z,
+					Widen(tfm::format("wzy: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				const vec2 b = a.yz;
+				const vec2 c = { 2.0f, 3.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y,
+					Widen(tfm::format("yz: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+		}		
+		TEST_METHOD(TestVecSwizzleArithmetic)
+		{
+			vec4 a = { 2.0f, 3.0f, 5.0f, 7.0f };
+			const vec4 b = { 11.0f, 13.0f, 17.0f, 19.0f };
+			const vec4 c = { a.x + b.y + b.w, a.y + b.x, a.z, a.w + b.z };
+
+			a.yxwx += b;
+
+			Assert::IsTrue(a.x == c.x && a.y == c.y && a.z == c.z && a.w == c.w,
+					Widen(tfm::format("a.yxwx += b.wyzz: a and c are not the same: %s should be %s", a.format(), c.format())).c_str());
+		}
 		TEST_METHOD(TestVec3Arithmetic)
 		{
 			const vec3 a = {1.4521684705132136f, -0.6657411666062907f, 1.3685779839015542f };
