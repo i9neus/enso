@@ -1,8 +1,7 @@
 ﻿#pragma once
 
-#include "CudaVecBase.cuh"
-#include "CudaVec3.cuh"
-#include "CudaVec4.cuh"
+#include "../vec/CudaVec3.cuh"
+#include "../vec/CudaVec4.cuh"
 
 namespace Cuda
 {

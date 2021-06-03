@@ -87,31 +87,7 @@
     <ClInclude Include="src\generic\StringUtils.h">
       <Filter>generic</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaVec2.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaVec3.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaVec4.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaMat4.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaMat3.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\math\CudaMath.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaIVec3.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaIVec4.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaIVec2.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh">
@@ -243,11 +219,35 @@
     <ClInclude Include="src\kernels\tracables\CudaSDF.cuh">
       <Filter>kernels\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\math\CudaVecBase.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\Assert.h">
       <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaIVec2.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaIVec3.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaIVec4.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaVec2.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaVec3.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh">
+      <Filter>kernels\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh">
+      <Filter>kernels\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh">
+      <Filter>kernels\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh">
+      <Filter>kernels\math\vec</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -295,6 +295,9 @@
     </Filter>
     <Filter Include="kernels\math\vec">
       <UniqueIdentifier>{f0a55eab-5607-4d11-94c5-304f046ace34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\math\mat">
+      <UniqueIdentifier>{f2c4430f-e77d-4246-a26a-6e5516867ce2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

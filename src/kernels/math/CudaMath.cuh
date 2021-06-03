@@ -1,13 +1,13 @@
 ﻿#pragma once
 
-#include "CudaIVec2.cuh"
-#include "CudaIVec3.cuh"
-#include "CudaIVec4.cuh"
-#include "CudaVec2.cuh"
-#include "CudaVec3.cuh"
-#include "CudaVec4.cuh"
-#include "CudaMat3.cuh"
-#include "CudaMat4.cuh"
+#include "vec/CudaIVec2.cuh"
+#include "vec/CudaIVec3.cuh"
+#include "vec/CudaIVec4.cuh"
+#include "vec/CudaVec2.cuh"
+#include "vec/CudaVec3.cuh"
+#include "vec/CudaVec4.cuh"
+#include "mat/CudaMat3.cuh"
+#include "mat/CudaMat4.cuh"
 
 namespace Cuda
 {    	

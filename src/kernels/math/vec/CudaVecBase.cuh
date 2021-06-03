@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../CudaCommonIncludes.cuh"
+#include "../../CudaCommonIncludes.cuh"
 #include "generic/Constants.h"
 
 namespace Cuda
