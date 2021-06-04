@@ -8,7 +8,7 @@ namespace Cuda
 
         float t = ray.tNear;
         vec2 uv;
-        Hit hit;
+        HitPoint hit;
         for (int face = 0; face < 5; face++)
         {
             int dim = face / 2;
@@ -32,13 +32,13 @@ namespace Cuda
         }
 
         if (t == ray.tNear) { return false; }
-        hit.p = localRay.o + localRay.d * t;
+        hit.o = localRay.o + localRay.d * t;
 
         // If we've hit the surface and it's the closest intersection, calculate the normal and UV coordinates
         // A more efficient way would be to defer this process to avoid unncessarily computing normals for occuluded surfaces.
         hit = m_transform.HitToWorldSpace(hit);
         
-        if (dot(hit.n, ray.od.o - hit.p) < 0.0f) { hit.n = -hit.n; }
+        if (dot(hit.n, ray.od.o - hit.o) < 0.0f) { hit.n = -hit.n; }
 
         ray.tNear = t;
         hitCtx.Set(hit, false, uv, 1e-5f);

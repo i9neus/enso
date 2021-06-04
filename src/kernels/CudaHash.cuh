@@ -9,7 +9,7 @@ namespace Cuda
     constexpr uint kFNVOffset = 0x811c9dc5u;
     
     // Compute a 32-bit Fowler-Noll-Vo hash for the given input
-    __device__ inline uint hashOf(uint i)
+    __device__ inline uint hashOf(const uint i)
     {
         uint h = (kFNVOffset ^ (i & 0xffu)) * kFNVPrime;
         h = (h ^ ((i >> 8u) & 0xffu)) * kFNVPrime;
@@ -31,7 +31,7 @@ namespace Cuda
         return hashCombine(hashOf(v0), hashOf(var...));
     }
 
-    __device__ inline uint hashCombine(uint a, uint b, uint c) { return hashCombine(hashCombine(a, b), c); }
+    /*__device__ inline uint hashCombine(uint a, uint b, uint c) { return hashCombine(hashCombine(a, b), c); }
     __device__ inline uint hashCombine(uint a, uint b, uint c, uint d) { return hashCombine(hashCombine(hashCombine(a, b), c), d); }
-    __device__ inline uint hashCombine(uint a, uint b, uint c, uint d, uint e) { return hashCombine(hashCombine(hashCombine(hashCombine(a, b), c), d), e); }
+    __device__ inline uint hashCombine(uint a, uint b, uint c, uint d, uint e) { return hashCombine(hashCombine(hashCombine(hashCombine(a, b), c), d), e); }*/
 }

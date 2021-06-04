@@ -12,7 +12,7 @@ namespace tests
 	{
 	public:
 		template<typename T>
-		void TestIsEqual(const T& matBaseline, const T& matTest, const float kEpsilon)
+		void TestMatIsEqual(const T& matBaseline, const T& matTest, const float kEpsilon)
 		{
 			for (int i = 0; i < T::kDims; i++)
 			{
@@ -25,10 +25,37 @@ namespace tests
 		}
 
 		template<typename T>
+		void TestVecIsEqual(const T& vecBaseline, const T& vecTest, const float kEpsilon)
+		{
+			for (int i = 0; i < T::kDims; i++)
+			{
+				Assert::IsTrue(std::abs(vecBaseline[i] - vecTest[i]) < kEpsilon,
+						Widen(tfm::format("Element %i is not equal: %s should be %sf", i, vecTest.format(), vecBaseline.format())).c_str());
+			}
+		}
+
+		template<typename T>
 		void CheckTypeSize(size_t targetSize, const char* name)
 		{
 			Assert::IsTrue(sizeof(T) == targetSize,
 				Widen(tfm::format("%s is the wrong size: %i should be %i", name, sizeof(T), targetSize)).c_str());
+		}
+	}; 
+
+	TEST_CLASS(CudaMathTests), MatrixTestUtils
+	{
+	public:
+		TEST_METHOD(TestBidirectionalTransform)
+		{
+			// Test that the matrix decomposition is correct for BidirectionalTransform object.
+
+			const vec3 scale(0.183276f, 2.083f, 6.0385f);
+			const vec3 rotate(1.5124f, -0.873651f, 0.58367f);
+			const vec3 translate(0.0f);
+
+			const BidirectionalTransform transform = CreateCompoundTransform(rotate, translate, scale);
+
+			TestVecIsEqual(scale, transform.scale, 1e-7f);
 		}
 	};
 	
@@ -62,7 +89,7 @@ namespace tests
 			{
 				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
 
-				const mat4 onbTest = createBasis(n);
+				const mat3 onbTest = createBasis(n);
 				const vec3 t0 = onbTest * b0;
 				const vec3 t1 = onbTest * b1;
 				const vec3 t2 = onbTest * b2;
@@ -78,7 +105,7 @@ namespace tests
 				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
 				const vec3 up = normalize(vec3(1.283508f, 0.7673658f, -0.38762f));
 
-				const mat4 onbTest = createBasis(n, up);
+				const mat3 onbTest = createBasis(n, up);
 				const vec3 s0 = onbTest * b0;
 				const vec3 s1 = onbTest * b1;
 				const vec3 s2 = onbTest * b2;
@@ -186,6 +213,15 @@ namespace tests
 
 				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
 					Widen(tfm::format("wwww: b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
+			}
+
+			{
+				vec4 b(1.0f);
+				b.xy -= vec2(0.5f);
+				const vec4 c = { 0.5f, 0.5f, 1.0f, 1.0f };
+
+				Assert::IsTrue(b.x == c.x && b.y == c.y && b.z == c.z && b.w == c.w,
+					Widen(tfm::format("b.xy -= vec2(0.5f): b and c are not the same: %s should be %s", b.format(), c.format())).c_str());
 			}
 		}
 
@@ -342,7 +378,7 @@ namespace tests
 
 			const mat4 matrixProdTest = matrixA * matrixB;
 
-			TestIsEqual(matrixProdBaseline, matrixProdTest, 1e-6f);
+			TestMatIsEqual(matrixProdBaseline, matrixProdTest, 1e-6f);
 		}
 
 		TEST_METHOD(TestMat4Transpose)
@@ -359,7 +395,7 @@ namespace tests
 
 			const mat4 transMatrixTest = transpose(matrix);
 
-			TestIsEqual(transMatrixBaseline, transMatrixTest, 1e-6f);
+			TestMatIsEqual(transMatrixBaseline, transMatrixTest, 1e-6f);
 		}
 		TEST_METHOD(TestMat4Determinant)
 		{
@@ -395,7 +431,7 @@ namespace tests
 
 			const mat4 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(invMatrixBaseline, invMatrixTest, 1e-5f);
+			TestMatIsEqual(invMatrixBaseline, invMatrixTest, 1e-5f);
 		}
 
 		TEST_METHOD(TestMat4SingularInverse)
@@ -406,7 +442,7 @@ namespace tests
 
 			const mat4 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(mat4::Null(), invMatrixTest, 1e-5f);
+			TestMatIsEqual(mat4::Null(), invMatrixTest, 1e-5f);
 		}
 	};
 	
@@ -443,7 +479,7 @@ namespace tests
 
 			const mat3 matrixProdTest = matrixA * matrixB;
 
-			TestIsEqual(matrixProdBaseline, matrixProdTest, 1e-6f);
+			TestMatIsEqual(matrixProdBaseline, matrixProdTest, 1e-6f);
 		}
 
 		TEST_METHOD(TestMat3Transpose)
@@ -458,7 +494,7 @@ namespace tests
 
 			const mat3 transMatrixTest = transpose(matrix);
 
-			TestIsEqual(transMatrixBaseline, transMatrixTest, 1e-6f);
+			TestMatIsEqual(transMatrixBaseline, transMatrixTest, 1e-6f);
 		}
 		TEST_METHOD(TestMat3Determinant)
 		{
@@ -491,7 +527,7 @@ namespace tests
 			
 			const mat3 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(invMatrixBaseline, invMatrixTest, 1e-5f);
+			TestMatIsEqual(invMatrixBaseline, invMatrixTest, 1e-5f);
 		}
 
 		TEST_METHOD(TestMat3SingularInverse)
@@ -502,7 +538,7 @@ namespace tests
 
 			const mat3 invMatrixTest = inverse(matrix);
 
-			TestIsEqual(mat3::Null(), invMatrixTest, 1e-5f);
+			TestMatIsEqual(mat3::Null(), invMatrixTest, 1e-5f);
 		}
 
 		/*TEST_METHOD(TestMat3RotationalSymmetry)

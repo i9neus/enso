@@ -34,7 +34,7 @@ namespace Cuda
         #define kCameraUp vec3(0.0, 1.0, 0.0) 
 
         // Generate 4 random numbers efrom a continuous uniform distribution
-        vec4 xi = renderCtx.pcg();
+        vec4 xi = renderCtx.Rand4();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
@@ -47,7 +47,7 @@ namespace Cuda
 
         float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
-        vec3 cameraPos(0.0f, 0.0f, -5.0f);
+        vec3 cameraPos(0.0f, 0.0f, 3.0f);
 
         float cameraOriginDist = length(cameraPos);
         vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
@@ -61,7 +61,7 @@ namespace Cuda
         focalDistance *= mix(0.0f, 1.0f, m_cameraFStop.y);
         float fStop = powf(2.0f, mix(-3.0, 8.0, m_cameraFStop.x));
 
-        mat4 basis = createBasis(cameraForward, kCameraUp);
+        mat3 basis = createBasis(cameraForward, kCameraUp);
 
         // Define the focal length and F-number depending, either from built-in or user-defined values
         float focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_cameraFLength.y));
@@ -95,8 +95,10 @@ namespace Cuda
         newRay.weight = 1.0f;
         newRay.depth = 0;
         newRay.flags = 0;
-
-        // Sample the wavelength (in Angstroms)  
         newRay.lambda = mix(3800.0f, 7000.0f, mu);
+
+        newRay.viewport.x = ushort(renderCtx.viewportPos.x);
+        newRay.viewport.y = ushort(renderCtx.viewportPos.y);
+        newRay.SetAlive();
     }
 }

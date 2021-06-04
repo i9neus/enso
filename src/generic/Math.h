@@ -15,4 +15,5 @@ namespace math
     template<typename T> inline constexpr T cub(const T& x)                 { return x * x * x; }
     template<typename T> inline T min(const T& a, const T& b)               { return (a < b) ? a : b; }
     template<typename T> inline T max(const T& a, const T& b)               { return (a > b) ? a : b; }
+    template<typename T> inline T clamp(const T& v, const T& a, const T& b) { return math::max(a, math::min(b, v));  }
 }

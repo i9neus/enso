@@ -22,7 +22,7 @@ namespace Cuda
         }
 
         float tNear = ray.tNear;
-        Hit hit; 
+        HitPoint hit;
         if (t0 > 0.0 && t0 < tNear)
         {
             hit.n = localRay.o + localRay.d * t0;

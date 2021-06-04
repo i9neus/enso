@@ -6,50 +6,15 @@
 
 namespace Cuda
 {
-	Device::WavefrontTracer::WavefrontTracer()
-	{
-		cu_deviceAccumBuffer = nullptr;
-		cu_deviceCompressedRayBuffer = nullptr;		 
-	}
-
 	__device__ void Device::WavefrontTracer::PreFrame(const float& wallTime, const int frameIdx)
 	{
 		m_wallTime = wallTime;
 		m_frameIdx = frameIdx;
 
-		auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * wallTime);
-		//transform.MakeIdentity();
-		
+		//auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * wallTime);
+		BidirectionalTransform transform;		
 		cu_cornell->SetTransform(transform);
 		cu_sphere->SetTransform(transform);
-	}
-
-	__device__ Device::RenderCtx Device::WavefrontTracer::CreateRenderCtx(const CompressedRay& compressed, const uint depth) const
-	{
-		int seed = int(hashOf(depth, uint(compressed.viewport.x), uint(compressed.viewport.y)));
-		
-		RenderCtx ctx;
-		ctx.pcg.Initialise(seed);
-		ctx.viewportPos = ivec2(compressed.viewport.x, compressed.viewport.y);
-		ctx.viewportDims = m_viewportDims;
-		ctx.wallTime = m_wallTime;
-		ctx.frameIdx = m_frameIdx;
-
-		return ctx;
-	}
-
-	__device__ Device::RenderCtx Device::WavefrontTracer::CreateRenderCtx(const ivec2 viewportPos) const
-	{
-		int seed = int(hashOf(0, uint(viewportPos.x), uint(viewportPos.y)));
-
-		RenderCtx ctx;
-		ctx.pcg.Initialise(seed);
-		ctx.viewportPos = viewportPos;
-		ctx.viewportDims = m_viewportDims;
-		ctx.wallTime = m_wallTime;
-		ctx.frameIdx = m_frameIdx;
-
-		return ctx;
 	}
 
 	__device__ void Device::WavefrontTracer::SeedRayBuffer(const ivec2& viewportPos) const
@@ -60,47 +25,75 @@ namespace Cuda
 
 		if (!compressedRay.IsAlive())
 		{
-			RenderCtx renderCtx = CreateRenderCtx(viewportPos);
-			m_camera.CreateRay(compressedRay, renderCtx);
-			compressedRay.SetAlive();
+			RenderCtx renderCtx(viewportPos, m_viewportDims, m_wallTime, m_frameIdx, 0);
+			m_camera.CreateRay(compressedRay, renderCtx);			
 		}
 
 		//cu_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
 	}
 
-	__device__ void Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
+	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
+		if (incidentRay.depth >= 5) { return kZero; }
+		
+		const vec4 xi = renderCtx.Rand4();
 
+		vec3 brdfDir;
+		float brdfPdf;
+		if (cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf))
+		{
+			const vec3 weight = incidentRay.weight * 0.8f;
+			
+			renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, incidentRay.depth);
+		}
+
+		return kZero;
 	}		 
 
-	__device__ void Device::WavefrontTracer::Trace(const ivec2& viewportPos) const
-	{
-		if (!IsValid(viewportPos)) { return; }
+	__device__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
+	{		
+		if (rayIdx >= cu_deviceCompressedRayBuffer->Size()) { return; }
 		
-		CompressedRay& compressedRay = (*cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
-
-		Ray ray(compressedRay);
-		RenderCtx renderCtx = CreateRenderCtx(compressedRay, m_frameIdx);
-		HitCtx hitCtx;
+		CompressedRay& compressedRay = (*cu_deviceCompressedRayBuffer)[rayIdx];
+		Ray incidentRay(compressedRay);
+		RenderCtx renderCtx(compressedRay.ViewportPos(), m_viewportDims, m_wallTime, m_frameIdx, compressedRay.depth);
 		vec3 L(0.0f);
-		
+		const vec2 viewportPos = compressedRay.ViewportPos();
+
+		int depth = incidentRay.depth;
+
 		// INTERSECTION 
+		HitCtx hitCtx;
 		//for (int i = 0; i < cu_deviceTracables->Size(); i++)
 		{
-			cu_cornell->Intersect(ray, hitCtx);
+			cu_cornell->Intersect(incidentRay, hitCtx);
+			//cu_sphere->Intersect(incidentRay, hitCtx);
 		}
 
 		// SHADE
-		if (!hitCtx.isValid) { compressedRay.Kill(); }
+		if (!hitCtx.isValid)
+		{
+			L += incidentRay.weight * vec3(1.0f);
+		}
 		else
 		{
-			L += hitCtx.hit.n * 0.5f + vec3(0.5f);
+			//L += hitCtx.hit.n * 0.5f + vec3(0.5f);
+			L += Shade(incidentRay, hitCtx, renderCtx);
 		}
 
-		//L += ray.od.d;
-		cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
-		cu_deviceAccumBuffer->Accumulate(viewportPos, L, 0);
+		if (renderCtx.emplacedRay.IsAlive())
+		{
+			compressedRay = renderCtx.emplacedRay;
+		}
+		else
+		{
+			compressedRay.Kill();
+		}
 
+		//L += incidentRay.od.d;
+		//cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
+		cu_deviceAccumBuffer->Accumulate(viewportPos, L, incidentRay.depth);
+		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
@@ -144,8 +137,10 @@ namespace Cuda
 
 		m_hostCornell = AssetHandle<Host::Cornell>(new Host::Cornell(), "id_cornell");
 		m_hostSphere = AssetHandle<Host::Sphere>(new Host::Sphere(), "id_sphere");
-		//m_hostTracables->Push(newSphere);		
+		//m_hostTracables->Push(newSphere);
 		//m_hostTracables->Sync();
+
+		m_hostLambert = AssetHandle<Host::LambertBRDF>(new Host::LambertBRDF(), "id_lambert");
 
 		checkCudaErrors(cudaDeviceSynchronize());
 
@@ -161,9 +156,10 @@ namespace Cuda
 								 			m_hostData.cu_deviceCompressedRayBuffer, 
 											m_hostData.cu_cornell,
 											m_hostData.cu_sphere,
+											m_hostData.cu_lambert,
 											m_hostData.m_viewportDims);
 		
-		m_block = dim3(16, 16, 1);
+		m_block = dim3(16, 16, 1);//
 		m_grid = dim3((m_hostAccumBuffer->GetHostInstance().Width() + 15) / 16, (m_hostAccumBuffer->GetHostInstance().Height() + 15) / 16, 1);
 
 		std::printf("%i, %i, %i\n", m_grid.x, m_grid.y, m_grid.z);
@@ -181,7 +177,7 @@ namespace Cuda
 
 	__global__ void KernelTrace(Device::WavefrontTracer* tracer)
 	{
-		tracer->Trace(KERNEL_COORDS_IVEC2);
+		tracer->Trace(blockIdx.x * blockDim.x + threadIdx.x);
 	}
 
 	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
@@ -193,19 +189,19 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage)
 	{
-		std::printf("Composite! %i %i %i\n", m_grid.x, m_grid.y, m_grid.z);
+		//std::printf("Composite! %i %i %i\n", m_grid.x, m_grid.y, m_grid.z);
 	
 		KernelComposite << < m_grid, m_block, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
 	}
 
 	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
 	{
-		std::printf("Iterate! %f\n", wallTime);
-
+		//std::printf("Iterate! %f\n", wallTime);
+		
 		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);
 
 		KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
 
-		KernelTrace << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
+		KernelTrace << <  m_hostCompressedRayBuffer->NumBlocks(), m_hostCompressedRayBuffer->ThreadsPerBlock(), 0, m_hostStream >> > (cu_deviceData);
 	}
 }

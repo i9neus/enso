@@ -82,6 +82,8 @@ namespace Cuda
 			}
 			__host__ inline const Device::ManagedArray<T, HostType, DeviceType>& GetHostInstance() const { return m_hostData; }
 			__host__ inline bool IsCreated() const { return cu_deviceData != nullptr; }
+			__host__ inline int ThreadsPerBlock() const { return m_threadsPerBlock; }
+			__host__ inline int NumBlocks() const { return m_numBlocks; }
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }

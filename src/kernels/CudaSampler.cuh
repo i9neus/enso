@@ -46,6 +46,8 @@ namespace Cuda
             uvec4   m_state;
 
         public:
+            __device__ PCG(const uint& seed) { Initialise(seed);  }
+
             #define kPCGRandBias 0.999999f
             
             // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
@@ -67,9 +69,9 @@ namespace Cuda
             }
 
             // Seed the PCG hash function with the current frame multipled by a prime
-            __device__  void Initialise(int frame)
+            __device__  inline void Initialise(const uint& seed)
             {
-                m_state = uvec4(frame * 20219, frame * 7243, frame * 12547, frame * 28573);
+                m_state = uvec4(seed * 20219, seed * 7243, seed * 12547, seed * 28573);
             }
 
             // Generates a tuple of canonical random numbers in the range [0, 1]

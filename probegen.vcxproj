@@ -40,6 +40,9 @@
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
+    <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
+    <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
+    <ClInclude Include="src\kernels\CudaManagedArray.cuh" />
     <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaCtx.cuh" />
@@ -50,6 +53,8 @@
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
+    <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh" />
@@ -100,14 +105,17 @@
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />
     <CudaCompile Include="src\kernels\math\CudaMath.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornell.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
@@ -170,7 +178,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>./;$(CudaToolkitDir)/include;../../common/inc;$(MSBuildProjectDirectory)/src;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;$(CudaToolkitDir)/include;../../common/inc;$(MSBuildProjectDirectory)/src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -213,6 +221,7 @@
     <CudaCompile>
       <Runtime>MT</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -249,6 +249,21 @@
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh">
       <Filter>kernels\math\vec</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lights\CudaLight.cuh">
+      <Filter>kernels\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh">
+      <Filter>kernels\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh">
+      <Filter>kernels\bxdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh">
+      <Filter>kernels\bxdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaManagedArray.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -299,6 +314,15 @@
     <Filter Include="kernels\math\mat">
       <UniqueIdentifier>{f2c4430f-e77d-4246-a26a-6e5516867ce2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\lights">
+      <UniqueIdentifier>{93e962f1-ea1e-4158-ac22-de5feb7fc1c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\bxdfs">
+      <UniqueIdentifier>{26fb12ca-2b5a-4813-a76c-4a424d4c1dde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\materials">
+      <UniqueIdentifier>{6d106cab-3e60-4e93-9597-a12a22e281ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -327,6 +351,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\math\CudaMath.cu">
       <Filter>kernels\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu">
+      <Filter>kernels\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu">
+      <Filter>kernels\bxdfs</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

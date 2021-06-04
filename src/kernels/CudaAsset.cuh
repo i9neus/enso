@@ -53,6 +53,7 @@ namespace Cuda
         void Deregister(std::shared_ptr<Host::Asset> object);
         void VerifyEmpty();
         void Report();
+        size_t Size() const { return m_assetMap.size(); }
 
     private:
         GlobalAssetRegistry() = default;

@@ -14,6 +14,7 @@ namespace Cuda
 	
 	using uint = unsigned int;
 	using uchar = unsigned char;
+	using ushort = unsigned short;
 
 	__host__ __device__ inline float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ inline float fract(const float& v) { return fmodf(v, 1.0f); }

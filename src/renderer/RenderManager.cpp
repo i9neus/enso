@@ -29,7 +29,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 			IsOk(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
 			m_nodeMask = devProp.luidDeviceNodeMask;
-			checkCudaErrors(cudaStreamCreate(&m_D3DStream));
+			checkCudaErrors(cudaStreamCreateWithFlags(&m_D3DStream, cudaStreamNonBlocking));
 			checkCudaErrors(cudaStreamCreate(&m_renderStream));
 			std::printf("CUDA Device Used [%d] %s\n", devId, devProp.name);
 			break;
@@ -39,6 +39,8 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	constexpr size_t kCudaHeapSizeLimit = 128 * 1024 * 1024;
 
 	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
+
+	checkCudaErrors(cudaEventCreate(&m_renderEvent));
 
 	// Create some Cuda objects
 	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
@@ -53,7 +55,7 @@ void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
 
-	std::printf("Shutting down and destroying %i managed assets:");
+	std::printf("Shutting down and destroying %i managed assets:", Cuda::AR().Size());
 	Cuda::AR().Report();
 
 	m_threadSignal.store(kHalt);
@@ -62,11 +64,14 @@ void RenderManager::Destroy()
 	m_managerThread.join();
 	std::printf("Killed threads.\n");
 
+	// Destroy assets
 	m_wavefrontTracer.DestroyAsset();
 	m_compositeImage.DestroyAsset();
 
-	//cudaEventDestroy(m_D3DTextureCopyEvent);
+	// Destroy events
+	checkCudaErrors(cudaEventDestroy(m_renderEvent));
 
+	// Destroy D3D linked objects
 	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
 	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
 }
@@ -127,8 +132,7 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
 	m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
-
-	//cudaEventRecord(m_D3DTextureCopyEvent, m_D3DStream);
+	checkCudaErrors(cudaStreamSynchronize(m_D3DStream));
 
 	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
 	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
@@ -168,21 +172,39 @@ void RenderManager::Start()
 }
 
 void RenderManager::Run()
-{	
+{		
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 	
-	int frameIdx = 0;
+	int iterationIdx = 0, frameIdx = 0;
+	constexpr float kTargetFps = 60.0f;
+	constexpr int kMaxSubframes = 1;
+	int numSubframes = kMaxSubframes;
 	while (m_threadSignal.load() == kRun)
-	{		
-		std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+	{				
+		Timer timer([&](float elapsed) -> std::string 
+			{ 
+				const float fps = 1.0f / elapsed;
+				return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
+			});
 		
-		m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
+		{
+			std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+
+			m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+
+			frameIdx++;
+		}		 
 
 		m_wavefrontTracer->Composite(m_compositeImage);
-		
+
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
+
+		//numSubframes = int(numSubframes * (1 / kTargetFps) / timer.Get());
+		//numSubframes = math::clamp(numSubframes, 1, kMaxSubframes);			
+
+		iterationIdx++;
 		
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		std::printf("Tick: %i\n", ++frameIdx);
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }

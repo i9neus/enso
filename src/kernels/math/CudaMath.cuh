@@ -39,7 +39,7 @@ namespace Cuda
 	struct PosDir
 	{
 	public:		
-		union { vec3 o, p; };
+		vec3 o;
 		union { vec3 d, n; };
 
 		__device__ PosDir() = default;
@@ -53,23 +53,26 @@ namespace Cuda
 		mat3 fwd;
 		mat3 inv;
 		mat3 nInv;
+		vec3 scale;
 
-		__host__ __device__ BidirectionalTransform() :
-			trans(0.0f),
-			fwd(mat3::Indentity()),
-			inv(mat3::Indentity()),
-			nInv(mat3::Indentity()) {}
+		__host__ __device__ BidirectionalTransform() 
+		{
+			MakeIdentity();
+		}
+			
 
 		__host__ __device__ inline BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
 		{ 
 			inv = inverse(fwd);
 			nInv = transpose(fwd);
+			scale = vec3(1 / length(fwd[0]), 1 / length(fwd[1]), 1 / length(fwd[2]));
 		}
 
 		__host__ __device__ inline void MakeIdentity()
 		{
 			trans = 0.0f;
-			fwd = inv = mat3::Indentity();
+			fwd = inv = nInv = mat3::Indentity();
+			scale = 1.0f;
 		}
 
 		__device__ inline PosDir RayToObjectSpace(const PosDir& world) const
@@ -82,12 +85,22 @@ namespace Cuda
 			return object;
 		}
 
+		__device__ inline vec3 PointToObjectSpace(const vec3& world) const
+		{
+			return fwd * (world - trans);
+		}
+
 		__device__ inline PosDir HitToWorldSpace(const PosDir& object) const
 		{
 			PosDir world;
-			world.p = inv * object.p;
+			world.o = inv * object.o;
 			world.n = nInv * object.n;
 			return world;
+		}
+
+		__device__ inline vec3 PointToWorldSpace(const vec3& object) const
+		{
+			return (inv * object) + trans;
 		}
 	};
 
@@ -154,16 +167,15 @@ namespace Cuda
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by
 	// Frisvad's original paper: http://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-	__host__ __device__ inline mat4 createBasis(vec3 n)
+	__host__ __device__ inline mat3 createBasis(vec3 n)
 	{
 		float s = sign(n.z);
 		float a = -1 / (s + n.z);
 		float b = n.x * n.y * a;
 
-		return transpose(mat4(vec4(1 + s * n.x * n.x * a, s * b, -s * n.x, 0.0f),
-			vec4(b, s + n.y * n.y * a, -n.y, 0.0f),
-			vec4(n, 0.0f),
-			vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+		return transpose(mat3(vec3(1 + s * n.x * n.x * a, s * b, -s * n.x),
+							  vec3(b, s + n.y * n.y * a, -n.y),
+							  n));
 	}
 	
 	/*__host__ __device__ inline mat4 createBasis(vec3 n)
@@ -183,21 +195,21 @@ namespace Cuda
 		return transpose(mat4(vec4(tangent, 0.0), vec4(cotangent, 0.0), vec4(n, 0.0), vec4(kZero, 1.0)));
 	}*/
 
-	__host__ __device__ inline mat4 createBasis(vec3 n, vec3 up)
+	__host__ __device__ inline mat3 createBasis(vec3 n, vec3 up)
 	{
-		float s = sign(n.z);
+		/*float s = sign(n.z);
 		float a = -1 / (s + n.z);
 		float b = n.x * n.y * a;
 
-		return transpose(mat4(vec4(1 + s * n.x * n.x * a, s * b, -s * n.x, 0.0f),
+		return transpose(mat3(vec4(1 + s * n.x * n.x * a, s * b, -s * n.x, 0.0f),
 			vec4(b, s + n.y * n.y * a, -n.y, 0.0f),
 			vec4(n, 0.0f),
-			vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+			vec4(0.0f, 0.0f, 0.0f, 1.0f)));*/
 
-		vec3 tangent = normalize(cross(n, up));
-		vec3 cotangent = cross(tangent, n);
+		const vec3 tangent = normalize(cross(n, up));
+		const vec3 cotangent = cross(tangent, n);
 
-		return transpose(mat4(vec4(tangent, 0.0), vec4(cotangent, 0.0), vec4(n, 0.0), vec4(kZero, 1.0)));
+		return transpose(mat3(tangent, cotangent, n));
 	}
 
 	// Finds the roots of a quadratic equation of the form a.x^2 + b.x + c = 0

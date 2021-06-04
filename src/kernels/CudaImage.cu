@@ -78,7 +78,6 @@ namespace Cuda
 		SafeFreeDeviceMemory(&m_hostData.cu_data);
 	}
 
-	// The host CPU Sinewave thread spawner
 	template<typename T>
 	__host__ void Host::Image<T>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream)
 	{		

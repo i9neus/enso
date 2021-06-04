@@ -14,8 +14,18 @@
 #include "dx12/D3DContainer.h"
 #include "Win32Application.h"
 
+#include "generic/StringUtils.h"
+
+// Call various method to guarante we have object files generated for the test suit. 
+void DummyMethodCalls()
+{
+	auto wstr = Widen("");
+}
+
 int main(int argc, char* argv[])
 {	
+	DummyMethodCalls();
+	
 	try
 	{
 		D3DContainer sample(1280, 720, "D3D12 Hello Texture");

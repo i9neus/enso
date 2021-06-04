@@ -42,6 +42,7 @@ private:
 	float						 m_AnimTime;
 	void*						 m_cudaTexturePtr = NULL;
 	cudaSurfaceObject_t          m_cuSurface;
+	cudaEvent_t                  m_renderEvent;
 
 	uint32_t					 m_D3DTextureWidth;
 	uint32_t				     m_D3DTextureHeight;
@@ -50,4 +51,5 @@ private:
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>  m_wavefrontTracer;
+
 };
