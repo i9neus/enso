@@ -7,7 +7,7 @@
 
 namespace Cuda
 {		
-	enum AccessSignal : unsigned int { kImageUnlocked, kImageReadLocked, kImageWriteLocked };
+	enum ImageAccessSignal : unsigned int { kImageUnlocked, kImageReadLocked, kImageWriteLocked };
 
 	namespace Host { template<typename T> class Image; }
 
@@ -23,13 +23,11 @@ namespace Cuda
 			__device__ ~Image() = default;
 
 			__host__ __device__ inline unsigned int GetArea() const { return m_width * m_height; }
-			__host__ __device__ inline unsigned int GetMemorySize() const { return m_width * m_height * sizeof(float4); }
+			__host__ __device__ inline unsigned int GetMemorySize() const { return m_width * m_height * sizeof(T); }
 			__host__ __device__ inline unsigned int Width() const { return m_width; }
 			__host__ __device__ inline unsigned int Height() const { return m_height; }
 			__host__ __device__ inline vec2 Dimensions() const { return vec2(float(m_width), float(m_height)); }
-			__host__ __device__ inline bool IsValid(const ivec2& xy) const {
-				return true;
-			}// { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
+			__host__ __device__ inline bool IsValid(const ivec2& xy) const { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
 
 			__device__ T* GetData() { return cu_data; }
 			__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
@@ -71,8 +69,8 @@ namespace Cuda
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
 
-		template class Image<CompressedRay>;
-		using CompressedRayBuffer = Image<CompressedRay>;
+		//template class Image<CompressedRay>;
+		//using CompressedRayBuffer = Image<CompressedRay>;
 	}
 
 	namespace Host
@@ -91,8 +89,8 @@ namespace Cuda
 		public:
 			using Pixel = T;
 
-			Image(unsigned int width, unsigned int height, cudaStream_t hostStream);
-			~Image() { OnDestroyAsset(); }
+			__host__ Image(unsigned int width, unsigned int height, cudaStream_t hostStream);
+			__host__ virtual ~Image() { OnDestroyAsset(); }
 
 			__host__ virtual void OnDestroyAsset() override final;
 
@@ -118,7 +116,7 @@ namespace Cuda
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
 
-		template class Image<CompressedRay>;
-		using CompressedRayBuffer = Image<CompressedRay>;
+		//template class Image<CompressedRay>;
+		//using CompressedRayBuffer = Image<CompressedRay>;
 	}
 }

@@ -56,7 +56,7 @@ namespace Cuda
 	{
 		if (!IsValid(viewportPos)) { return; }
 		
-		CompressedRay& compressedRay = cu_deviceCompressedRayBuffer->At(viewportPos);
+		CompressedRay& compressedRay = (*cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
 
 		if (!compressedRay.IsAlive())
 		{
@@ -68,30 +68,39 @@ namespace Cuda
 		//cu_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
 	}
 
+	__device__ void Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
+	{
+
+	}		 
+
 	__device__ void Device::WavefrontTracer::Trace(const ivec2& viewportPos) const
 	{
 		if (!IsValid(viewportPos)) { return; }
 		
-		CompressedRay& compressedRay = cu_deviceCompressedRayBuffer->At(viewportPos);
+		CompressedRay& compressedRay = (*cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
+
 		Ray ray(compressedRay);
 		RenderCtx renderCtx = CreateRenderCtx(compressedRay, m_frameIdx);
 		HitCtx hitCtx;
 		vec3 L(0.0f);
 		
+		// INTERSECTION 
 		//for (int i = 0; i < cu_deviceTracables->Size(); i++)
 		{
-			if (cu_cornell->Intersect(ray, hitCtx))
-			//if(cu_sphere->Intersect(ray, hitCtx))
-			{
-				L += hitCtx.hit.n * 0.5f + vec3(0.5f);
-				//L += vec3(0.5f, 0.0f, 0.0f);
-			}
+			cu_cornell->Intersect(ray, hitCtx);
+		}
+
+		// SHADE
+		if (!hitCtx.isValid) { compressedRay.Kill(); }
+		else
+		{
+			L += hitCtx.hit.n * 0.5f + vec3(0.5f);
 		}
 
 		//L += ray.od.d;
 		cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
 		cu_deviceAccumBuffer->Accumulate(viewportPos, L, 0);
-		compressedRay.Kill();
+
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
@@ -125,7 +134,7 @@ namespace Cuda
 		m_hostStream(hostStream)
 	{
 		// Create the packed ray buffer
-		m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512, 512, m_hostStream);
+		m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
 
 		// Create the accumulation buffer
 		m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>("id_hostAccumBuffer", 512, 512, m_hostStream);

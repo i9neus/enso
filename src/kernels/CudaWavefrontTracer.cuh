@@ -5,6 +5,7 @@
 #include "CudaPerspectiveCamera.cuh"
 #include "CudaCtx.cuh"
 #include "CudaAssetContainer.cuh"
+#include "CudaManagedArray.cuh"
 
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
@@ -12,10 +13,12 @@
 
 namespace Cuda
 {
-	namespace Host { class WavefrontTracer; }
+	namespace Host { class WavefrontTracer; }	
 	
 	namespace Device
 	{
+		using CompressedRayBuffer = Device::Array<CompressedRay>;
+		
 		class WavefrontTracer : public Device::Asset, public AssetTags<Host::WavefrontTracer, Device::WavefrontTracer>
 		{		
 			friend class Host::WavefrontTracer;
@@ -40,6 +43,8 @@ namespace Cuda
 					viewportPos.y >= 0 && viewportPos.y < cu_deviceAccumBuffer->Height();
 			}
 
+			__device__ void Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
+
 		public:
 			__device__ WavefrontTracer(Device::ImageRGBW* deviceAccumBuffer, Device::CompressedRayBuffer* deviceCompressedRayBuffer, Device::Cornell* cornell, Device::Sphere* sphere, const ivec2& viewportDims) :
 				cu_deviceAccumBuffer(deviceAccumBuffer),
@@ -60,6 +65,8 @@ namespace Cuda
 
 	namespace Host
 	{
+		using CompressedRayBuffer = Host::Array<CompressedRay>;
+		
 		class WavefrontTracer : public Host::Asset
 		{
 		private:
