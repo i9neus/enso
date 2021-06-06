@@ -179,6 +179,7 @@ void RenderManager::Run()
 	constexpr float kTargetFps = 60.0f;
 	constexpr int kMaxSubframes = 1;
 	int numSubframes = kMaxSubframes;
+
 	while (m_threadSignal.load() == kRun)
 	{				
 		Timer timer([&](float elapsed) -> std::string 

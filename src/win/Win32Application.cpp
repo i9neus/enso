@@ -48,6 +48,33 @@ The MIT License (MIT)
 
 #include "Win32Application.h"
 
+#include "thirdparty/imgui/backends/imgui_impl_win32.h"
+
+template<typename T>
+void Win32Application<T>::InitialiseIMGUI(HWND hWnd)
+{
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer backends
+	ImGui::ImplWin32_Init(hWnd);
+}
+
+template<typename T>
+void Win32Application<T>::DestroyIMGUI()
+{
+	ImGui::ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+}
+
 template<typename T>
 int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 {
@@ -84,8 +111,10 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 		hInstance,
 		pSample);
 
+	InitialiseIMGUI(GetHwnd());
+
 	// Initialize the sample. OnInit is defined in each child-implementation of DXSample.
-	pSample->OnInit();
+	pSample->OnInit(GetHwnd());
 
 	ShowWindow(GetHwnd(), nCmdShow);
 
@@ -107,12 +136,19 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 	return static_cast<char>(msg.wParam);
 }
 
+// Forward declare message handler from imgui_impl_win32.cpp
+namespace ImGui
+{
+	extern IMGUI_IMPL_API LRESULT ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+}
+
 // Main message handler for the sample.
 template<typename T>
 LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	if (ImGui::ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) { return 1; }
 
+	T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	switch (message)
 	{
 	case WM_CREATE:

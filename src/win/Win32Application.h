@@ -55,6 +55,8 @@ public:
 
 protected:
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static void InitialiseIMGUI(HWND hWnd);
+    static void DestroyIMGUI();
 
 };
 

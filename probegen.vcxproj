@@ -19,6 +19,8 @@
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui_draw.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui_tables.cpp" />
@@ -72,6 +74,8 @@
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
     <ClInclude Include="src\renderer\RenderManager.h" />
+    <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="src\thirdparty\imgui\imconfig.h" />
     <ClInclude Include="src\thirdparty\imgui\imgui.h" />
     <ClInclude Include="src\thirdparty\imgui\imgui_internal.h" />

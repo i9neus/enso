@@ -37,6 +37,12 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_widgets.cpp">
       <Filter>thirdparty\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp">
+      <Filter>thirdparty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>thirdparty\imgui\backends</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -264,6 +270,12 @@
     <ClInclude Include="src\kernels\CudaManagedArray.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h">
+      <Filter>thirdparty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h">
+      <Filter>thirdparty\imgui\backends</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -322,6 +334,9 @@
     </Filter>
     <Filter Include="kernels\materials">
       <UniqueIdentifier>{6d106cab-3e60-4e93-9597-a12a22e281ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\imgui\backends">
+      <UniqueIdentifier>{e6b247cc-e6e7-45ae-b0c0-d1b3ee027aa8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

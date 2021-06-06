@@ -13,7 +13,7 @@ public:
 		m_aspectRatio = float(width) / float(height);
 	}
 
-    virtual void OnInit() = 0;
+    virtual void OnInit(HWND hWnd) = 0;
     virtual void OnUpdate() = 0;
     virtual void OnRender() = 0;
     virtual void OnDestroy() = 0;

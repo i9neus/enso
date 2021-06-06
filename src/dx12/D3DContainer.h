@@ -57,10 +57,10 @@ class D3DContainer : public D3DWindowInterface
 public:
 	D3DContainer(UINT width, UINT height, std::string name);
 
-	virtual void OnInit();
-	virtual void OnRender();
-	virtual void OnDestroy();
-	virtual void OnUpdate();
+	virtual void OnInit(HWND hWnd) override final;
+	virtual void OnRender() override final;
+	virtual void OnDestroy() override final;
+	virtual void OnUpdate() override final;
 
 private:
 	// In this sample we overload the meaning of FrameCount to mean both the maximum
@@ -114,6 +114,7 @@ private:
 
 	RenderManager                m_manager;
 	IMGUIContainer				 m_imgui;
+	HWND						 m_hWnd;
 
 	void LoadPipeline();
 	void InitCuda();
@@ -125,6 +126,9 @@ private:
 	void CreateSinewaveAssets();
 	void CreateTriangleAssets();
 	void CreateRootSignature();
+	void CreateViewportQuad();
+	void CreateViewportTexture();
+	void OnRenderGUI();
 
 	void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
 };
