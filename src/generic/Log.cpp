@@ -97,6 +97,6 @@ void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const 
 
     m_logTerminalOut << "\033[" << colour << "m";
     m_logTerminalOut << formattedStr;
-    m_logTerminalOut << "\033[" << kFgDefault << "m";  
+    m_logTerminalOut << "\033[" << kFgDefault << "m\033[" << kBgDefault << "m";
     m_logTerminalOut.flush();
 }
