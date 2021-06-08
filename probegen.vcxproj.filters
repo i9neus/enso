@@ -43,6 +43,12 @@
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp">
       <Filter>thirdparty\imgui\backends</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\JsonUtils.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generic\Log.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -275,6 +281,12 @@
     </ClInclude>
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h">
       <Filter>thirdparty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\JsonUtils.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Log.h">
+      <Filter>generic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

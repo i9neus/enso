@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::runtime_error& err)
 	{
-		std::printf("Runtime error: %s\n", err.what());
+		Log::Error("Runtime error: %s\n", err.what());
 	}
 }
 

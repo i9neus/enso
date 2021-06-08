@@ -23,6 +23,7 @@
 
 #include "thirdparty/tinyformat/tinyformat.h"
 #include "Assert.h"
+#include "Log.h"
 
 using Microsoft::WRL::ComPtr;
 

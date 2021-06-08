@@ -17,6 +17,8 @@
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\IMGUIContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
+    <ClCompile Include="src\generic\JsonUtils.cpp" />
+    <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
@@ -38,6 +40,8 @@
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
+    <ClInclude Include="src\generic\JsonUtils.h" />
+    <ClInclude Include="src\generic\Log.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
