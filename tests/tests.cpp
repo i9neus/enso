@@ -1,6 +1,7 @@
 #include "CppUnitTest.h"
 #include "generic\StdIncludes.h"
 #include "kernels\math\CudaMath.cuh"
+#include "kernels\CudaRay.cuh"
 #include "generic\StringUtils.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -25,12 +26,12 @@ namespace tests
 		}
 
 		template<typename T>
-		void TestVecIsEqual(const T& vecBaseline, const T& vecTest, const float kEpsilon)
+		void TestVecIsEqual(const T& vecBaseline, const T& vecTest, const float kEpsilon, const char* name)
 		{
 			for (int i = 0; i < T::kDims; i++)
 			{
 				Assert::IsTrue(std::abs(vecBaseline[i] - vecTest[i]) < kEpsilon,
-						Widen(tfm::format("Element %i is not equal: %s should be %sf", i, vecTest.format(), vecBaseline.format())).c_str());
+						Widen(tfm::format("Element %i of %s is not equal: %s should be %s", i, name, vecTest.format(), vecBaseline.format())).c_str());
 			}
 		}
 
@@ -45,7 +46,7 @@ namespace tests
 	TEST_CLASS(CudaMathTests), MatrixTestUtils
 	{
 	public:
-		TEST_METHOD(TestBidirectionalTransform)
+		TEST_METHOD(TestBidirTransformScale)
 		{
 			// Test that the matrix decomposition is correct for BidirectionalTransform object.
 
@@ -55,7 +56,39 @@ namespace tests
 
 			const BidirectionalTransform transform = CreateCompoundTransform(rotate, translate, scale);
 
-			TestVecIsEqual(scale, transform.scale, 1e-7f);
+			TestVecIsEqual(scale, transform.scale, 1e-7f, "scale");
+		}
+
+		TEST_METHOD(TestBidirObjectToWorld)
+		{
+			// Transform a hit point from object space into world space
+
+			const BidirectionalTransform transform = CreateCompoundTransform(vec3(kHalfPi, 0.0f, 0.0f));
+
+			const vec3 oObject(0.0f, 1.0f, 0.0f);
+			const vec3 nObject(0.0f, 0.0f, 1.0f);
+			const vec3 oWorld(0.0f, 0.0f, -1.0f);
+			const vec3 nWorld(0.0f, 1.0f, 0.0f);
+
+			HitPoint hitWorld = transform.HitToWorldSpace(HitPoint(oObject, nObject));
+
+			TestVecIsEqual(hitWorld.o, oWorld, 1e-7f, "origin");
+		}
+
+		TEST_METHOD(TestBidirWorldToObjectToWorld)
+		{
+			// Transform a random vector and normal into object space and back out again
+
+			const BidirectionalTransform transform = CreateCompoundTransform(vec3(-kHalfPi, 0.0f, 0.0f));
+
+			const vec3 oWorld(10.3765f, 8.987291f, -2.579872f);
+			const vec3 nWorld = normalize(vec3(-1.826f, 0.825176f, -0.127982376f));
+
+			const HitPoint hitObject = transform.HitToObjectSpace(HitPoint(oWorld, nWorld));
+			const HitPoint hitWorld = transform.HitToWorldSpace(hitObject);
+
+			TestVecIsEqual(hitWorld.o, oWorld, 1e-6f, "origin");
+			TestVecIsEqual(hitWorld.n, nWorld, 1e-6f, "normal");
 		}
 	};
 	
