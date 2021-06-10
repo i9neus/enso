@@ -35,17 +35,6 @@ namespace Cuda
 	template<typename T>
 	__host__ __device__ inline T mix(const T& a, const T& b, const float& v) { return T(float(a) * (1 - v) + float(b) * v); }
 
-	// Multi-purpose class describing a position and a direction vector
-	struct PosDir
-	{
-	public:		
-		vec3 o;
-		union { vec3 d, n; };
-
-		__device__ PosDir() = default;
-		__device__ PosDir(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
-	};
-	
 	class BidirectionalTransform
 	{
 	public:
@@ -55,14 +44,13 @@ namespace Cuda
 		mat3 nInv;
 		vec3 scale;
 
-		__host__ __device__ BidirectionalTransform() 
+		__host__ __device__ BidirectionalTransform()
 		{
 			MakeIdentity();
 		}
-			
 
 		__host__ __device__ inline BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
-		{ 
+		{
 			inv = inverse(fwd);
 			nInv = transpose(fwd);
 			scale = vec3(1 / length(fwd[0]), 1 / length(fwd[1]), 1 / length(fwd[2]));
@@ -75,28 +63,23 @@ namespace Cuda
 			scale = 1.0f;
 		}
 
-		__device__ inline PosDir RayToObjectSpace(const PosDir& world) const
+		/*__device__ inline HitPoint HitToWorldSpace(const HitPoint& object) const
 		{
-			PosDir object;
-			object.o = world.o - trans;
-			object.d = world.d + object.o;
-			object.o = fwd * object.o;
-			object.d = (fwd * object.d) - object.o;
-			return object;
-		}
-
-		__device__ inline vec3 PointToObjectSpace(const vec3& world) const
-		{
-			return fwd * (world - trans);
-		}
-
-		__device__ inline PosDir HitToWorldSpace(const PosDir& object) const
-		{
-			PosDir world;
-			world.o = inv * object.o;
-			world.n = nInv * object.n;
+			HitPoint world;
+			world.p = inv * object.p;
+			//world.n = nInv * object.n;
+			world.n = normalize((inv * (object.n + object.o)) - world.o);
 			return world;
 		}
+
+		__device__ inline HitPoint HitToObjectSpace(const HitPoint& world) const
+		{
+			HitPoint object;
+			object.p = fwd * world.p;
+			//world.n = nInv * world.n;
+			object.n = normalize((fwd * (world.n + world.o)) - object.o);
+			return object;
+		}*/
 
 		__device__ inline vec3 PointToWorldSpace(const vec3& object) const
 		{

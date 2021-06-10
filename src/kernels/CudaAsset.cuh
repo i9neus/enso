@@ -2,6 +2,7 @@
 
 #include "generic/StdIncludes.h"
 #include <memory>
+#include "generic/JsonUtils.h"
 
 namespace Cuda
 {
@@ -40,6 +41,7 @@ namespace Cuda
             __host__ void SetAssetName(const std::string& name) { m_assetName = name; }
 
         public:
+            __host__ virtual void OnJson(const Json::Node& jsonNode) {}
             __host__ const inline std::string& GetAssetName() const { return m_assetName; }
         };
     }

@@ -11,7 +11,7 @@ namespace Cuda
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, RayBasic& extant, vec3& L, float& pdfLight) const
     {
         // Sample a point on the light 
-        const vec3& hitPos = hitCtx.hit.o;
+        const vec3& hitPos = hitCtx.hit.p;
         const vec3& normal = hitCtx.hit.n;
 
         const vec2 xi = renderCtx.Rand2() - 0.5f;
@@ -50,7 +50,7 @@ namespace Cuda
     {
         m_hostData.m_transform.MakeIdentity();
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_transform);
+        cu_deviceData = InstantiateOnDevice<Device::QuadLight>(m_hostData.m_transform);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()

@@ -8,8 +8,29 @@ namespace Cuda
 
 	#define kRayAlive 1
 
-	using RayBasic = PosDir;
-	using HitPoint = PosDir;
+	struct RayBasic
+	{
+	public:
+		vec3 o, d;
+
+		__device__ RayBasic() = default;
+		__device__ RayBasic(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
+		__device__ inline vec3 HitPoint(const float& t) const { return o + d * t; }		
+	};
+
+	__device__ inline RayBasic RayToObjectSpace(const RayBasic& world, const BidirectionalTransform& bdt) 
+	{
+		RayBasic object;
+		object.o = world.o - bdt.trans;
+		object.d = world.d + object.o;
+		object.o = bdt.fwd * object.o;
+		object.d = (bdt.fwd * object.d) - object.o;
+		return object;
+	}
+
+	__device__ inline vec3 PointToObjectSpace(const vec3& p, const BidirectionalTransform& bdt) { return bdt.fwd * (p - bdt.trans); }
+	__device__ inline vec3 PointToWorldSpace(const vec3& p, const BidirectionalTransform& bdt) { return (bdt.inv * p) + bdt.trans; }
+	__device__ inline vec3 NormalToWorldSpace(const vec3& n, const BidirectionalTransform& bdt) { return bdt.nInv * n; }
 
 	struct CompressedRay
 	{
@@ -54,5 +75,7 @@ namespace Cuda
 			depth(comp.depth)
 		{
 		}
+
+		__device__ vec3 HitPoint() const { return od.o + od.d * tNear; }
 	};
 }

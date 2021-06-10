@@ -288,6 +288,9 @@
     <ClInclude Include="src\generic\Log.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\materials\CudaMaterial.cuh">
+      <Filter>kernels\materials</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -384,6 +387,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu">
       <Filter>kernels\bxdfs</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\materials\CudaMaterial.cu">
+      <Filter>kernels\materials</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

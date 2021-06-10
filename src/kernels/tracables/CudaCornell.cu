@@ -4,7 +4,7 @@ namespace Cuda
 {
     __device__  bool Device::Cornell::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        RayBasic localRay = m_transform.RayToObjectSpace(ray.od);
+        const RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
 
         float t = ray.tNear;
         vec2 uv;
@@ -32,15 +32,11 @@ namespace Cuda
         }
 
         if (t == ray.tNear) { return false; }
-        hit.o = localRay.o + localRay.d * t;
-
-        // If we've hit the surface and it's the closest intersection, calculate the normal and UV coordinates
-        // A more efficient way would be to defer this process to avoid unncessarily computing normals for occuluded surfaces.
-        hit = m_transform.HitToWorldSpace(hit);
-        
-        if (dot(hit.n, ray.od.o - hit.o) < 0.0f) { hit.n = -hit.n; }
-
         ray.tNear = t;
+        hit.p = ray.HitPoint();
+        hit.n = NormalToWorldSpace(hit.n, m_transform);      
+        if (dot(hit.n, ray.od.o - hit.p) < 0.0f) { hit.n = -hit.n; }
+
         hitCtx.Set(hit, false, uv, 1e-5f);
 
         return true;
@@ -51,7 +47,7 @@ namespace Cuda
     {
         m_hostData.m_transform.MakeIdentity();
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_transform);
+        cu_deviceData = InstantiateOnDevice<Device::Cornell>(m_hostData.m_transform);
     }
 
     __host__ void Host::Cornell::OnDestroyAsset()

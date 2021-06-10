@@ -159,6 +159,14 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
 }
 
+void RenderManager::OnJson(const Json::Document& json)
+{
+	std::lock_guard<std::mutex> lock(m_jsonMutex);
+
+	m_renderParamsJson.DeepCopy(json);
+	m_isDirty = true;
+}
+
 void RenderManager::Start()
 {
 	std::printf("Start!\n");
@@ -187,6 +195,14 @@ void RenderManager::Run()
 				const float fps = 1.0f / elapsed;
 				return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
 			});
+
+		if (m_isDirty && frameIdx >= 2)
+		{
+			std::lock_guard<std::mutex> lock(m_jsonMutex);
+			m_wavefrontTracer->OnJson(m_renderParamsJson);
+			m_isDirty = false;
+			frameIdx = 0;
+		}
 		
 		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
 		{

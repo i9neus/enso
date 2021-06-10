@@ -49,6 +49,15 @@ namespace Cuda
 			}
 		};
 
+		struct HitPoint
+		{
+		public:
+			vec3 p, n;
+
+			__device__ HitPoint() = default;
+			__device__ HitPoint(const vec3& p_, const vec3& n_) : p(p_), n(n_) {}
+		};
+
 		struct HitCtx
 		{
 			HitPoint	hit;
@@ -60,7 +69,7 @@ namespace Cuda
 
 			__device__ HitCtx() : isValid(false) {}
 
-			__device__ inline vec3 ExtantOrigin() const { return hit.o + hit.n * kickoff; }
+			__device__ inline vec3 ExtantOrigin() const { return hit.p + hit.n * kickoff; }
 
 			__device__ void Set(const HitPoint& hit_, bool back, const vec2& uv_, const float kick)
 			{

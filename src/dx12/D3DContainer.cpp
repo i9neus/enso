@@ -440,6 +440,8 @@ void D3DContainer::OnRender()
 	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
 
+	m_imgui.UpdateParameters(m_manager);
+
 	m_manager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);	
 
 	// Update the frame index.

@@ -4,7 +4,7 @@ namespace Cuda
 {
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 
-        RayBasic localRay = m_transform.RayToObjectSpace(ray.od);
+        const RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
         if (fabs(localRay.d.z) < 1e-10) { return false; }
@@ -16,26 +16,22 @@ namespace Cuda
         float v = (localRay.o.y + localRay.d.y * t) + 0.5;
 
         if (m_isBounded && (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0)) { return false; }
-
-        // If we've hit the surface and it's the closest intersection, calculate the normal and UV coordinates
-        // A more efficient way would be to defer this process to avoid unncessarily computing normals for occuluded surfaces.
-        const vec3 hitLocal = localRay.o + localRay.d * t;
-        const vec3 hitGlobal = m_transform.inv * hitLocal;
-        const vec3 nGlobal = m_transform.inv * (vec3(0.0, 0.0, -1.0) + hitLocal);
-
+        
         ray.tNear = t;
-        //hitCtx.Set(normalize(hitGlobal - nGlobal), false, vec2(u, v), 1e-5f);
+        //HitPoint hit = m_transform.HitToWorldSpace(HitPoint(ray.HitPoint(), vec3(0.0f, 0.0f, 1.0f)));
+        //if (dot(hit.n, ray.od.o - hit.o) < 0.0f) { hit.n = -hit.n; }
 
+        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f), m_transform)), false, vec2(u, v), 1e-5f);
         return true;
     }
 
-    __host__  Host::Plane::Plane(const bool isBounded)
+    __host__  Host::Plane::Plane(const BidirectionalTransform& transform, const bool isBounded)
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_transform.MakeIdentity();
-        m_hostData.m_isBounded= isBounded;
+        m_hostData.m_transform = transform;
+        m_hostData.m_isBounded = isBounded;
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_transform, m_hostData.m_isBounded);
+        cu_deviceData = InstantiateOnDevice<Device::Plane>(m_hostData.m_transform, m_hostData.m_isBounded);
     }
 
     __host__ void Host::Plane::OnDestroyAsset()

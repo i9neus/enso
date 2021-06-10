@@ -5,7 +5,7 @@ namespace Cuda
     __host__ Host::LambertBRDF::LambertBRDF() : 
         cu_deviceData(nullptr)
     {
-        InstantiateOnDevice(&cu_deviceData);
+        cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();
     }
     
     __host__ void Host::LambertBRDF::OnDestroyAsset()

@@ -7,6 +7,7 @@
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
 #include "kernels/CudaAsset.cuh"
+#include "generic/JsonUtils.h"
 
 class RenderManager
 {
@@ -19,14 +20,18 @@ public:
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
 	void Start();
 	void Destroy();
+	void OnJson(const Json::Document& json);
 
 private:
 	void Run();
 
 	enum ThreadSignal : int { kRun, kRestart, kHalt };
 
-	std::thread m_managerThread;
-	std::atomic<int> m_threadSignal;
+	std::mutex		    m_jsonMutex;
+	std::thread			m_managerThread;
+	std::atomic<int>	m_threadSignal;
+	Json::Document		m_renderParamsJson;
+	std::atomic<bool>	m_isDirty;
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 	TimePoint					m_renderStartTime;

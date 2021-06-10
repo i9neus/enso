@@ -66,26 +66,58 @@ namespace Cuda
 		if (newInstance && !*newInstance) { *newInstance = new T(args...); }
 	}
 
-	template<typename T>
-	__global__ inline void KernelDestroyDeviceInstance(T* cu_instance)
-	{
-		if (cu_instance != nullptr) { delete cu_instance; }
-	}
-	
-	template<typename T, typename... Pack>
-	__host__ inline void InstantiateOnDevice(T** cu_data, Pack... args)
-	{
-		Assert(cu_data);
-		AssertMsg(*cu_data == nullptr, "Object must be explicitly nullptr.");
-		
-		T** cu_tempBuffer;
-		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(T*)));
+	template<typename ObjectType, typename... Pack>
+	__host__ inline ObjectType* InstantiateOnDevice(Pack... args)
+	{		
+		ObjectType** cu_tempBuffer;
+		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
 
 		KernelCreateDeviceInstance << < 1, 1 >> > (cu_tempBuffer, args...);
 		IsOk(cudaDeviceSynchronize());
 
-		IsOk(cudaMemcpy(cu_data, cu_tempBuffer, sizeof(T*), cudaMemcpyDeviceToHost));
+		ObjectType* cu_data;
+		IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
 		IsOk(cudaFree(cu_tempBuffer));
+		return cu_data;
+	}
+
+	// Instantiate an instance of ObjectType, copies params to device memory, and passes it with the ctor parameters
+	template<typename ObjectType, typename ParamsType, typename... Pack>
+	__host__ inline ObjectType* InstantiateOnDeviceWithParams(const ParamsType& params, Pack... args)
+	{
+		ParamsType* cu_params;
+		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
+		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
+
+		ObjectType* cu_data = InstantiateOnDevice<ObjectType>(cu_params, args...);
+
+		IsOk(cudaFree(cu_params));
+		return cu_data;
+	}
+
+	template<typename ObjectType, typename ParamsType>
+	__global__ static void KernelSyncParameters(ObjectType* cu_object, const ParamsType const* cu_params)
+	{
+		cu_object->OnSyncParameters(*cu_params);
+	}
+
+	template<typename ObjectType, typename ParamsType>
+	__host__ static void SyncParameters(ObjectType* cu_object, const ParamsType& params)
+	{
+		Assert(cu_object);
+		ParamsType* cu_params;
+		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
+		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
+
+		KernelSyncParameters<<<1, 1>>>(cu_object, cu_params);
+
+		IsOk(cudaFree(cu_params));
+	}
+
+	template<typename T>
+	__global__ inline void KernelDestroyDeviceInstance(T* cu_instance)
+	{
+		if (cu_instance != nullptr) { delete cu_instance; }
 	}
 
 	template<typename T>

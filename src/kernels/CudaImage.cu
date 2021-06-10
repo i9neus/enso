@@ -51,7 +51,7 @@ namespace Cuda
 
 		SafeAllocDeviceMemory(&m_hostData.cu_data, width * height);
 
-		InstantiateOnDevice(&cu_deviceData, width, height, m_hostData.cu_data);
+		cu_deviceData = InstantiateOnDevice<Device::Image<T>>(width, height, m_hostData.cu_data);
 
 		m_hostStream = hostStream;
 		m_block = dim3(16, 16, 1);

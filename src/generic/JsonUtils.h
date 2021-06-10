@@ -17,7 +17,17 @@ namespace Json
                 AssertMsgFmt(node.IsString(), "Node '%s' is not of type string.", name.c_str());
                 value = node.GetString();
             }
-        };       
+        };    
+
+        template<typename T, typename Lambda>
+        void AddArrayImpl(const std::string& name, const std::vector<T>& values, Lambda Push)
+        {
+            CheckOk();
+            rapidjson::Value jsonArray(rapidjson::kArrayType);
+            for (const auto& element : values) { Push(jsonArray, element); }
+
+            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), jsonArray, *m_allocator);
+        }
 
     public:
         inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
@@ -36,7 +46,21 @@ namespace Json
                               rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
         }
 
-        Node AddChildObject(const std::string& name)
+        template<typename T>
+        void AddArray(const std::string& name, const std::vector<T>& values)
+        {
+            AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const T& element) { jsonArray.PushBack(element, *m_allocator); });
+        }
+
+        void AddArray(const std::string& name, const std::vector<std::string>& values)
+        {
+            AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const std::string& element)
+                {
+                    jsonArray.PushBack(rapidjson::Value(element.c_str(), *m_allocator).Move(), *m_allocator);
+                });
+        }
+
+        const Node AddChildObject(const std::string& name)
         {
             CheckOk();
             m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
@@ -45,30 +69,75 @@ namespace Json
             return Node(&newNode, m_allocator);
         }
 
-        template<typename T> T GetValue(const std::string& name, bool required = false)
+        template<typename T> 
+        bool GetValue(const std::string& name, T& value, bool required = false) const
         {
             CheckOk();
-            const rapidjson::Value* child = GetChild(parent, name, required);
+            const rapidjson::Value* child = GetChildImpl(name, required);
             if (!child) { return false; }
 
             AssertMsgFmt(!child->IsObject() && !child->IsArray(), "Value at '%s' is not a scalar.", name.c_str());
 
-            T value;
             GetValueImpl<std::is_arithmetic<T>::value, std::is_integral<T>::value>::f(*child, name, value);
-            return value;
+            return true;
         }
 
-        Node GetChild(const std::string& name, bool required = false)
+        const Node GetChild(const std::string& name, bool required = false) const
         {
             CheckOk();
             return Node(GetChildImpl(name, required), m_allocator);
         }
 
-        Node GetChildObject(const std::string& name, bool required = false)
+        const Node GetChildObject(const std::string& name, bool required = false) const
         {
             CheckOk();
             rapidjson::Value* child = GetChildImpl(name, required);
             return Node((child && child->IsObject()) ? child : nullptr, m_allocator);
+        }
+
+        const Node GetChildArray(const std::string& name, bool required = false) const
+        {
+            rapidjson::Value* child = GetChildImpl(name, required);
+            if (!child) { return Node(); }
+
+            if (!child->IsArray())
+            {
+                AssertMsgFmt(!required, "Node %s is not an array.", name.c_str());
+                return Node();
+            }
+
+            return Node(child, m_allocator);
+        }
+
+        template<typename Type>
+        bool GetArrayValues(const std::string& name, std::vector<Type>& values, bool required = false) const
+        {
+            const Node child = GetChildArray(name, required);
+            if (!child) { return false; }
+            rapidjson::Value& array = *child.m_node;
+
+            for (size_t idx = 0; idx < array.Size(); idx++)
+            {
+                Type value;
+                GetValueImpl< std::is_arithmetic<Type>::value,
+                    std::is_integral<Type>::value >::f(array[idx],
+                        "[unknown; getVector()]",
+                        value);
+                values.emplace_back(value);
+            }
+            return true;
+        }
+
+        template<typename VecType>
+        bool GetVector(const std::string& name, VecType& vec, bool required = false) const
+        {
+            std::vector<typename VecType::kType> values;
+            if (!GetArrayValues(name, values, required)) { return false; }
+            AssertMsgFmt(VecType::kDims == values.size(),
+                "Error: JSON array '%s' expects %i elements.", VecType::kDims);
+
+            for (int i = 0; i < values.size(); i++) { vec[i] = values[i]; }           
+            return true;
         }
 
         inline operator bool() const { return m_node; }
@@ -77,10 +146,10 @@ namespace Json
         inline rapidjson::Value* GetPtr() { return m_node; }
 
     protected:
-        Node() : m_node(nullptr) {}
+        Node() : m_node(nullptr), m_allocator(nullptr) {}
         Node(rapidjson::Value* node, rapidjson::Document::AllocatorType* allocator) : m_node(node), m_allocator(allocator) {}
 
-        rapidjson::Value* GetChildImpl(const std::string& path, bool required);
+        rapidjson::Value* GetChildImpl(const std::string& path, bool required) const;
 
     protected:
         rapidjson::Value*                    m_node;
@@ -97,8 +166,15 @@ namespace Json
             m_allocator = &m_document.GetAllocator(); 
         }
 
+        void Clear()
+        {
+            m_document.SetNull();
+            m_document.SetObject();
+        }        
+
         void Parse(const std::string& data);
         void Load(const std::string& filePath);
+        void DeepCopy(const Document& other);
         std::string Stringify();
 
     private:

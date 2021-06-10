@@ -61,6 +61,7 @@
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh" />
+    <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh" />
@@ -119,6 +120,7 @@
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />
+    <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
     <CudaCompile Include="src\kernels\math\CudaMath.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornell.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">

@@ -32,6 +32,10 @@ namespace Cuda
 			__device__ T* GetData() { return cu_data; }
 			__device__ T& operator[](const uint idx) { return cu_data[idx]; }
 			__device__ const T& operator[](const uint idx) const { return cu_data[idx]; }
+			__device__ inline void Clear(const uint idx, const T& value)
+			{
+				if (idx < m_size) { cu_data[idx] = value; }
+			}
 
 		protected:
 			__host__ __device__ ManagedArray() : m_size(0), cu_data(nullptr) {}
@@ -109,13 +113,6 @@ namespace Cuda
 		atomicCAS(array->AccessSignal(), currentState, newState);
 	}
 
-	template<typename T>
-	__global__ void KernelClear(T* array, const T value)
-	{
-		//if (*(array->AccessSignal()) != kManagedArrayWriteLocked) { return; }
-
-	}
-
 	template<typename T, typename HostType, typename DeviceType>
 	__host__ Host::ManagedArray<T, HostType, DeviceType>::ManagedArray(const uint size, cudaStream_t hostStream) :
 		cu_deviceData(nullptr)
@@ -127,7 +124,7 @@ namespace Cuda
 
 		SafeAllocDeviceMemory(&m_hostData.cu_data, size);
 
-		InstantiateOnDevice(&cu_deviceData, m_hostData.m_size, m_hostData.m_layout, m_hostData.cu_data);
+		cu_deviceData = InstantiateOnDevice<DeviceType>(m_hostData.m_size, m_hostData.m_layout, m_hostData.cu_data);
 
 		m_hostStream = hostStream;
 		m_threadsPerBlock = 16 * 16;
@@ -142,9 +139,17 @@ namespace Cuda
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
+	__global__ void KernelClear(Device::ManagedArray<T, HostType, DeviceType>* cu_array, const T value)
+	{
+		//if (*(array->AccessSignal()) != kManagedArrayWriteLocked) { return; }
+		cu_array->Clear(blockIdx.x * blockDim.x + threadIdx.x, value);
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Clear(const T& value)
 	{
 		KernelClear << < m_numBlocks, m_threadsPerBlock, 0, m_hostStream >> > (cu_deviceData, value);
+		IsOk(cudaStreamSynchronize(m_hostStream));
 	}
 
 	template<typename T, typename HostType, typename DeviceType>

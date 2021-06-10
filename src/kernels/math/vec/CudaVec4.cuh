@@ -108,9 +108,9 @@ namespace Cuda
         vec4(const vec4&) = default;
 		__host__ __device__ explicit vec4(const float v) : x(v), y(v), z(v), w(v) {}
 		__host__ __device__ vec4(const float& x_, const float& y_, const float& z_, const float& w_) : x(x_), y(y_), z(z_), w(w_) {}
-		__host__ __device__ vec4(const vec3& v, const float& w_) : x(v.x), y(v.y), z(v.z), w(w_) {} 
 		__host__ __device__ vec4(const float& x_, const vec3& v) : x(x_), y(v.x), z(v.y), w(v.z) {}
 		__host__ __device__ vec4(const vec2& v, const float& z_, const float& w_) : x(v.x), y(v.y), z(z_), w(w_) {}
+        __host__ __device__ vec4(const vec3& v, const float& w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
 		template<typename T, typename = std::enable_if<std::is_base_of<VecBase<4>, T>::value>::type> 
 		__host__ __device__ vec4(const T& other) : x(float(other.x)), y(float(other.y)), z(float(other.z)), w(float(other.w)) {}
 

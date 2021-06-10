@@ -2,6 +2,12 @@
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
+IMGUIContainer::IMGUIContainer()
+{
+    m_parameters[1].scale = 1.0f;
+    m_parameters[1].colour = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+}
+
 void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
 {
     Assert(rootSignature);
@@ -31,12 +37,31 @@ void IMGUIContainer::Destroy()
     std::printf("Destroyed IMGUI D3D objects.\n");
 }
 
+void IMGUIContainer::UpdateParameters(RenderManager& manager)
+{
+    // If nothing's changed this frame, don't bother updating
+    if (m_parameters[1] == m_parameters[0])
+    {
+        m_parameters[0] = m_parameters[1];
+        return;
+    }
+
+    const auto& p = m_parameters[0];
+   
+    Json::Document document;
+    document.AddValue("scale", p.scale);
+    document.AddArray("albedo", std::vector<float>( {p.colour.x, p.colour.y, p.colour.z} ));
+
+    manager.OnJson(document);
+
+    Log::Debug("Updated!\n");
+
+    m_parameters[0] = m_parameters[1];
+}
+
 void IMGUIContainer::Render()
 {
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    auto& params = m_parameters[1];
     
     // Start the Dear ImGui frame
     ImGui::ImplDX12_NewFrame();
@@ -44,22 +69,19 @@ void IMGUIContainer::Render()
 
     ImGui::NewFrame();
 
-    static float f = 0.0f;
-    static int counter = 0;
-
     ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
-    ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-    ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-    ImGui::Checkbox("Another Window", &show_another_window);
+    //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+    //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+    //ImGui::Checkbox("Another Window", &show_another_window);
 
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+    ImGui::SliderFloat("Scale", &params.scale, 0.0f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::ColorEdit3("Colour", (float*)&params.colour); // Edit 3 floats representing a color
 
-    if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-        counter++;
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
+    //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+    //    counter++;
+    //ImGui::SameLine();
+    //ImGui::Text("counter = %d", counter);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();

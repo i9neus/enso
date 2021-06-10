@@ -34,7 +34,7 @@ namespace Cuda
             Device::Plane  m_hostData;
 
         public:
-            __host__ Plane(const bool isBounded);
+            __host__ Plane(const BidirectionalTransform& transform, const bool isBounded);
             __host__ virtual ~Plane() { OnDestroyAsset(); }
             __host__ virtual void OnDestroyAsset() override final;
 

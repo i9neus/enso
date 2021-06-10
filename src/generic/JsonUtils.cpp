@@ -6,7 +6,7 @@
  
 namespace Json
 {
-    rapidjson::Value* Node::GetChildImpl(const std::string& path, bool required)
+    rapidjson::Value* Node::GetChildImpl(const std::string& path, bool required) const
     {
         Assert(m_node);
         AssertMsg(!path.empty(), "Must specify a path to a node.");
@@ -46,6 +46,12 @@ namespace Json
 
         AssertMsg(false, "Shouldn't be here!");
         return nullptr;
+    }
+
+    void Document::DeepCopy(const Document& other)
+    {
+        m_document.SetObject();
+        m_document.CopyFrom(other.m_document, m_document.GetAllocator());
     }
 
     void Document::Parse(const std::string& data)

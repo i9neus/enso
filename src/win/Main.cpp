@@ -15,6 +15,7 @@
 #include "Win32Application.h"
 
 #include "generic/StringUtils.h"
+#include "generic/JsonUtils.h"
 
 // Call various method to guarante we have object files generated for the test suit. 
 void DummyMethodCalls()
@@ -25,6 +26,16 @@ void DummyMethodCalls()
 int main(int argc, char* argv[])
 {	
 	DummyMethodCalls();
+
+	/*Json::Document document;
+	document.AddValue("value1", 1);
+	document.AddValue("value2", "hello");
+	Json::Node node = document.AddChildObject("child");
+	node.AddValue("test", 1.0f); 
+	std::vector<float> arr = { 1.0f, 2.0f, 3.0f };
+	node.AddArray("array", arr);
+
+	std::cout << document.Stringify() << std::endl;*/
 	
 	try
 	{

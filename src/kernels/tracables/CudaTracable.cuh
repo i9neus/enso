@@ -5,11 +5,7 @@
 
 namespace Cuda
 {
-    namespace Host 
-    {  
-        class Tracable;
-        class Sphere;
-    }
+    namespace Host  { class Tracable;  }
     
     namespace Device
     {
@@ -34,6 +30,7 @@ namespace Cuda
         {
         public:
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
+            __host__ virtual void SetTransform(const BidirectionalTransform& transform) {}
         };
     }
 }
