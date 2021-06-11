@@ -71,6 +71,7 @@ namespace Cuda
 	__host__ __device__ inline float length(const vec2& v) { return sqrt(v.x * v.x + v.y * v.y); }
 	__host__ __device__ inline vec2 normalize(const vec2& v) { return v / length(v); }
 	__host__ __device__ inline vec2 fmod(const vec2& a, const vec2& b) { return vec2(fmodf(a.x, b.x), fmodf(a.y, b.y)); }
+	__host__ __device__ inline vec2 fmod(const vec2& a, const float& b) { return vec2(fmodf(a.x, b), fmodf(a.y, b)); }
 	__host__ __device__ inline vec2 pow(const vec2& a, const vec2& b) { return vec2(powf(a.x, b.x), powf(a.y, b.y)); }
 	__host__ __device__ inline vec2 exp(const vec2& a) { return vec2(expf(a.x), expf(a.y)); }
 	__host__ __device__ inline vec2 log(const vec2& a) { return vec2(logf(a.x), logf(a.y)); }

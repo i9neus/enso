@@ -4,34 +4,62 @@
 #include "CudaSampler.cuh"
 #include "CudaHash.cuh"
 
+//#define kPNGSampler
+
 namespace Cuda
 {
 	namespace Device
 	{
 		struct RenderCtx
 		{
-			__device__ RenderCtx(const ivec2& viewPos, const ivec2& viewDims, const float& wall, const int& frame, const uint& depth) :
+			__device__ RenderCtx(const ivec2& viewPos, const ivec2& viewDims, const float& wall, const int& sample, const uint& depth_) :
 				viewportPos(viewPos),
 				viewportDims(viewDims),
 				wallTime(wall),
-				frameIdx(frame),
-				pcg(hashOf(uint(frameIdx), uint(depth), uint(viewPos.x), uint(viewPos.y)))
+				sampleIdx(sample),
+				haltonSeed(HashOf(uint(depth) + 9871251u, uint(viewPos.x), uint(viewPos.y))),
+				depth(depth_),
+				pcg(HashCombine(HashOf(uint(sampleIdx)), haltonSeed))
 			{
 				emplacedRay.flags = 0;
 			}
 			
-			const ivec2    viewportPos;
-			const ivec2&   viewportDims;
-			const float	   wallTime;
-			const int	   frameIdx;
-			PCG            pcg;
+			const ivec2		viewportPos;
+			const ivec2&	viewportDims;
+			const uchar     depth;
+			const float		wallTime;
+			const int		sampleIdx;
+			const uint		haltonSeed;
+			PCG				pcg;
 
 			CompressedRay  emplacedRay;
 
+#ifdef kPNGSampler
 			__device__ inline vec4 Rand4() { return pcg.Rand(); }
 			__device__ inline vec3 Rand3() { return pcg.Rand().xyz; }
 			__device__ inline vec2 Rand2() { return pcg.Rand().xy; }
 			__device__ inline float Rand() { return pcg.Rand().x; }
+#else
+			__device__ inline vec4 Rand4() 
+			{ 
+				const vec4 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx), HaltonBase5(haltonSeed + sampleIdx), HaltonBase7(haltonSeed + sampleIdx));
+				return fmod(halton + pcg.Rand(haltonSeed), 1.0f);
+			}
+			__device__ inline vec3 Rand3() 
+			{ 
+				const vec3 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx), HaltonBase5(haltonSeed + sampleIdx));
+				return fmod(halton + pcg.Rand(haltonSeed).xyz, 1.0f);
+			}
+			__device__ inline vec2 Rand2()
+			{
+				const vec2 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx));
+				return fmod(halton + pcg.Rand(haltonSeed).xy, 1.0f);
+			}
+			__device__ inline float Rand1()
+			{
+				return fmodf(HaltonBase2(haltonSeed + sampleIdx) + pcg.Rand(haltonSeed).x, 1.0f);
+			}
+#endif
 
 			__device__ inline void EmplaceRay(const RayBasic& od, const vec3& weight, const float& pdf, const float& lambda, const uchar& flags, const uchar& depth)
 			{
@@ -44,6 +72,7 @@ namespace Cuda
 				emplacedRay.viewport.x = viewportPos.x;
 				emplacedRay.viewport.y = viewportPos.y;
 				emplacedRay.depth = depth + 1;
+				emplacedRay.sampleIdx = sampleIdx;
 
 				emplacedRay.flags |= kRayAlive;
 			}

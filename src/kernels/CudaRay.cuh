@@ -48,6 +48,7 @@ namespace Cuda
 		viewport;
 		uchar	flags;				// 1 byte
 		uchar	depth;				// 1 byte
+		uint	sampleIdx;			// 4 bytes
 
 		__device__ void SetAlive() { flags |= kRayAlive; }
 		__device__ void Kill() { flags &= ~kRayAlive; }
@@ -63,7 +64,6 @@ namespace Cuda
 		vec3	weight;            // The weight/throughput of the ray depending on context
 		float   pdf;               // The value of a probability density function incident to the intersection, depending on context
 		float   lambda;            // The wavelength of the ray used by the spectral integrator		
-		uchar   depth;
 
 		Ray() = default;
 		__device__ Ray(const CompressedRay & comp) :
@@ -71,8 +71,7 @@ namespace Cuda
 			tNear(FLT_MAX),
 			pdf(comp.pdf),
 			lambda(lambda),
-			weight(comp.weight),
-			depth(comp.depth)
+			weight(comp.weight)
 		{
 		}
 

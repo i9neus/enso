@@ -21,7 +21,7 @@ namespace Cuda
 		m_wallTime = wallTime;
 		m_frameIdx = frameIdx;
 
-		//auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * wallTime);
+		//auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * m_frameIdx / 100.0f);
 		BidirectionalTransform transform;
 		m_objects.cu_cornell->SetTransform(transform);
 		m_objects.cu_sphere->SetTransform(transform);
@@ -35,7 +35,7 @@ namespace Cuda
 
 		if (!compressedRay.IsAlive())
 		{
-			RenderCtx renderCtx(viewportPos, m_objects.viewportDims, m_wallTime, m_frameIdx, 0);
+			RenderCtx renderCtx(viewportPos, m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx + 1, 0);
 			m_camera.CreateRay(compressedRay, renderCtx);
 		}
 
@@ -44,9 +44,9 @@ namespace Cuda
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
-		if (incidentRay.depth >= 5) { return kZero; }
+		if (renderCtx.depth >= 1) { return kZero; }
 
-		const vec4 xi = renderCtx.Rand4();
+		//const vec4 xi = renderCtx.Rand4();
 
 		vec3 brdfDir;
 		float brdfPdf;
@@ -55,7 +55,7 @@ namespace Cuda
 			const vec3 weight = incidentRay.weight * 
 								m_objects.cu_simpleMaterial->Evaluate(hitCtx);
 
-			renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, incidentRay.depth);
+			renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, renderCtx.depth);
 		}
 
 		return kZero;
@@ -67,11 +67,11 @@ namespace Cuda
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
-		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, m_frameIdx, compressedRay.depth);
+		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
 		vec3 L(0.0f);
 		const vec2 viewportPos = compressedRay.ViewportPos();
 
-		int depth = incidentRay.depth;
+		int depth = renderCtx.depth;
 
 		// INTERSECTION 
 		HitCtx hitCtx;
@@ -105,7 +105,7 @@ namespace Cuda
 
 		//L += incidentRay.od.d;
 		//cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
-		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, incidentRay.depth, renderCtx.emplacedRay.IsAlive());
+		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
 		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
 	}
 

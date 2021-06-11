@@ -33,7 +33,7 @@ namespace Cuda
         // Define our camera vectors and orthonormal basis
         #define kCameraUp vec3(0.0, 1.0, 0.0) 
 
-        // Generate 4 random numbers efrom a continuous uniform distribution
+        // Generate 4 random numbers from a continuous uniform distribution
         vec4 xi = renderCtx.Rand4();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
@@ -41,8 +41,8 @@ namespace Cuda
         float mu = xi.y;
         if (m_useHaltonSpectralSampler)
         {
-            uint hash = hashCombine(0x01000193u, hashCombine(hashOf(uint(renderCtx.viewportPos.x)), hashOf(uint(renderCtx.viewportPos.y))));
-            mu = haltonBase2(hash);
+            uint hash = HashCombine(0x01000193u, HashCombine(HashOf(uint(renderCtx.viewportPos.x)), HashOf(uint(renderCtx.viewportPos.y))));
+            mu = HaltonBase2(hash);
         }
 
         float theta = kTwoPi * (m_cameraPos.x - 0.5f);
@@ -73,14 +73,14 @@ namespace Cuda
         // Generate a position on the sensor, the focal plane, and the lens. This lens will always have circular bokeh
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
         // but this doesn't really matter because the anti-aliasing kernel is so small that we won't notice the correlation 
-        vec2 sensorPos = vec2(xi.z, xi.x) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportDims.x, renderCtx.viewportDims.y) +
+        vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportDims.x, renderCtx.viewportDims.y) +
             kCameraSensorSize * (renderCtx.viewportPos - vec2(renderCtx.viewportDims) * 0.5) / float(max(renderCtx.viewportDims.x, renderCtx.viewportDims.y));
         vec2 focalPlanePos = vec2(sensorPos.x, sensorPos.y) * d2 / d1;
 
         vec2 lensPos;
         for (int i = 0; i < 10; i++)
         {
-            lensPos = xi.xy * 2.0 - vec2(1.0);
+            lensPos = xi.zw * 2.0 - vec2(1.0);
             float bladeDist = Ngon(atan2f(lensPos.y, lensPos.x) + kPi);
             if (length2(lensPos) < sqr(bladeDist)) { break; }
             xi = renderCtx.pcg();
@@ -96,6 +96,7 @@ namespace Cuda
         newRay.depth = 0;
         newRay.flags = 0;
         newRay.lambda = mix(3800.0f, 7000.0f, mu);
+        newRay.sampleIdx = renderCtx.sampleIdx;
 
         newRay.viewport.x = ushort(renderCtx.viewportPos.x);
         newRay.viewport.y = ushort(renderCtx.viewportPos.y);
