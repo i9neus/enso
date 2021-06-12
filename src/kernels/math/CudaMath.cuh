@@ -150,7 +150,7 @@ namespace Cuda
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by
 	// Frisvad's original paper: http://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-	__host__ __device__ inline mat3 createBasis(vec3 n)
+	__host__ __device__ inline mat3 CreateBasis(vec3 n)
 	{
 		float s = sign(n.z);
 		float a = -1 / (s + n.z);
@@ -161,7 +161,7 @@ namespace Cuda
 							  n));
 	}
 	
-	/*__host__ __device__ inline mat4 createBasis(vec3 n)
+	/*__host__ __device__ inline mat4 CreateBasis(vec3 n)
 	{
 		float s = sign(n.z);
 		float a = -1.0 / (s + n.z);
@@ -178,7 +178,7 @@ namespace Cuda
 		return transpose(mat4(vec4(tangent, 0.0), vec4(cotangent, 0.0), vec4(n, 0.0), vec4(kZero, 1.0)));
 	}*/
 
-	__host__ __device__ inline mat3 createBasis(vec3 n, vec3 up)
+	__host__ __device__ inline mat3 CreateBasis(vec3 n, vec3 up)
 	{
 		/*float s = sign(n.z);
 		float a = -1 / (s + n.z);

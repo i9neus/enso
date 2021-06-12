@@ -77,9 +77,10 @@ namespace Cuda
 		HitCtx hitCtx;
 		//for (int i = 0; i < cu_deviceTracables->Size(); i++)
 		{
-			m_objects.cu_cornell->Intersect(incidentRay, hitCtx);
+			//m_objects.cu_cornell->Intersect(incidentRay, hitCtx);
 			//m_objects.cu_sphere->Intersect(incidentRay, hitCtx);
 			m_objects.cu_groundPlane->Intersect(incidentRay, hitCtx);
+			m_objects.cu_kifs->Intersect(incidentRay, hitCtx);
 		}
 
 		// SHADE
@@ -137,7 +138,9 @@ namespace Cuda
 		m_hostCornell.DestroyAsset();
 		m_hostGroundPlane.DestroyAsset();
 		m_hostSphere.DestroyAsset();
+		m_hostKifs.DestroyAsset();
 		m_hostSimpleMaterial.DestroyAsset();
+		m_hostLambert.DestroyAsset();
 
 		DestroyOnDevice(&cu_deviceData);
 	}
@@ -160,6 +163,8 @@ namespace Cuda
 		m_hostSphere = AssetHandle<Host::Sphere>(new Host::Sphere(), "id_sphere");
 		m_hostGroundPlane = AssetHandle<Host::Plane>(new Host::Plane(CreateCompoundTransform(vec3(kHalfPi, 0.0f, 0.0f)), false), "id_plane");
 		m_hostSimpleMaterial = AssetHandle<Host::SimpleMaterial>(new Host::SimpleMaterial(), "id_simpleMaterial");
+		m_hostKifs = AssetHandle<Host::KIFS>(new Host::KIFS(), "id_kifs");
+
 		//m_hostTracables->Push(newSphere);
 		//m_hostTracables->Sync();
 
@@ -177,6 +182,7 @@ namespace Cuda
 		m_hostData.cu_sphere = m_hostSphere->GetDeviceInstance();
 		m_hostData.cu_groundPlane = m_hostGroundPlane->GetDeviceInstance();
 		m_hostData.cu_simpleMaterial = m_hostSimpleMaterial->GetDeviceInstance();
+		m_hostData.cu_kifs = m_hostKifs->GetDeviceInstance();
 
 		cu_deviceData = InstantiateOnDeviceWithParams<Device::WavefrontTracer>(m_hostData);
 		
@@ -195,6 +201,7 @@ namespace Cuda
 		m_hostLambert->OnJson(jsonNode);
 		m_hostGroundPlane->OnJson(jsonNode);
 		m_hostSimpleMaterial->OnJson(jsonNode);
+		m_hostKifs->OnJson(jsonNode);
 		m_isDirty = true;
 	}
 

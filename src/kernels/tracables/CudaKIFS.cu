@@ -9,11 +9,11 @@ namespace Cuda
     constexpr uint kSDFMaxSteps = 100;
     constexpr uint kSDFMaxIterations = 10;
     constexpr float kSDFCutoffThreshold = 1e-4f;
-    constexpr float kSDFEscapeThreshold = 10.0f;
+    constexpr float kSDFEscapeThreshold = 1.0f;
     constexpr float kSDFRayIncrement = 0.7f;
     constexpr float kSDFFailThreshold = 1e-2f;
 
-    __device__ void GetTetrahedronConstData(__constant__ vec3** V, __constant__ uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
+    /*__device__ void GetTetrahedronConstData( vec3** V,  uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
     {
         __constant__ static vec3 kV[6] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f };
         __constant__ static uint kF[4 * 4] = { 0, 1, 2, 0, 1, 2, 3, 0, 2, 3, 0, 0, 3, 0, 1, 0 };
@@ -25,7 +25,7 @@ namespace Cuda
         *polyOrder = 3u;
     }
 
-    __device__ void GetCubeConstData(__constant__ vec3** V, __constant__ uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
+    __device__ void GetCubeConstData( vec3** V,  uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
     {
         __constant__ static vec3 kV[8] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, 1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f,
                                           vec3(1.0f, 1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, -1.0f, -1.0f) * 0.5f };
@@ -36,25 +36,25 @@ namespace Cuda
         *numVertices = 8u;
         *numFaces = 6u;
         *polyOrder = 4u;
-    }
+    }*/
 
-    __host__ Device::KIFS::KIFS(const mat4Pair& transform, const KIFSType& type) :
+    __device__ Device::KIFS::KIFS(const BidirectionalTransform& transform) :
         Tracable(transform)
     {
-        m_type = type;
+        m_type = KIFSType::kTetrahedtron;
 
-        switch (m_type)
+        /*switch (m_type)
         {
         case KIFSType::kTetrahedtron:
             GetTetrahedronConstData(&m_V, &m_F, &m_numVertices, &m_numFaces, &m_polyOrder); break;
         case KIFSType::kCube:
             GetCubeConstData(&m_V, &m_F, &m_numVertices, &m_numFaces, &m_polyOrder); break;
-        };
+        };*/
 
-        m_origin = m_V[0];
+        //m_origin = m_V[0];
     }
 
-    __device__ void Device::KIFS::FoldTetrahedron(const mat4& matrix, const int& i, vec3& p, mat3& bi, uint& code) const
+    /*__device__ void Device::KIFS::FoldTetrahedron(const mat4& matrix, const int& i, vec3& p, mat3& bi, uint& code) const
     {
         if (p.x + p.y < 0.0)
         {
@@ -88,45 +88,6 @@ namespace Cuda
         //p.xz -= 5.0 * (gParamKIFSTranslate.xy - vec2(0.5));
         mat3 bi = b;
         mat3 bTrap = b;
-
-        // TODO: Missing parameter
-        /*float instance = floor(gParamKIFSInstance.y * 3.0 + 0.5);
-        if (instance > 0.0)
-        {
-            instance = 1.0 + 2.0 * (instance - 1.0);
-            vec3 q;
-            if (p.x >= 0.0) { q.x = (p.x < instance) ? fract(p.x) : (p.x - instance); }
-            else
-            {
-                q.x = (p.x > -instance) ? fract(abs(p.x)) : (instance - p.x);
-                bi[0].x = -bi[0].x;
-                bi[1].x = -bi[1].x;
-                bi[2].x = -bi[2].x;
-            }
-            if (abs(int(p.x)) % 2 == 1)
-            {
-                q.x = 1.0 - q.x;
-                bi[0].x = -bi[0].x;
-                bi[1].x = -bi[1].x;
-                bi[2].x = -bi[2].x;
-            }
-            if (p.z >= 0.0) { q.z = (p.z < instance) ? fract(p.z) : (p.z - instance); }
-            else
-            {
-                q.z = (p.z > -instance) ? fract(abs(p.z)) : (instance - p.z);
-                bi[0].z = -bi[0].z;
-                bi[1].z = -bi[1].z;
-                bi[2].z = -bi[2].z;
-            }
-            if (abs(int(p.z)) % 2 == 1)
-            {
-                q.z = 1.0 - q.z;
-                bi[0].z = -bi[0].z;
-                bi[1].z = -bi[1].z;
-                bi[2].z = -bi[2].z;
-            }
-            p = vec3(q[0] - 0.5, p[1], q[2] - 0.5);
-        }*/
         
         // TODO: Missing parameter
         //ivec2 iterations = ivec2(float(kSDFMaxIterations + 2) * vec2(gParamKIFSIterations1.y, gParamKIFSIterations2.y)) - ivec2(1.0);
@@ -237,85 +198,65 @@ namespace Cuda
         code = codeTrap;
 
         return trap;
-    }
+    }*/
     
     __device__  bool Device::KIFS::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        Ray::Basic localRay = ray.od.ToObjectSpace(m_matrix);
-        
+        RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
+
+        float t = Intersector::RayUnitBox(localRay);
+        if (t == kNoIntersect) { return false; }
+
         const float transformScale = 1.0f;
         const float localMag = length(localRay.d);
         localRay.d /= localMag;
 
-        float s = sign(localRay.d.z);
-        float a = -1.0 / (s + localRay.d.z);
-        float b = localRay.d.x * localRay.d.y * a;
-        mat3 basis;
-        basis[0] = localRay.d;
-        basis[1] = vec3(1.0f + s * localRay.d.x * localRay.d.x * a, s * b, -s * localRay.d.x);
-        basis[2] = vec3(b, s + localRay.d.y * localRay.d.y * a, -localRay.d.y);
-
+        //const mat3 basis = CreateBasis(localRay.d);
         vec3 grad;
-        vec3 p = localRay.o;
+        vec3 p = localRay.PointAt(t);
         int i;
-        float t;
         vec4 F;
-
-        bool isBounded = false;
         bool isSubsurface = false;
-        bool isOriginInBound = cwiseMax(abs(localRay.o)) < 0.5 / transformScale;
 
         for (i = 0; i < kSDFMaxSteps; i++)
         {
-            F = field(p, basis, code, surfaceDepth);
+            //F = field(p, basis, code, surfaceDepth);
 
             //if(!isOriginInBound)
             {
                 //vec4 FBox = sdfBox(p, 0.5 / transformScale); 
-                //vec4 FBox = sdfTorus(p, 0.5 / transformScale, 0.2 / transformScale);
-                vec4 FBox = SDF::Sphere(p, 0.5 / transformScale);
-                if (FBox.x > F.x) { F = FBox; }
+                vec4 FBox = SDF::Torus(p, 0.25 / transformScale, 0.1 / transformScale);
+                //vec4 FBox = SDF::Sphere(p, 0.5 / transformScale);
+                //if (FBox.x > F.x) { F = FBox; }
+                F = FBox;
             }
-
-            //F = sdfTorus(p, 0.5, 0.2);
-            //F = sdfSphere(p, 0.5);
 
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
             else if (F.x > 0.0 && F.x < kSDFCutoffThreshold) { break; }
 
-            if (!isBounded) { if (F.x < kSDFEscapeThreshold) { isBounded = true; } }
-            else if (F.x > kSDFEscapeThreshold) { return nullRay(); }
+            if (F.x > kSDFEscapeThreshold) { return false; }
 
             t += isSubsurface ? -F.x : F.x;
-            p = localRay.o + t * localRay.d;
+            p = localRay.PointAt(t);
         }
 
         t /= localMag;
-        if (F.x > kSDFFailThreshold || t > ray.tNear) { return nullRay(); }
-
-        // If we've hit the surface and it's the closest intersection, calculate the normal and UV coordinates
-        // A more efficient way would be to defer this process to avoid unncessarily computing normals for occuluded surfaces.
-        const vec3 hitLocal = localRay.o + localRay.d * t;
-        const vec3 hitGlobal = m_invMatrix * hitLocal;
-        vec3 nGlobal = normalize((m_invMatrix * (n + hitLocal)) - hitGlobal);
-        if (dot(n, localRay.d) > 0.0) { nGlobal = -nGlobal; }
+        if (F.x > kSDFFailThreshold || t > ray.tNear) { return false; }
 
         ray.tNear = t;
-        hitCtx.Set(nGlobal, false, uv, 1e-5f);
+        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_transform)), false, vec2(0.0f), 1e-4f);
 
         return true;
     }
 
-
     __host__  Host::KIFS::KIFS()
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_matrix = mat4::indentity();
-        m_hostData.m_invMatrix = mat4::indentity();
+        m_hostData.m_transform.MakeIdentity();
 
-        InstantiateOnDevice(&cu_deviceData, m_hostData.m_matrix, m_hostData.m_invMatrix);
+        cu_deviceData = InstantiateOnDevice<Device::KIFS>(m_hostData.m_transform);
     }
 
     __host__ void Host::KIFS::OnDestroyAsset()
@@ -323,4 +264,14 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
+    __host__ void Host::KIFS::OnJson(const Json::Node& jsonNode)
+    {
+        Device::KIFS::Params params;
+
+        //jsonNode.GetVector("albedo", params.albedo, true);
+
+        //Log::Debug("albedo: %s", params.albedo.format());
+
+        SyncParameters(cu_deviceData, params);
+    }
 }

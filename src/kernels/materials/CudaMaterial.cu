@@ -38,6 +38,8 @@ namespace Cuda
 
         jsonNode.GetVector("albedo", params.albedo, true);
 
+        Log::Debug("albedo: %s", params.albedo.format());
+
         SyncParameters(cu_deviceData, params);
     }
 }

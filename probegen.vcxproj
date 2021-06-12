@@ -73,6 +73,7 @@
     <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaCornell.cuh" />
+    <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaKIFS.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaPlane.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaSDF.cuh" />
@@ -124,7 +125,7 @@
     <CudaCompile Include="src\kernels\math\CudaMath.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornell.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />

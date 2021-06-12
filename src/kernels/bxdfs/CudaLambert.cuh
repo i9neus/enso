@@ -27,7 +27,7 @@ namespace Cuda
                 r.z = sqrt(1.0 - sqr(r.x) - sqr(r.y));
 
                 pdf = r.z / kPi;
-                extant = createBasis(hitCtx.hit.n) * r;  
+                extant = CreateBasis(hitCtx.hit.n) * r;  
 
                 return true;
             }

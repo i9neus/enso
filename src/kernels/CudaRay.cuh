@@ -15,7 +15,7 @@ namespace Cuda
 
 		__device__ RayBasic() = default;
 		__device__ RayBasic(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
-		__device__ inline vec3 HitPoint(const float& t) const { return o + d * t; }		
+		__device__ inline vec3 PointAt(const float& t) const { return o + d * t; }		
 	};
 
 	__device__ inline RayBasic RayToObjectSpace(const RayBasic& world, const BidirectionalTransform& bdt) 

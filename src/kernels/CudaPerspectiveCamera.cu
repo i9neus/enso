@@ -61,7 +61,7 @@ namespace Cuda
         focalDistance *= mix(0.0f, 1.0f, m_cameraFStop.y);
         float fStop = powf(2.0f, mix(-3.0, 8.0, m_cameraFStop.x));
 
-        mat3 basis = createBasis(cameraForward, kCameraUp);
+        mat3 basis = CreateBasis(cameraForward, kCameraUp);
 
         // Define the focal length and F-number depending, either from built-in or user-defined values
         float focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_cameraFLength.y));

@@ -13,6 +13,15 @@ namespace Cuda
         class KIFS : public Device::Tracable
         {
             friend Host::KIFS;
+        public: 
+            struct Params
+            {
+                //__host__ __device__ Params() : albedo(0.5f) {}
+
+                //vec3 ;
+            }
+            m_params;
+
         protected:
             KIFS() = default;
 
@@ -29,10 +38,11 @@ namespace Cuda
             uint        m_polyOrder;
 
         public:
-            __device__ KIFS(const mat4Pair& transform, const KIFSType& type);
+            __device__ KIFS(const BidirectionalTransform& transform);
             __device__ ~KIFS() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
+            __device__ void OnSyncParameters(const Params& params) { m_params = params; }
         };
     }
 
@@ -48,6 +58,7 @@ namespace Cuda
             __host__ KIFS();
             __host__ virtual ~KIFS() { OnDestroyAsset(); }
             __host__ virtual void OnDestroyAsset() override final;
+            __host__ virtual void OnJson(const Json::Node& jsonNode) override final;
 
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final { return cu_deviceData; }
         };

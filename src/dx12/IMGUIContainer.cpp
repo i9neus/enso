@@ -5,7 +5,7 @@
 IMGUIContainer::IMGUIContainer()
 {
     m_parameters[1].scale = 1.0f;
-    m_parameters[1].colour = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    m_parameters[1].colour = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
 }
 
 void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
@@ -46,7 +46,7 @@ void IMGUIContainer::UpdateParameters(RenderManager& manager)
         return;
     }
 
-    const auto& p = m_parameters[0];
+    const auto& p = m_parameters[1];
    
     Json::Document document;
     document.AddValue("scale", p.scale);

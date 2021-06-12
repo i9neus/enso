@@ -12,6 +12,7 @@
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
 #include "tracables/CudaCornell.cuh"
+#include "tracables/CudaKIFS.cuh"
 #include "materials/CudaMaterial.cuh"
 
 namespace Cuda
@@ -39,6 +40,7 @@ namespace Cuda
 				Device::Sphere*					cu_sphere;
 				Device::LambertBRDF*			cu_lambert;
 				Device::Plane*                  cu_groundPlane;
+				Device::KIFS*                   cu_kifs;
 				Device::SimpleMaterial*			cu_simpleMaterial;
 				ivec2							viewportDims;
 			};		
@@ -95,7 +97,10 @@ namespace Cuda
 			AssetHandle<Host::Cornell>                          m_hostCornell;
 			AssetHandle<Host::Sphere>                           m_hostSphere;
 			AssetHandle<Host::Plane>                            m_hostGroundPlane;
+			AssetHandle<Host::KIFS>								m_hostKifs;
+
 			AssetHandle<Host::LambertBRDF>                      m_hostLambert;
+
 			AssetHandle<Host::SimpleMaterial>					m_hostSimpleMaterial;
 
 			cudaStream_t			m_hostStream;

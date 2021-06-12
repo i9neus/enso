@@ -2,6 +2,7 @@
 
 #include "../CudaRay.cuh"
 #include "../CudaCtx.cuh"
+#include "CudaGenericIntersectors.cuh"
 
 namespace Cuda
 {

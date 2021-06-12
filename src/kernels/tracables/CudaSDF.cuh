@@ -6,7 +6,7 @@ namespace Cuda
 {    
     namespace SDF
     {
-        inline vec4 Capsule(const vec3& p, const vec3& v0, const vec3& v1, const float r)
+        __device__ inline vec4 Capsule(const vec3& p, const vec3& v0, const vec3& v1, const float r)
         {
             const vec3 dv = v1 - v0;
 
@@ -19,7 +19,7 @@ namespace Cuda
             return vec4(gradMag - r, grad);
         }
 
-        inline vec4 Torus(const vec3& p, const float& r1, const float& r2)
+        __device__ inline vec4 Torus(const vec3& p, const float& r1, const float& r2)
         {
             const vec3 pPlane = vec3(p.x, 0.0f, p.z);
             float pPlaneLen = length(pPlane);
@@ -28,19 +28,19 @@ namespace Cuda
             return vec4(length(pRing) - r2, normalize(pRing));
         }
 
-        inline vec4 Box(const vec3& p, const float& size)
+        __device__ inline vec4 Box(const vec3& p, const float& size)
         {
             const float F = cwiseMax(abs(p));
             return vec4(F - size, floor(abs(p + vec3(1e-5) * sign(p)) / F) * sign(p));
         }
 
-        inline vec4 Sphere(const vec3& p, const float& r)
+        __device__ inline vec4 Sphere(const vec3& p, const float& r)
         {
             const float pLen = length(p);
             return vec4(pLen - r, vec3(p / pLen));
         }
 
-        inline vec4 PolyhedronFace(const vec3& p, const vec3* v, const int numVerts, const float scale)
+        __device__ inline vec4 PolyhedronFace(const vec3& p, const vec3* v, const int numVerts, const float scale)
         {
             // TODO: Pre-cache the normal
             vec3 n = normalize(cross(v[1] - v[0], v[2] - v[0]));
