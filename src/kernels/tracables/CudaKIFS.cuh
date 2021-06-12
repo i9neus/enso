@@ -1,10 +1,11 @@
 ﻿#pragma once
 
 #include "CudaTracable.cuh"
+#include "CudaSDF.cuh"
 
 namespace Cuda
 {
-    namespace Host { class KIFS; }
+    namespace Host { class KIFS; }    
 
     enum class KIFSType : uint { kTetrahedtron, kCube };
 
@@ -35,7 +36,11 @@ namespace Cuda
 
             uint        m_numVertices;
             uint        m_numFaces;
-            uint        m_polyOrder;
+            uint        m_polyOrder;            
+
+            SDF::PolyhedronData      m_tetrahedronData;
+            SDF::PolyhedronData      m_cubeData;
+            SDF::PolyhedronData*     m_polyData;
 
         public:
             __device__ KIFS(const BidirectionalTransform& transform);

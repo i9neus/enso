@@ -1,5 +1,4 @@
 ﻿#include "CudaKIFS.cuh"
-#include "CudaSDF.cuh"
 
 namespace Cuda
 {
@@ -13,45 +12,36 @@ namespace Cuda
     constexpr float kSDFRayIncrement = 0.7f;
     constexpr float kSDFFailThreshold = 1e-2f;
 
-    /*__device__ void GetTetrahedronConstData( vec3** V,  uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
-    {
-        __constant__ static vec3 kV[6] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f };
-        __constant__ static uint kF[4 * 4] = { 0, 1, 2, 0, 1, 2, 3, 0, 2, 3, 0, 0, 3, 0, 1, 0 };
-        
-        *V = kV;
-        *F = kF;
-        *numVertices = 4u;
-        *numFaces = 4u;
-        *polyOrder = 3u;
-    }
-
-    __device__ void GetCubeConstData( vec3** V,  uint** F, uint* numVertices, uint* numFaces, uint* polyOrder)
-    {
-        __constant__ static vec3 kV[8] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, 1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f,
-                                          vec3(1.0f, 1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, -1.0f, -1.0f) * 0.5f };
-        __constant__ static uint kF[6 * 4] = { 0, 1, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 2, 3, 7, 6, 0, 2, 6, 4, 1, 3, 7, 5 };
-
-        *V = kV;
-        *F = kF;
-        *numVertices = 8u;
-        *numFaces = 6u;
-        *polyOrder = 4u;
-    }*/
-
     __device__ Device::KIFS::KIFS(const BidirectionalTransform& transform) :
-        Tracable(transform)
+        Tracable(transform),
+        m_tetrahedronData(4, 4 * 3, 3),
+        m_cubeData(8, 6 * 4, 4)
     {
-        m_type = KIFSType::kTetrahedtron;
+        {
+            const vec3 V[4] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f };
+            const uint F[12] = { 0, 1, 2, 1, 2, 3, 2, 3, 0, 3, 0, 1 };
+            memcpy((void*)m_tetrahedronData.V, V, sizeof(V));
+            memcpy((void*)m_tetrahedronData.F, F, sizeof(F));
+        }
 
-        /*switch (m_type)
+        {
+            const vec3 V[8] = { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, 1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f,
+                                          vec3(1.0f, 1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, -1.0f, -1.0f) * 0.5f };
+            const uint F[6 * 4] = { 0, 1, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 2, 3, 7, 6, 0, 2, 6, 4, 1, 3, 7, 5 };
+            memcpy((void*)m_cubeData.V, V, sizeof(V));
+            memcpy((void*)m_cubeData.F, F, sizeof(F));
+        }
+        
+        switch (m_type)
         {
         case KIFSType::kTetrahedtron:
-            GetTetrahedronConstData(&m_V, &m_F, &m_numVertices, &m_numFaces, &m_polyOrder); break;
+            m_polyData = &m_tetrahedronData; break;
         case KIFSType::kCube:
-            GetCubeConstData(&m_V, &m_F, &m_numVertices, &m_numFaces, &m_polyOrder); break;
-        };*/
+        default:
+            m_polyData = &m_cubeData; break;
+        };
 
-        //m_origin = m_V[0];
+        m_origin = m_polyData->F[0];
     }
 
     /*__device__ void Device::KIFS::FoldTetrahedron(const mat4& matrix, const int& i, vec3& p, mat3& bi, uint& code) const
