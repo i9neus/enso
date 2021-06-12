@@ -26,7 +26,7 @@ namespace Cuda
 			__host__ __device__ inline unsigned int GetMemorySize() const { return m_width * m_height * sizeof(T); }
 			__host__ __device__ inline unsigned int Width() const { return m_width; }
 			__host__ __device__ inline unsigned int Height() const { return m_height; }
-			__host__ __device__ inline vec2 Dimensions() const { return vec2(float(m_width), float(m_height)); }
+			__host__ __device__ inline ivec2 Dimensions() const { return ivec2(m_width, m_height); }
 			__host__ __device__ inline bool IsValid(const ivec2& xy) const { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
 
 			__device__ T* GetData() { return cu_data; }

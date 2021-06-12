@@ -69,9 +69,9 @@ namespace Cuda
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
 		vec3 L(0.0f);
-		const vec2 viewportPos = compressedRay.ViewportPos();
+		const vec2 viewportPos = vec2(compressedRay.ViewportPos().x, compressedRay.ViewportPos().y); // FIXME: Do an automatic cast
 
-		int depth = renderCtx.depth;
+		int depth = renderCtx.depth; 
 
 		// INTERSECTION 
 		HitCtx hitCtx;
@@ -106,7 +106,9 @@ namespace Cuda
 
 		//L += incidentRay.od.d;
 		//cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
-		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
+
+		// FIXME: Do an automatic cast
+		m_objects.cu_deviceAccumBuffer->Accumulate(ivec2(viewportPos), L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
 		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
 	}
 

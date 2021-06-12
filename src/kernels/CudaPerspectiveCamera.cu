@@ -73,8 +73,9 @@ namespace Cuda
         // Generate a position on the sensor, the focal plane, and the lens. This lens will always have circular bokeh
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
         // but this doesn't really matter because the anti-aliasing kernel is so small that we won't notice the correlation 
+        // FIXME: Do an automatic cast
         vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportDims.x, renderCtx.viewportDims.y) +
-            kCameraSensorSize * (renderCtx.viewportPos - vec2(renderCtx.viewportDims) * 0.5) / float(max(renderCtx.viewportDims.x, renderCtx.viewportDims.y));
+            kCameraSensorSize * (vec2(renderCtx.viewportPos) - vec2(renderCtx.viewportDims) * 0.5) / float(max(renderCtx.viewportDims.x, renderCtx.viewportDims.y));
         vec2 focalPlanePos = vec2(sensorPos.x, sensorPos.y) * d2 / d1;
 
         vec2 lensPos;

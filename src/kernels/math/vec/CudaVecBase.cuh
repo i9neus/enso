@@ -4,71 +4,49 @@
 #include "generic/Constants.h"
 
 namespace Cuda
-{
+{	
 	template<typename Type, int ActualSize, int SpoofedSize, int... Indices>
-	class __vec_swizzle
+	struct __vec_swizzle
 	{
-	public:
+		template<typename OtherType, int OtherActualSize, int OtherSpoofedSize, int... OtherIndices> friend struct __vec_swizzle;
+
 		Type data[ActualSize];
 
 	private:
-		template<int J, int K, int... Kn>
-		__host__ __device__ inline
-			typename std::enable_if<sizeof...(Kn) == 0>::type unpackRecurse(Type* vecData) const
+		template<int L0, int L1, int R0, int R1>
+		__host__ __device__ inline void UnpackTo(Type* otherData) const
 		{
-			vecData[J] = data[K];
+			otherData[L0] = data[R0];
+			otherData[L1] = data[R1];
 		}
 
-		template<int J, int K, int... Kn>
-		__host__ __device__ inline
-			typename std::enable_if<sizeof...(Kn) != 0>::type unpackRecurse(Type* vecData) const
+		template<int L0, int L1, int L2, int R0, int R1, int R2>
+		__host__ __device__ inline void UnpackTo(Type* otherData) const
 		{
-			vecData[J] = data[K];
-			unpackRecurse<J + 1, Kn...>(vecData);
+			otherData[L0] = data[R0];
+			UnpackTo<L1, L2, R1, R2>(otherData);
+		}
+
+		template<int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
+		__host__ __device__ inline void UnpackTo(Type* otherData) const
+		{
+			otherData[L0] = data[R0];
+			UnpackTo<L1, L2, L3, R1, R2, R3>(otherData);
 		}
 
 	public:
 		__vec_swizzle() = default;
 
-		__host__ __device__ inline void unpack(Type* vecData) const
+		// Assign from swizzled types
+		template<int OtherActualSize, int... OtherIndices>
+		__host__ __device__ inline __vec_swizzle& operator=(const __vec_swizzle<Type, OtherActualSize, SpoofedSize, OtherIndices...>& rhs)
 		{
-			unpackRecurse<0, Indices...>(vecData);
+			rhs.UnpackTo<Indices..., OtherIndices...>(data);
+			return *this;
 		}
 	};
 
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 2, Indices...>& operator *=(__vec_swizzle<Type, ActualSize, 2, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] *= rhs;	lhs.data[1] *= rhs;	return lhs;
-	}
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 3, Indices...>& operator *=(__vec_swizzle<Type, ActualSize, 3, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] *= rhs;	lhs.data[1] *= rhs;	lhs.data[2] *= rhs;	return lhs;
-	}
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 4, Indices...>& operator *=(__vec_swizzle<Type, ActualSize, 4, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] *= rhs;	lhs.data[1] *= rhs;	lhs.data[2] *= rhs;	lhs.data[3] *= rhs;	return lhs;
-	}
-
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 2, Indices...>& operator /=(__vec_swizzle<Type, ActualSize, 2, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] /= rhs;	lhs.data[1] /= rhs;	return lhs;
-	}
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 3, Indices...>& operator /=(__vec_swizzle<Type, ActualSize, 3, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] /= rhs;	lhs.data[1] /= rhs;	lhs.data[2] /= rhs;	return lhs;
-	}
-	template<typename Type, int ActualSize, int... Indices>
-	__host__ __device__ inline  __vec_swizzle<Type, ActualSize, 4, Indices...>& operator /=(__vec_swizzle<Type, ActualSize, 4, Indices...>& lhs, const Type& rhs)
-	{
-		lhs.data[0] /= rhs;	lhs.data[1] /= rhs;	lhs.data[2] /= rhs;	lhs.data[3] /= rhs;	return lhs;
-	}
-
-	template<int T> struct VecBase {};	
+	template<int T> struct __vec_base {};
 	
 
 }
