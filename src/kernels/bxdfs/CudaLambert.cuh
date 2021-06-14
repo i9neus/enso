@@ -23,7 +23,7 @@ namespace Cuda
                 const vec2 xi = renderCtx.Rand2();
                 
                 // Sample the Lambertian direction
-                vec3 r = vec3(SampleUnitDisc(xi.xy), 0.0f);
+                vec3 r = vec3(SampleUnitDisc(xi), 0.0f);
                 r.z = sqrt(1.0 - sqr(r.x) - sqr(r.y));
 
                 pdf = r.z / kPi;

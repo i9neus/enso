@@ -109,7 +109,7 @@ namespace tests
 		}
 		TEST_METHOD(TestMathOrthoBasis)
 		{
-			// Test the createBasis(n) function by checking that three orthogonal vectors, when transformed, are still orthogonal
+			// Test the CreateBasis(n) function by checking that three orthogonal vectors, when transformed, are still orthogonal
 
 			const vec3 b0 = normalize(vec3(0.73571f, -1.2945f, 0.34517f));
 			const vec3 b1 = normalize(cross(b0, (abs(dot(b0, vec3(1.0, 0.0, 0.0))) < 0.5) ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
@@ -122,7 +122,7 @@ namespace tests
 			{
 				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
 
-				const mat3 onbTest = createBasis(n);
+				const mat3 onbTest = CreateBasis(n);
 				const vec3 t0 = onbTest * b0;
 				const vec3 t1 = onbTest * b1;
 				const vec3 t2 = onbTest * b2;
@@ -132,13 +132,13 @@ namespace tests
 				Assert::IsTrue(std::abs(dot(t2, t0)) < kDotEpsilon, Widen(tfm::format("t2 and t0 are not ortogonal: dot product = %f", dot(t2, t0))).c_str());
 			}
 
-			// Test the createBasis(n, up) function by checking that three orthogonal vectors, when transformed, are still orthogonal
+			// Test the CreateBasis(n, up) function by checking that three orthogonal vectors, when transformed, are still orthogonal
 
 			{
 				const vec3 n = normalize(vec3(-0.537851f, -0.872652f, 1.275876f));
 				const vec3 up = normalize(vec3(1.283508f, 0.7673658f, -0.38762f));
 
-				const mat3 onbTest = createBasis(n, up);
+				const mat3 onbTest = CreateBasis(n, up);
 				const vec3 s0 = onbTest * b0;
 				const vec3 s1 = onbTest * b1;
 				const vec3 s2 = onbTest * b2;

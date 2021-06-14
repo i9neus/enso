@@ -1,28 +1,32 @@
 ﻿#pragma once
 
-#include "CudaCommonIncludes.cuh"
-#include "CudaImage.cuh"
-#include "CudaPerspectiveCamera.cuh"
-#include "CudaCtx.cuh"
 #include "CudaAssetContainer.cuh"
-#include "CudaManagedArray.cuh"
 #include "generic/JsonUtils.h"
-
-#include "bxdfs/CudaLambert.cuh"
-#include "tracables/CudaSphere.cuh"
-#include "tracables/CudaPlane.cuh"
-#include "tracables/CudaCornell.cuh"
-#include "tracables/CudaKIFS.cuh"
-#include "materials/CudaMaterial.cuh"
+#include "math/CudaMath.cuh"
+#include "CudaImage.cuh"
 
 namespace Cuda
 {
+	class HitCtx;
+	class RenderCtx;
+	class Ray;
+	class CompressedRay;
+	
 	namespace Host { class WavefrontTracer; }	
 
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
 	
 	namespace Device
 	{
+		class Cornell;
+		class Sphere;
+		class LambertBRDF;
+		class Plane;
+		class KIFS;
+		class SimpleMaterial;
+		class PerspectiveCamera;
+		template<typename T> class Array;
+		
 		using CompressedRayBuffer = Device::Array<CompressedRay>;
 		using PixelFlagsBuffer = Device::Array<uchar>;
 
@@ -42,13 +46,12 @@ namespace Cuda
 				Device::Plane*                  cu_groundPlane;
 				Device::KIFS*                   cu_kifs;
 				Device::SimpleMaterial*			cu_simpleMaterial;
+				Device::PerspectiveCamera*		cu_camera;
 				ivec2							viewportDims;
 			};		
 
 		protected:			
 			Objects							m_objects;
-
-			Device::PerspectiveCamera		m_camera;
 
 			float							m_wallTime;
 			int								m_frameIdx;
@@ -80,6 +83,16 @@ namespace Cuda
 
 	namespace Host
 	{
+		class Cornell;
+		class Sphere;
+		class LambertBRDF;
+		class Plane;
+		class KIFS;
+		class SimpleMaterial;
+		class Tracable;
+		class PerspectiveCamera;
+		template<typename T> class Array;
+
 		using CompressedRayBuffer = Host::Array<CompressedRay>;
 		using PixelFlagsBuffer = Host::Array<uchar>;
 		
@@ -102,6 +115,8 @@ namespace Cuda
 			AssetHandle<Host::LambertBRDF>                      m_hostLambert;
 
 			AssetHandle<Host::SimpleMaterial>					m_hostSimpleMaterial;
+
+			AssetHandle<Host::PerspectiveCamera>				m_hostPerspectiveCamera;
 
 			cudaStream_t			m_hostStream;
 			dim3                    m_block, m_grid;

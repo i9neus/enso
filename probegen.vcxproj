@@ -63,6 +63,7 @@
     <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh" />
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
+    <ClInclude Include="src\kernels\math\CudaTransform.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaIVec2.cuh" />

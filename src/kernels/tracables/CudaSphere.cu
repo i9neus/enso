@@ -12,7 +12,7 @@ namespace Cuda
         float c = dot(localRay.o, localRay.o) - 1.0;
 
         float t0, t1;
-        if (!quadraticSolve(a, b, c, t0, t1)) { return false; }
+        if (!QuadraticSolve(a, b, c, t0, t1)) { return false; }
 
         if (t1 < t0)
         {

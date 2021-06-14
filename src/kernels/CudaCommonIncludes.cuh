@@ -7,22 +7,12 @@
 #include "CudaAsset.cuh"
 #include "generic/StdIncludes.h"
 #include "thirdparty/nvidia/helper_cuda.h"
+#include "generic/Constants.h"
 
 namespace Cuda
 {
 #define IsOk checkCudaErrors
 	
-	using uint = unsigned int;
-	using uchar = unsigned char;
-	using ushort = unsigned short;
-
-	__host__ __device__ inline float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
-	__host__ __device__ inline float fract(const float& v) { return fmodf(v, 1.0f); }
-	__host__ __device__ inline float sign(const float& v) { return copysign(1.0f, v); }
-	template<typename T> __host__ inline void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
-
-	#define KERNEL_COORDS_IVEC2 ivec2(blockIdx.x* blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y)
-
 	template<typename T>
 	inline void SafeFreeDeviceMemory(T** deviceData)
 	{

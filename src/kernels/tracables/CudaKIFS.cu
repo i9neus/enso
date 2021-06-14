@@ -44,7 +44,7 @@ namespace Cuda
         m_origin = m_polyData->F[0];
     }
 
-    /*__device__ void Device::KIFS::FoldTetrahedron(const mat4& matrix, const int& i, vec3& p, mat3& bi, uint& code) const
+    __device__ void Device::KIFS::FoldTetrahedron(const mat4& matrix, const int& i, vec3& p, mat3& bi, uint& code) const
     {
         if (p.x + p.y < 0.0)
         {
@@ -72,7 +72,7 @@ namespace Cuda
         }
     }
 
-    __device__ vec4 Device::KIFS::Field(vec3 p, const mat3& b, const RenderCtx& renderCtx, uint& code, uint& surfaceDepth) const
+    /*__device__ vec4 Device::KIFS::Field(vec3 p, const mat3& b, const RenderCtx& renderCtx, uint& code, uint& surfaceDepth) const
     {
         // TODO: Missing parameter
         //p.xz -= 5.0 * (gParamKIFSTranslate.xy - vec2(0.5));

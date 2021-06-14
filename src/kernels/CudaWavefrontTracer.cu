@@ -3,6 +3,21 @@
 #include "CudaHash.cuh"
 #include "generic/Assert.h"
 #include "CudaAsset.cuh"
+#include "CudaRay.cuh" 
+
+#include "bxdfs/CudaLambert.cuh"
+#include "tracables/CudaSphere.cuh"
+#include "tracables/CudaPlane.cuh"
+#include "tracables/CudaCornell.cuh"
+#include "tracables/CudaKIFS.cuh"
+#include "materials/CudaMaterial.cuh"
+
+#include "CudaPerspectiveCamera.cuh"
+#include "CudaManagedArray.cuh"
+
+#include "CudaCommonIncludes.cuh"
+#include "CudaImage.cuh"
+#include "CudaCtx.cuh"
 
 namespace Cuda
 {
@@ -36,7 +51,7 @@ namespace Cuda
 		if (!compressedRay.IsAlive())
 		{
 			RenderCtx renderCtx(viewportPos, m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx + 1, 0);
-			m_camera.CreateRay(compressedRay, renderCtx);
+			m_objects.cu_camera->CreateRay(compressedRay, renderCtx);
 		}
 
 		//cu_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
@@ -69,7 +84,7 @@ namespace Cuda
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
 		vec3 L(0.0f);
-		const vec2 viewportPos = vec2(compressedRay.ViewportPos().x, compressedRay.ViewportPos().y); // FIXME: Do an automatic cast
+		const vec2 viewportPos = vec2(compressedRay.ViewportPos()); // FIXME: Do an automatic cast
 
 		int depth = renderCtx.depth; 
 
@@ -143,6 +158,7 @@ namespace Cuda
 		m_hostKifs.DestroyAsset();
 		m_hostSimpleMaterial.DestroyAsset();
 		m_hostLambert.DestroyAsset();
+		m_hostPerspectiveCamera.DestroyAsset();
 
 		DestroyOnDevice(&cu_deviceData);
 	}
@@ -167,6 +183,8 @@ namespace Cuda
 		m_hostSimpleMaterial = AssetHandle<Host::SimpleMaterial>(new Host::SimpleMaterial(), "id_simpleMaterial");
 		m_hostKifs = AssetHandle<Host::KIFS>(new Host::KIFS(), "id_kifs");
 
+		m_hostPerspectiveCamera = AssetHandle<Host::PerspectiveCamera>(new Host::PerspectiveCamera(), "id_perspcamera");
+
 		//m_hostTracables->Push(newSphere);
 		//m_hostTracables->Sync();
 
@@ -185,6 +203,7 @@ namespace Cuda
 		m_hostData.cu_groundPlane = m_hostGroundPlane->GetDeviceInstance();
 		m_hostData.cu_simpleMaterial = m_hostSimpleMaterial->GetDeviceInstance();
 		m_hostData.cu_kifs = m_hostKifs->GetDeviceInstance();
+		m_hostData.cu_camera = m_hostPerspectiveCamera->GetDeviceInstance();
 
 		cu_deviceData = InstantiateOnDeviceWithParams<Device::WavefrontTracer>(m_hostData);
 		

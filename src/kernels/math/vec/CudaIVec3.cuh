@@ -16,19 +16,19 @@ namespace Cuda
 			struct { Type i0, i1, i2; };
 			Type data[3];
 
-			__vec_swizzle<Type, 3, 3, 0, 0, 0> xxx; __vec_swizzle<Type, 3, 3, 0, 0, 1> xxy; __vec_swizzle<Type, 3, 3, 0, 0, 2> xxz;
-			__vec_swizzle<Type, 3, 3, 0, 1, 0> xyx; __vec_swizzle<Type, 3, 3, 0, 1, 1> xyy;
-			__vec_swizzle<Type, 3, 3, 0, 2, 0> xzx; __vec_swizzle<Type, 3, 3, 0, 2, 1> xzy; __vec_swizzle<Type, 3, 3, 0, 2, 2> xzz;
-			__vec_swizzle<Type, 3, 3, 1, 0, 0> yxx; __vec_swizzle<Type, 3, 3, 1, 0, 1> yxy; __vec_swizzle<Type, 3, 3, 1, 0, 2> yxz;
-			__vec_swizzle<Type, 3, 3, 1, 1, 0> yyx; __vec_swizzle<Type, 3, 3, 1, 1, 1> yyy; __vec_swizzle<Type, 3, 3, 1, 1, 2> yyz;
-			__vec_swizzle<Type, 3, 3, 1, 2, 0> yzx; __vec_swizzle<Type, 3, 3, 1, 2, 1> yzy; __vec_swizzle<Type, 3, 3, 1, 2, 2> yzz;
-			__vec_swizzle<Type, 3, 3, 2, 0, 0> zxx; __vec_swizzle<Type, 3, 3, 2, 0, 1> zxy; __vec_swizzle<Type, 3, 3, 2, 0, 2> zxz;
-			__vec_swizzle<Type, 3, 3, 2, 1, 0> zyx; __vec_swizzle<Type, 3, 3, 2, 1, 1> zyy; __vec_swizzle<Type, 3, 3, 2, 1, 2> zyz;
-			__vec_swizzle<Type, 3, 3, 2, 2, 0> zzx; __vec_swizzle<Type, 3, 3, 2, 2, 1> zzy; __vec_swizzle<Type, 3, 3, 2, 2, 2> zzz;
+            /*__vec_swizzle<Type, 3, 3, 0, 0, 0> xxx;*/ /*__vec_swizzle<Type, 3, 3, 0, 0, 1> xxy;*/ /*__vec_swizzle<Type, 3, 3, 0, 0, 2> xxz;*/
+            /*__vec_swizzle<Type, 3, 3, 0, 1, 0> xyx;*/ /*__vec_swizzle<Type, 3, 3, 0, 1, 1> xyy;*/
+            /*__vec_swizzle<Type, 3, 3, 0, 2, 0> xzx;*/ /*__vec_swizzle<Type, 3, 3, 0, 2, 1> xzy;*/ /*__vec_swizzle<Type, 3, 3, 0, 2, 2> xzz;*/
+            /*__vec_swizzle<Type, 3, 3, 1, 0, 0> yxx;*/ /*__vec_swizzle<Type, 3, 3, 1, 0, 1> yxy;*/ /*__vec_swizzle<Type, 3, 3, 1, 0, 2> yxz;*/
+            /*__vec_swizzle<Type, 3, 3, 1, 1, 0> yyx;*/ /*__vec_swizzle<Type, 3, 3, 1, 1, 1> yyy;*/ /*__vec_swizzle<Type, 3, 3, 1, 1, 2> yyz;*/
+            /*__vec_swizzle<Type, 3, 3, 1, 2, 0> yzx;*/ /*__vec_swizzle<Type, 3, 3, 1, 2, 1> yzy;*/ /*__vec_swizzle<Type, 3, 3, 1, 2, 2> yzz;*/
+            /*__vec_swizzle<Type, 3, 3, 2, 0, 0> zxx;*/ /*__vec_swizzle<Type, 3, 3, 2, 0, 1> zxy;*/ /*__vec_swizzle<Type, 3, 3, 2, 0, 2> zxz;*/
+            /*__vec_swizzle<Type, 3, 3, 2, 1, 0> zyx;*/ /*__vec_swizzle<Type, 3, 3, 2, 1, 1> zyy;*/ /*__vec_swizzle<Type, 3, 3, 2, 1, 2> zyz;*/
+            /*__vec_swizzle<Type, 3, 3, 2, 2, 0> zzx;*/ /*__vec_swizzle<Type, 3, 3, 2, 2, 1> zzy;*/ /*__vec_swizzle<Type, 3, 3, 2, 2, 2> zzz;*/
 
-			__vec_swizzle<Type, 3, 2, 0, 0> xx; __vec_swizzle<Type, 3, 2, 0, 1> xy; __vec_swizzle<Type, 3, 2, 0, 2> xz;
-			__vec_swizzle<Type, 3, 2, 1, 0> yx; __vec_swizzle<Type, 3, 2, 1, 1> yy; __vec_swizzle<Type, 3, 2, 1, 2> yz;
-			__vec_swizzle<Type, 3, 2, 2, 0> zx; __vec_swizzle<Type, 3, 2, 2, 1> zy; __vec_swizzle<Type, 3, 2, 2, 2> zz;
+            /*__vec_swizzle<Type, 3, 2, 0, 0> xx;*/ /*__vec_swizzle<Type, 3, 2, 0, 1> xy;*/ /*__vec_swizzle<Type, 3, 2, 0, 2> xz;*/
+            /*__vec_swizzle<Type, 3, 2, 1, 0> yx;*/ /*__vec_swizzle<Type, 3, 2, 1, 1> yy;*/ /*__vec_swizzle<Type, 3, 2, 1, 2> yz;*/
+            /*__vec_swizzle<Type, 3, 2, 2, 0> zx;*/ /*__vec_swizzle<Type, 3, 2, 2, 1> zy;*/ /*__vec_swizzle<Type, 3, 2, 2, 2> zz;*/
 		};
 
 		__vec_swizzle() = default;

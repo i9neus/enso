@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
-#include "CudaRay.cuh"
 
 //#define CudaImageBoundCheck
 
@@ -71,9 +70,6 @@ namespace Cuda
 		template class Image<vec4>;
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
-
-		//template class Image<CompressedRay>;
-		//using CompressedRayBuffer = Image<CompressedRay>;
 	}
 
 	namespace Host
@@ -118,8 +114,5 @@ namespace Cuda
 		template class Image<vec4>;
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
-
-		//template class Image<CompressedRay>;
-		//using CompressedRayBuffer = Image<CompressedRay>;
 	}
 }

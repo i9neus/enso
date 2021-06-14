@@ -9,3 +9,7 @@ __device__ constexpr float kFltMax = 3.402823466e+38f;
 __device__ constexpr float kPhi = 1.6180339887498948482045868343f;
 __device__ constexpr float kInvPhi = 1 / kPhi;
 __device__ constexpr float kLog2 = 0.6931471805599453f;
+
+using uint = unsigned int;
+using uchar = unsigned char;
+using ushort = unsigned short;

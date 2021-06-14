@@ -53,8 +53,8 @@ namespace Cuda
                 if (F) { delete[] F; F = nullptr; }
             }
 
-            vec3 const* V;
-            uchar const* F;
+            vec3 const*     V;
+            uchar const*    F;
             const uint      kNumVertices;
             const uint      kNumFaces;
             const uint      kPolyOrder;

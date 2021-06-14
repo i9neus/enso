@@ -294,6 +294,9 @@
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh">
       <Filter>kernels\tracables</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaTransform.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">

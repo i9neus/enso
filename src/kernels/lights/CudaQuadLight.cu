@@ -15,7 +15,7 @@ namespace Cuda
         const vec3& normal = hitCtx.hit.n;
 
         const vec2 xi = renderCtx.Rand2() - 0.5f;
-        const vec3 lightPos = m_transform.PointToWorldSpace(vec3(xi.xy, 0.0f));
+        const vec3 lightPos = m_transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
         vec3 extantDir = lightPos - hitPos;
@@ -26,7 +26,7 @@ namespace Cuda
         if (dot(extantDir, normal) <= 0.0f) { return false; }
 
         // Test if the emitter is rotated away from the shading point
-        vec3 lightNormal = m_transform.PointToWorldSpace(vec3(xi.xy, 1.0));
+        vec3 lightNormal = m_transform.PointToWorldSpace(vec3(xi, 1.0f));
         float cosPhi = dot(extantDir, normalize(lightNormal - lightPos));
         if (cosPhi < 0.0f) { return false; }
 

@@ -1,6 +1,8 @@
-﻿#include "CudaPerspectiveCamera.cuh"
-#include "CudaSampler.cuh"
+﻿#include "CudaSampler.cuh"
 #include "CudaHash.cuh"
+#include "CudaCtx.cuh"
+#include "CudaRay.cuh"
+#include "CudaPerspectiveCamera.cuh"
 
 #define kCameraAA                 1.5f             // The width/height of the anti-aliasing kernel in pixels
 #define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
@@ -102,5 +104,26 @@ namespace Cuda
         newRay.viewport.x = ushort(renderCtx.viewportPos.x);
         newRay.viewport.y = ushort(renderCtx.viewportPos.y);
         newRay.SetAlive();
+    }
+
+    __host__ Host::PerspectiveCamera::PerspectiveCamera()
+    {
+        cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
+    }
+
+    __host__ void Host::PerspectiveCamera::OnDestroyAsset()
+    {
+        DestroyOnDevice(&cu_deviceData);
+    }
+
+    __host__ void Host::PerspectiveCamera::OnJson(const Json::Node& jsonNode)
+    {
+        Device::PerspectiveCamera::Params params;
+
+        //jsonNode.GetVector("albedo", params.albedo, true);
+
+        //Log::Debug("albedo: %s", params.albedo.format());
+
+        SyncParameters(cu_deviceData, params);
     }
 }
