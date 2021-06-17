@@ -10,7 +10,7 @@ namespace Cuda
     namespace Intersector
     {
         // Ray-unit-box intersection test
-        __device__ inline float RayUnitBox(const RayBasic& ray)
+        __device__ __forceinline__ float RayUnitBox(const RayBasic& ray)
         {
             vec3 tNearPlane, tFarPlane;
             for (int dim = 0; dim < 3; dim++)
@@ -34,7 +34,7 @@ namespace Cuda
             return 0.0f;  // Ray is inside box
         }
 
-        __device__ inline float RayPlane(const RayBasic& ray, const vec3& p, const vec3& n)
+        __device__ __forceinline__ float RayPlane(const RayBasic& ray, const vec3& p, const vec3& n)
         {
             const float dDotN = dot(ray.d, n);
             return (dDotN < 1e-10f) ? kNoIntersect : ((dot(p, n) - dot(ray.o, n)) / dDotN);
