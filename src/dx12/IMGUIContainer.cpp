@@ -4,8 +4,15 @@
 
 IMGUIContainer::IMGUIContainer()
 {
-    m_parameters[1].scale = 1.0f;
-    m_parameters[1].colour = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+    auto& params = m_parameters[1];
+    
+    params.kifs.rotate = vec3(0.0f);
+    params.kifs.faceMask = 0xffffffffu;
+    params.kifs.scale = vec2(0.0f, 0.0f);
+    params.kifs.thickness = 0.5f;
+    params.kifs.iterations = ivec2(1, 1);
+    
+    params.material.colour = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
 }
 
 void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
@@ -37,6 +44,36 @@ void IMGUIContainer::Destroy()
     std::printf("Destroyed IMGUI D3D objects.\n");
 }
 
+void IMGUIContainer::ConstructCameraControls()
+{
+    if (!ImGui::CollapsingHeader("Camera")) { return; }
+   
+}
+
+void IMGUIContainer::ConstructKIFSControls(Cuda::Device::KIFS::Params& params)
+{
+    if (!ImGui::CollapsingHeader("KIFS")) { return; }
+     
+    ImGui::SliderFloat("Rotate X", &params.rotate.x, -1.0f, 1.0f); 
+    ImGui::SliderFloat("Rotate Y", &params.rotate.y, -1.0f, 1.0f);
+    ImGui::SliderFloat("Rotate Z", &params.rotate.z, -1.0f, 1.0f);
+
+    ImGui::SliderFloat("Scale A", &params.scale.x, -1.0f, 1.0f);
+    ImGui::SliderFloat("Scale B", &params.scale.y, -1.0f, 1.0f);
+    ImGui::SliderFloat("Isosurface thickness", &params.thickness, 0.0f, 1.0f);
+
+    ImGui::SliderInt("Iterations A", &params.iterations.x, 0, kSDFMaxIterations);
+    ImGui::SliderInt("Iterations B", &params.iterations.y, 0, kSDFMaxIterations);
+}
+
+void IMGUIContainer::ConstructMaterialControls(Parameters& params)
+{
+    if (!ImGui::CollapsingHeader("Material")) { return; }
+
+    ImGui::ColorEdit3("Colour", (float*)&params.material.colour); // Edit 3 floats representing a color
+
+}
+
 void IMGUIContainer::UpdateParameters(RenderManager& manager)
 {
     // If nothing's changed this frame, don't bother updating
@@ -46,11 +83,10 @@ void IMGUIContainer::UpdateParameters(RenderManager& manager)
         return;
     }
 
-    const auto& p = m_parameters[1];
+    const auto& params = m_parameters[1];
    
     Json::Document document;
-    document.AddValue("scale", p.scale);
-    document.AddArray("albedo", std::vector<float>( {p.colour.x, p.colour.y, p.colour.z} ));
+    document.AddArray("albedo", std::vector<float>( {params.material.colour.x, params.material.colour.y, params.material.colour.z} ));
 
     manager.OnJson(document);
 
@@ -69,19 +105,11 @@ void IMGUIContainer::Render()
 
     ImGui::NewFrame();
 
-    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+    ImGui::Begin("Generator");   
 
-    //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-    //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-    //ImGui::Checkbox("Another Window", &show_another_window);
-
-    ImGui::SliderFloat("Scale", &params.scale, 0.0f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-    ImGui::ColorEdit3("Colour", (float*)&params.colour); // Edit 3 floats representing a color
-
-    //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-    //    counter++;
-    //ImGui::SameLine();
-    //ImGui::Text("counter = %d", counter);
+    ConstructCameraControls();
+    ConstructKIFSControls(params.kifs);
+    ConstructMaterialControls(params);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
