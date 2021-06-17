@@ -16,20 +16,34 @@ namespace Cuda
 		public:
 			struct Params
 			{
-			}
-			m_params;
+				vec2 cameraFStop;
+				vec2 cameraPos;
+				vec2 cameraLook;
+				vec2 cameraFLength;
+				bool useHaltonSpectralSampler;
+			};
 
 		public:
 			__device__ PerspectiveCamera();
 			__device__ void CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const;
-			__device__ void OnSyncParameters(const Params& params) { m_params = params; }
+			__device__ void OnSyncParameters(const Params& params) 
+			{ 
+				m_params = params; 
+				Prepare();
+			}
 
 		private:
-			bool		m_useHaltonSpectralSampler;
-			vec2		m_cameraPos;
-			vec2        m_cameraLook;
-			vec2		m_cameraFLength;
-			vec2        m_cameraFStop;
+			__device__ void Prepare();
+
+		private:
+			Params 		m_params;
+
+			mat3		m_basis;
+			vec3		m_cameraPos;
+			float		m_d1, m_d2;
+			float		m_focalLength;
+			float		m_focalDistance;
+			float		m_fStop;
 		};
 	}
 

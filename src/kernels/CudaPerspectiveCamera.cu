@@ -8,11 +8,12 @@
 #define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
 #define kBlades                   5.0f
 #define kBladeCurvature           0.0f
+#define kCameraUp                 vec3(0.0f, 1.0f, 0.0f) 
 
 namespace Cuda
 {    
     // Returns the polar distance r to the perimeter of an n-sided polygon
-    __device__ float Ngon(float phi)
+    __device__ __forceinline__ float Ngon(float phi)
     {
         float piBlades = kPi / kBlades;
         float bladeRadius = cos(piBlades) / cos(fmodf(((phi)+piBlades) + piBlades, 2.0f * piBlades) - piBlades);
@@ -22,18 +23,62 @@ namespace Cuda
     }
 
     __device__ Device::PerspectiveCamera::PerspectiveCamera()
-    {
-        m_useHaltonSpectralSampler = false;
-        m_cameraPos = vec2(0.3f, 0.5f);
-        m_cameraLook = vec2(0.5f, 0.2f);
-        m_cameraFLength = vec2(0.45f);
-        m_cameraFStop = vec2(0.5f);
+    {     
+        //Prepare();
+    }
+
+    __device__ void Device::PerspectiveCamera::Prepare()
+    { 
+        //float theta = kTwoPi * (m_cameraPos.x - 0.5f);
+        //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
+        m_cameraPos = vec3(1.0f, 1.5f, 3.0f);
+
+        //float cameraOriginDist = length(cameraPos);
+        //vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
+        //cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
+        vec3 cameraLookAt = vec3(0.0f);
+        
+        vec3 cameraForward = cameraLookAt - m_cameraPos;
+        m_focalDistance = length(cameraForward);
+        cameraForward /= m_focalDistance;
+
+        m_basis = CreateBasis(cameraForward, kCameraUp);
+
+        m_focalDistance *= mix(0.0f, 1.0f, m_params.cameraFStop.y);
+        m_fStop = powf(2.0f, mix(-3.0, 8.0, m_params.cameraFStop.x));
+
+        // Define the focal length and F-number depending, either from built-in or user-defined values
+        m_focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_params.cameraFLength.y));
+
+        // Solve the thin-lens equation. http://hyperphysics.phy-astr.gsu.edu/hbase/geoopt/lenseq.html
+        m_d1 = 0.5 * (m_focalDistance - sqrt(-4.0 * m_focalLength * m_focalDistance + sqr(m_focalDistance)));
+        m_d2 = m_focalDistance - m_d1;
     }
     
     __device__ void Device::PerspectiveCamera::CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const
-    {
-        // Define our camera vectors and orthonormal basis
-        #define kCameraUp vec3(0.0, 1.0, 0.0) 
+    {         
+        __shared__ bool isInited;
+        __shared__ mat3 basis;
+        __shared__ vec3 cameraPos;
+        __shared__ float focalDistance, focalLength, fStop, d1, d2;
+
+        isInited = false;
+
+        __syncthreads();
+        
+        if (!isInited)
+        {
+            basis = m_basis;
+            cameraPos = m_cameraPos;
+            d1 = m_d1;
+            d2 = m_d2;
+            focalLength = m_focalLength;
+            focalDistance = m_focalDistance;
+            fStop = m_fStop;
+            isInited = true;
+        }
+
+        __syncthreads();
 
         // Generate 4 random numbers from a continuous uniform distribution
         vec4 xi = renderCtx.Rand<0, 1, 2, 3>();
@@ -41,36 +86,31 @@ namespace Cuda
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
         float mu = xi.y;
-        /*if (m_useHaltonSpectralSampler)
-        {
-            uint hash = HashCombine(0x01000193u, HashCombine(HashOf(uint(renderCtx.viewportPos.x)), HashOf(uint(renderCtx.viewportPos.y))));
-            mu = HaltonBase2(hash);
-        }*/
 
-        float theta = kTwoPi * (m_cameraPos.x - 0.5f);
+        /*float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
-        vec3 cameraPos(1.0f, 1.5f, 3.0f);
+        cameraPos = vec3(1.0f, 1.5f, 3.0f);
 
         float cameraOriginDist = length(cameraPos);
-        vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
+        vec3 cameraLookAt = vec3(-10.0f * (m_params.cameraLook - vec2(0.5f)), cameraOriginDist);
         //cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
         cameraLookAt = vec3(0.0f);
 
         vec3 cameraForward = cameraLookAt - cameraPos;
-        float focalDistance = length(cameraForward);
+        focalDistance = length(cameraForward);
         cameraForward /= focalDistance;
 
-        focalDistance *= mix(0.0f, 1.0f, m_cameraFStop.y);
-        float fStop = powf(2.0f, mix(-3.0, 8.0, m_cameraFStop.x));
+        focalDistance *= mix(0.0f, 1.0f, m_params.cameraFStop.y);
+        fStop = powf(2.0f, mix(-3.0, 8.0, m_params.cameraFStop.x));
 
-        mat3 basis = CreateBasis(cameraForward, kCameraUp);
+        basis = CreateBasis(cameraForward, kCameraUp);
 
         // Define the focal length and F-number depending, either from built-in or user-defined values
-        float focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_cameraFLength.y));
+        focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_params.cameraFLength.y));
 
         // Solve the thin-lens equation. http://hyperphysics.phy-astr.gsu.edu/hbase/geoopt/lenseq.html
-        float d1 = 0.5 * (focalDistance - sqrt(-4.0 * focalLength * focalDistance + sqr(focalDistance)));
-        float d2 = focalDistance - d1; 
+        d1 = 0.5 * (focalDistance - sqrt(-4.0 * focalLength * focalDistance + sqr(focalDistance)));
+        d2 = focalDistance - d1; */
 
         // Generate a position on the sensor, the focal plane, and the lens. This lens will always have circular bokeh
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
@@ -119,6 +159,12 @@ namespace Cuda
     __host__ void Host::PerspectiveCamera::OnJson(const Json::Node& jsonNode)
     {
         Device::PerspectiveCamera::Params params;
+
+        params.useHaltonSpectralSampler = false;
+        params.cameraPos = vec2(0.3f, 0.5f);
+        params.cameraLook = vec2(0.5f, 0.2f);
+        params.cameraFLength = vec2(0.45f);
+        params.cameraFStop = vec2(0.5f);
 
         //jsonNode.GetVector("albedo", params.albedo, true);
 

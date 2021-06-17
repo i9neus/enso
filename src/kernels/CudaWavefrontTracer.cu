@@ -223,6 +223,7 @@ namespace Cuda
 		m_hostGroundPlane->OnJson(jsonNode);
 		m_hostSimpleMaterial->OnJson(jsonNode);
 		m_hostKifs->OnJson(jsonNode);
+		m_hostPerspectiveCamera->OnJson(jsonNode);
 		m_isDirty = true;
 	}
 
