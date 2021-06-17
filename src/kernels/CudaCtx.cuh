@@ -34,33 +34,34 @@ namespace Cuda
 		CompressedRay  emplacedRay;
 
 #ifdef kPNGSampler
-		__device__ inline vec4 Rand4() { return pcg.Rand(); }
-		__device__ inline vec3 Rand3() { return pcg.Rand().xyz; }
-		__device__ inline vec2 Rand2() { return pcg.Rand().xy; }
-		__device__ inline float Rand() { return pcg.Rand().x; }
+		__device__ __forceinline__ vec4 Rand4() { return pcg.Rand(); }
+		__device__ __forceinline__ vec3 Rand3() { return pcg.Rand().xyz; }
+		__device__ __forceinline__ vec2 Rand2() { return pcg.Rand().xy; }
+		__device__ __forceinline__ float Rand() { return pcg.Rand().x; }
 #else
-		__device__ inline vec4 Rand4()
+		template<int B0, int B1, int B2, int B3>
+		__device__ __forceinline__ vec4 Rand()
 		{
-			const vec4 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx), HaltonBase5(haltonSeed + sampleIdx), HaltonBase7(haltonSeed + sampleIdx));
-			return fmod(halton + pcg.Rand(haltonSeed), 1.0f);
+			return Halton<vec4, B0, B1, B2, B3>(haltonSeed + sampleIdx);
 		}
-		__device__ inline vec3 Rand3()
+		template<int B0, int B1, int B2>
+		__device__ __forceinline__ vec3 Rand()
 		{
-			const vec3 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx), HaltonBase5(haltonSeed + sampleIdx));
-			return fmod(halton + pcg.Rand(haltonSeed).xyz, 1.0f);
+			return Halton<vec3, B0, B1, B2>(haltonSeed + sampleIdx);
 		}
-		__device__ inline vec2 Rand2()
+		template<int B0, int B1>
+		__device__ __forceinline__ vec2 Rand()
 		{
-			const vec2 halton(HaltonBase2(haltonSeed + sampleIdx), HaltonBase3(haltonSeed + sampleIdx));
-			return fmod(halton + pcg.Rand(haltonSeed).xy, 1.0f);
+			return Halton<vec2, B0, B1>(haltonSeed + sampleIdx);
 		}
-		__device__ inline float Rand1()
+		template<int B0>
+		__device__ __forceinline__ float Rand()
 		{
-			return fmodf(HaltonBase2(haltonSeed + sampleIdx) + pcg.Rand(haltonSeed).x, 1.0f);
+			return HaltonBase<B0>(haltonSeed + sampleIdx);
 		}
 #endif
 
-		__device__ inline void EmplaceRay(const RayBasic& od, const vec3& weight, const float& pdf, const float& lambda, const uchar& flags, const uchar& depth)
+		__device__ __forceinline__ void EmplaceRay(const RayBasic& od, const vec3& weight, const float& pdf, const float& lambda, const uchar& flags, const uchar& depth)
 		{
 			emplacedRay.od = od;
 			emplacedRay.weight = weight;
@@ -97,7 +98,7 @@ namespace Cuda
 
 		__device__ HitCtx() : isValid(false) {}
 
-		__device__ inline vec3 ExtantOrigin() const { return hit.p + hit.n * kickoff; }
+		__device__ __forceinline__ vec3 ExtantOrigin() const { return hit.p + hit.n * kickoff; }
 
 		__device__ void Set(const HitPoint& hit_, bool back, const vec2& uv_, const float kick)
 		{

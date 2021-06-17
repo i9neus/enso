@@ -20,7 +20,7 @@ namespace Cuda
 
             __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const
             {
-                const vec2 xi = renderCtx.Rand2();
+                const vec2 xi = renderCtx.Rand<0, 1>();
                 
                 // Sample the Lambertian direction
                 vec3 r = vec3(SampleUnitDisc(xi), 0.0f);

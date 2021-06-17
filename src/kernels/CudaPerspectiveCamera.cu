@@ -36,16 +36,16 @@ namespace Cuda
         #define kCameraUp vec3(0.0, 1.0, 0.0) 
 
         // Generate 4 random numbers from a continuous uniform distribution
-        vec4 xi = renderCtx.Rand4();
+        vec4 xi = renderCtx.Rand<0, 1, 2, 3>();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
         float mu = xi.y;
-        if (m_useHaltonSpectralSampler)
+        /*if (m_useHaltonSpectralSampler)
         {
             uint hash = HashCombine(0x01000193u, HashCombine(HashOf(uint(renderCtx.viewportPos.x)), HashOf(uint(renderCtx.viewportPos.y))));
             mu = HaltonBase2(hash);
-        }
+        }*/
 
         float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
@@ -85,8 +85,8 @@ namespace Cuda
         {
             lensPos = xi.zw * 2.0 - vec2(1.0);
             float bladeDist = Ngon(atan2f(lensPos.y, lensPos.x) + kPi);
-            if (length2(lensPos) < sqr(bladeDist)) { break; }
-            xi = renderCtx.pcg();
+            //if (length2(lensPos) < sqr(bladeDist)) { break; }
+            //xi = renderCtx.pcg();
         }
         lensPos *= 0.5 * focalLength / fStop;
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;

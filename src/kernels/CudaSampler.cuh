@@ -4,24 +4,32 @@
 
 namespace Cuda
 {    
-    // Reverse the bits of 32-bit integer
-    __device__ inline uint RadicalInverse(uint i)
+    template<int Idx> __device__ __forceinline__ float GetHaltonCRPrime() { return 0.0f; }
+    template<> __device__ __forceinline__ float GetHaltonCRPrime<0>() { return 1.0f; }
+    template<> __device__ __forceinline__ float GetHaltonCRPrime<1>() { return 2.0f; }
+    template<> __device__ __forceinline__ float GetHaltonCRPrime<2>() { return 3.0f; }
+    template<> __device__ __forceinline__ float GetHaltonCRPrime<3>() { return 5.0f; }
+    
+    template<int Base>
+    __device__ __forceinline__ float HaltonBase(uint seed)
+    {
+        return 0;
+    }
+
+    // Samples the radix-2 Halton sequence from seed value, i
+    template<>
+    __device__ __forceinline__ float HaltonBase<0>(uint i)
     {
         i = ((i & 0xffffu) << 16u) | (i >> 16u);
         i = ((i & 0x00ff00ffu) << 8u) | ((i & 0xff00ff00u) >> 8u);
         i = ((i & 0x0f0f0f0fu) << 4u) | ((i & 0xf0f0f0f0u) >> 4u);
         i = ((i & 0x33333333u) << 2u) | ((i & 0xccccccccu) >> 2u);
         i = ((i & 0x55555555u) << 1u) | ((i & 0xaaaaaaaau) >> 1u);
-        return i;
+        return float(i) / float(0xffffffffu);
     }
 
-    // Samples the radix-2 Halton sequence from seed value, i
-    __device__ inline float HaltonBase2(uint seed)
-    {
-        return float(RadicalInverse(seed)) / float(0xffffffffu);
-    }
-
-    __device__ inline float HaltonBase3(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<2>(uint seed)
     {
         uint accum = 0u;
         accum += 1162261467u * (seed % 3u); seed /= 3u;
@@ -46,7 +54,8 @@ namespace Cuda
         return float(accum + seed % 3u) / 3486784400.0f;
     }
 
-    __device__ inline float HaltonBase5(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<1>(uint seed)
     {
         uint accum = 0u;
         accum += 244140625u * (seed % 5u); seed /= 5u;
@@ -64,7 +73,8 @@ namespace Cuda
         return float(accum + seed % 5u) / 1220703124.0f;
     }
 
-    __device__ inline float HaltonBase7(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<3>(uint seed)
     {
         uint accum = 0u;
         accum += 282475249u * (seed % 7u); seed /= 7u;
@@ -80,7 +90,8 @@ namespace Cuda
         return float(accum + seed % 7u) / 1977326742.0f;
     }
 
-    __device__ inline float HaltonBase11(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<4>(uint seed)
     {
         uint accum = 0u;
         accum += 214358881u * (seed % 11u); seed /= 11u;
@@ -94,7 +105,8 @@ namespace Cuda
         return float(accum + seed % 11u) / 2357947690.0f;
     }
 
-    __device__ inline float HaltonBase13(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<5>(uint seed)
     {
         uint accum = 0u;
         accum += 62748517u * (seed % 13u); seed /= 13u;
@@ -107,7 +119,8 @@ namespace Cuda
         return float(accum + seed % 13u) / 815730720.0f;
     }
 
-    __device__ inline float HaltonBase17(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<6>(uint seed)
     {
         uint accum = 0u;
         accum += 24137569u * (seed % 17u); seed /= 17u;
@@ -119,7 +132,8 @@ namespace Cuda
         return float(accum + seed % 17u) / 410338672.0f;
     }
 
-    __device__ inline float HaltonBase19(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<7>(uint seed)
     {
         uint accum = 0u;
         accum += 47045881u * (seed % 19u); seed /= 19u;
@@ -131,7 +145,8 @@ namespace Cuda
         return float(accum + seed % 19u) / 893871738.0f;
     }
 
-    __device__ inline float HaltonBase23(uint seed)
+    template<>
+    __device__ __forceinline__ float HaltonBase<8>(uint seed)
     {
         uint accum = 0u;
         accum += 148035889u * (seed % 23u); seed /= 23u;
@@ -143,18 +158,45 @@ namespace Cuda
         return float(accum + seed % 23u) / 3404825446.0f;
     }
 
+    template<int Idx, int B0>
+    __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
+    {
+        data[Idx] = fmodf(HaltonBase<B0>(seed) + GetHaltonCRPrime<B0>() * float(seed) / float(0xffffffffu), 1.0f);
+    }
+
+    template<int Idx, int B0, int B1, int... Pack>
+    __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
+    {
+        data[Idx] = fmodf(HaltonBase<B0>(seed) + GetHaltonCRPrime<B0>() * float(seed) / float(0xffffffffu), 1.0f);
+        HaltonImpl<Idx + 1, B1, Pack...>(seed, data);
+    }
+
+    template<typename T, int... Pack>
+    __device__  __forceinline__ T Halton(const uint seed)
+    {
+        T v;
+        HaltonImpl<0, Pack...>(seed, v.data);
+        return v;
+    } 
+
+    template<int Base>
+    __device__  __forceinline__ float Halton(const uint seed)
+    {
+        return fmodf(HaltonBase<Base>(seed) + GetHaltonCRPrime<Base>() * float(seed) / float(0xffffffffu), 1.0f);
+    }
+
     class PCG
     {
+        #define kPCGRandBias 0.999999f
+
     private:
         uvec4   m_state;
 
     public:
         __device__ PCG(const uint& seed) { Initialise(seed); }
 
-#define kPCGRandBias 0.999999f
-
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
-        __device__  inline void Advance()
+        __device__  __forceinline__ void Advance()
         {
             m_state = m_state * 1664525u + 1013904223u;
 
@@ -172,37 +214,28 @@ namespace Cuda
         }
 
         // Seed the PCG hash function with the current frame multipled by a prime
-        __device__  inline void Initialise(const uint& seed)
+        __device__  __forceinline__ void Initialise(const uint& seed)
         {
             m_state = uvec4(seed * 20219, seed * 7243, seed * 12547, seed * 28573);
         }
 
         // Generates a tuple of canonical random numbers in the range [0, 1]
-        __device__  vec4 Rand(const uint& seed)
-        {
-            Initialise(seed);
-            return kPCGRandBias * vec4(m_state) / float(0xffffffffu);
-        }
-
-        // Generates a tuple of canonical random numbers in the range [0, 1]
-        __device__  vec4 Rand()
+        __device__  __forceinline__ vec4 Rand()
         {
             Advance();
             return kPCGRandBias * vec4(m_state) / float(0xffffffffu);
         }
-
-        __device__ inline vec4 operator()() { return Rand(); }
     };
 
     // Quick and dirty method for sampling the unit disc from two canonical random variables. For a better algorithm, see
     // A Low Distortion Map Between Disk and Square (Shirley and Chiu)
-    __device__ inline vec2 SampleUnitDisc(const vec2& xi)
+    __device__ __forceinline__ vec2 SampleUnitDisc(const vec2& xi)
     {
         float phi = xi.y * kTwoPi;
         return vec2(sin(phi), cos(phi)) * sqrt(xi.x);
     }
 
-    __device__ inline vec3 SampleUnitSphere(vec2 xi)
+    __device__ __forceinline__ vec3 SampleUnitSphere(vec2 xi)
     {
         xi.x = xi.x * 2.0 - 1.0;
         xi.y *= kTwoPi;

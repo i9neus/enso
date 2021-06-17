@@ -9,7 +9,7 @@ namespace Cuda
     constexpr uint kFNVOffset = 0x811c9dc5u;
 
     // Compute a 32-bit Fowler-Noll-Vo hash for the given input
-    __device__ inline uint HashOf(const uint i)
+    __device__ __forceinline__ uint HashOf(const uint i)
     {
         uint h = (kFNVOffset ^ (i & 0xffu)) * kFNVPrime;
         h = (h ^ ((i >> 8u) & 0xffu)) * kFNVPrime;
@@ -19,14 +19,14 @@ namespace Cuda
     }
 
     // Mix and combine two hashes
-    __device__ inline uint HashCombine(uint a, uint b)
+    __device__ __forceinline__ uint HashCombine(uint a, uint b)
     {
         return (((a << (31u - (b & 31u))) | (a >> (b & 31u)))) ^
             ((b << (a & 31u)) | (b >> (31u - (a & 31u))));
     }
 
     template<typename... Vars>
-    __device__ inline uint HashOf(const uint& v0, const Vars&... var)
+    __device__ __forceinline__ uint HashOf(const uint& v0, const Vars&... var)
     {
         return HashCombine(HashOf(v0), HashOf(var...));
     }
