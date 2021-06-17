@@ -10,7 +10,7 @@ namespace Cuda
 	{ 
 		//if (*(image->AccessSignal()) != kImageWriteLocked) { return; }
 		
-		image->Clear(KERNEL_COORDS_IVEC2, value);
+		image->Clear(kKernelPos<ivec2>(), value);
 	}
 	
 	template<typename T>

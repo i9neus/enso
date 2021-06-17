@@ -233,7 +233,7 @@ namespace Cuda
 
 	__global__ void KernelSeedRayBuffer(Device::WavefrontTracer* tracer)
 	{
-		tracer->SeedRayBuffer(KERNEL_COORDS_IVEC2);
+		tracer->SeedRayBuffer(kKernelPos<ivec2>());
 	}
 
 	__global__ void KernelTrace(Device::WavefrontTracer* tracer)
@@ -245,7 +245,7 @@ namespace Cuda
 	{
 		//if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
 
-		tracer->Composite(KERNEL_COORDS_IVEC2, deviceOutputImage);
+		tracer->Composite(kKernelPos<ivec2>(), deviceOutputImage);
 	}
 
 	__host__ void Host::WavefrontTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage)

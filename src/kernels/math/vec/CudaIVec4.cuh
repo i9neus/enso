@@ -104,23 +104,23 @@ namespace Cuda
             /*__vec_swizzle<Type, 4, 2, 3, 0> wx;*/ /*__vec_swizzle<Type, 4, 2, 3, 1> wy;*/ /*__vec_swizzle<Type, 4, 2, 3, 2> wz;*/ /*__vec_swizzle<Type, 4, 2, 3, 3> ww;*/
         };
 
-        __vec_swizzle() = default;
-        __vec_swizzle(const __vec_swizzle&) = default;
-        __host__ __device__ explicit __vec_swizzle(const Type v) : x(v), y(v), z(v), w(v) {}
-        __host__ __device__ __vec_swizzle(const Type& x_, const Type& y_, const Type& z_, const Type& w_) : x(x_), y(y_), z(z_), w(w_) {}
+        __host__ __device__ __forceinline__ __vec_swizzle() {}
+        __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle&) = default;
+        __host__ __device__ __forceinline__ explicit __vec_swizzle(const Type v) : x(v), y(v), z(v), w(v) {}
+        __host__ __device__ __forceinline__ __vec_swizzle(const Type& x_, const Type& y_, const Type& z_, const Type& w_) : x(x_), y(y_), z(z_), w(w_) {}
 
         // Cast from combinations of vector and scalar types
-        __host__ __device__ __vec_swizzle(const Type& x_, const ivec3& v) : x(x_), y(v.x), z(v.y), w(v.z) {}
-        __host__ __device__ __vec_swizzle(const __ivec2<Type>& v, const Type& z_, const Type& w_) : x(v.x), y(v.y), z(z_), w(w_) {}
-        __host__ __device__ __vec_swizzle(const __ivec3<Type>& v, const Type& w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
+        __host__ __device__ __forceinline__ __vec_swizzle(const Type& x_, const ivec3& v) : x(x_), y(v.x), z(v.y), w(v.z) {}
+        __host__ __device__ __forceinline__ __vec_swizzle(const __ivec2<Type>& v, const Type& z_, const Type& w_) : x(v.x), y(v.y), z(z_), w(w_) {}
+        __host__ __device__ __forceinline__ __vec_swizzle(const __ivec3<Type>& v, const Type& w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
 
         // Cast from other vec4 types
         template<typename OtherType, int I0, int I1, int I2, int I3>
-        __host__ __device__ explicit __vec_swizzle(const __vec_swizzle<OtherType, 4, 4, I0, I1, I2, I3>& v) :
+        __host__ __device__ __forceinline__ explicit __vec_swizzle(const __vec_swizzle<OtherType, 4, 4, I0, I1, I2, I3>& v) :
             x(Type(v.data[I0])), y(Type(v.data[I1])), z(Type(v.data[I2])), w(Type(v.data[I3])) {}
 
         template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-        __host__ __device__ inline void UnpackTo(Type* otherData) const
+        __host__ __device__ __forceinline__ void UnpackTo(Type* otherData) const
         {
             otherData[L0] = data[0];
             otherData[L1] = data[1];
@@ -130,21 +130,21 @@ namespace Cuda
 
         // Cast from swizzled types
         template<typename Type, int... In>
-        __host__ __device__ inline __vec_swizzle(const __vec_swizzle<Type, 4, 4, In...>& swizzled)
+        __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle<Type, 4, 4, In...>& swizzled)
         {
             swizzled.UnpackTo<0, 1, 2, 3, In...>(data);
         }
 
         // Assign from swizzled types
         template<typename Type, int R0, int R1, int R2, int R3>
-        __host__ __device__ inline __vec_swizzle& operator=(const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+        __host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
         {
             x = rhs.other[R0]; y = rhs.other[R1]; z = rhs.other[R2]; w = rhs.other[R3];
             return *this;
         }
 
-        __host__ __device__ inline const Type& operator[](const unsigned int idx) const { return data[idx]; }
-        __host__ __device__ inline Type& operator[](const unsigned int idx) { return data[idx]; }
+        __host__ __device__ __forceinline__ const Type& operator[](const unsigned int idx) const { return data[idx]; }
+        __host__ __device__ __forceinline__ Type& operator[](const unsigned int idx) { return data[idx]; }
 
         __host__ inline std::string format() const { return tfm::format("{%i, %i, %i, %i}", x, y, z, w); }
     };
@@ -153,177 +153,177 @@ namespace Cuda
     template<typename Type> using __ivec4 = __vec_swizzle<Type, 4, 4, 0, 1, 2, 3>;
 
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type> operator +(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator +(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs.data[L0] + rhs.data[R0], lhs.data[L1] + rhs.data[R1], lhs.data[L2] + rhs.data[R2], lhs.data[L3] + rhs.data[R3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator +(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator +(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] + rhs, lhs.data[L1] + rhs, lhs.data[L2] + rhs, lhs.data[L3] + rhs };
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs.data[L0] - rhs.data[R0], lhs.data[L1] - rhs.data[R1], lhs.data[L2] - rhs.data[R2], lhs.data[L3] - rhs.data[R3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] - rhs, lhs.data[L1] - rhs, lhs.data[L2] - rhs, lhs.data[L3] - rhs };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator -(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs)
     {
         return { -lhs.data[L0], -lhs.data[L1], -lhs.data[L2], -lhs.data[L3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type> operator *(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator *(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs.data[L0] * rhs.data[R0], lhs.data[L1] * rhs.data[R1], lhs.data[L2] * rhs.data[R2], lhs.data[L3] * rhs.data[R3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator *(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator *(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] * rhs, lhs.data[L1] * rhs, lhs.data[L2] * rhs, lhs.data[L3] * rhs };
     }
     template<typename Type, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type> operator *(const Type& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator *(const Type& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs * rhs.data[L0], lhs * rhs.data[L1], lhs * rhs.data[L2], lhs * rhs.data[L3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type> operator /(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator /(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs.data[L0] / rhs.data[R0], lhs.data[L1] / rhs.data[R1], lhs.data[L2] / rhs.data[R2], lhs.data[L3] / rhs.data[R3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator /(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator /(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] / rhs, lhs.data[L1] / rhs, lhs.data[L2] / rhs, lhs.data[L3] / rhs };
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator +=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator +=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] += rhs.data[R0]; lhs.data[L1] += rhs.data[R1]; lhs.data[L2] += rhs.data[R2]; lhs.data[L3] += rhs.data[R3];
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator -=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator -=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] -= rhs.data[R0]; lhs.data[L1] -= rhs.data[R1]; lhs.data[L2] -= rhs.data[R2]; lhs.data[L3] -= rhs.data[R3];
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator *=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator *=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] *= rhs.data[R0]; lhs.data[L1] *= rhs.data[R1]; lhs.data[L2] *= rhs.data[R2]; lhs.data[L3] *= rhs.data[R3];
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator *=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator *=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] *= rhs; lhs.data[L1] *= rhs; lhs.data[L2] *= rhs; lhs.data[L3] *= rhs;
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator /=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator /=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] /= rhs.data[R0]; lhs.data[L1] /= rhs.data[R1]; lhs.data[L2] /= rhs.data[R2]; lhs.data[L3] /= rhs.data[R3];
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator /=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& operator /=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] /= rhs; lhs.data[L1] /= rhs; lhs.data[L2] /= rhs; lhs.data[L3] /= rhs;
         return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type>& operator %=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator %=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] %= rhs; lhs.data[L1] %= rhs; lhs.data[L2] %= rhs; lhs.data[L3] %= rhs; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type>& operator %=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator %=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         return { lhs.data[L0] % rhs.data[R0], lhs.data[L1] % rhs.data[R1], lhs.data[L2] % rhs.data[R2], lhs.data[L3] %= rhs.data[R3] };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type>& operator ^=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator ^=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] ^= rhs; lhs.data[L1] ^= rhs; lhs.data[L2] ^= rhs; lhs.data[L3] ^= rhs; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type>& operator ^=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator ^=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] ^= rhs.data[R0]; lhs.data[L1] ^= rhs.data[R1]; lhs.data[L2] ^= rhs.data[R2]; lhs.data[L3] ^= rhs.data[R3]; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type>& operator &=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator &=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] &= rhs; lhs.data[L1] &= rhs; lhs.data[L2] &= rhs; lhs.data[L3] &= rhs; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type>& operator &=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator &=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] &= rhs.data[R0]; lhs.data[L1] &= rhs.data[R1]; lhs.data[L2] &= rhs.data[R2]; lhs.data[L3] &= rhs.data[R3]; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type>& operator |=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator |=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         lhs.data[L0] |= rhs; lhs.data[L1] |= rhs; lhs.data[L2] |= rhs; lhs.data[L3] |= rhs; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
-    __host__ __device__ inline __ivec4<Type>& operator |=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type>& operator |=(__vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<Type, 4, 4, R0, R1, R2, R3>& rhs)
     {
         lhs.data[L0] |= rhs.data[R0]; lhs.data[L1] |= rhs.data[R1]; lhs.data[L2] |= rhs.data[R2]; lhs.data[L3] |= rhs.data[R3]; return lhs;
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator<<(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator<<(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] << rhs, lhs.data[L1] << rhs, lhs.data[L2] << rhs, lhs.data[L3] << rhs };
     }
     template<typename Type, int L0, int L1, int L2, int L3>
-    __host__ __device__ inline __ivec4<Type> operator >>(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
+    __host__ __device__ __forceinline__ __ivec4<Type> operator >>(const __vec_swizzle<Type, 4, 4, L0, L1, L2, L3>& lhs, const Type& rhs)
     {
         return { lhs.data[L0] >> rhs, lhs.data[L1] >> rhs, lhs.data[L2] >> rhs, lhs.data[L3] >> rhs };
     }
 
 
     template<typename Type>
-    __host__ __device__ inline __ivec4<Type> clamp(const __ivec4<Type>& v, const __ivec4<Type>& a, const __ivec4<Type>& b)
+    __host__ __device__ __forceinline__ __ivec4<Type> clamp(const __ivec4<Type>& v, const __ivec4<Type>& a, const __ivec4<Type>& b)
     {
         return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w) };
     }
     template<typename Type>
-    __host__ __device__ inline __ivec4<Type> abs(const __ivec4<Type>& a)
+    __host__ __device__ __forceinline__ __ivec4<Type> abs(const __ivec4<Type>& a)
     {
         return { abs(a.x), abs(a.y), abs(a.z), abs(a.w) };
     }
     template<typename Type>
-    __host__ __device__ inline Type sum(const __ivec4<Type>& a)
+    __host__ __device__ __forceinline__ Type sum(const __ivec4<Type>& a)
     {
         return a.x + a.y + a.z + a.w;
     }
     template<typename Type>
-    __host__ __device__ inline __ivec4<Type> sign(const __ivec4<Type>& v)
+    __host__ __device__ __forceinline__ __ivec4<Type> sign(const __ivec4<Type>& v)
     {
         return { sign(v.x), sign(v.y), sign(v.z), sign(v.w) };
     }
 
     template<typename Type>
-    __host__ __device__ inline bool operator==(const __ivec4<Type>& lhs, const __ivec4<Type>& rhs)
+    __host__ __device__ __forceinline__ bool operator==(const __ivec4<Type>& lhs, const __ivec4<Type>& rhs)
     {
         return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w;
     }
     template<typename Type>
-    __host__ __device__ inline bool operator!=(const __ivec4<Type>& lhs, const __ivec4<Type>& rhs)
+    __host__ __device__ __forceinline__ bool operator!=(const __ivec4<Type>& lhs, const __ivec4<Type>& rhs)
     {
         return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w;
     }
 
     template<typename Type>
-    __host__ __device__ inline Type cwiseMax(const __ivec4<Type>& v)
+    __host__ __device__ __forceinline__ Type cwiseMax(const __ivec4<Type>& v)
     {
         Type m = v[0];
         for (int i = 1; i < 4; i++) { m = max(m, v[i]); }
@@ -331,7 +331,7 @@ namespace Cuda
     }
 
     template<typename Type>
-    __host__ __device__ inline Type cwiseMin(const __ivec4<Type>& v)
+    __host__ __device__ __forceinline__ Type cwiseMin(const __ivec4<Type>& v)
     {
         Type m = v[i];
         for (int i = 1; i < 4; i++) { m = min(m, v[i]); }
@@ -339,7 +339,7 @@ namespace Cuda
     }
 
     // FIXME: Cuda intrinsics aren't working. Why is this?
-    //__host__ __device__ inline vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
+    //__host__ __device__ __forceinline__ vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
 
     using ivec4 = __ivec4<int>;
 	using uvec4 = __ivec4<uint>;

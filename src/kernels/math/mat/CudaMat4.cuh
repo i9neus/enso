@@ -33,12 +33,12 @@ namespace Cuda
 			return mat4(vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 0.0f));
 		}
 
-		mat4() = default;
-		__host__ __device__ mat4(const vec4 & x_, const vec4 & y_, const vec4 & z_, const vec4 & w_) : x(x_), y(y_), z(z_), w(w_) {}
-		__host__ __device__ mat4(const mat4 & other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
+		__host__ __device__ __forceinline__ mat4() {}
+		__host__ __device__ __forceinline__ mat4(const mat4&) = default;
+		__host__ __device__ __forceinline__ mat4(const vec4& x_, const vec4& y_, const vec4& z_, const vec4& w_) : x(x_), y(y_), z(z_), w(w_) {}
 
-		__host__ __device__ inline const vec4& operator[](const unsigned int idx) const { return data[idx]; }
-		__host__ __device__ inline vec4& operator[](const unsigned int idx) { return data[idx]; }
+		__host__ __device__ __forceinline__ const vec4& operator[](const unsigned int idx) const { return data[idx]; }
+		__host__ __device__ __forceinline__ vec4& operator[](const unsigned int idx) { return data[idx]; }
 
 		__host__ inline std::string format(const bool pretty = false) const
 		{
@@ -48,9 +48,9 @@ namespace Cuda
 	};
 
 	//template<typename T>
-	//__host__ __device__ inline void cast(const mat4& m, T v[4]) { v[0] = cast<T>(m[0]); v[1] = cast<T>(m[1]); v[2] = cast<T>(m[2]); v[3] = cast<T>(m[3]); }
+	//__host__ __device__ __forceinline__ void cast(const mat4& m, T v[4]) { v[0] = cast<T>(m[0]); v[1] = cast<T>(m[1]); v[2] = cast<T>(m[2]); v[3] = cast<T>(m[3]); }
 
-	__host__ __device__ inline mat4 operator *(const mat4& a, const mat4& b)
+	__host__ __device__ __forceinline__ mat4 operator *(const mat4& a, const mat4& b)
 	{
 		mat4 r;
 		r.i00 = a.i00 * b.i00 + a.i01 * b.i10 + a.i02 * b.i20 + a.i03 * b.i30;
@@ -72,13 +72,13 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline mat4& operator *=(mat4& a, const mat4& b)
+	__host__ __device__ __forceinline__ mat4& operator *=(mat4& a, const mat4& b)
 	{
 		const mat4 r = a * b;
 		return a = r;
 	}
 
-	__host__ __device__ inline vec4 operator *(const mat4& a, const vec4& b)
+	__host__ __device__ __forceinline__ vec4 operator *(const mat4& a, const vec4& b)
 	{
 		vec4 r;
 		r.i0 = a.i00 * b.i0 + a.i01 * b.i1 + a.i02 * b.i2 + a.i03 * b[3];
@@ -88,7 +88,7 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline vec3 operator *(const mat4& a, const vec3& b)
+	__host__ __device__ __forceinline__ vec3 operator *(const mat4& a, const vec3& b)
 	{
 		vec3 r;
 		r.x = a.i00 * b.x + a.i01 * b.y + a.i02 * b.z + a.i03;
@@ -97,12 +97,12 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline float trace(const mat4& m)
+	__host__ __device__ __forceinline__ float trace(const mat4& m)
 	{
 		return m.i00 + m.i11 + m.i22 + m.i33;
 	}
 
-	__host__ __device__ inline mat4 transpose(const mat4& m)
+	__host__ __device__ __forceinline__ mat4 transpose(const mat4& m)
 	{
 		mat4 r;
 		r.i00 = m.i00; r.i01 = m.i10; r.i02 = m.i20; r.i03 = m.i30;
@@ -112,7 +112,7 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline float det(const mat4& m)
+	__host__ __device__ __forceinline__ float det(const mat4& m)
 	{
 		// Laplace expansion 	
 		return (m.i00 * m.i11 - m.i10 * m.i01) * (m.i22 * m.i33 - m.i32 * m.i23) -
@@ -123,7 +123,7 @@ namespace Cuda
 			(m.i02 * m.i13 - m.i12 * m.i03) * (m.i20 * m.i31 - m.i30 * m.i21);
 	}
 
-	__host__ __device__ inline mat4 inverse(const mat4& m)
+	__host__ __device__ __forceinline__ mat4 inverse(const mat4& m)
 	{
 		constexpr float kInverseEpsilon = 1e-20f;
 
@@ -166,7 +166,7 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ inline bool operator ==(const mat4& a, const mat4& b)
+	__host__ __device__ __forceinline__ bool operator ==(const mat4& a, const mat4& b)
 	{
 		for (int i = 0; i < 4; i++)
 		{
@@ -177,5 +177,5 @@ namespace Cuda
 		}
 		return true;
 	}
-	__host__ __device__ inline bool operator !=(const mat4& a, const mat4& b) { return !(a == b); }
+	__host__ __device__ __forceinline__ bool operator !=(const mat4& a, const mat4& b) { return !(a == b); }
 }
