@@ -25,14 +25,14 @@ namespace Cuda
 			MakeIdentity();
 		}
 
-		__host__ __device__ inline BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
+		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
 		{
 			inv = inverse(fwd);
 			nInv = transpose(fwd);
 			scale = vec3(1 / length(fwd[0]), 1 / length(fwd[1]), 1 / length(fwd[2]));
 		}
 
-		__host__ __device__ inline void MakeIdentity()
+		__host__ __device__ __forceinline__ void MakeIdentity()
 		{
 			trans = 0.0f;
 			fwd = inv = nInv = mat3::Indentity();
@@ -57,13 +57,13 @@ namespace Cuda
 			return object;
 		}*/
 
-		__device__ inline vec3 PointToWorldSpace(const vec3& object) const
+		__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& object) const
 		{
 			return (inv * object) + trans;
 		}
 	};
 
-	__host__ __device__ inline mat3 ScaleMat3(const vec3 scale)
+	__host__ __device__ __forceinline__ mat3 ScaleMat3(const vec3 scale)
 	{
 		const vec3 invScale = vec3(1.0f) / scale;
 		return mat3(vec3(invScale.x, 0.0, 0.0),
@@ -71,7 +71,7 @@ namespace Cuda
 			vec3(0.0, 0.0, invScale.z));
 	}
 
-	__host__ __device__ inline mat3 RotXMat3(const float theta)
+	__host__ __device__ __forceinline__ mat3 RotXMat3(const float theta)
 	{
 		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
 		return mat3(vec3(1.0, 0.0, 0.0),
@@ -79,7 +79,7 @@ namespace Cuda
 			vec3(0.0, sinTheta, cosTheta));
 	}
 
-	__host__ __device__ inline mat3 RotYMat3(const float theta)
+	__host__ __device__ __forceinline__ mat3 RotYMat3(const float theta)
 	{
 		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
 		return mat3(vec3(cosTheta, 0.0, sinTheta),
@@ -87,7 +87,7 @@ namespace Cuda
 			vec3(-sinTheta, 0.0, cosTheta));
 	}
 
-	__host__ __device__ inline mat3 RotZMat3(const float theta)
+	__host__ __device__ __forceinline__ mat3 RotZMat3(const float theta)
 	{
 		const float cosTheta = cosf(theta), sinTheta = sinf(theta);
 		return mat3(vec3(cosTheta, -sinTheta, 0.0),
@@ -96,7 +96,7 @@ namespace Cuda
 	}
 
 	// Builds a composite matrix from three Euler angles, scale and translation vectors
-	__host__ __device__ inline BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f))
+	__host__ __device__ __forceinline__ BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f))
 	{
 		mat3 mat = mat3::Indentity();
 
@@ -112,7 +112,7 @@ namespace Cuda
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by
 	// Frisvad's original paper: http://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-	__host__ __device__ inline mat3 CreateBasis(vec3 n)
+	__host__ __device__ __forceinline__ mat3 CreateBasis(vec3 n)
 	{
 		float s = sign(n.z);
 		float a = -1 / (s + n.z);
@@ -140,7 +140,7 @@ namespace Cuda
 		return transpose(mat4(vec4(tangent, 0.0), vec4(cotangent, 0.0), vec4(n, 0.0), vec4(kZero, 1.0)));
 	}*/
 
-	__host__ __device__ inline mat3 CreateBasis(vec3 n, vec3 up)
+	__host__ __device__ __forceinline__ mat3 CreateBasis(vec3 n, vec3 up)
 	{
 		/*float s = sign(n.z);
 		float a = -1 / (s + n.z);

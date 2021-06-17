@@ -21,12 +21,12 @@ namespace Cuda
 				m_width(width), m_height(height), cu_data(data), m_accessSignal(kImageUnlocked) {}
 			__device__ ~Image() = default;
 
-			__host__ __device__ inline unsigned int GetArea() const { return m_width * m_height; }
-			__host__ __device__ inline unsigned int GetMemorySize() const { return m_width * m_height * sizeof(T); }
-			__host__ __device__ inline unsigned int Width() const { return m_width; }
-			__host__ __device__ inline unsigned int Height() const { return m_height; }
-			__host__ __device__ inline ivec2 Dimensions() const { return ivec2(m_width, m_height); }
-			__host__ __device__ inline bool IsValid(const ivec2& xy) const { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
+			__host__ __device__ __forceinline__ unsigned int GetArea() const { return m_width * m_height; }
+			__host__ __device__ __forceinline__ unsigned int GetMemorySize() const { return m_width * m_height * sizeof(T); }
+			__host__ __device__ __forceinline__ unsigned int Width() const { return m_width; }
+			__host__ __device__ __forceinline__ unsigned int Height() const { return m_height; }
+			__host__ __device__ __forceinline__ ivec2 Dimensions() const { return ivec2(m_width, m_height); }
+			__host__ __device__ __forceinline__ bool IsValid(const ivec2& xy) const { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
 
 			__device__ T* GetData() { return cu_data; }
 			__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
@@ -48,7 +48,7 @@ namespace Cuda
 			}
 
 			template<typename = typename std::enable_if<std::is_same<T, vec4>::value>>
-			__device__ inline void Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive)
+			__device__ __forceinline__ void Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive)
 			{
 				auto& texel = cu_data[xy.y * m_height + xy.x]; 				
 				texel += vec4(value, float(1 >> depth));

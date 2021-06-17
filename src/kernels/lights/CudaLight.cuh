@@ -14,7 +14,7 @@ namespace Cuda
         public:
             Light() = default;
 
-            __device__ inline void SetTransform(const BidirectionalTransform& transform) { m_transform = transform; }
+            __device__ __forceinline__ void SetTransform(const BidirectionalTransform& transform) { m_transform = transform; }
 
         protected:
             __device__ Light(const BidirectionalTransform& transform) : m_transform(transform) {}

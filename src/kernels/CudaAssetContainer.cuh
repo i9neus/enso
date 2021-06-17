@@ -25,9 +25,9 @@ namespace Cuda
 			uint			m_numElements;
 
 		public:
-			__device__ inline uint Size() const { return m_numElements; }
-			__device__ inline ElementType& operator[](const int idx) { return *cu_data[idx]; }
-			__device__ inline const ElementType& operator[](const int idx) const { return *cu_data[idx]; }
+			__device__ __forceinline__ uint Size() const { return m_numElements; }
+			__device__ __forceinline__ ElementType& operator[](const int idx) { return *cu_data[idx]; }
+			__device__ __forceinline__ const ElementType& operator[](const int idx) const { return *cu_data[idx]; }
 		};
 	}
 

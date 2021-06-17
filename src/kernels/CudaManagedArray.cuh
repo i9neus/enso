@@ -26,13 +26,13 @@ namespace Cuda
 				m_size(size), m_layout(layout), cu_data(data), m_signal(AccessSignal::kUnlocked) { }
 			__device__ ~ManagedArray() = default;
 
-			__host__ __device__ inline unsigned int Size() const { return m_size; }
-			__host__ __device__ inline unsigned int MemorySize() const { return m_size * sizeof(T); }
+			__host__ __device__ __forceinline__ unsigned int Size() const { return m_size; }
+			__host__ __device__ __forceinline__ unsigned int MemorySize() const { return m_size * sizeof(T); }
 
 			__device__ T* GetData() { return cu_data; }
 			__device__ T& operator[](const uint idx) { return cu_data[idx]; }
 			__device__ const T& operator[](const uint idx) const { return cu_data[idx]; }
-			__device__ inline void Clear(const uint idx, const T& value)
+			__device__ __forceinline__ void Clear(const uint idx, const T& value)
 			{
 				if (idx < m_size) { cu_data[idx] = value; }
 			}

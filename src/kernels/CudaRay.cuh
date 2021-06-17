@@ -28,9 +28,9 @@ namespace Cuda
 		return object;
 	}
 
-	__device__ inline vec3 PointToObjectSpace(const vec3& p, const BidirectionalTransform& bdt) { return bdt.fwd * (p - bdt.trans); }
-	__device__ inline vec3 PointToWorldSpace(const vec3& p, const BidirectionalTransform& bdt) { return (bdt.inv * p) + bdt.trans; }
-	__device__ inline vec3 NormalToWorldSpace(const vec3& n, const BidirectionalTransform& bdt) { return bdt.nInv * n; }
+	__device__ __forceinline__ vec3 PointToObjectSpace(const vec3& p, const BidirectionalTransform& bdt) { return bdt.fwd * (p - bdt.trans); }
+	__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& p, const BidirectionalTransform& bdt) { return (bdt.inv * p) + bdt.trans; }
+	__device__ __forceinline__ vec3 NormalToWorldSpace(const vec3& n, const BidirectionalTransform& bdt) { return bdt.nInv * n; }
 
 	struct CompressedRay
 	{
@@ -50,10 +50,10 @@ namespace Cuda
 		uchar	depth;				// 1 byte
 		uint	sampleIdx;			// 4 bytes
 
-		__device__ void SetAlive() { flags |= kRayAlive; }
-		__device__ void Kill() { flags &= ~kRayAlive; }
-		__device__ bool IsAlive() { return flags & kRayAlive; }
-		__device__ ivec2 ViewportPos() const { return ivec2(viewport.x, viewport.y); }
+		__device__ __forceinline__ void SetAlive() { flags |= kRayAlive; }
+		__device__ __forceinline__ void Kill() { flags &= ~kRayAlive; }
+		__device__ __forceinline__ bool IsAlive() { return flags & kRayAlive; }
+		__device__ __forceinline__ ivec2 ViewportPos() const { return ivec2(viewport.x, viewport.y); }
 	};
 
 	// The "full fat" ray objects that most methods will refer to

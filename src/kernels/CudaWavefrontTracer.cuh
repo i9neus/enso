@@ -59,7 +59,7 @@ namespace Cuda
 
 			WavefrontTracer() { memset(this, 0, sizeof(WavefrontTracer)); }
 
-			__device__ inline bool IsValid(const ivec2& viewportPos) const
+			__device__ __forceinline__ bool IsValid(const ivec2& viewportPos) const
 			{
 				return viewportPos.x >= 0 && viewportPos.x < m_objects.cu_deviceAccumBuffer->Width() &&
 					viewportPos.y >= 0 && viewportPos.y < m_objects.cu_deviceAccumBuffer->Height();
@@ -73,8 +73,6 @@ namespace Cuda
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const uint rayIdx) const;
-			__device__ inline RenderCtx CreateRenderCtx(const CompressedRay& compressed) const;
-			__device__ inline RenderCtx CreateRenderCtx(const ivec2 viewportPos, const int depth = 0) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			//__device__ void OnSyncParams(const Params* params);
 
