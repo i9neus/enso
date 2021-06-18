@@ -1,4 +1,6 @@
-﻿#include "CudaMath.cuh"
+﻿#include "CudaTests.cuh"
+#include "math/CudaMath.cuh"
+#include "tracables/CudaKIFS.cuh"
 
 namespace Cuda
 {
@@ -12,6 +14,8 @@ namespace Cuda
 		uint ivec4Size;
 		uint mat4Size;
 		uint mat3Size;
+
+		uint kifsScratchpadSize;
 	};
 
 	__global__ void KernelVerifyTypeSizes(TypeSizeTestResults* results)
@@ -24,6 +28,8 @@ namespace Cuda
 		results->ivec4Size = sizeof(ivec4);
 		results->mat4Size = sizeof(mat4);
 		results->mat3Size = sizeof(mat3);
+
+		results->kifsScratchpadSize = sizeof(Device::KIFS::Scratchpad);
 	}
 
 	__host__ void VerifyTypeSizes()
@@ -47,6 +53,12 @@ namespace Cuda
 		AssertMsgFmt(results.mat3Size == sizeof(mat3), "mat3 host/device size mismatch. Host: %i bytes, device %i bytes", sizeof(mat3), results.mat3Size);
 		AssertMsgFmt(results.mat4Size == sizeof(mat4), "mat4 host/device size mismatch. Host: %i bytes, device %i bytes", sizeof(mat4), results.mat4Size);
 
-		std::printf("Type size check passed!\n");
+		Log::Debug("Type size information:\n");
+		{
+			Log::Indent indent;
+			Log::Debug("- Device::KIFS::Scratchpad: %i bytes\n", results.kifsScratchpadSize);
+		}
+
+		Log::Write("Type size check passed!\n");
 	}
 }

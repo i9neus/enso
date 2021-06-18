@@ -3,6 +3,7 @@
 #include "dx12/SecurityAttributes.h"
 #include "dx12/DXSampleHelper.h"
 #include "thirdparty/nvidia/helper_cuda.h"
+#include "kernels/CudaTests.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt)
