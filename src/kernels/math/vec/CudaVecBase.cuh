@@ -35,14 +35,25 @@ namespace Cuda
 		}
 
 	public:
-		__host__ __device__ __forceinline__ __vec_swizzle() {}
-		__host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle& other) = default;
+		__vec_swizzle() = default;
+		__vec_swizzle(const __vec_swizzle& other) = default;
 
 		// Assign from swizzled types
 		template<int OtherActualSize, int... OtherIndices>
 		__host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<Type, OtherActualSize, SpoofedSize, OtherIndices...>& rhs)
 		{
 			rhs.UnpackTo<Indices..., OtherIndices...>(data);
+			return *this;
+		}
+
+		// Assign from arithmetic types
+		template<typename OtherType, typename = typename std::enable_if<std::is_arithmetic<OtherType>::value>::type>
+		__host__ __device__ __forceinline__ __vec_swizzle& operator=(const OtherType& rhs)
+		{
+			for (int i = 0; i < ActualSize; i++)
+			{
+				data[i] = Type(rhs);
+			}
 			return *this;
 		}
 	};

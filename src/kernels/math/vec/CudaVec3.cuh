@@ -33,8 +33,8 @@ namespace Cuda
 			__vec_swizzle<float, 3, 2, 2, 0> zx; __vec_swizzle<float, 3, 2, 2, 1> zy; /*__vec_swizzle<float, 3, 2, 2, 2> zz;*/
 		};
 
-        __host__ __device__ __forceinline__ __vec_swizzle() {}
-        __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle&) = default;
+        __vec_swizzle() = default;
+        __vec_swizzle(const __vec_swizzle&) = default;
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const float v) : x(v), y(v), z(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
@@ -64,6 +64,14 @@ namespace Cuda
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<float, RS, 3, R0, R1, R2>& rhs)
         {
             x = rhs.other[R0]; y = rhs.other[R1]; z = rhs.other[R2];
+            return *this;
+        }
+
+        // Assign from arithmetic types
+        template<typename OtherType, typename = typename std::enable_if<std::is_arithmetic<OtherType>::value>::type>
+        __host__ __device__ __forceinline__ __vec_swizzle& operator=(const OtherType& rhs)
+        {
+            x = float(rhs); y = float(rhs); z = float(rhs); 
             return *this;
         }
 

@@ -20,8 +20,8 @@ namespace Cuda
 			__vec_swizzle<Type, 2, 2, 1, 1> yy;
 		};
 
-        __host__ __device__ __forceinline__ __vec_swizzle() {}
-        __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle&) = default;
+        __vec_swizzle() = default;
+        __vec_swizzle(const __vec_swizzle&) = default;
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const Type v) : x(v), y(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const Type& x_, const Type& y_) : x(x_), y(y_) {}
 
@@ -49,6 +49,14 @@ namespace Cuda
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<Type, RS, 2, R0, R1>& rhs)
         {
             x = rhs.other[R0]; y = rhs.other[R1];
+            return *this;
+        }
+
+        // Assign from arithmetic types
+        template<typename OtherType, typename = typename std::enable_if<std::is_arithmetic<OtherType>::value>::type>
+        __host__ __device__ __forceinline__ __vec_swizzle& operator=(const OtherType& rhs)
+        {
+            x = Type(rhs); y = Type(rhs);
             return *this;
         }
 
