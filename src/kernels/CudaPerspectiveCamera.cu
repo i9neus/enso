@@ -31,12 +31,12 @@ namespace Cuda
     { 
         //float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
-        m_cameraPos = vec3(1.0f, 1.5f, 3.0f);
+        m_cameraPos = vec3(0.5f, 1.0f, 1.5f);
 
         //float cameraOriginDist = length(cameraPos);
         //vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
         //cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
-        vec3 cameraLookAt = vec3(0.0f);
+        vec3 cameraLookAt = vec3(0.0f, 0.5f, 0.0f);
         
         vec3 cameraForward = cameraLookAt - m_cameraPos;
         m_focalDistance = length(cameraForward);
@@ -61,11 +61,11 @@ namespace Cuda
         __shared__ mat3 basis;
         __shared__ vec3 cameraPos;
         __shared__ float focalDistance, focalLength, fStop, d1, d2;
-
         isInited = false;
 
         __syncthreads();
         
+        // Load the camera data from global to shared memory
         if (!isInited)
         {
             basis = m_basis;

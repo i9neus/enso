@@ -297,6 +297,9 @@
     <ClInclude Include="src\kernels\math\CudaTransform.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaTests.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -382,12 +385,6 @@
     <CudaCompile Include="src\kernels\tracables\CudaCornell.cu">
       <Filter>kernels\tracables</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\math\CudaMath.cu">
-      <Filter>kernels\math</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu">
       <Filter>kernels\lights</Filter>
     </CudaCompile>
@@ -396,6 +393,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu">
       <Filter>kernels\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaTests.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
+      <Filter>kernels\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

@@ -40,23 +40,20 @@ namespace Cuda
             return vec4(pLen - r, vec3(p / pLen));
         }
 
-        template<typename PolyType>
-        __device__ __forceinline__ vec4 PolyhedronFace(const vec3& p, const PolyType& poly, const int faceIdx, const float scale)
+        /*template<typename PolyType>
+        __device__ __forceinline__ vec4 PolyhedronFace(const vec3& p, const PolyType& poly, const uint& faceIdx, const float& scale)
         {
-            // TODO: Pre-cache the normal
             const vec3* V = poly.V;
-            const uchar* F = poly.F;
-            const uint j = faceIdx * PolyType::kPolyOrder;
-
-            vec3 n = normalize(cross(V[F[j + 1]] - V[F[j + 0]], V[F[j + 2]] - V[F[j + 0]]));
+            const vec3& N = poly.N[faceIdx];
+            const uchar* F = &poly.F[faceIdx * PolyType::kPolyOrder];
             vec3 grad;
 
             // Test against each of the polygon's edges
             for (int i = 0; i < PolyType::kPolyOrder; i++)
             {
-                const vec3 dv = (V[F[j + (i + 1) % poly.kPolyOrder]] - V[F[j + i]]) * scale;
-                const vec3 vi = V[F[j + i]] * scale;
-                const vec3 edgeNorm = normalize(cross(dv, n));
+                const vec3 dv = (V[F[(i + 1) % poly.kPolyOrder]] - V[F[i]]) * scale;
+                const vec3 vi = V[F[i]] * scale;
+                const vec3 edgeNorm = normalize(cross(dv, N));
                 if (dot(edgeNorm, p - vi) > 0.0f)
                 {
                     const float t = clamp((dot(p, dv) - dot(vi, dv)) / dot(dv, dv), 0.0f, 1.0f);
@@ -67,9 +64,8 @@ namespace Cuda
             }
 
             // Test against the face itself
-            const vec3 v0 = V[F[j + 0]] * scale;
-            if (dot(n, p - v0) < 0.0f) { n = -n; }
-            return vec4((dot(p, n) - dot(v0, n)), n);
-        }
+            const vec3 v0 = V[F[0]] * scale;
+            return (dot(N, p - v0) < 0.0f) ? vec4((dot(p, -N) - dot(v0, -N)), -N) : vec4((dot(p, N) - dot(v0, N)), N);
+        }*/
     }
 }

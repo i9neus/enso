@@ -12,6 +12,8 @@ RenderManager::RenderManager() :
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
 {
+	Log::Write("Initialising Cuda...\n");
+	
 	int num_cuda_devices = 0;
 	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
 
@@ -21,18 +23,33 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	}
 	for (UINT devId = 0; devId < (UINT)num_cuda_devices; devId++)
 	{
+		Log::Indent indent1;
+		
 		cudaDeviceProp devProp;
 		checkCudaErrors(cudaGetDeviceProperties(&devProp, devId));
 
 		if ((memcmp(&dx12DeviceLUID.LowPart, devProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
 			(memcmp(&dx12DeviceLUID.HighPart, devProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
 		{
+			cudaDeviceProp deviceProp;
+			IsOk(cudaGetDeviceProperties(&deviceProp, devId));
+
+			int pLow, pHigh;
+			IsOk(cudaDeviceGetStreamPriorityRange(&pLow, &pHigh));
+
+			Log::Debug("Stream priority range: [%i, %i]\n", pLow, pHigh);
+			
 			IsOk(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
 			m_nodeMask = devProp.luidDeviceNodeMask;
-			checkCudaErrors(cudaStreamCreateWithFlags(&m_D3DStream, cudaStreamNonBlocking));
+			checkCudaErrors(cudaStreamCreateWithPriority(&m_D3DStream, cudaStreamNonBlocking, pHigh));
 			checkCudaErrors(cudaStreamCreate(&m_renderStream));
-			std::printf("CUDA Device Used [%d] %s\n", devId, devProp.name);
+			Log::Write("CUDA Device Used [%d] %s\n", devId, devProp.name);
+			{
+				Log::Indent indent2;
+				Log::Debug("- sharedMemPerMultiprocessor: %i bytes\n", deviceProp.sharedMemPerMultiprocessor);
+				Log::Debug("- sharedMemPerBlock: %i bytes\n", deviceProp.sharedMemPerBlock);
+			}
 			break;
 		}
 	}
@@ -41,7 +58,9 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 
 	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
 
-	checkCudaErrors(cudaEventCreate(&m_renderEvent));
+	checkCudaErrors(cudaEventCreate(&m_renderEvent));	
+
+	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
 
 	// Create some Cuda objects
 	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
@@ -132,8 +151,13 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
 
-	m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
-	checkCudaErrors(cudaStreamSynchronize(m_D3DStream));
+	// Only emplace another copy call if the previous one has successfully executed
+	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
+	{
+		m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
+		IsOk(cudaEventRecord(m_renderEvent));
+	}
+	//IsOk(cudaStreamSynchronize(m_D3DStream));
 
 	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
 	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));

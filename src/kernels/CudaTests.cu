@@ -29,7 +29,7 @@ namespace Cuda
 		results->mat4Size = sizeof(mat4);
 		results->mat3Size = sizeof(mat3);
 
-		results->kifsScratchpadSize = sizeof(Device::KIFS::Scratchpad);
+		results->kifsScratchpadSize = Device::KIFS::SizeOfSharedMemory();
 	}
 
 	__host__ void VerifyTypeSizes()

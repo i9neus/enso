@@ -8,6 +8,9 @@
 #undef min
 #undef max
 
+template<typename T> inline T min(const T& a, const T& b) { return (a < b) ? a : b; }
+template<typename T> inline T max(const T& a, const T& b) { return (a > b) ? a : b; }
+
 namespace math
 {
     template<typename T> inline constexpr T mod2(const T& a, const T& b)    { return ((a % b) + b) % b; }

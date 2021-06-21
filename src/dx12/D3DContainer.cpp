@@ -8,7 +8,7 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 	D3DWindowInterface(width, height, name),
 	m_frameIndex(0),
 	m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
-	m_fenceValues{},
+	m_fenceValues{0, 0},
 	m_rtvDescriptorSize(0)
 {
 	m_viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height) };
@@ -443,6 +443,7 @@ void D3DContainer::OnRender()
 	m_imgui.UpdateParameters(m_manager);
 
 	m_manager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);	
+	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 	// Update the frame index.
 	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();

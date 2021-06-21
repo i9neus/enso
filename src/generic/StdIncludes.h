@@ -46,16 +46,20 @@ public:
         return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
     }
 
-    ~Timer()
+    inline void Write(const std::string& format) const
     {
-        
+        Log::Debug(format, Get());
+    }
+
+    ~Timer()
+    {        
         if (m_lambda)
         {
-            std::printf("%s\n", m_lambda(Get()).c_str());
+            Log::Debug("%s\n", m_lambda(Get()).c_str());
         }
         else if(!m_message.empty())
         {
-            std::printf("%s\n", tfm::format(m_message.c_str(), Get()).c_str());
+            Log::Debug("%s\n", tfm::format(m_message.c_str(), Get()).c_str());
         }
     }
 

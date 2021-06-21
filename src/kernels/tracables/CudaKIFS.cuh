@@ -6,13 +6,15 @@
 
 namespace Cuda
 {
+    // Foreward declarations
     namespace Host { class KIFS; }    
     namespace SDF { struct PolyhedronData; }
+    struct BlockConstantData;
 
     enum class KIFSType : uint { kTetrahedtron, kCube };
 
     namespace Device
-    {
+    {        
         class KIFS : public Device::Tracable
         {
             friend Host::KIFS;
@@ -24,20 +26,39 @@ namespace Cuda
 
                 float   vertScale;
                 float   thickness;
-                ivec2   iterations;
+                int     iterations;
+                int     maxIterations;
                 uint    faceMask;
-            }
-            m_params;
+            }; 
+
+            struct KernelConstantData
+            {
+                int                         numIterations;
+                float                       isosurfaceThickness;
+                float                       vertScale;
+                uint                        faceMask;
+
+                struct
+                {
+                    mat3                    matrix;
+                    float                   scale;
+                }
+                iteration[kSDFMaxIterations];
+            };
+
+            __device__ static uint SizeOfSharedMemory();
 
         protected:
             __device__ vec4 Field(vec3 p, const mat3& b, uint& code, uint& surfaceDepth) const;
-            __device__ void FoldTetrahedron(const mat3& matrix, const int& i, vec3& p, mat3& bi, uint& code) const; 
             __device__ void Initialise();
+            __device__ __inline__ void PrepareKernelConstantData(KernelConstantData& bd) const;
 
             KIFSType    m_type;
             vec3        m_origin;
 
-            const vec3  m_kXi[kSDFMaxIterations];
+            Params      m_params;
+            KernelConstantData m_kernelConstantData;
+
             mat3        m_matrices[kSDFMaxIterations];
             float       m_iterScales[kSDFMaxIterations];
             ivec2       m_iterations;
@@ -48,17 +69,19 @@ namespace Cuda
 
             uint        m_numVertices;
             uint        m_numFaces;
-            uint        m_polyOrder;            
-
-            StaticPolyhedron<4, 4, 3>     m_tetrahedronData;
-            StaticPolyhedron<8, 6, 4>     m_cubeData;
+            uint        m_polyOrder;           
 
         public:
             __device__ KIFS();
             __device__ ~KIFS() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
-            __device__ void OnSyncParameters(const Params& params) { m_params = params; }
+            __device__ void Precache();
+            __device__ void OnSyncParameters(const Params& params) 
+            { 
+                m_params = params;
+                Initialise();
+            }
         };
     }
 

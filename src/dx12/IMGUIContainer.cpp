@@ -10,7 +10,7 @@ IMGUIContainer::IMGUIContainer()
     params.kifs.faceMask = 0xffffffffu;
     params.kifs.scale = vec2(0.0f, 0.0f);
     params.kifs.thickness = 0.5f;
-    params.kifs.iterations = ivec2(1, 1);
+    params.kifs.iterations = 1;
     
     params.material.colour = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
 }
@@ -62,8 +62,7 @@ void IMGUIContainer::ConstructKIFSControls(Cuda::Device::KIFS::Params& params)
     ImGui::SliderFloat("Scale B", &params.scale.y, -1.0f, 1.0f);
     ImGui::SliderFloat("Isosurface thickness", &params.thickness, 0.0f, 1.0f);
 
-    ImGui::SliderInt("Iterations A", &params.iterations.x, 0, kSDFMaxIterations);
-    ImGui::SliderInt("Iterations B", &params.iterations.y, 0, kSDFMaxIterations);
+    ImGui::SliderInt("Iterations ", &params.iterations, 0, kSDFMaxIterations);
 }
 
 void IMGUIContainer::ConstructMaterialControls(Parameters& params)

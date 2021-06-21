@@ -66,6 +66,7 @@ namespace Cuda
 			}
 
 			__device__ vec3 Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
+			__device__ void InitaliseScratchpadObjects() const;
 
 		public:
 			__device__ WavefrontTracer(const Objects* objects);

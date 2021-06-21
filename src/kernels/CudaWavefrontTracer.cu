@@ -53,8 +53,6 @@ namespace Cuda
 			RenderCtx renderCtx(viewportPos, m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx + 1, 0);
 			m_objects.cu_camera->CreateRay(compressedRay, renderCtx);
 		}
-
-		//cu_deviceAccumBuffer->At(viewportPos) = vec4(newRay.od.d, 1.0f);
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
@@ -77,14 +75,16 @@ namespace Cuda
 	}
 
 	__device__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
-	{
+	{				
+		m_objects.cu_kifs->Precache();
+		
 		if (rayIdx >= m_objects.cu_deviceCompressedRayBuffer->Size()) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
 		vec3 L(0.0f);
-		const vec2 viewportPos = vec2(compressedRay.ViewportPos()); // FIXME: Do an automatic cast
+		const ivec2 viewportPos = compressedRay.ViewportPos(); // FIXME: Do an automatic cast				
 
 		int depth = renderCtx.depth; 
 
@@ -96,7 +96,7 @@ namespace Cuda
 			//m_objects.cu_sphere->Intersect(incidentRay, hitCtx);
 			m_objects.cu_groundPlane->Intersect(incidentRay, hitCtx);
 			m_objects.cu_kifs->Intersect(incidentRay, hitCtx);
-		}
+		}		
 
 		// SHADE
 		if (!hitCtx.isValid)
@@ -119,8 +119,8 @@ namespace Cuda
 			compressedRay.Kill();			
 		}
 
-		//L += incidentRay.od.d;
-		//cu_deviceAccumBuffer->At(viewportPos) = 0.0f;
+		//m_objects.cu_deviceAccumBuffer->At(viewportPos) = vec4(hitCtx.hit.p, -1.0f);
+		//return;
 
 		// FIXME: Do an automatic cast
 		m_objects.cu_deviceAccumBuffer->Accumulate(ivec2(viewportPos), L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
@@ -239,12 +239,12 @@ namespace Cuda
 
 	__global__ void KernelTrace(Device::WavefrontTracer* tracer)
 	{
-		tracer->Trace(blockIdx.x * blockDim.x + threadIdx.x);
+		tracer->Trace(kKernelIdx);
 	}
 
 	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
 	{
-		//if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
+		if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
 
 		tracer->Composite(kKernelPos<ivec2>(), deviceOutputImage);
 	}
@@ -253,7 +253,9 @@ namespace Cuda
 	{
 		//std::printf("Composite! %i %i %i\n", m_grid.x, m_grid.y, m_grid.z);
 	
+		hostOutputImage->SignalSetWrite(m_hostStream);
 		KernelComposite << < m_grid, m_block, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+		hostOutputImage->SignalUnsetWrite(m_hostStream);
 	}
 
 	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)

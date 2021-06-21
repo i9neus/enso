@@ -4,8 +4,6 @@
 
 namespace Cuda
 {    	
-	__host__ void VerifyTypeSizes();
-	
 	__host__ __device__ __forceinline__ float cubrt(float a)								{ return copysignf(1.0f, a) * powf(fabs(a), 1.0f / 3.0f); }
 	__host__ __device__ __forceinline__ float toRad(float deg)								{ return kTwoPi * deg / 360; }
 	__host__ __device__ __forceinline__ float toDeg(float rad)								{ return 360 * rad / kTwoPi; }
@@ -30,6 +28,8 @@ namespace Cuda
 	#define kKernelX				(blockIdx.x * blockDim.x + threadIdx.x)	
 	#define kKernelY				(blockIdx.y * blockDim.y + threadIdx.y)	
 	#define kKernelIdx				kKernelX
+	#define kThreadIdx				threadIdx.x
+	#define kWarpLane				(threadIdx.x & 31)
 	#define kKernelWidth			(gridDim.x * blockDim.x)
 	#define kKernelHeight			(gridDim.y * blockDim.y)
 	#define kIsFirstThread			(threadIdx.x == 0 && threadIdx.y == 0)
@@ -71,10 +71,21 @@ namespace Cuda
 	}
 
 	template<int NumVertices, int NumFaces, int PolyOrder, typename IdxType = uchar>
-	struct StaticPolyhedron
+	struct SimplePolyhedron
 	{
-		vec3		V[NumVertices];
-		IdxType		F[NumFaces * PolyOrder];
 		enum _attrs : int { kNumVertices = NumVertices, kNumFaces = NumFaces, kPolyOrder = PolyOrder };
+		
+		SimplePolyhedron() = default;
+		__host__ __device__ void Prepare()
+		{
+			for (int i = 0, j = 0; i < kNumFaces; i++, j += kPolyOrder)
+			{
+				N[i] = normalize(cross(V[F[j + 1]] - V[F[j + 0]], V[F[j + 2]] - V[F[j + 0]]));
+			}
+		}
+		
+		vec3		V[NumVertices];
+		IdxType		F[NumFaces * PolyOrder];		
+		vec3		N[NumFaces];
 	};
 }

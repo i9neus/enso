@@ -57,6 +57,7 @@
     <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaSampler.cuh" />
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
+    <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
@@ -120,15 +121,12 @@
     <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
+    <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
-    <CudaCompile Include="src\kernels\math\CudaMath.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornell.cu" />
-    <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
   </ItemGroup>
@@ -203,7 +201,7 @@
       <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
       <Include>./;../../common/inc</Include>
       <Defines>WIN32</Defines>
-      <AdditionalOptions>--threads 0</AdditionalOptions>
+      <AdditionalOptions>--threads 0 --default-stream per-thread</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
