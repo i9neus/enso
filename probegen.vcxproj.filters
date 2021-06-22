@@ -300,6 +300,9 @@
     <ClInclude Include="src\kernels\CudaTests.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh">
+      <Filter>kernels\lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -399,6 +402,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu">
       <Filter>kernels\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu">
+      <Filter>kernels\lights</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
