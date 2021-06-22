@@ -2,10 +2,37 @@
 
 namespace Cuda
 {
+    __host__ void QuadLightParams::ToJson(Json::Node& node) const
+    {
+        node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
+        node.AddArray("orientation", std::vector<float>({ orientation.x, orientation.y, orientation.z }));
+        node.AddArray("scale", std::vector<float>({ scale.x, scale.y, scale.z }));
+
+        node.AddValue("intensity", intensity);
+        node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
+    }
+
+    __host__ void QuadLightParams::FromJson(const Json::Node& node)
+    {
+        node.GetVector("position", position, true);
+        node.GetVector("orientation", orientation, true);
+        node.GetVector("scale", scale, true);
+
+        node.GetValue("intensity", intensity, true);
+        node.GetVector("colour", colour, true);
+    }
+    
     __device__ Device::QuadLight::QuadLight(const BidirectionalTransform& transform) : Light(transform)
     {
         m_emitterArea = m_transform.scale.x * m_transform.scale.x;
         m_emitterRadiance = vec3(1.0f);
+    }
+
+    __device__ void Device::QuadLight::Prepare()
+    {
+        m_transform = CreateCompoundTransform(m_params.orientation, m_params.position, m_params.scale);
+        m_emitterArea = m_transform.scale.x * m_transform.scale.x;
+        m_emitterRadiance = m_params.colour * math::pow(2.0f, m_params.intensity) / m_emitterArea;
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, RayBasic& extant, vec3& L, float& pdfLight) const
@@ -38,11 +65,15 @@ namespace Cuda
         pdfLight = 1.0f / solidAngle;
 
         // Calculate the ray throughput in the event that is hits the light
-        L = incident.weight * (m_emitterRadiance / m_emitterArea) * solidAngle * cosTheta / kPi;
+        L = incident.weight * m_emitterRadiance * solidAngle * cosTheta / kPi;
     }
 
-    __device__ void Device::QuadLight::Evaluate()
-    {
+    __device__ void Device::QuadLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
+    {        
+        const float solidAngle = dot(hitCtx.hit.n, incident.od.d) * m_emitterArea / sqr(incident.tNear);
+
+        pdfLight = 1 / solidAngle;
+        L = m_emitterRadiance;
     }
     
     __host__  Host::QuadLight::QuadLight()
@@ -56,5 +87,14 @@ namespace Cuda
     __host__ void Host::QuadLight::OnDestroyAsset()
     {
         DestroyOnDevice(&cu_deviceData);
+    }
+
+    __host__ void Host::QuadLight::OnJson(const Json::Node& parentNode)
+    {
+        Json::Node childNode = parentNode.GetChildObject("material", true);
+        if (childNode)
+        {
+            SyncParameters(cu_deviceData, QuadLightParams(childNode));
+        }
     }
 }

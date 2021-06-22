@@ -58,6 +58,8 @@ namespace Cuda
 	#define kBlue vec3(0.0f, 0.0f, 1.0f)
 	#define kPink vec3(1.0f, 0.0f, 1.0f)
 
+	enum class IntegratorMode { kMIS = 0, kLightOnly, kBrdfOnly };
+
 	// Finds the roots of a quadratic equation of the form a.x^2 + b.x + c = 0
 	__device__ __forceinline__ bool QuadraticSolve(float a, float b, float c, float& t0, float& t1)
 	{

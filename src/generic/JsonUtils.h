@@ -14,6 +14,7 @@ namespace Json
         {
             template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value)
             {
+                // NOTE: An error here means that a value is being requested that hasn't explicitly been specialised e.g. GetValue("", var) where var is a vector. 
                 AssertMsgFmt(node.IsString(), "Node '%s' is not of type string.", name.c_str());
                 value = node.GetString();
             }
