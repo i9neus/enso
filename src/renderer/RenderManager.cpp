@@ -6,7 +6,8 @@
 #include "kernels/CudaTests.cuh"
 
 RenderManager::RenderManager() : 
-	m_threadSignal(kHalt)
+	m_threadSignal(kHalt),
+	m_isDirty(false)
 {
 }
 
@@ -145,11 +146,18 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 {				
 	cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
 	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
-
 	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
-	externalSemaphoreWaitParams.flags = 0;
+	externalSemaphoreWaitParams.flags = 0;	
 
-	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
+	//checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
+
+	// If the next frame is not ready to be rendered yet, wait until it is ready.
+	if (m_d3dFence->GetCompletedValue() < currentFenceValue)
+	{
+		//std::printf("%i is waiting for %i (%i)\n", m_frameIndex, m_fenceValues[m_frameIndex], currentFenceValue);
+		ThrowIfFailed(m_d3dFence->SetEventOnCompletion(currentFenceValue, m_fenceEvent));
+		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+	}
 
 	// Only emplace another copy call if the previous one has successfully executed
 	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
@@ -161,15 +169,19 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 
 	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
 	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
-
 	externalSemaphoreSignalParams.params.fence.value = ++currentFenceValue;
 	externalSemaphoreSignalParams.flags = 0;
 
-	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));
+	//checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));
+
+	m_d3dFence->Signal(++currentFenceValue);
 }
 
-void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence)
+void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent)
 {
+	m_d3dFence = d3dFence;
+	m_fenceEvent = fenceEvent;
+	
 	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
 
 	memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
@@ -215,18 +227,19 @@ void RenderManager::Run()
 
 	while (m_threadSignal.load() == kRun)
 	{				
-		Timer timer([&](float elapsed) -> std::string 
+		/*Timer timer([&](float elapsed) -> std::string 
 			{ 
 				const float fps = 1.0f / elapsed;
 				return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
-			});
+			});*/
+		Timer timer;
 
 		if (m_isDirty && frameIdx >= 2)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
 			m_wavefrontTracer->OnJson(m_renderParamsJson);
 			m_isDirty = false;
-			frameIdx = 0;
+			frameIdx = 0;			
 		}
 		
 		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
@@ -246,6 +259,20 @@ void RenderManager::Run()
 		//numSubframes = math::clamp(numSubframes, 1, kMaxSubframes);			
 
 		iterationIdx++;
+		m_frameTimes[frameIdx % m_frameTimes.size()] = timer.Get();
+		float meanFrameTime = 0.0f;
+		for (const auto& ft : m_frameTimes)
+		{
+			meanFrameTime += ft;
+		}
+		meanFrameTime /= math::min(frameIdx, int(m_frameTimes.size()));
+
+		{
+			std::lock_guard<std::mutex> lock(m_jsonMutex);
+			m_renderStatsJson.Clear();
+			m_renderStatsJson.AddValue("frameTime", timer.Get());
+			m_renderStatsJson.AddValue("meanFrameTime", meanFrameTime);
+		}
 		
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}

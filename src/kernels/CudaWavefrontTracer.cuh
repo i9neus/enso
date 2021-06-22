@@ -126,7 +126,7 @@ namespace Cuda
 			__host__ ~WavefrontTracer() { OnDestroyAsset(); }
 
 			__host__ virtual void OnDestroyAsset() override final;
-			__host__ void OnJson(const Json::Node& renderParamsJson);
+			__host__ virtual void OnJson(const Json::Node& renderParamsJson) override final;
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx);
 		};

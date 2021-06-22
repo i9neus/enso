@@ -2,7 +2,8 @@
 
 #include "../CudaRay.cuh"
 #include "../CudaCtx.cuh"
-#include "generic/JsonUtils.h" 
+
+namespace Json { class Node; }
 
 namespace Cuda
 {
@@ -41,13 +42,19 @@ namespace Cuda
             struct Params
             {
                 __host__ __device__ Params() : albedo(0.5f) {}
+                __host__ Params(const Json::Node& node) { FromJson(node); }
+
+                __host__ void ToJson(Json::Node& node) const;
+                __host__ void FromJson(const Json::Node& node);
+
                 vec3 albedo;
-            }
-            m_params;
+            };
 
         public:
-            SimpleMaterial() = default;
+            __host__ __device__ SimpleMaterial() : m_params() { m_params.albedo = vec3(1.0f);  }
             ~SimpleMaterial() = default;
+
+            Params m_params;
 
             __device__ vec3 Evaluate(const HitCtx& hit) const;
             __device__ void OnSyncParameters(const Params& params) { m_params = params;  }

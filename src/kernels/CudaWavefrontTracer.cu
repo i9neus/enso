@@ -76,7 +76,7 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
 	{				
-		m_objects.cu_kifs->Precache();
+		m_objects.cu_kifs->InitialiseKernelConstantData();
 		
 		if (rayIdx >= m_objects.cu_deviceCompressedRayBuffer->Size()) { return; }
 
@@ -105,7 +105,6 @@ namespace Cuda
 		}
 		else
 		{
-			//L += hitCtx.hit.n;// *0.5f + vec3(0.5f);
 			L += Shade(incidentRay, hitCtx, renderCtx);
 		}
 
@@ -123,7 +122,7 @@ namespace Cuda
 		//return;
 
 		// FIXME: Do an automatic cast
-		m_objects.cu_deviceAccumBuffer->Accumulate(ivec2(viewportPos), L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
+		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
 		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
 	}
 

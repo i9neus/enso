@@ -58,7 +58,41 @@ namespace Cuda
 		}
 	};
 
-	__host__ __device__ __forceinline__ float clamp(const float& v, const float& a, const float& b) { return fmaxf(a, fminf(v, b)); }
-	__host__ __device__ __forceinline__ float fract(const float& v) { return fmodf(v, 1.0f); }
-	__host__ __device__ __forceinline__ float sign(const float& v) { return copysign(1.0f, v); }
+	__host__ __device__ __forceinline__ float clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
+	__host__ __device__ __forceinline__ float fract(const float& v) noexcept { return fmodf(v, 1.0f); }
+	__host__ __device__ __forceinline__ float sign(const float& v) noexcept { return copysign(1.0f, v); }
+
+	namespace math
+	{
+#define USE_CUDA_INTRINSICS
+
+#if defined(__CUDA_ARCH__) && defined(USE_CUDA_INTRINSICS)
+		template<typename T> __device__ __forceinline__ T cos(const T& v) { return __cosf(v); }
+		template<typename T> __device__ __forceinline__ T sin(const T& v) { return __sinf(v); }
+		template<typename T> __device__ __forceinline__ T tan(const T& v) { return __tanf(v); }
+		template<typename T> __device__ __forceinline__ T exp(const T& v) { return __expf(v); }
+		template<typename T> __device__ __forceinline__ T sqrt(const T& v) { return __fsqrt_rn(v); }
+		template<typename T> __device__ __forceinline__ T pow(const T& a, const T& b) { return __powf(a, b); }
+		template<typename T> __device__ __forceinline__ T log10(const T& v) { return __log10f(v); }
+		template<typename T> __device__ __forceinline__ T log2(const T& v) { return __log2f(v); }
+		template<typename T> __device__ __forceinline__ T log(const T& v) { return __logf(v); }
+		template<typename T> __device__ __forceinline__ void sincos(const T& v, T& s, T& c) { __sincosf(v, &s, &c); }
+#else
+		template<typename T> __host__ __device__ __forceinline__ T cos(const T& v) noexcept { return cosf(v); }
+		template<typename T> __host__ __device__ __forceinline__ T sin(const T& v) noexcept { return sinf(v); }
+		template<typename T> __host__ __device__ __forceinline__ T tan(const T& v) noexcept { return tanf(v); }
+		template<typename T> __host__ __device__ __forceinline__ T exp(const T& v) noexcept { return expf(v); }
+		template<typename T> __host__ __device__ __forceinline__ T sqrt(const T& v) { return sqrtf(v); }
+		template<typename T> __host__ __device__ __forceinline__ T pow(const T& a, const T& b) noexcept { return powf(a, b); }
+		template<typename T> __host__ __device__ __forceinline__ T log10(const T& v) noexcept { return log10f(v); }
+		template<typename T> __host__ __device__ __forceinline__ T log2(const T& v) noexcept { return log2f(v); }
+		template<typename T> __host__ __device__ __forceinline__ T log(const T& v) noexcept { return logf(v); }
+		template<typename T> __host__ __device__ __forceinline__ void sincos(const T& v, T& s, T& c) noexcept
+		{ 
+			s = sinf(v);
+			c = cosf(v);
+		}
+#endif
+	}
+
 }

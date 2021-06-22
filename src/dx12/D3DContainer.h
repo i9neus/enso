@@ -112,7 +112,7 @@ private:
 	ComPtr<ID3D12Fence> m_fence;
 	UINT64 m_fenceValues[FrameCount];
 
-	RenderManager                m_manager;
+	RenderManager                m_cudaRenderer;
 	IMGUIContainer				 m_imgui;
 	HWND						 m_hWnd;
 

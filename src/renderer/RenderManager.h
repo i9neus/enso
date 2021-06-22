@@ -15,12 +15,19 @@ public:
 	RenderManager();
 
 	void InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
-	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence);
+	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
 	void Start();
 	void Destroy();
 	void OnJson(const Json::Document& json);
+	
+	template<typename Lambda>
+	void GetRenderStats(Lambda statsLambda) 
+	{ 
+		std::lock_guard<std::mutex> lock(m_jsonMutex);
+		statsLambda(m_renderStatsJson);
+	}
 
 private:
 	void Run();
@@ -31,7 +38,10 @@ private:
 	std::thread			m_managerThread;
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_renderParamsJson;
-	std::atomic<bool>	m_isDirty;
+	std::atomic<bool>	m_isDirty; 
+
+	Json::Document			m_renderStatsJson;
+	std::array<float, 20>	m_frameTimes;
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 	TimePoint					m_renderStartTime;
@@ -48,6 +58,8 @@ private:
 	void*						 m_cudaTexturePtr = NULL;
 	cudaSurfaceObject_t          m_cuSurface;
 	cudaEvent_t                  m_renderEvent;
+	ComPtr<ID3D12Fence>		     m_d3dFence;
+	HANDLE						 m_fenceEvent;
 
 	uint32_t					 m_D3DTextureWidth;
 	uint32_t				     m_D3DTextureHeight;

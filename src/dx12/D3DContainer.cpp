@@ -8,8 +8,9 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 	D3DWindowInterface(width, height, name),
 	m_frameIndex(0),
 	m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
-	m_fenceValues{0, 0},
-	m_rtvDescriptorSize(0)
+	m_fenceValues{ 0, 0 },
+	m_rtvDescriptorSize(0),
+	m_imgui(m_cudaRenderer)
 {
 	m_viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height) };
 }
@@ -17,14 +18,14 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 void D3DContainer::OnInit(HWND hWnd)
 {
 	m_hWnd = hWnd;
-	
+
 	LoadPipeline();
 
-	m_manager.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-	
+	m_cudaRenderer.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+
 	LoadAssets();
 
-	m_manager.Start();
+	m_cudaRenderer.Start();
 }
 
 void D3DContainer::OnUpdate() {}
@@ -275,12 +276,12 @@ void D3DContainer::CreateViewportTexture()
 		srvDesc.Format = textureDesc.Format;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MipLevels = 1;
-		
+
 		m_device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_manager.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
+		m_cudaRenderer.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
 	}
 }
 
@@ -341,7 +342,7 @@ void D3DContainer::LoadAssets()
 
 	CreateViewportQuad();
 
-	CreateViewportTexture();	
+	CreateViewportTexture();
 
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFailed(m_commandList->Close());
@@ -352,16 +353,16 @@ void D3DContainer::LoadAssets()
 	{
 		ThrowIfFailed(m_device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&m_fence)));
 
-		m_manager.LinkSynchronisationObjects(m_device, m_fence);
-
-		m_fenceValues[m_frameIndex]++;
-
 		// Create an event handle to use for frame synchronization.
 		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		if (m_fenceEvent == nullptr)
 		{
 			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 		}
+
+		m_cudaRenderer.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
+
+		m_fenceValues[m_frameIndex]++;	
 
 		// Wait for the command list to execute; we are reusing the same command 
 		// list in our main loop but for now, we just want to wait for setup to 
@@ -425,7 +426,7 @@ void D3DContainer::PopulateCommandList()
 
 // Render the scene.
 void D3DContainer::OnRender()
-{	
+{
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList();
 
@@ -440,9 +441,9 @@ void D3DContainer::OnRender()
 	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
 
-	m_imgui.UpdateParameters(m_manager);
+	m_imgui.UpdateParameters();
 
-	m_manager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);	
+	m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 	// Update the frame index.
@@ -468,7 +469,7 @@ void D3DContainer::OnDestroy()
 	// cleaned up by the destructor.
 	WaitForGpu();
 
-	m_manager.Destroy();
+	m_cudaRenderer.Destroy();
 	m_imgui.Destroy();
 
 	CloseHandle(m_fenceEvent);

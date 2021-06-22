@@ -2,17 +2,10 @@
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
-IMGUIContainer::IMGUIContainer()
+IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
+    m_cudaRenderer(cudaRenderer)
 {
     auto& params = m_parameters[1];
-    
-    params.kifs.rotate = vec3(0.0f);
-    params.kifs.faceMask = 0xffffffffu;
-    params.kifs.scale = vec2(0.0f, 0.0f);
-    params.kifs.thickness = 0.5f;
-    params.kifs.iterations = 1;
-    
-    params.material.colour = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
 }
 
 void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
@@ -46,34 +39,36 @@ void IMGUIContainer::Destroy()
 
 void IMGUIContainer::ConstructCameraControls()
 {
-    if (!ImGui::CollapsingHeader("Camera")) { return; }
+    if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
    
 }
 
 void IMGUIContainer::ConstructKIFSControls(Cuda::Device::KIFS::Params& params)
 {
-    if (!ImGui::CollapsingHeader("KIFS")) { return; }
+    if (!ImGui::CollapsingHeader("KIFS", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
      
-    ImGui::SliderFloat("Rotate X", &params.rotate.x, -1.0f, 1.0f); 
-    ImGui::SliderFloat("Rotate Y", &params.rotate.y, -1.0f, 1.0f);
-    ImGui::SliderFloat("Rotate Z", &params.rotate.z, -1.0f, 1.0f);
+    ImGui::SliderFloat("Rotate X", &params.rotate.x, 0.0f, 1.0f); 
+    ImGui::SliderFloat("Rotate Y", &params.rotate.y, 0.0f, 1.0f);
+    ImGui::SliderFloat("Rotate Z", &params.rotate.z, 0.0f, 1.0f);
 
-    ImGui::SliderFloat("Scale A", &params.scale.x, -1.0f, 1.0f);
-    ImGui::SliderFloat("Scale B", &params.scale.y, -1.0f, 1.0f);
-    ImGui::SliderFloat("Isosurface thickness", &params.thickness, 0.0f, 1.0f);
+    ImGui::SliderFloat("Scale A", &params.scale.x, 0.0f, 1.0f);
+    ImGui::SliderFloat("Scale B", &params.scale.y, 0.0f, 1.0f);
 
-    ImGui::SliderInt("Iterations ", &params.iterations, 0, kSDFMaxIterations);
+    ImGui::SliderFloat("Crust thickness", &params.crustThickness, 0.0f, 1.0f);
+    ImGui::SliderFloat("Vertex scale", &params.vertScale, 0.0f, 1.0f);
+
+    ImGui::SliderInt("Iterations ", &params.numIterations, 0, kSDFMaxIterations);
 }
 
 void IMGUIContainer::ConstructMaterialControls(Parameters& params)
 {
-    if (!ImGui::CollapsingHeader("Material")) { return; }
+    if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::ColorEdit3("Colour", (float*)&params.material.colour); // Edit 3 floats representing a color
+    ImGui::ColorEdit3("Albedo", (float*)&params.material.albedo); // Edit 3 floats representing a color
 
 }
 
-void IMGUIContainer::UpdateParameters(RenderManager& manager)
+void IMGUIContainer::UpdateParameters()
 {
     // If nothing's changed this frame, don't bother updating
     if (m_parameters[1] == m_parameters[0])
@@ -85,9 +80,17 @@ void IMGUIContainer::UpdateParameters(RenderManager& manager)
     const auto& params = m_parameters[1];
    
     Json::Document document;
-    document.AddArray("albedo", std::vector<float>( {params.material.colour.x, params.material.colour.y, params.material.colour.z} ));
 
-    manager.OnJson(document);
+    {
+        Json::Node childNode = document.AddChildObject("material");
+        params.material.ToJson(childNode);
+    }
+    {
+        Json::Node childNode = document.AddChildObject("kifs");
+        params.kifs.ToJson(childNode);
+    }
+
+    m_cudaRenderer.OnJson(document);
 
     Log::Debug("Updated!\n");
 
@@ -110,7 +113,15 @@ void IMGUIContainer::Render()
     ConstructKIFSControls(params.kifs);
     ConstructMaterialControls(params);
 
+    float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
+    m_cudaRenderer.GetRenderStats([&](const Json::Document& node)
+        {
+            node.GetValue("frameTime", renderFrameTime, false);
+            node.GetValue("meanFrameTime", renderMeanFrameTime, false);
+        });
+
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("Render %.3f ms/frame (%.1f FPS)", 1000.0f * renderMeanFrameTime, 1.0f / renderMeanFrameTime);
     ImGui::End();
 
     // Rendering

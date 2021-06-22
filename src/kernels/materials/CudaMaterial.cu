@@ -1,7 +1,18 @@
 ﻿#include "CudaMaterial.cuh"
+#include "generic/JsonUtils.h" 
 
 namespace Cuda
 {
+    __host__ void Device::SimpleMaterial::Params::ToJson(Json::Node& node) const
+    {
+        node.AddArray("albedo", std::vector<float>({ albedo.x, albedo.y, albedo.z }));
+    }
+
+    __host__ void Device::SimpleMaterial::Params::FromJson(const Json::Node& node)
+    {
+        node.GetVector("albedo", albedo, true);
+    }
+    
     __device__ vec3 Device::SimpleMaterial::Evaluate(const HitCtx& hit) const
     {
         constexpr float kGridScale = 5.0f;
@@ -32,15 +43,13 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::SimpleMaterial::OnJson(const Json::Node& jsonNode)
+    __host__ void Host::SimpleMaterial::OnJson(const Json::Node& parentNode)
     {
-        Device::SimpleMaterial::Params params;
-
-        jsonNode.GetVector("albedo", params.albedo, true);
-
-        Log::Debug("albedo: %s", params.albedo.format());
-
-        SyncParameters(cu_deviceData, params);
+        Json::Node childNode = parentNode.GetChildObject("material", true);
+        if (childNode)
+        {
+            SyncParameters(cu_deviceData, Device::SimpleMaterial::Params(childNode));
+        }
     }
 }
     

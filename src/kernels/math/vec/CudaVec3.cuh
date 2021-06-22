@@ -5,7 +5,7 @@
 
 namespace Cuda
 {		
-	// Full specialisation of __vec_swizzle for vec3
+    // Full specialisation of __vec_swizzle for vec3
 	template<>
 	struct __vec_swizzle<float, 3, 3, 0, 1, 2>
 	{
@@ -192,7 +192,7 @@ namespace Cuda
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ float length(const __vec_swizzle<float, LS, 3, L0, L1, L2>& v)
     {
-        return sqrt(v.data[L0] * v.data[L0] + v.data[L1] * v.data[L1] + v.data[L2] * v.data[L2]);
+        return math::sqrt(v.data[L0] * v.data[L0] + v.data[L1] * v.data[L1] + v.data[L2] * v.data[L2]);
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 3, L0, L1, L2> normalize(const __vec_swizzle<float, LS, 3, L0, L1, L2>& v)
@@ -212,27 +212,27 @@ namespace Cuda
     template<int LS, int L0, int L1, int L2, int RS, int R0, int R1, int R2>
     __host__ __device__ __forceinline__ vec3 pow(__vec_swizzle<float, LS, 3, L0, L1, L2>& a, const __vec_swizzle<float, RS, 3, R0, R1, R2>& b)
     {
-        return { powf(a.data[L0], b.data[R0]), powf(a.data[L1], b.data[R1]), powf(a.data[L2], b.data[R2]) };
+        return { math::pow(a.data[L0], b.data[R0]), math::pow(a.data[L1], b.data[R1]), math::pow(a.data[L2], b.data[R2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 exp(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { exp(a.data[L0]), exp(a.data[L1]), exp(a.data[L2]) };
+        return { math::exp(a.data[L0]), math::exp(a.data[L1]), math::exp(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { logf(a.data[L0]), logf(a.data[L1]), logf(a.data[L2]) };
+        return { math::log(a.data[L0]), math::log(a.data[L1]), math::log(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log10(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { log10f(a.data[L0]), log10f(a.data[L1]), log10f(a.data[L2]) };
+        return { math::log10(a.data[L0]), math::log10(a.data[L1]), math::log10(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log2(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { log2f(a.data[L0]), log2f(a.data[L1]), log2f(a.data[L2]) };
+        return { math::log2(a.data[L0]), math::log2(a.data[L1]), math::log2(a.data[L2]) };
     }
 
     __host__ __device__ __forceinline__ vec3 clamp(const vec3& v, const vec3& a, const vec3& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z) }; }

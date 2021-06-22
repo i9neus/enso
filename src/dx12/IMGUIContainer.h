@@ -11,6 +11,7 @@
 #include "kernels/math/CudaMath.cuh"
 #include "kernels/tracables/CudaKIFS.cuh"
 #include "kernels/CudaPerspectiveCamera.cuh"
+#include "kernels/materials/CudaMaterial.cuh"
 
 #include "thirdparty/imgui/imgui.h"
 
@@ -38,21 +39,17 @@ inline void SafeRelease(T*& resource)
 class IMGUIContainer
 {
 private:
-    ComPtr<ID3D12DescriptorHeap> m_srvHeap;
-    HWND                        m_hWnd;
+    ComPtr<ID3D12DescriptorHeap>    m_srvHeap;
+    HWND                            m_hWnd;
+    RenderManager&                  m_cudaRenderer;
 
     struct Parameters
-    {        
+    {                
         Cuda::Device::PerspectiveCamera::Params     camera;
         Cuda::Device::KIFS::Params                  kifs;
+        Cuda::Device::SimpleMaterial::Params        material;
 
-        struct
-        {
-            ImVec4  colour;
-        } 
-        material;
-
-        Parameters() { std::memset(this, 0, sizeof(Parameters)); }
+        Parameters() = default;
         Parameters& operator=(const Parameters& other) = default;
 
         bool operator==(const Parameters& other) const
@@ -73,12 +70,12 @@ private:
     void ConstructCameraControls();
 
 public:
-    IMGUIContainer();
+    IMGUIContainer(RenderManager& cudaRenderer);
 
     void Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames);
     void Render();
     void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
     void Destroy();
-    void UpdateParameters(RenderManager& manager);
+    void UpdateParameters();
 
 };

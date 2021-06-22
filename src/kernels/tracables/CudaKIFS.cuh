@@ -21,20 +21,25 @@ namespace Cuda
         public: 
             struct Params
             {
+                __host__ __device__ Params();
+                __host__ Params(const Json::Node& node) { FromJson(node); }
+
+                __host__ void ToJson(Json::Node& node) const;
+                __host__ void FromJson(const Json::Node& node);
+                
                 vec3    rotate;
                 vec2    scale;
 
                 float   vertScale;
-                float   thickness;
-                int     iterations;
-                int     maxIterations;
+                float   crustThickness;
+                int     numIterations;
                 uint    faceMask;
             }; 
 
             struct KernelConstantData
             {
                 int                         numIterations;
-                float                       isosurfaceThickness;
+                float                       crustThickness;
                 float                       vertScale;
                 uint                        faceMask;
 
@@ -50,22 +55,13 @@ namespace Cuda
 
         protected:
             __device__ vec4 Field(vec3 p, const mat3& b, uint& code, uint& surfaceDepth) const;
-            __device__ void Initialise();
-            __device__ __inline__ void PrepareKernelConstantData(KernelConstantData& bd) const;
+            __device__ void Prepare();
 
             KIFSType    m_type;
             vec3        m_origin;
 
             Params      m_params;
-            KernelConstantData m_kernelConstantData;
-
-            mat3        m_matrices[kSDFMaxIterations];
-            float       m_iterScales[kSDFMaxIterations];
-            ivec2       m_iterations;
-            int         m_maxIterations;
-            float       m_isosurfaceThickness;
-            float       m_vertScale;
-            uint        m_faceMask;
+            KernelConstantData m_kernelConstantData;          
 
             uint        m_numVertices;
             uint        m_numFaces;
@@ -76,11 +72,11 @@ namespace Cuda
             __device__ ~KIFS() = default;
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
-            __device__ void Precache();
+            __device__ void InitialiseKernelConstantData() const;
             __device__ void OnSyncParameters(const Params& params) 
             { 
                 m_params = params;
-                Initialise();
+                Prepare();
             }
         };
     }

@@ -76,16 +76,8 @@ namespace Cuda
 		enum _attrs : int { kNumVertices = NumVertices, kNumFaces = NumFaces, kPolyOrder = PolyOrder };
 		
 		SimplePolyhedron() = default;
-		__host__ __device__ void Prepare()
-		{
-			for (int i = 0, j = 0; i < kNumFaces; i++, j += kPolyOrder)
-			{
-				N[i] = normalize(cross(V[F[j + 1]] - V[F[j + 0]], V[F[j + 2]] - V[F[j + 0]]));
-			}
-		}
 		
 		vec3		V[NumVertices];
 		IdxType		F[NumFaces * PolyOrder];		
-		vec3		N[NumFaces];
 	};
 }
