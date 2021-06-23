@@ -20,7 +20,7 @@ namespace Cuda
 			depth(depth_),
 			pcg(HashCombine(HashOf(uint(sampleIdx)), haltonSeed))
 		{
-			emplacedRay.flags = 0;
+			ResetRay();
 		}
 
 		const ivec2		viewportPos;
@@ -60,6 +60,7 @@ namespace Cuda
 			return HaltonBase<B0>(haltonSeed + sampleIdx);
 		}
 #endif
+		__device__ __forceinline__ void ResetRay() { emplacedRay.flags = 0; }
 
 		__device__ __forceinline__ void EmplaceRay(const RayBasic& od, const vec3& weight, const float& pdf, const float& lambda, const uchar& flags, const uchar& depth)
 		{

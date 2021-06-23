@@ -3,21 +3,25 @@
 
 namespace Cuda
 {
-    __host__ void Device::SimpleMaterial::Params::ToJson(Json::Node& node) const
+    __host__ void SimpleMaterialParams::ToJson(Json::Node& node) const
     {
         node.AddArray("albedo", std::vector<float>({ albedo.x, albedo.y, albedo.z }));
+        node.AddArray("incandescence", std::vector<float>({ incandescence.x, incandescence.y, incandescence.z }));
     }
 
-    __host__ void Device::SimpleMaterial::Params::FromJson(const Json::Node& node)
+    __host__ void SimpleMaterialParams::FromJson(const Json::Node& node)
     {
         node.GetVector("albedo", albedo, true);
+        node.GetVector("incandescence", incandescence, true);
     }
     
-    __device__ vec3 Device::SimpleMaterial::Evaluate(const HitCtx& hit) const
+    __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
     {
         constexpr float kGridScale = 5.0f;
 
-        vec3 albedo = m_params.albedo;
+        incandescence = m_params.incandescence;
+        albedo = m_params.albedo;
+
         vec2 absUv = abs(hit.uv - vec2(0.5f));
         if (absUv.x < 0.52f && absUv.y < 0.52f && !(absUv.x < 0.5f && absUv.y < 0.5f)) 
         { 
@@ -28,8 +32,6 @@ namespace Cuda
         {
             albedo *= 0.7;
         }
-
-        return albedo;
     }
     
     __host__ Host::SimpleMaterial::SimpleMaterial() :
@@ -48,7 +50,7 @@ namespace Cuda
         Json::Node childNode = parentNode.GetChildObject("material", true);
         if (childNode)
         {
-            SyncParameters(cu_deviceData, Device::SimpleMaterial::Params(childNode));
+            SyncParameters(cu_deviceData, SimpleMaterialParams(childNode));
         }
     }
 }

@@ -35,7 +35,7 @@ namespace Cuda
         };
     };
 
-    __host__ __device__ Device::KIFS::Params::Params() :
+    __host__ __device__ KIFSParams::KIFSParams() :
         rotate(0.0f),
         scale(0.5f),
         vertScale(0.5f),
@@ -45,7 +45,7 @@ namespace Cuda
     {
     }
 
-    __host__ void Device::KIFS::Params::ToJson(Json::Node& node) const
+    __host__ void KIFSParams::ToJson(Json::Node& node) const
     {
         node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y, rotate.z }));
         node.AddArray("scale", std::vector<float>({ scale.x, scale.y }));
@@ -55,7 +55,7 @@ namespace Cuda
         node.AddValue("faceMask", faceMask);
     }
 
-    __host__ void Device::KIFS::Params::FromJson(const Json::Node& node)
+    __host__ void KIFSParams::FromJson(const Json::Node& node)
     {
         node.GetVector("rotate", rotate, true);
         node.GetVector("scale", scale, true);
@@ -234,13 +234,13 @@ namespace Cuda
                 FFace.x = (FFace.x * iterationScale) - kcd.crustThickness;
                 if (FFace.x < F.x) { F = FFace; }
             }
-        }        
+        }
 
         //F= SDF::Torus(position, 0.3, 0.1);
-      
+
         return F;
     }
-    
+
     __device__  bool Device::KIFS::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
         RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
@@ -268,10 +268,10 @@ namespace Cuda
 
             //if(!isOriginInBound)
             {
-                vec4 FBox = SDF::Box(p, 0.5f); 
+                vec4 FBox = SDF::Box(p, 0.5f);
                 //vec4 FBox = SDF::Torus(p, 0.25 / transformScale, 0.1 / transformScale);
                 //vec4 FBox = SDF::Sphere(p, 0.5 / transformScale);
-                if (FBox.x > F.x) { F = FBox; } 
+                if (FBox.x > F.x) { F = FBox; }
                 //F = FBox;
             }
 
@@ -337,7 +337,7 @@ namespace Cuda
         Json::Node childNode = parentNode.GetChildObject("kifs", true);
         if (childNode)
         {
-            SyncParameters(cu_deviceData, Device::KIFS::Params(childNode));
+            SyncParameters(cu_deviceData, KIFSParams(childNode));
         }
     }
 }

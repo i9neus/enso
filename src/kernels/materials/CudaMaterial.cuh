@@ -16,7 +16,7 @@ namespace Cuda
         public:
             Material() = default;
 
-            __device__ vec3 Evaluate(const HitCtx& hit) const;
+            __device__ void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const;
         };
     }
 
@@ -33,31 +33,32 @@ namespace Cuda
 
     namespace Host { class SimpleMaterial; }
 
+    struct SimpleMaterialParams
+    {
+        __host__ __device__ SimpleMaterialParams() : albedo(0.5f) {}
+        __host__ SimpleMaterialParams(const Json::Node& node) { FromJson(node); }
+
+        __host__ void ToJson(Json::Node& node) const;
+        __host__ void FromJson(const Json::Node& node);
+
+        vec3 albedo;
+        vec3 incandescence;
+    };
+
     namespace Device
     {
         class SimpleMaterial : public Device::Material
         {
             friend Host::SimpleMaterial;
-        public:
-            struct Params
-            {
-                __host__ __device__ Params() : albedo(0.5f) {}
-                __host__ Params(const Json::Node& node) { FromJson(node); }
-
-                __host__ void ToJson(Json::Node& node) const;
-                __host__ void FromJson(const Json::Node& node);
-
-                vec3 albedo;
-            };
 
         public:
-            __host__ __device__ SimpleMaterial() : m_params() { m_params.albedo = vec3(1.0f);  }
+            __host__ __device__ SimpleMaterial() : m_params() {}
             ~SimpleMaterial() = default;
 
-            Params m_params;
+            SimpleMaterialParams m_params;
 
-            __device__ vec3 Evaluate(const HitCtx& hit) const;
-            __device__ void OnSyncParameters(const Params& params) { m_params = params;  }
+            __device__ void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const;
+            __device__ void OnSyncParameters(const SimpleMaterialParams& params) { m_params = params;  }
         };
     }
 

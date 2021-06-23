@@ -6,7 +6,11 @@ namespace Cuda
 {
 	#define kSpecularPdf  65000.0f;
 
-	#define kRayAlive 1
+	enum RayFlags : uchar
+	{
+		kRayAlive =		  1 << 0,
+		kLightSampleRay = 1 << 1
+	};
 
 	struct RayBasic
 	{
@@ -46,7 +50,7 @@ namespace Cuda
 			ushort		y;			// 2 bytes
 		}
 		viewport;
-		uchar	flags;				// 1 byte
+		uchar   flags;				// 1 byte
 		uchar	depth;				// 1 byte
 		uint	sampleIdx;			// 4 bytes
 

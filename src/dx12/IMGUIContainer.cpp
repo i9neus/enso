@@ -37,13 +37,19 @@ void IMGUIContainer::Destroy()
     std::printf("Destroyed IMGUI D3D objects.\n");
 }
 
-void IMGUIContainer::ConstructCameraControls()
+void IMGUIContainer::ConstructCameraControls(Cuda::PerspectiveCameraParams& params)
 {
     if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
    
+    ImGui::InputFloat3("Position", &params.position[0]);
+    ImGui::InputFloat3("Look at", &params.lookAt[0]);
+    
+    ImGui::SliderFloat("F-stop", &params.fStop, 0.0f, 1.0f);
+    ImGui::SliderFloat("Focal length", &params.fLength, 0.0f, 1.0f);
+    ImGui::SliderFloat("Focal plane", &params.focalPlane, 0.0f, 2.0f);
 }
 
-void IMGUIContainer::ConstructKIFSControls(Cuda::Device::KIFS::Params& params)
+void IMGUIContainer::ConstructKIFSControls(Cuda::KIFSParams& params)
 {
     if (!ImGui::CollapsingHeader("KIFS", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
      
@@ -60,12 +66,12 @@ void IMGUIContainer::ConstructKIFSControls(Cuda::Device::KIFS::Params& params)
     ImGui::SliderInt("Iterations ", &params.numIterations, 0, kSDFMaxIterations);
 }
 
-void IMGUIContainer::ConstructMaterialControls(Parameters& params)
+void IMGUIContainer::ConstructMaterialControls(Cuda::SimpleMaterialParams& params)
 {
     if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::ColorEdit3("Albedo", (float*)&params.material.albedo); // Edit 3 floats representing a color
-
+    ImGui::ColorEdit3("Albedo", (float*)&params.albedo); 
+    ImGui::ColorEdit3("Incandescence", (float*)&params.incandescence); 
 }
 
 void IMGUIContainer::UpdateParameters()
@@ -79,8 +85,8 @@ void IMGUIContainer::UpdateParameters()
 
     const auto& params = m_parameters[1];
    
+    // Construct a JSON dictionary with the new settings
     Json::Document document;
-
     {
         Json::Node childNode = document.AddChildObject("material");
         params.material.ToJson(childNode);
@@ -88,6 +94,10 @@ void IMGUIContainer::UpdateParameters()
     {
         Json::Node childNode = document.AddChildObject("kifs");
         params.kifs.ToJson(childNode);
+    }
+    {
+        Json::Node childNode = document.AddChildObject("perspectiveCamera");
+        params.perspectiveCamera.ToJson(childNode);
     }
 
     m_cudaRenderer.OnJson(document);
@@ -109,9 +119,9 @@ void IMGUIContainer::Render()
 
     ImGui::Begin("Generator");   
 
-    ConstructCameraControls();
+    ConstructCameraControls(params.perspectiveCamera);
     ConstructKIFSControls(params.kifs);
-    ConstructMaterialControls(params);
+    ConstructMaterialControls(params.material);
 
     float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
     m_cudaRenderer.GetRenderStats([&](const Json::Document& node)

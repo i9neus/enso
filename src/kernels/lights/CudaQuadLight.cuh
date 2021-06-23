@@ -39,7 +39,7 @@ namespace Cuda
             __device__ ~QuadLight() = default;
 
             __device__ void Prepare(); 
-            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, RayBasic& extant, vec3& L, float& pdf) const;
+            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const;
             __device__ void Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const;
             __device__ void OnSyncParameters(const QuadLightParams& params) 
             {  

@@ -59,17 +59,42 @@ namespace Cuda
 	{
 		if (renderCtx.depth >= 1) { return kZero; }
 
-		//const vec4 xi = renderCtx.Rand4();
+		vec3 albedo, incandescence;
+		m_objects.cu_simpleMaterial->Evaluate(hitCtx, albedo, incandescence);
+		//vec2 xi = renderCtx.Rand<2, 3>();
 
-		vec3 brdfDir;
-		float brdfPdf;
-		if (m_objects.cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf))
-		{
-			const vec3 weight = incidentRay.weight * 
-								m_objects.cu_simpleMaterial->Evaluate(hitCtx);
+		// Sample the BRDF
+		//if(xi.x < 0.75f)
+		{			
+			vec3 brdfDir;
+			float brdfPdf;
+			if (!m_objects.cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf)) { return kZero; }
+
+			// Light evaluation
+			/*if (xi.y < 0.5f)
+			{
+			}
+			// Global illumination evaluation
+			else
+			{
+
+			}*/
+
+			const vec3 weight = incidentRay.weight * albedo;
 
 			renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, renderCtx.depth);
 		}
+		/*else
+		{
+			vec3 brdfDir;
+			float brdfPdf;
+			if (m_objects.cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf))
+			{
+				const vec3 weight = incidentRay.weight * albedo;
+
+				renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, renderCtx.depth);
+			}
+		}*/
 
 		return kZero;
 	}

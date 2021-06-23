@@ -144,12 +144,12 @@ void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr
 
 void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 {				
-	cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
+	/*cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
 	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
 	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
 	externalSemaphoreWaitParams.flags = 0;	
 
-	//checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));
+	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));*/
 
 	// If the next frame is not ready to be rendered yet, wait until it is ready.
 	if (m_d3dFence->GetCompletedValue() < currentFenceValue)
@@ -167,12 +167,12 @@ void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 	}
 	//IsOk(cudaStreamSynchronize(m_D3DStream));
 
-	cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
+	/*cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
 	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
 	externalSemaphoreSignalParams.params.fence.value = ++currentFenceValue;
 	externalSemaphoreSignalParams.flags = 0;
 
-	//checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));
+	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));*/
 
 	m_d3dFence->Signal(++currentFenceValue);
 }
@@ -206,8 +206,6 @@ void RenderManager::OnJson(const Json::Document& json)
 
 void RenderManager::Start()
 {
-	std::printf("Start!\n");
-	
 	m_threadSignal = kRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
 
@@ -253,10 +251,7 @@ void RenderManager::Run()
 
 		m_wavefrontTracer->Composite(m_compositeImage);
 
-		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
-
-		//numSubframes = int(numSubframes * (1 / kTargetFps) / timer.Get());
-		//numSubframes = math::clamp(numSubframes, 1, kMaxSubframes);			
+		checkCudaErrors(cudaStreamSynchronize(m_renderStream));		
 
 		iterationIdx++;
 		m_frameTimes[frameIdx % m_frameTimes.size()] = timer.Get();

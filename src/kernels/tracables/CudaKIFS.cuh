@@ -13,29 +13,29 @@ namespace Cuda
 
     enum class KIFSType : uint { kTetrahedtron, kCube };
 
+    struct KIFSParams
+    {
+        __host__ __device__ KIFSParams();
+        __host__ KIFSParams(const Json::Node& node) { FromJson(node); }
+
+        __host__ void ToJson(Json::Node& node) const;
+        __host__ void FromJson(const Json::Node& node);
+
+        vec3    rotate;
+        vec2    scale;
+
+        float   vertScale;
+        float   crustThickness;
+        int     numIterations;
+        uint    faceMask;
+    };
+
     namespace Device
-    {        
+    {
         class KIFS : public Device::Tracable
         {
             friend Host::KIFS;
-        public: 
-            struct Params
-            {
-                __host__ __device__ Params();
-                __host__ Params(const Json::Node& node) { FromJson(node); }
-
-                __host__ void ToJson(Json::Node& node) const;
-                __host__ void FromJson(const Json::Node& node);
-                
-                vec3    rotate;
-                vec2    scale;
-
-                float   vertScale;
-                float   crustThickness;
-                int     numIterations;
-                uint    faceMask;
-            }; 
-
+        public:
             struct KernelConstantData
             {
                 int                         numIterations;
@@ -60,12 +60,12 @@ namespace Cuda
             KIFSType    m_type;
             vec3        m_origin;
 
-            Params      m_params;
-            KernelConstantData m_kernelConstantData;          
+            KIFSParams      m_params;
+            KernelConstantData m_kernelConstantData;
 
             uint        m_numVertices;
             uint        m_numFaces;
-            uint        m_polyOrder;           
+            uint        m_polyOrder;
 
         public:
             __device__ KIFS();
@@ -73,7 +73,7 @@ namespace Cuda
 
             __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
             __device__ void InitialiseKernelConstantData() const;
-            __device__ void OnSyncParameters(const Params& params) 
+            __device__ void OnSyncParameters(const KIFSParams& params)
             { 
                 m_params = params;
                 Prepare();

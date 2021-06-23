@@ -12,6 +12,33 @@
 
 namespace Cuda
 {    
+    __host__ __device__ PerspectiveCameraParams::PerspectiveCameraParams()
+    {
+        position = vec3(0.5f, 1.0f, 1.5f);
+        lookAt = vec3(0.0f, 0.5f, 0.0f);
+        focalPlane = 1.0f;
+        fLength = 0.45f;
+        fStop = 0.45f;
+    }
+    
+    __host__ void PerspectiveCameraParams::ToJson(Json::Node& node) const
+    {
+        node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
+        node.AddArray("lookAt", std::vector<float>({ lookAt.x, lookAt.y, lookAt.z }));
+        node.AddValue("focalPlane", focalPlane);
+        node.AddValue("fLength", fLength);
+        node.AddValue("fStop", fStop);
+    }
+
+    __host__ void PerspectiveCameraParams::FromJson(const Json::Node& node)
+    {
+        node.GetVector("position", position, true);
+        node.GetVector("lookAt", lookAt, true);
+        node.GetValue("focalPlane", focalPlane, true);
+        node.GetValue("fLength", fLength, true);
+        node.GetValue("fStop", fStop, true);
+    }
+    
     // Returns the polar distance r to the perimeter of an n-sided polygon
     __device__ __forceinline__ float Ngon(float phi)
     {
@@ -31,12 +58,12 @@ namespace Cuda
     { 
         //float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
-        m_cameraPos = vec3(0.5f, 1.0f, 1.5f);
+        m_cameraPos = m_params.position;
 
         //float cameraOriginDist = length(cameraPos);
         //vec3 cameraLookAt = vec3(-10.0f * (m_cameraLook - vec2(0.5f)), cameraOriginDist);
         //cameraLookAt = createBasis(-cameraPos / cameraOriginDist, kCameraUp) * cameraLookAt;
-        vec3 cameraLookAt = vec3(0.0f, 0.5f, 0.0f);
+        vec3 cameraLookAt = m_params.lookAt;
         
         vec3 cameraForward = cameraLookAt - m_cameraPos;
         m_focalDistance = length(cameraForward);
@@ -44,11 +71,11 @@ namespace Cuda
 
         m_basis = CreateBasis(cameraForward, kCameraUp);
 
-        m_focalDistance *= mix(0.0f, 1.0f, m_params.cameraFStop.y);
-        m_fStop = powf(2.0f, mix(-3.0, 8.0, m_params.cameraFStop.x));
+        m_focalDistance *= m_params.focalPlane;
+        m_fStop = powf(2.0f, mix(-3.0, 8.0, m_params.fStop));
 
         // Define the focal length and F-number depending, either from built-in or user-defined values
-        m_focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_params.cameraFLength.y));
+        m_focalLength = powf(2.0f, mix(-9.0f, -0.5f, m_params.fLength));
 
         // Solve the thin-lens equation. http://hyperphysics.phy-astr.gsu.edu/hbase/geoopt/lenseq.html
         m_d1 = 0.5 * (m_focalDistance - sqrt(-4.0 * m_focalLength * m_focalDistance + sqr(m_focalDistance)));
@@ -156,20 +183,12 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::PerspectiveCamera::OnJson(const Json::Node& jsonNode)
+    __host__ void Host::PerspectiveCamera::OnJson(const Json::Node& parentNode)
     {
-        Device::PerspectiveCamera::Params params;
-
-        params.useHaltonSpectralSampler = false;
-        params.cameraPos = vec2(0.3f, 0.5f);
-        params.cameraLook = vec2(0.5f, 0.2f);
-        params.cameraFLength = vec2(0.45f);
-        params.cameraFStop = vec2(0.5f);
-
-        //jsonNode.GetVector("albedo", params.albedo, true);
-
-        //Log::Debug("albedo: %s", params.albedo.format());
-
-        SyncParameters(cu_deviceData, params);
+        Json::Node childNode = parentNode.GetChildObject("perspectiveCamera", true);
+        if (childNode)
+        {
+            SyncParameters(cu_deviceData, PerspectiveCameraParams(childNode));
+        }
     }
 }

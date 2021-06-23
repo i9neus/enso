@@ -45,9 +45,9 @@ private:
 
     struct Parameters
     {                
-        Cuda::Device::PerspectiveCamera::Params     camera;
-        Cuda::Device::KIFS::Params                  kifs;
-        Cuda::Device::SimpleMaterial::Params        material;
+        Cuda::PerspectiveCameraParams     perspectiveCamera;
+        Cuda::KIFSParams                  kifs;
+        Cuda::SimpleMaterialParams        material;
 
         Parameters() = default;
         Parameters& operator=(const Parameters& other) = default;
@@ -65,9 +65,9 @@ private:
     
     Parameters                          m_parameters[2];
 
-    void ConstructKIFSControls(Cuda::Device::KIFS::Params& params);
-    void ConstructMaterialControls(Parameters& params);
-    void ConstructCameraControls();
+    void ConstructKIFSControls(Cuda::KIFSParams& params);
+    void ConstructMaterialControls(Cuda::SimpleMaterialParams& params);
+    void ConstructCameraControls(Cuda::PerspectiveCameraParams& params);
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);

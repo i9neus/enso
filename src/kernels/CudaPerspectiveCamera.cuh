@@ -2,31 +2,38 @@
 
 #include <stdlib.h>
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
 	class CompressedRay;
 	class RenderCtx;
 
 	namespace Host { class PerspectiveCamera; }
+
+	struct PerspectiveCameraParams
+	{
+		__host__ __device__ PerspectiveCameraParams();
+		__host__ PerspectiveCameraParams(const Json::Node& node) : PerspectiveCameraParams() { FromJson(node); }
+
+		__host__ void ToJson(Json::Node& node) const;
+		__host__ void FromJson(const Json::Node& node);
+		
+		vec3 position;
+		vec3 lookAt;
+		float focalPlane;
+		float fLength;
+		float fStop;
+	};
 	
 	namespace Device
 	{
 		class PerspectiveCamera : public Device::Asset, public AssetTags<Host::PerspectiveCamera, Device::PerspectiveCamera>
 		{
 		public:
-			struct Params
-			{
-				vec2 cameraFStop;
-				vec2 cameraPos;
-				vec2 cameraLook;
-				vec2 cameraFLength;
-				bool useHaltonSpectralSampler;
-			};
-
-		public:
 			__device__ PerspectiveCamera();
 			__device__ void CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const;
-			__device__ void OnSyncParameters(const Params& params) 
+			__device__ void OnSyncParameters(const PerspectiveCameraParams& params)
 			{ 
 				m_params = params; 
 				Prepare();
@@ -36,7 +43,7 @@ namespace Cuda
 			__device__ void Prepare();
 
 		private:
-			Params 		m_params;
+			PerspectiveCameraParams 		m_params;
 
 			mat3		m_basis;
 			vec3		m_cameraPos;
