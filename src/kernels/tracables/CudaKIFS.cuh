@@ -4,6 +4,8 @@
 
 #define kSDFMaxIterations 10
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     // Foreward declarations
@@ -28,6 +30,8 @@ namespace Cuda
         float   crustThickness;
         int     numIterations;
         uint    faceMask;
+
+        BidirectionalTransform transform;
     };
 
     namespace Device
@@ -71,8 +75,10 @@ namespace Cuda
             __device__ KIFS();
             __device__ ~KIFS() = default;
 
-            __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
-            __device__ void InitialiseKernelConstantData() const;
+            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const Json::Node& json);
+
+            __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
+            __device__ virtual void InitialiseKernelConstantData() const override final;
             __device__ void OnSyncParameters(const KIFSParams& params)
             { 
                 m_params = params;
@@ -89,8 +95,8 @@ namespace Cuda
             Device::KIFS* cu_deviceData;
 
         public:
-            __host__ KIFS();
-            __host__ virtual ~KIFS() { OnDestroyAsset(); }
+            __host__ KIFS(const Json::Node& node);
+            __host__ virtual ~KIFS() = default;
             __host__ virtual void OnDestroyAsset() override final;
             __host__ virtual void OnJson(const Json::Node& jsonNode) override final;
 

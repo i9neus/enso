@@ -12,20 +12,20 @@ namespace Cuda
     {
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
-        const std::string& assetName = object->GetAssetName();
-        AssertMsgFmt(m_assetMap.find(assetName) == m_assetMap.end(), "Object '%s' is already in asset registry!", object->GetAssetName().c_str());
+        const std::string& assetId = object->GetAssetID();
+        AssertMsgFmt(m_assetMap.find(assetId) == m_assetMap.end(), "Object '%s' is already in asset registry!", object->GetAssetID().c_str());
         
-        m_assetMap.emplace(assetName, std::weak_ptr <Host::Asset>(object));
-        std::printf("Registered asset '%s'.\n", assetName.c_str());
+        m_assetMap.emplace(assetId, std::weak_ptr <Host::Asset>(object));
+        std::printf("Registered asset '%s'.\n", assetId.c_str());
     }
 
     void GlobalAssetRegistry::Deregister(std::shared_ptr<Host::Asset> object)
     {
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
-        const std::string& assetName = object->GetAssetName();
-        AssertMsgFmt(m_assetMap.find(assetName) != m_assetMap.end(), "Object '%s' does not exist in asset registry!", object->GetAssetName().c_str());
-        m_assetMap.erase(assetName);
+        const std::string& assetId = object->GetAssetID();
+        AssertMsgFmt(m_assetMap.find(assetId) != m_assetMap.end(), "Object '%s' does not exist in asset registry!", object->GetAssetID().c_str());
+        m_assetMap.erase(assetId);
     }
 
     void GlobalAssetRegistry::Report()

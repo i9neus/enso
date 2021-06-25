@@ -34,10 +34,11 @@ namespace Cuda
         }
     }
     
-    __host__ Host::SimpleMaterial::SimpleMaterial() :
+    __host__ Host::SimpleMaterial::SimpleMaterial(const Json::Node& node) :
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
+        FromJson(node);
     }
 
     __host__ void Host::SimpleMaterial::OnDestroyAsset()
@@ -45,7 +46,7 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::SimpleMaterial::OnJson(const Json::Node& parentNode)
+    __host__ void Host::SimpleMaterial::FromJson(const Json::Node& parentNode)
     {
         Json::Node childNode = parentNode.GetChildObject("material", true);
         if (childNode)

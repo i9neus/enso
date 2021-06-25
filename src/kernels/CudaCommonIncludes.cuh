@@ -9,12 +9,23 @@
 #include "thirdparty/nvidia/helper_cuda.h"
 #include "generic/Constants.h"
 
-namespace Cuda
+template <typename T>
+__host__ inline void CudaAssert(T result, char const* const func, const char* const file, const int line)
 {
-#define IsOk checkCudaErrors
-	
+	if (result != 0)
+	{
+		AssertMsgFmt(false,
+			"CUDA returned error code=%d(%s) \"%s\" \n",
+			file, line, (unsigned int)result, _cudaGetErrorEnum(result), func);
+	}
+}
+
+#define IsOk(val) CudaAssert((val), #val, __FILE__, __LINE__)
+
+namespace Cuda
+{		
 	template<typename T>
-	inline void SafeFreeDeviceMemory(T** deviceData)
+	__host__ inline void SafeFreeDeviceMemory(T** deviceData)
 	{
 		Assert(deviceData);
 		if (*deviceData != nullptr)
@@ -25,7 +36,7 @@ namespace Cuda
 	}
 
 	template<typename T>
-	inline void SafeAllocDeviceMemory(T** deviceObject, size_t numElements, T* hostData = nullptr)
+	__host__ inline void SafeAllocDeviceMemory(T** deviceObject, size_t numElements)
 	{
 		Assert(deviceObject);
 		AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
@@ -34,10 +45,16 @@ namespace Cuda
 		std::printf("Allocated %i bytes of GPU memory (%i elements)\n", arraySize, numElements);
 
 		IsOk(cudaMalloc((void**)deviceObject, arraySize));
-		if (hostData)
-		{
-			IsOk(cudaMemcpy(deviceObject, hostData, arraySize, cudaMemcpyHostToDevice));
-		}
+	}
+
+	template<typename T>
+	__host__ inline void SafeAllocAndCopyToDeviceMemory(T** deviceObject, size_t numElements, T* hostData)
+	{
+		Assert(hostData);
+		
+		SafeAllocDeviceMemory(deviceObject, numElements);
+
+		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(T) * numElements, cudaMemcpyHostToDevice));
 	}
 
 	/*template<typename T>
@@ -75,6 +92,8 @@ namespace Cuda
 	template<typename ObjectType, typename ParamsType, typename... Pack>
 	__host__ inline ObjectType* InstantiateOnDeviceWithParams(const ParamsType& params, Pack... args)
 	{
+		static_assert(std::is_standard_layout<ParamsType>::value, "Parameter structure must be standard layout type.");
+		
 		ParamsType* cu_params;
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
 		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
@@ -94,6 +113,8 @@ namespace Cuda
 	template<typename ObjectType, typename ParamsType>
 	__host__ static void SyncParameters(ObjectType* cu_object, const ParamsType& params)
 	{
+		static_assert(std::is_standard_layout<ParamsType>::value, "Parameter structure must be standard layout type.");
+		
 		Assert(cu_object);
 		ParamsType* cu_params;
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));

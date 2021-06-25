@@ -18,13 +18,11 @@ namespace Cuda
 	
 	namespace Device
 	{
-		class Cornell;
-		class Sphere;
-		class LambertBRDF;
-		class Plane;
-		class KIFS;
-		class SimpleMaterial;
 		class PerspectiveCamera;
+		class Material;
+		class Tracable;
+		class Light;
+		class BxDF;
 		template<typename T> class Array;
 		
 		using CompressedRayBuffer = Device::Array<CompressedRay>;
@@ -39,13 +37,11 @@ namespace Cuda
 				Device::ImageRGBW*				cu_deviceAccumBuffer;
 				Device::CompressedRayBuffer*	cu_deviceCompressedRayBuffer;
 				Device::PixelFlagsBuffer*		cu_pixelFlagsBuffer;
-				//Device::AssetContainer<Device::Tracable>* cu_deviceTracables;
-				Device::Cornell*				cu_cornell;
-				Device::Sphere*					cu_sphere;
-				Device::LambertBRDF*			cu_lambert;
-				Device::Plane*                  cu_groundPlane;
-				Device::KIFS*                   cu_kifs;
-				Device::SimpleMaterial*			cu_simpleMaterial;
+				Device::AssetContainer<Device::Tracable>*	cu_deviceTracables;
+				Device::AssetContainer<Device::Material>*	cu_deviceMaterials;
+				Device::AssetContainer<Device::Light>*		cu_deviceLights;
+				Device::AssetContainer<Device::BxDF>*		cu_deviceBxDFs;
+
 				Device::PerspectiveCamera*		cu_camera;
 				ivec2							viewportDims;
 			};		
@@ -75,6 +71,7 @@ namespace Cuda
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
+			__device__ void PreBlock() const;
 			//__device__ void OnSyncParams(const Params* params);
 
 		};
@@ -82,13 +79,10 @@ namespace Cuda
 
 	namespace Host
 	{
-		class Cornell;
-		class Sphere;
-		class LambertBRDF;
-		class Plane;
-		class KIFS;
-		class SimpleMaterial;
+		class Material;
 		class Tracable;
+		class Light;
+		class BxDF;
 		class PerspectiveCamera;
 		template<typename T> class Array;
 
@@ -99,21 +93,16 @@ namespace Cuda
 		{
 		private:
 			Device::WavefrontTracer*		cu_deviceData;
-			Device::WavefrontTracer::Objects m_hostData;
+			Device::WavefrontTracer::Objects m_hostObjects;
 
 			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
 
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
-			AssetHandle<Host::Cornell>                          m_hostCornell;
-			AssetHandle<Host::Sphere>                           m_hostSphere;
-			AssetHandle<Host::Plane>                            m_hostGroundPlane;
-			AssetHandle<Host::KIFS>								m_hostKifs;
-
-			AssetHandle<Host::LambertBRDF>                      m_hostLambert;
-
-			AssetHandle<Host::SimpleMaterial>					m_hostSimpleMaterial;
+			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
+			AssetHandle<Host::AssetContainer<Host::Material>>   m_hostMaterials;
+			AssetHandle<Host::AssetContainer<Host::BxDF>>		m_hostBxDFs;
 
 			AssetHandle<Host::PerspectiveCamera>				m_hostPerspectiveCamera;
 

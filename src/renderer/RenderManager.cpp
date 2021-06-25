@@ -4,6 +4,7 @@
 #include "dx12/DXSampleHelper.h"
 #include "thirdparty/nvidia/helper_cuda.h"
 #include "kernels/CudaTests.cuh"
+#include "kernels/CudaCommonIncludes.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),

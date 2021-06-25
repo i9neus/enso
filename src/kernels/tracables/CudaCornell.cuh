@@ -35,8 +35,10 @@ namespace Cuda
 
         public:
             __host__ Cornell();
-            __host__ virtual ~Cornell() { OnDestroyAsset(); }
+            __host__ virtual ~Cornell() = default;
             __host__ virtual void OnDestroyAsset() override final;
+
+            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const Json::Node& json);
 
             __host__ virtual Device::Cornell* GetDeviceInstance() const override final { return cu_deviceData; }
         };

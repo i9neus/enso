@@ -9,24 +9,20 @@ namespace Cuda
 
     namespace Device
     {
-        class Light : public Device::Asset, public AssetTags<Host::Light, Device::Light>
+        class Light : public Device::RenderObject, public AssetTags<Host::Light, Device::Light>
         {
         public:
-            Light() = default;
+            Light() = default;      
+            virtual ~Light() = default;
 
-            __device__ __forceinline__ void SetTransform(const BidirectionalTransform& transform) { m_transform = transform; }
-
-        protected:
-            __device__ Light(const BidirectionalTransform& transform) : m_transform(transform) {}
-            __device__ ~Light() = default;
-
-            BidirectionalTransform        m_transform;
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const = 0;
+            __device__ virtual void Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const = 0;
         };
     }
 
     namespace Host
     {
-        class Light : public Host::Asset, public AssetTags<Host::Light, Device::Light>
+        class Light : public Host::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
         {
         public:
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;

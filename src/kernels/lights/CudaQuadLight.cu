@@ -1,4 +1,5 @@
 ﻿#include "CudaQuadLight.cuh"
+#include "../tracables/CudaPlane.cuh"
 
 namespace Cuda
 {
@@ -22,16 +23,14 @@ namespace Cuda
         node.GetVector("colour", colour, true);
     }
     
-    __device__ Device::QuadLight::QuadLight(const BidirectionalTransform& transform) : Light(transform)
+    __device__ Device::QuadLight::QuadLight()
     {
-        m_emitterArea = m_transform.scale.x * m_transform.scale.x;
-        m_emitterRadiance = vec3(1.0f);
+        Prepare();
     }
 
     __device__ void Device::QuadLight::Prepare()
-    {
-        m_transform = CreateCompoundTransform(m_params.orientation, m_params.position, m_params.scale);
-        m_emitterArea = m_transform.scale.x * m_transform.scale.x;
+    {        
+        m_emitterArea = m_params.transform.scale.x * m_params.transform.scale.x;
         m_emitterRadiance = m_params.colour * math::pow(2.0f, m_params.intensity) / m_emitterArea;
     }
     
@@ -42,7 +41,7 @@ namespace Cuda
         const vec3& normal = hitCtx.hit.n;
 
         const vec2 xi = renderCtx.Rand<0, 1>() - 0.5f;
-        const vec3 lightPos = m_transform.PointToWorldSpace(vec3(xi, 0.0f));
+        const vec3 lightPos = m_params.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
         extant = lightPos - hitPos;
@@ -53,7 +52,7 @@ namespace Cuda
         if (dot(extant, normal) <= 0.0f) { return false; }
 
         // Test if the emitter is rotated away from the shading point
-        vec3 lightNormal = m_transform.PointToWorldSpace(vec3(xi, 1.0f));
+        vec3 lightNormal = m_params.transform.PointToWorldSpace(vec3(xi, 1.0f));
         float cosPhi = dot(extant, normalize(lightNormal - lightPos));
         if (cosPhi < 0.0f) { return false; }
 
@@ -76,12 +75,11 @@ namespace Cuda
         L = m_emitterRadiance;
     }
     
-    __host__  Host::QuadLight::QuadLight()
+    __host__  Host::QuadLight::QuadLight(const Json::Node& jsonNode)
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_transform.MakeIdentity();
-
-        cu_deviceData = InstantiateOnDevice<Device::QuadLight>(m_hostData.m_transform);
+        cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
+        FromJson(jsonNode);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
@@ -89,12 +87,20 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::QuadLight::OnJson(const Json::Node& parentNode)
+    __host__ void Host::QuadLight::FromJson(const Json::Node& parentNode)
     {
-        Json::Node childNode = parentNode.GetChildObject("material", true);
-        if (childNode)
-        {
-            SyncParameters(cu_deviceData, QuadLightParams(childNode));
-        }
+        Json::Node childNode = parentNode.GetChildObject("quadLight", true);
+        if (!childNode) { return; }
+
+        // Pull the parameters from the JSON dictionary and create a transform
+        QuadLightParams newParams;
+        newParams.FromJson(childNode);
+        newParams.transform.FromJson(childNode); 
+       
+        // Update the transform of the light plane asset so they match
+        m_lightPlaneAsset->SetTransform(newParams.transform);
+     
+        // Synchronise with the decvice
+        SyncParameters(cu_deviceData, newParams);
     }
 }

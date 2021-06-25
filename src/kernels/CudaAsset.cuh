@@ -15,13 +15,12 @@ namespace Cuda
         using DeviceVariant = DeviceType;
         using HostVariant = HostType;
     };
+
+    enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight };
     
     namespace Device
     { 
-        class Asset
-        {
-
-        };
+        class Asset { };
     }
     
     namespace Host
@@ -29,20 +28,26 @@ namespace Cuda
         class Asset
         {
         private:
-            std::string     m_assetName;
+            std::string     m_assetId;
+            AssetType       m_assetType;            
 
         protected:
             template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
 
             Asset() = default;
-            __host__ Asset(const std::string& name) : m_assetName(name) {}
+            __host__ Asset(const std::string& name) : m_assetId(name) {}
 
             __host__ virtual void OnDestroyAsset() = 0;
-            __host__ void SetAssetName(const std::string& name) { m_assetName = name; }
+            __host__ void SetAssetMetadata(const std::string& name, const AssetType& type) 
+            { 
+                m_assetId = name; 
+                m_assetType = type;
+            }
 
         public:
-            __host__ virtual void OnJson(const Json::Node& jsonNode) {}
-            __host__ const inline std::string& GetAssetName() const { return m_assetName; }
+            __host__ virtual void FromJson(const Json::Node& jsonNode) {}
+            __host__ const inline std::string& GetAssetID() const { return m_assetId; }
+            __host__ const inline AssetType GetAssetType() const { return m_assetType; }
         };
     }
 
@@ -68,17 +73,26 @@ namespace Cuda
     class AssetHandle
     {
     private:
-        std::shared_ptr<T>          m_ptr;
+        std::shared_ptr<T>          m_ptr;      
 
     public:
         AssetHandle() = default;
-        ~AssetHandle() = default;
+        ~AssetHandle() 
+        {  
+            OnDestroyAsset(); 
+        }
+
+        template<typename OtherType>
+        explicit AssetHandle(AssetHandle<OtherType>& other)
+        {
+            m_ptr = other.m_ptr;
+        }
 
         template<typename... Pack>
-        AssetHandle(const std::string& assetName, Pack... args)
+        AssetHandle(const std::string& assetName, AssetType& assetType, Pack... args)
         {
             m_ptr.reset(new T(args...));
-            m_ptr->SetAssetName(assetName);
+            m_ptr->SetAssetMetadata(assetName);
 
             GlobalAssetRegistry::Get().Register(m_ptr);
         }
@@ -86,7 +100,7 @@ namespace Cuda
         AssetHandle(T* ptr, const std::string& assetName)
         {
             m_ptr.reset(ptr);
-            m_ptr->SetAssetName(assetName);
+            m_ptr->SetAssetMetadata(assetName);
 
             GlobalAssetRegistry::Get().Register(m_ptr);
         }
@@ -94,9 +108,9 @@ namespace Cuda
         void DestroyAsset()
         {
             AssertMsgFmt(m_ptr.use_count() == 1, "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
-                m_ptr->GetAssetName().c_str(), m_ptr.use_count() - 1);
+                m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
 
-            std::printf("Destroyed '%s' with %i counts remaining.\n", m_ptr->GetAssetName().c_str(), m_ptr.use_count() - 1);
+            std::printf("Destroyed '%s' with %i counts remaining.\n", m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
 
             m_ptr->OnDestroyAsset();
             GlobalAssetRegistry::Get().Deregister(m_ptr);

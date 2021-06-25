@@ -9,60 +9,10 @@
 #include "mat/CudaMat3.cuh"
 #include "mat/CudaMat4.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
-	class BidirectionalTransform
-	{
-	public:
-		vec3 trans;
-		mat3 fwd;
-		mat3 inv;
-		mat3 nInv;
-		vec3 scale;
-
-		__host__ __device__ BidirectionalTransform()
-		{
-			MakeIdentity();
-		}
-
-		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& t, const mat3& f) : trans(t), fwd(f)
-		{
-			inv = inverse(fwd);
-			nInv = transpose(fwd);
-			scale = vec3(1 / length(fwd[0]), 1 / length(fwd[1]), 1 / length(fwd[2]));
-		}
-
-		__host__ __device__ __forceinline__ void MakeIdentity()
-		{
-			trans = 0.0f;
-			fwd = inv = nInv = mat3::Indentity();
-			scale = 1.0f;
-		}
-
-		/*__device__ inline HitPoint HitToWorldSpace(const HitPoint& object) const
-		{
-			HitPoint world;
-			world.p = inv * object.p;
-			//world.n = nInv * object.n;
-			world.n = normalize((inv * (object.n + object.o)) - world.o);
-			return world;
-		}
-
-		__device__ inline HitPoint HitToObjectSpace(const HitPoint& world) const
-		{
-			HitPoint object;
-			object.p = fwd * world.p;
-			//world.n = nInv * world.n;
-			object.n = normalize((fwd * (world.n + world.o)) - object.o);
-			return object;
-		}*/
-
-		__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& object) const
-		{
-			return (inv * object) + trans;
-		}
-	};
-
 	__host__ __device__ __forceinline__ mat3 ScaleMat3(const vec3 scale)
 	{
 		const vec3 invScale = vec3(1.0f) / scale;
@@ -94,20 +44,65 @@ namespace Cuda
 			vec3(sinTheta, cosTheta, 0.0),
 			vec3(0.0, 0.0, 1.0));
 	}
-
-	// Builds a composite matrix from three Euler angles, scale and translation vectors
-	__host__ __device__ __forceinline__ BidirectionalTransform CreateCompoundTransform(const vec3& theta, const vec3& translate = vec3(0.0f), const vec3& scale = vec3(1.0f))
+	
+	class BidirectionalTransform
 	{
-		mat3 mat = mat3::Indentity();
+	public:
+		vec3 trans;
+		vec3 rot;
+		vec3 scale;
 
-		if (scale != vec3(1.0)) { mat *= ScaleMat3(scale); }
+		mat3 fwd;
+		mat3 inv;
+		mat3 nInv;
 
-		if (theta.x != 0.0) { mat *= RotXMat3(theta.x); }
-		if (theta.y != 0.0) { mat *= RotYMat3(theta.y); }
-		if (theta.z != 0.0) { mat *= RotZMat3(theta.z); }
+		__host__ void FromJson(const Json::Node& json);
+		__host__ void ToJson(Json::Node& json) const;
 
-		return BidirectionalTransform(translate, mat);
-	}
+		__host__ __device__ BidirectionalTransform()
+		{
+			MakeIdentity();
+		}
+
+		__host__ BidirectionalTransform(const Json::Node& json);
+
+		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& t, const vec3& r, const vec3& s)
+		{
+			Create(t, r, s);
+		}
+
+		__host__ __device__ void Create(const vec3& t, const vec3& r, const vec3& s)
+		{
+			trans = t;
+			rot = r;
+			scale = s;
+
+			fwd = mat3::Indentity();
+
+			if (scale != vec3(1.0)) { fwd *= ScaleMat3(scale); }
+
+			if (rot.x != 0.0) { fwd *= RotXMat3(rot.x); }
+			if (rot.y != 0.0) { fwd *= RotYMat3(rot.y); }
+			if (rot.z != 0.0) { fwd *= RotZMat3(rot.z); }
+
+			inv = inverse(fwd);
+			nInv = transpose(fwd);
+		}
+
+		__host__ __device__ __forceinline__ void MakeIdentity()
+		{
+			trans = 0.0f;
+			rot = 0.0f;
+			scale = 1.0f;
+
+			fwd = inv = nInv = mat3::Indentity();
+		}
+
+		__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& object) const
+		{
+			return (inv * object) + trans;
+		}
+	};
 
 	// Fast construction of orthonormal basis using quarternions to avoid expensive normalisation and branching 
 	// From Duf et al's technical report https://graphics.pixar.com/library/OrthonormalB/paper.pdf, inspired by

@@ -1,5 +1,6 @@
 ﻿#include "CudaKIFS.cuh"
 #include "CudaSDF.cuh"
+#include "generic/JsonUtils.h"
 
 namespace Cuda
 {
@@ -86,13 +87,12 @@ namespace Cuda
             vec3 theta = (2.0f * kXi[i] - 1.0f) * kPi * (rotateAlpha + rotateBeta * f);
             float iterScale = scaleAlpha * powf(2.0f, float(i) * scaleBeta);
 
-            m_kernelConstantData.iteration[i].matrix = CreateCompoundTransform(vec3(theta), vec3(iterScale)).fwd;
+            m_kernelConstantData.iteration[i].matrix = BidirectionalTransform(vec3(0.0f), vec3(theta), vec3(iterScale)).fwd;
             m_kernelConstantData.iteration[i].scale = iterScale;
         }
     }
 
-    __device__ Device::KIFS::KIFS() :
-        Tracable(CreateCompoundTransform(vec3(0.0f), vec3(0.0f, 0.5f, 0.0f)))
+    __device__ Device::KIFS::KIFS()
     {
         m_type = KIFSType::kTetrahedtron;
 
@@ -107,11 +107,7 @@ namespace Cuda
 
     __device__ void Device::KIFS::InitialiseKernelConstantData() const
     {
-        if (kThreadIdx == 0)
-        {
-            memcpy(&GetKernelConstantData(), &m_kernelConstantData, sizeof(KernelConstantData));
-        }
-        __syncthreads();
+        memcpy(&GetKernelConstantData(), &m_kernelConstantData, sizeof(KernelConstantData));
     }
 
     __device__ __forceinline__ void FoldTetrahedron(const mat3& matrix, const int& i, vec3& p, mat3& bi, ushort& code)
@@ -295,10 +291,11 @@ namespace Cuda
         return true;
     }
 
-    __host__  Host::KIFS::KIFS()
+    __host__  Host::KIFS::KIFS(const Json::Node& node)
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::KIFS>();
+        FromJson(node);
 
         {
             SimplePolyhedron<4, 4, 3> tet = {

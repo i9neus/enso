@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include "CudaCommonIncludes.cuh"
+#include <map>
+#include <vector>
 
 //#define CudaImageBoundCheck
 
@@ -19,15 +21,16 @@ namespace Cuda
 			template<typename T, typename S> friend class Host::AssetContainer;
 
 		protected:
-			AssetContainer() : cu_data(nullptr), m_numElements(0u) {	}
-
-			ElementType**	cu_data;
-			uint			m_numElements;
+			ElementType**		    cu_data;
+			uint					m_numElements;
 
 		public:
+			__host__ AssetContainer() : cu_data(nullptr), m_numElements(0) {}
+			__device__ AssetContainer(ElementType** data, uint numElements) : cu_data(data), m_numElements(numElements) {	}
+
 			__device__ __forceinline__ uint Size() const { return m_numElements; }
-			__device__ __forceinline__ ElementType& operator[](const int idx) { return *cu_data[idx]; }
-			__device__ __forceinline__ const ElementType& operator[](const int idx) const { return *cu_data[idx]; }
+			__device__ __forceinline__ ElementType* operator[](const int idx) { return cu_data[idx]; }
+			__device__ __forceinline__ const ElementType* operator[](const int idx) const { return cu_data[idx]; }
 		};
 	}
 
@@ -38,50 +41,68 @@ namespace Cuda
 			public Host::Asset, 
 			public AssetTags<Host::AssetContainer<typename ElementType::HostVariant>, Device::AssetContainer<typename ElementType::DeviceVariant>>
 		{
-		private:
-			Device::AssetContainer<typename ElementType::DeviceVariant>* cu_deviceData;
-			Device::AssetContainer<typename ElementType::DeviceVariant> m_hostData;
+		public:
+			class Iterator
+			{
+			public:
+				__host__ Iterator(std::map<std::string, AssetHandle<ElementType>>::iterator& it) : m_it(it) {}
 
-			std::vector<AssetHandle<ElementType>> m_assets;
+				__host__ inline bool operator != (const Iterator& other) const { return m_it != other.m_it; }
+				__host__ inline AssetHandle<ElementType>& operator* () { return *m_it; }
+				__host__ inline Iterator& operator++() { ++m_it; return *this; }
+
+			private:
+				std::map<std::string, AssetHandle<ElementType>>::iterator m_it;
+			};
+
+		private:
+			Device::AssetContainer<typename ElementType::DeviceVariant>*	cu_deviceData;
+			Device::AssetContainer<typename ElementType::DeviceVariant>		m_hostData;
+
+			std::map<std::string, AssetHandle<ElementType>>					m_assetMap;
 
 		public:
 			__host__ AssetContainer() : cu_deviceData(nullptr) {}
 
-			__host__ void Push(AssetHandle<ElementType> newAsset)
+			__host__ AssetHandle<ElementType> Find(const std::string& id)
 			{
-				m_assets.push_back(newAsset);
+				auto it = m_assetMap.find(id);
+				return (it == m_assetMap.end()) ? AssetHandle<ElementType>() : *it;
 			}
 
-			__host__ size_t Size() const { return m_assets.size(); }
+			__host__ void Push(AssetHandle<ElementType> newAsset)
+			{
+				m_assetMap.push_back(newAsset);
+			}
 
-			__host__ void Sync()
+			__host__ size_t Size() const { return m_assetMap.size(); }
+
+			__host__ void Synchronise()
 			{
 				// Clean up first
 				SafeFreeDeviceMemory(&m_hostData.cu_data);
 				SafeFreeDeviceMemory(&cu_deviceData);
 
-				m_numElements = m_assets.size();
-				if (m_numElements == 0) { return; }
+				if (m_assetMap.empty()) { return; }
 
 				// Create an array of the asset device instances ready to upload to the device
-				std::vector<typename ElementType::DeviceVariant*> hostArray(m_numElements);
-				for (int i = 0; i < m_numElements; i++)
+				std::vector<typename ElementType::DeviceVariant*> hostArray;
+				hostArray.reserve(m_assetMap.size()));
+				for(auto& asset : m_assetMap)
 				{
-					hostArray[i] = m_assets[i]->GetDeviceInstance();
+					hostArray.push_back(asset->GetDeviceInstance());
 				}
 
-				// Allocate the array data on the device and upload the elements in the vector
-				SafeAllocDeviceArray(&cu_data, m_numElements, hostArray.data());
+				SafeAllocAndCopyToDeviceMemory(&m_hostData.cu_data, m_assetMap.size(), hostArray.data());
 
-				// Allocate the array class on the device and upload the host copy
-				SafeCreateDeviceInstance(&cu_deviceContainer, static_cast<Device::AssetContainer<typename ElementType::DeviceVariant>*>(this));
+				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>(m_hostData.cu_data, m_assetMap.size());
 			}
 
-			__host__ void Clear()
+			__host__ void Destroy()
 			{
-				for (int i = 0; i < m_assets.size(); i++)
+				for (int i = 0; i < m_assetMap.size(); i++)
 				{
-					m_assets[i].DestroyAsset();
+					m_assetMap[i].DestroyAsset();
 				}
 
 				DestroyOnDevice(&cu_deviceData);
@@ -90,13 +111,24 @@ namespace Cuda
 
 			__host__ virtual void OnDestroyAsset() override final
 			{
-				Clear();
+				Destroy();
 			}
 
 			__host__ Device::AssetContainer<typename ElementType::DeviceVariant>* GetDeviceInstance()
 			{
-				AssertMsg(cu_deviceContainer, "Array has not been initialised!");
-				return cu_deviceContainer;  
+				AssertMsg(cu_deviceData, "Array has not been initialised!");
+				return cu_deviceData;
+			}
+
+			__host__ Iterator begin() { return Iterator(*this, 0); }
+			__host__ Iterator end() { return Iterator(*this, m_assetMap.size()); }
+
+			__host__ virtual void OnJson(const Json::Node& parentNode) override final
+			{
+				for (auto& asset : m_assetMap)
+				{
+					asset->OnJson(parentNode);
+				}
 			}
 		};
 	}

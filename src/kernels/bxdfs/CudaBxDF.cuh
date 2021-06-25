@@ -9,7 +9,7 @@ namespace Cuda
 
     namespace Device
     {
-        class BxDF : public Device::Asset, public AssetTags<Host::BxDF, Device::BxDF>
+        class BxDF : public Device::RenderObject, public AssetTags<Host::BxDF, Device::BxDF>
         {
         public:
             BxDF() = default;
@@ -21,7 +21,7 @@ namespace Cuda
 
     namespace Host
     {
-        class BxDF : public Host::Asset, public AssetTags<Host::BxDF, Device::BxDF>
+        class BxDF : public Host::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
         {
         public:
             __host__ virtual Device::BxDF* GetDeviceInstance() const = 0;

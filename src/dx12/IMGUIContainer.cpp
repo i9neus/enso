@@ -37,6 +37,18 @@ void IMGUIContainer::Destroy()
     std::printf("Destroyed IMGUI D3D objects.\n");
 }
 
+void IMGUIContainer::ConstructQuadLightControls(Cuda::QuadLightParams& params)
+{
+    if (!ImGui::CollapsingHeader("Quad light", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ImGui::InputFloat3("Position", &params.position[0]);
+    ImGui::InputFloat3("Orientation", &params.orientation[0]);
+    ImGui::InputFloat3("Scale", &params.scale[0]);
+
+    ImGui::ColorEdit3("Colour", &params.colour[0]);
+    ImGui::SliderFloat("Intensity", &params.intensity, -10.0f, 10.0f);
+}
+
 void IMGUIContainer::ConstructCameraControls(Cuda::PerspectiveCameraParams& params)
 {
     if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -99,6 +111,10 @@ void IMGUIContainer::UpdateParameters()
         Json::Node childNode = document.AddChildObject("perspectiveCamera");
         params.perspectiveCamera.ToJson(childNode);
     }
+    {
+        Json::Node childNode = document.AddChildObject("quadLight");
+        params.quadLight.ToJson(childNode);
+    }
 
     m_cudaRenderer.OnJson(document);
 
@@ -122,6 +138,7 @@ void IMGUIContainer::Render()
     ConstructCameraControls(params.perspectiveCamera);
     ConstructKIFSControls(params.kifs);
     ConstructMaterialControls(params.material);
+    ConstructQuadLightControls(params.quadLight);
 
     float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
     m_cudaRenderer.GetRenderStats([&](const Json::Document& node)

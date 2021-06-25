@@ -2,6 +2,8 @@
 
 #include "CudaLight.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     namespace Host { class EnvironmentLight; }
@@ -24,19 +26,17 @@ namespace Cuda
         {
             friend Host::EnvironmentLight;
         protected:
-            EnvironmentLight() = default;
-
             float m_emitterArea;
             vec3  m_emitterRadiance;
             EnvironmentLightParams m_params;
 
         public:
-            __device__ EnvironmentLight(const BidirectionalTransform& transform);
+            __device__ EnvironmentLight();
             __device__ ~EnvironmentLight() = default;
 
             __device__ void Prepare();
-            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const;
-            __device__ void Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const;
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;
+            __device__ virtual void Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const override final;
             __device__ void OnSyncParameters(const EnvironmentLightParams& params)
             {
                 m_params = params;
@@ -54,9 +54,9 @@ namespace Cuda
             Device::EnvironmentLight  m_hostData;
 
         public:
-            __host__ EnvironmentLight();
-            __host__ virtual ~EnvironmentLight() { OnDestroyAsset(); }
-            __host__ virtual void OnJson(const Json::Node& jsonNode) override final;
+            __host__ EnvironmentLight(const Json::Node& jsonNode);
+            __host__ virtual ~EnvironmentLight() = default;
+            __host__ virtual void FromJson(const Json::Node& jsonNode) override final;
             __host__ virtual void OnDestroyAsset() override final;
 
             __host__ virtual Device::EnvironmentLight* GetDeviceInstance() const override final { return cu_deviceData; }

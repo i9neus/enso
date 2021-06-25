@@ -14,7 +14,7 @@ namespace Cuda
         node.GetVector("colour", colour, true);
     }
 
-    __device__ Device::EnvironmentLight::EnvironmentLight(const BidirectionalTransform& transform) : Light(transform)
+    __device__ Device::EnvironmentLight::EnvironmentLight()
     {
         m_emitterRadiance = vec3(1.0f);
     }
@@ -41,9 +41,7 @@ namespace Cuda
     __host__  Host::EnvironmentLight::EnvironmentLight()
         : cu_deviceData(nullptr)
     {
-        m_hostData.m_transform.MakeIdentity();
-
-        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>(m_hostData.m_transform);
+        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>();
     }
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()

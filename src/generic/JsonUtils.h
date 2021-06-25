@@ -9,6 +9,27 @@ namespace Json
 {
     class Node
     {
+    public:
+        template<typename IteratorType, typename NodeType>
+        class __Iterator
+        {
+        public:
+            __Iterator(IteratorType& it, rapidjson::Document::AllocatorType* allocator) : m_it(it), m_allocator(allocator) {}
+
+            inline __Iterator& operator++() { ++m_it; return *this; }
+            inline NodeType operator*() { return Node(&m_it.value, m_allocator); }
+            inline bool operator!=(const __Iterator& other) { m_it != it; }
+
+            inline std::string Name() const { return m_it->name.GetString(); }
+
+        private:
+            IteratorType m_it;
+            rapidjson::Document::AllocatorType* m_allocator;
+        };
+        
+        using Iterator = __Iterator<rapidjson::Value::MemberIterator, Node>;
+        using ConstIterator = __Iterator<rapidjson::Value::ConstMemberIterator, const Node>;
+
     private:
         template<bool/* = is_arithmetic<T>*/, bool/* = is_integral<T>*/> struct GetValueImpl
         {
@@ -32,6 +53,13 @@ namespace Json
 
     public:
         inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
+
+        Iterator begin() { return Iterator(m_node->MemberBegin(), m_allocator); }
+        Iterator end() { return Iterator(m_node->MemberEnd(), m_allocator); }
+        ConstIterator begin() const { return ConstIterator(static_cast<rapidjson::Value::ConstMemberIterator>(m_node->MemberBegin()), m_allocator); }
+        ConstIterator end() const { return ConstIterator(static_cast<rapidjson::Value::ConstMemberIterator>(m_node->MemberEnd()), m_allocator); }
+
+        std::string& GetName() const { return m_node->; }
 
         template<typename T>
         void AddValue(const std::string& name, const T& value)

@@ -2,26 +2,41 @@
 
 #include "CudaTracable.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     namespace Host { class Plane; }
+
+    struct PlaneParams
+    {
+        __host__ __device__ PlaneParams();
+        __host__ PlaneParams(const Json::Node& node) { FromJson(node); }
+
+        __host__ void ToJson(Json::Node& node) const;
+        __host__ void FromJson(const Json::Node& node);
+        
+        bool isBounded;
+        BidirectionalTransform transform;
+    };
 
     namespace Device
     {
         class Plane : public Device::Tracable
         {
             friend Host::Plane;
-        protected:
-            Plane() = default;
-
-            bool m_isBounded;
+        private:
+            PlaneParams m_params;
 
         public:
-            __device__ Plane(const BidirectionalTransform& transform, const bool isBounded) :
-                Tracable(transform), m_isBounded(isBounded) {}
+            __device__ Plane() = default;
             __device__ ~Plane() = default;
 
-            __device__ bool Intersect(Ray& ray, HitCtx& hit) const;
+            __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
+            __device__ void OnSyncParameters(const PlaneParams& params)
+            {
+                m_params = params;
+            }
         };
     }
 
@@ -34,9 +49,12 @@ namespace Cuda
             Device::Plane  m_hostData;
 
         public:
-            __host__ Plane(const BidirectionalTransform& transform, const bool isBounded);
-            __host__ virtual ~Plane() { OnDestroyAsset(); }
+            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const Json::Node& json);
+
+            __host__ Plane(const Json::Node& node);
+            __host__ virtual ~Plane() = default;
             __host__ virtual void OnDestroyAsset() override final;
+            __host__ virtual void FromJson(const Json::Node& jsonNode) override final;
 
             __host__ virtual Device::Plane* GetDeviceInstance() const override final { return cu_deviceData; }
         };

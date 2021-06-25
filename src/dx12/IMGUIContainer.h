@@ -12,6 +12,7 @@
 #include "kernels/tracables/CudaKIFS.cuh"
 #include "kernels/CudaPerspectiveCamera.cuh"
 #include "kernels/materials/CudaMaterial.cuh"
+#include "kernels/lights/CudaQuadLight.cuh"
 
 #include "thirdparty/imgui/imgui.h"
 
@@ -48,6 +49,7 @@ private:
         Cuda::PerspectiveCameraParams     perspectiveCamera;
         Cuda::KIFSParams                  kifs;
         Cuda::SimpleMaterialParams        material;
+        Cuda::QuadLightParams             quadLight;
 
         Parameters() = default;
         Parameters& operator=(const Parameters& other) = default;
@@ -68,6 +70,7 @@ private:
     void ConstructKIFSControls(Cuda::KIFSParams& params);
     void ConstructMaterialControls(Cuda::SimpleMaterialParams& params);
     void ConstructCameraControls(Cuda::PerspectiveCameraParams& params);
+    void ConstructQuadLightControls(Cuda::QuadLightParams& params);
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);
