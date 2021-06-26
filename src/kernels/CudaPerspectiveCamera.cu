@@ -3,6 +3,7 @@
 #include "CudaCtx.cuh"
 #include "CudaRay.cuh"
 #include "CudaPerspectiveCamera.cuh"
+#include "generic/JsonUtils.h"
 
 #define kCameraAA                 1.5f             // The width/height of the anti-aliasing kernel in pixels
 #define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
@@ -21,7 +22,7 @@ namespace Cuda
         fStop = 0.45f;
     }
     
-    __host__ void PerspectiveCameraParams::ToJson(Json::Node& node) const
+    __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
         node.AddArray("lookAt", std::vector<float>({ lookAt.x, lookAt.y, lookAt.z }));
@@ -30,7 +31,7 @@ namespace Cuda
         node.AddValue("fStop", fStop);
     }
 
-    __host__ void PerspectiveCameraParams::FromJson(const Json::Node& node)
+    __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node)
     {
         node.GetVector("position", position, true);
         node.GetVector("lookAt", lookAt, true);
@@ -183,7 +184,7 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::PerspectiveCamera::OnJson(const Json::Node& parentNode)
+    __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode)
     {
         Json::Node childNode = parentNode.GetChildObject("perspectiveCamera", true);
         if (childNode)

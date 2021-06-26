@@ -2,6 +2,7 @@
 
 #include "../CudaRay.cuh"
 #include "../CudaCtx.cuh"
+#include "../CudaRenderObject.cuh"
 
 namespace Cuda
 {
@@ -22,10 +23,11 @@ namespace Cuda
 
     namespace Host
     {
-        class Light : public Host::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
+        class Light : public Host::RenderObject, public AssetTags<Host::Light, Device::Light>
         {
         public:
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;
+            __host__ virtual AssetType GetAssetType() const override final { return AssetType::kLight; }
         };
     }
 }

@@ -2,7 +2,8 @@
 
 #include "generic/StdIncludes.h"
 #include <memory>
-#include "generic/JsonUtils.h"
+
+namespace Json { class Node; }
 
 namespace Cuda
 {
@@ -16,7 +17,7 @@ namespace Cuda
         using HostVariant = HostType;
     };
 
-    enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight };
+    enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight, kCamera, kIntegrator };
     
     namespace Device
     { 
@@ -28,26 +29,26 @@ namespace Cuda
         class Asset
         {
         private:
-            std::string     m_assetId;
-            AssetType       m_assetType;            
+            std::string     m_assetId;       
 
         protected:
             template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
 
-            Asset() = default;
+            Asset() = default;            
             __host__ Asset(const std::string& name) : m_assetId(name) {}
 
             __host__ virtual void OnDestroyAsset() = 0;
-            __host__ void SetAssetMetadata(const std::string& name, const AssetType& type) 
+            __host__ void SetAssetID(const std::string& name) 
             { 
                 m_assetId = name; 
-                m_assetType = type;
             }
 
         public:
-            __host__ virtual void FromJson(const Json::Node& jsonNode) {}
+            virtual ~Asset() = default;
+
+            __host__ virtual void FromJson(const ::Json::Node& jsonNode) {}
+            __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown;  }
             __host__ const inline std::string& GetAssetID() const { return m_assetId; }
-            __host__ const inline AssetType GetAssetType() const { return m_assetType; }
         };
     }
 
@@ -79,7 +80,7 @@ namespace Cuda
         AssetHandle() = default;
         ~AssetHandle() 
         {  
-            OnDestroyAsset(); 
+            m_ptr->OnDestroyAsset(); 
         }
 
         template<typename OtherType>
@@ -89,18 +90,19 @@ namespace Cuda
         }
 
         template<typename... Pack>
-        AssetHandle(const std::string& assetName, AssetType& assetType, Pack... args)
+        AssetHandle(const std::string& assetName, Pack... args)
         {
             m_ptr.reset(new T(args...));
-            m_ptr->SetAssetMetadata(assetName);
+            m_ptr->SetAssetID(assetName);
 
             GlobalAssetRegistry::Get().Register(m_ptr);
         }
 
-        AssetHandle(T* ptr, const std::string& assetName)
+        template<typename Type, typename = typename std::enable_if<std::is_base_of<Host::Asset, Type>::value>::type>
+        AssetHandle(Type* ptr, const std::string& assetName)
         {
             m_ptr.reset(ptr);
-            m_ptr->SetAssetMetadata(assetName);
+            m_ptr->SetAssetID(assetName);
 
             GlobalAssetRegistry::Get().Register(m_ptr);
         }

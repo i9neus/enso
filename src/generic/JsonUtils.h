@@ -4,31 +4,45 @@
 #include "thirdparty/rapidjson/allocators.h"
 #include "thirdparty/rapidjson/error/en.h"
 #include "StdIncludes.h"
- 
+
 namespace Json
-{
+{    
     class Node
     {
-    public:
-        template<typename IteratorType, typename NodeType>
+    protected:
+        rapidjson::Value*                       m_node;
+        rapidjson::Document::AllocatorType*     m_allocator;
+
+        Node() : m_node(nullptr), m_allocator(nullptr) {}
+        Node(rapidjson::Value* node, rapidjson::Document::AllocatorType* allocator) : m_node(node), m_allocator(allocator) {}
+
+        rapidjson::Value* GetChildImpl(const std::string& path, bool required) const;
+
+    public:    
+        template<bool IsConst>
         class __Iterator
         {
         public:
-            __Iterator(IteratorType& it, rapidjson::Document::AllocatorType* allocator) : m_it(it), m_allocator(allocator) {}
+            __Iterator(rapidjson::Value::MemberIterator& it, rapidjson::Document::AllocatorType* allocator) : m_it(it), m_allocator(allocator) {}
 
             inline __Iterator& operator++() { ++m_it; return *this; }
-            inline NodeType operator*() { return Node(&m_it.value, m_allocator); }
-            inline bool operator!=(const __Iterator& other) { m_it != it; }
+
+            template<bool C = IsConst>
+            inline typename std::enable_if<!C, Node>::type operator*() const { return Node(&(m_it->value), m_allocator); }
+            template<bool C = IsConst>
+            inline typename std::enable_if<C, const Node>::type operator*() const { return Node(&(m_it->value), m_allocator); }
+
+            inline bool operator!=(const __Iterator& other) const { return m_it != other.m_it; }
 
             inline std::string Name() const { return m_it->name.GetString(); }
 
         private:
-            IteratorType m_it;
-            rapidjson::Document::AllocatorType* m_allocator;
+            rapidjson::Value::MemberIterator     m_it;
+            rapidjson::Document::AllocatorType*  m_allocator;
         };
         
-        using Iterator = __Iterator<rapidjson::Value::MemberIterator, Node>;
-        using ConstIterator = __Iterator<rapidjson::Value::ConstMemberIterator, const Node>;
+        using Iterator = __Iterator<false>;
+        using ConstIterator = __Iterator<true>;
 
     private:
         template<bool/* = is_arithmetic<T>*/, bool/* = is_integral<T>*/> struct GetValueImpl
@@ -56,10 +70,8 @@ namespace Json
 
         Iterator begin() { return Iterator(m_node->MemberBegin(), m_allocator); }
         Iterator end() { return Iterator(m_node->MemberEnd(), m_allocator); }
-        ConstIterator begin() const { return ConstIterator(static_cast<rapidjson::Value::ConstMemberIterator>(m_node->MemberBegin()), m_allocator); }
-        ConstIterator end() const { return ConstIterator(static_cast<rapidjson::Value::ConstMemberIterator>(m_node->MemberEnd()), m_allocator); }
-
-        std::string& GetName() const { return m_node->; }
+        ConstIterator begin() const { return ConstIterator(m_node->MemberBegin(), m_allocator); }
+        ConstIterator end() const { return ConstIterator(m_node->MemberEnd(), m_allocator); }
 
         template<typename T>
         void AddValue(const std::string& name, const T& value)
@@ -172,17 +184,7 @@ namespace Json
         inline operator bool() const { return m_node; }
         inline bool operator!() const { return !m_node; }
 
-        inline rapidjson::Value* GetPtr() { return m_node; }
-
-    protected:
-        Node() : m_node(nullptr), m_allocator(nullptr) {}
-        Node(rapidjson::Value* node, rapidjson::Document::AllocatorType* allocator) : m_node(node), m_allocator(allocator) {}
-
-        rapidjson::Value* GetChildImpl(const std::string& path, bool required) const;
-
-    protected:
-        rapidjson::Value*                    m_node;
-        rapidjson::Document::AllocatorType*  m_allocator;
+        inline rapidjson::Value* GetPtr() { return m_node; }  
     };
 
     class Document : public Node

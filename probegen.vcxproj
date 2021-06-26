@@ -55,6 +55,7 @@
     <ClInclude Include="src\kernels\CudaHash.cuh" />
     <ClInclude Include="src\kernels\CudaImage.cuh" />
     <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh" />
+    <ClInclude Include="src\kernels\CudaRenderObject.cuh" />
     <ClInclude Include="src\kernels\CudaSampler.cuh" />
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
     <ClInclude Include="src\kernels\CudaTests.cuh" />
@@ -75,7 +76,10 @@
     <ClInclude Include="src\kernels\math\vec\CudaVec3.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
-    <ClInclude Include="src\kernels\tracables\CudaCornell.cuh" />
+    <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh" />
+    <ClInclude Include="src\kernels\tracables\CudaCornell.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaKIFS.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaPlane.cuh" />
@@ -127,7 +131,11 @@
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
-    <CudaCompile Include="src\kernels\tracables\CudaCornell.cu" />
+    <CudaCompile Include="src\kernels\CudaRenderObjectFactory.cu" />
+    <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="src\kernels\tracables\CudaCornell.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />

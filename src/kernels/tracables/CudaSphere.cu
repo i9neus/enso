@@ -45,21 +45,21 @@ namespace Cuda
         return true;
     }
 
-     __host__ AssetHandle<Host::RenderObject> Host::Sphere::Instantiate(const std::string& id, const AssetType& expectedType, const Json::Node& json)
+     __host__ AssetHandle<Host::RenderObject> Host::Sphere::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
      {
          if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
 
          return AssetHandle<Host::RenderObject>(new Host::Sphere(json), id);
      }
 
-    __host__  Host::Sphere::Sphere(const Json::Node& node)
+    __host__  Host::Sphere::Sphere(const ::Json::Node& node)
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
         FromJson(node);
     }
 
-    __host__ void Host::Sphere::FromJson(const Json::Node& parentNode)
+    __host__ void Host::Sphere::FromJson(const ::Json::Node& parentNode)
     {
         SyncParameters(cu_deviceData, BidirectionalTransform(parentNode));
     }

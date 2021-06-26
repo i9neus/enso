@@ -303,6 +303,12 @@
     <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh">
       <Filter>kernels\lights</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaRenderObject.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -319,9 +325,6 @@
     </Filter>
     <Filter Include="dx12\hlsl">
       <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="renderer">
-      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
     <Filter Include="kernels\math">
       <UniqueIdentifier>{683b4a22-8741-469d-bda7-497068883385}</UniqueIdentifier>
@@ -365,6 +368,9 @@
     <Filter Include="thirdparty\imgui\backends">
       <UniqueIdentifier>{e6b247cc-e6e7-45ae-b0c0-d1b3ee027aa8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="renderer">
+      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -405,6 +411,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu">
       <Filter>kernels\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaRenderObjectFactory.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\math\CudaTransform.cu">
+      <Filter>kernels\math</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

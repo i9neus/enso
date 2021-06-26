@@ -46,7 +46,7 @@ namespace Cuda
     {
     }
 
-    __host__ void KIFSParams::ToJson(Json::Node& node) const
+    __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y, rotate.z }));
         node.AddArray("scale", std::vector<float>({ scale.x, scale.y }));
@@ -56,7 +56,7 @@ namespace Cuda
         node.AddValue("faceMask", faceMask);
     }
 
-    __host__ void KIFSParams::FromJson(const Json::Node& node)
+    __host__ void KIFSParams::FromJson(const ::Json::Node& node)
     {
         node.GetVector("rotate", rotate, true);
         node.GetVector("scale", scale, true);
@@ -239,7 +239,7 @@ namespace Cuda
 
     __device__  bool Device::KIFS::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
+        RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
         float t = Intersector::RayUnitBox(localRay);
         if (t == kNoIntersect) { return false; }
@@ -286,12 +286,19 @@ namespace Cuda
         if (F.x > kSDFFailThreshold || t > ray.tNear) { return false; }
 
         ray.tNear = t;
-        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_transform)), false, vec2(0.0f), 1e-4f);
+        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_params.transform)), false, vec2(0.0f), 1e-4f);
 
         return true;
     }
 
-    __host__  Host::KIFS::KIFS(const Json::Node& node)
+    __host__ AssetHandle<Host::RenderObject> Host::KIFS::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
+    {
+        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+
+        return AssetHandle<Host::RenderObject>(new Host::KIFS(json), id);
+    }
+
+    __host__  Host::KIFS::KIFS(const ::Json::Node& node)
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::KIFS>();
@@ -329,7 +336,7 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::KIFS::OnJson(const Json::Node& parentNode)
+    __host__ void Host::KIFS::FromJson(const ::Json::Node& parentNode)
     {
         Json::Node childNode = parentNode.GetChildObject("kifs", true);
         if (childNode)

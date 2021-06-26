@@ -3,7 +3,7 @@
 
 namespace Cuda
 {
-    __host__ void BidirectionalTransform::FromJson(const Json::Node& parentNode)
+    __host__ void BidirectionalTransform::FromJson(const ::Json::Node& parentNode)
     {
         const auto transNode = parentNode.GetChildObject("transform", false);
         if (!transNode) { return; }
@@ -34,7 +34,7 @@ namespace Cuda
         transNode.AddArray("scale", std::vector<float>({ scale.x, scale.y, scale.z }));
     }
 
-    __host__ BidirectionalTransform::BidirectionalTransform(const Json::Node& node)
+    __host__ BidirectionalTransform::BidirectionalTransform(const ::Json::Node& node)
     {
         FromJson(node);
     }

@@ -11,11 +11,9 @@ namespace Cuda
     
     namespace Device
     {
-        class Tracable : public Device::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
+        class Tracable : public Device::RenderObject, public AssetTags<Device::Tracable, Device::Tracable>
         {
         public:
-            Tracable() = default;
-
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const = 0;
             __device__ virtual void InitialiseKernelConstantData() const {};
 
@@ -35,6 +33,7 @@ namespace Cuda
 
         public:
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
+            __host__ virtual AssetType GetAssetType() const override final { return AssetType::kTracable; }
         };
     }
 }

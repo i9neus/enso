@@ -14,10 +14,10 @@ namespace Cuda
 	struct PerspectiveCameraParams
 	{
 		__host__ __device__ PerspectiveCameraParams();
-		__host__ PerspectiveCameraParams(const Json::Node& node) : PerspectiveCameraParams() { FromJson(node); }
+		__host__ PerspectiveCameraParams(const ::Json::Node& node) : PerspectiveCameraParams() { FromJson(node); }
 
-		__host__ void ToJson(Json::Node& node) const;
-		__host__ void FromJson(const Json::Node& node);
+		__host__ void ToJson(::Json::Node& node) const;
+		__host__ void FromJson(const ::Json::Node& node);
 		
 		vec3 position;
 		vec3 lookAt;
@@ -66,7 +66,7 @@ namespace Cuda
 			__host__ virtual ~PerspectiveCamera() { OnDestroyAsset(); }
 
 			__host__ virtual void                       OnDestroyAsset() override final;
-			__host__ virtual void                       OnJson(const Json::Node& jsonNode) override final;
+			__host__ virtual void                       FromJson(const ::Json::Node& jsonNode) override final;
 			__host__ Device::PerspectiveCamera*			GetDeviceInstance() const { return cu_deviceData; }
 		};
 	}

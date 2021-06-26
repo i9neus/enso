@@ -45,14 +45,14 @@ namespace Cuda
 			class Iterator
 			{
 			public:
-				__host__ Iterator(std::map<std::string, AssetHandle<ElementType>>::iterator& it) : m_it(it) {}
+				__host__ Iterator(typename std::map<std::string, AssetHandle<ElementType>>::iterator& it) : m_it(it) {}
 
 				__host__ inline bool operator != (const Iterator& other) const { return m_it != other.m_it; }
 				__host__ inline AssetHandle<ElementType>& operator* () { return *m_it; }
 				__host__ inline Iterator& operator++() { ++m_it; return *this; }
 
 			private:
-				std::map<std::string, AssetHandle<ElementType>>::iterator m_it;
+				typename std::map<std::string, AssetHandle<ElementType>>::iterator m_it;
 			};
 
 		private:
@@ -87,7 +87,7 @@ namespace Cuda
 
 				// Create an array of the asset device instances ready to upload to the device
 				std::vector<typename ElementType::DeviceVariant*> hostArray;
-				hostArray.reserve(m_assetMap.size()));
+				hostArray.reserve(m_assetMap.size());
 				for(auto& asset : m_assetMap)
 				{
 					hostArray.push_back(asset->GetDeviceInstance());
@@ -123,7 +123,7 @@ namespace Cuda
 			__host__ Iterator begin() { return Iterator(*this, 0); }
 			__host__ Iterator end() { return Iterator(*this, m_assetMap.size()); }
 
-			__host__ virtual void OnJson(const Json::Node& parentNode) override final
+			__host__ virtual void OnJson(const ::Json::Node& parentNode) override final
 			{
 				for (auto& asset : m_assetMap)
 				{

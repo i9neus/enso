@@ -3,13 +3,13 @@
 
 namespace Cuda
 {
-    __host__ void PlaneParams::ToJson(Json::Node& node) const
+    __host__ void PlaneParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("bounded", isBounded);
         transform.ToJson(node);
     }
 
-    __host__ void PlaneParams::FromJson(const Json::Node& node)
+    __host__ void PlaneParams::FromJson(const ::Json::Node& node)
     {
         node.GetValue("bounded", isBounded, true);
         transform.FromJson(node);
@@ -28,7 +28,7 @@ namespace Cuda
         float u = (localRay.o.x + localRay.d.x * t) + 0.5;
         float v = (localRay.o.y + localRay.d.y * t) + 0.5;
 
-        if (m_isBounded && (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0)) { return false; }
+        if (m_params.isBounded && (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0)) { return false; }
         
         ray.tNear = t;
         //HitPoint hit = m_transform.HitToWorldSpace(HitPoint(ray.HitPoint(), vec3(0.0f, 0.0f, 1.0f)));
@@ -38,7 +38,14 @@ namespace Cuda
         return true;
     }
 
-    __host__  Host::Plane::Plane(const Json::Node& node)
+    __host__ AssetHandle<Host::RenderObject> Host::Plane::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
+    {
+        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+
+        return AssetHandle<Host::RenderObject>(new Host::Plane(json), id);
+    }
+
+    __host__  Host::Plane::Plane(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
         FromJson(node);
@@ -49,7 +56,7 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::Plane::FromJson(const Json::Node& parentNode)
+    __host__ void Host::Plane::FromJson(const ::Json::Node& parentNode)
     {
         SyncParameters(cu_deviceData, PlaneParams(parentNode));
     }

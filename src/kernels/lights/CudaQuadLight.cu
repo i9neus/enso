@@ -1,9 +1,11 @@
 ﻿#include "CudaQuadLight.cuh"
 #include "../tracables/CudaPlane.cuh"
 
+#include "generic/JsonUtils.h"
+
 namespace Cuda
 {
-    __host__ void QuadLightParams::ToJson(Json::Node& node) const
+    __host__ void QuadLightParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
         node.AddArray("orientation", std::vector<float>({ orientation.x, orientation.y, orientation.z }));
@@ -13,7 +15,7 @@ namespace Cuda
         node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
     }
 
-    __host__ void QuadLightParams::FromJson(const Json::Node& node)
+    __host__ void QuadLightParams::FromJson(const ::Json::Node& node)
     {
         node.GetVector("position", position, true);
         node.GetVector("orientation", orientation, true);
@@ -74,8 +76,15 @@ namespace Cuda
         pdfLight = 1 / solidAngle;
         L = m_emitterRadiance;
     }
+
+    __host__ AssetHandle<Host::RenderObject> Host::QuadLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
+    {
+        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+
+        return AssetHandle<Host::RenderObject>(new Host::QuadLight(json), id);
+    }
     
-    __host__  Host::QuadLight::QuadLight(const Json::Node& jsonNode)
+    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode)
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
@@ -87,7 +96,7 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::QuadLight::FromJson(const Json::Node& parentNode)
+    __host__ void Host::QuadLight::FromJson(const ::Json::Node& parentNode)
     {
         Json::Node childNode = parentNode.GetChildObject("quadLight", true);
         if (!childNode) { return; }
@@ -98,7 +107,7 @@ namespace Cuda
         newParams.transform.FromJson(childNode); 
        
         // Update the transform of the light plane asset so they match
-        m_lightPlaneAsset->SetTransform(newParams.transform);
+        //m_lightPlaneAsset->SetTransform(newParams.transform);
      
         // Synchronise with the decvice
         SyncParameters(cu_deviceData, newParams);

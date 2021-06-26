@@ -92,7 +92,7 @@ namespace tests
 			const vec3 rotate(1.5124f, -0.873651f, 0.58367f);
 			const vec3 translate(0.0f);
 
-			const BidirectionalTransform transform = CreateCompoundTransform(rotate, translate, scale);
+			const BidirectionalTransform transform(rotate, translate, scale);
 
 			TestVecIsEqual(scale, transform.scale, 1e-7f, "scale");
 		}

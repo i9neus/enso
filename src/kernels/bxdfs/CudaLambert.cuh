@@ -18,7 +18,7 @@ namespace Cuda
             LambertBRDF() = default;
             ~LambertBRDF() = default;
 
-            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final
             {
                 const vec2 xi = renderCtx.Rand<0, 1>();
                 
@@ -50,8 +50,11 @@ namespace Cuda
         public:
             __host__ LambertBRDF();
             __host__ virtual ~LambertBRDF() { OnDestroyAsset(); }
-            __host__ virtual void OnDestroyAsset() override final;
 
+            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string&, const AssetType&, const ::Json::Node&);
+
+            __host__ virtual void OnDestroyAsset() override final;
+            __host__ static std::string GetAssetTypeString() { return "lambert"; }
             __host__ virtual Device::LambertBRDF* GetDeviceInstance() const override final { return cu_deviceData; }
         };
     }

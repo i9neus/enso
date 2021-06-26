@@ -42,7 +42,7 @@ namespace Json
             if (!lex || !lex.PeekNext('.')) { return node; }
 
             parentID = childID;
-        }
+        } 
 
         AssertMsg(false, "Shouldn't be here!");
         return nullptr;

@@ -56,15 +56,15 @@ namespace Cuda
 		mat3 inv;
 		mat3 nInv;
 
-		__host__ void FromJson(const Json::Node& json);
-		__host__ void ToJson(Json::Node& json) const;
+		__host__ void FromJson(const ::Json::Node& json);
+		__host__ void ToJson(::Json::Node& json) const;
 
 		__host__ __device__ BidirectionalTransform()
 		{
 			MakeIdentity();
 		}
 
-		__host__ BidirectionalTransform(const Json::Node& json);
+		__host__ BidirectionalTransform(const ::Json::Node& json);
 
 		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& t, const vec3& r, const vec3& s)
 		{

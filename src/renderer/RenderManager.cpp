@@ -236,7 +236,7 @@ void RenderManager::Run()
 		if (m_isDirty && frameIdx >= 2)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			m_wavefrontTracer->OnJson(m_renderParamsJson);
+			m_wavefrontTracer->FromJson(m_renderParamsJson);
 			m_isDirty = false;
 			frameIdx = 0;			
 		}

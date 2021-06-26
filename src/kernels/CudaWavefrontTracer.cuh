@@ -1,9 +1,11 @@
 ﻿#pragma once
 
+#include "CudaRenderObject.cuh"
 #include "CudaAssetContainer.cuh"
-#include "generic/JsonUtils.h"
 #include "math/CudaMath.cuh"
 #include "CudaImage.cuh"
+
+namespace Json { class Node; }
 
 namespace Cuda
 {
@@ -89,7 +91,7 @@ namespace Cuda
 		using CompressedRayBuffer = Host::Array<CompressedRay>;
 		using PixelFlagsBuffer = Host::Array<uchar>;
 		
-		class WavefrontTracer : public Host::Asset
+		class WavefrontTracer : public Host::RenderObject
 		{
 		private:
 			Device::WavefrontTracer*		cu_deviceData;
@@ -99,10 +101,10 @@ namespace Cuda
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
 
-			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
+			/*AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
 			AssetHandle<Host::AssetContainer<Host::Material>>   m_hostMaterials;
-			AssetHandle<Host::AssetContainer<Host::BxDF>>		m_hostBxDFs;
+			AssetHandle<Host::AssetContainer<Host::BxDF>>		m_hostBxDFs;*/
 
 			AssetHandle<Host::PerspectiveCamera>				m_hostPerspectiveCamera;
 
@@ -112,10 +114,13 @@ namespace Cuda
 
 		public:
 			__host__ WavefrontTracer(cudaStream_t hostStream);
-			__host__ ~WavefrontTracer() { OnDestroyAsset(); }
+			__host__ virtual ~WavefrontTracer();
+
+			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
+			__host__ static std::string GetAssetTypeString() { return "sphere"; }
 
 			__host__ virtual void OnDestroyAsset() override final;
-			__host__ virtual void OnJson(const Json::Node& renderParamsJson) override final;
+			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson) override final;
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx);
 		};
