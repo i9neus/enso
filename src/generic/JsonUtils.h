@@ -210,6 +210,7 @@ namespace Json
 
     private:
         std::string LoadTextFile(const std::string& filePath) const;
+        bool GetFileHandle(const std::string& filePath, std::ifstream& file) const;
 
     private:
         rapidjson::Document m_document;
