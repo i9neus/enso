@@ -105,22 +105,26 @@ namespace Cuda
 	}
 
 	template<typename ObjectType, typename ParamsType>
-	__global__ static void KernelSyncParameters(ObjectType* cu_object, const ParamsType * const cu_params)
+	__global__ static void KernelSyncObjects(ObjectType* cu_object, const ParamsType* const cu_params)
 	{
-		cu_object->OnSyncParameters(*cu_params);
+		if (cu_params)
+		{
+			cu_object->Synchronise(*cu_params);
+		}
 	}
 
 	template<typename ObjectType, typename ParamsType>
-	__host__ static void SyncParameters(ObjectType* cu_object, const ParamsType& params)
+	__host__ static void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params)
 	{
-		static_assert(std::is_standard_layout<ParamsType>::value, "Parameter structure must be standard layout type.");
-		
+		static_assert(std::is_standard_layout<ParamsType>::value, "Object structure must be standard layout type.");
+
 		Assert(cu_object);
 		ParamsType* cu_params;
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
 		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
-		KernelSyncParameters<<<1, 1>>>(cu_object, cu_params);
+		KernelSyncObjects << <1, 1 >> > (cu_object, cu_params);
+		IsOk(cudaDeviceSynchronize());
 
 		IsOk(cudaFree(cu_params));
 	}

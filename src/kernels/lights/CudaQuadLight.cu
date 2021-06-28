@@ -5,6 +5,12 @@
 
 namespace Cuda
 {
+    __host__ QuadLightParams::QuadLightParams(const ::Json::Node& node) :
+        QuadLightParams()
+    { 
+         FromJson(node, ::Json::kRequiredWarn); 
+    }
+    
     __host__ void QuadLightParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
@@ -15,14 +21,14 @@ namespace Cuda
         node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
     }
 
-    __host__ void QuadLightParams::FromJson(const ::Json::Node& node)
+    __host__ void QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("position", position, true);
-        node.GetVector("orientation", orientation, true);
-        node.GetVector("scale", scale, true);
+        node.GetVector("position", position, flags);
+        node.GetVector("orientation", orientation, flags);
+        node.GetVector("scale", scale, flags);
 
-        node.GetValue("intensity", intensity, true);
-        node.GetVector("colour", colour, true);
+        node.GetValue("intensity", intensity, flags);
+        node.GetVector("colour", colour, flags);
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -88,7 +94,7 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
-        FromJson(jsonNode);
+        FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
@@ -96,20 +102,20 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::QuadLight::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("quadLight", true);
+        Json::Node childNode = node.GetChildObject("quadLight", flags);
         if (!childNode) { return; }
 
         // Pull the parameters from the JSON dictionary and create a transform
         QuadLightParams newParams;
-        newParams.FromJson(childNode);
-        newParams.transform.FromJson(childNode); 
+        newParams.FromJson(childNode, flags);
+        newParams.transform.FromJson(childNode, flags); 
        
         // Update the transform of the light plane asset so they match
         //m_lightPlaneAsset->SetTransform(newParams.transform);
      
         // Synchronise with the decvice
-        SyncParameters(cu_deviceData, newParams);
+        SynchroniseObjects(cu_deviceData, newParams);
     }
 }

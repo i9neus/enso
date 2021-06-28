@@ -3,16 +3,22 @@
 
 namespace Cuda
 {
+    __host__ EnvironmentLightParams::EnvironmentLightParams(const ::Json::Node& node) :
+        EnvironmentLightParams()
+    { 
+        FromJson(node, ::Json::kRequiredWarn); 
+    }
+    
     __host__ void EnvironmentLightParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("intensity", intensity);
         node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
     }
 
-    __host__ void EnvironmentLightParams::FromJson(const ::Json::Node& node)
+    __host__ void EnvironmentLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("intensity", intensity, true);
-        node.GetVector("colour", colour, true);
+        node.GetValue("intensity", intensity, flags);
+        node.GetVector("colour", colour, flags);
     }
 
     __device__ Device::EnvironmentLight::EnvironmentLight()
@@ -50,7 +56,7 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>();
-        FromJson(jsonNode);
+        FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()
@@ -58,12 +64,12 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("material", true);
+        Json::Node childNode = parentNode.GetChildObject("material", flags);
         if (childNode)
         {
-            SyncParameters(cu_deviceData, EnvironmentLightParams(childNode));
+            SynchroniseObjects(cu_deviceData, EnvironmentLightParams(childNode));
         }
     }
 }

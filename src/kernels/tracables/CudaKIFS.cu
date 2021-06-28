@@ -46,6 +46,12 @@ namespace Cuda
     {
     }
 
+    __host__ KIFSParams::KIFSParams(const ::Json::Node& node, const uint flags) :
+        KIFSParams()
+    { 
+        FromJson(node, flags); 
+    }
+
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y, rotate.z }));
@@ -56,14 +62,14 @@ namespace Cuda
         node.AddValue("faceMask", faceMask);
     }
 
-    __host__ void KIFSParams::FromJson(const ::Json::Node& node)
+    __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("rotate", rotate, true);
-        node.GetVector("scale", scale, true);
-        node.GetValue("vertScale", vertScale, true);
-        node.GetValue("crustThickness", crustThickness, true);
-        node.GetValue("numIterations", numIterations, true);
-        node.GetValue("faceMask", faceMask, true);
+        node.GetVector("rotate", rotate, flags);
+        node.GetVector("scale", scale, flags);
+        node.GetValue("vertScale", vertScale, flags);
+        node.GetValue("crustThickness", crustThickness, flags);
+        node.GetValue("numIterations", numIterations, flags);
+        node.GetValue("faceMask", faceMask, flags);
     }
 
     __device__ void Device::KIFS::Prepare()
@@ -302,7 +308,7 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::KIFS>();
-        FromJson(node);
+        FromJson(node, ::Json::kRequiredWarn);
 
         {
             SimplePolyhedron<4, 4, 3> tet = {
@@ -336,12 +342,8 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::KIFS::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::KIFS::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("kifs", true);
-        if (childNode)
-        {
-            SyncParameters(cu_deviceData, KIFSParams(childNode));
-        }
+        SynchroniseObjects(cu_deviceData, KIFSParams(parentNode, flags));
     }
 }

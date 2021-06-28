@@ -24,14 +24,9 @@
 
 namespace Cuda
 {
-	/*__device__ void Device::WavefrontTracer::OnSyncParams(const Device::WavefrontTracer::Params* params)
+	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
 	{
-		if (params) { m_objects = *params; }
-	}*/
-
-	__device__ Device::WavefrontTracer::WavefrontTracer(const Objects* cu_objects)
-	{
-		if (cu_objects) { m_objects = *cu_objects; }
+		m_objects = objects;
 	}
 
 	__device__ void Device::WavefrontTracer::PreFrame(const float& wallTime, const int frameIdx)
@@ -180,9 +175,10 @@ namespace Cuda
 	{
 		if (!m_hostCompressedRayBuffer) { return; }
 
-		/*for (auto& tracable : *m_hostTracables)	{ tracable.DestroyAsset(); }
-		for (auto& light : *m_hostLights) { light.DestroyAsset(); }
-		for (auto& material : *m_hostMaterials) { material.DestroyAsset(); }*/
+		m_hostCompressedRayBuffer.DestroyAsset();
+		m_hostAccumBuffer.DestroyAsset();
+		m_hostTracables.DestroyAsset();
+		m_hostLights.DestroyAsset();
 		
 		m_hostPerspectiveCamera.DestroyAsset();
 
@@ -193,55 +189,25 @@ namespace Cuda
 	{
 		if (expectedType != AssetType::kIntegrator) { return AssetHandle<Host::RenderObject>(); }
 
-		return AssetHandle<Host::RenderObject>(new Host::QuadLight(json), id);
+		return AssetHandle<Host::RenderObject>(new Host::WavefrontTracer(json), id);
 	}
 
-	__host__ Host::WavefrontTracer::WavefrontTracer(cudaStream_t hostStream) :
+	__host__ Host::WavefrontTracer::WavefrontTracer(const ::Json::Node& node) :
 		cu_deviceData(nullptr),
-		m_hostStream(hostStream),
 		m_isDirty(true)
 	{
 		// Create the packed ray buffer
-		/*m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
+		m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
 
 		// Create the accumulation buffer
 		m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>("id_hostAccumBuffer", 512, 512, m_hostStream);
 		m_hostAccumBuffer->Clear(vec4(0.0f));
 
-		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("id_tracableContainer");
-		m_hostMaterials = AssetHandle<Host::AssetContainer<Host::Material>>("id_materialContainer");
-		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>("id_lightContainer");
-		m_hostBxDFs = AssetHandle<Host::AssetContainer<Host::BxDF>>("id_bxdfContainer");
+		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("wavefront_tracablesContainer");
+		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>("wavefront_lightsContainer");	
 
-		m_hostTracables->Push(AssetHandle<Host::Tracable>(new Host::Cornell(), "id_cornell"));
-		m_hostTracables->Push(AssetHandle<Host::Tracable>(new Host::Sphere(), "id_sphere"));
-		m_hostTracables->Push(AssetHandle<Host::Tracable>(new Host::Plane(BidirectionalTransform(vec3(0.0f), vec3(kHalfPi, 0.0f, 0.0f), vec3(1.0f)), false), "id_groundplane"));
-		auto quadLightPlane = AssetHandle<Host::Tracable>(new Host::Plane(BidirectionalTransform(), true), "id_quadlightplane");
-		m_hostTracables->Push(quadLightPlane);		
-		m_hostTracables->Push(AssetHandle<Host::Tracable>(new Host::KIFS(), "id_kifs"));
-		m_hostTracables->Synchronise();
-
-		m_hostMaterials->Push(AssetHandle<Host::Material>(new Host::SimpleMaterial(), "id_simpleMaterial"));
-		m_hostMaterials->Synchronise();
-
-		m_hostLights->Push(AssetHandle<Host::Light>(new Host::QuadLight(quadLightPlane), "id_quadlight"));
-		m_hostLights->Synchronise();
-
-		m_hostPerspectiveCamera = AssetHandle<Host::PerspectiveCamera>(new Host::PerspectiveCamera(), "id_perspcamera");
-
-		m_hostBxDFs->Push(AssetHandle<Host::BxDF>(new Host::LambertBRDF(), "id_lambert"));
-		m_hostLights->Synchronise();*/
-
-		checkCudaErrors(cudaDeviceSynchronize());
-
-		// Create the wavefront tracer structure on the device
-		/*m_hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-		//m_hostObjects.cu_pixelFlagsBuffer = m_hostPixelFlagsBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
-		m_hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();*/
-
-		cu_deviceData = InstantiateOnDeviceWithParams<Device::WavefrontTracer>(m_hostObjects);
+		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
+		FromJson(node, ::Json::kRequiredWarn);
 		
 		m_block = dim3(16, 16, 1);
 		m_grid = dim3((m_hostAccumBuffer->GetHostInstance().Width() + 15) / 16, (m_hostAccumBuffer->GetHostInstance().Height() + 15) / 16, 1);
@@ -252,7 +218,37 @@ namespace Cuda
 		OnDestroyAsset(); 
 	}
 
-	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& jsonNode)
+	__host__ void Host::WavefrontTracer::Synchronise()
+	{
+		// Synchronise the container objects managed by this instance
+		m_hostTracables->Synchronise();
+		m_hostLights->Synchronise();
+
+		// Synchronise the wavefront tracer structure on the device
+		m_hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+		m_hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+		m_hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
+		m_hostObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
+		m_hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
+
+		SynchroniseObjects(cu_deviceData, m_hostObjects);
+	}
+
+	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
+	{
+		for (auto& object : sceneObjects)
+		{
+			switch (object->GetAssetType())
+			{
+			case AssetType::kTracable:
+				m_hostTracables->Push(object.DynamicCast<Tracable>()); break;			
+			case AssetType::kLight:
+				m_hostLights->Push(object.DynamicCast<Light>()); break;
+			}
+		}
+	}
+
+	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& jsonNode, const uint flags)
 	{
 		/*m_hostTracables->OnJson(jsonNode);
 		m_hostMaterials->OnJson(jsonNode);

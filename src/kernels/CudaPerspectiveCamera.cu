@@ -21,6 +21,12 @@ namespace Cuda
         fLength = 0.45f;
         fStop = 0.45f;
     }
+
+    __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
+        PerspectiveCameraParams() 
+    { 
+        FromJson(node, ::Json::kRequiredWarn);
+    }
     
     __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
     {
@@ -31,13 +37,13 @@ namespace Cuda
         node.AddValue("fStop", fStop);
     }
 
-    __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node)
+    __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("position", position, true);
-        node.GetVector("lookAt", lookAt, true);
-        node.GetValue("focalPlane", focalPlane, true);
-        node.GetValue("fLength", fLength, true);
-        node.GetValue("fStop", fStop, true);
+        node.GetVector("position", position, flags);
+        node.GetVector("lookAt", lookAt, flags);
+        node.GetValue("focalPlane", focalPlane, flags);
+        node.GetValue("fLength", fLength, flags);
+        node.GetValue("fStop", fStop, flags);
     }
     
     // Returns the polar distance r to the perimeter of an n-sided polygon
@@ -52,7 +58,7 @@ namespace Cuda
 
     __device__ Device::PerspectiveCamera::PerspectiveCamera()
     {     
-        //Prepare();
+
     }
 
     __device__ void Device::PerspectiveCamera::Prepare()
@@ -174,9 +180,17 @@ namespace Cuda
         newRay.SetAlive();
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera()
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode)
     {
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
+        FromJson(parentNode, ::Json::kRequiredWarn);
+    }
+
+    __host__ AssetHandle<Host::RenderObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
+    {
+        if (expectedType != AssetType::kCamera) { return AssetHandle<Host::RenderObject>(); }
+
+        return AssetHandle<Host::RenderObject>(new Host::PerspectiveCamera(json), id);
     }
 
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
@@ -184,12 +198,12 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("perspectiveCamera", true);
+        Json::Node childNode = parentNode.GetChildObject("perspectiveCamera", flags);
         if (childNode)
         {
-            SyncParameters(cu_deviceData, PerspectiveCameraParams(childNode));
+            SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(childNode));
         }
     }
 }

@@ -9,10 +9,10 @@ namespace Cuda
         transform.ToJson(node);
     }
 
-    __host__ void PlaneParams::FromJson(const ::Json::Node& node)
+    __host__ void PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("bounded", isBounded, true);
-        transform.FromJson(node);
+        node.GetValue("bounded", isBounded, flags);
+        transform.FromJson(node, ::Json::kRequiredWarn);
     }
     
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
@@ -48,7 +48,7 @@ namespace Cuda
     __host__  Host::Plane::Plane(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
-        FromJson(node);
+        FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::Plane::OnDestroyAsset()
@@ -56,8 +56,8 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::Plane::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
     {
-        SyncParameters(cu_deviceData, PlaneParams(parentNode));
+        SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
     }
 }

@@ -4,10 +4,12 @@
 #include "generic/D3DIncludes.h"
 #include "generic/Math.h"
 #include <cuda_runtime.h>
+#include "generic/JsonUtils.h"
+
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
 #include "kernels/CudaAsset.cuh"
-#include "generic/JsonUtils.h"
+#include "kernels/CudaRenderObject.cuh"
 
 class RenderManager
 {
@@ -18,6 +20,7 @@ public:
 	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
+	void Build();
 	void Start();
 	void Destroy();
 	void OnJson(const Json::Document& json);
@@ -38,7 +41,11 @@ private:
 	std::thread			m_managerThread;
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_renderParamsJson;
+	Json::Document		m_sceneJson;
+	Json::Document		m_configJson;
 	std::atomic<bool>	m_isDirty; 
+
+	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
 	Json::Document			m_renderStatsJson;
 	std::array<float, 20>	m_frameTimes;

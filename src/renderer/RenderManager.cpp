@@ -3,8 +3,10 @@
 #include "dx12/SecurityAttributes.h"
 #include "dx12/DXSampleHelper.h"
 #include "thirdparty/nvidia/helper_cuda.h"
+
 #include "kernels/CudaTests.cuh"
 #include "kernels/CudaCommonIncludes.cuh"
+#include "kernels/CudaRenderObjectFactory.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
@@ -14,7 +16,8 @@ RenderManager::RenderManager() :
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
 {
-	Log::Write("Initialising Cuda...\n");
+	Log::NL();
+	Log::Indent indent("Initialising Cuda...\n");
 	
 	int num_cuda_devices = 0;
 	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
@@ -66,11 +69,57 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 
 	// Create some Cuda objects
 	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
-	m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
+	//m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 
 	Cuda::VerifyTypeSizes();
 
 	IsOk(cudaDeviceSynchronize());
+}
+
+void RenderManager::Build()
+{
+	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
+	
+	Log::NL();
+	Log::Indent indent("Building render manager...\n");
+	
+	// Load the root config
+	Log::Write("Loading 'config.json'...\n");
+	m_configJson.Load("config.json");
+
+	std::string sceneJsonPath;
+	m_configJson.GetValue("scene", sceneJsonPath, Json::kRequiredAssert);
+
+	Log::Write("Loading scene file '%s'...\n", sceneJsonPath);
+	m_sceneJson.Load(sceneJsonPath);
+
+	// Create a container for the render objects
+	m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
+	
+	// Instantiate them according to the scene JSON
+	const Log::Snapshot beginState = Log::GetMessageState();
+	{		
+		Log::Indent indent("Creating scene objects...\n");
+		
+		Cuda::RenderObjectFactory objectFactory;
+		objectFactory.Instantiate(m_sceneJson, m_renderObjects);
+	}
+	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
+	Log::Write("Done! Successfully created %i objects (%i errors, %i warnings)\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
+
+	// Bind together to create the scene DAG
+	{
+		Log::Indent indent("Binding scene objects...\n");
+		m_renderObjects->Bind();
+	}
+	Log::Write("Done!\n");
+
+	// Bind together to create the scene DAG
+	{
+		Log::Indent indent("Synchronising scene objects with device...\n");
+		//m_renderObjects->Synchronise();
+	}
+	Log::Write("Done!\n");
 }
 
 void RenderManager::Destroy()
@@ -85,9 +134,12 @@ void RenderManager::Destroy()
 
 	m_managerThread.join();
 	std::printf("Killed threads.\n");
+	 
+	// Destroy the render objects
+	m_renderObjects.DestroyAsset();
 
 	// Destroy assets
-	m_wavefrontTracer.DestroyAsset();
+	//m_wavefrontTracer.DestroyAsset();
 	m_compositeImage.DestroyAsset();
 
 	// Destroy events
@@ -236,7 +288,7 @@ void RenderManager::Run()
 		if (m_isDirty && frameIdx >= 2)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			m_wavefrontTracer->FromJson(m_renderParamsJson);
+			//m_wavefrontTracer->FromJson(m_renderParamsJson);
 			m_isDirty = false;
 			frameIdx = 0;			
 		}
@@ -245,12 +297,12 @@ void RenderManager::Run()
 		{
 			std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 
-			m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+			//m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
 
 			frameIdx++;
 		}		 
 
-		m_wavefrontTracer->Composite(m_compositeImage);
+		//m_wavefrontTracer->Composite(m_compositeImage);
 
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));		
 

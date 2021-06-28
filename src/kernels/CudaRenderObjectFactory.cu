@@ -15,6 +15,8 @@
 
 #include "materials/CudaMaterial.cuh"
 
+#include "CudaPerspectiveCamera.cuh"
+
 #include "CudaWavefrontTracer.cuh"
 
 namespace Cuda
@@ -24,7 +26,7 @@ namespace Cuda
         m_instantiators[Host::Sphere::GetAssetTypeString()] = Host::Sphere::Instantiate;
         m_instantiators[Host::KIFS::GetAssetTypeString()] = Host::KIFS::Instantiate;
         m_instantiators[Host::Plane::GetAssetTypeString()] = Host::Plane::Instantiate;
-        //m_instantiators[Host::Cornell::GetAssetTypeString()] = Host::Cornell::Instantiate;
+        //m_instantiators[Host::Cornell::GetAssetTypeString()] = Host::Cornell::Instantiate;\
 
         m_instantiators[Host::QuadLight::GetAssetTypeString()] = Host::QuadLight::Instantiate;
         m_instantiators[Host::EnvironmentLight::GetAssetTypeString()] = Host::EnvironmentLight::Instantiate;
@@ -34,62 +36,74 @@ namespace Cuda
         m_instantiators[Host::LambertBRDF::GetAssetTypeString()] = Host::LambertBRDF::Instantiate;
 
         m_instantiators[Host::WavefrontTracer::GetAssetTypeString()] = Host::WavefrontTracer::Instantiate;
+
+        m_instantiators[Host::PerspectiveCamera::GetAssetTypeString()] = Host::PerspectiveCamera::Instantiate;
     }
    
-    __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, RenderObjectContainer& renderObjects)
+    __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
     {
         for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
+            AssetHandle<Host::RenderObject> newObject;
             std::string newType = it.Name();
             ::Json::Node childNode = *it;
             std::string newId;
-            childNode.GetValue("id", newId, true);
+            if (!childNode.GetValue("id", newId, ::Json::kRequiredWarn)) { continue; }
 
-            auto& instantiator = m_instantiators.find(newType);
-            if (instantiator == m_instantiators.end())
             {
-                Log::Error("Error: '%s' is not a valid render object type.", newType);
-                continue;
+                Log::Indent indent(tfm::format("Creating new object '%s'...\n", newId));
+
+                auto& instantiator = m_instantiators.find(newType);
+                if (instantiator == m_instantiators.end())
+                {
+                    Log::Error("Error: '%s' is not a valid render object type.\n", newType);
+                    continue;
+                }
+
+                Log::Debug("Instantiating new %s....\n", objectTypeStr);
+
+                if (renderObjects->Exists(newId))
+                {
+                    Log::Error("Error: an object with ID '%s' has alread been instantiated.\n", newId);
+                    continue;
+                }
+
+                newObject = (instantiator->second)(newId, expectedType, childNode);
+
+                AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.\n", newType.c_str());
+
+                renderObjects->Emplace(newObject);
             }
-
-            if (renderObjects.Exists(newId))
-            {
-                Log::Error("Error: an object with ID '%s' has alread been instantiated.", newId);
-            }
-
-            AssetHandle<Host::RenderObject> newObject = (instantiator->second)(newId, expectedType, childNode);
-
-            AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.", newType.c_str());
-
-            renderObjects.Emplace(newObject);
         }
     }
     
-    __host__ void RenderObjectFactory::Instantiate(const ::Json::Node& rootNode, RenderObjectContainer& renderObjects)
+    __host__ void RenderObjectFactory::Instantiate(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
     {        
+        Assert(renderObjects);
+
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("tracables", true);
-            InstantiateList(childNode, AssetType::kTracable, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("tracables", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kTracable, "tracable", renderObjects);
         }        
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("lights", true);
-            InstantiateList(childNode, AssetType::kLight, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("lights", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kLight, "light", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("materials", true);
-            InstantiateList(childNode, AssetType::kMaterial, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("materials", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kMaterial, "material", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", true);
-            InstantiateList(childNode, AssetType::kBxDF, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kBxDF, "BxDF", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("cameras", true);
-            InstantiateList(childNode, AssetType::kCamera, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("cameras", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kCamera, "camera", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("integrators", true);
-            InstantiateList(childNode, AssetType::kIntegrator, renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("integrators", ::Json::kRequiredWarn);
+            InstantiateList(childNode, AssetType::kIntegrator, "integrator", renderObjects);
         }
     }
 }

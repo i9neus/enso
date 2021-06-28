@@ -9,10 +9,10 @@ namespace Cuda
     struct PlaneParams
     {
         __host__ __device__ PlaneParams() : isBounded(false) {}
-        __host__ PlaneParams(const ::Json::Node& node) { FromJson(node); }
+        __host__ PlaneParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node);
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
         
         bool isBounded;
         BidirectionalTransform transform;
@@ -31,7 +31,7 @@ namespace Cuda
             __device__ ~Plane() = default;
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
-            __device__ void OnSyncParameters(const PlaneParams& params)
+            __device__ void Synchronise(const PlaneParams& params)
             {
                 m_params = params;
             }
@@ -53,7 +53,7 @@ namespace Cuda
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
             __host__ virtual void OnDestroyAsset() override final;
-            __host__ virtual void FromJson(const ::Json::Node& jsonNode) override final;
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ static std::string GetAssetTypeString() { return "plane"; }
             __host__ virtual Device::Plane* GetDeviceInstance() const override final { return cu_deviceData; }
         };

@@ -371,6 +371,9 @@
     <Filter Include="renderer">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="scenes">
+      <UniqueIdentifier>{cf54c47d-ed90-4617-afcb-f24ce6e443c6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -423,6 +426,12 @@
     <None Include=".gitignore" />
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <Filter>dx12\hlsl</Filter>
+    </None>
+    <None Include="bin\win64\Release\config.json">
+      <Filter>scenes</Filter>
+    </None>
+    <None Include="scenes\default.json">
+      <Filter>scenes</Filter>
     </None>
   </ItemGroup>
 </Project>

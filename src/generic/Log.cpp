@@ -36,11 +36,18 @@ void Log::Indent::Restore()
 }
 
 Log::Log() :
-    m_logTerminalOut(std::cout)
+    m_logTerminalOut(std::cout)    
 {
 }
 
 Log::~Log() { }
+
+Log::Snapshot Log::GetMessageState()
+{
+    return Singleton().m_stats;
+}
+
+void Log::NL() { Singleton().WriteImpl("\n", kFgDefault, kLogNormal); }
 
 void Log::Write(const std::string& message)
 {
@@ -99,4 +106,6 @@ void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const 
     m_logTerminalOut << formattedStr;
     m_logTerminalOut << "\033[" << kFgDefault << "m\033[" << kBgDefault << "m";
     m_logTerminalOut.flush();
+
+    m_stats[level]++;
 }

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <stdlib.h>
+#include "CudaRenderObject.cuh"
 
 namespace Json { class Node; }
 
@@ -14,10 +14,10 @@ namespace Cuda
 	struct PerspectiveCameraParams
 	{
 		__host__ __device__ PerspectiveCameraParams();
-		__host__ PerspectiveCameraParams(const ::Json::Node& node) : PerspectiveCameraParams() { FromJson(node); }
+		__host__ PerspectiveCameraParams(const ::Json::Node& node);
 
 		__host__ void ToJson(::Json::Node& node) const;
-		__host__ void FromJson(const ::Json::Node& node);
+		__host__ void FromJson(const ::Json::Node& node, const uint flags);
 		
 		vec3 position;
 		vec3 lookAt;
@@ -33,7 +33,7 @@ namespace Cuda
 		public:
 			__device__ PerspectiveCamera();
 			__device__ void CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const;
-			__device__ void OnSyncParameters(const PerspectiveCameraParams& params)
+			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
 				m_params = params; 
 				Prepare();
@@ -56,18 +56,21 @@ namespace Cuda
 
 	namespace Host
 	{
-		class PerspectiveCamera : public Host::Asset, public AssetTags<Host::PerspectiveCamera, Device::PerspectiveCamera>
+		class PerspectiveCamera : public Host::RenderObject, public AssetTags<Host::PerspectiveCamera, Device::PerspectiveCamera>
 		{
 		private:
 			Device::PerspectiveCamera*				cu_deviceData;
 
 		public:
-			__host__ PerspectiveCamera();
+			__host__ PerspectiveCamera(const ::Json::Node& parentNode);
 			__host__ virtual ~PerspectiveCamera() { OnDestroyAsset(); }
 
+			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
+
 			__host__ virtual void                       OnDestroyAsset() override final;
-			__host__ virtual void                       FromJson(const ::Json::Node& jsonNode) override final;
+			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ Device::PerspectiveCamera*			GetDeviceInstance() const { return cu_deviceData; }
+			__host__ static std::string GetAssetTypeString() { return "perspective"; }
 		};
 	}
 }

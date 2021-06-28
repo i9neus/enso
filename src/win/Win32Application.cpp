@@ -181,7 +181,7 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 			pSample->OnUpdate();
 			pSample->OnRender();
 
-			SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
+			//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
 		}
 		return 0;
 

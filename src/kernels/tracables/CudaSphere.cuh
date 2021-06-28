@@ -20,7 +20,7 @@ namespace Cuda
             __device__ Sphere() = default;
             __device__ ~Sphere() = default;
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final; 
-            __device__ void OnSyncParameters(const BidirectionalTransform& transform)
+            __device__ void Synchronise(const BidirectionalTransform& transform)
             {
                 m_transform = transform;
             }
@@ -45,7 +45,7 @@ namespace Cuda
             __host__ virtual Device::Sphere* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "sphere"; }
             
-            __host__ virtual void FromJson(const ::Json::Node& jsonNode) override final;
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
         };
     }
 }

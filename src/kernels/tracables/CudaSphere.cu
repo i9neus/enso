@@ -56,12 +56,12 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
-        FromJson(node);
+        FromJson(node, ::Json::kRequiredWarn);
     }
 
-    __host__ void Host::Sphere::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::Sphere::FromJson(const ::Json::Node& node, const uint flags)
     {
-        SyncParameters(cu_deviceData, BidirectionalTransform(parentNode));
+        SynchroniseObjects(cu_deviceData, BidirectionalTransform(node, flags));
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()

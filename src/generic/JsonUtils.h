@@ -4,9 +4,12 @@
 #include "thirdparty/rapidjson/allocators.h"
 #include "thirdparty/rapidjson/error/en.h"
 #include "StdIncludes.h"
+#include "Log.h"
 
 namespace Json
-{    
+{        
+    enum RequiredFlags : uint { kNotRequired, kRequiredWarn, kRequiredAssert };
+    
     class Node
     {
     protected:
@@ -16,7 +19,7 @@ namespace Json
         Node() : m_node(nullptr), m_allocator(nullptr) {}
         Node(rapidjson::Value* node, rapidjson::Document::AllocatorType* allocator) : m_node(node), m_allocator(allocator) {}
 
-        rapidjson::Value* GetChildImpl(const std::string& path, bool required) const;
+        rapidjson::Value* GetChildImpl(const std::string& path, uint flags) const;
 
     public:    
         template<bool IsConst>
@@ -111,10 +114,10 @@ namespace Json
         }
 
         template<typename T> 
-        bool GetValue(const std::string& name, T& value, bool required = false) const
+        bool GetValue(const std::string& name, T& value, const uint flags) const
         {
             CheckOk();
-            const rapidjson::Value* child = GetChildImpl(name, required);
+            const rapidjson::Value* child = GetChildImpl(name, flags);
             if (!child) { return false; }
 
             AssertMsgFmt(!child->IsObject() && !child->IsArray(), "Value at '%s' is not a scalar.", name.c_str());
@@ -123,27 +126,27 @@ namespace Json
             return true;
         }
 
-        const Node GetChild(const std::string& name, bool required = false) const
+        const Node GetChild(const std::string& name, const uint flags) const
         {
             CheckOk();
-            return Node(GetChildImpl(name, required), m_allocator);
+            return Node(GetChildImpl(name, flags), m_allocator);
         }
 
-        const Node GetChildObject(const std::string& name, bool required = false) const
+        const Node GetChildObject(const std::string& name, const uint flags) const
         {
             CheckOk();
-            rapidjson::Value* child = GetChildImpl(name, required);
+            rapidjson::Value* child = GetChildImpl(name, flags);
             return Node((child && child->IsObject()) ? child : nullptr, m_allocator);
         }
 
-        const Node GetChildArray(const std::string& name, bool required = false) const
+        const Node GetChildArray(const std::string& name, const uint flags) const
         {
-            rapidjson::Value* child = GetChildImpl(name, required);
+            rapidjson::Value* child = GetChildImpl(name, flags);
             if (!child) { return Node(); }
 
             if (!child->IsArray())
             {
-                AssertMsgFmt(!required, "Node %s is not an array.", name.c_str());
+                AssertMsgFmt(flags != kRequiredAssert, "Node '%s' is not an array.", name.c_str());
                 return Node();
             }
 
@@ -151,9 +154,9 @@ namespace Json
         }
 
         template<typename Type>
-        bool GetArrayValues(const std::string& name, std::vector<Type>& values, bool required = false) const
+        bool GetArrayValues(const std::string& name, std::vector<Type>& values, const uint flags) const
         {
-            const Node child = GetChildArray(name, required);
+            const Node child = GetChildArray(name, flags);
             if (!child) { return false; }
             rapidjson::Value& array = *child.m_node;
 
@@ -170,10 +173,10 @@ namespace Json
         }
 
         template<typename VecType>
-        bool GetVector(const std::string& name, VecType& vec, bool required = false) const
+        bool GetVector(const std::string& name, VecType& vec, const uint flags) const
         {
             std::vector<typename VecType::kType> values;
-            if (!GetArrayValues(name, values, required)) { return false; }
+            if (!GetArrayValues(name, values, flags)) { return false; }
             AssertMsgFmt(VecType::kDims == values.size(),
                 "Error: JSON array '%s' expects %i elements.", VecType::kDims);
 

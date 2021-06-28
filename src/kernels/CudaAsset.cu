@@ -16,7 +16,7 @@ namespace Cuda
         AssertMsgFmt(m_assetMap.find(assetId) == m_assetMap.end(), "Object '%s' is already in asset registry!", object->GetAssetID().c_str());
         
         m_assetMap.emplace(assetId, std::weak_ptr <Host::Asset>(object));
-        std::printf("Registered asset '%s'.\n", assetId.c_str());
+        Log::Debug("Registered asset '%s'.\n", assetId.c_str());
     }
 
     void GlobalAssetRegistry::Deregister(std::shared_ptr<Host::Asset> object)
@@ -34,11 +34,11 @@ namespace Cuda
         {
             if (asset.second.expired())
             {
-                std::printf("  - WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
+                Log::Warning("  - WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
                 continue;
             }
 
-            std::printf("  - '%s' with %i ref counts\n", asset.first.c_str(), asset.second.use_count());
+            Log::Write("  - '%s' with %i ref counts\n", asset.first.c_str(), asset.second.use_count());
         }
     }
 
@@ -48,11 +48,11 @@ namespace Cuda
 
         if (m_assetMap.empty()) 
         { 
-            std::printf("SUCCESS! All managed assets were sucessfully cleaned up.\n");
+            Log::Write("SUCCESS! All managed assets were sucessfully cleaned up.\n");
             return; 
         }
 
-        std::printf("WARNING: The following %i objects were not explicitly destroyed!\n", m_assetMap.size());
+        Log::Warning("WARNING: The following %i objects were not explicitly destroyed!\n", m_assetMap.size());
         
         Report(); 
 

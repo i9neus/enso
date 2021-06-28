@@ -55,8 +55,6 @@ namespace Cuda
 			int								m_frameIdx;
 			int								m_maxRayDepth;
 
-			WavefrontTracer() { memset(this, 0, sizeof(WavefrontTracer)); }
-
 			__device__ __forceinline__ bool IsValid(const ivec2& viewportPos) const
 			{
 				return viewportPos.x >= 0 && viewportPos.x < m_objects.cu_deviceAccumBuffer->Width() &&
@@ -67,14 +65,14 @@ namespace Cuda
 			__device__ void InitaliseScratchpadObjects() const;
 
 		public:
-			__device__ WavefrontTracer(const Objects* objects);
+			__device__ WavefrontTracer() = default;
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
-			//__device__ void OnSyncParams(const Params* params);
+			__device__ void Synchronise(const Objects& params);
 
 		};
 	}
@@ -101,26 +99,26 @@ namespace Cuda
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
 
-			/*AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
+			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
-			AssetHandle<Host::AssetContainer<Host::Material>>   m_hostMaterials;
-			AssetHandle<Host::AssetContainer<Host::BxDF>>		m_hostBxDFs;*/
 
 			AssetHandle<Host::PerspectiveCamera>				m_hostPerspectiveCamera;
 
-			cudaStream_t			m_hostStream;
 			dim3                    m_block, m_grid;
 			bool					m_isDirty;
 
 		public:
-			__host__ WavefrontTracer(cudaStream_t hostStream);
+			__host__ WavefrontTracer(const ::Json::Node& node);
 			__host__ virtual ~WavefrontTracer();
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
-			__host__ static std::string GetAssetTypeString() { return "sphere"; }
+			__host__ static std::string GetAssetTypeString() { return "wavefront"; }
 
 			__host__ virtual void OnDestroyAsset() override final;
-			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson) override final;
+			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
+			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
+			__host__ virtual void Synchronise() override final;
+
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx);
 		};

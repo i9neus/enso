@@ -8,7 +8,7 @@
  
 namespace Json
 {
-    rapidjson::Value* Node::GetChildImpl(const std::string& path, bool required) const
+    rapidjson::Value* Node::GetChildImpl(const std::string& path, const uint flags) const
     {
         Assert(m_node);
         AssertMsg(!path.empty(), "Must specify a path to a node.");
@@ -26,16 +26,29 @@ namespace Json
 
             if (!node->IsObject())
             {
-                AssertMsgFmt(!required, "A required JSON node '%s' is invalid ('%s' is not an object.)",
+                
+                AssertMsgFmt(flags != kRequiredAssert, "A required JSON node '%s' is invalid ('%s' is not an object.)",
                     path.c_str(), parentID.c_str());
+                
+                if (flags == kRequiredWarn)
+                {
+                    Log::Warning("JSON node/attribute '%s' was expected but not found ('%s' is not an object.)\n", path, parentID);
+                }
+
                 return nullptr;
             }
 
             rapidjson::Value::MemberIterator jsonIt = node->FindMember(childID.c_str());
             if (jsonIt == node->MemberEnd())
             {
-                AssertMsgFmt(!required, "A required JSON node '%s' is invalid ('%s' not found)",
+                AssertMsgFmt(flags != kRequiredAssert, "A required JSON node '%s' is invalid ('%s' not found)",
                     path.c_str(), childID.c_str());
+
+                if (flags == kRequiredWarn)
+                {
+                    Log::Warning("JSON node/attribute '%s' was expected but not found.\n", path);
+                }
+
                 return nullptr;
             }
 
@@ -95,7 +108,7 @@ namespace Json
 
 #ifdef _DEBUG
         // We're in debug mode so assume that the Release directory has the actual file we're looking for
-        concatPath += "..\\'Release\\";
+        concatPath += "..\\Release\\";
         Log::Warning("_DEBUG: Modifying local path to '%s'...\n", concatPath + filePath);
 #endif
         

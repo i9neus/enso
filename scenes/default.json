@@ -1,0 +1,83 @@
+{
+  "integrators": 
+  {
+    "wavefront": 
+    {
+      "enabled": true,
+      "id": "integrator_wfTracer",
+      "camera": "camera_perspCam"
+    }  
+  },
+  "cameras": 
+  {
+    "perspective" :
+    {
+      "enabled": true,
+      "id": "camera_perspCam",
+      "pos": [0.5, 1.0, 1.5],
+      "lookAt": [0.0, 0.5, 0.0],
+      "focalPlane": 1.0,
+      "fLength": 0.45,
+      "fStop": 0.45
+    }
+  },
+  "tracables": 
+  {
+    "plane":
+    {
+      "enabled": true,
+      "id": "tracable_groundPlane",      
+      "material": "material_groundPlane",
+      "bounded": false,
+      "transform" : 
+      {
+        "pos": [0.0, 0.0, 0.0],
+        "rot": [0.0, 0.0, 0.0],
+        "sca": [1.0, 1.0, 1.0]
+      }
+    },
+    "kifs":
+    {
+      "enabled": true,
+      "id": "tracable_kifs",
+      "material": "material_kifs",
+      "transform" : 
+      {
+        "pos": [0.0, 0.0, 0.0],
+        "rot": [0.0, 0.0, 0.0],
+        "sca": [1.0, 1.0, 1.0]
+      }
+    }
+  },
+  "materials": 
+  {
+    "simple":
+    {
+      "enabled": true,
+      "id": "material_groundPlane",
+      "bxdf": "bxdf_diffuse",
+      "albedo": [0.7, 0.7, 0.7],
+      "incandescence" : [0.0, 0.0, 0.0]
+    },
+    "simple":
+    {
+      "enabled": true,
+      "id": "material_kifs",
+      "bxdf": "bxdf_diffuse",
+      "albedo": [0.2, 0.2, 0.2],
+      "incandescence" : [0.0, 0.0, 0.0]
+    }
+  },
+  "bxdfs": 
+  {
+    "lambert":
+    {
+      "enabled": true,
+      "id": "bxdf_diffuse"
+    }
+  },
+  "lights": 
+  {
+
+  }
+}

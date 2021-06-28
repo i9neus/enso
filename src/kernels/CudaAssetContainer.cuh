@@ -70,14 +70,14 @@ namespace Cuda
 				return (it == m_assetMap.end()) ? AssetHandle<ElementType>() : *it;
 			}
 
-			__host__ void Push(AssetHandle<ElementType> newAsset)
+			__host__ void Push(AssetHandle<ElementType>& newAsset)
 			{
-				m_assetMap.push_back(newAsset);
+				m_assetMap[newAsset->GetAssetID()] = newAsset;
 			}
 
 			__host__ size_t Size() const { return m_assetMap.size(); }
 
-			__host__ void Synchronise()
+			__host__ virtual void Synchronise() override final
 			{
 				// Clean up first
 				SafeFreeDeviceMemory(&m_hostData.cu_data);
@@ -90,7 +90,7 @@ namespace Cuda
 				hostArray.reserve(m_assetMap.size());
 				for(auto& asset : m_assetMap)
 				{
-					hostArray.push_back(asset->GetDeviceInstance());
+					hostArray.push_back(asset.second->GetDeviceInstance());
 				}
 
 				SafeAllocAndCopyToDeviceMemory(&m_hostData.cu_data, m_assetMap.size(), hostArray.data());
@@ -100,11 +100,6 @@ namespace Cuda
 
 			__host__ void Destroy()
 			{
-				for (int i = 0; i < m_assetMap.size(); i++)
-				{
-					m_assetMap[i].DestroyAsset();
-				}
-
 				DestroyOnDevice(&cu_deviceData);
 				SafeFreeDeviceMemory(&m_hostData.cu_data);
 			}
@@ -123,11 +118,11 @@ namespace Cuda
 			__host__ Iterator begin() { return Iterator(*this, 0); }
 			__host__ Iterator end() { return Iterator(*this, m_assetMap.size()); }
 
-			__host__ virtual void OnJson(const ::Json::Node& parentNode) override final
+			__host__ virtual void FromJson(const ::Json::Node& parentNode, const uint flags) override final
 			{
 				for (auto& asset : m_assetMap)
 				{
-					asset->OnJson(parentNode);
+					asset.second->FromJson(parentNode, flags);
 				}
 			}
 		};

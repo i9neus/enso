@@ -3,20 +3,20 @@
 
 namespace Cuda
 {
-    __host__ void BidirectionalTransform::FromJson(const ::Json::Node& parentNode)
+    __host__ void BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
     {
-        const auto transNode = parentNode.GetChildObject("transform", false);
+        const auto transNode = node.GetChildObject("transform", flags);
         if (!transNode) { return; }
 
-        if (!transNode.GetVector("trans", trans, false))
+        if (!transNode.GetVector("pos", trans, flags))
         {
             trans = 0.0f;
         }
-        if (!transNode.GetVector("rot", rot, false))
+        if (!transNode.GetVector("rot", rot, flags))
         {
             rot = 0.0f;
         }
-        if (transNode.GetVector("scale", scale, false))
+        if (transNode.GetVector("sca", scale, flags))
         {
             scale = 1.0f;
         }
@@ -29,13 +29,13 @@ namespace Cuda
     {
         auto transNode = parentNode.AddChildObject("transform");
 
-        transNode.AddArray("trans", std::vector<float>({ trans.x, trans.y, trans.z }));
+        transNode.AddArray("pos", std::vector<float>({ trans.x, trans.y, trans.z }));
         transNode.AddArray("rot", std::vector<float>({ rot.x, rot.y, rot.z }));
-        transNode.AddArray("scale", std::vector<float>({ scale.x, scale.y, scale.z }));
+        transNode.AddArray("sca", std::vector<float>({ scale.x, scale.y, scale.z }));
     }
 
-    __host__ BidirectionalTransform::BidirectionalTransform(const ::Json::Node& node)
+    __host__ BidirectionalTransform::BidirectionalTransform(const ::Json::Node& node, const uint flags)
     {
-        FromJson(node);
+        FromJson(node, flags);
     }
 }

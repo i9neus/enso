@@ -34,6 +34,7 @@ namespace Cuda
         public:
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kTracable; }
+            __host__ static std::string GetAssetTypeString() { return "tracable"; }
         };
     }
 }

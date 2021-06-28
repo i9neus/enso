@@ -29,13 +29,14 @@ namespace Cuda
         class Asset
         {
         private:
-            std::string     m_assetId;       
+            std::string     m_assetId;
 
         protected:
+            cudaStream_t    m_hostStream;
             template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
 
-            Asset() = default;            
-            __host__ Asset(const std::string& name) : m_assetId(name) {}
+            __host__ Asset() : m_hostStream(0) { }
+            __host__ Asset(const std::string& name) : m_assetId(name), m_hostStream(0) {  }
 
             __host__ virtual void OnDestroyAsset() = 0;
             __host__ void SetAssetID(const std::string& name) 
@@ -46,9 +47,11 @@ namespace Cuda
         public:
             virtual ~Asset() = default;
 
-            __host__ virtual void FromJson(const ::Json::Node& jsonNode) {}
+            __host__ virtual void FromJson(const ::Json::Node& jsonNode, const uint flags) {}
             __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown;  }
             __host__ const inline std::string& GetAssetID() const { return m_assetId; }
+            __host__ void SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
+            __host__ virtual void Synchronise() {}
         };
     }
 
@@ -74,14 +77,13 @@ namespace Cuda
     class AssetHandle
     {
     private:
-        std::shared_ptr<T>          m_ptr;      
+        std::shared_ptr<T>          m_ptr;     
 
     public:
         AssetHandle() = default;
-        ~AssetHandle() 
-        {  
-            m_ptr->OnDestroyAsset(); 
-        }
+        ~AssetHandle() = default;
+
+        explicit AssetHandle(std::shared_ptr<T>& ptr) : m_ptr(ptr) {}
 
         template<typename OtherType>
         explicit AssetHandle(AssetHandle<OtherType>& other)
@@ -107,12 +109,25 @@ namespace Cuda
             GlobalAssetRegistry::Get().Register(m_ptr);
         }
 
+        template<typename NewType>
+        AssetHandle<NewType> DynamicCast()
+        {
+            AssertMsg(m_ptr, "Invalid asset handle");
+            
+            std::shared_ptr<NewType> downcast = std::dynamic_pointer_cast<NewType>(m_ptr);
+            AssertMsgFmt(downcast, "Dynamic cast to %s for asset '%s' failed.", NewType::GetAssetTypeString().c_str(), m_ptr->GetAssetID().c_str());
+
+            return AssetHandle<NewType>(downcast);
+        }
+
         void DestroyAsset()
         {
+            if (!m_ptr) { return; }
+            
             AssertMsgFmt(m_ptr.use_count() == 1, "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
                 m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
 
-            std::printf("Destroyed '%s' with %i counts remaining.\n", m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+            Log::Debug("Destroyed '%s' with %i counts remaining.\n", m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
 
             m_ptr->OnDestroyAsset();
             GlobalAssetRegistry::Get().Deregister(m_ptr);
@@ -130,10 +145,12 @@ namespace Cuda
 
         inline const T& operator*() const
         {
+            AssertMsg(m_ptr, "Invalid asset handle");
             return *m_ptr;
         }
         inline T& operator*()
         {
+            AssertMsg(m_ptr, "Invalid asset handle");
             return *m_ptr;
         }
     };

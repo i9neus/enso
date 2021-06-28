@@ -18,10 +18,10 @@ namespace Cuda
     struct KIFSParams
     {
         __host__ __device__ KIFSParams();
-        __host__ KIFSParams(const ::Json::Node& node) { FromJson(node); }
+        __host__ KIFSParams(const ::Json::Node& node, const uint flags);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node);
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         vec3    rotate;
         vec2    scale;
@@ -77,7 +77,7 @@ namespace Cuda
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
             __device__ virtual void InitialiseKernelConstantData() const override final;
-            __device__ void OnSyncParameters(const KIFSParams& params)
+            __device__ void Synchronise(const KIFSParams& params)
             { 
                 m_params = params;
                 Prepare();
@@ -99,7 +99,7 @@ namespace Cuda
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
             __host__ virtual void OnDestroyAsset() override final;
-            __host__ virtual void FromJson(const ::Json::Node& jsonNode) override final;
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ static std::string GetAssetTypeString() { return "kifs"; }
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final { return cu_deviceData; }
         };

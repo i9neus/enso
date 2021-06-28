@@ -3,16 +3,22 @@
 
 namespace Cuda
 {
+    __host__ SimpleMaterialParams::SimpleMaterialParams(const ::Json::Node& node, const uint flags) :
+        SimpleMaterialParams()
+    {
+        FromJson(node, ::Json::kRequiredWarn);
+    }
+    
     __host__ void SimpleMaterialParams::ToJson(::Json::Node& node) const
     {
         node.AddArray("albedo", std::vector<float>({ albedo.x, albedo.y, albedo.z }));
         node.AddArray("incandescence", std::vector<float>({ incandescence.x, incandescence.y, incandescence.z }));
     }
 
-    __host__ void SimpleMaterialParams::FromJson(const ::Json::Node& node)
+    __host__ void SimpleMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("albedo", albedo, true);
-        node.GetVector("incandescence", incandescence, true);
+        node.GetVector("albedo", albedo, flags);
+        node.GetVector("incandescence", incandescence, flags);
     }
     
     __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -36,7 +42,7 @@ namespace Cuda
 
     __host__ AssetHandle<Host::RenderObject> Host::SimpleMaterial::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
-        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+        if (expectedType != AssetType::kMaterial) { return AssetHandle<Host::RenderObject>(); }
 
         return AssetHandle<Host::RenderObject>(new Host::SimpleMaterial(json), id);
     }
@@ -45,7 +51,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
-        FromJson(node);
+        FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::SimpleMaterial::OnDestroyAsset()
@@ -53,13 +59,9 @@ namespace Cuda
         DestroyOnDevice(&cu_deviceData);
     }
 
-    __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode)
+    __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("material", true);
-        if (childNode)
-        {
-            SyncParameters(cu_deviceData, SimpleMaterialParams(childNode));
-        }
+        SynchroniseObjects(cu_deviceData, SimpleMaterialParams(parentNode, flags));
     }
 }
     
