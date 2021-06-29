@@ -155,7 +155,7 @@ namespace Cuda
 	template<typename T, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<T, HostType, DeviceType>::OnDestroyAsset()
 	{
-		DestroyOnDevice(&cu_deviceData);
+		DestroyOnDevice(cu_deviceData);
 		SafeFreeDeviceMemory(&m_hostData.cu_data);
 	}
 }

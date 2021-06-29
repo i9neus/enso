@@ -99,7 +99,7 @@ namespace Cuda
 
     __host__ void Host::QuadLight::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)

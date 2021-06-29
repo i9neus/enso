@@ -339,7 +339,7 @@ namespace Cuda
 
     __host__ void Host::KIFS::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::KIFS::FromJson(const ::Json::Node& parentNode, const uint flags)

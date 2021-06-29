@@ -42,7 +42,7 @@ namespace Cuda
 		AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
 		const size_t arraySize = sizeof(T) * numElements;
 
-		std::printf("Allocated %i bytes of GPU memory (%i elements)\n", arraySize, numElements);
+		Log::System("Allocated %i bytes of GPU memory (%i elements)\n", arraySize, numElements);
 
 		IsOk(cudaMalloc((void**)deviceObject, arraySize));
 	}
@@ -136,14 +136,13 @@ namespace Cuda
 	}
 
 	template<typename T>
-	__host__ inline void DestroyOnDevice(T** cu_data)
+	__host__ inline void DestroyOnDevice(T*& cu_data)
 	{
-		Assert(cu_data != nullptr);
-		if (*cu_data == nullptr) { return; }
+		if (cu_data == nullptr) { return; }
 		
-		KernelDestroyDeviceInstance << < 1, 1 >> > (*cu_data);		
+		KernelDestroyDeviceInstance << < 1, 1 >> > (cu_data);		
 		IsOk(cudaDeviceSynchronize());
 
-		*cu_data = nullptr;
+		cu_data = nullptr;
 	}
 }

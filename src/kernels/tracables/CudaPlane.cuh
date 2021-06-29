@@ -27,8 +27,8 @@ namespace Cuda
             PlaneParams m_params;
 
         public:
-            __device__ Plane() = default;
-            __device__ ~Plane() = default;
+            __device__ Plane() {}
+            __device__ ~Plane() {}
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
             __device__ void Synchronise(const PlaneParams& params)

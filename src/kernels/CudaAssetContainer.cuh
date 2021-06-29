@@ -121,7 +121,7 @@ namespace Cuda
 
 			__host__ void Destroy()
 			{
-				DestroyOnDevice(&cu_deviceData);
+				DestroyOnDevice(cu_deviceData);
 				SafeFreeDeviceMemory(&m_deviceObjects.cu_data);
 			}
 

@@ -74,7 +74,7 @@ namespace Cuda
 	template<typename T>
 	__host__ void Host::Image<T>::OnDestroyAsset()
 	{		
-		DestroyOnDevice(&cu_deviceData);
+		DestroyOnDevice(cu_deviceData);
 		SafeFreeDeviceMemory(&m_hostData.cu_data);
 	}
 

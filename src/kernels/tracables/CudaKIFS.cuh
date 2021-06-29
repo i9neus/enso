@@ -73,7 +73,7 @@ namespace Cuda
 
         public:
             __device__ KIFS();
-            __device__ ~KIFS() = default;
+            __device__ ~KIFS() {}
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
             __device__ virtual void InitialiseKernelConstantData() const override final;

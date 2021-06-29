@@ -49,24 +49,9 @@ Log::Snapshot Log::GetMessageState()
 
 void Log::NL() { Singleton().WriteImpl("\n", kFgDefault, kLogNormal); }
 
-void Log::Write(const std::string& message)
+void Log::StaticWrite(const std::string& message, const uint32_t colour, const LogLevel level)
 {
-    Singleton().WriteImpl(message, kFgDefault, kLogNormal);
-}
-
-void Log::Debug(const std::string& message)
-{
-    Singleton().WriteImpl(message, kFgGreen, kLogDebug);
-}
-
-void Log::Warning(const std::string& message)
-{
-    Singleton().WriteImpl(message, kFgYellow, kLogWarning);
-}
-
-void Log::Error(const std::string& message)
-{
-    Singleton().WriteImpl(message, kBgRed, kLogError);
+    Singleton().WriteImpl(message, colour, level);
 }
 
 Log& Log::Singleton()

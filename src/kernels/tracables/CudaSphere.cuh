@@ -17,8 +17,9 @@ namespace Cuda
             BidirectionalTransform m_transform;
 
         public:
-            __device__ Sphere() = default;
-            __device__ ~Sphere() = default;
+            __device__ Sphere() {}
+            __device__ virtual ~Sphere() {}
+
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final; 
             __device__ void Synchronise(const BidirectionalTransform& transform)
             {

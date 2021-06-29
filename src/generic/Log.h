@@ -6,6 +6,7 @@
 #include <mutex>
 #include <array>
 #include "Constants.h"
+#include "thirdparty/tinyformat/tinyformat.h"
 
 enum LogLevel : uint32_t { kLogDebug = 0, kLogNormal, kLogWarning, kLogError, kLogCritical, kNumLogLevels };
 
@@ -84,29 +85,24 @@ public:
     static constexpr int32_t kMaxIndent = 5;
     static constexpr int32_t kIndentChars = 3;
 
-    static void NL();
+    static void NL();    
 
-    template<typename... Args>
-    static inline void Write(const std::string& message, const Args&... args) { Log::Write(tfm::format(message.c_str(), args...)); }
-    static void Write(const std::string& message);
+#define LOG_TYPE(Name, Colour, Type) template<typename... Args> \
+                                     static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(tfm::format(message.c_str(), args...), Colour, Type); } \
+                                     static void Name(const std::string& message) { Log::StaticWrite(message, Colour, Type); }
 
-    template<typename... Args>
-    static inline void Debug(const std::string& message, const Args&... args)  { Log::Debug(tfm::format(message.c_str(), args...)); }
-    static void Debug(const std::string& message);
-
-    template<typename... Args>
-    static inline void Warning(const std::string& message, const Args&... args) { Log::Warning(tfm::format(message.c_str(), args...)); }
-    static void Warning(const std::string& message);
-
-    template<typename... Args>
-    static inline void Error(const std::string& message, const Args&... args) { Log::Error(tfm::format(message.c_str(), args...)); }
-    static void Error(const std::string& message);
+    LOG_TYPE(Write, kFgDefault, kLogNormal)
+    LOG_TYPE(Debug, kFgGreen, kLogDebug)
+    LOG_TYPE(Warning, kFgYellow, kLogWarning)
+    LOG_TYPE(Error, kBgRed, kLogError)
+    LOG_TYPE(System, kFgTeal, kLogDebug)
 
     static Snapshot GetMessageState();
 
 private:
     static Log& Singleton();
 
+    static void StaticWrite(const std::string& formatted, const uint32_t colour, const LogLevel level);
     void WriteImpl(const std::string& formatted, const uint32_t colour, const LogLevel level);
 
     std::ostream&       m_logTerminalOut;

@@ -61,8 +61,8 @@ namespace Cuda
             friend Host::SimpleMaterial;
 
         public:
-            __host__ __device__ SimpleMaterial() : m_params() {}
-            ~SimpleMaterial() = default;
+            __device__ SimpleMaterial() : m_params() {}
+            __device__ ~SimpleMaterial() {}
 
             SimpleMaterialParams m_params;
 
@@ -82,7 +82,6 @@ namespace Cuda
             Device::SimpleMaterial*     cu_deviceData;
 
             std::string                 m_bxdfId;
-            AssetHandle<Host::BxDF>     m_bxdfAsset;
 
         public:
             __host__ SimpleMaterial(const ::Json::Node& jsonNode);
@@ -93,7 +92,6 @@ namespace Cuda
             __host__ virtual void                       OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void                       Bind(RenderObjectContainer& objectContainer) override final;
-            __host__ virtual void                       Synchronise();
             __host__ virtual Device::SimpleMaterial*    GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "simple"; }
         };

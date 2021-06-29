@@ -61,7 +61,7 @@ namespace Cuda
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)

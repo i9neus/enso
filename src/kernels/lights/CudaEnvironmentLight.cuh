@@ -32,7 +32,7 @@ namespace Cuda
 
         public:
             __device__ EnvironmentLight();
-            __device__ ~EnvironmentLight() = default;
+            __device__ ~EnvironmentLight() {}
 
             __device__ void Prepare();
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;

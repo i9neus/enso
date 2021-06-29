@@ -16,10 +16,11 @@ namespace Cuda
         public:
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const = 0;
             __device__ virtual void InitialiseKernelConstantData() const {};
+            
+            __device__ virtual ~Tracable() = default;
 
         protected:
             __device__ Tracable() = default;
-            __device__ virtual ~Tracable() = default;
         };
     }
 

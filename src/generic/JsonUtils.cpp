@@ -14,6 +14,7 @@ namespace Json
         AssertMsg(!path.empty(), "Must specify a path to a node.");
         AssertMsg(m_node->IsObject(), "Parent node is not an object.");
 
+
         Lexer lex(path);
         std::string parentID = "[root node]";
         rapidjson::Value* node = m_node;

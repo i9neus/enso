@@ -66,6 +66,6 @@ namespace Cuda
 
     __host__ void Host::Sphere::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 }

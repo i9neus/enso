@@ -53,7 +53,7 @@ namespace Cuda
 
     __host__ void Host::Plane::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)

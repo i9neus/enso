@@ -102,10 +102,11 @@ namespace Cuda
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
 
-			AssetHandle<Host::PerspectiveCamera>				m_hostPerspectiveCamera;
+			AssetHandle<Host::PerspectiveCamera>				m_cameraAsset;
 
 			dim3                    m_block, m_grid;
 			bool					m_isDirty;
+			std::string				m_cameraId;
 
 		public:
 			__host__ WavefrontTracer(const ::Json::Node& node);
@@ -117,7 +118,6 @@ namespace Cuda
 			__host__ virtual void OnDestroyAsset() override final;
 			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
 			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
-			__host__ virtual void Synchronise() override final;
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx);

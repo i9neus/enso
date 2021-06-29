@@ -113,13 +113,6 @@ void RenderManager::Build()
 		m_renderObjects->Bind();
 	}
 	Log::Write("Done!\n");
-
-	// Sync everything with the Cuda device
-	{
-		Log::Indent indent("Synchronising scene objects with device...\n");
-		m_renderObjects->Synchronise();
-	}
-	Log::Write("Done!\n");
 }
 
 void RenderManager::Destroy()

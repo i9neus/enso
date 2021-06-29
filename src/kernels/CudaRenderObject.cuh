@@ -15,10 +15,8 @@ namespace Cuda
         class RenderObject : public Device::Asset
         {
         public:
-            RenderObject() = default;
-
-        protected:
-            __device__ ~RenderObject() = default;
+            __device__ RenderObject() {}
+            __device__ virtual ~RenderObject() {}
         };
     }
 
@@ -79,9 +77,29 @@ namespace Cuda
 
         __host__ virtual void OnDestroyAsset() override final
         {
-            for (auto& object : m_objectMap)
+            constexpr int kMaxAttempts = 10;
+            for (int i = 0; !m_objectMap.empty() && i < kMaxAttempts; i++)
             {
-                object.second.DestroyAsset();
+                for (ObjectMap::iterator it = m_objectMap.begin(); it != m_objectMap.end();)
+                {                    
+                    uint flags = 0;
+                    if (i == kMaxAttempts - 1)
+                    {
+                        flags |= kAssetForceDestroy | kAssetAssertOnError;
+                    }
+                    
+                    // Try to delete the asset
+                    if (!it->second.DestroyAsset(flags))
+                    {
+                        ++it;
+                    }
+                    else
+                    {
+                        auto nextIt = std::next(it);
+                        m_objectMap.erase(it);
+                        it = nextIt;
+                    }
+                }
             }
         }
 

@@ -79,6 +79,9 @@ namespace Cuda
     
     __host__ void RenderObjectFactory::Instantiate(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
     {        
+        AssetHandle<Cuda::Host::Plane> plane("test", rootNode);
+        plane.DestroyAsset();
+        
         Assert(renderObjects);
 
         {

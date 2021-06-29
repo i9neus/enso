@@ -73,6 +73,8 @@ namespace Cuda
         std::mutex                                                      m_mutex;
     };
 
+    enum AssetHandleFlags : uint { kAssetForceDestroy = 1, kAssetAssertOnError = 2 };
+
     template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
     class AssetHandle
     {
@@ -119,21 +121,30 @@ namespace Cuda
             return AssetHandle<NewType>(std::dynamic_pointer_cast<NewType>(m_ptr));
         }
 
-        void DestroyAsset()
+        bool DestroyAsset(const uint flags = 0)
         {
-            if (!m_ptr) { return; }
+            if (!m_ptr) { return true; }
             
-            AssertMsgFmt(m_ptr.use_count() == 1, "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
-                m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+            // If the refcount is greater than 1, the object is still in use elsewhere
+            if (m_ptr.use_count() > 1 && !(flags & kAssetForceDestroy))
+            {
+                AssertMsgFmt(!(flags & kAssetAssertOnError), "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
+                                 m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+                return false;
+            }
 
-            Log::Debug("Destroyed '%s' with %i counts remaining.\n", m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+            const std::string assetId = m_ptr->GetAssetID();
 
             m_ptr->OnDestroyAsset();
             GlobalAssetRegistry::Get().Deregister(m_ptr);
             m_ptr.reset();
+
+            Log::Debug("Destroyed '%s'.\n", assetId.c_str());
+
+            return true;
         }
 
-        inline operator bool() const { return m_ptr; }
+        inline operator bool() const { return bool(m_ptr); }
         inline bool operator!() const { return !m_ptr; }
 
         inline T* operator->() { return &operator*(); }

@@ -179,10 +179,9 @@ namespace Cuda
 		m_hostAccumBuffer.DestroyAsset();
 		m_hostTracables.DestroyAsset();
 		m_hostLights.DestroyAsset();
-		
-		m_hostPerspectiveCamera.DestroyAsset();
+	
 
-		DestroyOnDevice(&cu_deviceData);
+		DestroyOnDevice(cu_deviceData);
 	}
 
 	__host__ AssetHandle<Host::RenderObject> Host::WavefrontTracer::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -218,22 +217,6 @@ namespace Cuda
 		OnDestroyAsset(); 
 	}
 
-	__host__ void Host::WavefrontTracer::Synchronise()
-	{
-		// Synchronise the container objects managed by this instance
-		m_hostTracables->Synchronise();
-		m_hostLights->Synchronise();
-
-		// Synchronise the wavefront tracer structure on the device
-		m_hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
-		m_hostObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
-		m_hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
-
-		SynchroniseObjects(cu_deviceData, m_hostObjects);
-	}
-
 	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
 	{
 		for (auto& object : sceneObjects)
@@ -245,18 +228,34 @@ namespace Cuda
 			case AssetType::kLight:
 				m_hostLights->Push(object.DynamicCast<Light>()); break;
 			}
+		}		
+
+		// Synchronise the container objects managed by this instance
+		m_hostTracables->Synchronise();
+		m_hostLights->Synchronise();
+
+		// Synchronise the wavefront tracer structure on the device
+		m_hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+		m_hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+		m_hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
+		m_hostObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
+		m_hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
+
+		m_cameraAsset = GetAssetHandleForBinding<Host::WavefrontTracer, Host::PerspectiveCamera>(sceneObjects, m_cameraId);
+		if (m_cameraAsset)
+		{
+			m_hostObjects.cu_camera = m_cameraAsset->GetDeviceInstance();
 		}
+
+		SynchroniseObjects(cu_deviceData, m_hostObjects);
+		Log::Write("Bound tracables and lights to wavefront tracer '%s'.\n", GetAssetID());
 	}
 
-	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& jsonNode, const uint flags)
-	{
-		/*m_hostTracables->OnJson(jsonNode);
-		m_hostMaterials->OnJson(jsonNode);
-		m_hostLights->OnJson(jsonNode);
-		m_hostBxDFs->OnJson(jsonNode);
+	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
+	{		
+		parentNode.GetValue("camera", m_cameraId, flags);
 
-		m_hostPerspectiveCamera->OnJson(jsonNode);
-		m_isDirty = true;*/
+		m_isDirty = true;
 	}
 
 	__global__ void KernelPreFrame(Device::WavefrontTracer* tracer, const float wallTime, const int frameIdx)

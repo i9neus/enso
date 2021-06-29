@@ -195,7 +195,7 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
     {
-        DestroyOnDevice(&cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)

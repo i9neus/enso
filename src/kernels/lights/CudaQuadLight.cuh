@@ -39,7 +39,7 @@ namespace Cuda
 
         public:
             __device__ QuadLight();
-            __device__ ~QuadLight() = default;
+            __device__ virtual ~QuadLight() {}
 
             __device__ void Prepare(); 
             __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;
