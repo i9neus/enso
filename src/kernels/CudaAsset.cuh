@@ -81,7 +81,9 @@ namespace Cuda
 
     public:
         AssetHandle() = default;
+        AssetHandle(const std::nullptr_t&) {}
         ~AssetHandle() = default;
+
 
         explicit AssetHandle(std::shared_ptr<T>& ptr) : m_ptr(ptr) {}
 
@@ -113,11 +115,8 @@ namespace Cuda
         AssetHandle<NewType> DynamicCast()
         {
             AssertMsg(m_ptr, "Invalid asset handle");
-            
-            std::shared_ptr<NewType> downcast = std::dynamic_pointer_cast<NewType>(m_ptr);
-            AssertMsgFmt(downcast, "Dynamic cast to %s for asset '%s' failed.", NewType::GetAssetTypeString().c_str(), m_ptr->GetAssetID().c_str());
 
-            return AssetHandle<NewType>(downcast);
+            return AssetHandle<NewType>(std::dynamic_pointer_cast<NewType>(m_ptr));
         }
 
         void DestroyAsset()

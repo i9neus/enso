@@ -19,18 +19,28 @@ namespace Cuda
 		class AssetContainer : public Device::Asset, public AssetTags<Host::AssetContainer<ElementType>, Device::AssetContainer<ElementType>>
 		{
 			template<typename T, typename S> friend class Host::AssetContainer;
+		public:
+			struct Objects
+			{
+				__device__ Objects() : cu_data(nullptr), numElements(0) {}
+				__device__ Objects(ElementType** data_, uint numElements_) : cu_data(data_), numElements(numElements_) {}
+				ElementType**	cu_data;
+				uint			numElements;
+			};
 
 		protected:
-			ElementType**		    cu_data;
-			uint					m_numElements;
+			Objects		m_objects;
 
 		public:
-			__host__ AssetContainer() : cu_data(nullptr), m_numElements(0) {}
-			__device__ AssetContainer(ElementType** data, uint numElements) : cu_data(data), m_numElements(numElements) {	}
-
-			__device__ __forceinline__ uint Size() const { return m_numElements; }
-			__device__ __forceinline__ ElementType* operator[](const int idx) { return cu_data[idx]; }
-			__device__ __forceinline__ const ElementType* operator[](const int idx) const { return cu_data[idx]; }
+			__device__ AssetContainer() = default;
+			__device__ __forceinline__ uint Size() const { return m_objects.numElements; }
+			__device__ __forceinline__ ElementType* operator[](const int idx) { return m_objects.cu_data[idx]; }
+			__device__ __forceinline__ const ElementType* operator[](const int idx) const { return m_objects.cu_data[idx]; }
+			
+			__device__ void Synchronise(const Objects& objects) 
+			{ 
+				m_objects = objects; 
+			}
 		};
 	}
 
@@ -56,13 +66,16 @@ namespace Cuda
 			};
 
 		private:
-			Device::AssetContainer<typename ElementType::DeviceVariant>*	cu_deviceData;
-			Device::AssetContainer<typename ElementType::DeviceVariant>		m_hostData;
+			Device::AssetContainer<typename ElementType::DeviceVariant>*				cu_deviceData;
+			typename Device::AssetContainer<typename ElementType::DeviceVariant>::Objects		m_deviceObjects;
 
 			std::map<std::string, AssetHandle<ElementType>>					m_assetMap;
 
 		public:
-			__host__ AssetContainer() : cu_deviceData(nullptr) {}
+			__host__ AssetContainer() : cu_deviceData(nullptr) 
+			{
+				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
+			}
 
 			__host__ AssetHandle<ElementType> Find(const std::string& id)
 			{
@@ -80,28 +93,36 @@ namespace Cuda
 			__host__ virtual void Synchronise() override final
 			{
 				// Clean up first
-				SafeFreeDeviceMemory(&m_hostData.cu_data);
-				SafeFreeDeviceMemory(&cu_deviceData);
+				SafeFreeDeviceMemory(&m_deviceObjects.cu_data);
 
-				if (m_assetMap.empty()) { return; }
-
-				// Create an array of the asset device instances ready to upload to the device
-				std::vector<typename ElementType::DeviceVariant*> hostArray;
-				hostArray.reserve(m_assetMap.size());
-				for(auto& asset : m_assetMap)
+				if (!m_assetMap.empty())
 				{
-					hostArray.push_back(asset.second->GetDeviceInstance());
+					// Create an array of the asset device instances ready to upload to the device
+					std::vector<typename ElementType::DeviceVariant*> hostArray;
+					hostArray.reserve(m_assetMap.size());
+					for (auto& asset : m_assetMap)
+					{
+						hostArray.push_back(asset.second->GetDeviceInstance());
+					}
+
+					// Upload the array of device pointers
+					SafeAllocAndCopyToDeviceMemory(&m_deviceObjects.cu_data, m_assetMap.size(), hostArray.data());
+					m_deviceObjects.numElements = m_assetMap.size();
+				}
+				else
+				{
+					m_deviceObjects.cu_data = nullptr;
+					m_deviceObjects.numElements = 0;
 				}
 
-				SafeAllocAndCopyToDeviceMemory(&m_hostData.cu_data, m_assetMap.size(), hostArray.data());
-
-				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>(m_hostData.cu_data, m_assetMap.size());
+				// Synchronise the object list to the device
+				SynchroniseObjects(cu_deviceData, m_deviceObjects);
 			}
 
 			__host__ void Destroy()
 			{
 				DestroyOnDevice(&cu_deviceData);
-				SafeFreeDeviceMemory(&m_hostData.cu_data);
+				SafeFreeDeviceMemory(&m_deviceObjects.cu_data);
 			}
 
 			__host__ virtual void OnDestroyAsset() override final

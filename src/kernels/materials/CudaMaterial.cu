@@ -1,5 +1,6 @@
 ﻿#include "CudaMaterial.cuh"
 #include "generic/JsonUtils.h" 
+#include "../bxdfs/CudaBxDF.cuh"
 
 namespace Cuda
 {
@@ -60,8 +61,25 @@ namespace Cuda
     }
 
     __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
-    {
+    {        
         SynchroniseObjects(cu_deviceData, SimpleMaterialParams(parentNode, flags));
+
+        parentNode.GetValue("bxdf", m_bxdfId, flags);
+
+        Device::SimpleMaterial test;
+    }
+
+    __host__ void Host::SimpleMaterial::Bind(RenderObjectContainer& objectContainer)
+    {
+        m_bxdfAsset = GetAssetHandleForBinding<Host::Material, Host::BxDF>(objectContainer, m_bxdfId);
+    }
+
+    __host__ void Host::SimpleMaterial::Synchronise()
+    {
+        if (!m_bxdfAsset) { return; }
+
+        // Push the binding to the device
+        SynchroniseObjects(cu_deviceData, m_bxdfAsset->GetDeviceInstance());
     }
 }
     

@@ -7,6 +7,8 @@
 namespace Cuda
 {
     class RenderObjectContainer;
+
+    enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
     
     namespace Device
     {
@@ -25,11 +27,34 @@ namespace Cuda
         class RenderObject : public Host::Asset
         {
         public:
-            __host__ virtual void Bind(RenderObjectContainer& parentObject) {}
+            __host__ virtual void Bind(RenderObjectContainer& objectContainer) {}
 
         protected:
             __host__ RenderObject() = default;
             __host__ virtual ~RenderObject() = default; 
+
+            template<typename ThisType, typename BindType>
+            __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)
+            {
+                // Try to find a handle to the asset
+                AssetHandle<RenderObject> baseAsset = objectContainer.Find(otherId);
+                if (!baseAsset)
+                {
+                    Log::Error("Unable to bind %s '%s' to %s '%s': %s does not exist.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
+                    return nullptr;
+                }
+
+                // Try to downcast it
+                AssetHandle<BindType> downcastAsset = baseAsset.DynamicCast<BindType>();
+                if (!downcastAsset)
+                {
+                    Log::Error("Unable to bind %s '%s' to %s '%s': asset is not the correct type.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
+                    return nullptr;
+                }
+              
+                Log::Write("Bound %s '%s' to %s '%s'.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID());
+                return downcastAsset;
+            }            
         };     
     }  
 
@@ -69,6 +94,12 @@ namespace Cuda
             {
                 object.second->Bind(*this);
             }
+        }
+
+        __host__ AssetHandle<Host::RenderObject> Find(const std::string& id)
+        {
+            auto it = m_objectMap.find(id);
+            return (it == m_objectMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
         }
 
         __host__ virtual void Synchronise() override final

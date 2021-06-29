@@ -12,10 +12,15 @@ namespace Cuda
 
     namespace Device
     {
+        class BxDF;
+        
         class Material : public Device::RenderObject, public AssetTags<Host::Material, Device::Material>
         {
+        protected:
+            const Device::BxDF* cu_bxdf;
+
         public:
-            Material() = default;
+            __device__ Material() : cu_bxdf(nullptr) {}
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const = 0;
         };
@@ -25,11 +30,13 @@ namespace Cuda
     {
         class Material : public Host::RenderObject, public AssetTags<Host::Material, Device::Material>
         {
-        public:
-            Material() = default;
+        protected:
+            __host__ Material() = default;
 
+        public:
             __host__ virtual Device::Material* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kMaterial; }
+            __host__ static std::string GetAssetTypeString() { return "material"; }
         };
     }
 
@@ -61,15 +68,21 @@ namespace Cuda
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const override final;
             __device__ void Synchronise(const SimpleMaterialParams& params) { m_params = params;  }
+            __device__ void Synchronise(const Device::BxDF* bxdf) { cu_bxdf = bxdf; }
         };
     }
 
     namespace Host
     {
+        class BxDF;
+
         class SimpleMaterial : public Host::Material
         {
         private:
-            Device::SimpleMaterial* cu_deviceData;
+            Device::SimpleMaterial*     cu_deviceData;
+
+            std::string                 m_bxdfId;
+            AssetHandle<Host::BxDF>     m_bxdfAsset;
 
         public:
             __host__ SimpleMaterial(const ::Json::Node& jsonNode);
@@ -79,6 +92,8 @@ namespace Cuda
 
             __host__ virtual void                       OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ virtual void                       Bind(RenderObjectContainer& objectContainer) override final;
+            __host__ virtual void                       Synchronise();
             __host__ virtual Device::SimpleMaterial*    GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "simple"; }
         };

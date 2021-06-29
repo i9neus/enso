@@ -114,10 +114,10 @@ void RenderManager::Build()
 	}
 	Log::Write("Done!\n");
 
-	// Bind together to create the scene DAG
+	// Sync everything with the Cuda device
 	{
 		Log::Indent indent("Synchronising scene objects with device...\n");
-		//m_renderObjects->Synchronise();
+		m_renderObjects->Synchronise();
 	}
 	Log::Write("Done!\n");
 }

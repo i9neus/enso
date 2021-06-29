@@ -105,7 +105,7 @@ namespace Cuda
 	}
 
 	template<typename ObjectType, typename ParamsType>
-	__global__ static void KernelSyncObjects(ObjectType* cu_object, const ParamsType* const cu_params)
+	__global__ static void KernelSyncObjects(ObjectType* cu_object, const ParamsType* cu_params)
 	{
 		if (cu_params)
 		{

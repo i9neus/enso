@@ -29,6 +29,7 @@ namespace Cuda
         public:
             __host__ virtual Device::BxDF* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kBxDF; }
+            __host__ static std::string GetAssetTypeString() { return "BxDF"; }
         };
     }
 }
