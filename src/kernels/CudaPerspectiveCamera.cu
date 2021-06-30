@@ -30,7 +30,7 @@ namespace Cuda
     
     __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
+        node.AddArray("pos", std::vector<float>({ position.x, position.y, position.z }));
         node.AddArray("lookAt", std::vector<float>({ lookAt.x, lookAt.y, lookAt.z }));
         node.AddValue("focalPlane", focalPlane);
         node.AddValue("fLength", fLength);
@@ -39,7 +39,7 @@ namespace Cuda
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("position", position, flags);
+        node.GetVector("pos", position, flags);
         node.GetVector("lookAt", lookAt, flags);
         node.GetValue("focalPlane", focalPlane, flags);
         node.GetValue("fLength", fLength, flags);
@@ -58,7 +58,7 @@ namespace Cuda
 
     __device__ Device::PerspectiveCamera::PerspectiveCamera()
     {     
-
+        Prepare();
     }
 
     __device__ void Device::PerspectiveCamera::Prepare()
@@ -200,10 +200,6 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("perspectiveCamera", flags);
-        if (childNode)
-        {
-            SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(childNode));
-        }
+        SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(parentNode));
     }
 }

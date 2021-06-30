@@ -34,11 +34,11 @@ namespace Cuda
         {
             if (asset.second.expired())
             {
-                Log::Warning("  - WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
+                Log::Warning("- WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
                 continue;
             }
 
-            Log::Write("  - '%s' with %i ref counts\n", asset.first.c_str(), asset.second.use_count());
+            Log::Write("- '%s' with %i ref counts\n", asset.first.c_str(), asset.second.use_count());
         }
     }
 

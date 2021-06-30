@@ -7,6 +7,7 @@
 #include "kernels/CudaTests.cuh"
 #include "kernels/CudaCommonIncludes.cuh"
 #include "kernels/CudaRenderObjectFactory.cuh"
+#include "kernels/CudaWavefrontTracer.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
@@ -81,7 +82,7 @@ void RenderManager::Build()
 	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
 	
 	Log::NL();
-	Log::Indent indent("Building render manager...\n");
+	Log::Indent indent("Building render manager...\n", "Build complete!\n");
 	
 	// Load the root config
 	Log::Write("Loading 'config.json'...\n");
@@ -113,27 +114,34 @@ void RenderManager::Build()
 		m_renderObjects->Bind();
 	}
 	Log::Write("Done!\n");
+
+	// Get a handle to the wavefront tracer
+	Log::Write("Attaching to wavefront tracer object...\n");
+	m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();
+	AssertMsg(m_wavefrontTracer, "Unable to find a wavefront tracer instance to attach to.");
 }
 
 void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
 
-	std::printf("Shutting down and destroying %i managed assets:", Cuda::AR().Size());
-	Cuda::AR().Report();
+	Log::Indent("Shutting down...\n");	
 
-	m_threadSignal.store(kHalt);
-	std::printf("Shutting down...\n");
-
+	Log::Write("Halting renderer...\n");
+	m_threadSignal.store(kHalt);	
 	m_managerThread.join();
-	std::printf("Killed threads.\n");
+	Log::Write("Done!\n");	
 	 
-	// Destroy the render objects
-	m_renderObjects.DestroyAsset();
+	{
+		Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
+		Cuda::AR().Report();
 
-	// Destroy assets
-	//m_wavefrontTracer.DestroyAsset();
-	m_compositeImage.DestroyAsset();
+		// Destroy the render objects
+		m_renderObjects.DestroyAsset();
+
+		// Destroy assets
+		m_compositeImage.DestroyAsset();
+	}
 
 	// Destroy events
 	checkCudaErrors(cudaEventDestroy(m_renderEvent));
@@ -281,21 +289,21 @@ void RenderManager::Run()
 		if (m_isDirty && frameIdx >= 2)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			//m_wavefrontTracer->FromJson(m_renderParamsJson);
+			m_wavefrontTracer->FromJson(m_renderParamsJson, Json::kSilent);
 			m_isDirty = false;
-			frameIdx = 0;			
+			frameIdx = 0;
 		}
 		
 		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
 		{
 			std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 
-			//m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+			m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
 
 			frameIdx++;
 		}		 
 
-		//m_wavefrontTracer->Composite(m_compositeImage);
+		m_wavefrontTracer->Composite(m_compositeImage);
 
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));		
 

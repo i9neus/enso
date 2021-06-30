@@ -33,11 +33,6 @@ namespace Cuda
 	{
 		m_wallTime = wallTime;
 		m_frameIdx = frameIdx;
-
-		//auto transform = CreateCompoundTransform(vec3(0.8f, 1.1f, 0.9f) * m_frameIdx / 100.0f);
-		//BidirectionalTransform transform;
-		//m_objects.cu_cornell->SetTransform(transform);
-		//m_objects.cu_sphere->SetTransform(transform);
 	}
 
 	__device__ void Device::WavefrontTracer::SeedRayBuffer(const ivec2& viewportPos) const
@@ -53,20 +48,23 @@ namespace Cuda
 		}
 	}
 
-	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const HitCtx& hitCtx, RenderCtx& renderCtx) const
+	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
 		if (renderCtx.depth >= 1) { return kZero; }
 
 		vec3 albedo, incandescence;
-		//m_objects.cu_simpleMaterial->Evaluate(hitCtx, albedo, incandescence);
+		material.Evaluate(hitCtx, albedo, incandescence);
 		vec2 xi = renderCtx.Rand<2, 3>();
+
+		const BxDF* bxdf = material.GetBoundBxDF();
+		if (!bxdf) { return kPink; }
 
 		// Sample the BRDF
 		//if(xi.x < 0.75f)
 		{			
 			vec3 brdfDir;
 			float brdfPdf;
-			//if (!m_objects.cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf)) { return incandescence; }
+			if (!bxdf->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf)) { return incandescence; }
 
 			// Light evaluation
 			/*if (xi.y < 0.5f)
@@ -114,39 +112,49 @@ namespace Cuda
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
 		vec3 L(0.0f);
-		const ivec2 viewportPos = compressedRay.ViewportPos(); // FIXME: Do an automatic cast				
+		const ivec2 viewportPos = compressedRay.ViewportPos(); // FIXME: Do an automatic cast
+
+		compressedRay.Kill();
+
+		//m_objects.cu_deviceAccumBuffer->At(viewportPos) = vec4(incidentRay.od.d, -1.0f);
+		//return;
 
 		int depth = renderCtx.depth; 
 
 		// INTERSECTION 
 		HitCtx hitCtx;
-		for (int i = 0; i < m_objects.cu_deviceTracables->Size(); i++)
+		auto& tracables = *m_objects.cu_deviceTracables;
+		Device::Tracable* hitObject = nullptr;
+		for (int i = 0; i < tracables.Size(); i++)
 		{
-			(*m_objects.cu_deviceTracables)[i]->Intersect(incidentRay, hitCtx);
+			if (tracables[i]->Intersect(incidentRay, hitCtx))
+			{
+				hitObject = tracables[i];
+			}
 		}		
 
 		// SHADE
-		if (!hitCtx.isValid)
+		if (!hitObject)
 		{
 			L += incidentRay.weight * vec3(1.0f);
 		}
 		else
 		{
-			L += Shade(incidentRay, hitCtx, renderCtx);
+			const Device::Material* hitMaterial = hitObject->GetBoundMaterial();			
+			if (!hitMaterial)
+			{
+				// If no material is bound to this tracable, shade pink to get people's attention
+				L += kPink;
+				return;
+			}
+
+			L += Shade(incidentRay, *hitMaterial, hitCtx, renderCtx);
 		}
 
 		if (renderCtx.emplacedRay.IsAlive())
 		{
 			compressedRay = renderCtx.emplacedRay;
-			//L += compressedRay.od.d * 0.5f + vec3(0.5f);
 		}
-		else
-		{
-			compressedRay.Kill();			
-		}
-
-		//m_objects.cu_deviceAccumBuffer->At(viewportPos) = vec4(hitCtx.hit.p, -1.0f);
-		//return;
 
 		// FIXME: Do an automatic cast
 		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
@@ -219,13 +227,16 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
 	{
+		Log::Indent indent;
 		for (auto& object : sceneObjects)
 		{
 			switch (object->GetAssetType())
 			{
 			case AssetType::kTracable:
+				Log::Debug("Linked tracable '%s' to wavefront tracer.\n", object->GetAssetID());
 				m_hostTracables->Push(object.DynamicCast<Tracable>()); break;			
 			case AssetType::kLight:
+				Log::Debug("Linked light '%s' to wavefront tracer.\n", object->GetAssetID());
 				m_hostLights->Push(object.DynamicCast<Light>()); break;
 			}
 		}		
@@ -281,7 +292,7 @@ namespace Cuda
 
 	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
 	{
-		if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
+		//if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
 
 		tracer->Composite(kKernelPos<ivec2>(), deviceOutputImage);
 	}

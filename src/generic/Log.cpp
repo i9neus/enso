@@ -85,7 +85,9 @@ void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const 
     if (newLine) { formattedStr += '\n'; } // NL
 
     // Lock
-    std::lock_guard<std::mutex> lock(m_logFileMutex);
+    //std::lock_guard<std::mutex> lock(m_logFileMutex);
+
+    //std::printf("\033[%im%s\033[%im\033[%im", colour, formattedStr.c_str(), kFgDefault, kBgDefault);
 
     m_logTerminalOut << "\033[" << colour << "m";
     m_logTerminalOut << formattedStr;

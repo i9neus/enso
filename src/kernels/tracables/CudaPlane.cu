@@ -58,6 +58,8 @@ namespace Cuda
 
     __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
     {
+        Host::Tracable::FromJson(node, flags);
+        
         SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
     }
 }

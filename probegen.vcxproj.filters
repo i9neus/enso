@@ -309,6 +309,9 @@
     <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaMathUtils.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -420,6 +423,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\math\CudaTransform.cu">
       <Filter>kernels\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaTracable.cu">
+      <Filter>kernels\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

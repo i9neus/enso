@@ -444,8 +444,8 @@ void D3DContainer::OnRender()
 
 	m_imgui.UpdateParameters();
 
-	//m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
-	m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
+	m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
+	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 	// Update the frame index.
 	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();

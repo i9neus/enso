@@ -53,7 +53,6 @@ namespace Cuda
      }
 
     __host__  Host::Sphere::Sphere(const ::Json::Node& node)
-        : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
         FromJson(node, ::Json::kRequiredWarn);
@@ -61,6 +60,8 @@ namespace Cuda
 
     __host__ void Host::Sphere::FromJson(const ::Json::Node& node, const uint flags)
     {
+        Host::Tracable::FromJson(node, flags);
+        
         SynchroniseObjects(cu_deviceData, BidirectionalTransform(node, flags));
     }
 

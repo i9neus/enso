@@ -8,7 +8,7 @@
 
 namespace Json
 {        
-    enum RequiredFlags : uint { kNotRequired, kRequiredWarn, kRequiredAssert };
+    enum RequiredFlags : uint { kSilent, kRequiredWarn, kRequiredAssert };
     
     class Node
     {

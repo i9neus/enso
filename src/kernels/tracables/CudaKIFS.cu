@@ -342,8 +342,10 @@ namespace Cuda
         DestroyOnDevice(cu_deviceData);
     }
 
-    __host__ void Host::KIFS::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ void Host::KIFS::FromJson(const ::Json::Node& node, const uint flags)
     {
-        SynchroniseObjects(cu_deviceData, KIFSParams(parentNode, flags));
+        Host::Tracable::FromJson(node, flags);
+        
+        SynchroniseObjects(cu_deviceData, KIFSParams(node, flags));
     }
 }

@@ -23,6 +23,7 @@ namespace Cuda
             __device__ Material() : cu_bxdf(nullptr) {}
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const = 0;
+            __device__ __forceinline__ const Device::BxDF* GetBoundBxDF() const { return cu_bxdf; }
         };
     }
 
@@ -50,8 +51,8 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        vec3 albedo;
-        vec3 incandescence;
+        vec3            albedo;
+        vec3            incandescence;
     };
 
     namespace Device

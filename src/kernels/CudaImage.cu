@@ -25,7 +25,7 @@ namespace Cuda
 	template<typename T>
 	__global__ void KernelCopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, Device::Image<T>* image, cudaSurfaceObject_t cuSurface)
 	{
-		if (*(image->AccessSignal()) != kImageReadLocked) { return; }
+		//if (*(image->AccessSignal()) != kImageReadLocked) { return; }
 
 		unsigned int kx = blockIdx.x * blockDim.x + threadIdx.x;
 		unsigned int ky = blockIdx.y * blockDim.y + threadIdx.y;

@@ -25,7 +25,7 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
 
     Assert(ImGui::ImplDX12_CreateDeviceObjects());
 
-    std::printf("IMGUI successfully initialised!\n");
+    Log::Write("IMGUI successfully initialised!\n");
 }
 
 void IMGUIContainer::Destroy()
@@ -34,7 +34,7 @@ void IMGUIContainer::Destroy()
     
     SafeRelease(m_srvHeap);
 
-    std::printf("Destroyed IMGUI D3D objects.\n");
+    Log::Write("Destroyed IMGUI D3D objects.\n");
 }
 
 void IMGUIContainer::ConstructQuadLightControls(Cuda::QuadLightParams& params)

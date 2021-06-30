@@ -120,6 +120,20 @@ namespace Cuda
             return (it == m_objectMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
         }
 
+        template<typename T>
+        __host__ AssetHandle<T> FindFirstOfType()
+        {
+            for (auto object : m_objectMap)
+            {
+                auto downcast = object.second.DynamicCast<T>();
+                if (downcast)
+                {
+                    return downcast;
+                }
+            }
+            return nullptr;
+        }
+
         __host__ virtual void Synchronise() override final
         {
             for (auto& object : m_objectMap)
