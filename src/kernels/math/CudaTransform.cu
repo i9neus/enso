@@ -35,4 +35,9 @@ namespace Cuda
     {
         FromJson(node, flags);
     }
+
+    __host__ bool BidirectionalTransform::operator==(const BidirectionalTransform& rhs) const
+    {
+        return trans == rhs.trans && rot == rhs.rot && scale == rhs.scale;
+    }
 }

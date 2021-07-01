@@ -14,6 +14,12 @@ namespace Cuda
         node.GetValue("bounded", isBounded, flags);
         transform.FromJson(node, ::Json::kRequiredWarn);
     }
+
+    __host__ bool PlaneParams::operator==(const PlaneParams& rhs) const
+    {
+        return isBounded == rhs.isBounded &&
+            transform == rhs.transform;
+    }
     
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 

@@ -30,6 +30,15 @@ namespace Cuda
         node.GetValue("intensity", intensity, flags);
         node.GetVector("colour", colour, flags);
     }
+
+    __host__ bool QuadLightParams::operator==(const QuadLightParams& rhs) const
+    {
+        return position == rhs.position &&
+            orientation == rhs.orientation &&
+            scale == rhs.scale &&
+            intensity == rhs.intensity &&
+            colour == rhs.colour;
+    }
     
     __device__ Device::QuadLight::QuadLight()
     {

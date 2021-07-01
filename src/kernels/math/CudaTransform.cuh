@@ -51,6 +51,7 @@ namespace Cuda
 
 		__host__ void FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
+		__host__ bool operator==(const BidirectionalTransform&) const;
 
 		__host__ __device__ BidirectionalTransform()
 		{

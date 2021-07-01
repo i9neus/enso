@@ -72,6 +72,16 @@ namespace Cuda
         node.GetValue("faceMask", faceMask, flags);
     }
 
+    __host__ bool KIFSParams::operator==(const KIFSParams& rhs) const
+    {
+        return rotate == rhs.rotate &&
+            scale == rhs.scale &&
+            vertScale == rhs.vertScale &&
+            crustThickness == rhs.crustThickness &&
+            numIterations == rhs.numIterations &&
+            faceMask == rhs.faceMask;
+    }
+
     __device__ void Device::KIFS::Prepare()
     {
         m_kernelConstantData.numIterations = m_params.numIterations;

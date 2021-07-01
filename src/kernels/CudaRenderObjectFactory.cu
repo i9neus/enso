@@ -21,7 +21,8 @@
 
 namespace Cuda
 {        
-    RenderObjectFactory::RenderObjectFactory()
+    RenderObjectFactory::RenderObjectFactory(cudaStream_t hostStream) :
+        m_hostStream(hostStream) 
     {
         m_instantiators[Host::Sphere::GetAssetTypeString()] = Host::Sphere::Instantiate;
         m_instantiators[Host::KIFS::GetAssetTypeString()] = Host::KIFS::Instantiate;
@@ -47,6 +48,9 @@ namespace Cuda
             AssetHandle<Host::RenderObject> newObject;
             std::string newId = it.Name();
             ::Json::Node childNode = *it;
+
+            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }
+
             std::string newClass;
             if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
 
@@ -69,9 +73,9 @@ namespace Cuda
                 }
 
                 newObject = (instantiator->second)(newId, expectedType, childNode);
-
                 AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.\n", newClass.c_str());
 
+                newObject->SetHostStream(m_hostStream);
                 renderObjects->Emplace(newObject);
             }
         }

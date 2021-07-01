@@ -42,6 +42,12 @@ namespace Cuda
         node.GetVector("albedo", albedo, flags);
         node.GetVector("incandescence", incandescence, flags);
     }
+
+    __host__ bool SimpleMaterialParams::operator==(const SimpleMaterialParams& rhs) const
+    {
+        return albedo == rhs.albedo &&
+            incandescence == rhs.incandescence;
+    }
     
     __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
     {

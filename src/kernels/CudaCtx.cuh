@@ -10,28 +10,26 @@
 namespace Cuda
 {
 	struct RenderCtx
-	{
-		__device__ RenderCtx(const ivec2& viewPos, const ivec2& viewDims, const float& wall, const int& sample, const uint& depth_) :
-			viewportPos(viewPos),
+	{		
+		__device__ __forceinline__ RenderCtx(CompressedRay& compressed, const ivec2& viewDims) :
+			emplacedRay(compressed),
+			viewportPos(compressed.ViewportPos()),
 			viewportDims(viewDims),
-			wallTime(wall),
-			sampleIdx(sample),
-			haltonSeed(HashOf(uint(depth) + 9871251u, uint(viewPos.x), uint(viewPos.y))),
-			depth(depth_),
+			sampleIdx(compressed.sampleIdx),
+			haltonSeed(HashOf(uint(depth) + 9871251u, uint(viewportPos.x), uint(viewportPos.y))),
+			depth(compressed.depth),
 			pcg(HashCombine(HashOf(uint(sampleIdx)), haltonSeed))
 		{
-			ResetRay();
 		}
 
-		const ivec2		viewportPos;
-		const ivec2& viewportDims;
-		const uchar     depth;
-		const float		wallTime;
-		const int		sampleIdx;
+		ivec2			viewportPos;
+		const ivec2&	viewportDims;
+		uchar			depth;
+		int				sampleIdx;
 		const uint		haltonSeed;
 		PCG				pcg;
 
-		CompressedRay  emplacedRay;
+		CompressedRay&  emplacedRay;
 
 #ifdef kPNGSampler
 		__device__ __forceinline__ vec4 Rand4() { return pcg.Rand(); }
@@ -70,8 +68,6 @@ namespace Cuda
 			emplacedRay.pdf = pdf;
 			emplacedRay.lambda = lambda;
 			emplacedRay.flags = flags;
-			emplacedRay.viewport.x = viewportPos.x;
-			emplacedRay.viewport.y = viewportPos.y;
 			emplacedRay.depth = depth + 1;
 			emplacedRay.sampleIdx = sampleIdx;
 

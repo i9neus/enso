@@ -102,7 +102,7 @@ void RenderManager::Build()
 	{		
 		Log::Indent indent("Creating scene objects...\n");
 		
-		Cuda::RenderObjectFactory objectFactory;
+		Cuda::RenderObjectFactory objectFactory(m_renderStream);
 		objectFactory.Instantiate(m_sceneJson, m_renderObjects);
 	}
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;

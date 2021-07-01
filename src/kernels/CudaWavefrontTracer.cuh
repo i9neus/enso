@@ -18,13 +18,15 @@ namespace Cuda
 
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
 
-	struct WaverfrontTracerParams : public AssetParams
+	struct WavefrontTracerParams : public AssetParams
 	{
-		__host__ __device__ WaverfrontTracerParams() {}
-		__host__ WaverfrontTracerParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
+		__host__ __device__ WavefrontTracerParams() {}
+		__host__ WavefrontTracerParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+		bool operator==(const WavefrontTracerParams&) const { return true; }
 	};
 	
 	namespace Device
@@ -59,7 +61,7 @@ namespace Cuda
 
 		protected:			
 			Objects							m_objects;
-			WaverfrontTracerParams          m_params;
+			WavefrontTracerParams          m_params;
 
 			float							m_wallTime;
 			int								m_frameIdx;
@@ -83,7 +85,7 @@ namespace Cuda
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
 			__device__ void Synchronise(const Objects& objects);
-			__device__ void Synchronise(const WaverfrontTracerParams& params);
+			__device__ void Synchronise(const WavefrontTracerParams& params);
 
 		};
 	}

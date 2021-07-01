@@ -21,6 +21,12 @@ namespace Cuda
         node.GetVector("colour", colour, flags);
     }
 
+    __host__ bool EnvironmentLightParams::operator==(const EnvironmentLightParams& rhs) const
+    {
+        return intensity == rhs.intensity &&
+            colour == rhs.colour;
+    }
+
     __device__ Device::EnvironmentLight::EnvironmentLight()
     {
         m_emitterRadiance = vec3(1.0f);

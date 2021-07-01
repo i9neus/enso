@@ -23,6 +23,8 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        bool operator==(const KIFSParams&) const;
+
         vec3    rotate;
         vec2    scale;
 

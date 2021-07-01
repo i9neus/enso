@@ -18,6 +18,7 @@ namespace Cuda
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+		__host__ bool operator==(const PerspectiveCameraParams&) const;
 		
 		vec3 position;
 		vec3 lookAt;
@@ -32,7 +33,7 @@ namespace Cuda
 		{
 		public:
 			__device__ PerspectiveCamera();
-			__device__ void CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const;
+			__device__ void CreateRay(RenderCtx& renderCtx) const;
 			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
 				m_params = params; 

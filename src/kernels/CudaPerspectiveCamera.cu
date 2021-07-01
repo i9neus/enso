@@ -45,6 +45,15 @@ namespace Cuda
         node.GetValue("fLength", fLength, flags);
         node.GetValue("fStop", fStop, flags);
     }
+
+    __host__ bool PerspectiveCameraParams::operator==(const PerspectiveCameraParams& rhs) const
+    {
+        return position == rhs.position &&
+            lookAt == rhs.lookAt &&
+            focalPlane == rhs.focalPlane &&
+            fLength == rhs.fLength &&
+            fStop == rhs.fStop;
+    }
     
     // Returns the polar distance r to the perimeter of an n-sided polygon
     __device__ __forceinline__ float Ngon(float phi)
@@ -89,7 +98,7 @@ namespace Cuda
         m_d2 = m_focalDistance - m_d1;
     }
     
-    __device__ void Device::PerspectiveCamera::CreateRay(CompressedRay& newRay, RenderCtx& renderCtx) const
+    __device__ void Device::PerspectiveCamera::CreateRay(RenderCtx& renderCtx) const
     {         
         __shared__ bool isInited;
         __shared__ mat3 basis;
@@ -166,6 +175,7 @@ namespace Cuda
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;
 
         // Assemble the ray
+        auto& newRay = renderCtx.emplacedRay;
         newRay.od.o = basis * vec3(lensPos, d1);
         newRay.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - newRay.od.o);
         newRay.od.o += cameraPos;

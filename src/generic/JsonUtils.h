@@ -124,6 +124,13 @@ namespace Json
             return Node(&newNode, *this);
         }
 
+        bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const
+        {
+            bool value = defaultValue;
+            GetValue(name, value, flags);
+            return value;
+        }
+
         template<typename T> 
         bool GetValue(const std::string& name, T& value, const uint flags) const
         {

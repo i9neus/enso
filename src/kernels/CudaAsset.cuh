@@ -19,12 +19,16 @@ namespace Cuda
 
     enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight, kCamera, kIntegrator };
 
-    struct AssetParams
+    struct AssetParams {};
+
+    struct NullParams
     {
-        __host__ __device__ AssetParams() {}
+        __host__ __device__ NullParams() {}
 
         __host__ void ToJson(Json::Node&) const {}
         __host__ void FromJson(const Json::Node&, const uint) {}
+
+        bool operator==(const NullParams&) const { return true; }
     };
     
     namespace Device

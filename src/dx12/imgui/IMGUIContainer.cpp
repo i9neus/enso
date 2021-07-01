@@ -30,7 +30,7 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
 
 void IMGUIContainer::Build()
 {
-    Log::Indent indent("Building IMGUI components...\n");
+    Log::Indent indent("Building IMGUI components...\n", "Done!\n");
     m_shelves.clear();
 
     const Json::Document& json = m_cudaRenderer.GetSceneJSON();
@@ -58,7 +58,7 @@ void IMGUIContainer::UpdateParameters()
 
         m_cudaRenderer.OnJson(shelf->GetDAGPath(), newJson);
 
-        Log::Debug("Updated!\n");
+        Log::Debug("Updated! %s, %s\n", shelf->GetID(), newJson);
         return;
     }
 }

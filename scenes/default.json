@@ -38,7 +38,7 @@
     },
     "tracable_kifs":
     {
-      "enabled": true,
+      "enabled": false,
       "class": "kifs",
       "material": "material_kifs",
       "transform" : 

@@ -24,12 +24,12 @@
 
 namespace Cuda
 {
-	__host__ void WaverfrontTracerParams::ToJson(::Json::Node& node) const
+	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
 
 	}
 
-	__host__ void WaverfrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
+	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
 
 	}
@@ -39,7 +39,7 @@ namespace Cuda
 		m_objects = objects;
 	}
 
-	__device__ void Device::WavefrontTracer::Synchronise(const WaverfrontTracerParams& params)
+	__device__ void Device::WavefrontTracer::Synchronise(const WavefrontTracerParams& params)
 	{
 		m_params = params;
 	}
@@ -58,8 +58,12 @@ namespace Cuda
 
 		if (!compressedRay.IsAlive())
 		{
-			RenderCtx renderCtx(viewportPos, m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx + 1, 0);
-			m_objects.cu_camera->CreateRay(compressedRay, renderCtx);
+			compressedRay.viewport.x = viewportPos.x;
+			compressedRay.viewport.y = viewportPos.y;
+			compressedRay.sampleIdx = compressedRay.sampleIdx + 1;
+
+			RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
+			m_objects.cu_camera->CreateRay(renderCtx);
 		}
 	}
 
@@ -125,16 +129,12 @@ namespace Cuda
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
-		RenderCtx renderCtx(compressedRay.ViewportPos(), m_objects.viewportDims, m_wallTime, compressedRay.sampleIdx, compressedRay.depth);
-		vec3 L(0.0f);
-		const ivec2 viewportPos = compressedRay.ViewportPos(); // FIXME: Do an automatic cast
+		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 
-		compressedRay.Kill();
-
-		//m_objects.cu_deviceAccumBuffer->At(viewportPos) = vec4(incidentRay.od.d, -1.0f);
+		compressedRay.Reset();
+		
+		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
 		//return;
-
-		int depth = renderCtx.depth; 
 
 		// INTERSECTION 
 		HitCtx hitCtx;
@@ -149,6 +149,7 @@ namespace Cuda
 		}		
 
 		// SHADE
+		vec3 L(0.0f);
 		if (!hitObject)
 		{
 			L += incidentRay.weight * vec3(1.0f);
@@ -160,10 +161,11 @@ namespace Cuda
 			{
 				// If no material is bound to this tracable, shade pink to get people's attention
 				L += kPink;
-				return;
 			}
-
-			L += Shade(incidentRay, *hitMaterial, hitCtx, renderCtx);
+			else
+			{
+				L += Shade(incidentRay, *hitMaterial, hitCtx, renderCtx);
+			}
 		}
 
 		if (renderCtx.emplacedRay.IsAlive())
@@ -172,7 +174,7 @@ namespace Cuda
 		}
 
 		// FIXME: Do an automatic cast
-		m_objects.cu_deviceAccumBuffer->Accumulate(viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
+		m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
 		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
 	}
 
@@ -219,6 +221,7 @@ namespace Cuda
 	{
 		// Create the packed ray buffer
 		m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
+		m_hostCompressedRayBuffer->Clear(CompressedRay());
 
 		// Create the accumulation buffer
 		m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>("id_hostAccumBuffer", 512, 512, m_hostStream);
@@ -280,7 +283,7 @@ namespace Cuda
 	{		
 		Host::RenderObject::FromJson(parentNode, flags);
 
-		SynchroniseObjects(cu_deviceData, WaverfrontTracerParams(parentNode, flags));
+		SynchroniseObjects(cu_deviceData, WavefrontTracerParams(parentNode, flags));
 
 		parentNode.GetValue("camera", m_cameraId, flags);
 		m_isDirty = true;

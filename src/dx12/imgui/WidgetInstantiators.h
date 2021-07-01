@@ -53,7 +53,7 @@ public:
 
     virtual bool Update(std::string& newJson) override final
     {
-        if (!IsDirty()) { return false; }
+        if (m_params[0] == m_params[1]) { return false; }
         m_params[1] = m_params[0];
 
         Json::Document newNode;
@@ -61,16 +61,6 @@ public:
         newJson = newNode.Stringify();
 
         return true;
-    }
-
-protected:
-    bool IsDirty() const
-    {
-        for (int i = 0; i < sizeof(ParamsType); i++)
-        {
-            if (reinterpret_cast<const unsigned char*>(&m_params[0])[i] != reinterpret_cast<const unsigned char*>(&m_params[1])[i]) { return true; }
-        }
-        return false;
     }
 
 protected:
@@ -100,7 +90,7 @@ public:
 };
 
 // Sphere tracable
-class SphereShelf : public IMGUIShelf<Cuda::AssetParams>
+class SphereShelf : public IMGUIShelf<Cuda::NullParams>
 {
 public:
     SphereShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -144,7 +134,7 @@ public:
 };
 
 // Lambertian BRDF
-class LambertBRDFShelf : public IMGUIShelf<Cuda::AssetParams>
+class LambertBRDFShelf : public IMGUIShelf<Cuda::NullParams>
 {
 public:
     LambertBRDFShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -155,7 +145,7 @@ public:
 };
 
 // Wavefront tracer
-class WavefrontTracerShelf : public IMGUIShelf<Cuda::WaverfrontTracerParams>
+class WavefrontTracerShelf : public IMGUIShelf<Cuda::WavefrontTracerParams>
 {
 public:
     WavefrontTracerShelf(const Json::Node& json) : IMGUIShelf(json) {}
