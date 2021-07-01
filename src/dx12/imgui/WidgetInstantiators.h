@@ -1,0 +1,188 @@
+#pragma once
+
+#include "thirdparty/imgui/imgui.h"
+
+#include "kernels/tracables/CudaKIFS.cuh"
+#include "kernels/tracables/CudaSphere.cuh"
+#include "kernels/tracables/CudaPlane.cuh"
+//#include "kernels/tracables/CudaCornell.cuh"
+
+#include "kernels/lights/CudaQuadLight.cuh"
+#include "kernels/lights/CudaEnvironmentLight.cuh"
+
+#include "kernels/bxdfs/CudaLambert.cuh"
+
+#include "kernels/materials/CudaMaterial.cuh"
+
+#include "kernels/CudaPerspectiveCamera.cuh"
+
+#include "kernels/CudaWavefrontTracer.cuh"
+
+namespace Json { class Document; class Node; }
+
+class IMGUIAbstractShelf
+{
+public:
+    IMGUIAbstractShelf() = default;
+    virtual void Construct() = 0;
+    virtual bool Update(std::string& newJson) = 0;
+    const std::string& GetDAGPath() const { return m_dagPath; }
+    const std::string& GetID() const { return m_id; }
+    void SetIDAndDAGPath(const std::string& id, const std::string& dagPath)
+    {
+        m_id = id;
+        m_dagPath = dagPath;
+    }          
+
+protected:
+    std::string m_dagPath;
+    std::string m_id;
+};
+
+template<typename ParamsType>
+class IMGUIShelf : public IMGUIAbstractShelf
+{
+public:
+    IMGUIShelf(const Json::Node& json)
+    {
+        m_params[0].FromJson(json, Json::kRequiredWarn);
+        m_params[1] = m_params[0];
+    }
+
+    virtual ~IMGUIShelf() = default;
+
+    virtual bool Update(std::string& newJson) override final
+    {
+        if (!IsDirty()) { return false; }
+        m_params[1] = m_params[0];
+
+        Json::Document newNode;
+        m_params[0].ToJson(newNode);
+        newJson = newNode.Stringify();
+
+        return true;
+    }
+
+protected:
+    bool IsDirty() const
+    {
+        for (int i = 0; i < sizeof(ParamsType); i++)
+        {
+            if (reinterpret_cast<const unsigned char*>(&m_params[0])[i] != reinterpret_cast<const unsigned char*>(&m_params[1])[i]) { return true; }
+        }
+        return false;
+    }
+
+protected:
+    std::array<ParamsType, 2> m_params;
+};
+
+// Simple material
+class SimpleMaterialShelf : public IMGUIShelf<Cuda::SimpleMaterialParams>
+{
+public:
+    SimpleMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~SimpleMaterialShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json)  {  return std::shared_ptr<IMGUIShelf>(new SimpleMaterialShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Plane tracable
+class PlaneShelf : public IMGUIShelf<Cuda::PlaneParams>
+{
+public:
+    PlaneShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~PlaneShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PlaneShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Sphere tracable
+class SphereShelf : public IMGUIShelf<Cuda::AssetParams>
+{
+public:
+    SphereShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~SphereShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node & json) { return std::shared_ptr<IMGUIShelf>(new SphereShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// KIFS tracable
+class KIFSShelf : public IMGUIShelf<Cuda::KIFSParams>
+{
+public:
+    KIFSShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~KIFSShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Quad light
+class QuadLightShelf : public IMGUIShelf<Cuda::QuadLightParams>
+{
+public:
+    QuadLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~QuadLightShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new QuadLightShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Environment light
+class EnvironmentLightShelf : public IMGUIShelf<Cuda::EnvironmentLightParams>
+{
+public:
+    EnvironmentLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~EnvironmentLightShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new EnvironmentLightShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Lambertian BRDF
+class LambertBRDFShelf : public IMGUIShelf<Cuda::AssetParams>
+{
+public:
+    LambertBRDFShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~LambertBRDFShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LambertBRDFShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Wavefront tracer
+class WavefrontTracerShelf : public IMGUIShelf<Cuda::WaverfrontTracerParams>
+{
+public:
+    WavefrontTracerShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~WavefrontTracerShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new WavefrontTracerShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Wavefront tracer BRDF
+class PerspectiveCameraShelf : public IMGUIShelf<Cuda::PerspectiveCameraParams>
+{
+public:
+    PerspectiveCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~PerspectiveCameraShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PerspectiveCameraShelf(json)); }
+    virtual void Construct() override final;
+};
+
+class IMGUIShelfFactory
+{
+public:
+    IMGUIShelfFactory();
+
+    std::vector<std::shared_ptr<IMGUIAbstractShelf>> Instantiate(const Json::Document& document, const Cuda::RenderObjectContainer& objectContainer);
+
+private:
+    std::map<std::string, std::function<std::shared_ptr<IMGUIAbstractShelf>(const ::Json::Node&)>>    m_instantiators;
+};

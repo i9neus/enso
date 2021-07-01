@@ -6,13 +6,14 @@ namespace Cuda
 {
     namespace Host { class Plane; }
 
-    struct PlaneParams
+    struct PlaneParams : public AssetParams
     {
         __host__ __device__ PlaneParams() : isBounded(false) {}
         __host__ PlaneParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ std::string Diff(const PlaneParams& other);
         
         bool isBounded;
         BidirectionalTransform transform;

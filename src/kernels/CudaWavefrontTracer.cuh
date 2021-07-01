@@ -17,6 +17,15 @@ namespace Cuda
 	namespace Host { class WavefrontTracer; }	
 
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
+
+	struct WaverfrontTracerParams : public AssetParams
+	{
+		__host__ __device__ WaverfrontTracerParams() {}
+		__host__ WaverfrontTracerParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
+
+		__host__ void ToJson(::Json::Node& node) const;
+		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+	};
 	
 	namespace Device
 	{
@@ -50,6 +59,7 @@ namespace Cuda
 
 		protected:			
 			Objects							m_objects;
+			WaverfrontTracerParams          m_params;
 
 			float							m_wallTime;
 			int								m_frameIdx;
@@ -72,7 +82,8 @@ namespace Cuda
 			__device__ void Trace(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
-			__device__ void Synchronise(const Objects& params);
+			__device__ void Synchronise(const Objects& objects);
+			__device__ void Synchronise(const WaverfrontTracerParams& params);
 
 		};
 	}
@@ -118,6 +129,7 @@ namespace Cuda
 			__host__ virtual void OnDestroyAsset() override final;
 			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
 			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
+			__host__ void SetDirty() { m_isDirty = true; }
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx);

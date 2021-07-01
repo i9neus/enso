@@ -49,6 +49,9 @@
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp">
+      <Filter>dx12\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">

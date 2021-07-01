@@ -26,6 +26,8 @@ void D3DContainer::OnInit(HWND hWnd)
 	LoadAssets();
 
 	m_cudaRenderer.Build();
+	m_imgui.Build();
+
 	m_cudaRenderer.Start();
 }
 

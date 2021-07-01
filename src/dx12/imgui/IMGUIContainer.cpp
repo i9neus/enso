@@ -5,7 +5,7 @@
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
     m_cudaRenderer(cudaRenderer)
 {
-    auto& params = m_parameters[1];
+
 }
 
 void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
@@ -28,6 +28,18 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
     Log::Write("IMGUI successfully initialised!\n");
 }
 
+void IMGUIContainer::Build()
+{
+    Log::Indent indent("Building IMGUI components...\n");
+    m_shelves.clear();
+
+    const Json::Document& json = m_cudaRenderer.GetSceneJSON();
+    const Cuda::AssetHandle<Cuda::RenderObjectContainer> renderObjects = m_cudaRenderer.GetRenderObjectContainer();
+    
+    IMGUIShelfFactory shelfFactory;
+    m_shelves = shelfFactory.Instantiate(json, *renderObjects);
+}
+
 void IMGUIContainer::Destroy()
 {
     ImGui::ImplDX12_Shutdown();
@@ -37,108 +49,34 @@ void IMGUIContainer::Destroy()
     Log::Write("Destroyed IMGUI D3D objects.\n");
 }
 
-void IMGUIContainer::ConstructQuadLightControls(Cuda::QuadLightParams& params)
-{
-    if (!ImGui::CollapsingHeader("Quad light", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-    ImGui::InputFloat3("Position", &params.position[0]);
-    ImGui::InputFloat3("Orientation", &params.orientation[0]);
-    ImGui::InputFloat3("Scale", &params.scale[0]);
-
-    ImGui::ColorEdit3("Colour", &params.colour[0]);
-    ImGui::SliderFloat("Intensity", &params.intensity, -10.0f, 10.0f);
-}
-
-void IMGUIContainer::ConstructCameraControls(Cuda::PerspectiveCameraParams& params)
-{
-    if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-   
-    ImGui::InputFloat3("Position", &params.position[0]);
-    ImGui::InputFloat3("Look at", &params.lookAt[0]);
-    
-    ImGui::SliderFloat("F-stop", &params.fStop, 0.0f, 1.0f);
-    ImGui::SliderFloat("Focal length", &params.fLength, 0.0f, 1.0f);
-    ImGui::SliderFloat("Focal plane", &params.focalPlane, 0.0f, 2.0f);
-}
-
-void IMGUIContainer::ConstructKIFSControls(Cuda::KIFSParams& params)
-{
-    if (!ImGui::CollapsingHeader("KIFS", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-     
-    ImGui::SliderFloat("Rotate X", &params.rotate.x, 0.0f, 1.0f); 
-    ImGui::SliderFloat("Rotate Y", &params.rotate.y, 0.0f, 1.0f);
-    ImGui::SliderFloat("Rotate Z", &params.rotate.z, 0.0f, 1.0f);
-
-    ImGui::SliderFloat("Scale A", &params.scale.x, 0.0f, 1.0f);
-    ImGui::SliderFloat("Scale B", &params.scale.y, 0.0f, 1.0f);
-
-    ImGui::SliderFloat("Crust thickness", &params.crustThickness, 0.0f, 1.0f);
-    ImGui::SliderFloat("Vertex scale", &params.vertScale, 0.0f, 1.0f);
-
-    ImGui::SliderInt("Iterations ", &params.numIterations, 0, kSDFMaxIterations);
-}
-
-void IMGUIContainer::ConstructMaterialControls(Cuda::SimpleMaterialParams& params)
-{
-    if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-    ImGui::ColorEdit3("Albedo", (float*)&params.albedo); 
-    ImGui::ColorEdit3("Incandescence", (float*)&params.incandescence); 
-}
-
 void IMGUIContainer::UpdateParameters()
 {
-    // If nothing's changed this frame, don't bother updating
-    if (m_parameters[1] == m_parameters[0])
-    {
-        m_parameters[0] = m_parameters[1];
+    for (const auto& shelf : m_shelves)
+    {        
+        std::string newJson;
+        if (!shelf->Update(newJson)) { continue; }
+
+        m_cudaRenderer.OnJson(shelf->GetDAGPath(), newJson);
+
+        Log::Debug("Updated!\n");
         return;
     }
-
-    const auto& params = m_parameters[1];
-   
-    // Construct a JSON dictionary with the new settings
-    Json::Document document;
-    {
-        Json::Node childNode = document.AddChildObject("material");
-        params.material.ToJson(childNode);
-    }
-    {
-        Json::Node childNode = document.AddChildObject("kifs");
-        params.kifs.ToJson(childNode);
-    }
-    {
-        Json::Node childNode = document.AddChildObject("perspectiveCamera");
-        params.perspectiveCamera.ToJson(childNode);
-    }
-    {
-        Json::Node childNode = document.AddChildObject("quadLight");
-        params.quadLight.ToJson(childNode);
-    }
-
-    m_cudaRenderer.OnJson(document);
-
-    Log::Debug("Updated!\n");
-
-    m_parameters[0] = m_parameters[1];
 }
 
 void IMGUIContainer::Render()
 {
-    auto& params = m_parameters[1];
-    
     // Start the Dear ImGui frame
     ImGui::ImplDX12_NewFrame();
     ImGui::ImplWin32_NewFrame();
 
     ImGui::NewFrame();
 
-    ImGui::Begin("Generator");   
+    ImGui::Begin("Generator"); 
 
-    ConstructCameraControls(params.perspectiveCamera);
-    ConstructKIFSControls(params.kifs);
-    ConstructMaterialControls(params.material);
-    ConstructQuadLightControls(params.quadLight);
+    for (const auto& shelf : m_shelves)
+    {
+        shelf->Construct();
+    }
 
     float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
     m_cudaRenderer.GetRenderStats([&](const Json::Document& node)

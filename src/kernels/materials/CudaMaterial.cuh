@@ -48,7 +48,7 @@ namespace Cuda
 
     namespace Host { class SimpleMaterial; }
 
-    struct SimpleMaterialParams
+    struct SimpleMaterialParams : public AssetParams
     {
         __host__ __device__ SimpleMaterialParams();
         __host__ SimpleMaterialParams(const ::Json::Node& node, const uint flags);

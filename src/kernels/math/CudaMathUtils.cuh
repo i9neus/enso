@@ -27,6 +27,8 @@ namespace Cuda
 	__host__ __device__ __forceinline__ float	saw01(float a)								{ return fabs(fract(a) * 2 - 1); }
 	__host__ __device__ __forceinline__ void	sort(float& a, float& b)					{ if(a > b) { float s = a; a = b; b = s; } }
 	__host__ __device__ __forceinline__ void	swap(float& a, float& b)					{ float s = a; a = b; b = s; }
+	template<typename T> __host__ __device__ __forceinline__ T max(const T& a, const T& b)  { return (a > b) ? a : b; }
+	template<typename T> __host__ __device__ __forceinline__ T min(const T& a, const T& b)  { return (a < b) ? a : b; }
 	__host__ __device__ __forceinline__ float	max3(const float& a, const float& b, const float& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
 	__host__ __device__ __forceinline__ float	min3(const float& a, const float& b, const float& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
 	template<typename T> __host__ __device__ __forceinline__ T mix(const T& a, const T& b, const float& v) { return T(float(a) * (1 - v) + float(b) * v); }

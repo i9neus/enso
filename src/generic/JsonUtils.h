@@ -16,7 +16,7 @@ namespace Json
         rapidjson::Value*                       m_node;
         rapidjson::Document::AllocatorType*     m_allocator;
         std::string                             m_dagPath;
-        static const char                       kDAGDelimiter = '\\';
+        static const char                       kDAGDelimiter = '/';
 
         Node() : m_node(nullptr), m_allocator(nullptr) {}
         Node(const std::nullptr_t&) : m_node(nullptr), m_allocator(nullptr) {}

@@ -252,11 +252,13 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
 }
 
-void RenderManager::OnJson(const Json::Document& json)
+void RenderManager::OnJson(const std::string& dagPath, const std::string& newJson)
 {
-	std::lock_guard<std::mutex> lock(m_jsonMutex);
+	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 
-	m_renderParamsJson.DeepCopy(json);
+	m_paramsPatch.dagPath = dagPath;
+	m_paramsPatch.json.Parse(newJson);
+
 	m_isDirty = true;
 }
 
@@ -288,14 +290,27 @@ void RenderManager::Run()
 			});*/
 		Timer timer;
 
+		// Has the scene graph been dirtied?
 		if (m_isDirty && frameIdx >= 2)
-		{
-			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			m_wavefrontTracer->FromJson(m_renderParamsJson, Json::kSilent);
+		{					
+			std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+
+			Json::Node node = m_sceneJson.GetChildObject(m_paramsPatch.dagPath, Json::kSilent);
+			if (node)
+			{
+				Cuda::AssetHandle<Cuda::Host::RenderObject> asset = m_renderObjects->FindByDAG(m_paramsPatch.dagPath);
+				if (asset)
+				{
+					asset->FromJson(m_paramsPatch.json, Json::kSilent);
+				}
+			}
+
 			m_isDirty = false;
+			m_wavefrontTracer->SetDirty();
 			frameIdx = 0;
 		}
 		
+		// Render up to N subframes
 		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
 		{
 			std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;

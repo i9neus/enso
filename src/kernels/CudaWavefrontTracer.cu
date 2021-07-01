@@ -24,9 +24,24 @@
 
 namespace Cuda
 {
+	__host__ void WaverfrontTracerParams::ToJson(::Json::Node& node) const
+	{
+
+	}
+
+	__host__ void WaverfrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
+	{
+
+	}
+	
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
 	{
 		m_objects = objects;
+	}
+
+	__device__ void Device::WavefrontTracer::Synchronise(const WaverfrontTracerParams& params)
+	{
+		m_params = params;
 	}
 
 	__device__ void Device::WavefrontTracer::PreFrame(const float& wallTime, const int frameIdx)
@@ -187,7 +202,6 @@ namespace Cuda
 		m_hostAccumBuffer.DestroyAsset();
 		m_hostTracables.DestroyAsset();
 		m_hostLights.DestroyAsset();
-	
 
 		DestroyOnDevice(cu_deviceData);
 	}
@@ -265,9 +279,10 @@ namespace Cuda
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
 	{		
 		Host::RenderObject::FromJson(parentNode, flags);
-		
-		parentNode.GetValue("camera", m_cameraId, flags);
 
+		SynchroniseObjects(cu_deviceData, WaverfrontTracerParams(parentNode, flags));
+
+		parentNode.GetValue("camera", m_cameraId, flags);
 		m_isDirty = true;
 	}
 

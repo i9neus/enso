@@ -5,13 +5,16 @@ namespace Cuda
 {
     __host__ void Host::RenderObject::FromJson(const ::Json::Node& node, const uint flags)
     {
-        if (!node.HasDAGPath())
+        if (!GetDAGPath().empty()) { return; }
+        
+        if (node.HasDAGPath())
+        {
+            SetDAGPath(node.GetDAGPath());
+        }
+        else
         {
             Log::Error("Internal error: JSON node for '%s' has no DAG path.\n", GetAssetID());
-            return;
-        }
-
-        SetDAGPath(node.GetDAGPath());
+        }       
     }
 
     __host__ void RenderObjectContainer::Finalise() const
@@ -74,7 +77,7 @@ namespace Cuda
         constexpr int kMaxAttempts = 10;
         for (int i = 0; !m_objectMap.empty() && i < kMaxAttempts; i++)
         {
-            for (ObjectMap::iterator it = m_objectMap.begin(); it != m_objectMap.end();)
+            for (RenderObjectMap::iterator it = m_objectMap.begin(); it != m_objectMap.end();)
             {
                 uint flags = 0;
                 if (i == kMaxAttempts - 1)

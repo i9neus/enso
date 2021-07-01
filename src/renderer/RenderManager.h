@@ -23,7 +23,10 @@ public:
 	void Build();
 	void Start();
 	void Destroy();
-	void OnJson(const Json::Document& json);
+	void OnJson(const std::string& dagPath, const std::string& newJson);
+
+	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
+	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
 	
 	template<typename Lambda>
 	void GetRenderStats(Lambda statsLambda) 
@@ -37,13 +40,21 @@ private:
 
 	enum ThreadSignal : int { kRun, kRestart, kHalt };
 
-	std::mutex		    m_jsonMutex;
+	std::mutex		    m_renderResourceMutex;
+	std::mutex			m_jsonMutex;
 	std::thread			m_managerThread;
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_renderParamsJson;
 	Json::Document		m_sceneJson;
 	Json::Document		m_configJson;
 	std::atomic<bool>	m_isDirty; 
+	
+	struct
+	{
+		std::string dagPath;
+		Json::Document json;
+	} 
+	m_paramsPatch;
 
 	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 

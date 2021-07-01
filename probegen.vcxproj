@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
+    <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />

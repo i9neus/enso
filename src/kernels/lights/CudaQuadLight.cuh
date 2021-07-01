@@ -10,7 +10,7 @@ namespace Cuda
         class Plane;
     }
 
-    struct QuadLightParams
+    struct QuadLightParams : public AssetParams
     {
         __host__ __device__ QuadLightParams() : position(0.0f), orientation(0.0f), scale(1.0f), intensity(1.0f), colour(1.0f) {}
         __host__ QuadLightParams(const ::Json::Node& node);

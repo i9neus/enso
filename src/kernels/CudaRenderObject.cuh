@@ -74,23 +74,33 @@ namespace Cuda
         RenderObjectMap       m_dagMap;
 
     public:
-        class Iterator
+        template<typename ItType, bool IsConst>
+        class __Iterator
         {
         private:
-            RenderObjectMap::iterator m_it;
+            ItType m_it;
         public:
-            Iterator(RenderObjectMap::iterator it) noexcept : m_it(it) {}
+            __Iterator(ItType it) noexcept : m_it(it) {}
 
-            Iterator& operator++() { ++m_it; return *this; }
-            bool operator!=(const Iterator& rhs) const { return m_it != rhs.m_it; }
-            AssetHandle<Host::RenderObject>& operator*() { return m_it->second; }
+            __Iterator& operator++() { ++m_it; return *this; }
+            bool operator!=(const __Iterator& rhs) const { return m_it != rhs.m_it; }
+
+            template<bool C = IsConst> inline typename std::enable_if<!C, AssetHandle<Host::RenderObject>&>::type operator*() { return m_it->second; }
+            template<bool C = IsConst> inline typename std::enable_if<C, const AssetHandle<Host::RenderObject>&>::type operator*() const { return m_it->second; }
         };
 
+        using Iterator = __Iterator<RenderObjectMap::iterator, false>;
+        using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
+
         __host__ RenderObjectContainer() = default;
+        __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
+        __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;
 
         __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
         __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }
+        __host__ ConstIterator begin() const noexcept { return ConstIterator(m_objectMap.cbegin()); }
+        __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
 
         __host__ AssetHandle<Host::RenderObject> FindByID(const std::string& id)
         {

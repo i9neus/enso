@@ -2,11 +2,12 @@
 
 #include "CudaTracable.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     class RenderObjectContainer;
     namespace Host {  class Sphere;   }
-    namespace Json {  class Node;  }
 
     namespace Device
     {
