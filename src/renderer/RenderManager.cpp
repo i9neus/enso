@@ -115,6 +115,8 @@ void RenderManager::Build()
 	}
 	Log::Write("Done!\n");
 
+	m_renderObjects->Finalise();
+
 	// Get a handle to the wavefront tracer
 	Log::Write("Attaching to wavefront tracer object...\n");
 	m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();

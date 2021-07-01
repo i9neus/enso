@@ -14,20 +14,18 @@ namespace Json
         AssertMsg(!path.empty(), "Must specify a path to a node.");
         AssertMsg(m_node->IsObject(), "Parent node is not an object.");
 
-
         Lexer lex(path);
         std::string parentID = "[root node]";
-        rapidjson::Value* node = m_node;
+        rapidjson::Value* node = m_node; 
         while (lex)
         {
             std::string childID;
-            bool success = lex.ParseToken(childID, [](char c) { return std::isalnum(c) || c == '_'; });
+            bool success = lex.ParseToken(childID, [](char c) { return c != kDAGDelimiter; });
 
             AssertMsgFmt(success, "Malformed or missing identifier in path string '%s'.", path.c_str());
 
             if (!node->IsObject())
-            {
-                
+            {                
                 AssertMsgFmt(flags != kRequiredAssert, "A required JSON node '%s' is invalid ('%s' is not an object.)",
                     path.c_str(), parentID.c_str());
                 
@@ -55,7 +53,7 @@ namespace Json
 
             node = &jsonIt->value; // Jump into the child node
 
-            if (!lex || !lex.PeekNext('.')) { return node; }
+            if (!lex || !lex.PeekNext(kDAGDelimiter)) { return node; }
 
             parentID = childID;
         } 

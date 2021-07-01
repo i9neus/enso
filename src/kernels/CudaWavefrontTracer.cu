@@ -264,6 +264,8 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
 	{		
+		Host::RenderObject::FromJson(parentNode, flags);
+		
 		parentNode.GetValue("camera", m_cameraId, flags);
 
 		m_isDirty = true;

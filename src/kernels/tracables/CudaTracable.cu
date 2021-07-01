@@ -6,6 +6,8 @@ namespace Cuda
 {
     __host__ void Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)
     {
+        Host::RenderObject::FromJson(node, flags);
+        
         node.GetValue("material", m_materialId, flags);
     }
     

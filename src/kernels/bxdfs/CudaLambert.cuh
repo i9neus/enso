@@ -2,6 +2,8 @@
 
 #include "CudaBxDF.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     namespace Host { class LambertBRDF; }
@@ -48,7 +50,7 @@ namespace Cuda
             Device::LambertBRDF  m_hostData;
 
         public:
-            __host__ LambertBRDF();
+            __host__ LambertBRDF(const ::Json::Node&);
             __host__ virtual ~LambertBRDF() { OnDestroyAsset(); }
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string&, const AssetType&, const ::Json::Node&);

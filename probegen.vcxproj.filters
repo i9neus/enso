@@ -427,6 +427,9 @@
     <CudaCompile Include="src\kernels\tracables\CudaTracable.cu">
       <Filter>kernels\tracables</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaRenderObject.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

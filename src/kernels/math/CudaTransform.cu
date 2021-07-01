@@ -8,18 +8,12 @@ namespace Cuda
         const auto transNode = node.GetChildObject("transform", flags);
         if (!transNode) { return; }
 
-        if (!transNode.GetVector("pos", trans, flags))
-        {
-            trans = 0.0f;
-        }
-        if (!transNode.GetVector("rot", rot, flags))
-        {
-            rot = 0.0f;
-        }
-        if (transNode.GetVector("sca", scale, flags))
-        {
-            scale = 1.0f;
-        }
+        trans = rot = 0.0f;
+        scale = 1.0f;
+
+        transNode.GetVector("pos", trans, flags);       
+        transNode.GetVector("rot", rot, flags);
+        transNode.GetVector("sca", scale, flags);
 
         // Convert from degrees to radians
         rot = toRad(rot);

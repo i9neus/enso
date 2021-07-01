@@ -26,6 +26,10 @@ namespace Cuda
         class Light : public Host::RenderObject, public AssetTags<Host::Light, Device::Light>
         {
         public:
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
+            {
+                Host::RenderObject::FromJson(node, flags);
+            }
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kLight; }
             __host__ static std::string GetAssetTypeString() { return "light"; }

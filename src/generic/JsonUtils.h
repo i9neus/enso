@@ -15,9 +15,17 @@ namespace Json
     protected:
         rapidjson::Value*                       m_node;
         rapidjson::Document::AllocatorType*     m_allocator;
+        std::string                             m_dagPath;
+        static const char                       kDAGDelimiter = '\\';
 
         Node() : m_node(nullptr), m_allocator(nullptr) {}
-        Node(rapidjson::Value* node, rapidjson::Document::AllocatorType* allocator) : m_node(node), m_allocator(allocator) {}
+        Node(const std::nullptr_t&) : m_node(nullptr), m_allocator(nullptr) {}
+        Node(rapidjson::Value* node, const Node& parent) : m_node(node), m_allocator(parent.m_allocator) {}
+        Node(rapidjson::Value* node, const Node& parent, const ::std::string& id) : 
+            m_node(node), m_allocator(parent.m_allocator)
+        {
+            m_dagPath = (parent.m_dagPath.empty()) ? id : (parent.m_dagPath + kDAGDelimiter + id);
+        }
 
         rapidjson::Value* GetChildImpl(const std::string& path, uint flags) const;
 
@@ -26,14 +34,14 @@ namespace Json
         class __Iterator
         {
         public:
-            __Iterator(rapidjson::Value::MemberIterator& it, rapidjson::Document::AllocatorType* allocator) : m_it(it), m_allocator(allocator) {}
+            __Iterator(rapidjson::Value::MemberIterator& it, const Node& parentNode) : m_it(it), m_parentNode(parentNode) {}
 
             inline __Iterator& operator++() { ++m_it; return *this; }
 
             template<bool C = IsConst>
-            inline typename std::enable_if<!C, Node>::type operator*() const { return Node(&(m_it->value), m_allocator); }
+            inline typename std::enable_if<!C, Node>::type operator*() const { return Node(&(m_it->value), m_parentNode, m_it->name.GetString()); }
             template<bool C = IsConst>
-            inline typename std::enable_if<C, const Node>::type operator*() const { return Node(&(m_it->value), m_allocator); }
+            inline typename std::enable_if<C, const Node>::type operator*() const { return Node(&(m_it->value), m_parentNode, m_it->name.GetString()); }
 
             inline bool operator!=(const __Iterator& other) const { return m_it != other.m_it; }
 
@@ -41,7 +49,7 @@ namespace Json
 
         private:
             rapidjson::Value::MemberIterator     m_it;
-            rapidjson::Document::AllocatorType*  m_allocator;
+            const Node&                          m_parentNode;
         };
         
         using Iterator = __Iterator<false>;
@@ -70,11 +78,14 @@ namespace Json
 
     public:
         inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
+        
+        inline bool HasDAGPath() const { return !m_dagPath.empty(); }
+        inline const std::string& GetDAGPath() const { return m_dagPath; }
 
-        Iterator begin() { return Iterator(m_node->MemberBegin(), m_allocator); }
-        Iterator end() { return Iterator(m_node->MemberEnd(), m_allocator); }
-        ConstIterator begin() const { return ConstIterator(m_node->MemberBegin(), m_allocator); }
-        ConstIterator end() const { return ConstIterator(m_node->MemberEnd(), m_allocator); }
+        Iterator begin() { CheckOk(); return Iterator(m_node->MemberBegin(), *this); }
+        Iterator end() { CheckOk(); return Iterator(m_node->MemberEnd(), *this); }
+        ConstIterator begin() const { CheckOk(); return ConstIterator(m_node->MemberBegin(), *this); }
+        ConstIterator end() const { CheckOk(); return ConstIterator(m_node->MemberEnd(), *this); }
 
         template<typename T>
         void AddValue(const std::string& name, const T& value)
@@ -110,7 +121,7 @@ namespace Json
             m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
             rapidjson::Value& newNode = (*m_node)[name.c_str()];
             newNode.SetObject();
-            return Node(&newNode, m_allocator);
+            return Node(&newNode, *this);
         }
 
         template<typename T> 
@@ -129,14 +140,16 @@ namespace Json
         const Node GetChild(const std::string& name, const uint flags) const
         {
             CheckOk();
-            return Node(GetChildImpl(name, flags), m_allocator);
+            return Node(GetChildImpl(name, flags), *this, name);
         }
 
         const Node GetChildObject(const std::string& name, const uint flags) const
         {
             CheckOk();
             rapidjson::Value* child = GetChildImpl(name, flags);
-            return Node((child && child->IsObject()) ? child : nullptr, m_allocator);
+            if (!child || !child->IsObject()) { return nullptr; }
+
+            return Node(child, *this, name);
         }
 
         const Node GetChildArray(const std::string& name, const uint flags) const
@@ -150,7 +163,7 @@ namespace Json
                 return Node();
             }
 
-            return Node(child, m_allocator);
+            return Node(child, *this, name);
         }
 
         template<typename Type>

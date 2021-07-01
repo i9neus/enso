@@ -104,6 +104,8 @@ namespace Cuda
 
     __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)
     {
+        Host::Light::FromJson(node, flags);
+        
         Json::Node childNode = node.GetChildObject("quadLight", flags);
         if (!childNode) { return; }
 

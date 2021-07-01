@@ -66,10 +66,8 @@ namespace Cuda
 
     __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Json::Node childNode = parentNode.GetChildObject("material", flags);
-        if (childNode)
-        {
-            SynchroniseObjects(cu_deviceData, EnvironmentLightParams(childNode));
-        }
+        Host::Light::FromJson(parentNode, flags);
+        
+        SynchroniseObjects(cu_deviceData, EnvironmentLightParams(parentNode));
     }
 }

@@ -24,6 +24,7 @@ namespace Cuda
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const = 0;
             __device__ __forceinline__ const Device::BxDF* GetBoundBxDF() const { return cu_bxdf; }
+            __device__ void Synchronise(const Device::BxDF* bxdf) { cu_bxdf = bxdf; }
         };
     }
 
@@ -34,10 +35,14 @@ namespace Cuda
         protected:
             __host__ Material() = default;
 
+            std::string                 m_bxdfId;
+
         public:
-            __host__ virtual Device::Material* GetDeviceInstance() const = 0;
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;
+            __host__ virtual void Bind(RenderObjectContainer& objectContainer) override final;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kMaterial; }
             __host__ static std::string GetAssetTypeString() { return "material"; }
+            __host__ virtual Device::Material* GetDeviceInstance() const = 0;
         };
     }
 
@@ -45,7 +50,7 @@ namespace Cuda
 
     struct SimpleMaterialParams
     {
-        __host__ __device__ SimpleMaterialParams() : albedo(0.5f), incandescence(0.0f) {}
+        __host__ __device__ SimpleMaterialParams();
         __host__ SimpleMaterialParams(const ::Json::Node& node, const uint flags);
 
         __host__ void ToJson(::Json::Node& node) const;
@@ -69,7 +74,6 @@ namespace Cuda
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const override final;
             __device__ void Synchronise(const SimpleMaterialParams& params) { m_params = params;  }
-            __device__ void Synchronise(const Device::BxDF* bxdf) { cu_bxdf = bxdf; }
         };
     }
 
@@ -82,8 +86,6 @@ namespace Cuda
         private:
             Device::SimpleMaterial*     cu_deviceData;
 
-            std::string                 m_bxdfId;
-
         public:
             __host__ SimpleMaterial(const ::Json::Node& jsonNode);
             __host__ virtual ~SimpleMaterial() = default;
@@ -92,7 +94,6 @@ namespace Cuda
 
             __host__ virtual void                       OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
-            __host__ virtual void                       Bind(RenderObjectContainer& objectContainer) override final;
             __host__ virtual Device::SimpleMaterial*    GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "simple"; }
         };

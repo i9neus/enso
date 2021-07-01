@@ -4,6 +4,27 @@
 
 namespace Cuda
 {
+    __host__ void Host::Material::FromJson(const ::Json::Node& parentNode, const uint flags)
+    {
+        Host::RenderObject::FromJson(parentNode, flags);
+        
+        parentNode.GetValue("bxdf", m_bxdfId, flags);
+    }
+
+    __host__ void Host::Material::Bind(RenderObjectContainer& objectContainer)
+    {
+        // Push the binding to the device
+        AssetHandle<Host::BxDF> bxdfAsset = GetAssetHandleForBinding<Host::Material, Host::BxDF>(objectContainer, m_bxdfId);
+        if (bxdfAsset)
+        {
+            SynchroniseObjects(GetDeviceInstance(), bxdfAsset->GetDeviceInstance());
+        }
+    }
+
+    __host__ __device__ SimpleMaterialParams::SimpleMaterialParams() : 
+        albedo(0.5f), 
+        incandescence(0.0f) {}
+    
     __host__ SimpleMaterialParams::SimpleMaterialParams(const ::Json::Node& node, const uint flags) :
         SimpleMaterialParams()
     {
@@ -62,20 +83,9 @@ namespace Cuda
 
     __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
     {        
+        Host::Material::FromJson(parentNode, flags);
+        
         SynchroniseObjects(cu_deviceData, SimpleMaterialParams(parentNode, flags));
-
-        parentNode.GetValue("bxdf", m_bxdfId, flags);
-    }
-
-    __host__ void Host::SimpleMaterial::Bind(RenderObjectContainer& objectContainer)
-    {
-        AssetHandle<Host::BxDF> bxdfAsset = GetAssetHandleForBinding<Host::Material, Host::BxDF>(objectContainer, m_bxdfId);
-
-        // Push the binding to the device
-        if (bxdfAsset)
-        {            
-            SynchroniseObjects(cu_deviceData, bxdfAsset->GetDeviceInstance());
-        }
     }
 }
     

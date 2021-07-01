@@ -8,13 +8,14 @@ namespace Cuda
     {
         if (expectedType != AssetType::kBxDF) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::LambertBRDF(), id);
+        return AssetHandle<Host::RenderObject>(new Host::LambertBRDF(json), id);
     }
     
-    __host__ Host::LambertBRDF::LambertBRDF() :
+    __host__ Host::LambertBRDF::LambertBRDF(const ::Json::Node& parentNode) :
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();
+        Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
     }
     
     __host__ void Host::LambertBRDF::OnDestroyAsset()

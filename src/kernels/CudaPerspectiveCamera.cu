@@ -200,6 +200,8 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
+        Host::RenderObject::FromJson(parentNode, flags);
+        
         SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(parentNode));
     }
 }

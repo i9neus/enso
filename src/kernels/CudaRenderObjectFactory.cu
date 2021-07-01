@@ -45,18 +45,18 @@ namespace Cuda
         for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
             AssetHandle<Host::RenderObject> newObject;
-            std::string newType = it.Name();
+            std::string newId = it.Name();
             ::Json::Node childNode = *it;
-            std::string newId;
-            if (!childNode.GetValue("id", newId, ::Json::kRequiredWarn)) { continue; }
+            std::string newClass;
+            if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
 
             {
                 Log::Indent indent(tfm::format("Creating new object '%s'...\n", newId));
 
-                auto& instantiator = m_instantiators.find(newType);
+                auto& instantiator = m_instantiators.find(newClass);
                 if (instantiator == m_instantiators.end())
                 {
-                    Log::Error("Error: '%s' is not a valid render object type.\n", newType);
+                    Log::Error("Error: '%s' is not a valid render object type.\n", newClass);
                     continue;
                 }
 
@@ -70,7 +70,7 @@ namespace Cuda
 
                 newObject = (instantiator->second)(newId, expectedType, childNode);
 
-                AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.\n", newType.c_str());
+                AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.\n", newClass.c_str());
 
                 renderObjects->Emplace(newObject);
             }
@@ -78,34 +78,31 @@ namespace Cuda
     }
     
     __host__ void RenderObjectFactory::Instantiate(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
-    {        
-        AssetHandle<Cuda::Host::Plane> plane("test", rootNode);
-        plane.DestroyAsset();
-        
+    {               
         Assert(renderObjects);
 
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("tracables", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("tracables", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kTracable, "tracable", renderObjects);
         }        
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("lights", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("lights", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kLight, "light", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("materials", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("materials", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kMaterial, "material", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kBxDF, "BxDF", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("cameras", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("cameras", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kCamera, "camera", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("integrators", ::Json::kRequiredWarn);
+            const ::Json::Node childNode = rootNode.GetChildObject("integrators", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kIntegrator, "integrator", renderObjects);
         }
     }
