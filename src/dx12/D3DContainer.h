@@ -2,7 +2,7 @@
 
 #include "D3DWindowInterface.h"
 #include "DXSampleHelper.h"
-#include "IMGUIContainer.h"
+#include "imgui/IMGUIContainer.h"
 
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"

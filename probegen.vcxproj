@@ -15,7 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
-    <ClCompile Include="src\dx12\IMGUIContainer.cpp" />
+    <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
@@ -36,7 +36,8 @@
     <ClInclude Include="src\dx12\d3dx12.h" />
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
-    <ClInclude Include="src\dx12\IMGUIContainer.h" />
+    <ClInclude Include="src\dx12\imgui\IMGUIContainer.h" />
+    <ClInclude Include="src\dx12\imgui\WidgetInstantiators.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />

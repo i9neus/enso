@@ -44,6 +44,8 @@ private:
     HWND                            m_hWnd;
     RenderManager&                  m_cudaRenderer;
 
+    std::vector<std::shared_ptr<Cuda::AssetParams>> m_assetParams;
+
     struct Parameters
     {                
         Cuda::PerspectiveCameraParams     perspectiveCamera;
