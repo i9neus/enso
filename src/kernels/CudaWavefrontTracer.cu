@@ -87,7 +87,7 @@ namespace Cuda
 		vec2 xi = renderCtx.Rand<2, 3>();
 
 		const BxDF* bxdf = material.GetBoundBxDF();
-		if (!bxdf) { return kPink; }
+		if (!bxdf) { return incandescence; }
 
 		// Sample the BRDF
 		//if(xi.x < 0.75f)
@@ -163,7 +163,7 @@ namespace Cuda
 		vec3 L(0.0f);
 		if (!hitObject)
 		{
-			L += incidentRay.weight * vec3(1.0f);
+			//L += incidentRay.weight * vec3(1.0f);
 		}
 		else
 		{

@@ -98,7 +98,6 @@ namespace Cuda
         AssetHandle(const std::nullptr_t&) {}
         ~AssetHandle() = default;
 
-
         explicit AssetHandle(std::shared_ptr<T>& ptr) : m_ptr(ptr) {}
 
         template<typename OtherType>
@@ -131,6 +130,14 @@ namespace Cuda
             AssertMsg(m_ptr, "Invalid asset handle");
 
             return AssetHandle<NewType>(std::dynamic_pointer_cast<NewType>(m_ptr));
+        }
+
+        template<typename NewType>
+        AssetHandle<NewType> StaticCast()
+        {
+            AssertMsg(m_ptr, "Invalid asset handle");
+
+            return AssetHandle<NewType>(std::static_pointer_cast<NewType>(m_ptr));
         }
 
         bool DestroyAsset(const uint flags = 0)

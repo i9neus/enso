@@ -51,6 +51,14 @@ namespace Cuda
         return AssetHandle<Host::RenderObject>(new Host::Plane(json), id);
     }
 
+    // Constructor used to instantiate child objects e.g. from quad lights
+    __host__  Host::Plane::Plane()
+    {        
+        cu_deviceData = InstantiateOnDevice<Device::Plane>();
+        RenderObject::MakeChildObject();
+    }
+
+    // Constructor for user instantiations
     __host__  Host::Plane::Plane(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
@@ -67,5 +75,10 @@ namespace Cuda
         Host::Tracable::FromJson(node, flags);
         
         SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
+    }
+
+    __host__ void Host::Plane::UpdateParams(const BidirectionalTransform& transform, const bool isBounded)
+    {
+        SynchroniseObjects(cu_deviceData, PlaneParams(transform, isBounded));
     }
 }

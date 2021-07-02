@@ -115,7 +115,14 @@ std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(
 
     for (auto& object : renderObjects)
     {
-        AssertMsgFmt(object->HasDAGPath(), "Object '%s' has an invalid DAG path.", object->GetAssetID().c_str());
+        // Ignore objects instantiated by other objects
+        if (object->IsChildObject()) { continue; }
+
+        if (!object->HasDAGPath())
+        {
+            Log::Error("Error: object '%s' has an invalid DAG path.\n", object->GetAssetID().c_str());
+            continue;
+        }
 
         const std::string& dagPath = object->GetDAGPath();
         const Json::Node childNode = rootNode.GetChildObject(dagPath, Json::kSilent);

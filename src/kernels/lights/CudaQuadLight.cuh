@@ -8,6 +8,7 @@ namespace Cuda
     { 
         class QuadLight;  
         class Plane;
+        class EmitterMaterial;
     }
 
     struct QuadLightParams : public AssetParams
@@ -59,12 +60,13 @@ namespace Cuda
         {
         private:
             Device::QuadLight* cu_deviceData;
-            Device::QuadLight  m_hostData;
+            QuadLightParams  m_params;
 
             AssetHandle<Host::Plane> m_lightPlaneAsset;
+            AssetHandle<Host::EmitterMaterial> m_lightMaterialAsset;
 
         public:
-            __host__ QuadLight(const ::Json::Node& node);
+            __host__ QuadLight(const ::Json::Node& node, const std::string& id);
             __host__ virtual ~QuadLight() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
@@ -73,6 +75,7 @@ namespace Cuda
             __host__ virtual void OnDestroyAsset() override final;
             __host__ static std::string GetAssetTypeString() { return "quad"; }
             __host__ virtual Device::QuadLight* GetDeviceInstance() const override final { return cu_deviceData; }
+            __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
         };
     }
 }

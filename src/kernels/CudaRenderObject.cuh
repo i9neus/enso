@@ -26,13 +26,15 @@ namespace Cuda
         {
         public:
             __host__ virtual void Bind(RenderObjectContainer& objectContainer) {}
+            __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;
 
             __host__ const std::string& GetDAGPath() const { return m_dagPath; }
             __host__ const bool HasDAGPath() const { return !m_dagPath.empty(); }
+            __host__ bool IsChildObject() const { return m_isChildObject; }
 
         protected:
-            __host__ RenderObject() = default;
+            __host__ RenderObject() : m_isChildObject(false) {}
             __host__ virtual ~RenderObject() = default; 
 
             template<typename ThisType, typename BindType>
@@ -59,9 +61,11 @@ namespace Cuda
             } 
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
+            __host__ void MakeChildObject(const bool isChild = true) { m_isChildObject = isChild; }
 
         private:
-            std::string m_dagPath;
+            std::string         m_dagPath;
+            bool                m_isChildObject;
         };     
     }  
 

@@ -12,7 +12,7 @@
 
 #include "kernels/bxdfs/CudaLambert.cuh"
 
-#include "kernels/materials/CudaMaterial.cuh"
+#include "kernels/materials/CudaSimpleMaterial.cuh"
 
 #include "kernels/CudaPerspectiveCamera.cuh"
 

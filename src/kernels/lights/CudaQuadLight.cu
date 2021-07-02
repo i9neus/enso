@@ -1,5 +1,6 @@
 ﻿#include "CudaQuadLight.cuh"
 #include "../tracables/CudaPlane.cuh"
+#include "../materials/CudaEmitterMaterial.cuh"
 
 #include "generic/JsonUtils.h"
 
@@ -94,16 +95,25 @@ namespace Cuda
 
     __host__ AssetHandle<Host::RenderObject> Host::QuadLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
-        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+        if (expectedType != AssetType::kLight) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::QuadLight(json), id);
+        return AssetHandle<Host::RenderObject>(new Host::QuadLight(json, id), id);
     }
     
-    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode)
+    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode, const std::string& id)
         : cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
-        FromJson(jsonNode, ::Json::kRequiredWarn);
+        FromJson(jsonNode, ::Json::kRequiredWarn);        
+
+        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(), id + "_material");
+        Assert(m_lightMaterialAsset);
+        m_lightMaterialAsset->UpdateParams(vec3(1.0f));
+
+        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(), id + "_planeTracable");
+        Assert(m_lightPlaneAsset);
+        m_lightPlaneAsset->UpdateParams(m_params.transform, true);
+        m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
@@ -119,14 +129,23 @@ namespace Cuda
         if (!childNode) { return; }
 
         // Pull the parameters from the JSON dictionary and create a transform
-        QuadLightParams newParams;
-        newParams.FromJson(childNode, flags);
-        newParams.transform.FromJson(childNode, flags); 
+        m_params.FromJson(childNode, flags);
+        m_params.transform.FromJson(childNode, flags);
        
         // Update the transform of the light plane asset so they match
         //m_lightPlaneAsset->SetTransform(newParams.transform);
      
         // Synchronise with the decvice
-        SynchroniseObjects(cu_deviceData, newParams);
+        SynchroniseObjects(cu_deviceData, m_params);
+    }
+
+    __host__ std::vector<AssetHandle<Host::RenderObject>> Host::QuadLight::GetChildObjectHandles()
+    {
+        return std::vector<AssetHandle<Host::RenderObject>>(
+            {
+            m_lightPlaneAsset.StaticCast<Host::RenderObject>(),
+            m_lightMaterialAsset.StaticCast<Host::RenderObject>() 
+            }
+         );
     }
 }

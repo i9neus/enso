@@ -13,7 +13,7 @@
 
 #include "bxdfs/CudaLambert.cuh"
 
-#include "materials/CudaMaterial.cuh"
+#include "materials/CudaSimpleMaterial.cuh"
 
 #include "CudaPerspectiveCamera.cuh"
 
@@ -73,10 +73,30 @@ namespace Cuda
                 }
 
                 newObject = (instantiator->second)(newId, expectedType, childNode);
-                AssertMsgFmt(newObject, "The object instantiator for type '%s' did not return a valid render object.\n", newClass.c_str());
+                if (!newObject)
+                {
+                    Log::Error("Object class '%s' is not a member of group '%s'. Move it to the correct group and try again.\n", newClass.c_str(), objectTypeStr);
+                    continue;
+                }
 
+                // Emplace the newly created object
                 newObject->SetHostStream(m_hostStream);
                 renderObjects->Emplace(newObject);
+
+                // The render object may have generated some of its own assets. Add them to the object list. 
+                std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
+                if(!childObjects.empty())
+                {
+                    Log::Debug("Captured %i child objects:\n", childObjects.size());
+                    Log::Indent indent2;
+                    for (auto& child : childObjects)
+                    {
+                        child->SetHostStream(m_hostStream);
+                        renderObjects->Emplace(child);
+
+                        Log::Debug("%s\n", child->GetAssetID());
+                    }
+                }
             }
         }
     }

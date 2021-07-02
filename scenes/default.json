@@ -79,6 +79,10 @@
   },
   "lights": 
   {
-
+    "light_mainQuad":
+    {
+      "enabled": true,
+      "class": "quad"
+    }
   }
 }

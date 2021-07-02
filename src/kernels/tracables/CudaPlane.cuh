@@ -9,6 +9,7 @@ namespace Cuda
     struct PlaneParams : public AssetParams
     {
         __host__ __device__ PlaneParams() : isBounded(false) {}
+        __host__ __device__ PlaneParams(const BidirectionalTransform& transform_, const bool isBounded_) : transform(transform_), isBounded(isBounded_) {}
         __host__ PlaneParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
@@ -49,6 +50,7 @@ namespace Cuda
             Device::Plane  m_hostData;
 
         public:
+            __host__ Plane();
             __host__ Plane(const ::Json::Node& node);
             __host__ virtual ~Plane() = default;
 
@@ -59,6 +61,9 @@ namespace Cuda
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
 
             __host__ virtual Device::Plane* GetDeviceInstance() const override final { return cu_deviceData; }
+
+            __host__ void UpdateParams(const BidirectionalTransform& transform, const bool isBounded);
+            __host__ void SetBoundMaterialID(const std::string& id) { m_materialId = id; }
         };
     }
 }
