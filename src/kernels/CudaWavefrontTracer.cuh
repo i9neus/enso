@@ -20,13 +20,15 @@ namespace Cuda
 
 	struct WavefrontTracerParams : public AssetParams
 	{
-		__host__ __device__ WavefrontTracerParams() {}
-		__host__ WavefrontTracerParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
+		__host__ __device__ WavefrontTracerParams();
+		__host__ WavefrontTracerParams(const ::Json::Node& node, const uint flags) : WavefrontTracerParams() { FromJson(node, flags); }
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-		bool operator==(const WavefrontTracerParams&) const { return true; }
+		bool operator==(const WavefrontTracerParams&) const;
+
+		int maxDepth;
 	};
 	
 	namespace Device

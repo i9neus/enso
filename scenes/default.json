@@ -5,7 +5,8 @@
     {
       "enabled": true,
       "class": "wavefront",
-      "camera": "camera_perspCam"
+      "camera": "camera_perspCam",
+      "maxDepth" : 1
     }  
   },
   "cameras": 

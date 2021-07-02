@@ -18,7 +18,7 @@ void PlaneShelf::Construct()
 
 void SphereShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
@@ -56,14 +56,14 @@ void QuadLightShelf::Construct()
 
 void EnvironmentLightShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
 
 void LambertBRDFShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
@@ -85,7 +85,8 @@ void WavefrontTracerShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::Text("[No attributes]");
+    auto& p = m_params[0];
+    ImGui::SliderInt("Max path depth", &p.maxDepth, 0, 20);
 }
 
 IMGUIShelfFactory::IMGUIShelfFactory()

@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 
 	std::cout << document.Stringify() << std::endl;*/
 	
-	//try
+	try
 	{
 		D3DContainer sample(1280, 720, "D3D12 Hello Texture");
 		auto rValue = Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
@@ -46,10 +46,10 @@ int main(int argc, char* argv[])
 
 		return rValue;
 	}
-	/*catch (const std::runtime_error& err)
+	catch (const std::runtime_error& err)
 	{
 		Log::Error("Runtime error: %s\n", err.what());
-	}*/
+	}
 }
 
 /*_Use_decl_annotations_

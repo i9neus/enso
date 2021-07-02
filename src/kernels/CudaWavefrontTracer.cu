@@ -24,14 +24,24 @@
 
 namespace Cuda
 {
+	__host__ WavefrontTracerParams::WavefrontTracerParams() : 
+		maxDepth(1)
+	{
+	}
+	
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
-
+		node.AddValue("maxDepth", maxDepth);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
+		node.GetValue("maxDepth", maxDepth, flags);
+	}
 
+	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
+	{
+		return maxDepth == rhs.maxDepth;
 	}
 	
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
@@ -55,21 +65,22 @@ namespace Cuda
 		if (!IsValid(viewportPos)) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
-
+		
 		if (!compressedRay.IsAlive())
 		{
 			compressedRay.viewport.x = viewportPos.x;
 			compressedRay.viewport.y = viewportPos.y;
-			compressedRay.sampleIdx = compressedRay.sampleIdx + 1;
+			compressedRay.sampleIdx++;
+			compressedRay.depth = 0;
 
 			RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 			m_objects.cu_camera->CreateRay(renderCtx);
-		}
+		}	
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
-		if (renderCtx.depth >= 1) { return kZero; }
+		if (renderCtx.depth >= m_params.maxDepth) { return kZero; }
 
 		vec3 albedo, incandescence;
 		material.Evaluate(hitCtx, albedo, incandescence);
@@ -131,7 +142,7 @@ namespace Cuda
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 
-		compressedRay.Reset();
+		compressedRay.Kill();
 		
 		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
 		//return;
@@ -168,14 +179,7 @@ namespace Cuda
 			}
 		}
 
-		if (renderCtx.emplacedRay.IsAlive())
-		{
-			compressedRay = renderCtx.emplacedRay;
-		}
-
-		// FIXME: Do an automatic cast
-		m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, renderCtx.emplacedRay.IsAlive());
-		//cu_deviceAccumBuffer->At(viewportPos) += vec4(L, 1.0f);
+		m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
@@ -188,6 +192,8 @@ namespace Cuda
 		// If the texel weight is negative, the texel is ready to be rendered
 		vec4& texel = m_objects.cu_deviceAccumBuffer->At(viewportPos);
 		if (texel.w >= 0.0f) { return; }
+
+		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[kKernelIdx];
 
 		// Flip the weight back to positve
 		texel.w = -texel.w;

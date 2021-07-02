@@ -58,7 +58,7 @@ namespace Cuda
 		uint	sampleIdx;			// 4 bytes
 
 		__device__ __forceinline__ void SetAlive() { flags |= kRayAlive; }
-		__device__ __forceinline__ void Reset() { flags = 0; }
+		__device__ __forceinline__ void Kill() { flags = 0; }
 		__device__ __forceinline__ bool IsAlive() { return flags & kRayAlive; }
 		__device__ __forceinline__ ivec2 ViewportPos() const { return ivec2(viewport.x, viewport.y); }
 	};

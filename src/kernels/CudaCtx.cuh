@@ -17,8 +17,10 @@ namespace Cuda
 			viewportDims(viewDims),
 			sampleIdx(compressed.sampleIdx),
 			haltonSeed(HashOf(uint(depth) + 9871251u, uint(viewportPos.x), uint(viewportPos.y))),
-			depth(compressed.depth),
-			pcg(HashCombine(HashOf(uint(sampleIdx)), haltonSeed))
+			depth(compressed.depth)
+#ifdef kPNGSampler
+			,pcg(HashCombine(HashOf(uint(sampleIdx)), haltonSeed))
+#endif
 		{
 		}
 
@@ -32,28 +34,32 @@ namespace Cuda
 		CompressedRay&  emplacedRay;
 
 #ifdef kPNGSampler
-		__device__ __forceinline__ vec4 Rand4() { return pcg.Rand(); }
-		__device__ __forceinline__ vec3 Rand3() { return pcg.Rand().xyz; }
-		__device__ __forceinline__ vec2 Rand2() { return pcg.Rand().xy; }
-		__device__ __forceinline__ float Rand() { return pcg.Rand().x; }
+		template<int B0, int B1, int B2, int B3>
+		__device__ __forceinline__ vec4 Rand() { return pcg.Rand(); }
+		template<int B0, int B1, int B2>
+		__device__ __forceinline__ vec3 Rand() { return pcg.Rand().xyz; }
+		template<int B0, int B1>
+		__device__ __forceinline__ vec2 Rand() { return pcg.Rand().xy; }
+		template<int B0>
+		__device__ __forceinline__ float Ran() { return pcg.Rand().x; }
 #else
 		template<int B0, int B1, int B2, int B3>
-		__device__ __forceinline__ vec4 Rand()
+		__device__ __forceinline__ vec4 Rand() const
 		{
 			return Halton<vec4, B0, B1, B2, B3>(haltonSeed + sampleIdx);
 		}
 		template<int B0, int B1, int B2>
-		__device__ __forceinline__ vec3 Rand()
+		__device__ __forceinline__ vec3 Rand() const 
 		{
 			return Halton<vec3, B0, B1, B2>(haltonSeed + sampleIdx);
 		}
 		template<int B0, int B1>
-		__device__ __forceinline__ vec2 Rand()
+		__device__ __forceinline__ vec2 Rand() const 
 		{
 			return Halton<vec2, B0, B1>(haltonSeed + sampleIdx);
 		}
 		template<int B0>
-		__device__ __forceinline__ float Rand()
+		__device__ __forceinline__ float Rand() const
 		{
 			return HaltonBase<B0>(haltonSeed + sampleIdx);
 		}
@@ -69,7 +75,6 @@ namespace Cuda
 			emplacedRay.lambda = lambda;
 			emplacedRay.flags = flags;
 			emplacedRay.depth = depth + 1;
-			emplacedRay.sampleIdx = sampleIdx;
 
 			emplacedRay.flags |= kRayAlive;
 		}
