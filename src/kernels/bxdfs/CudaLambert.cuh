@@ -41,6 +41,7 @@ namespace Cuda
 
             __host__ virtual void OnDestroyAsset() override final;
             __host__ static std::string GetAssetTypeString() { return "lambert"; }
+            __host__ static std::string GetAssetDescriptionString() { return "Lambertian BRDF"; }
             __host__ virtual Device::LambertBRDF* GetDeviceInstance() const override final { return cu_deviceData; }
         };
     }

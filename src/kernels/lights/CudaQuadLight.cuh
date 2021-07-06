@@ -74,6 +74,7 @@ namespace Cuda
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void OnDestroyAsset() override final;
             __host__ static std::string GetAssetTypeString() { return "quad"; }
+            __host__ static std::string GetAssetDescriptionString() { return "Quad Light"; }
             __host__ virtual Device::QuadLight* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
             __host__ virtual AssetHandle<Host::Tracable> GetTracableHandle() override final;

@@ -28,7 +28,8 @@ namespace Cuda
 		maxDepth(1),
 		ambientRadiance(0.0f),
 		debugNormals(false),
-		importanceMode(kImportanceMIS)
+		importanceMode(kImportanceMIS),
+		displayGamma(1.0f)
 	{
 	}
 	
@@ -37,6 +38,7 @@ namespace Cuda
 		node.AddValue("maxDepth", maxDepth);
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
 		node.AddValue("debugNormals", debugNormals);
+		node.AddValue("displayGamma", displayGamma);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
 		node.AddEnumeratedParameter("importanceMode", importanceModeIds, importanceMode);
@@ -47,6 +49,7 @@ namespace Cuda
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("debugNormals", debugNormals, flags);
+		node.GetValue("displayGamma", displayGamma, flags);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
 		node.GetEnumeratedParameter("importanceMode", importanceModeIds, importanceMode, flags);
@@ -203,6 +206,7 @@ namespace Cuda
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
+		vec3 L(0.0f);
 		
 		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
 		//return;
@@ -220,9 +224,17 @@ namespace Cuda
 				hitObject = tracables[i];
 			}
 		}
-		
-		vec3 L(0.0f);
-		
+
+		if (m_params.debugNormals)
+		{
+			if (hitObject)
+			{
+				L = hitCtx.hit.n * 0.5f + vec3(0.5f);
+			}
+			m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, 0, false);
+			return;
+		}
+				
 		if (!hitObject)
 		{
 			// Ray didn't hit anything so add the ambient term multiplied by the weight
@@ -292,7 +304,8 @@ namespace Cuda
 		// Flip the weight back to positve
 		texel.w = -texel.w;
 
-		const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
+		// Normalise and gamma correct
+		const vec3 rgb = pow(texel.xyz / fmax(1.0f, texel.w), vec3(1.0f / m_params.displayGamma));
 		deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
 	}
 

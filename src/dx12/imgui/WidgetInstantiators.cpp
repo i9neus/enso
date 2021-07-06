@@ -3,7 +3,7 @@
 
 void SimpleMaterialShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&p.albedo);
@@ -13,7 +13,7 @@ void SimpleMaterialShelf::Construct()
 
 void CornellMaterialShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ImGui::ColorEdit3("Albedo 1", (float*)&p.albedo[0]);
@@ -26,7 +26,7 @@ void CornellMaterialShelf::Construct()
 
 void PlaneShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ConstructTransform(p.tracable.transform);
@@ -35,7 +35,7 @@ void PlaneShelf::Construct()
 
 void SphereShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ConstructTransform(p.transform);
@@ -43,7 +43,7 @@ void SphereShelf::Construct()
 
 void CornellBoxShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ConstructTransform(p.tracable.transform);
@@ -51,8 +51,8 @@ void CornellBoxShelf::Construct()
 
 void KIFSShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-    
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
     auto& p = m_params[0];
     ImGui::SliderFloat("Rotate X", &p.rotate.x, 0.0f, 1.0f);
     ImGui::SliderFloat("Rotate Y", &p.rotate.y, 0.0f, 1.0f);
@@ -69,7 +69,7 @@ void KIFSShelf::Construct()
 
 void QuadLightShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ConstructTransform(p.transform);
@@ -80,24 +80,24 @@ void QuadLightShelf::Construct()
 
 void EnvironmentLightShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
 
 void LambertBRDFShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
 
 void PerspectiveCameraShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
-    
+
     ImGui::DragFloat3("Position", &p.position[0], math::max(0.01f, cwiseMax(p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &p.lookAt[0], math::max(0.01f, cwiseMax(p.lookAt) * 0.01f));
 
@@ -108,12 +108,13 @@ void PerspectiveCameraShelf::Construct()
 
 void WavefrontTracerShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
     ImGui::SliderInt("Max path depth", &p.maxDepth, 0, 20);
     ImGui::ColorEdit3("Ambient radiance", &p.ambientRadiance[0]);
     ImGui::Checkbox("Debug normals", &p.debugNormals);
+    ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 
     const char* labels[3] = { "MIS", "Lights", "BxDFs" };
     const char* selectedLabel = labels[p.importanceMode];  // Label to preview before opening the combo (technically it could be anything)
@@ -135,6 +136,7 @@ void WavefrontTracerShelf::Construct()
         }
         ImGui::EndCombo();
     }
+
 }
 
 IMGUIShelfFactory::IMGUIShelfFactory()
@@ -150,7 +152,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
     m_instantiators[Cuda::Host::QuadLight::GetAssetTypeString()] = QuadLightShelf::Instantiate;
     m_instantiators[Cuda::Host::EnvironmentLight::GetAssetTypeString()] = EnvironmentLightShelf::Instantiate;
 
-    m_instantiators[Cuda::Host::LambertBRDF::GetAssetTypeString()] = LambertBRDFShelf::Instantiate;
+    //m_instantiators[Cuda::Host::LambertBRDF::GetAssetTypeString()] = LambertBRDFShelf::Instantiate;
 
     m_instantiators[Cuda::Host::PerspectiveCamera::GetAssetTypeString()] = PerspectiveCameraShelf::Instantiate;
 

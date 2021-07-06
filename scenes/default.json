@@ -8,7 +8,8 @@
       "camera": "camera_perspCam",
       "maxDepth" : 3,
       "debugNormals": false,
-      "importanceMode": "mis"
+      "importanceMode": "mis",
+      "displayGamma": 1.7
     }  
   },
   "cameras": 
@@ -119,7 +120,20 @@
       "colour": [1.0, 1.0, 1.0],
       "transform" : 
       {
-        "pos": [0.0, 0.48, 0.0],
+        "pos": [0.2, 0.48, 0.2],
+        "rot": [-90.0, 0.0, 0.0],
+        "sca": [0.2, 0.2, 0.2]
+      }
+    },
+    "light_mainQuad2":
+    {
+      "enabled": true,
+      "class": "quad",
+      "intensity": 1.5,
+      "colour": [1.0, 1.0, 1.0],
+      "transform" : 
+      {
+        "pos": [-0.2, 0.48, -0.2],
         "rot": [-90.0, 0.0, 0.0],
         "sca": [0.2, 0.2, 0.2]
       }

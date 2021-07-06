@@ -72,6 +72,7 @@ namespace Cuda
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ Device::PerspectiveCamera*			GetDeviceInstance() const { return cu_deviceData; }
 			__host__ static std::string GetAssetTypeString() { return "perspective"; }
+			__host__ static std::string GetAssetDescriptionString() { return "Perspective Camera"; }
 		};
 	}
 }

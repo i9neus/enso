@@ -41,7 +41,7 @@ protected:
     std::string m_id;
 };
 
-template<typename ParamsType>
+template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {
 public:
@@ -71,8 +71,10 @@ public:
         if (ImGui::TreeNode("Transform"))
         {
             ImGui::DragFloat3("Position", &transform.trans[0], math::max(0.01f, cwiseMax(transform.trans) * 0.01f));
-            ImGui::DragFloat3("Rotation", &transform.rot[0], math::max(0.01f, cwiseMax(transform.rot) * 0.01f));
-            ImGui::DragFloat3("Scale", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
+            ImGui::DragFloat3("Rotation", &transform.rot[0], math::max(0.01f, cwiseMax(transform.rot) * 0.01f));            
+            //ImGui::DragFloat3("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
+            ImGui::DragFloat("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
+            transform.scale = transform.scale[0];
             ImGui::TreePop();
         }
     }
@@ -88,12 +90,23 @@ public:
         return false;
     }
 
+    std::string GetShelfTitle()
+    {
+        const auto& assetDescription = ObjectType::GetAssetDescriptionString();
+        if (assetDescription.empty())
+        {
+            return tfm::format("%s", m_id);
+        }
+
+        return tfm::format("%s: %s", ObjectType::GetAssetDescriptionString(), m_id);
+    }
+
 protected:
     std::array<ParamsType, 2> m_params;
 };
 
 // Simple material
-class SimpleMaterialShelf : public IMGUIShelf<Cuda::SimpleMaterialParams>
+class SimpleMaterialShelf : public IMGUIShelf<Cuda::Host::SimpleMaterial, Cuda::SimpleMaterialParams>
 {
 public:
     SimpleMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -104,7 +117,7 @@ public:
 };
 
 // Simple material
-class CornellMaterialShelf : public IMGUIShelf<Cuda::CornellMaterialParams>
+class CornellMaterialShelf : public IMGUIShelf<Cuda::Host::CornellMaterial, Cuda::CornellMaterialParams>
 {
 public:
     CornellMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -115,7 +128,7 @@ public:
 };
 
 // Plane tracable
-class PlaneShelf : public IMGUIShelf<Cuda::PlaneParams>
+class PlaneShelf : public IMGUIShelf<Cuda::Host::Plane, Cuda::PlaneParams>
 {
 public:
     PlaneShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -126,7 +139,7 @@ public:
 };
 
 // Sphere tracable
-class SphereShelf : public IMGUIShelf<Cuda::TracableParams>
+class SphereShelf : public IMGUIShelf<Cuda::Host::Sphere, Cuda::TracableParams>
 {
 public:
     SphereShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -137,7 +150,7 @@ public:
 };
 
 // KIFS tracable
-class KIFSShelf : public IMGUIShelf<Cuda::KIFSParams>
+class KIFSShelf : public IMGUIShelf<Cuda::Host::KIFS, Cuda::KIFSParams>
 {
 public:
     KIFSShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -148,7 +161,7 @@ public:
 };
 
 // Quad light
-class QuadLightShelf : public IMGUIShelf<Cuda::QuadLightParams>
+class QuadLightShelf : public IMGUIShelf<Cuda::Host::QuadLight, Cuda::QuadLightParams >
 {
 public:
     QuadLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -159,7 +172,7 @@ public:
 };
 
 // Environment light
-class EnvironmentLightShelf : public IMGUIShelf<Cuda::EnvironmentLightParams>
+class EnvironmentLightShelf : public IMGUIShelf<Cuda::Host::EnvironmentLight, Cuda::EnvironmentLightParams>
 {
 public:
     EnvironmentLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -170,7 +183,7 @@ public:
 };
 
 // Lambertian BRDF
-class LambertBRDFShelf : public IMGUIShelf<Cuda::NullParams>
+class LambertBRDFShelf : public IMGUIShelf<Cuda::Host::LambertBRDF, Cuda::NullParams>
 {
 public:
     LambertBRDFShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -181,7 +194,7 @@ public:
 };
 
 // Wavefront tracer
-class WavefrontTracerShelf : public IMGUIShelf<Cuda::WavefrontTracerParams>
+class WavefrontTracerShelf : public IMGUIShelf<Cuda::Host::WavefrontTracer, Cuda::WavefrontTracerParams>
 {
 public:
     WavefrontTracerShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -192,7 +205,7 @@ public:
 };
 
 // Perspective camera
-class PerspectiveCameraShelf : public IMGUIShelf<Cuda::PerspectiveCameraParams>
+class PerspectiveCameraShelf : public IMGUIShelf<Cuda::Host::PerspectiveCamera, Cuda::PerspectiveCameraParams>
 {
 public:
     PerspectiveCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -203,7 +216,7 @@ public:
 };
 
 // Cornell box
-class CornellBoxShelf : public IMGUIShelf<Cuda::CornellBoxParams>
+class CornellBoxShelf : public IMGUIShelf<Cuda::Host::CornellBox, Cuda::CornellBoxParams>
 {
 public:
     CornellBoxShelf(const Json::Node& json) : IMGUIShelf(json) {}

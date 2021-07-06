@@ -33,6 +33,7 @@ namespace Cuda
 		bool debugNormals;
 		vec3 ambientRadiance;
 		int importanceMode;
+		float displayGamma;
 	};
 	
 	namespace Device
@@ -134,6 +135,7 @@ namespace Cuda
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 			__host__ static std::string GetAssetTypeString() { return "wavefront"; }
+			__host__ static std::string GetAssetDescriptionString() { return "Wavefront Tracer"; }
 
 			__host__ virtual void OnDestroyAsset() override final;
 			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;

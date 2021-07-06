@@ -46,6 +46,7 @@ namespace Cuda
 
             __host__ virtual Device::Sphere* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "sphere"; }
+            __host__ static std::string GetAssetDescriptionString() { return "Sphere"; }
             
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
         };
