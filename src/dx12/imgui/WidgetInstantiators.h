@@ -5,7 +5,7 @@
 #include "kernels/tracables/CudaKIFS.cuh"
 #include "kernels/tracables/CudaSphere.cuh"
 #include "kernels/tracables/CudaPlane.cuh"
-//#include "kernels/tracables/CudaCornell.cuh"
+#include "kernels/tracables/CudaCornellBox.cuh"
 
 #include "kernels/lights/CudaQuadLight.cuh"
 #include "kernels/lights/CudaEnvironmentLight.cuh"
@@ -13,6 +13,7 @@
 #include "kernels/bxdfs/CudaLambert.cuh"
 
 #include "kernels/materials/CudaSimpleMaterial.cuh"
+#include "kernels/materials/CudaCornellMaterial.cuh"
 
 #include "kernels/CudaPerspectiveCamera.cuh"
 
@@ -101,6 +102,17 @@ public:
     virtual void Construct() override final;
 };
 
+// Simple material
+class CornellMaterialShelf : public IMGUIShelf<Cuda::CornellMaterialParams>
+{
+public:
+    CornellMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~CornellMaterialShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellMaterialShelf(json)); }
+    virtual void Construct() override final;
+};
+
 // Plane tracable
 class PlaneShelf : public IMGUIShelf<Cuda::PlaneParams>
 {
@@ -178,7 +190,7 @@ public:
     virtual void Construct() override final;
 };
 
-// Wavefront tracer BRDF
+// Perspective camera
 class PerspectiveCameraShelf : public IMGUIShelf<Cuda::PerspectiveCameraParams>
 {
 public:
@@ -186,6 +198,17 @@ public:
     virtual ~PerspectiveCameraShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PerspectiveCameraShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Cornell box
+class CornellBoxShelf : public IMGUIShelf<Cuda::CornellBoxParams>
+{
+public:
+    CornellBoxShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~CornellBoxShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellBoxShelf(json)); }
     virtual void Construct() override final;
 };
 

@@ -11,6 +11,19 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &p.useGrid);
 }
 
+void CornellMaterialShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+    ImGui::ColorEdit3("Albedo 1", (float*)&p.albedo[0]);
+    ImGui::ColorEdit3("Albedo 2", (float*)&p.albedo[1]);
+    ImGui::ColorEdit3("Albedo 3", (float*)&p.albedo[2]);
+    ImGui::ColorEdit3("Albedo 4", (float*)&p.albedo[3]);
+    ImGui::ColorEdit3("Albedo 5", (float*)&p.albedo[4]);
+    ImGui::ColorEdit3("Albedo 6", (float*)&p.albedo[5]);
+}
+
 void PlaneShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -26,6 +39,14 @@ void SphereShelf::Construct()
 
     auto& p = m_params[0];
     ConstructTransform(p.transform);
+}
+
+void CornellBoxShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+    ConstructTransform(p.tracable.transform);
 }
 
 void KIFSShelf::Construct()
@@ -119,10 +140,12 @@ void WavefrontTracerShelf::Construct()
 IMGUIShelfFactory::IMGUIShelfFactory()
 {
     m_instantiators[Cuda::Host::SimpleMaterial::GetAssetTypeString()] = SimpleMaterialShelf::Instantiate;
+    m_instantiators[Cuda::Host::CornellMaterial::GetAssetTypeString()] = CornellMaterialShelf::Instantiate;
 
     m_instantiators[Cuda::Host::Plane::GetAssetTypeString()] = PlaneShelf::Instantiate;
     m_instantiators[Cuda::Host::Sphere::GetAssetTypeString()] = SphereShelf::Instantiate;
     m_instantiators[Cuda::Host::KIFS::GetAssetTypeString()] = KIFSShelf::Instantiate;
+    m_instantiators[Cuda::Host::CornellBox::GetAssetTypeString()] = CornellBoxShelf::Instantiate;
 
     m_instantiators[Cuda::Host::QuadLight::GetAssetTypeString()] = QuadLightShelf::Instantiate;
     m_instantiators[Cuda::Host::EnvironmentLight::GetAssetTypeString()] = EnvironmentLightShelf::Instantiate;

@@ -66,6 +66,7 @@
     <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh" />
+    <ClInclude Include="src\kernels\materials\CudaCornellMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
@@ -81,10 +82,7 @@
     <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh" />
-    <ClInclude Include="src\kernels\tracables\CudaCornell.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="src\kernels\tracables\CudaCornellBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaKIFS.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaPlane.cuh" />
@@ -137,16 +135,14 @@
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />
+    <CudaCompile Include="src\kernels\materials\CudaCornellMaterial.cu" />
     <CudaCompile Include="src\kernels\materials\CudaEmitterMaterial.cu" />
     <CudaCompile Include="src\kernels\materials\CudaEmitterMaterial.cuh" />
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObjectFactory.cu" />
     <CudaCompile Include="src\kernels\materials\CudaSimpleMaterial.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
-    <CudaCompile Include="src\kernels\tracables\CudaCornell.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />

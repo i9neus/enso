@@ -6,9 +6,9 @@
       "enabled": true,
       "class": "wavefront",
       "camera": "camera_perspCam",
-      "maxDepth" : 5,
+      "maxDepth" : 3,
       "debugNormals": false,
-      "importanceMode": "bxdf"
+      "importanceMode": "mis"
     }  
   },
   "cameras": 
@@ -17,8 +17,8 @@
     {
       "enabled": true,
       "class": "perspective",
-      "pos": [0.5, 1.0, 1.5],
-      "lookAt": [0.0, 0.5, 0.0],
+      "pos": [0.0, 0.0, 1.5],
+      "lookAt": [0.0, 0.0, 0.0],
       "focalPlane": 1.0,
       "fLength": 0.45,
       "fStop": 0.45
@@ -28,7 +28,7 @@
   {
     "tracable_groundPlane":
     {
-      "enabled": true,
+      "enabled": false,
       "class": "plane",      
       "material": "material_groundPlane",
       "bounded": false,
@@ -39,16 +39,16 @@
         "sca": [1.0, 1.0, 1.0]
       }
     },
-    "tracable_groundPlane":
+    "cornellBox":
     {
       "enabled": true,
-      "class": "plane",      
-      "material": "material_groundPlane",
+      "class": "cornellbox",      
+      "material": "material_cornell",
       "bounded": false,
       "transform" : 
       {
         "pos": [0.0, 0.0, 0.0],
-        "rot": [90.0, 0.0, 0.0],
+        "rot": [0.0, 0.0, 0.0],
         "sca": [1.0, 1.0, 1.0]
       }
     },
@@ -59,7 +59,7 @@
       "material": "material_kifs",
       "transform" : 
       {
-        "pos": [0.0, 0.5, 0.0],
+        "pos": [0.0, 0.0, 0.0],
         "rot": [0.0, 0.0, 0.0],
         "sca": [0.2, 0.2, 0.2]
       }
@@ -69,10 +69,9 @@
   {
     "material_groundPlane":
     {
-      "enabled": true,
       "class": "simple",
       "bxdf": "bxdf_diffuse",
-      "albedo": [1.0, 1.0, 1.0],
+      "albedo": [0.5, 0.5, 0.5],
       "incandescence" : [0.0, 0.0, 0.0],
       "useGrid" : true,
       "transform" : 
@@ -84,12 +83,22 @@
     },
     "material_kifs":
     {
-      "enabled": true,
       "class": "simple",
       "bxdf": "bxdf_diffuse",
       "albedo": [1.0, 1.0, 1.0],
       "incandescence" : [0.0, 0.0, 0.0],
       "useGrid": false
+    },
+    "material_cornell":
+    {
+      "class": "cornellmaterial",
+      "bxdf": "bxdf_diffuse",
+      "albedo1": [0.5, 0.0, 0.0],
+      "albedo2": [0.2, 0.5, 0.0],
+      "albedo3": [0.5, 0.5, 0.5],
+      "albedo4": [0.5, 0.5, 0.5],
+      "albedo5": [0.5, 0.5, 0.5],
+      "albedo6": [0.5, 0.5, 0.5]
     }
   },
   "bxdfs": 
@@ -106,13 +115,13 @@
     {
       "enabled": true,
       "class": "quad",
-      "intensity": 0.0,
+      "intensity": 1.5,
       "colour": [1.0, 1.0, 1.0],
       "transform" : 
       {
-        "pos": [0.0, 1.0, 0.0],
+        "pos": [0.0, 0.48, 0.0],
         "rot": [90.0, 0.0, 0.0],
-        "sca": [1.0, 1.0, 1.0]
+        "sca": [0.2, 0.2, 0.2]
       }
     }
   }

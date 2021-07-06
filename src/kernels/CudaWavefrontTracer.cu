@@ -8,7 +8,7 @@
 #include "bxdfs/CudaLambert.cuh"
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
-//#include "tracables/CudaCornell.cuh"
+#include "tracables/CudaCornellBox.cuh"
 #include "tracables/CudaKIFS.cuh"
 #include "materials/CudaMaterial.cuh"
 #include "lights/CudaQuadLight.cuh"
@@ -99,8 +99,8 @@ namespace Cuda
 
 	__device__ uchar Device::WavefrontTracer::GetImportanceMode(const RenderCtx& ctx) const
 	{
-		//return m_params.importanceMode;
-		return (ctx.emplacedRay.viewport.x < 256) ? m_params.importanceMode : kImportanceMIS;
+		return m_params.importanceMode;
+		//return (ctx.emplacedRay.viewport.x < 256) ? m_params.importanceMode : kImportanceMIS;
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const

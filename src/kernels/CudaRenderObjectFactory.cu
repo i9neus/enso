@@ -6,7 +6,7 @@
 #include "tracables/CudaKIFS.cuh"
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
-//#include "tracables/CudaCornell.cuh"
+#include "tracables/CudaCornellBox.cuh"
 
 #include "lights/CudaQuadLight.cuh"
 #include "lights/CudaEnvironmentLight.cuh"
@@ -14,6 +14,7 @@
 #include "bxdfs/CudaLambert.cuh"
 
 #include "materials/CudaSimpleMaterial.cuh"
+#include "materials/CudaCornellMaterial.cuh"
 
 #include "CudaPerspectiveCamera.cuh"
 
@@ -27,12 +28,13 @@ namespace Cuda
         m_instantiators[Host::Sphere::GetAssetTypeString()] = Host::Sphere::Instantiate;
         m_instantiators[Host::KIFS::GetAssetTypeString()] = Host::KIFS::Instantiate;
         m_instantiators[Host::Plane::GetAssetTypeString()] = Host::Plane::Instantiate;
-        //m_instantiators[Host::Cornell::GetAssetTypeString()] = Host::Cornell::Instantiate;\
+        m_instantiators[Host::CornellBox::GetAssetTypeString()] = Host::CornellBox::Instantiate;
 
         m_instantiators[Host::QuadLight::GetAssetTypeString()] = Host::QuadLight::Instantiate;
         m_instantiators[Host::EnvironmentLight::GetAssetTypeString()] = Host::EnvironmentLight::Instantiate;
 
         m_instantiators[Host::SimpleMaterial::GetAssetTypeString()] = Host::SimpleMaterial::Instantiate;
+        m_instantiators[Host::CornellMaterial::GetAssetTypeString()] = Host::CornellMaterial::Instantiate;
 
         m_instantiators[Host::LambertBRDF::GetAssetTypeString()] = Host::LambertBRDF::Instantiate;
 
