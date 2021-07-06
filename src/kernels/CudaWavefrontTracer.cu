@@ -121,6 +121,7 @@ namespace Cuda
 		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
 
 		vec2 xi = renderCtx.Rand<2, 3>();
+		const auto numLights = m_objects.cu_deviceLights->Size();
 
 		const BxDF* bxdf = material.GetBoundBxDF();
 		if (!bxdf) 
@@ -129,7 +130,7 @@ namespace Cuda
 		}
 
 		// If there are no lights in this scene, always sample the BxDF
-		if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_objects.cu_deviceLights->Size() == 0)
+		if (GetImportanceMode(renderCtx) == kImportanceBxDF || numLights == 0)
 		{
 			xi.x *= 0.5f;
 		}
@@ -154,7 +155,7 @@ namespace Cuda
 			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
 			
 			// Randomly select a light
-			const int lightIdx = min(m_objects.cu_deviceLights->Size() - 1, uint(xi.y * m_objects.cu_deviceLights->Size()));
+			const int lightIdx = min(numLights - 1, uint(xi.y * numLights));
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
 
 			float pdfBxDF, pdfLight;
@@ -168,7 +169,9 @@ namespace Cuda
 					float weightBxDF;
 					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
 
-					L *= renderCtx.emplacedRay.weight * albedo * 2.0f * weightBxDF; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+					const float weightLight = numLights;
+
+					L *= renderCtx.emplacedRay.weight * albedo * 2.0f * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
 
 					// If MIS is enabled, weight the ray using the power heuristic
 					if (GetImportanceMode(renderCtx) == kImportanceMIS)
@@ -257,8 +260,9 @@ namespace Cuda
 						{
 							float pdfLight;
 							if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
-							{
+							{								
 								L *= compressedRay.weight;
+								L *= float(m_objects.cu_deviceLights->Size());
 								if (GetImportanceMode(renderCtx) == kImportanceMIS)
 								{
 									L *= PowerHeuristic(compressedRay.pdf, pdfLight);
