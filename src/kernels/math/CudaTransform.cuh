@@ -65,7 +65,7 @@ namespace Cuda
 			Create(t, r, s);
 		}
 
-		__host__ __device__ void Create(const vec3& t, const vec3& r, const vec3& s)
+		__host__ __device__ __forceinline__ void Create(const vec3& t, const vec3& r, const vec3& s)
 		{
 			trans = t;
 			rot = r;
@@ -73,14 +73,15 @@ namespace Cuda
 
 			fwd = mat3::Indentity();
 
+			if (rot.x != 0.0) { fwd *= RotXMat3(toRad(rot.x)); }
+			if (rot.y != 0.0) { fwd *= RotYMat3(toRad(rot.y)); }
+			if (rot.z != 0.0) { fwd *= RotZMat3(toRad(rot.z)); }
+
+			nInv = transpose(fwd);
+
 			if (scale != vec3(1.0)) { fwd *= ScaleMat3(scale); }
 
-			if (rot.x != 0.0) { fwd *= RotXMat3(rot.x); }
-			if (rot.y != 0.0) { fwd *= RotYMat3(rot.y); }
-			if (rot.z != 0.0) { fwd *= RotZMat3(rot.z); }
-
 			inv = inverse(fwd);
-			nInv = transpose(fwd);
 		}
 
 		__host__ __device__ __forceinline__ void MakeIdentity()

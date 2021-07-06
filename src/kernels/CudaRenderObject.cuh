@@ -9,6 +9,7 @@ namespace Cuda
     class RenderObjectContainer;
 
     enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
+    enum LightIdFlags : uchar { kNotALight = 0xff };
     
     namespace Device
     {
@@ -24,7 +25,7 @@ namespace Cuda
     {        
         class RenderObject : public Host::Asset
         {
-        public:
+        public:            
             __host__ virtual void Bind(RenderObjectContainer& objectContainer) {}
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;

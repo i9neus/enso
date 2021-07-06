@@ -20,24 +20,8 @@ namespace Cuda
             LambertBRDF() = default;
             ~LambertBRDF() = default;
 
-            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final
-            {
-                const vec2 xi = renderCtx.Rand<0, 1>();
-                
-                // Sample the Lambertian direction
-                vec3 r = vec3(SampleUnitDisc(xi), 0.0f);
-                r.z = sqrt(1.0 - sqr(r.x) - sqr(r.y));
-
-                pdf = r.z / kPi;
-                extant = CreateBasis(hitCtx.hit.n) * r;  
-
-                return true;
-            }
-
-            __device__ float Evaluate(const Ray& incident, const HitCtx& hitCtx, const vec3& extant) const
-            {
-                return dot(extant, hitCtx.hit.n) * kPi;
-            }
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final;
+            __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const override final;
         };
     }
 

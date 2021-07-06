@@ -4,7 +4,9 @@
 #include "thirdparty/rapidjson/allocators.h"
 #include "thirdparty/rapidjson/error/en.h"
 #include "StdIncludes.h"
+#include "StringUtils.h"
 #include "Log.h"
+#include <map>
 
 namespace Json
 {        
@@ -94,12 +96,7 @@ namespace Json
             m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), value, *m_allocator);
         }
 
-        void AddValue(const std::string& name, const std::string& value)
-        {
-            CheckOk();
-            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), 
-                              rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
-        }
+        void AddValue(const std::string& name, const std::string& value);
 
         template<typename T>
         void AddArray(const std::string& name, const std::vector<T>& values)
@@ -107,29 +104,21 @@ namespace Json
             AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const T& element) { jsonArray.PushBack(element, *m_allocator); });
         }
 
-        void AddArray(const std::string& name, const std::vector<std::string>& values)
-        {
-            AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const std::string& element)
-                {
-                    jsonArray.PushBack(rapidjson::Value(element.c_str(), *m_allocator).Move(), *m_allocator);
-                });
-        }
+        void AddArray(const std::string& name, const std::vector<std::string>& values);
 
-        const Node AddChildObject(const std::string& name)
+        template<typename T>
+        void AddEnumeratedParameter(const std::string& parameterName, const std::vector<std::string>& ids, const T& parameterValue)
         {
+            AssertMsgFmt(parameterValue >= 0 && parameterValue < ids.size(), 
+                "Parameter value %i for attribute '%s' is not in the valid range [0, %i)", parameterValue, parameterName.c_str(), ids.size());
+            
             CheckOk();
-            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
-            rapidjson::Value& newNode = (*m_node)[name.c_str()];
-            newNode.SetObject();
-            return Node(&newNode, *this);
+            m_node->AddMember(rapidjson::Value(parameterName.c_str(), *m_allocator).Move(),
+                rapidjson::Value(ids[parameterValue].c_str(), *m_allocator).Move(), *m_allocator);
         }
 
-        bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const
-        {
-            bool value = defaultValue;
-            GetValue(name, value, flags);
-            return value;
-        }
+        const Node AddChildObject(const std::string& name);
+        bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const;
 
         template<typename T> 
         bool GetValue(const std::string& name, T& value, const uint flags) const
@@ -144,34 +133,9 @@ namespace Json
             return true;
         }
 
-        const Node GetChild(const std::string& name, const uint flags) const
-        {
-            CheckOk();
-            return Node(GetChildImpl(name, flags), *this, name);
-        }
-
-        const Node GetChildObject(const std::string& name, const uint flags) const
-        {
-            CheckOk();
-            rapidjson::Value* child = GetChildImpl(name, flags);
-            if (!child || !child->IsObject()) { return nullptr; }
-
-            return Node(child, *this, name);
-        }
-
-        const Node GetChildArray(const std::string& name, const uint flags) const
-        {
-            rapidjson::Value* child = GetChildImpl(name, flags);
-            if (!child) { return Node(); }
-
-            if (!child->IsArray())
-            {
-                AssertMsgFmt(flags != kRequiredAssert, "Node '%s' is not an array.", name.c_str());
-                return Node();
-            }
-
-            return Node(child, *this, name);
-        }
+        const Node GetChild(const std::string& name, const uint flags) const;
+        const Node GetChildObject(const std::string& name, const uint flags) const;
+        const Node GetChildArray(const std::string& name, const uint flags) const;
 
         template<typename Type>
         bool GetArrayValues(const std::string& name, std::vector<Type>& values, const uint flags) const
@@ -203,6 +167,9 @@ namespace Json
             for (int i = 0; i < values.size(); i++) { vec[i] = values[i]; }           
             return true;
         }
+
+        bool GetEnumeratedParameter(const std::string& parameterName, const std::vector<std::string>& ids, int& parameterValue, const uint flags) const;
+        bool GetEnumeratedParameter(const std::string& parameterName, const std::map<std::string, int>& map, int& parameterValue, const uint flags) const;
 
         inline operator bool() const { return m_node; }
         inline bool operator!() const { return !m_node; }

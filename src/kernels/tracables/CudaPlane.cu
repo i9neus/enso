@@ -6,24 +6,24 @@ namespace Cuda
     __host__ void PlaneParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("bounded", isBounded);
-        transform.ToJson(node);
+        tracable.ToJson(node);
     }
 
     __host__ void PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("bounded", isBounded, flags);
-        transform.FromJson(node, ::Json::kRequiredWarn);
+        tracable.FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ bool PlaneParams::operator==(const PlaneParams& rhs) const
     {
         return isBounded == rhs.isBounded &&
-            transform == rhs.transform;
+            tracable == rhs.tracable;
     }
     
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 
-        const RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
+        const RayBasic localRay = RayToObjectSpace(ray.od, m_params.tracable.transform);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
         if (fabs(localRay.d.z) < 1e-10) { return false; }
@@ -40,7 +40,7 @@ namespace Cuda
         //HitPoint hit = m_transform.HitToWorldSpace(HitPoint(ray.HitPoint(), vec3(0.0f, 0.0f, 1.0f)));
         //if (dot(hit.n, ray.od.o - hit.o) < 0.0f) { hit.n = -hit.n; }
 
-        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f), m_params.transform)), false, vec2(u, v), 1e-5f);
+        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f), m_params.tracable.transform)), false, vec2(u, v), 1e-5f);
         return true;
     }
 

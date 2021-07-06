@@ -15,16 +15,16 @@ namespace Cuda
         {
             friend Host::Sphere;
         protected:
-            BidirectionalTransform m_transform;
+            TracableParams m_params;
 
         public:
             __device__ Sphere() {}
             __device__ virtual ~Sphere() {}
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final; 
-            __device__ void Synchronise(const BidirectionalTransform& transform)
+            __device__ void Synchronise(const TracableParams& params)
             {
-                m_transform = transform;
+                m_params = params;
             }
         };
     }

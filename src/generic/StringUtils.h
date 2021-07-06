@@ -4,6 +4,19 @@
 
 std::wstring Widen(const std::string& str);
 
+// Capitalises the first letter of the input string
+std::string CapitaliseFirst(const std::string& input);
+
+void ClipTrailingWhitespace(std::string& input);
+
+void MakeLowercase(std::string& input);
+std::string Lowercase(const std::string& input);
+bool IsLowercase(const std::string& input);
+
+void MakeUppercase(std::string& input);
+std::string Uppercase(const std::string& input);
+bool IsUppercase(const std::string& input);
+
 class Lexer
 {
 private:

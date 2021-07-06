@@ -14,9 +14,6 @@ namespace Cuda
         transNode.GetVector("pos", trans, flags);       
         transNode.GetVector("rot", rot, flags);
         transNode.GetVector("sca", scale, flags);
-
-        // Convert from degrees to radians
-        rot = toRad(rot);
         
         // Build the transform
         Create(trans, rot, scale);
@@ -27,7 +24,7 @@ namespace Cuda
         auto transNode = parentNode.AddChildObject("transform");
 
         transNode.AddArray("pos", std::vector<float>({ trans.x, trans.y, trans.z }));
-        transNode.AddArray("rot", std::vector<float>({ toDeg(rot.x), toDeg(rot.y), toDeg(rot.z) }));
+        transNode.AddArray("rot", std::vector<float>({ rot.x, rot.y, rot.z }));
         transNode.AddArray("sca", std::vector<float>({ scale.x, scale.y, scale.z }));
     }
 

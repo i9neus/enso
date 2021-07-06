@@ -6,7 +6,8 @@ namespace Cuda
 {
     __host__ __device__ SimpleMaterialParams::SimpleMaterialParams() :
         albedo(0.5f),
-        incandescence(0.0f) {}
+        incandescence(0.0f),
+        useGrid(false) {}
 
     __host__ SimpleMaterialParams::SimpleMaterialParams(const ::Json::Node& node, const uint flags) :
         SimpleMaterialParams()
@@ -18,18 +19,14 @@ namespace Cuda
     {
         node.AddArray("albedo", std::vector<float>({ albedo.x, albedo.y, albedo.z }));
         node.AddArray("incandescence", std::vector<float>({ incandescence.x, incandescence.y, incandescence.z }));
+        node.AddValue("useGrid", useGrid);
     }
 
     __host__ void SimpleMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetVector("albedo", albedo, flags);
         node.GetVector("incandescence", incandescence, flags);
-    }
-
-    __host__ bool SimpleMaterialParams::operator==(const SimpleMaterialParams& rhs) const
-    {
-        return albedo == rhs.albedo &&
-            incandescence == rhs.incandescence;
+        node.GetValue("useGrid", useGrid, flags);
     }
 
     __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -39,15 +36,18 @@ namespace Cuda
         incandescence = m_params.incandescence;
         albedo = m_params.albedo;
 
-        vec2 absUv = abs(hit.uv - vec2(0.5f));
-        if (absUv.x < 0.52f && absUv.y < 0.52f && !(absUv.x < 0.5f && absUv.y < 0.5f))
+        if (m_params.useGrid)
         {
-            albedo *= 0.7;
-        }
-        if (fract(absUv.x * kGridScale) < 0.02f || fract(absUv.y * kGridScale) < 0.02f ||
-            fract(absUv.x * 10.0f * kGridScale) < 0.1f || fract(absUv.y * 10.0 * kGridScale) < 0.1f)
-        {
-            albedo *= 0.7;
+            vec2 absUv = abs(hit.uv - vec2(0.5f));
+            if (absUv.x < 0.52f && absUv.y < 0.52f && !(absUv.x < 0.5f && absUv.y < 0.5f))
+            {
+                albedo *= 0.7;
+            }
+            if (fract(absUv.x * kGridScale) < 0.02f || fract(absUv.y * kGridScale) < 0.02f ||
+                fract(absUv.x * 10.0f * kGridScale) < 0.1f || fract(absUv.y * 10.0 * kGridScale) < 0.1f)
+            {
+                albedo *= 0.7;
+            }
         }
     }
 

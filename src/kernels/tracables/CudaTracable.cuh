@@ -10,6 +10,20 @@ namespace Json { class Node; }
 namespace Cuda
 {
     namespace Host  { class Tracable;  }
+
+    struct TracableParams
+    {
+        __host__ __device__ TracableParams() {}
+        __host__ __device__ TracableParams(const BidirectionalTransform& transform_) : transform(transform_) {}
+        __host__ TracableParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+        bool operator==(const TracableParams&) const;
+
+        BidirectionalTransform transform;
+    };
     
     namespace Device
     {
@@ -18,18 +32,28 @@ namespace Cuda
         class Tracable : public Device::RenderObject, public AssetTags<Device::Tracable, Device::Tracable>
         {
         public:
+            struct Objects
+            {
+                __host__ __device__ Objects() : cu_material(nullptr), lightId(0xff) {}
+
+                const Device::Material* cu_material;
+                uchar lightId;
+            };
+
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const = 0;
             __device__ virtual void InitialiseKernelConstantData() const {};
 
-            __device__ void Synchronise(const Device::Material* material) { cu_material = material; }
-            __device__ const Device::Material* GetBoundMaterial() const { return cu_material; }
+            __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
+            __device__ __forceinline__ const Device::Material* GetBoundMaterial() const { return m_objects.cu_material; }
+            __device__ __forceinline__ uchar GetLightID() const { return m_objects.lightId; }
             
             __device__ virtual ~Tracable() {}
 
         protected:
-            __device__ Tracable() : cu_material(nullptr) {}
+            Objects m_objects;
 
-            const Device::Material* cu_material;
+            __device__ Tracable() : m_objects() {}
+           
         };
     }
 
@@ -40,17 +64,22 @@ namespace Cuda
         class Tracable : public Host::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
         {
         protected:
-            __host__ Tracable() = default;
+            __host__ Tracable() : m_lightId(kNotALight) {}
             __host__ virtual ~Tracable() = default;
-
-            std::string         m_materialId;
+            
+            AssetHandle<Host::Material> m_materialAsset;
+            std::string                 m_materialId;
+            uchar                       m_lightId;
 
         public:
             __host__ virtual Device::Tracable*      GetDeviceInstance() const = 0;
             __host__ virtual AssetType              GetAssetType() const override final { return AssetType::kTracable; }
             __host__ virtual void                   Bind(RenderObjectContainer& objectContainer) override final;
+            __host__ virtual void                   Synchronise() override final;
             __host__ virtual void                   FromJson(const ::Json::Node& node, const uint flags) override;
             __host__ static std::string             GetAssetTypeString() { return "tracable"; }
+            
+            __host__ void                           SetLightID(const uchar lightId) { m_lightId = lightId; }
         };
     }
 }

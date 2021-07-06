@@ -4,6 +4,21 @@
 
 namespace Cuda
 {
+    __host__ void TracableParams::ToJson(::Json::Node& node) const
+    {
+        transform.ToJson(node);
+    }
+
+    __host__ void TracableParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        transform.FromJson(node, ::Json::kRequiredWarn);
+    }
+
+    __host__ bool TracableParams::operator==(const TracableParams& rhs) const
+    {
+        return transform == rhs.transform;
+    }
+    
     __host__ void Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::RenderObject::FromJson(node, flags);
@@ -18,13 +33,23 @@ namespace Cuda
             Log::Error("Error: no material binding ID was specified for tracable '%s'.\n", GetAssetID());
             return;
         }
-        
-        AssetHandle<Host::Material> materialAsset = GetAssetHandleForBinding<Host::Tracable, Host::Material>(objectContainer, m_materialId);
+                
+        // Get a handle to the material asset for this tracable
+        m_materialAsset = GetAssetHandleForBinding<Host::Tracable, Host::Material>(objectContainer, m_materialId);        
+    }
+
+    __host__ void Host::Tracable::Synchronise()
+    {
+        Device::Tracable::Objects deviceObjects;
+        deviceObjects.lightId = m_lightId;
+        if (m_materialAsset)
+        {
+            deviceObjects.cu_material = m_materialAsset->GetDeviceInstance();
+        }
 
         // Push the binding to the device
-        if (materialAsset)
-        {
-            SynchroniseObjects(static_cast<Device::Tracable*>(GetDeviceInstance()), materialAsset->GetDeviceInstance());
-        }
+        SynchroniseObjects(static_cast<Device::Tracable*>(GetDeviceInstance()), deviceObjects);
+
+        Log::Debug("Synchronised tracable '%s'.\n", GetAssetID());
     }
 }

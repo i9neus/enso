@@ -8,8 +8,10 @@ namespace Cuda
 
 	enum RayFlags : uchar
 	{
-		kRayAlive =		  1 << 0,
-		kLightSampleRay = 1 << 1
+		kRayIndirectSample =		1 << 0,
+		kRayDirectLightSample =		1 << 1,
+		kRayDirectBxDFSample =		1 << 2,
+		kRayDirectSample =			kRayDirectLightSample | kRayDirectBxDFSample
 	};
 
 	struct RayBasic
@@ -46,7 +48,7 @@ namespace Cuda
 		RayBasic		od;			// 24 bytes
 		vec3			weight;		// 12 bytes
 		half			pdf;		// 2 bytes
-		half			lambda;		// 2 bytes
+		uchar			lightId;	// 1 byte
 		struct
 		{
 			ushort		x;			// 2 bytes
@@ -57,31 +59,28 @@ namespace Cuda
 		uchar	depth;				// 1 byte
 		uint	sampleIdx;			// 4 bytes
 
-		__device__ __forceinline__ void SetAlive() { flags |= kRayAlive; }
 		__device__ __forceinline__ void Kill() { flags = 0; }
-		__device__ __forceinline__ bool IsAlive() { return flags & kRayAlive; }
+		__device__ __forceinline__ bool IsAlive() const { return flags != 0; }		
 		__device__ __forceinline__ ivec2 ViewportPos() const { return ivec2(viewport.x, viewport.y); }
 	};
 
 	// The "full fat" ray objects that most methods will refer to
 	struct Ray
 	{				
-		RayBasic	od;		
-		float   tNear;             // The parameterised intersection along the ray, defined in cartesian coordinates as o + d * tNear		
-		vec3	weight;            // The weight/throughput of the ray depending on context
-		float   pdf;               // The value of a probability density function incident to the intersection, depending on context
-		float   lambda;            // The wavelength of the ray used by the spectral integrator		
+		RayBasic	od;
+		float		tNear;             // The parameterised intersection along the ray, defined in cartesian coordinates as o + d * tNear			
+		uchar		flags;
 
 		Ray() = default;
 		__device__ Ray(const CompressedRay & comp) :
 			od(comp.od),
 			tNear(FLT_MAX),
-			pdf(comp.pdf),
-			lambda(lambda),
-			weight(comp.weight)
+			flags(comp.flags)
 		{
 		}
 
-		__device__ vec3 HitPoint() const { return od.o + od.d * tNear; }
+		__device__ __forceinline__ vec3 HitPoint() const { return od.o + od.d * tNear; }
+		__device__ __forceinline__ bool IsDirectSample() const { return flags & kRayDirectSample; }
+		__device__ __forceinline__ bool IsIndirectSample() const { return flags & kRayIndirectSample; }
 	};
 }

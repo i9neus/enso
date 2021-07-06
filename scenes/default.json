@@ -6,7 +6,9 @@
       "enabled": true,
       "class": "wavefront",
       "camera": "camera_perspCam",
-      "maxDepth" : 1
+      "maxDepth" : 5,
+      "debugNormals": false,
+      "importanceMode": "bxdf"
     }  
   },
   "cameras": 
@@ -33,20 +35,33 @@
       "transform" : 
       {
         "pos": [0.0, 0.0, 0.0],
-        "rot": [-90.0, 0.0, 0.0],
+        "rot": [90.0, 0.0, 0.0],
         "sca": [1.0, 1.0, 1.0]
       }
     },
-    "tracable_kifs":
+    "tracable_groundPlane":
     {
-      "enabled": false,
-      "class": "kifs",
-      "material": "material_kifs",
+      "enabled": true,
+      "class": "plane",      
+      "material": "material_groundPlane",
+      "bounded": false,
       "transform" : 
       {
         "pos": [0.0, 0.0, 0.0],
-        "rot": [0.0, 0.0, 0.0],
+        "rot": [90.0, 0.0, 0.0],
         "sca": [1.0, 1.0, 1.0]
+      }
+    },
+    "tracable_sphere":
+    {
+      "enabled": true,
+      "class": "sphere",
+      "material": "material_kifs",
+      "transform" : 
+      {
+        "pos": [0.0, 0.5, 0.0],
+        "rot": [0.0, 0.0, 0.0],
+        "sca": [0.2, 0.2, 0.2]
       }
     }
   },
@@ -57,16 +72,24 @@
       "enabled": true,
       "class": "simple",
       "bxdf": "bxdf_diffuse",
-      "albedo": [0.7, 0.7, 0.7],
-      "incandescence" : [0.0, 0.0, 0.0]
+      "albedo": [1.0, 1.0, 1.0],
+      "incandescence" : [0.0, 0.0, 0.0],
+      "useGrid" : true,
+      "transform" : 
+      {
+        "pos": [0.0, 0.0, 0.0],
+        "rot": [0.0, 0.0, 0.0],
+        "sca": [1.0, 1.0, 1.0]
+      }
     },
     "material_kifs":
     {
       "enabled": true,
       "class": "simple",
       "bxdf": "bxdf_diffuse",
-      "albedo": [0.2, 0.2, 0.2],
-      "incandescence" : [0.0, 0.0, 0.0]
+      "albedo": [1.0, 1.0, 1.0],
+      "incandescence" : [0.0, 0.0, 0.0],
+      "useGrid": false
     }
   },
   "bxdfs": 
@@ -82,7 +105,15 @@
     "light_mainQuad":
     {
       "enabled": true,
-      "class": "quad"
+      "class": "quad",
+      "intensity": 0.0,
+      "colour": [1.0, 1.0, 1.0],
+      "transform" : 
+      {
+        "pos": [0.0, 1.0, 0.0],
+        "rot": [90.0, 0.0, 0.0],
+        "sca": [1.0, 1.0, 1.0]
+      }
     }
   }
 }

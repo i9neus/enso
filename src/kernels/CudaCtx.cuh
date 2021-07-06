@@ -5,7 +5,7 @@
 #include "CudaHash.cuh"
 #include "CudaRay.cuh"
 
-//#define kPNGSampler
+#define kPNGSampler
 
 namespace Cuda
 {
@@ -66,17 +66,22 @@ namespace Cuda
 #endif
 		__device__ __forceinline__ void ResetRay() { emplacedRay.flags = 0; }
 
-		__device__ __forceinline__ void EmplaceRay(const RayBasic& od, const vec3& weight, const float& pdf, const float& lambda, const uchar& flags, const uchar& depth)
+		__device__ __forceinline__ void EmplaceIndirectSample(const RayBasic& od, const vec3& weight)
 		{
 			emplacedRay.od = od;
 			emplacedRay.weight = weight;
-			emplacedRay.lambda = lambda;
-			emplacedRay.pdf = pdf;
-			emplacedRay.lambda = lambda;
-			emplacedRay.flags = flags;
-			emplacedRay.depth = depth + 1;
+			emplacedRay.depth++;
+			emplacedRay.flags = kRayIndirectSample;
+		}
 
-			emplacedRay.flags |= kRayAlive;
+		__device__ __forceinline__ void EmplaceDirectSample(const RayBasic& od, const vec3& weight, const float& pdf, const ushort& lightId, const uchar& flags)
+		{
+			emplacedRay.od = od;
+			emplacedRay.weight = weight;
+			emplacedRay.lightId = lightId;
+			emplacedRay.pdf = pdf;
+			emplacedRay.depth++;
+			emplacedRay.flags = flags;
 		}
 	};
 

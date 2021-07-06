@@ -6,6 +6,14 @@
 
 namespace Cuda
 {
+    __host__ __device__ QuadLightParams::QuadLightParams() : 
+        position(0.0f), 
+        orientation(0.0f), 
+        scale(1.0f), 
+        intensity(1.0f), 
+        colour(1.0f), 
+        radiance(1.0f) {}
+    
     __host__ QuadLightParams::QuadLightParams(const ::Json::Node& node) :
         QuadLightParams()
     { 
@@ -14,9 +22,7 @@ namespace Cuda
     
     __host__ void QuadLightParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("position", std::vector<float>({ position.x, position.y, position.z }));
-        node.AddArray("orientation", std::vector<float>({ orientation.x, orientation.y, orientation.z }));
-        node.AddArray("scale", std::vector<float>({ scale.x, scale.y, scale.z }));
+        transform.ToJson(node);
 
         node.AddValue("intensity", intensity);
         node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
@@ -24,21 +30,12 @@ namespace Cuda
 
     __host__ void QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("position", position, flags);
-        node.GetVector("orientation", orientation, flags);
-        node.GetVector("scale", scale, flags);
+        transform.FromJson(node, flags);
 
         node.GetValue("intensity", intensity, flags);
         node.GetVector("colour", colour, flags);
-    }
 
-    __host__ bool QuadLightParams::operator==(const QuadLightParams& rhs) const
-    {
-        return position == rhs.position &&
-            orientation == rhs.orientation &&
-            scale == rhs.scale &&
-            intensity == rhs.intensity &&
-            colour == rhs.colour;
+        radiance = colour * std::pow(2.0f, intensity) / (transform.scale.x * transform.scale.y);
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -48,8 +45,7 @@ namespace Cuda
 
     __device__ void Device::QuadLight::Prepare()
     {        
-        m_emitterArea = m_params.transform.scale.x * m_params.transform.scale.x;
-        m_emitterRadiance = m_params.colour * math::pow(2.0f, m_params.intensity) / m_emitterArea;
+        m_emitterArea = m_params.transform.scale.x * m_params.transform.scale.y;
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
@@ -58,7 +54,7 @@ namespace Cuda
         const vec3& hitPos = hitCtx.hit.p;
         const vec3& normal = hitCtx.hit.n;
 
-        const vec2 xi = renderCtx.Rand<0, 1>() - 0.5f;
+        const vec2 xi = renderCtx.Rand<0, 1>() - vec2(0.5f);
         const vec3 lightPos = m_params.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
@@ -70,19 +66,19 @@ namespace Cuda
         if (dot(extant, normal) <= 0.0f) { return false; }
 
         // Test if the emitter is rotated away from the shading point
-        vec3 lightNormal = m_params.transform.PointToWorldSpace(vec3(xi, 1.0f));
-        float cosPhi = dot(extant, normalize(lightNormal - lightPos));
+        vec3 lightNormal = m_params.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
+        float cosPhi = dot(extant, normalize(lightNormal));
         if (cosPhi < 0.0f) { return false; }
 
         // Compute the projected solid angle of the light        
-        float solidAngle = cosPhi * min(1e5f, m_emitterArea / sqr(lightDist));
+        float solidAngle = cosPhi * min(1e10f, m_emitterArea / sqr(lightDist));
 
-        // Compute the PDFs of the light and BRDF
-        float cosTheta = dot(normal, extant);
+        // Compute the PDFs of the light
         pdfLight = 1.0f / solidAngle;
 
         // Calculate the ray throughput in the event that is hits the light
-        L = incident.weight * m_emitterRadiance * solidAngle * cosTheta / kPi;
+        L = m_params.radiance * solidAngle / kPi;
+        return true;
     }
 
     __device__ void Device::QuadLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
@@ -90,7 +86,7 @@ namespace Cuda
         const float solidAngle = dot(hitCtx.hit.n, incident.od.d) * m_emitterArea / sqr(incident.tNear);
 
         pdfLight = 1 / solidAngle;
-        L = m_emitterRadiance;
+        L = m_params.radiance;
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::QuadLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -103,17 +99,18 @@ namespace Cuda
     __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode, const std::string& id)
         : cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
-        FromJson(jsonNode, ::Json::kRequiredWarn);        
-
+        // Instantiate the emitter material
         m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(), id + "_material");
         Assert(m_lightMaterialAsset);
-        m_lightMaterialAsset->UpdateParams(vec3(1.0f));
 
+        // Instantiate the plane tracable
         m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(), id + "_planeTracable");
         Assert(m_lightPlaneAsset);
-        m_lightPlaneAsset->UpdateParams(m_params.transform, true);
         m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
+
+        // Finally, instantitate the light itself 
+        cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
+        FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
@@ -123,17 +120,15 @@ namespace Cuda
 
     __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)
     {
-        Host::Light::FromJson(node, flags);
-        
-        Json::Node childNode = node.GetChildObject("quadLight", flags);
-        if (!childNode) { return; }
+        Host::Light::FromJson(node, flags);      
 
         // Pull the parameters from the JSON dictionary and create a transform
-        m_params.FromJson(childNode, flags);
-        m_params.transform.FromJson(childNode, flags);
+        m_params.FromJson(node, flags);
+        m_params.transform.FromJson(node, flags);
        
-        // Update the transform of the light plane asset so they match
-        //m_lightPlaneAsset->SetTransform(newParams.transform);
+        // Update the attributes of the child objects
+        m_lightPlaneAsset->UpdateParams(m_params.transform, true);
+        m_lightMaterialAsset->UpdateParams(m_params.radiance);
      
         // Synchronise with the decvice
         SynchroniseObjects(cu_deviceData, m_params);
@@ -147,5 +142,12 @@ namespace Cuda
             m_lightMaterialAsset.StaticCast<Host::RenderObject>() 
             }
          );
+    }
+
+    __host__ AssetHandle<Host::Tracable> Host::QuadLight::GetTracableHandle()
+    {
+        AssertMsgFmt(m_lightPlaneAsset, "QuadLight object '%s' was not properly initialised.", GetAssetID().c_str());
+
+        return m_lightPlaneAsset.StaticCast<Host::Tracable>();
     }
 }

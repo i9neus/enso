@@ -5,22 +5,27 @@ void SimpleMaterialShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&m_params[0].albedo);
-    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&m_params[0].incandescence);
+    auto& p = m_params[0];
+    ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&p.albedo);
+    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);
+    ImGui::Checkbox("Use grid", &p.useGrid);
 }
 
 void PlaneShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::Checkbox("Bounded", &(m_params[0].isBounded));
+    auto& p = m_params[0];
+    ConstructTransform(p.tracable.transform);
+    ImGui::Checkbox("Bounded", &p.isBounded);
 }
 
 void SphereShelf::Construct()
 {
-    if (!ImGui::CollapsingHeader(m_id.c_str())) { return; }
+    if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::Text("[No attributes]");
+    auto& p = m_params[0];
+    ConstructTransform(p.transform);
 }
 
 void KIFSShelf::Construct()
@@ -46,9 +51,7 @@ void QuadLightShelf::Construct()
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
-    ImGui::InputFloat3("Position", &p.position[0]);
-    ImGui::InputFloat3("Orientation", &p.orientation[0]);
-    ImGui::InputFloat3("Scale", &p.scale[0]);
+    ConstructTransform(p.transform);
 
     ImGui::ColorEdit3("Colour", &p.colour[0]);
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
@@ -73,6 +76,7 @@ void PerspectiveCameraShelf::Construct()
     if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
+    
     ImGui::InputFloat3("Position", &p.position[0]);
     ImGui::InputFloat3("Look at", &p.lookAt[0]);
 
@@ -87,6 +91,29 @@ void WavefrontTracerShelf::Construct()
 
     auto& p = m_params[0];
     ImGui::SliderInt("Max path depth", &p.maxDepth, 0, 20);
+    ImGui::ColorEdit3("Ambient radiance", &p.ambientRadiance[0]);
+    ImGui::Checkbox("Debug normals", &p.debugNormals);
+
+    const char* labels[3] = { "MIS", "Lights", "BxDFs" };
+    const char* selectedLabel = labels[p.importanceMode];  // Label to preview before opening the combo (technically it could be anything)
+    if (ImGui::BeginCombo("Importance mode", selectedLabel, 0))
+    {
+        for (int n = 0; n < 3; n++)
+        {
+            const bool isSelected = (p.importanceMode == n);
+            if (ImGui::Selectable(labels[n], isSelected))
+            {
+                p.importanceMode = n;
+            }
+
+            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
 }
 
 IMGUIShelfFactory::IMGUIShelfFactory()

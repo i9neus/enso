@@ -1,5 +1,4 @@
 #include "JsonUtils.h"
-#include "StringUtils.h"
 
 #include "thirdparty/rapidjson/stringbuffer.h"
 #include "thirdparty/rapidjson/prettywriter.h"
@@ -60,6 +59,121 @@ namespace Json
 
         AssertMsg(false, "Shouldn't be here!");
         return nullptr;
+    }
+
+    void Node::AddValue(const std::string& name, const std::string& value)
+    {
+        CheckOk();
+        m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(),
+            rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
+    }
+
+    void Node::AddArray(const std::string& name, const std::vector<std::string>& values)
+    {
+        AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const std::string& element)
+            {
+                jsonArray.PushBack(rapidjson::Value(element.c_str(), *m_allocator).Move(), *m_allocator);
+            });
+    }
+
+    const Node Node::AddChildObject(const std::string& name)
+    {
+        CheckOk();
+        m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
+        rapidjson::Value& newNode = (*m_node)[name.c_str()];
+        newNode.SetObject();
+        return Node(&newNode, *this);
+    }
+
+    bool Node::GetBool(const std::string& name, const bool defaultValue, const uint flags) const
+    {
+        bool value = defaultValue;
+        GetValue(name, value, flags);
+        return value;
+    }
+
+    const Node Node::GetChild(const std::string& name, const uint flags) const
+    {
+        CheckOk();
+        return Node(GetChildImpl(name, flags), *this, name);
+    }
+
+    const Node Node::GetChildObject(const std::string& name, const uint flags) const
+    {
+        CheckOk();
+        rapidjson::Value* child = GetChildImpl(name, flags);
+        if (!child || !child->IsObject()) { return nullptr; }
+
+        return Node(child, *this, name);
+    }
+
+    const Node Node::GetChildArray(const std::string& name, const uint flags) const
+    {
+        rapidjson::Value* child = GetChildImpl(name, flags);
+        if (!child) { return Node(); }
+
+        if (!child->IsArray())
+        {
+            AssertMsgFmt(flags != kRequiredAssert, "Node '%s' is not an array.", name.c_str());
+            return Node();
+        }
+
+        return Node(child, *this, name);
+    }
+
+    bool Node::GetEnumeratedParameter(const std::string& parameterName, const std::vector<std::string>& ids, int& parameterValue, const uint flags) const
+    {
+        std::map<std::string, int> map;
+        for (int idx = 0; idx < ids.size(); idx++)
+        {
+            map.insert(std::make_pair(Lowercase(ids[idx]), idx));
+        }
+        return GetEnumeratedParameter(parameterName, map, parameterValue, flags);
+    }
+
+    bool Node::GetEnumeratedParameter(const std::string& parameterName, const std::map<std::string, int>& map, int& parameterValue, const uint flags) const
+    {
+        AssertMsg(!map.empty(), "Empty enumeration map.");
+
+        std::string parameterStr;
+        if (!GetValue(parameterName, parameterStr, flags)) { return false; }
+
+        if (parameterStr.empty())
+        {
+            AssertMsgFmt(flags != kRequiredAssert, "Required parameter '%s' not specified.", parameterName.c_str());
+            if (flags == kRequiredWarn)
+            {
+                Log::Warning("JSON node/attribute '%s' was expected but not foun\n", parameterName);
+            }
+            return false;
+        }
+
+        MakeLowercase(parameterStr);
+
+        auto it = map.find(parameterStr);
+        if (it != map.end())
+        {
+            parameterValue = it->second;
+            return true;
+        }
+        else
+        {
+            // Not found, so print an error with the list of possible options
+            std::string error = tfm::format("Invalid value for parameter '%s'. Options are:", parameterName);
+            for (const auto& element : map)
+            {
+                error += tfm::format(" '%s'", element.first);
+            }
+
+            AssertMsgFmt(flags != kRequiredAssert, error.c_str());
+            if (flags == kRequiredWarn)
+            {
+                Log::Warning(error);
+            }
+            return false;
+        }
+
+        return true;
     }
 
     void Document::DeepCopy(const Document& other)

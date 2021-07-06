@@ -17,6 +17,7 @@ namespace Cuda
 	namespace Host { class WavefrontTracer; }	
 
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
+	enum ImportanceMode : uchar { kImportanceMIS, kImportanceLight, kImportanceBxDF };
 
 	struct WavefrontTracerParams : public AssetParams
 	{
@@ -29,6 +30,9 @@ namespace Cuda
 		bool operator==(const WavefrontTracerParams&) const;
 
 		int maxDepth;
+		bool debugNormals;
+		vec3 ambientRadiance;
+		int importanceMode;
 	};
 	
 	namespace Device
@@ -75,6 +79,7 @@ namespace Cuda
 					viewportPos.y >= 0 && viewportPos.y < m_objects.cu_deviceAccumBuffer->Height();
 			}
 
+			__device__ uchar GetImportanceMode(const RenderCtx& ctx) const;
 			__device__ vec3 Shade(const Ray& incidentRay, const Device::Material& hitMaterial, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
 			__device__ void InitaliseScratchpadObjects() const;
 

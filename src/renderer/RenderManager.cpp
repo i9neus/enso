@@ -82,45 +82,57 @@ void RenderManager::Build()
 	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
 	
 	Log::NL();
-	Log::Indent indent("Building render manager...\n", "Build complete!\n");
-	
-	// Load the root config
-	Log::Write("Loading 'config.json'...\n");
-	m_configJson.Load("config.json");
-
-	std::string sceneJsonPath;
-	m_configJson.GetValue("scene", sceneJsonPath, Json::kRequiredAssert);
-
-	Log::Write("Loading scene file '%s'...\n", sceneJsonPath);
-	m_sceneJson.Load(sceneJsonPath);
-
-	// Create a container for the render objects
-	m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
-	
-	// Instantiate them according to the scene JSON
 	const Log::Snapshot beginState = Log::GetMessageState();
-	{		
-		Log::Indent indent("Creating scene objects...\n");
-		
-		Cuda::RenderObjectFactory objectFactory(m_renderStream);
-		objectFactory.Instantiate(m_sceneJson, m_renderObjects);
-	}
-	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
-	Log::Write("Done! Successfully created %i objects (%i errors, %i warnings)\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
-
-	// Bind together to create the scene DAG
 	{
-		Log::Indent indent("Binding scene objects...\n");
-		m_renderObjects->Bind();
+		Log::Indent indent("Building render manager...\n");
+
+		// Load the root config
+		Log::Write("Loading 'config.json'...\n");
+		m_configJson.Load("config.json");
+
+		std::string sceneJsonPath;
+		m_configJson.GetValue("scene", sceneJsonPath, Json::kRequiredAssert);
+
+		Log::Write("Loading scene file '%s'...\n", sceneJsonPath);
+		m_sceneJson.Load(sceneJsonPath);
+
+		// Create a container for the render objects
+		m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
+
+		// Instantiate them according to the scene JSON		
+		{
+			Log::Indent indent("Creating scene objects...\n");
+
+			Cuda::RenderObjectFactory objectFactory(m_renderStream);
+			objectFactory.Instantiate(m_sceneJson, m_renderObjects);
+		}
+		Log::Write("Successfully created %i objects\n", m_renderObjects->Size());
+
+		// Bind together to create the scene DAG
+		{
+			Log::Indent indent("Binding scene objects...\n");
+			m_renderObjects->Bind();
+		}
+		Log::Write("Okay!\n");
+
+		// Synchronise the render objects with the device
+		{
+			Log::Indent indent("Synchronising scene with device...\n");
+			m_renderObjects->Synchronise();
+		}
+		Log::Write("Okay!\n");
+
+		m_renderObjects->Finalise();
+
+		// Get a handle to the wavefront tracer
+		Log::Write("Attaching to wavefront tracer object...\n");
+		m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();
+		AssertMsg(m_wavefrontTracer, "Unable to find a wavefront tracer instance to attach to.");
 	}
-	Log::Write("Done!\n");
 
-	m_renderObjects->Finalise();
+	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
+	Log::Write("*** BUILD COMPLETE***\n%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 
-	// Get a handle to the wavefront tracer
-	Log::Write("Attaching to wavefront tracer object...\n");
-	m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();
-	AssertMsg(m_wavefrontTracer, "Unable to find a wavefront tracer instance to attach to.");
 }
 
 void RenderManager::Destroy()

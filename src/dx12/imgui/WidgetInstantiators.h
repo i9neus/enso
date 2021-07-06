@@ -53,7 +53,8 @@ public:
 
     virtual bool Update(std::string& newJson) override final
     {
-        if (m_params[0] == m_params[1]) { return false; }
+        //if (m_params[0] == m_params[1]) { return false; }
+        if (!IsDirty()) { return false; }
         m_params[1] = m_params[0];
 
         Json::Document newNode;
@@ -61,6 +62,28 @@ public:
         newJson = newNode.Stringify();
 
         return true;
+    }
+
+    void ConstructTransform(Cuda::BidirectionalTransform& transform)
+    {
+        if (ImGui::TreeNode("Transform"))
+        {
+            ImGui::InputFloat3("Position", &transform.trans[0]);
+            ImGui::InputFloat3("Rotation", &transform.rot[0]);
+            ImGui::InputFloat3("Scale", &transform.scale[0]);
+            ImGui::TreePop();
+        }
+    }
+
+    bool IsDirty() const
+    {
+        static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
+
+        for (int i = 0; i < sizeof(ParamsType); i++)
+        {
+            if (reinterpret_cast<const unsigned char*>(&m_params[0])[i] != reinterpret_cast<const unsigned char*>(&m_params[1])[i]) { return true; }
+        }
+        return false;
     }
 
 protected:
@@ -90,7 +113,7 @@ public:
 };
 
 // Sphere tracable
-class SphereShelf : public IMGUIShelf<Cuda::NullParams>
+class SphereShelf : public IMGUIShelf<Cuda::TracableParams>
 {
 public:
     SphereShelf(const Json::Node& json) : IMGUIShelf(json) {}

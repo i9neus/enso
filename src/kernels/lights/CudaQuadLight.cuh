@@ -13,18 +13,18 @@ namespace Cuda
 
     struct QuadLightParams : public AssetParams
     {
-        __host__ __device__ QuadLightParams() : position(0.0f), orientation(0.0f), scale(1.0f), intensity(1.0f), colour(1.0f) {}
+        __host__ __device__ QuadLightParams();
         __host__ QuadLightParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
-        __host__ bool operator==(const QuadLightParams&) const;
 
         vec3 position;
         vec3 orientation;
         vec3 scale;
         float intensity;
         vec3 colour;
+        vec3 radiance;
 
         BidirectionalTransform transform;
     };
@@ -36,7 +36,6 @@ namespace Cuda
             friend Host::QuadLight;
         protected:
             float                   m_emitterArea;
-            vec3                    m_emitterRadiance;
             QuadLightParams         m_params;
 
         public:
@@ -51,6 +50,7 @@ namespace Cuda
                 m_params = params; 
                 Prepare();
             }
+            __device__ void Synchronise(const Objects& objects) { m_objects = objects; }            
         };
     }
 
@@ -76,6 +76,7 @@ namespace Cuda
             __host__ static std::string GetAssetTypeString() { return "quad"; }
             __host__ virtual Device::QuadLight* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
+            __host__ virtual AssetHandle<Host::Tracable> GetTracableHandle() override final;
         };
     }
 }

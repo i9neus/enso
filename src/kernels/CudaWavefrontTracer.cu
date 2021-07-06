@@ -25,23 +25,37 @@
 namespace Cuda
 {
 	__host__ WavefrontTracerParams::WavefrontTracerParams() : 
-		maxDepth(1)
+		maxDepth(1),
+		ambientRadiance(0.0f),
+		debugNormals(false),
+		importanceMode(kImportanceMIS)
 	{
 	}
 	
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
 		node.AddValue("maxDepth", maxDepth);
+		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
+		node.AddValue("debugNormals", debugNormals);
+
+		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
+		node.AddEnumeratedParameter("importanceMode", importanceModeIds, importanceMode);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
+		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
+		node.GetValue("debugNormals", debugNormals, flags);
+
+		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
+		node.GetEnumeratedParameter("importanceMode", importanceModeIds, importanceMode, flags);
 	}
 
 	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
 	{
-		return maxDepth == rhs.maxDepth;
+		return maxDepth == rhs.maxDepth &&
+			ambientRadiance == rhs.ambientRadiance;
 	}
 	
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
@@ -77,51 +91,92 @@ namespace Cuda
 			m_objects.cu_camera->CreateRay(renderCtx);
 		}	
 	}
+	
+	__device__ __forceinline__ float PowerHeuristic(float pdf1, float pdf2)
+	{
+		return 2.0f * sqr(pdf1) / (sqr(pdf1) + sqr(pdf2));
+	}
+
+	__device__ uchar Device::WavefrontTracer::GetImportanceMode(const RenderCtx& ctx) const
+	{
+		//return m_params.importanceMode;
+		return (ctx.emplacedRay.viewport.x < 256) ? m_params.importanceMode : kImportanceMIS;
+	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
-	{
-		if (renderCtx.depth >= m_params.maxDepth) { return kZero; }
-
+	{	
 		vec3 albedo, incandescence;
 		material.Evaluate(hitCtx, albedo, incandescence);
+
+		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
+
 		vec2 xi = renderCtx.Rand<2, 3>();
 
 		const BxDF* bxdf = material.GetBoundBxDF();
-		if (!bxdf) { return incandescence; }
-
-		// Sample the BRDF
-		//if(xi.x < 0.75f)
-		{			
-			vec3 brdfDir;
-			float brdfPdf;
-			if (!bxdf->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf)) { return incandescence; }
-
-			// Light evaluation
-			/*if (xi.y < 0.5f)
-			{
-
-			}
-			// Global illumination evaluation
-			else
-			{
-
-			}*/
-
-			const vec3 weight = incidentRay.weight * albedo;
-
-			renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, renderCtx.depth);
+		if (!bxdf) 
+		{ 
+			return incandescence; 
 		}
-		/*else
-		{
-			vec3 brdfDir;
-			float brdfPdf;
-			if (m_objects.cu_lambert->Sample(incidentRay, hitCtx, renderCtx, brdfDir, brdfPdf))
-			{
-				const vec3 weight = incidentRay.weight * albedo;
 
-				renderCtx.EmplaceRay(RayBasic(hitCtx.ExtantOrigin(), brdfDir), weight, brdfPdf, incidentRay.lambda, 0, renderCtx.depth);
+		// If there are no lights in this scene, always sample the BxDF
+		if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_objects.cu_deviceLights->Size() == 0)
+		{
+			xi.x *= 0.5f;
+		}
+
+		// Indirect light sampling
+		if(xi.x < 0.5f)
+		{			
+			vec3 extantDir;
+			float pdfBxDF;
+			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
+			{
+				vec3 L = renderCtx.emplacedRay.weight * albedo;
+				if (GetImportanceMode(renderCtx) != kImportanceBxDF) { L *= 2.0f; }
+
+				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L);
 			}
-		}*/
+		}
+		// Direct light sampling
+		else
+		{		
+			// Rescale the random number
+			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
+			
+			// Randomly select a light
+			const int lightIdx = min(m_objects.cu_deviceLights->Size() - 1, uint(xi.y * m_objects.cu_deviceLights->Size()));
+			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
+
+			float pdfBxDF, pdfLight;
+			vec3 extantDir, L;
+
+			// Sample the light
+			if (xi.x < 0.5f)
+			{
+				if (light.Sample(incidentRay, hitCtx, renderCtx, extantDir, L, pdfLight))
+				{
+					float weightBxDF;
+					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
+
+					L *= renderCtx.emplacedRay.weight * albedo * 2.0f * weightBxDF; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+
+					// If MIS is enabled, weight the ray using the power heuristic
+					if (GetImportanceMode(renderCtx) == kImportanceMIS)
+					{
+						L *= PowerHeuristic(pdfLight, pdfBxDF);
+					}
+
+					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, pdfLight, lightIdx, kRayDirectLightSample);
+				}
+			}
+			// Sample the BxDF
+			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
+			{	
+				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), 
+					renderCtx.emplacedRay.weight * albedo * 2.0f,
+					pdfBxDF, lightIdx, kRayDirectBxDFSample);
+			}	
+		}
 
 		return incandescence;
 	}
@@ -141,13 +196,13 @@ namespace Cuda
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
-
-		compressedRay.Kill();
 		
 		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
 		//return;
 
-		// INTERSECTION 
+		compressedRay.Kill();
+
+		// INTERSECTION
 		HitCtx hitCtx;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
@@ -157,29 +212,60 @@ namespace Cuda
 			{
 				hitObject = tracables[i];
 			}
-		}		
-
-		// SHADE
+		}
+		
 		vec3 L(0.0f);
+		
 		if (!hitObject)
 		{
-			//L += incidentRay.weight * vec3(1.0f);
+			// Ray didn't hit anything so add the ambient term multiplied by the weight
+			L = m_params.ambientRadiance * compressedRay.weight;
 		}
 		else
-		{
-			const Device::Material* hitMaterial = hitObject->GetBoundMaterial();			
-			if (!hitMaterial)
+		{		
+			// Ray is a direct sample 
+			if (incidentRay.IsDirectSample())
 			{
-				// If no material is bound to this tracable, shade pink to get people's attention
-				L += kPink;
+				// Check that the intersected tracable is the same as the light ID associated with this ray
+				if (compressedRay.lightId == hitObject->GetLightID())
+				{
+					// Light should be evaluated (i.e. BxDF was sampled)
+					if (incidentRay.flags & kRayDirectBxDFSample)
+					{
+						const Light* light = (*m_objects.cu_deviceLights)[compressedRay.lightId];
+						if (!light) { L = kPink; }
+						else
+						{
+							float pdfLight;
+							light->Evaluate(incidentRay, hitCtx, L, pdfLight);
+
+							L *= compressedRay.weight;
+							if (GetImportanceMode(renderCtx) == kImportanceMIS)
+							{
+								L *= PowerHeuristic(compressedRay.pdf, pdfLight);
+							}
+						}
+					}
+					// If the light itself was sampled, everything's baked into the throughput
+					else
+					{
+						L = compressedRay.weight;
+					}
+				}
 			}
-			else
-			{
-				L += Shade(incidentRay, *hitMaterial, hitCtx, renderCtx);
-			}
+			else if(hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF)
+			{			
+				// Otherwise, it's a BxDF sample so do a regular shade op
+				L = Shade(incidentRay, *(hitObject->GetBoundMaterial()), hitCtx, renderCtx) * compressedRay.weight;
+				//if(compressedRay.IsAlive()) L = compressedRay.od.d * 0.5f + vec3(0.5f);
+			}	
 		}
 
-		m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
+		// Accumulate radiance if we're above a certain threshold
+		//if (cwiseMax(L) > 1e-6f)
+		{
+			m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
+		}
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
@@ -253,16 +339,32 @@ namespace Cuda
 		Log::Indent indent;
 		for (auto& object : sceneObjects)
 		{
-			switch (object->GetAssetType())
+			const auto type = object->GetAssetType();
+			
+			if (type == AssetType::kTracable)
 			{
-			case AssetType::kTracable:
 				Log::Debug("Linked tracable '%s' to wavefront tracer.\n", object->GetAssetID());
-				m_hostTracables->Push(object.DynamicCast<Tracable>()); break;			
-			case AssetType::kLight:
-				Log::Debug("Linked light '%s' to wavefront tracer.\n", object->GetAssetID());
-				m_hostLights->Push(object.DynamicCast<Light>()); break;
+
+				Cuda::AssetHandle<Host::Tracable> tracable = object.DynamicCast<Tracable>();
+				Assert(tracable);
+				m_hostTracables->Push(tracable);
 			}
-		}		
+			else if(type == AssetType::kLight)
+			{
+				Log::Debug("Linked light '%s' to wavefront tracer.\n", object->GetAssetID());
+
+				Cuda::AssetHandle<Host::Light> light = object.DynamicCast<Light>();				
+				Assert(light);				
+			
+				// Set the light ID for this tracable with the index of the light in the array. Crude, but it'll do for now. 
+				Cuda::AssetHandle<Host::Tracable> tracable = light->GetTracableHandle();
+				const uchar lightId = m_hostLights->Size();
+				light->SetLightID(lightId);
+				tracable->SetLightID(lightId);
+
+				m_hostLights->Push(light);
+			}
+		}
 
 		// Synchronise the container objects managed by this instance
 		m_hostTracables->Synchronise();

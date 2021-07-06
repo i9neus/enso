@@ -5,7 +5,7 @@ namespace Cuda
 {     
     __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        const RayBasic localRay = RayToObjectSpace(ray.od, m_transform);
+        const RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
         float a = dot(localRay.d, localRay.d);
@@ -38,7 +38,7 @@ namespace Cuda
 
         ray.tNear = tNear;
         hit.p = ray.HitPoint();
-        hit.n = NormalToWorldSpace(hit.n, m_transform);
+        hit.n = NormalToWorldSpace(hit.n, m_params.transform);
 
         hitCtx.Set(hit, false, vec2(0.0f), 1e-5f);
 
@@ -62,7 +62,7 @@ namespace Cuda
     {
         Host::Tracable::FromJson(node, flags);
         
-        SynchroniseObjects(cu_deviceData, BidirectionalTransform(node, flags));
+        SynchroniseObjects(cu_deviceData, TracableParams(node, flags));
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()

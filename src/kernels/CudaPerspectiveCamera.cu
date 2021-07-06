@@ -181,8 +181,8 @@ namespace Cuda
         newRay.od.o += cameraPos;
         newRay.weight = 1.0f;
         newRay.depth = 0;
-        newRay.flags = kRayAlive;
-        newRay.lambda = mix(3800.0f, 7000.0f, mu);
+        newRay.flags = kRayIndirectSample;
+        //newRay.lambda = mix(3800.0f, 7000.0f, mu);
         newRay.sampleIdx = renderCtx.sampleIdx;
 
         newRay.viewport.x = ushort(renderCtx.viewportPos.x);

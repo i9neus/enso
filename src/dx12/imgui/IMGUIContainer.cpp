@@ -75,7 +75,9 @@ void IMGUIContainer::Render()
 
     for (const auto& shelf : m_shelves)
     {
+        ImGui::PushID(shelf->GetID().c_str());        
         shelf->Construct();
+        ImGui::PopID();
     }
 
     float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
