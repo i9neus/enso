@@ -1,6 +1,7 @@
 #pragma once
 
 #include "thirdparty/imgui/imgui.h"
+#include "generic/Math.h"
 
 #include "kernels/tracables/CudaKIFS.cuh"
 #include "kernels/tracables/CudaSphere.cuh"
@@ -69,9 +70,9 @@ public:
     {
         if (ImGui::TreeNode("Transform"))
         {
-            ImGui::InputFloat3("Position", &transform.trans[0]);
-            ImGui::InputFloat3("Rotation", &transform.rot[0]);
-            ImGui::InputFloat3("Scale", &transform.scale[0]);
+            ImGui::DragFloat3("Position", &transform.trans[0], math::max(0.01f, cwiseMax(transform.trans) * 0.01f));
+            ImGui::DragFloat3("Rotation", &transform.rot[0], math::max(0.01f, cwiseMax(transform.rot) * 0.01f));
+            ImGui::DragFloat3("Scale", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
             ImGui::TreePop();
         }
     }

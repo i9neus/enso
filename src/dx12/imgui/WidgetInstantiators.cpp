@@ -98,8 +98,8 @@ void PerspectiveCameraShelf::Construct()
 
     auto& p = m_params[0];
     
-    ImGui::InputFloat3("Position", &p.position[0]);
-    ImGui::InputFloat3("Look at", &p.lookAt[0]);
+    ImGui::DragFloat3("Position", &p.position[0], math::max(0.01f, cwiseMax(p.position) * 0.01f));
+    ImGui::DragFloat3("Look at", &p.lookAt[0], math::max(0.01f, cwiseMax(p.lookAt) * 0.01f));
 
     ImGui::SliderFloat("F-stop", &p.fStop, 0.0f, 1.0f);
     ImGui::SliderFloat("Focal length", &p.fLength, 0.0f, 1.0f);
