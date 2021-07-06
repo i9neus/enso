@@ -68,10 +68,10 @@ namespace Cuda
         // Test if the emitter is rotated away from the shading point
         vec3 lightNormal = m_params.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
         float cosPhi = dot(extant, normalize(lightNormal));
-        if (cosPhi < 0.0f) { return false; }
+        if (cosPhi > 0.0f) { return false; }
 
         // Compute the projected solid angle of the light        
-        float solidAngle = cosPhi * min(1e10f, m_emitterArea / sqr(lightDist));
+        float solidAngle = -cosPhi * min(1e10f, m_emitterArea / sqr(lightDist));
 
         // Compute the PDFs of the light
         pdfLight = 1.0f / solidAngle;
@@ -81,12 +81,18 @@ namespace Cuda
         return true;
     }
 
-    __device__ void Device::QuadLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
+    __device__ bool Device::QuadLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
     {        
-        const float solidAngle = dot(hitCtx.hit.n, incident.od.d) * m_emitterArea / sqr(incident.tNear);
-
+        const float cosPhi = dot(hitCtx.hit.n, incident.od.d);
+        if (cosPhi > 0.0f)
+        {
+            return false;
+        }
+        
+        const float solidAngle = -cosPhi * m_emitterArea / sqr(incident.tNear);
         pdfLight = 1 / solidAngle;
         L = m_params.radiance;
+        return true;
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::QuadLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

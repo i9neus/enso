@@ -11,6 +11,7 @@ namespace Cuda
 		kRayIndirectSample =		1 << 0,
 		kRayDirectLightSample =		1 << 1,
 		kRayDirectBxDFSample =		1 << 2,
+		kRaySpecular =				1 << 3,
 		kRayDirectSample =			kRayDirectLightSample | kRayDirectBxDFSample
 	};
 

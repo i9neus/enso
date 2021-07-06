@@ -43,12 +43,13 @@ namespace Cuda
         extant = SampleUnitSphere(renderCtx.Rand<0, 1>());
     }
 
-    __device__ void Device::EnvironmentLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
+    __device__ bool Device::EnvironmentLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
     {
         const float solidAngle = dot(hitCtx.hit.n, incident.od.d) * m_emitterArea / sqr(incident.tNear);
 
         pdfLight = 1 / solidAngle;
         L = m_emitterRadiance;
+        return true;
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::EnvironmentLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

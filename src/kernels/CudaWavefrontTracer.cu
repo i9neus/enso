@@ -105,9 +105,16 @@ namespace Cuda
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{	
-		vec3 albedo, incandescence;
-		material.Evaluate(hitCtx, albedo, incandescence);
+		vec3 albedo;
+		vec3 incandescence(0.0f);
 
+		// Don't emit light from backfacing materials
+		if (!hitCtx.backfacing)
+		{
+			material.Evaluate(hitCtx, albedo, incandescence);
+		}
+		
+		// If we're at max depth, terminate the ray
 		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
 
 		vec2 xi = renderCtx.Rand<2, 3>();
@@ -237,12 +244,13 @@ namespace Cuda
 						else
 						{
 							float pdfLight;
-							light->Evaluate(incidentRay, hitCtx, L, pdfLight);
-
-							L *= compressedRay.weight;
-							if (GetImportanceMode(renderCtx) == kImportanceMIS)
+							if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
 							{
-								L *= PowerHeuristic(compressedRay.pdf, pdfLight);
+								L *= compressedRay.weight;
+								if (GetImportanceMode(renderCtx) == kImportanceMIS)
+								{
+									L *= PowerHeuristic(compressedRay.pdf, pdfLight);
+								}
 							}
 						}
 					}
@@ -253,7 +261,7 @@ namespace Cuda
 					}
 				}
 			}
-			else if(hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF)
+			else if(hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags == kRaySpecular)
 			{			
 				// Otherwise, it's a BxDF sample so do a regular shade op
 				L = Shade(incidentRay, *(hitObject->GetBoundMaterial()), hitCtx, renderCtx) * compressedRay.weight;

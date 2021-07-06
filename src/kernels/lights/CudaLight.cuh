@@ -27,7 +27,7 @@ namespace Cuda
             __device__ virtual ~Light() {}
 
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const = 0;
-            __device__ virtual void Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const = 0;
+            __device__ virtual bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const = 0;
             __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
         };
     }
