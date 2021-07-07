@@ -25,44 +25,55 @@
       "fStop": 0.45
     }
   },
-  "tracables": 
-  {
-    "tracable_groundPlane":
-    {
+  "tracables": {
+    "tracable_groundPlane": {
       "enabled": false,
-      "class": "plane",      
+      "class": "plane",
       "material": "material_groundPlane",
       "bounded": false,
-      "transform" : 
-      {
-        "pos": [0.0, 0.0, 0.0],
-        "rot": [90.0, 0.0, 0.0],
-        "sca": [1.0, 1.0, 1.0]
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 90.0, 0.0, 0.0 ],
+        "sca": [ 1.0, 1.0, 1.0 ]
       }
     },
-    "cornellBox":
-    {
+    "cornellBox": {
       "enabled": true,
-      "class": "cornellbox",      
+      "class": "cornellbox",
       "material": "material_cornell",
       "bounded": false,
-      "transform" : 
-      {
-        "pos": [0.0, 0.0, 0.0],
-        "rot": [0.0, 0.0, 0.0],
-        "sca": [1.0, 1.0, 1.0]
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 1.0, 1.0, 1.0 ]
       }
     },
-    "tracable_sphere":
-    {
-      "enabled": true,
+    "tracable_sphere": {
+      "enabled": false,
       "class": "sphere",
       "material": "material_kifs",
-      "transform" : 
-      {
-        "pos": [0.0, 0.0, 0.0],
-        "rot": [0.0, 0.0, 0.0],
-        "sca": [0.2, 0.2, 0.2]
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.2, 0.2, 0.2 ]
+      }
+    },
+    "kifsFractal": {
+      "enabled": true,
+      "class": "kifs",
+      "material": "material_kifs",
+      "rotate": [ 0.0, 0.0, 0.0 ],
+      "scale": [ 0.0, 0.0 ],
+      "vertScale": 0.5,
+      "crustThickness": 0.5,
+      "numIterations": 0,
+      "sdfTracer": {
+        "maxIterations": 50
+      },
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.2, 0.2, 0.2 ]
       }
     }
   },
@@ -120,22 +131,9 @@
       "colour": [1.0, 1.0, 1.0],
       "transform" : 
       {
-        "pos": [0.2, 0.48, 0.2],
+        "pos": [0.0, 0.48, 0.0],
         "rot": [-90.0, 0.0, 0.0],
-        "sca": [0.2, 0.2, 0.2]
-      }
-    },
-    "light_mainQuad2":
-    {
-      "enabled": true,
-      "class": "quad",
-      "intensity": 1.5,
-      "colour": [1.0, 1.0, 1.0],
-      "transform" : 
-      {
-        "pos": [-0.2, 0.48, -0.2],
-        "rot": [-90.0, 0.0, 0.0],
-        "sca": [0.2, 0.2, 0.2]
+        "sca": [0.3, 0.3, 0.3]
       }
     }
   }

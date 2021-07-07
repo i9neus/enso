@@ -472,5 +472,8 @@
     <None Include="scenes\default.json">
       <Filter>scenes</Filter>
     </None>
+    <None Include="scenes\kifs.json">
+      <Filter>scenes</Filter>
+    </None>
   </ItemGroup>
 </Project>

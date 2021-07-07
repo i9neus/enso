@@ -38,6 +38,7 @@ namespace Cuda
 		SimplePolyhedron() = default;
 		
 		vec3		V[NumVertices];
-		IdxType		F[NumFaces * PolyOrder];		
+		IdxType		F[NumFaces * PolyOrder];
+		float		sqrBoundRadius;
 	};
 }

@@ -102,6 +102,7 @@ namespace Cuda
 		float		kickoff;           // The degree to which extant rays should be displaced from the surface to prevent self-intersection
 		bool		isValid;
 		vec3        albedo;
+		vec3		debug;
 
 		__device__ HitCtx() : isValid(false) {}
 

@@ -132,7 +132,6 @@ void RenderManager::Build()
 
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
 	Log::Write("*** BUILD COMPLETE***\n%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
-
 }
 
 void RenderManager::Destroy()

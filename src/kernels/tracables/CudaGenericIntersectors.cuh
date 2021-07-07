@@ -10,15 +10,15 @@ namespace Cuda
     namespace Intersector
     {
         // Ray-unit-box intersection test
-        __host__ __device__ __forceinline__ float RayUnitBox(const RayBasic& ray)
+        __host__ __device__ __forceinline__ float RayBox(const RayBasic& ray, const float bounds)
         {
             vec3 tBackPlane, tFrontPlane;
             for (int dim = 0; dim < 3; dim++)
             {
                 if (fabsf(ray.d[dim]) > 1e-10f)
                 {
-                    const float t0 = (0.5f - ray.o[dim]) / ray.d[dim];
-                    const float t1 = (-0.5f - ray.o[dim]) / ray.d[dim];
+                    const float t0 = (bounds - ray.o[dim]) / ray.d[dim];
+                    const float t1 = (-bounds - ray.o[dim]) / ray.d[dim];
                     if (t0 < t1) { tBackPlane[dim] = t0;  tFrontPlane[dim] = t1; }
                     else { tBackPlane[dim] = t1;  tFrontPlane[dim] = t0; }
                 }

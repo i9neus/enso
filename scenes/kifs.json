@@ -1,0 +1,68 @@
+{
+  "integrators": 
+  {
+    "integrator_wfTracer": {
+      "enabled": true,
+      "class": "wavefront",
+      "camera": "camera_perspCam",
+      "maxDepth": 3,
+      "debugNormals": true,
+      "importanceMode": "mis",
+      "displayGamma": 1.7,
+      "ambientRadiance": [ 0.5, 0.5, 0.5 ]
+    }  
+  },
+  "cameras": 
+  {
+    "camera_perspCam" :
+    {
+      "enabled": true,
+      "class": "perspective",
+      "pos": [0.0, 0.0, 1.5],
+      "lookAt": [0.0, 0.0, 0.0],
+      "focalPlane": 1.0,
+      "fLength": 0.45,
+      "fStop": 0.45
+    }
+  },
+  "tracables": 
+  {
+    "kifsFractal": {
+      "enabled": true,
+      "class": "kifs",
+      "material": "material_kifs",
+      "rotate": [ 0.0, 0.0, 0.0 ],
+      "scale": [ 0.0, 0.0 ],
+      "vertScale": 0.5,
+      "crustThickness": 0.5,
+      "numIterations": 0,
+      "sdfTracer": 
+      {
+        "maxIterations": 50
+      },
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 1.0, 1.0, 1.0 ]
+      }
+    }
+  },
+  "materials": 
+  {
+    "material_kifs": {
+      "class": "simple",
+      "bxdf": "bxdf_diffuse",
+      "albedo": [ 0.5, 0.5, 0.5 ],
+      "incandescence": [ 0.0, 0.0, 0.0 ],
+      "useGrid": false
+    }    
+  },
+  "bxdfs": 
+  {
+    "bxdf_diffuse": { "class": "lambert" }
+  },
+  "lights": 
+  {
+    
+  }
+}

@@ -31,6 +31,7 @@ namespace Cuda
 
 		int maxDepth;
 		bool debugNormals;
+		bool debugShaders;
 		vec3 ambientRadiance;
 		int importanceMode;
 		float displayGamma;

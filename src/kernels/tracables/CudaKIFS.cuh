@@ -32,6 +32,17 @@ namespace Cuda
         float   crustThickness;
         int     numIterations;
         uint    faceMask;
+        bool    clipToBound;
+
+        struct
+        {
+            int maxIterations;
+            float cutoffThreshold;
+            float escapeThreshold;
+            float rayIncrement;
+            float failThreshold;
+        }
+        sdf;
 
         BidirectionalTransform transform;
     };

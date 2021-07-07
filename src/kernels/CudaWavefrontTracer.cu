@@ -28,6 +28,7 @@ namespace Cuda
 		maxDepth(1),
 		ambientRadiance(0.0f),
 		debugNormals(false),
+		debugShaders(false),
 		importanceMode(kImportanceMIS),
 		displayGamma(1.0f)
 	{
@@ -38,6 +39,7 @@ namespace Cuda
 		node.AddValue("maxDepth", maxDepth);
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
 		node.AddValue("debugNormals", debugNormals);
+		node.AddValue("debugShaders", debugShaders);
 		node.AddValue("displayGamma", displayGamma);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
@@ -49,6 +51,7 @@ namespace Cuda
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("debugNormals", debugNormals, flags);
+		node.GetValue("debugShaders", debugShaders, flags);
 		node.GetValue("displayGamma", displayGamma, flags);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
@@ -143,7 +146,7 @@ namespace Cuda
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
 				vec3 L = renderCtx.emplacedRay.weight * albedo;
-				if (GetImportanceMode(renderCtx) != kImportanceBxDF) { L *= 2.0f; }
+				if (GetImportanceMode(renderCtx) != kImportanceBxDF && numLights != 0) { L *= 2.0f; }
 
 				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L);
 			}
@@ -218,6 +221,7 @@ namespace Cuda
 
 		// INTERSECTION
 		HitCtx hitCtx;
+		hitCtx.debug = 0.0f;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
 		for (int i = 0; i < tracables.Size(); i++)
@@ -283,6 +287,12 @@ namespace Cuda
 				L = Shade(incidentRay, *(hitObject->GetBoundMaterial()), hitCtx, renderCtx) * compressedRay.weight;
 				//if(compressedRay.IsAlive()) L = compressedRay.od.d * 0.5f + vec3(0.5f);
 			}	
+		}
+
+		if (m_params.debugShaders)
+		{
+			L = hitCtx.debug;
+			compressedRay.Kill();
 		}
 
 		// Accumulate radiance if we're above a certain threshold

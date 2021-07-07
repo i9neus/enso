@@ -12,7 +12,7 @@ namespace Cuda
     __host__ void PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("bounded", isBounded, flags);
-        tracable.FromJson(node, ::Json::kRequiredWarn);
+        tracable.FromJson(node, flags);
     }
 
     __host__ bool PlaneParams::operator==(const PlaneParams& rhs) const

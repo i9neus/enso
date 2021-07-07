@@ -7,11 +7,11 @@ namespace Cuda
 #define kKIFSPolyhedronType 0
 #define kKIFSFoldType       0
 
-    constexpr uint kSDFMaxSteps = 50;
+    /*constexpr uint kSDFMaxSteps = 50;
     constexpr float kSDFCutoffThreshold = 1e-4f;
     constexpr float kSDFEscapeThreshold = 1.0f;
     constexpr float kSDFRayIncrement = 0.9f;
-    constexpr float kSDFFailThreshold = 1e-2f;
+    constexpr float kSDFFailThreshold = 1e-2f;*/
 
     __constant__ SimplePolyhedron<4, 4, 3> kTetrahedronData;
     __constant__ SimplePolyhedron<8, 6, 4> kCubeData;
@@ -42,8 +42,14 @@ namespace Cuda
         vertScale(0.5f),
         crustThickness(0.5f),
         numIterations(1),
-        faceMask(0xffffffff)
+        faceMask(0xffffffff),
+        clipToBound(false)
     {
+        sdf.maxIterations = 50;
+        sdf.cutoffThreshold = 1e-4f;
+        sdf.escapeThreshold = 1.0f;
+        sdf.rayIncrement = 0.9f;
+        sdf.failThreshold = 1e-2f;
     }
 
     __host__ KIFSParams::KIFSParams(const ::Json::Node& node, const uint flags) :
@@ -60,6 +66,16 @@ namespace Cuda
         node.AddValue("crustThickness", crustThickness);
         node.AddValue("numIterations", numIterations);
         node.AddValue("faceMask", faceMask);
+        node.AddValue("clipToBound", clipToBound);
+
+        ::Json::Node sdfNode = node.AddChildObject("sdf");
+        sdfNode.AddValue("maxIterations", sdf.maxIterations);
+        sdfNode.AddValue("cutoffThreshold", sdf.cutoffThreshold);
+        sdfNode.AddValue("escapeThreshold", sdf.escapeThreshold);
+        sdfNode.AddValue("rayIncrement", sdf.rayIncrement);
+        sdfNode.AddValue("failThreshold", sdf.failThreshold);
+
+        transform.ToJson(node);
     }
 
     __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -70,6 +86,19 @@ namespace Cuda
         node.GetValue("crustThickness", crustThickness, flags);
         node.GetValue("numIterations", numIterations, flags);
         node.GetValue("faceMask", faceMask, flags);
+        node.GetValue("clipToBound", clipToBound, flags);
+
+        const ::Json::Node sdfNode = node.GetChildObject("sdf", flags);
+        if (sdfNode)
+        {
+            sdfNode.GetValue("maxIterations", sdf.maxIterations, flags);
+            sdfNode.GetValue("cutoffThreshold", sdf.cutoffThreshold, flags);
+            sdfNode.GetValue("escapeThreshold", sdf.escapeThreshold, flags);
+            sdfNode.GetValue("rayIncrement", sdf.rayIncrement, flags);
+            sdfNode.GetValue("failThreshold", sdf.failThreshold, flags);
+        }
+
+        transform.FromJson(node, flags);
     }
 
     __host__ bool KIFSParams::operator==(const KIFSParams& rhs) const
@@ -126,11 +155,11 @@ namespace Cuda
         memcpy(&GetKernelConstantData(), &m_kernelConstantData, sizeof(KernelConstantData));
     }
 
-    __device__ __forceinline__ void FoldTetrahedron(const mat3& matrix, const int& i, vec3& p, mat3& bi, ushort& code)
+    __device__ __forceinline__ void FoldTetrahedron(const int& i, vec3& p, mat3& bi, ushort& code)
     {
         if (p.x + p.y < 0)
         {
-            p.xy = -p.xy;
+            p.xy = -p.yx;
             bi[0].xy = -bi[0].yx;
             bi[1].xy = -bi[1].yx;
             bi[2].xy = -bi[2].yx;
@@ -221,23 +250,19 @@ namespace Cuda
             if (i == kcd.numIterations - 1) { break; }
 
 #if kKIFSFoldType == 0
-            FoldTetrahedron(matrix, i, p, bi, code);
+            FoldTetrahedron(i, p, bi, code);
 #else
-            FoldCube(matrix, i, p, bi, code);
+            FoldCube(i, p, bi, code);
 #endif
 
+            // Scale up around [1, 1, 1]
             p = (p - kOne) * 2.0f + kOne;
             iterationScale *= 0.5f;
-        }
-
-        // Transform the normal from folded space into object space
-        F.yzw = bi * F.yzw;
-        F.yzw = normalize(basis[0] * F.y + basis[1] * F.z + basis[2] * F.w);
-        pathId = code;
+        }    
 
         // Test this position against each polyhedron face
         F.x = kFltMax;
-        for (i = 0; i < kCubeData.kNumFaces; i++)
+        for (i = 0; i < kTetrahedronData.kNumFaces; i++)
         {
             //if ((kcd.faceMask & (1 << i)) != 0)
             {
@@ -248,7 +273,13 @@ namespace Cuda
             }
         }
 
-        //F= SDF::Torus(position, 0.3, 0.1);
+        /*F = SDF::Sphere(p, 0.5f);
+        F.x *= iterationScale;*/
+
+        // Transform the normal from folded space into object space
+        F.yzw = bi * F.yzw;
+        F.yzw = normalize(basis[0] * F.y + basis[1] * F.z + basis[2] * F.w);
+        pathId = code;
 
         return F;
     }
@@ -257,13 +288,14 @@ namespace Cuda
     {
         RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
-        float t = Intersector::RayUnitBox(localRay);
+        float t = Intersector::RayBox(localRay, 1.0f);
         if (t == kNoIntersect) { return false; }
-        //float t = 0.0f;
 
-        const float transformScale = 1.0f;
+        //float t = 0.0f; 
+
         const float localMag = length(localRay.d);
         localRay.d /= localMag;
+        t *= localMag;
 
         const mat3 basis = CreateBasis(localRay.d);
         vec3 grad;
@@ -274,15 +306,15 @@ namespace Cuda
         uint code = 0;
         uint surfaceDepth = 0;
 
-        for (i = 0; i < kSDFMaxSteps; i++)
+        for (i = 0; i < m_params.sdf.maxIterations; i++)
         {
             F = Field(p, basis, code, surfaceDepth);
 
-            //if(!isOriginInBound)
+            if(m_params.clipToBound)
             {
-                vec4 FBox = SDF::Box(p, 0.5f);
-                //vec4 FBox = SDF::Torus(p, 0.25 / transformScale, 0.1 / transformScale);
-                //vec4 FBox = SDF::Sphere(p, 0.5 / transformScale);
+                vec4 FBox = SDF::Box(p, 1.0f);
+                //vec4 FBox = SDF::Torus(p, 0.4, 0.1);
+                //vec4 FBox = SDF::Sphere(p, 0.5f);
                 if (FBox.x > F.x) { F = FBox; }
                 //F = FBox;
             }
@@ -290,16 +322,18 @@ namespace Cuda
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (F.x > 0.0 && F.x < kSDFCutoffThreshold) { break; }
+            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(m_params.sdf.maxIterations); break; }
 
-            if (F.x > kSDFEscapeThreshold) { return false; }
+            if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(m_params.sdf.maxIterations); return false; }
 
-            t += isSubsurface ? -F.x : F.x;
+            t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;
             p = localRay.PointAt(t);
         }
 
         t /= localMag;
-        if (F.x > kSDFFailThreshold || t > ray.tNear) { return false; }
+        if (F.x > m_params.sdf.failThreshold || t > ray.tNear) { hitCtx.debug = vec3(0.0f, 1.0f, 0.0f) * float(i) / float(m_params.sdf.maxIterations); return false; }
+
+        hitCtx.debug *= F.x;
 
         ray.tNear = t;
         hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_params.transform)), false, vec2(0.0f), 1e-4f);
@@ -325,6 +359,7 @@ namespace Cuda
                 { vec3(1.0f, 1.0f, 1.0f) * 0.5f, vec3(-1.0f, -1.0f, 1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f },
                 { 0, 1, 2, 1, 2, 3, 2, 3, 0, 3, 0, 1 }
             };
+            tet.sqrBoundRadius = length2(vec3(1.0f, 1.0f, 1.0f) * 0.5f) + 1e-6f;
             IsOk(cudaMemcpyToSymbol(kTetrahedronData, &tet, sizeof(SimplePolyhedron<4, 4, 3>)));
         }
 
@@ -334,6 +369,7 @@ namespace Cuda
                  vec3(1.0f, 1.0f, -1.0f) * 0.5f, vec3(-1.0f, 1.0f, -1.0f) * 0.5f, vec3(1.0f, -1.0f, -1.0f) * 0.5f, vec3(-1.0f, -1.0f, -1.0f) * 0.5f },
                { 0, 1, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 2, 3, 7, 6, 0, 2, 6, 4, 1, 3, 7, 5 }
             };
+            tet.sqrBoundRadius = length2(vec3(1.0f, 1.0f, 1.0f) * 0.5f) + 1e-6f;
             IsOk(cudaMemcpyToSymbol(kCubeData, &tet, sizeof(SimplePolyhedron<8, 6, 4>)));
         }
 

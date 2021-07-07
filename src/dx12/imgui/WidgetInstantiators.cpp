@@ -54,17 +54,20 @@ void KIFSShelf::Construct()
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
-    ImGui::SliderFloat("Rotate X", &p.rotate.x, 0.0f, 1.0f);
-    ImGui::SliderFloat("Rotate Y", &p.rotate.y, 0.0f, 1.0f);
-    ImGui::SliderFloat("Rotate Z", &p.rotate.z, 0.0f, 1.0f);
+    ConstructTransform(p.transform);
 
-    ImGui::SliderFloat("Scale A", &p.scale.x, 0.0f, 1.0f);
-    ImGui::SliderFloat("Scale B", &p.scale.y, 0.0f, 1.0f);
-
+    ImGui::DragFloat3("Rotation", &p.rotate[0], math::max(0.01f, cwiseMax(p.rotate) * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat2("Scaling", &p.scale[0], math::max(0.01f, cwiseMax(p.scale) * 0.01f), 0.0f, 1.0f);
     ImGui::SliderFloat("Crust thickness", &p.crustThickness, 0.0f, 1.0f);
     ImGui::SliderFloat("Vertex scale", &p.vertScale, 0.0f, 1.0f);
-
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
+    ImGui::Checkbox("Bounded", &p.clipToBound);
+
+    ImGui::DragInt("SDF Max Steps", &p.sdf.maxIterations, 1, 1, 500);
+    ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.01f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("SDF Escape Threshold", &p.sdf.escapeThreshold, math::max(0.01f, p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
+    ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.01f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f);
 }
 
 void QuadLightShelf::Construct()
@@ -114,6 +117,7 @@ void WavefrontTracerShelf::Construct()
     ImGui::SliderInt("Max path depth", &p.maxDepth, 0, 20);
     ImGui::ColorEdit3("Ambient radiance", &p.ambientRadiance[0]);
     ImGui::Checkbox("Debug normals", &p.debugNormals);
+    ImGui::Checkbox("Debug shaders", &p.debugShaders);
     ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 
     const char* labels[3] = { "MIS", "Lights", "BxDFs" };
