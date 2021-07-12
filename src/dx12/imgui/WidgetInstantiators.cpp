@@ -56,18 +56,28 @@ void KIFSShelf::Construct()
     auto& p = m_params[0];
     ConstructTransform(p.transform);
 
-    ImGui::DragFloat3("Rotation", &p.rotate[0], math::max(0.01f, cwiseMax(p.rotate) * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat2("Rotation", &p.rotate[0], math::max(0.01f, cwiseMax(p.rotate) * 0.01f));
     ImGui::DragFloat2("Scaling", &p.scale[0], math::max(0.01f, cwiseMax(p.scale) * 0.01f), 0.0f, 1.0f);
     ImGui::SliderFloat("Crust thickness", &p.crustThickness, 0.0f, 1.0f);
     ImGui::SliderFloat("Vertex scale", &p.vertScale, 0.0f, 1.0f);
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
-    ImGui::Checkbox("Bounded", &p.clipToBound);
 
-    ImGui::DragInt("SDF Max Steps", &p.sdf.maxIterations, 1, 1, 500);
-    ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.01f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f);
+    for (int i = 0; i < 6; i++)
+    {
+        bool faceMaskBool = p.faceMask & (1 << i);
+        ImGui::Checkbox(tfm::format("%i", i).c_str(), &faceMaskBool); 
+        ImGui::SameLine();
+        p.faceMask = (p.faceMask & ~(1 << i)) | (int(faceMaskBool) << i);
+
+    }
+    ImGui::Text("Face mask");
+
+    ImGui::DragInt("SDF Max Specular Interations", &p.sdf.maxSpecularIterations, 1, 1, 500);
+    ImGui::DragInt("SDF Max Diffuse Iterations", &p.sdf.maxDiffuseIterations, 1, 1, 500);
+    ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.00001f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     ImGui::DragFloat("SDF Escape Threshold", &p.sdf.escapeThreshold, math::max(0.01f, p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
-    ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 1.0f);
-    ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.01f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
+    ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.00001f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
 }
 
 void QuadLightShelf::Construct()

@@ -42,10 +42,10 @@ namespace Cuda
         vertScale(0.5f),
         crustThickness(0.5f),
         numIterations(1),
-        faceMask(0xffffffff),
-        clipToBound(false)
+        faceMask(0xffffffff)
     {
-        sdf.maxIterations = 50;
+        sdf.maxSpecularIterations = 50;
+        sdf.maxDiffuseIterations = 15;
         sdf.cutoffThreshold = 1e-4f;
         sdf.escapeThreshold = 1.0f;
         sdf.rayIncrement = 0.9f;
@@ -60,16 +60,16 @@ namespace Cuda
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y, rotate.z }));
+        node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y}));
         node.AddArray("scale", std::vector<float>({ scale.x, scale.y }));
         node.AddValue("vertScale", vertScale);
         node.AddValue("crustThickness", crustThickness);
         node.AddValue("numIterations", numIterations);
         node.AddValue("faceMask", faceMask);
-        node.AddValue("clipToBound", clipToBound);
 
         ::Json::Node sdfNode = node.AddChildObject("sdf");
-        sdfNode.AddValue("maxIterations", sdf.maxIterations);
+        sdfNode.AddValue("maxSpecularIterations", sdf.maxSpecularIterations);
+        sdfNode.AddValue("maxDiffuseIterations", sdf.maxDiffuseIterations);
         sdfNode.AddValue("cutoffThreshold", sdf.cutoffThreshold);
         sdfNode.AddValue("escapeThreshold", sdf.escapeThreshold);
         sdfNode.AddValue("rayIncrement", sdf.rayIncrement);
@@ -86,12 +86,12 @@ namespace Cuda
         node.GetValue("crustThickness", crustThickness, flags);
         node.GetValue("numIterations", numIterations, flags);
         node.GetValue("faceMask", faceMask, flags);
-        node.GetValue("clipToBound", clipToBound, flags);
 
         const ::Json::Node sdfNode = node.GetChildObject("sdf", flags);
         if (sdfNode)
         {
-            sdfNode.GetValue("maxIterations", sdf.maxIterations, flags);
+            sdfNode.GetValue("maxSpecularIterations", sdf.maxSpecularIterations, flags);
+            sdfNode.GetValue("maxDiffuseIterations", sdf.maxDiffuseIterations, flags);
             sdfNode.GetValue("cutoffThreshold", sdf.cutoffThreshold, flags);
             sdfNode.GetValue("escapeThreshold", sdf.escapeThreshold, flags);
             sdfNode.GetValue("rayIncrement", sdf.rayIncrement, flags);
@@ -264,7 +264,7 @@ namespace Cuda
         F.x = kFltMax;
         for (i = 0; i < kTetrahedronData.kNumFaces; i++)
         {
-            //if ((kcd.faceMask & (1 << i)) != 0)
+            if ((kcd.faceMask & (1 << i)) != 0)
             {
                 vec4 FFace = PolyhedronFace(p, kTetrahedronData, i, kcd.vertScale);
 
@@ -305,12 +305,13 @@ namespace Cuda
         bool isSubsurface = false;
         uint code = 0;
         uint surfaceDepth = 0;
+        const int maxIterations = (ray.depth == 0) ? m_params.sdf.maxSpecularIterations : m_params.sdf.maxDiffuseIterations;
 
-        for (i = 0; i < m_params.sdf.maxIterations; i++)
+        for (i = 0; i < maxIterations; i++)
         {
             F = Field(p, basis, code, surfaceDepth);
 
-            if(m_params.clipToBound)
+            //if(m_params.clipToBound)
             {
                 vec4 FBox = SDF::Box(p, 1.0f);
                 //vec4 FBox = SDF::Torus(p, 0.4, 0.1);
@@ -322,16 +323,16 @@ namespace Cuda
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(m_params.sdf.maxIterations); break; }
+            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
 
-            if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(m_params.sdf.maxIterations); return false; }
+            if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
             t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;
             p = localRay.PointAt(t);
         }
 
         t /= localMag;
-        if (F.x > m_params.sdf.failThreshold || t > ray.tNear) { hitCtx.debug = vec3(0.0f, 1.0f, 0.0f) * float(i) / float(m_params.sdf.maxIterations); return false; }
+        if (F.x > m_params.sdf.failThreshold || t > ray.tNear) { hitCtx.debug = vec3(0.0f, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
         hitCtx.debug *= F.x;
 

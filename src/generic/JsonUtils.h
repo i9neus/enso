@@ -161,8 +161,16 @@ namespace Json
         {
             std::vector<typename VecType::kType> values;
             if (!GetArrayValues(name, values, flags)) { return false; }
-            AssertMsgFmt(VecType::kDims == values.size(),
-                "Error: JSON array '%s' expects %i elements.", VecType::kDims);
+
+            if (VecType::kDims != values.size())
+            {
+                AssertMsgFmt(flags != kRequiredAssert, "Error: JSON array '%s' expects %i elements.", name.c_str(), VecType::kDims);
+                if (flags == kRequiredWarn)
+                {
+                    Log::Warning("Warning: JSON array '%s' expects % i elements.", name.c_str(), VecType::kDims);
+                }
+                return false;
+            }
 
             for (int i = 0; i < values.size(); i++) { vec[i] = values[i]; }           
             return true;

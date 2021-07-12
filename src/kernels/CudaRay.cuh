@@ -71,12 +71,14 @@ namespace Cuda
 		RayBasic	od;
 		float		tNear;             // The parameterised intersection along the ray, defined in cartesian coordinates as o + d * tNear			
 		uchar		flags;
+		uchar		depth;
 
 		Ray() = default;
-		__device__ Ray(const CompressedRay & comp) :
+		__device__ Ray(const CompressedRay& comp) :
 			od(comp.od),
 			tNear(FLT_MAX),
-			flags(comp.flags)
+			flags(comp.flags),
+			depth(comp.depth)
 		{
 		}
 

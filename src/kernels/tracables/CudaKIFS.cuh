@@ -25,18 +25,18 @@ namespace Cuda
 
         bool operator==(const KIFSParams&) const;
 
-        vec3    rotate;
+        vec2    rotate;
         vec2    scale;
 
         float   vertScale;
         float   crustThickness;
         int     numIterations;
         uint    faceMask;
-        bool    clipToBound;
 
         struct
         {
-            int maxIterations;
+            int maxSpecularIterations;
+            int maxDiffuseIterations;
             float cutoffThreshold;
             float escapeThreshold;
             float rayIncrement;
