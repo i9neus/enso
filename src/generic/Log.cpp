@@ -36,8 +36,13 @@ void Log::Indent::Restore()
 }
 
 Log::Log() :
-    m_logTerminalOut(std::cout)    
+    m_logTerminalOut(std::cout),
+    m_logFlags(0)
 {
+    EnableLevel(kLogNormal, true);
+    EnableLevel(kLogWarning, true);
+    EnableLevel(kLogError, true);
+    EnableLevel(kLogCritical, true);
 }
 
 Log::~Log() { }
@@ -45,6 +50,12 @@ Log::~Log() { }
 Log::Snapshot Log::GetMessageState()
 {
     return Singleton().m_stats;
+}
+
+void Log::EnableLevel(const uint32_t flag, const bool set)
+{
+    if (set) { m_logFlags |= (1 << flag); }
+    else { m_logFlags &= ~(1 << flag); }
 }
 
 void Log::NL() { Singleton().WriteImpl("\n", kFgDefault, kLogNormal); }
@@ -62,6 +73,8 @@ Log& Log::Singleton()
 
 void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const LogLevel level)
 {
+    if (!(m_logFlags | (1 << level))) { return; }
+    
     std::string sanitisedStr, formattedStr;
     bool carriageReturn = false, newLine = false;
 

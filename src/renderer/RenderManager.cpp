@@ -8,6 +8,8 @@
 #include "kernels/CudaCommonIncludes.cuh"
 #include "kernels/CudaRenderObjectFactory.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
+#include "kernels/CudaAssetContainer.cuh"
+#include "kernels/tracables/CudaTracable.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
@@ -73,6 +75,8 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	//m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 
 	Cuda::VerifyTypeSizes();
+
+	Cuda::TestScheduling();
 
 	IsOk(cudaDeviceSynchronize());
 }
@@ -346,9 +350,13 @@ void RenderManager::Run()
 
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
+			const auto stats = m_wavefrontTracer->GetRenderStats();
+
 			m_renderStatsJson.Clear();
 			m_renderStatsJson.AddValue("frameTime", timer.Get());
 			m_renderStatsJson.AddValue("meanFrameTime", meanFrameTime);
+			m_renderStatsJson.AddValue("deadRays", stats.deadRays);
+			
 		}
 		
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));

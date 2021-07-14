@@ -324,6 +324,9 @@
     <ClInclude Include="src\kernels\materials\CudaCornellMaterial.cuh">
       <Filter>kernels\materials</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaManagedObject.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">

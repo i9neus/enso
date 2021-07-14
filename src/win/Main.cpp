@@ -27,15 +27,9 @@ int main(int argc, char* argv[])
 {	
 	DummyMethodCalls();
 
-	/*Json::Document document;
-	document.AddValue("value1", 1);
-	document.AddValue("value2", "hello");
-	Json::Node node = document.AddChildObject("child");
-	node.AddValue("test", 1.0f); 
-	std::vector<float> arr = { 1.0f, 2.0f, 3.0f };
-	node.AddArray("array", arr);
-
-	std::cout << document.Stringify() << std::endl;*/
+	auto& log = Log::Singleton();
+	log.EnableLevel(kLogSystem, true);
+	log.EnableLevel(kLogDebug, true);
 	
 	try
 	{

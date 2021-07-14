@@ -24,7 +24,7 @@
 
 namespace Cuda
 {
-	__host__ WavefrontTracerParams::WavefrontTracerParams() : 
+	__host__ WavefrontTracerParams::WavefrontTracerParams() :
 		maxDepth(1),
 		ambientRadiance(0.0f),
 		debugNormals(false),
@@ -33,7 +33,7 @@ namespace Cuda
 		displayGamma(1.0f)
 	{
 	}
-	
+
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
 		node.AddValue("maxDepth", maxDepth);
@@ -63,10 +63,15 @@ namespace Cuda
 		return maxDepth == rhs.maxDepth &&
 			ambientRadiance == rhs.ambientRadiance;
 	}
-	
+
+	__device__ Device::WavefrontTracer::WavefrontTracer() : m_checkDigit(0)
+	{
+	}
+
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
 	{
 		m_objects = objects;
+		m_checkDigit = 31415972;
 	}
 
 	__device__ void Device::WavefrontTracer::Synchronise(const WavefrontTracerParams& params)
@@ -85,7 +90,7 @@ namespace Cuda
 		if (!IsValid(viewportPos)) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
-		
+
 		if (!compressedRay.IsAlive())
 		{
 			compressedRay.viewport.x = viewportPos.x;
@@ -95,9 +100,9 @@ namespace Cuda
 
 			RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 			m_objects.cu_camera->CreateRay(renderCtx);
-		}	
+		}
 	}
-	
+
 	__device__ __forceinline__ float PowerHeuristic(float pdf1, float pdf2)
 	{
 		return 2.0f * sqr(pdf1) / (sqr(pdf1) + sqr(pdf2));
@@ -110,7 +115,7 @@ namespace Cuda
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
-	{	
+	{
 		vec3 albedo;
 		vec3 incandescence(0.0f);
 
@@ -119,7 +124,7 @@ namespace Cuda
 		{
 			material.Evaluate(hitCtx, albedo, incandescence);
 		}
-		
+
 		// If we're at max depth, terminate the ray
 		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
 
@@ -127,9 +132,9 @@ namespace Cuda
 		const auto numLights = m_objects.cu_deviceLights->Size();
 
 		const BxDF* bxdf = material.GetBoundBxDF();
-		if (!bxdf) 
-		{ 
-			return incandescence; 
+		if (!bxdf)
+		{
+			return incandescence;
 		}
 
 		// If there are no lights in this scene, always sample the BxDF
@@ -139,8 +144,8 @@ namespace Cuda
 		}
 
 		// Indirect light sampling
-		if(xi.x < 0.5f)
-		{			
+		if (xi.x < 0.5f)
+		{
 			vec3 extantDir;
 			float pdfBxDF;
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
@@ -153,10 +158,10 @@ namespace Cuda
 		}
 		// Direct light sampling
 		else
-		{		
+		{
 			// Rescale the random number
 			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
-			
+
 			// Randomly select a light
 			const int lightIdx = min(numLights - 1, uint(xi.y * numLights));
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
@@ -187,11 +192,11 @@ namespace Cuda
 			}
 			// Sample the BxDF
 			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
-			{	
-				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), 
+			{
+				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir),
 					renderCtx.emplacedRay.weight * albedo * 2.0f,
 					pdfBxDF, lightIdx, kRayDirectBxDFSample);
-			}	
+			}
 		}
 
 		return incandescence;
@@ -199,21 +204,24 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::PreBlock() const
 	{
-		for (int i = 0; i < m_objects.cu_deviceTracables->Size(); i++)
+		 auto I = m_objects.cu_deviceTracables->Size();
+		for (int i = 0; i < I; i++)
 		{
 			(*m_objects.cu_deviceTracables)[i]->InitialiseKernelConstantData();
 		}
 	}
 
 	__device__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
-	{		
+	{
+		__shared__ uchar deadRays[16 * 16];
+
 		if (rayIdx >= m_objects.cu_deviceCompressedRayBuffer->Size()) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 		vec3 L(0.0f);
-		
+
 		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
 		//return;
 
@@ -224,7 +232,9 @@ namespace Cuda
 		hitCtx.debug = 0.0f;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
-		for (int i = 0; i < tracables.Size(); i++)
+		auto I = tracables.Size();
+		int check = m_checkDigit;
+		for (int i = 0; i < I; i++)
 		{
 			if (tracables[i]->Intersect(incidentRay, hitCtx))
 			{
@@ -241,14 +251,14 @@ namespace Cuda
 			m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, 0, false);
 			return;
 		}
-				
+
 		if (!hitObject)
 		{
 			// Ray didn't hit anything so add the ambient term multiplied by the weight
 			L = m_params.ambientRadiance * compressedRay.weight;
 		}
 		else
-		{		
+		{
 			// Ray is a direct sample 
 			if (incidentRay.IsDirectSample())
 			{
@@ -264,7 +274,7 @@ namespace Cuda
 						{
 							float pdfLight;
 							if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
-							{								
+							{
 								L *= compressedRay.weight;
 								L *= float(m_objects.cu_deviceLights->Size());
 								if (GetImportanceMode(renderCtx) == kImportanceMIS)
@@ -281,12 +291,12 @@ namespace Cuda
 					}
 				}
 			}
-			else if(hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags == kRaySpecular)
-			{			
+			else if (hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags == kRaySpecular)
+			{
 				// Otherwise, it's a BxDF sample so do a regular shade op
 				L = Shade(incidentRay, *(hitObject->GetBoundMaterial()), hitCtx, renderCtx) * compressedRay.weight;
 				//if(compressedRay.IsAlive()) L = compressedRay.od.d * 0.5f + vec3(0.5f);
-			}	
+			}
 		}
 
 		if (m_params.debugShaders)
@@ -295,11 +305,41 @@ namespace Cuda
 			compressedRay.Kill();
 		}
 
-		// Accumulate radiance if we're above a certain threshold
-		//if (cwiseMax(L) > 1e-6f)
+		m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
+
+		deadRays[kThreadIdx] = !compressedRay.IsAlive();
+
+		// Reduce the contents of the block buffer to count the number of dead rays 
+		__syncthreads();
+		for (int i = 128; i >= 8; i >>= 1)
 		{
-			m_objects.cu_deviceAccumBuffer->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
+			if (kThreadIdx < i)
+			{
+				deadRays[kThreadIdx] += deadRays[kThreadIdx + i];
+			}
+			__syncthreads();
 		}
+
+		if (kThreadIdx < 8)
+		{
+			(*m_objects.cu_blockRayOccupancy)[kBlockIdx * 8 + kThreadIdx] = deadRays[0];
+		}
+	}
+
+	__device__ void Device::WavefrontTracer::Reduce()
+	{
+		auto& occupancyBuffer = *m_objects.cu_blockRayOccupancy;
+		
+		for (uint i = 4096; i > 0; i >>= 1)
+		{
+			if (kKernelIdx < i)
+			{
+				occupancyBuffer[kKernelIdx] += occupancyBuffer[kKernelIdx + i];
+			}
+			__syncthreads();
+		}
+
+		m_objects.cu_renderStats->deadRays = occupancyBuffer[0];
 	}
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
@@ -330,7 +370,9 @@ namespace Cuda
 		m_hostCompressedRayBuffer.DestroyAsset();
 		m_hostAccumBuffer.DestroyAsset();
 		m_hostTracables.DestroyAsset();
-		m_hostLights.DestroyAsset();
+		m_hostLights.DestroyAsset(); 
+		m_hostBlockRayOccupancy.DestroyAsset();
+		m_hostRenderStats.DestroyAsset();
 
 		DestroyOnDevice(cu_deviceData);
 	}
@@ -354,8 +396,12 @@ namespace Cuda
 		m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>("id_hostAccumBuffer", 512, 512, m_hostStream);
 		m_hostAccumBuffer->Clear(vec4(0.0f));
 
+		// Create the occupancy buffer and render stats
+		m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>("id_hostBlockRayOccupancy", 512 * 512 / 32, m_hostStream);
+		m_hostRenderStats = AssetHandle < Host::ManagedObject<Device::WavefrontTracer::RenderStats>>("wavefront_renderStats");
+
 		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("wavefront_tracablesContainer");
-		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>("wavefront_lightsContainer");	
+		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>("wavefront_lightsContainer");
 
 		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
 		FromJson(node, ::Json::kRequiredWarn);
@@ -406,19 +452,23 @@ namespace Cuda
 		m_hostLights->Synchronise();
 
 		// Synchronise the wavefront tracer structure on the device
-		m_hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-		m_hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
-		m_hostObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
-		m_hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
+		Device::WavefrontTracer::Objects hostObjects;
+		hostObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+		hostObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+		hostObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
+		hostObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
+		hostObjects.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
+		hostObjects.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
+		hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
 
 		m_cameraAsset = GetAssetHandleForBinding<Host::WavefrontTracer, Host::PerspectiveCamera>(sceneObjects, m_cameraId);
 		if (m_cameraAsset)
 		{
-			m_hostObjects.cu_camera = m_cameraAsset->GetDeviceInstance();
+			hostObjects.cu_camera = m_cameraAsset->GetDeviceInstance();
 		}
 
-		SynchroniseObjects(cu_deviceData, m_hostObjects);
+		SynchroniseObjects(cu_deviceData, hostObjects);
+
 		Log::Write("Bound tracables and lights to wavefront tracer '%s'.\n", GetAssetID());
 	}
 
@@ -447,10 +497,15 @@ namespace Cuda
 		if (kThreadIdx == 0)
 		{
 			tracer->PreBlock();
-		}
+		} 
 		__syncthreads();
 
 		tracer->Trace(kKernelIdx);
+	}
+
+	__global__ void KernelReduce(Device::WavefrontTracer* tracer)
+	{
+		tracer->Reduce();
 	}
 
 	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
@@ -469,8 +524,15 @@ namespace Cuda
 		hostOutputImage->SignalUnsetWrite(m_hostStream);
 	}
 
-	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
+	__host__ Device::WavefrontTracer::RenderStats Host::WavefrontTracer::GetRenderStats()
 	{
+		Device::WavefrontTracer::RenderStats stats;
+		m_hostRenderStats->SynchroniseHost(stats);
+		return stats;
+	}
+
+	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
+	{		
 		//std::printf("Iterate! %f\n", wallTime);
 
 		if (m_isDirty)
@@ -486,5 +548,7 @@ namespace Cuda
 		KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
 
 		KernelTrace << <  m_hostCompressedRayBuffer->NumBlocks(), m_hostCompressedRayBuffer->ThreadsPerBlock(), 0, m_hostStream >> > (cu_deviceData);
+
+		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}
 }

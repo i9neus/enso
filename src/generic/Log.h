@@ -8,7 +8,16 @@
 #include "Constants.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 
-enum LogLevel : uint32_t { kLogDebug = 0, kLogNormal, kLogWarning, kLogError, kLogCritical, kNumLogLevels };
+enum LogLevel : uint32_t 
+{ 
+    kLogDebug = 0, 
+    kLogNormal, 
+    kLogWarning, 
+    kLogError, 
+    kLogCritical, 
+    kLogSystem,
+    kNumLogLevels
+};
 
 enum ANSIColourCode : uint32_t
 {
@@ -79,13 +88,14 @@ public:
     };
 
 public:
-    Log();
-    ~Log();
-
     static constexpr int32_t kMaxIndent = 5;
     static constexpr int32_t kIndentChars = 3;
 
-    static void NL();    
+    static Log& Singleton();
+    static void NL();   
+    static Snapshot GetMessageState();
+
+    void EnableLevel(const uint32_t flags, bool set);
 
 #define LOG_TYPE(Name, Colour, Type) template<typename... Args> \
                                      static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(tfm::format(message.c_str(), args...), Colour, Type); } \
@@ -95,12 +105,11 @@ public:
     LOG_TYPE(Debug, kFgGreen, kLogDebug)
     LOG_TYPE(Warning, kFgYellow, kLogWarning)
     LOG_TYPE(Error, kBgRed, kLogError)
-    LOG_TYPE(System, kFgTeal, kLogDebug)
-
-    static Snapshot GetMessageState();
+    LOG_TYPE(System, kFgTeal, kLogSystem)
 
 private:
-    static Log& Singleton();
+    Log();
+    ~Log();
 
     static void StaticWrite(const std::string& formatted, const uint32_t colour, const LogLevel level);
     void WriteImpl(const std::string& formatted, const uint32_t colour, const LogLevel level);
@@ -109,6 +118,7 @@ private:
     std::mutex          m_logFileMutex;
     int32_t             m_logIndentation;
     int32_t             m_logVerbosity;
+    uint32_t            m_logFlags;
     
     Snapshot            m_stats;
 };

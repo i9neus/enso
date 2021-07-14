@@ -14,6 +14,7 @@ namespace Cuda
 		uint ivec4Size;
 		uint mat4Size;
 		uint mat3Size;
+		uint ptrSize;
 
 		uint kifsScratchpadSize;
 	};
@@ -28,6 +29,7 @@ namespace Cuda
 		results->ivec4Size = sizeof(ivec4);
 		results->mat4Size = sizeof(mat4);
 		results->mat3Size = sizeof(mat3);
+		results->ptrSize = sizeof(int*);
 
 		results->kifsScratchpadSize = Device::KIFS::SizeOfSharedMemory();
 	}
@@ -57,8 +59,36 @@ namespace Cuda
 		{
 			Log::Indent indent;
 			Log::Debug("- Device::KIFS::Scratchpad: %i bytes\n", results.kifsScratchpadSize);
+			Log::Debug("- Device pointer: %i bytes\n", results.ptrSize);
 		}
 
 		Log::Write("Type size check passed!\n");
+	} 
+
+	__global__ void KernelTestScheduling(uint* results)
+	{
+		/*if (kKernelIdx > 16)
+		{
+			return;
+		}*/
+		
+		__syncthreads();
+
+		*results = __activemask();
+	}
+
+	__host__ void TestScheduling()
+	{
+		/*uint* cu_resultsBuffer;
+		IsOk(cudaMalloc((void***)&cu_resultsBuffer, sizeof(uint)));
+
+		KernelTestScheduling << < 32, 1 >> > (cu_resultsBuffer);
+		IsOk(cudaDeviceSynchronize());
+
+		uint results;
+		IsOk(cudaMemcpy(&results, cu_resultsBuffer, sizeof(uint), cudaMemcpyDeviceToHost));
+		IsOk(cudaFree(cu_resultsBuffer));
+
+		Log::System("__activemask(): %i\n", results);*/
 	}
 }

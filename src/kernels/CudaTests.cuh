@@ -5,4 +5,5 @@
 namespace Cuda
 {
 	__host__ void VerifyTypeSizes();
+	__host__ void TestScheduling();
 }

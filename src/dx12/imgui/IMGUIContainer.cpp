@@ -81,14 +81,18 @@ void IMGUIContainer::Render()
     }
 
     float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
+    int deadRays = -1;
     m_cudaRenderer.GetRenderStats([&](const Json::Document& node)
         {
-            node.GetValue("frameTime", renderFrameTime, false);
-            node.GetValue("meanFrameTime", renderMeanFrameTime, false);
+            node.GetValue("frameTime", renderFrameTime, Json::kSilent);
+            node.GetValue("meanFrameTime", renderMeanFrameTime, Json::kSilent);
+            node.GetValue("deadRays", deadRays, Json::kSilent);
         });
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Render %.3f ms/frame (%.1f FPS)", 1000.0f * renderMeanFrameTime, 1.0f / renderMeanFrameTime);
+    ImGui::Text("Dead rays: %i", deadRays);
+
     ImGui::End();
 
     // Rendering

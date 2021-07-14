@@ -176,7 +176,7 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 	case WM_PAINT:
 		if (pSample)
 		{
-			Timer frameTimer;
+			//Timer frameTimer;
 			
 			pSample->OnUpdate();
 			pSample->OnRender();

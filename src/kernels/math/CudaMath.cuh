@@ -8,6 +8,7 @@ namespace Cuda
 	#define kKernelY				(blockIdx.y * blockDim.y + threadIdx.y)	
 	#define kKernelIdx				kKernelX
 	#define kThreadIdx				threadIdx.x
+	#define kBlockIdx				blockIdx.x
 	#define kWarpLane				(threadIdx.x & 31)
 	#define kKernelWidth			(gridDim.x * blockDim.x)
 	#define kKernelHeight			(gridDim.y * blockDim.y)

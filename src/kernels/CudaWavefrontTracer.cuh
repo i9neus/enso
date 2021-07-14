@@ -4,6 +4,7 @@
 #include "CudaAssetContainer.cuh"
 #include "math/CudaMath.cuh"
 #include "CudaImage.cuh"
+#include "CudaManagedObject.cuh"
 
 namespace Json { class Node; }
 
@@ -53,18 +54,25 @@ namespace Cuda
 		{		
 			friend class Host::WavefrontTracer;
 		public:
+			struct RenderStats
+			{
+				uint	deadRays;
+			};
+
 			struct Objects
 			{
-				Device::ImageRGBW*				cu_deviceAccumBuffer;
-				Device::CompressedRayBuffer*	cu_deviceCompressedRayBuffer;
-				Device::PixelFlagsBuffer*		cu_pixelFlagsBuffer;
+				Device::ImageRGBW*							cu_deviceAccumBuffer;
+				Device::CompressedRayBuffer*				cu_deviceCompressedRayBuffer;
+				Device::PixelFlagsBuffer*					cu_pixelFlagsBuffer;
 				Device::AssetContainer<Device::Tracable>*	cu_deviceTracables;
 				Device::AssetContainer<Device::Material>*	cu_deviceMaterials;
 				Device::AssetContainer<Device::Light>*		cu_deviceLights;
 				Device::AssetContainer<Device::BxDF>*		cu_deviceBxDFs;
+				Device::Array<uint>*						cu_blockRayOccupancy;
+				RenderStats*								cu_renderStats;
 
-				Device::PerspectiveCamera*		cu_camera;
-				ivec2							viewportDims;
+				Device::PerspectiveCamera*					cu_camera;
+				ivec2										viewportDims;
 			};		
 
 		protected:			
@@ -74,6 +82,7 @@ namespace Cuda
 			float							m_wallTime;
 			int								m_frameIdx;
 			int								m_maxRayDepth;
+			uint							m_checkDigit;
 
 			__device__ __forceinline__ bool IsValid(const ivec2& viewportPos) const
 			{
@@ -86,13 +95,14 @@ namespace Cuda
 			__device__ void InitaliseScratchpadObjects() const;
 
 		public:
-			__device__ WavefrontTracer() = default;
+			__device__ WavefrontTracer();
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
+			__device__ void Reduce();
 			__device__ void Synchronise(const Objects& objects);
 			__device__ void Synchronise(const WavefrontTracerParams& params);
 
@@ -110,16 +120,19 @@ namespace Cuda
 
 		using CompressedRayBuffer = Host::Array<CompressedRay>;
 		using PixelFlagsBuffer = Host::Array<uchar>;
+		using IndirectionBuffer = Host::Array<uint>;
 		
 		class WavefrontTracer : public Host::RenderObject
 		{
 		private:
-			Device::WavefrontTracer*		cu_deviceData;
-			Device::WavefrontTracer::Objects m_hostObjects;
+			Device::WavefrontTracer*							cu_deviceData;
+			AssetHandle<Host::ManagedObject<Device::WavefrontTracer::RenderStats>> m_hostRenderStats;
 
 			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
+			AssetHandle<Host::IndirectionBuffer>				m_hostRayIndirectionBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
+			AssetHandle<Host::Array<uint>>						m_hostBlockRayOccupancy;			
 
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
@@ -144,7 +157,9 @@ namespace Cuda
 			__host__ void SetDirty() { m_isDirty = true; }
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
-			__host__ void Iterate(const float wallTime, const float frameIdx);
+			__host__ void Iterate(const float wallTime, const float frameIdx); 
+			
+			__host__ Device::WavefrontTracer::RenderStats GetRenderStats();
 		};
 	}
 }

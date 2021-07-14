@@ -24,7 +24,7 @@ namespace Cuda
 		public:
 			__device__ ManagedArray(const uint size, const ManagedArrayLayout& layout, T* data) :
 				m_size(size), m_layout(layout), cu_data(data), m_signal(AccessSignal::kUnlocked) { }
-			__device__ ~ManagedArray() = default;
+			__device__ ~ManagedArray() {}
 
 			__host__ __device__ __forceinline__ unsigned int Size() const { return m_size; }
 			__host__ __device__ __forceinline__ unsigned int MemorySize() const { return m_size * sizeof(T); }

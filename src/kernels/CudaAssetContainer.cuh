@@ -46,6 +46,12 @@ namespace Cuda
 
 	namespace Host
 	{		
+		template<typename T>
+		__global__ void KernelAssertSize(T* container, uint size)
+		{
+			assert(container->Size() == size);
+		}
+		
 		template<typename ElementType>
 		class AssetContainer<ElementType, typename std::enable_if<std::is_base_of<Host::Asset, ElementType>::value>::type> :
 			public Host::Asset, 
@@ -145,6 +151,12 @@ namespace Cuda
 				{
 					asset.second->FromJson(parentNode, flags);
 				}
+			}
+
+			__host__ void AssertSize(const uint size) const
+			{
+				KernelAssertSize << < 1, 1, 0 >> > (cu_deviceData, size);
+				IsOk(cudaDeviceSynchronize());
 			}
 		};
 	}
