@@ -70,7 +70,10 @@ namespace Cuda
 	template<typename T, typename... Pack>
 	__global__ inline void KernelCreateDeviceInstance(T** newInstance, Pack... args)
 	{
-		if (newInstance && !*newInstance) { *newInstance = new T(args...); }
+		assert(newInstance);
+		assert(!*newInstance);
+		
+		*newInstance = new T(args...); 
 	}
 
 	template<typename ObjectType, typename... Pack>
@@ -78,13 +81,16 @@ namespace Cuda
 	{		
 		ObjectType** cu_tempBuffer;
 		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
+		IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
 
 		KernelCreateDeviceInstance << < 1, 1 >> > (cu_tempBuffer, args...);
 		IsOk(cudaDeviceSynchronize());
 
-		ObjectType* cu_data;
+		ObjectType* cu_data = nullptr;
 		IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
 		IsOk(cudaFree(cu_tempBuffer));
+
+		Log::System("Instantiated device object at 0x%x\n", cu_data);
 		return cu_data;
 	}
 
