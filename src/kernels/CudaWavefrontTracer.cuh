@@ -61,7 +61,6 @@ namespace Cuda
 
 			struct Objects
 			{
-				Device::ImageRGBW*							cu_deviceAccumBuffer;
 				Device::CompressedRayBuffer*				cu_deviceCompressedRayBuffer;
 				Device::PixelFlagsBuffer*					cu_pixelFlagsBuffer;
 				Device::AssetContainer<Device::Tracable>*	cu_deviceTracables;
@@ -72,12 +71,13 @@ namespace Cuda
 				RenderStats*								cu_renderStats;
 
 				Device::Camera*								cu_camera;
+				Device::ImageRGBW*							cu_accumBuffer;
 				ivec2										viewportDims;
 			};		
 
 		protected:			
 			Objects							m_objects;
-			WavefrontTracerParams          m_params;
+			WavefrontTracerParams			m_params;
 
 			float							m_wallTime;
 			int								m_frameIdx;
@@ -86,8 +86,8 @@ namespace Cuda
 
 			__device__ __forceinline__ bool IsValid(const ivec2& viewportPos) const
 			{
-				return viewportPos.x >= 0 && viewportPos.x < m_objects.cu_deviceAccumBuffer->Width() &&
-					viewportPos.y >= 0 && viewportPos.y < m_objects.cu_deviceAccumBuffer->Height();
+				return viewportPos.x >= 0 && viewportPos.x < m_objects.cu_accumBuffer->Width() &&
+					viewportPos.y >= 0 && viewportPos.y < m_objects.cu_accumBuffer->Height();
 			}
 
 			__device__ uchar GetImportanceMode(const RenderCtx& ctx) const;
@@ -128,7 +128,6 @@ namespace Cuda
 			Device::WavefrontTracer*							cu_deviceData;
 			AssetHandle<Host::ManagedObject<Device::WavefrontTracer::RenderStats>> m_hostRenderStats;
 
-			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::IndirectionBuffer>				m_hostRayIndirectionBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
@@ -141,6 +140,7 @@ namespace Cuda
 
 			dim3                    m_block, m_grid;
 			bool					m_isDirty;
+			bool					m_isInitialised;
 			std::string				m_cameraId;
 
 		public:

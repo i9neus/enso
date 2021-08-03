@@ -32,12 +32,24 @@ namespace Cuda
 		class PerspectiveCamera : public Device::Camera
 		{
 		public:
+			struct Objects
+			{
+				Device::ImageRGBW* cu_deviceAccumBuffer;
+			};
+
 			__device__ PerspectiveCamera();
 			__device__ virtual void CreateRay(RenderCtx& renderCtx) const override final;
+			__device__ virtual void Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive) override final;
+			__device__ virtual Device::ImageRGBW& GetAccumulationBuffer() override final { return *m_objects.cu_deviceAccumBuffer; }
+
 			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
 				m_params = params; 
 				Prepare();
+			}
+			__device__ void Synchronise(const Objects& objects)
+			{
+				m_objects = objects;
 			}
 
 		private:
@@ -45,6 +57,7 @@ namespace Cuda
 
 		private:
 			PerspectiveCameraParams 		m_params;
+			Objects							m_objects;
 
 			mat3		m_basis;
 			vec3		m_cameraPos;
@@ -71,8 +84,12 @@ namespace Cuda
 			__host__ virtual void                       OnDestroyAsset() override final;
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final { return cu_deviceData; }
-			__host__ static std::string GetAssetTypeString() { return "perspective"; }
-			__host__ static std::string GetAssetDescriptionString() { return "Perspective Camera"; }
+			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return m_hostAccumBuffer; }
+			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
+			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
+
+		private:
+			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 		};
 	}
 }
