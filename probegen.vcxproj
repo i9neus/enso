@@ -50,6 +50,9 @@
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
+    <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
+    <ClInclude Include="src\kernels\cameras\CudaLightProbeCamera.cuh" />
+    <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaManagedArray.cuh" />
     <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
@@ -57,7 +60,6 @@
     <ClInclude Include="src\kernels\CudaHash.cuh" />
     <ClInclude Include="src\kernels\CudaImage.cuh" />
     <ClInclude Include="src\kernels\CudaManagedObject.cuh" />
-    <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObject.cuh" />
     <ClInclude Include="src\kernels\CudaSampler.cuh" />
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
@@ -127,9 +129,10 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
+    <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />
+    <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
-    <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObject.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />

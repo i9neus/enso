@@ -1,7 +1,8 @@
-﻿#include "CudaSampler.cuh"
-#include "CudaHash.cuh"
-#include "CudaCtx.cuh"
-#include "CudaRay.cuh"
+﻿#include "../CudaSampler.cuh"
+#include "../CudaHash.cuh"
+#include "../CudaCtx.cuh"
+#include "../CudaRay.cuh"
+
 #include "CudaPerspectiveCamera.cuh"
 #include "generic/JsonUtils.h"
 
@@ -189,7 +190,8 @@ namespace Cuda
         newRay.viewport.y = ushort(renderCtx.viewportPos.y);
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode)
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode) : 
+        Host::Camera(parentNode)
     {
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
         FromJson(parentNode, ::Json::kRequiredWarn);

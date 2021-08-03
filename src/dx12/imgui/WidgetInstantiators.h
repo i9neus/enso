@@ -16,7 +16,7 @@
 #include "kernels/materials/CudaSimpleMaterial.cuh"
 #include "kernels/materials/CudaCornellMaterial.cuh"
 
-#include "kernels/CudaPerspectiveCamera.cuh"
+#include "kernels/cameras/CudaPerspectiveCamera.cuh"
 
 #include "kernels/CudaWavefrontTracer.cuh"
 

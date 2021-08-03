@@ -13,7 +13,7 @@
 #include "materials/CudaMaterial.cuh"
 #include "lights/CudaQuadLight.cuh"
 
-#include "CudaPerspectiveCamera.cuh"
+#include "cameras/CudaPerspectiveCamera.cuh"
 #include "CudaManagedArray.cuh"
 
 #include "CudaCommonIncludes.cuh"
@@ -461,7 +461,7 @@ namespace Cuda
 		hostObjects.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
 		hostObjects.viewportDims = m_hostAccumBuffer->GetHostInstance().Dimensions();
 
-		m_cameraAsset = GetAssetHandleForBinding<Host::WavefrontTracer, Host::PerspectiveCamera>(sceneObjects, m_cameraId);
+		m_cameraAsset = GetAssetHandleForBinding<Host::WavefrontTracer, Host::Camera>(sceneObjects, m_cameraId);
 		if (m_cameraAsset)
 		{
 			hostObjects.cu_camera = m_cameraAsset->GetDeviceInstance();

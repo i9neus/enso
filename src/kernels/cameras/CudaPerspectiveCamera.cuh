@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "CudaRenderObject.cuh"
+#include "CudaCamera.cuh"
 
 namespace Json { class Node; }
 
@@ -29,11 +29,11 @@ namespace Cuda
 	
 	namespace Device
 	{
-		class PerspectiveCamera : public Device::Asset, public AssetTags<Host::PerspectiveCamera, Device::PerspectiveCamera>
+		class PerspectiveCamera : public Device::Camera
 		{
 		public:
 			__device__ PerspectiveCamera();
-			__device__ void CreateRay(RenderCtx& renderCtx) const;
+			__device__ virtual void CreateRay(RenderCtx& renderCtx) const override final;
 			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
 				m_params = params; 
@@ -57,7 +57,7 @@ namespace Cuda
 
 	namespace Host
 	{
-		class PerspectiveCamera : public Host::RenderObject, public AssetTags<Host::PerspectiveCamera, Device::PerspectiveCamera>
+		class PerspectiveCamera : public Host::Camera
 		{
 		private:
 			Device::PerspectiveCamera*				cu_deviceData;
@@ -70,7 +70,7 @@ namespace Cuda
 
 			__host__ virtual void                       OnDestroyAsset() override final;
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
-			__host__ Device::PerspectiveCamera*			GetDeviceInstance() const { return cu_deviceData; }
+			__host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ static std::string GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string GetAssetDescriptionString() { return "Perspective Camera"; }
 		};

@@ -105,9 +105,6 @@
     <ClInclude Include="src\kernels\math\CudaMath.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\CudaPerspectiveCamera.cuh">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\CudaSampler.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
@@ -327,6 +324,15 @@
     <ClInclude Include="src\kernels\CudaManagedObject.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\cameras\CudaLightProbeCamera.cuh">
+      <Filter>kernels\cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\cameras\CudaCamera.cuh">
+      <Filter>kernels\cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh">
+      <Filter>kernels\cameras</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -395,15 +401,15 @@
     <Filter Include="dx12\imgui">
       <UniqueIdentifier>{11088863-1c49-4f1c-b4c3-3fa6da7a1c0f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\cameras">
+      <UniqueIdentifier>{16ef40bb-a36c-4763-b920-715dbd8179f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaImage.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\CudaPerspectiveCamera.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaAsset.cu">
@@ -462,6 +468,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\materials\CudaCornellMaterial.cu">
       <Filter>kernels\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu">
+      <Filter>kernels\cameras</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu">
+      <Filter>kernels\cameras</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

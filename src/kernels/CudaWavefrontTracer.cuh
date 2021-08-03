@@ -40,7 +40,7 @@ namespace Cuda
 	
 	namespace Device
 	{
-		class PerspectiveCamera;
+		class Camera;
 		class Material;
 		class Tracable;
 		class Light;
@@ -71,7 +71,7 @@ namespace Cuda
 				Device::Array<uint>*						cu_blockRayOccupancy;
 				RenderStats*								cu_renderStats;
 
-				Device::PerspectiveCamera*					cu_camera;
+				Device::Camera*								cu_camera;
 				ivec2										viewportDims;
 			};		
 
@@ -115,7 +115,7 @@ namespace Cuda
 		class Tracable;
 		class Light;
 		class BxDF;
-		class PerspectiveCamera;
+		class Camera;
 		template<typename T> class Array;
 
 		using CompressedRayBuffer = Host::Array<CompressedRay>;
@@ -137,7 +137,7 @@ namespace Cuda
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
 
-			AssetHandle<Host::PerspectiveCamera>				m_cameraAsset;
+			AssetHandle<Host::Camera>							m_cameraAsset;
 
 			dim3                    m_block, m_grid;
 			bool					m_isDirty;
