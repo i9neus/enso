@@ -99,7 +99,7 @@ namespace Cuda
 				AssertMsg(cu_deviceData, "Image has not been initialised!");
 				return cu_deviceData;
 			}
-			__host__ inline const Device::Image<T>& GetHostInstance() const { return m_hostData; }
+			__host__ inline const Device::Image<T>& GetMetadata() const { return m_hostData; }
 			__host__ inline bool IsCreated() const { return cu_deviceData != nullptr; }
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);

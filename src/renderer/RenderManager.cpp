@@ -10,6 +10,7 @@
 #include "kernels/CudaWavefrontTracer.cuh"
 #include "kernels/CudaAssetContainer.cuh"
 #include "kernels/tracables/CudaTracable.cuh"
+#include "kernels/cameras/CudaCamera.cuh"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
@@ -126,16 +127,41 @@ void RenderManager::Build()
 		}
 		Log::Write("Okay!\n");
 
+		// Finalise all the render objects
 		m_renderObjects->Finalise();
 
-		// Get a handle to the wavefront tracer
-		Log::Write("Attaching to wavefront tracer object...\n");
+		// Get a handle to the first wavefront tracer object we find
 		m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();
-		AssertMsg(m_wavefrontTracer, "Unable to find a wavefront tracer instance to attach to.");
+		Assert(m_wavefrontTracer, "No wavefront tracer objects were instantiated.");
+
+		// Get a list of active cameras
+		m_activeCameras = m_renderObjects->FindAllOfType<Cuda::Host::Camera>();
+		if (m_activeCameras.empty())
+		{
+			Log::Error("WARNING: No camera objects were instantiated and enabled.\n");
+		}
+		else
+		{
+			// Look for wavefront tracers with live cameras
+			m_liveCamera = nullptr;
+			for (auto& camera : m_activeCameras)
+			{
+				if (camera->IsLive())
+				{
+					m_liveCamera = camera;
+					break;
+				}
+			}
+			if (!m_liveCamera)
+			{
+				Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n");
+			}
+		}
 	}
 
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
-	Log::Write("*** BUILD COMPLETE***\n%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
+	Log::Write("*** BUILD COMPLETE***\n");
+	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 }
 
 void RenderManager::Destroy()
@@ -319,25 +345,37 @@ void RenderManager::Run()
 					asset->FromJson(m_paramsPatch.json, Json::kSilent);
 				}
 			}
+			
+			// Clear the render states of all active camera objects
+			for (auto camera : m_activeCameras) { camera->ClearRenderState(); }
 
+			// Reset the render manager state
 			m_isDirty = false;
-			m_wavefrontTracer->SetDirty();
 			frameIdx = 0;
 		}
 		
-		// Render up to N subframes
-		for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
+		for (auto& camera : m_activeCameras)
 		{
-			std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+			m_wavefrontTracer->AttachCamera(camera);
+			
+			// Render up to N subframes
+			for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
+			{
+				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 
-			m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+				m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
 
-			frameIdx++;
-		}		 
+				frameIdx++;
+			}
 
-		m_wavefrontTracer->Composite(m_compositeImage);
+			// If this wavefront tracer is live, update the composite image
+			if (camera == m_liveCamera)
+			{
+				m_wavefrontTracer->Composite(m_compositeImage);
+			}
 
-		checkCudaErrors(cudaStreamSynchronize(m_renderStream));		
+			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
+		}
 
 		iterationIdx++;
 		m_frameTimes[frameIdx % m_frameTimes.size()] = timer.Get();
@@ -348,9 +386,11 @@ void RenderManager::Run()
 		}
 		meanFrameTime /= math::min(frameIdx, int(m_frameTimes.size()));
 
+		if(m_liveCamera)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			const auto stats = m_wavefrontTracer->GetRenderStats();
+			Cuda::Device::RenderState::Stats stats;
+			m_liveCamera->GetRenderStats()->SynchroniseHost(stats);
 
 			m_renderStatsJson.Clear();
 			m_renderStatsJson.AddValue("frameTime", timer.Get());

@@ -165,6 +165,8 @@ namespace Cuda
 
         inline operator bool() const { return bool(m_ptr); }
         inline bool operator!() const { return !m_ptr; }
+        inline bool operator==(const AssetHandle& rhs) const { return m_ptr == rhs.m_ptr; }
+        inline bool operator!=(const AssetHandle& rhs) const { return m_ptr != rhs.m_ptr; }
 
         inline T* operator->() { return &operator*(); }
         inline const T* operator->() const { return &operator*(); }

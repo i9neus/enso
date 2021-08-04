@@ -5,6 +5,8 @@
 
 #include "CudaPerspectiveCamera.cuh"
 #include "generic/JsonUtils.h"
+#include "../CudaManagedArray.cuh"
+#include "../CudaManagedObject.cuh"
 
 #define kCameraAA                 1.5f             // The width/height of the anti-aliasing kernel in pixels
 #define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
@@ -67,9 +69,7 @@ namespace Cuda
     }
 
     __device__ Device::PerspectiveCamera::PerspectiveCamera()
-    {     
-        
-        
+    {             
         Prepare();
     }
 
@@ -194,35 +194,40 @@ namespace Cuda
 
     __device__ void Device::PerspectiveCamera::Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive)
     {
-        m_objects.cu_deviceAccumBuffer->Accumulate(xy, value, depth, isAlive);
+        m_renderState.cu_accumBuffer->Accumulate(xy, value, depth, isAlive);
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode) : 
-        Host::Camera(parentNode)
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
+        Host::Camera(parentNode, id)
     {
         // Create the accumulation buffer
-        m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>("id_perpAccumBuffer", 512, 512, m_hostStream);
-        m_hostAccumBuffer->Clear(vec4(0.0f));
+        m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), 512, 512, m_hostStream);
+        m_hostAccumBuffer->Clear(vec4(0.0f));        
         
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
         FromJson(parentNode, ::Json::kRequiredWarn);
 
         // Sychronise the device objects
-        Device::PerspectiveCamera::Objects deviceObjects;
-        deviceObjects.cu_deviceAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        SynchroniseObjects(cu_deviceData, deviceObjects);
+        Device::RenderState renderState;
+        renderState.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+        renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
+        renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
+        SynchroniseObjects(cu_deviceData, renderState);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
         if (expectedType != AssetType::kCamera) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::PerspectiveCamera(json), id);
+        return AssetHandle<Host::RenderObject>(new Host::PerspectiveCamera(json, id), id);
     }
 
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
     {
+        Host::Camera::OnDestroyAsset();
+        
         m_hostAccumBuffer.DestroyAsset();
         
         DestroyOnDevice(cu_deviceData);
@@ -230,8 +235,15 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Host::RenderObject::FromJson(parentNode, flags);
+        Host::Camera::FromJson(parentNode, flags);
         
         SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(parentNode));
+    }
+
+    __host__ void Host::PerspectiveCamera::ClearRenderState()
+    {
+        m_hostAccumBuffer->Clear(vec4(0.0f));
+        m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
+        //m_hostPixelFlagsBuffer->Clear(0);
     }
 }

@@ -84,7 +84,10 @@ private:
 	uint32_t				     m_clientWidth;
 	uint32_t                     m_clientHeight;
 
-	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
-	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>  m_wavefrontTracer;
+	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
+	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;
+
+	std::vector<Cuda::AssetHandle<Cuda::Host::Camera>>			m_activeCameras;
+	Cuda::AssetHandle<Cuda::Host::Camera>						m_liveCamera;
 
 };

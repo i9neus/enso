@@ -5,51 +5,69 @@
     {
       "enabled": true,
       "class": "wavefront",
-      "camera": "camera_perspCam",
-      "maxDepth" : 3,
+      "maxDepth": 3,
       "debugNormals": false,
       "importanceMode": "mis",
       "displayGamma": 1.7
-    }  
+    }    
   },
   "cameras": 
   {
-    "camera_perspCam" :
+    "camera_perspCam": 
     {
       "enabled": true,
+      "live":  true,
       "class": "perspective",
-      "pos": [0.0, 0.0, 1.5],
-      "lookAt": [0.0, 0.0, 0.0],
+      "pos": [ 0.0, 0.0, 1.5 ],
+      "lookAt": [ 0.0, 0.0, 0.0 ],
       "focalPlane": 1.0,
       "fLength": 0.45,
       "fStop": 0.45
+    },
+    "camera_probeCam": 
+    {
+      "enabled": true,
+      "live":  false,
+      "class": "lightprobe",
+      "transform": 
+      {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.99, 0.99, 0.99 ]
+      },
+      "density": [10, 10, 10]
     }
   },
-  "tracables": {
-    "tracable_groundPlane": {
+  "tracables": 
+  {
+    "tracable_groundPlane": 
+    {
       "enabled": false,
       "class": "plane",
       "material": "material_groundPlane",
       "bounded": false,
-      "transform": {
+      "transform": 
+      {
         "pos": [ 0.0, 0.0, 0.0 ],
         "rot": [ 90.0, 0.0, 0.0 ],
         "sca": [ 1.0, 1.0, 1.0 ]
       }
     },
-    "cornellBox": {
+    "cornellBox": 
+    {
       "enabled": true,
       "class": "cornellbox",
       "material": "material_cornell",
       "bounded": false,
-      "transform": {
+      "transform": 
+      {
         "pos": [ 0.0, 0.0, 0.0 ],
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 1.0, 1.0, 1.0 ]
       }
     },
     "tracable_sphere": {
-      "enabled": false,
+      "enabled": true,
       "class": "sphere",
       "material": "material_kifs",
       "transform": {
@@ -59,7 +77,7 @@
       }
     },
     "kifsFractal": {
-      "enabled": true,
+      "enabled": false,
       "class": "kifs",
       "material": "material_kifs",
       "rotate": [ 0.0, 0.0, 0.0 ],

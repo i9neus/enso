@@ -5,15 +5,22 @@
 #include "CudaAsset.cuh"
 #include "CudaRay.cuh" 
 
-#include "bxdfs/CudaLambert.cuh"
+/*#include "bxdfs/CudaLambert.cuh"
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
 #include "tracables/CudaCornellBox.cuh"
 #include "tracables/CudaKIFS.cuh"
 #include "materials/CudaMaterial.cuh"
 #include "lights/CudaQuadLight.cuh"
-
 #include "cameras/CudaPerspectiveCamera.cuh"
+#include "cameras/CudaLightProbeCamera.cuh"*/
+
+#include "bxdfs/CudaBxDF.cuh"
+#include "materials/CudaMaterial.cuh"
+#include "lights/CudaLight.cuh"
+#include "tracables/CudaTracable.cuh"
+#include "cameras/CudaCamera.cuh"
+
 #include "CudaManagedArray.cuh"
 
 #include "CudaCommonIncludes.cuh"
@@ -71,7 +78,21 @@ namespace Cuda
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
 	{
 		m_objects = objects;
-		m_objects.cu_accumBuffer = &objects.cu_camera->GetAccumulationBuffer();
+
+		// If a camera is attached then load the objects into the block
+		if (objects.cu_camera)
+		{
+			const auto& renderState = objects.cu_camera->GetRenderState();
+			//m_objects.cu_accumBuffer = renderState.cu_accumBuffer;
+			m_objects.cu_compressedRayBuffer = renderState.cu_compressedRayBuffer;
+			//m_objects.cu_pixelFlagsBuffer = renderState.cu_pixelFlagsBuffer;
+			m_objects.cu_blockRayOccupancy = renderState.cu_blockRayOccupancy;
+			m_objects.cu_renderStats = renderState.cu_renderStats;
+
+			assert(m_objects.cu_compressedRayBuffer);
+			assert(m_objects.cu_blockRayOccupancy);
+			assert(m_objects.cu_renderStats);
+		}
 
 		m_checkDigit = 31415972;
 	}
@@ -89,9 +110,7 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::SeedRayBuffer(const ivec2& viewportPos) const
 	{
-		if (!IsValid(viewportPos)) { return; }
-
-		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
+		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
 
 		if (!compressedRay.IsAlive())
 		{
@@ -206,7 +225,7 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::PreBlock() const
 	{
-		 auto I = m_objects.cu_deviceTracables->Size();
+		auto I = m_objects.cu_deviceTracables->Size();
 		for (int i = 0; i < I; i++)
 		{
 			(*m_objects.cu_deviceTracables)[i]->InitialiseKernelConstantData();
@@ -217,9 +236,9 @@ namespace Cuda
 	{
 		__shared__ uchar deadRays[16 * 16];
 
-		if (rayIdx >= m_objects.cu_deviceCompressedRayBuffer->Size()) { return; }
+		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
 
-		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[rayIdx];
+		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
 		vec3 L(0.0f);
@@ -331,7 +350,7 @@ namespace Cuda
 	__device__ void Device::WavefrontTracer::Reduce()
 	{
 		auto& occupancyBuffer = *m_objects.cu_blockRayOccupancy;
-		
+
 		for (uint i = 4096; i > 0; i >>= 1)
 		{
 			if (kKernelIdx < i)
@@ -346,18 +365,18 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
 	{
-		auto& accumBuffer = m_objects.cu_camera->GetAccumulationBuffer();
-		
+		const auto accumBuffer = m_objects.cu_camera->GetRenderState().cu_accumBuffer;
+
 		if (viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
-			viewportPos.x >= accumBuffer.Width() || viewportPos.y >= accumBuffer.Height()) {
+			viewportPos.x >= accumBuffer->Width() || viewportPos.y >= accumBuffer->Height()) {
 			return;
 		}
 
 		// If the texel weight is negative, the texel is ready to be rendered
-		vec4& texel = accumBuffer.At(viewportPos);
+		vec4& texel = accumBuffer->At(viewportPos);
 		if (texel.w >= 0.0f) { return; }
 
-		CompressedRay& compressedRay = (*m_objects.cu_deviceCompressedRayBuffer)[kKernelIdx];
+		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[kKernelIdx];
 
 		// Flip the weight back to positve
 		texel.w = -texel.w;
@@ -369,11 +388,8 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::OnDestroyAsset()
 	{
-		m_hostCompressedRayBuffer.DestroyAsset();
 		m_hostTracables.DestroyAsset();
-		m_hostLights.DestroyAsset(); 
-		m_hostBlockRayOccupancy.DestroyAsset();
-		m_hostRenderStats.DestroyAsset();
+		m_hostLights.DestroyAsset();
 
 		DestroyOnDevice(cu_deviceData);
 	}
@@ -382,34 +398,27 @@ namespace Cuda
 	{
 		if (expectedType != AssetType::kIntegrator) { return AssetHandle<Host::RenderObject>(); }
 
-		return AssetHandle<Host::RenderObject>(new Host::WavefrontTracer(json), id);
+		return AssetHandle<Host::RenderObject>(new Host::WavefrontTracer(json, id), id);
 	}
 
-	__host__ Host::WavefrontTracer::WavefrontTracer(const ::Json::Node& node) :
+	__host__ Host::WavefrontTracer::WavefrontTracer(const ::Json::Node& node, const std::string& id) :
 		cu_deviceData(nullptr),
 		m_isDirty(true),
 		m_isInitialised(true)
 	{
-		// Create the packed ray buffer
-		m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
-		m_hostCompressedRayBuffer->Clear(CompressedRay());
-
-		// Create the occupancy buffer and render stats
-		m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>("id_hostBlockRayOccupancy", 512 * 512 / 32, m_hostStream);
-		m_hostRenderStats = AssetHandle < Host::ManagedObject<Device::WavefrontTracer::RenderStats>>("wavefront_renderStats");
-
-		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>("wavefront_tracablesContainer");
-		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>("wavefront_lightsContainer");
+		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>(tfm::format("%s_tracablesContainer", id));
+		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id));
 
 		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
 		FromJson(node, ::Json::kRequiredWarn);
 
-		m_block = dim3(16, 16, 1);
+		m_block = dim3(1, 1, 1);
+		m_grid = dim3(1, 1, 1);
 	}
 
-	__host__ Host::WavefrontTracer::~WavefrontTracer() 
-	{ 
-		OnDestroyAsset(); 
+	__host__ Host::WavefrontTracer::~WavefrontTracer()
+	{
+		OnDestroyAsset();
 	}
 
 	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
@@ -418,7 +427,7 @@ namespace Cuda
 		for (auto& object : sceneObjects)
 		{
 			const auto type = object->GetAssetType();
-			
+
 			if (type == AssetType::kTracable)
 			{
 				Log::Debug("Linked tracable '%s' to wavefront tracer.\n", object->GetAssetID());
@@ -427,13 +436,13 @@ namespace Cuda
 				Assert(tracable);
 				m_hostTracables->Push(tracable);
 			}
-			else if(type == AssetType::kLight)
+			else if (type == AssetType::kLight)
 			{
 				Log::Debug("Linked light '%s' to wavefront tracer.\n", object->GetAssetID());
 
-				Cuda::AssetHandle<Host::Light> light = object.DynamicCast<Light>();				
-				Assert(light);				
-			
+				Cuda::AssetHandle<Host::Light> light = object.DynamicCast<Light>();
+				Assert(light);
+
 				// Set the light ID for this tracable with the index of the light in the array. Crude, but it'll do for now. 
 				Cuda::AssetHandle<Host::Tracable> tracable = light->GetTracableHandle();
 				const uchar lightId = m_hostLights->Size();
@@ -449,41 +458,19 @@ namespace Cuda
 		m_hostLights->Synchronise();
 
 		// Synchronise the wavefront tracer structure on the device
-		Device::WavefrontTracer::Objects deviceObjects;
-		deviceObjects.cu_deviceCompressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-		deviceObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
-		deviceObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
-		deviceObjects.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
-		deviceObjects.cu_renderStats = m_hostRenderStats->GetDeviceInstance();		
+		m_deviceObjects.cu_deviceTracables = m_hostTracables->GetDeviceInstance();
+		m_deviceObjects.cu_deviceLights = m_hostLights->GetDeviceInstance();
 
-		m_cameraAsset = GetAssetHandleForBinding<Host::WavefrontTracer, Host::Camera>(sceneObjects, m_cameraId);
-		if (m_cameraAsset)
-		{
-			deviceObjects.cu_camera = m_cameraAsset->GetDeviceInstance();
-
-			AssertMsg(m_cameraAsset->GetAccumulationBuffer(), "This camera object does not have an accumulation buffer associated with it.");
-			const Device::ImageRGBW& accumBuffer = m_cameraAsset->GetAccumulationBuffer()->GetHostInstance();
-
-			deviceObjects.viewportDims = accumBuffer.Dimensions();			
-			
-			m_grid = dim3((accumBuffer.Width() + 15) / 16, (accumBuffer.Height() + 15) / 16, 1);
-		}	
-		else
-		{
-			Log::Error("No camera asset is bound to wavefront tracer '%s'. Nothing will be rendered.\n", GetAssetID());
-			m_isInitialised = false;
-		}	
-
-		SynchroniseObjects(cu_deviceData, deviceObjects);
+		SynchroniseObjects(cu_deviceData, m_deviceObjects);
 
 		if (!m_isInitialised)
 		{
 			Log::Write("Bound tracables and lights to wavefront tracer '%s'.\n", GetAssetID());
-		}		 
+		}
 	}
 
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
-	{		
+	{
 		Host::RenderObject::FromJson(parentNode, flags);
 
 		SynchroniseObjects(cu_deviceData, WavefrontTracerParams(parentNode, flags));
@@ -507,7 +494,7 @@ namespace Cuda
 		if (kThreadIdx == 0)
 		{
 			tracer->PreBlock();
-		} 
+		}
 		__syncthreads();
 
 		tracer->Trace(kKernelIdx);
@@ -529,32 +516,34 @@ namespace Cuda
 	{
 		//std::printf("Composite! %i %i %i\n", m_grid.x, m_grid.y, m_grid.z);
 		if (!m_isInitialised) { return; }
-	
+
 		hostOutputImage->SignalSetWrite(m_hostStream);
 		KernelComposite << < m_grid, m_block, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
 		hostOutputImage->SignalUnsetWrite(m_hostStream);
 	}
 
-	__host__ Device::WavefrontTracer::RenderStats Host::WavefrontTracer::GetRenderStats()
+	__host__ void Host::WavefrontTracer::AttachCamera(AssetHandle<Host::Camera>& camera)
 	{
-		Device::WavefrontTracer::RenderStats stats;
-		m_hostRenderStats->SynchroniseHost(stats);
-		return stats;
+		m_hostCameraAsset = camera;
+		if (!m_hostCameraAsset) { return; }		
+
+		auto accumBuffer = m_hostCameraAsset->GetAccumulationBuffer();
+		AssertMsg(accumBuffer, "This camera object does not have an accumulation buffer associated with it.");
+		const auto& accumBuffferMetadata = accumBuffer->GetMetadata();
+
+		// Synchronise the attached camera with the device
+		m_deviceObjects.viewportDims = accumBuffferMetadata.Dimensions();	
+		m_deviceObjects.cu_camera = m_hostCameraAsset->GetDeviceInstance();
+		SynchroniseObjects(cu_deviceData, m_deviceObjects);
+
+		m_block = dim3(16, 16, 1);
+		m_grid = dim3((accumBuffferMetadata.Width() + 15) / 16, (accumBuffferMetadata.Height() + 15) / 16, 1);
+		m_hostCompressedRayBuffer = m_hostCameraAsset->GetCompressedRayBuffer();
 	}
 
 	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
-	{		
-		if (!m_isInitialised) { return; }
-		
-		//std::printf("Iterate! %f\n", wallTime);
-
-		if (m_isDirty)
-		{
-			m_cameraAsset->GetAccumulationBuffer()->Clear(vec4(0.0f));
-			m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
-			//m_hostPixelFlagsBuffer->Clear(0);
-			m_isDirty = false;
-		}
+	{
+		if (!m_isInitialised || !m_hostCameraAsset) { return; }
 		
 		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);
 

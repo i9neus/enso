@@ -129,6 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
+    <CudaCompile Include="src\kernels\cameras\CudaCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />

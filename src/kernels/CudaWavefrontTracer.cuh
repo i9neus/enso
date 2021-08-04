@@ -3,8 +3,8 @@
 #include "CudaRenderObject.cuh"
 #include "CudaAssetContainer.cuh"
 #include "math/CudaMath.cuh"
-#include "CudaImage.cuh"
-#include "CudaManagedObject.cuh"
+
+#include "cameras/CudaCamera.cuh"
 
 namespace Json { class Node; }
 
@@ -54,24 +54,17 @@ namespace Cuda
 		{		
 			friend class Host::WavefrontTracer;
 		public:
-			struct RenderStats
-			{
-				uint	deadRays;
-			};
-
 			struct Objects
 			{
-				Device::CompressedRayBuffer*				cu_deviceCompressedRayBuffer;
-				Device::PixelFlagsBuffer*					cu_pixelFlagsBuffer;
-				Device::AssetContainer<Device::Tracable>*	cu_deviceTracables;
-				Device::AssetContainer<Device::Material>*	cu_deviceMaterials;
-				Device::AssetContainer<Device::Light>*		cu_deviceLights;
-				Device::AssetContainer<Device::BxDF>*		cu_deviceBxDFs;
-				Device::Array<uint>*						cu_blockRayOccupancy;
-				RenderStats*								cu_renderStats;
+				Device::AssetContainer<Device::Tracable>*	cu_deviceTracables = nullptr;
+				Device::AssetContainer<Device::Light>*		cu_deviceLights = nullptr;
 
-				Device::Camera*								cu_camera;
-				Device::ImageRGBW*							cu_accumBuffer;
+				Device::Camera*								cu_camera = nullptr;			
+
+				Device::CompressedRayBuffer*				cu_compressedRayBuffer = nullptr;
+				Device::Array<uint>*						cu_blockRayOccupancy = nullptr;
+				Device::RenderState::Stats*					cu_renderStats = nullptr;
+
 				ivec2										viewportDims;
 			};		
 
@@ -82,13 +75,7 @@ namespace Cuda
 			float							m_wallTime;
 			int								m_frameIdx;
 			int								m_maxRayDepth;
-			uint							m_checkDigit;
-
-			__device__ __forceinline__ bool IsValid(const ivec2& viewportPos) const
-			{
-				return viewportPos.x >= 0 && viewportPos.x < m_objects.cu_accumBuffer->Width() &&
-					viewportPos.y >= 0 && viewportPos.y < m_objects.cu_accumBuffer->Height();
-			}
+			uint							m_checkDigit;			
 
 			__device__ uchar GetImportanceMode(const RenderCtx& ctx) const;
 			__device__ vec3 Shade(const Ray& incidentRay, const Device::Material& hitMaterial, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
@@ -115,28 +102,19 @@ namespace Cuda
 		class Tracable;
 		class Light;
 		class BxDF;
-		class Camera;
-		template<typename T> class Array;
-
-		using CompressedRayBuffer = Host::Array<CompressedRay>;
-		using PixelFlagsBuffer = Host::Array<uchar>;
-		using IndirectionBuffer = Host::Array<uint>;
+		class Camera;	
 		
 		class WavefrontTracer : public Host::RenderObject
 		{
 		private:
-			Device::WavefrontTracer*							cu_deviceData;
-			AssetHandle<Host::ManagedObject<Device::WavefrontTracer::RenderStats>> m_hostRenderStats;
-
-			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
-			AssetHandle<Host::IndirectionBuffer>				m_hostRayIndirectionBuffer;
-			AssetHandle<Host::PixelFlagsBuffer>					m_hostPixelFlagsBuffer;
-			AssetHandle<Host::Array<uint>>						m_hostBlockRayOccupancy;			
+			Device::WavefrontTracer*							cu_deviceData;		
+			Device::WavefrontTracer::Objects					m_deviceObjects;
 
 			AssetHandle<Host::AssetContainer<Host::Tracable>>   m_hostTracables;
 			AssetHandle<Host::AssetContainer<Host::Light>>      m_hostLights;
 
-			AssetHandle<Host::Camera>							m_cameraAsset;
+			AssetHandle<Host::Camera>							m_hostCameraAsset;
+			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 
 			dim3                    m_block, m_grid;
 			bool					m_isDirty;
@@ -144,7 +122,7 @@ namespace Cuda
 			std::string				m_cameraId;
 
 		public:
-			__host__ WavefrontTracer(const ::Json::Node& node);
+			__host__ WavefrontTracer(const ::Json::Node& node, const std::string& id);
 			__host__ virtual ~WavefrontTracer();
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
@@ -158,8 +136,8 @@ namespace Cuda
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Iterate(const float wallTime, const float frameIdx); 
-			
-			__host__ Device::WavefrontTracer::RenderStats GetRenderStats();
+			__host__ AssetHandle<Host::Camera> GetAttachedCamera() { return m_hostCameraAsset; }
+			__host__ void AttachCamera(AssetHandle<Host::Camera>& camera);
 		};
 	}
 }

@@ -125,12 +125,21 @@ namespace Cuda
             for (auto object : m_objectMap)
             {
                 auto downcast = object.second.DynamicCast<T>();
-                if (downcast)
-                {
-                    return downcast;
-                }
+                if (downcast) { return downcast; }
             }
             return nullptr;
+        }
+
+        template<typename T>
+        __host__ std::vector<AssetHandle<T>> FindAllOfType()
+        {
+            std::vector<AssetHandle<T>> assets;
+            for (auto object : m_objectMap)
+            {
+                auto downcast = object.second.DynamicCast<T>();
+                if (downcast) { assets.push_back(downcast); }
+            }
+            return assets;
         }
 
         __host__ void Bind();
