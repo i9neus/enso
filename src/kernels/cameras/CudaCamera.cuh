@@ -40,8 +40,8 @@ namespace Cuda
 		public:
 			__device__ Camera() {}
 
-			__device__ virtual void CreateRay(RenderCtx& renderCtx) const = 0;
-			__device__ virtual void Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive) = 0;
+			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) = 0;
+			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos) = 0;
 
 			__device__ const Device::RenderState& GetRenderState() const { return m_renderState; }
 		
@@ -68,6 +68,7 @@ namespace Cuda
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() = 0;
 			__host__ virtual void ClearRenderState() = 0;
 			__host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;
+			__host__ virtual void SeedRayBuffer() = 0;
 
 			__host__ static std::string GetAssetTypeString() { return "camera"; }
 			__host__ bool IsLive() const { return m_isLiveCamera; }

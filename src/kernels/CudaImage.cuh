@@ -101,6 +101,8 @@ namespace Cuda
 			}
 			__host__ inline const Device::Image<T>& GetMetadata() const { return m_hostData; }
 			__host__ inline bool IsCreated() const { return cu_deviceData != nullptr; }
+			__host__ inline dim3 GetBlockSize() const { return m_block; }
+			__host__ inline dim3 GetGridSize() const { return m_grid; }
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, kImageUnlocked, kImageReadLocked); }

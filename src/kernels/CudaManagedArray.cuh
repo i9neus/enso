@@ -68,8 +68,8 @@ namespace Cuda
 			Device::ManagedArray<T, HostType, DeviceType>		m_hostData;
 
 			cudaStream_t	  m_hostStream;			
-			int			      m_threadsPerBlock;
-			int			      m_numBlocks;
+			int			      m_blockSize;
+			int			      m_gridSize;
 
 		public:
 			__host__ ManagedArray() : cu_deviceData(nullptr) { }
@@ -86,8 +86,8 @@ namespace Cuda
 			}
 			__host__ inline const Device::ManagedArray<T, HostType, DeviceType>& GetHostInstance() const { return m_hostData; }
 			__host__ inline bool IsCreated() const { return cu_deviceData != nullptr; }
-			__host__ inline int ThreadsPerBlock() const { return m_threadsPerBlock; }
-			__host__ inline int NumBlocks() const { return m_numBlocks; }
+			__host__ inline int GetBlockSize() const { return m_blockSize; }
+			__host__ inline int GetGridSize() const { return m_gridSize; }
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }
@@ -127,8 +127,8 @@ namespace Cuda
 		cu_deviceData = InstantiateOnDevice<DeviceType>(m_hostData.m_size, m_hostData.m_layout, m_hostData.cu_data);
 
 		m_hostStream = hostStream;
-		m_threadsPerBlock = 16 * 16;
-		m_numBlocks = (size + (m_threadsPerBlock - 1)) / (m_threadsPerBlock);
+		m_blockSize = 16 * 16;
+		m_gridSize = (size + (m_blockSize - 1)) / (m_blockSize);
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
@@ -148,7 +148,7 @@ namespace Cuda
 	template<typename T, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Clear(const T& value)
 	{
-		KernelClear << < m_numBlocks, m_threadsPerBlock, 0, m_hostStream >> > (cu_deviceData, value);
+		KernelClear << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData, value);
 		IsOk(cudaStreamSynchronize(m_hostStream));
 	}
 

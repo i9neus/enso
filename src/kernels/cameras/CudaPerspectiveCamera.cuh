@@ -8,6 +8,8 @@ namespace Cuda
 {
 	class CompressedRay;
 	class RenderCtx;
+	class PseudoRNG;
+	class QuasiRNG;
 
 	namespace Host { class PerspectiveCamera; }
 
@@ -25,6 +27,8 @@ namespace Cuda
 		float focalPlane;
 		float fLength;
 		float fStop;
+
+		ivec2 viewportDims;
 	};
 	
 	namespace Device
@@ -33,8 +37,8 @@ namespace Cuda
 		{
 		public:
 			__device__ PerspectiveCamera();
-			__device__ virtual void CreateRay(RenderCtx& renderCtx) const override final;
-			__device__ virtual void Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive) override final;
+			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
+			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos) override final;
 
 			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
@@ -48,6 +52,7 @@ namespace Cuda
 
 		private:
 			__device__ void Prepare();
+			__device__ void CreateRay(const ivec2& viewportPos, CompressedRay& ray) const;
 
 		private:
 			PerspectiveCameraParams 		m_params;
@@ -79,11 +84,15 @@ namespace Cuda
 			__host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return m_hostAccumBuffer; }
 			__host__ virtual void						ClearRenderState() override final;
+			__host__ virtual void						SeedRayBuffer() override final;
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
 
 		private:
 			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
+
+			dim3                    m_block;
+			dim3					m_grid;
 		};
 	}
 }

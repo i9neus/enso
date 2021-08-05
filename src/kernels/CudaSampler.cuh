@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
+#include "CudaRay.cuh"
+#include "CudaHash.cuh"
 
 namespace Cuda
 {    
@@ -195,6 +196,12 @@ namespace Cuda
     public:
         __device__ PseudoRNG() {}
         __device__ PseudoRNG(const uint& seed) { Initialise(seed); }
+        __device__ PseudoRNG(const CompressedRay& ray) 
+        { 
+            Initialise(HashOf(uint(ray.sampleIdx), 
+                              uint(ray.depth) + 9871251u, 
+                              uint(ray.viewport.x), uint(ray.viewport.y))); 
+        }        
 
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
         __device__  __forceinline__ void Advance()
@@ -240,7 +247,11 @@ namespace Cuda
     class QuasiRNG
     {
     public:
-        QuasiRNG(const uint seed) : haltonSeed(seed) {}
+        __device__ QuasiRNG(const uint seed) : haltonSeed(seed) {}
+        __device__ QuasiRNG(const CompressedRay& ray) : 
+            haltonSeed(HashOf(uint(ray.sampleIdx),
+                        uint(ray.depth) + 9871251u,
+                        uint(ray.viewport.x), uint(ray.viewport.y))) {}    
 
         template<int B0, int B1, int B2, int B3>
         __device__ __forceinline__ vec4 Rand() const

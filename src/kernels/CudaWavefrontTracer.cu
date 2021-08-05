@@ -108,22 +108,6 @@ namespace Cuda
 		m_frameIdx = frameIdx;
 	}
 
-	__device__ void Device::WavefrontTracer::SeedRayBuffer(const ivec2& viewportPos) const
-	{
-		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
-
-		if (!compressedRay.IsAlive())
-		{
-			compressedRay.viewport.x = viewportPos.x;
-			compressedRay.viewport.y = viewportPos.y;
-			compressedRay.sampleIdx++;
-			compressedRay.depth = 0;
-
-			RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
-			m_objects.cu_camera->CreateRay(renderCtx);
-		}
-	}
-
 	__device__ __forceinline__ float PowerHeuristic(float pdf1, float pdf2)
 	{
 		return 2.0f * sqr(pdf1) / (sqr(pdf1) + sqr(pdf2));
@@ -240,7 +224,7 @@ namespace Cuda
 
 		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
 		Ray incidentRay(compressedRay);
-		RenderCtx renderCtx(compressedRay, m_objects.viewportDims);
+		RenderCtx renderCtx(compressedRay);
 		vec3 L(0.0f);
 
 		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
@@ -269,7 +253,7 @@ namespace Cuda
 			{
 				L = hitCtx.hit.n * 0.5f + vec3(0.5f);
 			}
-			m_objects.cu_camera->Accumulate(renderCtx.viewportPos, L, 0, false);
+			m_objects.cu_camera->Accumulate(renderCtx, L);
 			return;
 		}
 
@@ -326,7 +310,7 @@ namespace Cuda
 			compressedRay.Kill();
 		}
 
-		m_objects.cu_camera->Accumulate(renderCtx.viewportPos, L, renderCtx.depth, compressedRay.IsAlive());
+		m_objects.cu_camera->Accumulate(renderCtx, L);
 
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 
@@ -411,9 +395,6 @@ namespace Cuda
 
 		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
 		FromJson(node, ::Json::kRequiredWarn);
-
-		m_block = dim3(1, 1, 1);
-		m_grid = dim3(1, 1, 1);
 	}
 
 	__host__ Host::WavefrontTracer::~WavefrontTracer()
@@ -484,11 +465,6 @@ namespace Cuda
 		tracer->PreFrame(wallTime, frameIdx);
 	}
 
-	__global__ void KernelSeedRayBuffer(Device::WavefrontTracer* tracer)
-	{
-		tracer->SeedRayBuffer(kKernelPos<ivec2>());
-	}
-
 	__global__ void KernelTrace(Device::WavefrontTracer* tracer)
 	{
 		if (kThreadIdx == 0)
@@ -518,8 +494,8 @@ namespace Cuda
 		if (!m_isInitialised) { return; }
 
 		hostOutputImage->SignalSetWrite(m_hostStream);
-		KernelComposite << < m_grid, m_block, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
-		hostOutputImage->SignalUnsetWrite(m_hostStream);
+		KernelComposite << < m_hostAccumBuffer->GetGridSize(), m_hostAccumBuffer->GetBlockSize(), 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+		hostOutputImage->SignalUnsetWrite(m_hostStream);		
 	}
 
 	__host__ void Host::WavefrontTracer::AttachCamera(AssetHandle<Host::Camera>& camera)
@@ -532,24 +508,20 @@ namespace Cuda
 		const auto& accumBuffferMetadata = accumBuffer->GetMetadata();
 
 		// Synchronise the attached camera with the device
-		m_deviceObjects.viewportDims = accumBuffferMetadata.Dimensions();	
 		m_deviceObjects.cu_camera = m_hostCameraAsset->GetDeviceInstance();
 		SynchroniseObjects(cu_deviceData, m_deviceObjects);
 
-		m_block = dim3(16, 16, 1);
-		m_grid = dim3((accumBuffferMetadata.Width() + 15) / 16, (accumBuffferMetadata.Height() + 15) / 16, 1);
 		m_hostCompressedRayBuffer = m_hostCameraAsset->GetCompressedRayBuffer();
+		m_hostAccumBuffer = m_hostCameraAsset->GetAccumulationBuffer();
 	}
 
 	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
 	{
 		if (!m_isInitialised || !m_hostCameraAsset) { return; }
 		
-		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);
+		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);		
 
-		KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
-
-		KernelTrace << <  m_hostCompressedRayBuffer->NumBlocks(), m_hostCompressedRayBuffer->ThreadsPerBlock(), 0, m_hostStream >> > (cu_deviceData);
+		KernelTrace << <  m_hostCompressedRayBuffer->GetGridSize(), m_hostCompressedRayBuffer->GetBlockSize(), 0, m_hostStream >> > (cu_deviceData);
 
 		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}

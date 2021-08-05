@@ -23,6 +23,7 @@ namespace Cuda
         focalPlane = 1.0f;
         fLength = 0.45f;
         fStop = 0.45f;
+        viewportDims = ivec2(512, 512);
     }
 
     __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
@@ -73,6 +74,16 @@ namespace Cuda
         Prepare();
     }
 
+    __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos)
+    {
+        CompressedRay& compressedRay = (*m_renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
+
+        if (!compressedRay.IsAlive())
+        {            
+            CreateRay(viewportPos, compressedRay);
+        }
+    }
+
     __device__ void Device::PerspectiveCamera::Prepare()
     { 
         //float theta = kTwoPi * (m_cameraPos.x - 0.5f);
@@ -101,7 +112,7 @@ namespace Cuda
         m_d2 = m_focalDistance - m_d1;
     }
     
-    __device__ void Device::PerspectiveCamera::CreateRay(RenderCtx& renderCtx) const
+    __device__ void Device::PerspectiveCamera::CreateRay(const ivec2& viewportPos, CompressedRay& ray) const
     {         
         __shared__ bool isInited;
         __shared__ mat3 basis;
@@ -126,8 +137,15 @@ namespace Cuda
 
         __syncthreads();
 
+        // Update the ray with the new properties and generate a random sampler from it
+        ray.viewport.x = viewportPos.x;
+        ray.viewport.y = viewportPos.y;
+        ray.sampleIdx++;
+        ray.depth = 0;
+        RNG rng(ray);
+
         // Generate 4 random numbers from a continuous uniform distribution
-        vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
+        vec4 xi = rng.Rand<0, 1, 2, 3>();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
@@ -162,8 +180,8 @@ namespace Cuda
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
         // but this doesn't really matter because the anti-aliasing kernel is so small that we won't notice the correlation 
         // FIXME: Do an automatic cast
-        vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / max(renderCtx.viewportDims.x, renderCtx.viewportDims.y) +
-            kCameraSensorSize * (vec2(renderCtx.viewportPos) - vec2(renderCtx.viewportDims) * 0.5) / float(max(renderCtx.viewportDims.x, renderCtx.viewportDims.y));
+        vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / max(m_params.viewportDims.x, m_params.viewportDims.y) +
+            kCameraSensorSize * (vec2(viewportPos) - vec2(m_params.viewportDims) * 0.5) / float(max(m_params.viewportDims.x, m_params.viewportDims.y));
         vec2 focalPlanePos = vec2(sensorPos.x, sensorPos.y) * d2 / d1;
 
         vec2 lensPos;
@@ -178,23 +196,18 @@ namespace Cuda
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;
 
         // Assemble the ray
-        auto& newRay = renderCtx.emplacedRay;
-        newRay.od.o = basis * vec3(lensPos, d1);
-        newRay.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - newRay.od.o);
-        newRay.od.o += cameraPos;
-        newRay.weight = 1.0f;
-        newRay.depth = 0;
-        newRay.flags = kRaySpecular;
-        //newRay.lambda = mix(3800.0f, 7000.0f, mu);
-        newRay.sampleIdx = renderCtx.sampleIdx;
-
-        newRay.viewport.x = ushort(renderCtx.viewportPos.x);
-        newRay.viewport.y = ushort(renderCtx.viewportPos.y);
+        ray.od.o = basis * vec3(lensPos, d1);
+        ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
+        ray.od.o += cameraPos;
+        ray.weight = 1.0f;
+        ray.depth = 0;
+        ray.flags = kRaySpecular;
+        //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
-    __device__ void Device::PerspectiveCamera::Accumulate(const ivec2& xy, const vec3& value, const uchar depth, const bool isAlive)
+    __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const vec3& value)
     {
-        m_renderState.cu_accumBuffer->Accumulate(xy, value, depth, isAlive);
+        m_renderState.cu_accumBuffer->Accumulate(ivec2(ctx.emplacedRay.viewport.x, ctx.emplacedRay.viewport.y), value, ctx.depth, ctx.emplacedRay.IsAlive());
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
@@ -215,6 +228,9 @@ namespace Cuda
         renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
         SynchroniseObjects(cu_deviceData, renderState);
+
+        m_block = dim3(16, 16, 1);
+        m_grid = dim3((m_hostAccumBuffer->GetMetadata().Width() + 15) / 16, (m_hostAccumBuffer->GetMetadata().Height() + 15) / 16, 1);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -245,5 +261,15 @@ namespace Cuda
         m_hostAccumBuffer->Clear(vec4(0.0f));
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
         //m_hostPixelFlagsBuffer->Clear(0);
+    }
+
+    __global__ void KernelSeedRayBuffer(Device::PerspectiveCamera* camera)
+    {
+        camera->SeedRayBuffer(kKernelPos<ivec2>());
+    }
+
+    __host__ void Host::PerspectiveCamera::SeedRayBuffer()
+    {
+        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
     }
 }

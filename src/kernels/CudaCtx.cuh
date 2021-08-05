@@ -1,40 +1,21 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
 #include "CudaSampler.cuh"
-#include "CudaHash.cuh"
-#include "CudaRay.cuh"
 
 namespace Cuda
 {
-#define kPseudoRandomSampler
-	
+	using RNG = PseudoRNG;
+
 	struct RenderCtx
-	{		
-		__device__ __forceinline__ RenderCtx(CompressedRay& compressed, const ivec2& viewDims) :
+	{
+		__device__ __forceinline__ RenderCtx(CompressedRay& compressed) :
 			emplacedRay(compressed),
-			viewportPos(compressed.ViewportPos()),
-			viewportDims(viewDims),
-			sampleIdx(compressed.sampleIdx),			
 			depth(compressed.depth),
-#ifdef kPseudoRandomSampler
-			rng(HashOf(uint(sampleIdx), uint(depth) + 9871251u, uint(viewportPos.x), uint(viewportPos.y)))
-#else
-			rng(HashOf(uint(depth) + 9871251u, uint(viewportPos.x), uint(viewportPos.y)))
-#endif
+			rng(compressed)
 		{}
 
-		ivec2			viewportPos;
-		const ivec2& viewportDims;
 		uchar			depth;
-		int				sampleIdx;
-
-#ifdef kPseudoRandomSampler
-		PseudoRNG		rng;
-#else
-		QuasiRNG		rng;
-#endif
-
+		RNG				rng;
 		CompressedRay&  emplacedRay;
 
 		__device__ __forceinline__ void ResetRay() { emplacedRay.flags = 0; }

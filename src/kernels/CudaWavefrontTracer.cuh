@@ -64,8 +64,6 @@ namespace Cuda
 				Device::CompressedRayBuffer*				cu_compressedRayBuffer = nullptr;
 				Device::Array<uint>*						cu_blockRayOccupancy = nullptr;
 				Device::RenderState::Stats*					cu_renderStats = nullptr;
-
-				ivec2										viewportDims;
 			};		
 
 		protected:			
@@ -85,7 +83,6 @@ namespace Cuda
 			__device__ WavefrontTracer();
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
-			__device__ void SeedRayBuffer(const ivec2& viewportPos) const;
 			__device__ void Trace(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
@@ -115,8 +112,8 @@ namespace Cuda
 
 			AssetHandle<Host::Camera>							m_hostCameraAsset;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
+			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
 
-			dim3                    m_block, m_grid;
 			bool					m_isDirty;
 			bool					m_isInitialised;
 			std::string				m_cameraId;

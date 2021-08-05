@@ -363,6 +363,10 @@ void RenderManager::Run()
 			{
 				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 
+				// Seed the buffer with a new batch of rays
+				camera->SeedRayBuffer();
+
+				// Trace those rays through the wavefront tracer 
 				m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
 
 				frameIdx++;
