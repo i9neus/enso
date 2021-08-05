@@ -11,6 +11,42 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &p.useGrid);
 }
 
+void IMGUIAbstractShelf::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)
+{
+    const char* selectedLabel = labels[selected].c_str();  // Label to preview before opening the combo (technically it could be anything)
+    if (ImGui::BeginCombo(name.c_str(), selectedLabel, 0))
+    {
+        for (int n = 0; n < 3; n++)
+        {
+            const bool isSelected = (selected == n);
+            if (ImGui::Selectable(labels[n].c_str(), isSelected))
+            {
+                selected = n;
+            }
+
+            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+}
+
+void IMGUIAbstractShelf::ConstructTransform(Cuda::BidirectionalTransform& transform)
+{
+    if (ImGui::TreeNode("Transform"))
+    {
+        ImGui::DragFloat3("Position", &transform.trans[0], math::max(0.01f, cwiseMax(transform.trans) * 0.01f));
+        ImGui::DragFloat3("Rotation", &transform.rot[0], math::max(0.01f, cwiseMax(transform.rot) * 0.01f));
+        //ImGui::DragFloat3("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
+        ImGui::DragFloat("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
+        transform.scale = transform.scale[0];
+        ImGui::TreePop();
+    }
+}
+
 void CornellMaterialShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -120,6 +156,19 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 }
 
+void LightProbeCameraShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+
+    ConstructTransform(p.transform);
+
+    ImGui::DragInt3("Grid density", &p.gridDensity[0], 1, 100);
+    ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.shL);    
+}
+
+
 void WavefrontTracerShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -129,28 +178,7 @@ void WavefrontTracerShelf::Construct()
     ImGui::ColorEdit3("Ambient radiance", &p.ambientRadiance[0]);
     ImGui::Checkbox("Debug normals", &p.debugNormals);
     ImGui::Checkbox("Debug shaders", &p.debugShaders);
-
-    const char* labels[3] = { "MIS", "Lights", "BxDFs" };
-    const char* selectedLabel = labels[p.importanceMode];  // Label to preview before opening the combo (technically it could be anything)
-    if (ImGui::BeginCombo("Importance mode", selectedLabel, 0))
-    {
-        for (int n = 0; n < 3; n++)
-        {
-            const bool isSelected = (p.importanceMode == n);
-            if (ImGui::Selectable(labels[n], isSelected))
-            {
-                p.importanceMode = n;
-            }
-
-            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-            if (isSelected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
-    }
-
+    ConstructComboBox("Importance mode", { "MIS", "Lights", "BxDFs" }, p.importanceMode);
 }
 
 IMGUIShelfFactory::IMGUIShelfFactory()
@@ -169,6 +197,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
     //m_instantiators[Cuda::Host::LambertBRDF::GetAssetTypeString()] = LambertBRDFShelf::Instantiate;
 
     m_instantiators[Cuda::Host::PerspectiveCamera::GetAssetTypeString()] = PerspectiveCameraShelf::Instantiate;
+    m_instantiators[Cuda::Host::LightProbeCamera::GetAssetTypeString()] = LightProbeCameraShelf::Instantiate;
 
     m_instantiators[Cuda::Host::WavefrontTracer::GetAssetTypeString()] = WavefrontTracerShelf::Instantiate;
 }

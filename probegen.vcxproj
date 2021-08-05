@@ -74,6 +74,7 @@
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="src\kernels\math\CudaMathUtils.cuh" />
+    <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh" />
     <ClInclude Include="src\kernels\math\CudaTransform.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh" />

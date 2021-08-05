@@ -17,6 +17,7 @@
 #include "kernels/materials/CudaCornellMaterial.cuh"
 
 #include "kernels/cameras/CudaPerspectiveCamera.cuh"
+#include "kernels/cameras/CudaLightProbeCamera.cuh"
 
 #include "kernels/CudaWavefrontTracer.cuh"
 
@@ -37,6 +38,9 @@ public:
     }          
 
 protected:
+    void ConstructTransform(Cuda::BidirectionalTransform& transform);
+    void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
+
     std::string m_dagPath;
     std::string m_id;
 };
@@ -64,19 +68,6 @@ public:
         newJson = newNode.Stringify();
 
         return true;
-    }
-
-    void ConstructTransform(Cuda::BidirectionalTransform& transform)
-    {
-        if (ImGui::TreeNode("Transform"))
-        {
-            ImGui::DragFloat3("Position", &transform.trans[0], math::max(0.01f, cwiseMax(transform.trans) * 0.01f));
-            ImGui::DragFloat3("Rotation", &transform.rot[0], math::max(0.01f, cwiseMax(transform.rot) * 0.01f));            
-            //ImGui::DragFloat3("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
-            ImGui::DragFloat("Scale XYZ", &transform.scale[0], math::max(0.01f, cwiseMax(transform.scale) * 0.01f));
-            transform.scale = transform.scale[0];
-            ImGui::TreePop();
-        }
     }
 
     bool IsDirty() const
@@ -212,6 +203,17 @@ public:
     virtual ~PerspectiveCameraShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PerspectiveCameraShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Light probe camera
+class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
+{
+public:
+    LightProbeCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~LightProbeCameraShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
 };
 

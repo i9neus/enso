@@ -20,10 +20,10 @@ namespace Cuda
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
-		__host__ bool operator==(const LightProbeCameraParams&) const;
 
-		BidirectionalTransform transform;
-		ivec3 density;
+		BidirectionalTransform		transform;
+		ivec3						gridDensity;
+		int							shL;
 	};
 
 	namespace Device
@@ -39,7 +39,7 @@ namespace Cuda
 
 			__device__ LightProbeCamera();
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
-			__device__ void SeedRayBuffer(const ivec2& viewportPos);
+			__device__ void SeedRayBuffer();
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 
 			__device__ void Synchronise(const LightProbeCameraParams& params)
@@ -54,18 +54,16 @@ namespace Cuda
 
 		private:
 			__device__ void Prepare();
-			__device__ void CreateRay(const ivec2& viewportPos, CompressedRay& ray) const;
+			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray) const;
 
 		private:
 			LightProbeCameraParams 		m_params;
 			Objects						m_objects;
 
-			mat3		m_basis;
-			vec3		m_cameraPos;
-			float		m_d1, m_d2;
-			float		m_focalLength;
-			float		m_focalDistance;
-			float		m_fStop;
+			int							m_numProbes;
+			int							m_bucketsPerProbe;
+			int							m_bucketsPerCoefficient;
+			int							m_totalBuckets;
 		};
 	}
 

@@ -1,24 +1,18 @@
-﻿#include "../CudaSampler.cuh"
-#include "../CudaHash.cuh"
-#include "../CudaCtx.cuh"
-#include "../CudaRay.cuh"
-
-#include "CudaLightProbeCamera.cuh"
+﻿#include "CudaLightProbeCamera.cuh"
 #include "generic/JsonUtils.h"
+
+#include "../CudaCtx.cuh"
 #include "../CudaManagedArray.cuh"
 #include "../CudaManagedObject.cuh"
 
-#define kCameraAA                 1.5f             // The width/height of the anti-aliasing kernel in pixels
-#define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
-#define kBlades                   5.0f
-#define kBladeCurvature           0.0f
-#define kCameraUp                 vec3(0.0f, 1.0f, 0.0f) 
+#include "../math/CudaSphericalHarmonics.cuh"
 
 namespace Cuda
 {
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
-        density = ivec3(5, 5, 5);      
+        gridDensity = ivec3(5, 5, 5);
+        shL = 1;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -30,15 +24,17 @@ namespace Cuda
     __host__ void LightProbeCameraParams::ToJson(::Json::Node& node) const
     {
         transform.ToJson(node);
-        
-        node.AddArray("density", std::vector<int>({ density.x, density.y, density.z }));     
+
+        node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
+        node.AddValue("L", shL);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
-        
-        node.GetVector("density", density, flags);
+
+        node.GetVector("gridDensity", gridDensity, flags);
+        node.GetValue("L", shL, flags);
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera()
@@ -46,29 +42,60 @@ namespace Cuda
         Prepare();
     }
 
-    __device__ void Device::LightProbeCamera::SeedRayBuffer(const ivec2& viewportPos)
+    __device__ void Device::LightProbeCamera::SeedRayBuffer()
     {
-        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
+        assert(kKernelIdx < 512 * 512);
+
+        if (kKernelIdx > m_totalBuckets) { return; }
+        
+        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
 
         if (!compressedRay.IsAlive())
         {
-            CreateRay(viewportPos, compressedRay);
+            CreateRay(kKernelIdx, compressedRay);
         }
     }
 
     __device__ void Device::LightProbeCamera::Prepare()
     {
-        
+        // Number of light probes in the grid
+        m_numProbes = m_params.gridDensity.x * m_params.gridDensity.y * m_params.gridDensity.z;
+        // Number of sample buckets per probe
+        m_bucketsPerProbe = m_objects.cu_accumBuffer->Size() / m_numProbes;
+        // Number of sample buckets per SH coefficient per probe
+        m_bucketsPerCoefficient = m_bucketsPerProbe / SH::GetNumCoefficients(m_params.shL);
+
+        // Adjust values so everything packs correctly
+        m_bucketsPerProbe = m_bucketsPerCoefficient * SH::GetNumCoefficients(m_params.shL);        
+        m_totalBuckets = m_bucketsPerProbe * m_numProbes;
     }
 
-    __device__ void Device::LightProbeCamera::CreateRay(const ivec2& viewportPos, CompressedRay& ray) const
-    {
-       
+    __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray) const
+    {           
+        // Update the ray with the new properties and generate a random sampler from it
+        ray.accumIdx = accumIdx;
+        ray.sampleIdx++;
+        ray.depth = 0;
+        RNG rng(ray);
+
+        ray.od.d = SampleUnitSphere(rng.Rand<0, 1>());      
+
+        const int probeIdx = accumIdx / m_bucketsPerProbe;
+        const int coeffIdx = accumIdx % m_bucketsPerCoefficient;
+        const ivec3 gridIdx(probeIdx % m_params.gridDensity.x,
+                            (probeIdx / m_params.gridDensity.x) % m_params.gridDensity.y,
+                            probeIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
+
+        // Project this direction into SH and pre-normalise
+        ray.weight = SH::Project(ray.od.d, coeffIdx) * kFourPi;
+        ray.depth = 0;
+        ray.flags = kRaySpecular;
+        ray.od.o = m_params.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.gridDensity) - vec3(0.5f));
     }
 
     __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const vec3& value)
     {
-        
+        (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx] += vec4(value, float(1 >> ctx.depth));
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
@@ -126,7 +153,7 @@ namespace Cuda
 
     __global__ void KernelSeedRayBuffer(Device::LightProbeCamera* camera)
     {
-        camera->SeedRayBuffer(kKernelPos<ivec2>());
+        camera->SeedRayBuffer();
     }
 
     __host__ void Host::LightProbeCamera::SeedRayBuffer()

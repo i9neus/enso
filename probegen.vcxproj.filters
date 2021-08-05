@@ -333,6 +333,9 @@
     <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh">
       <Filter>kernels\cameras</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
