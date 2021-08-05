@@ -40,7 +40,7 @@ namespace Cuda
     __device__ bool Device::EnvironmentLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {
         pdfLight = 1 / kFourPi;
-        extant = SampleUnitSphere(renderCtx.Rand<0, 1>());
+        extant = SampleUnitSphere(renderCtx.rng.Rand<0, 1>());
     }
 
     __device__ bool Device::EnvironmentLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const

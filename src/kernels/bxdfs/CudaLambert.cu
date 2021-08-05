@@ -6,7 +6,7 @@ namespace Cuda
 {
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const
     {
-        const vec2 xi = renderCtx.Rand<0, 1>();
+        const vec2 xi = renderCtx.rng.Rand<0, 1>();
 
         // Sample the Lambertian direction
         vec3 r = vec3(SampleUnitDisc(xi), 0.0f);

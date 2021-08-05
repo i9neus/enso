@@ -185,7 +185,7 @@ namespace Cuda
         return fmodf(HaltonBase<Base>(seed) + GetHaltonCRPrime<Base>() * float(seed) / float(0xffffffffu), 1.0f);
     }
 
-    class PCG
+    class PseudoRNG
     {
         #define kPCGRandBias 0.999999f
 
@@ -193,8 +193,8 @@ namespace Cuda
         uvec4   m_state;
 
     public:
-        __device__ PCG() {}
-        __device__ PCG(const uint& seed) { Initialise(seed); }
+        __device__ PseudoRNG() {}
+        __device__ PseudoRNG(const uint& seed) { Initialise(seed); }
 
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
         __device__  __forceinline__ void Advance()
@@ -220,12 +220,51 @@ namespace Cuda
             m_state = uvec4(seed * 20219, seed * 7243, seed * 12547, seed * 28573);
         }
 
-        // Generates a tuple of canonical random numbers in the range [0, 1]
-        __device__  __forceinline__ vec4 Rand()
+        // Generates a 4-tuple of canonical random numbers in the range [0, 1]
+        __device__  __forceinline__ vec4 Rand4()
         {
             Advance();
             return kPCGRandBias * vec4(m_state) / float(0xffffffffu);
         }
+
+        template<int B0, int B1, int B2, int B3>
+        __device__ __forceinline__ vec4 Rand() { return Rand4(); }
+        template<int B0, int B1, int B2>
+        __device__ __forceinline__ vec3 Rand() { return Rand4().xyz; }
+        template<int B0, int B1>
+        __device__ __forceinline__ vec2 Rand() { return Rand4().xy; }
+        template<int B0>
+        __device__ __forceinline__ float Rand() { return Rand4().x; }
+    };
+
+    class QuasiRNG
+    {
+    public:
+        QuasiRNG(const uint seed) : haltonSeed(seed) {}
+
+        template<int B0, int B1, int B2, int B3>
+        __device__ __forceinline__ vec4 Rand() const
+        {
+            return Halton<vec4, B0, B1, B2, B3>(haltonSeed);
+        }
+        template<int B0, int B1, int B2>
+        __device__ __forceinline__ vec3 Rand() const
+        {
+            return Halton<vec3, B0, B1, B2>(haltonSeed);
+        }
+        template<int B0, int B1>
+        __device__ __forceinline__ vec2 Rand() const
+        {
+            return Halton<vec2, B0, B1>(haltonSeed);
+        }
+        template<int B0>
+        __device__ __forceinline__ float Rand() const
+        {
+            return HaltonBase<B0>(haltonSeed);
+        }
+
+    private:
+        const uint		haltonSeed;
     };
 
     // Quick and dirty method for sampling the unit disc from two canonical random variables. For a better algorithm, see

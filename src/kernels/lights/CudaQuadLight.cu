@@ -54,7 +54,7 @@ namespace Cuda
         const vec3& hitPos = hitCtx.hit.p;
         const vec3& normal = hitCtx.hit.n;
 
-        const vec2 xi = renderCtx.Rand<0, 1>() - vec2(0.5f);
+        const vec2 xi = renderCtx.rng.Rand<0, 1>() - vec2(0.5f);
         const vec3 lightPos = m_params.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point

@@ -149,7 +149,7 @@ namespace Cuda
 		// If we're at max depth, terminate the ray
 		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
 
-		vec2 xi = renderCtx.Rand<2, 3>();
+		vec2 xi = renderCtx.rng.Rand<2, 3>();
 		const auto numLights = m_objects.cu_deviceLights->Size();
 
 		const BxDF* bxdf = material.GetBoundBxDF();

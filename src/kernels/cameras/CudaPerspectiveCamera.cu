@@ -127,7 +127,7 @@ namespace Cuda
         __syncthreads();
 
         // Generate 4 random numbers from a continuous uniform distribution
-        vec4 xi = renderCtx.Rand<0, 1, 2, 3>();
+        vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
 
         // The value of mu is used to sample the spectral wavelength but also the chromatic aberration effect.
         // If we're using the Halton low-disrepancy sampler, hash the input values and sample the sequence
