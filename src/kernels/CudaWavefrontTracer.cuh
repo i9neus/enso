@@ -35,7 +35,6 @@ namespace Cuda
 		bool debugShaders;
 		vec3 ambientRadiance;
 		int importanceMode;
-		float displayGamma;
 	};
 	
 	namespace Device

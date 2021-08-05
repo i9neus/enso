@@ -36,8 +36,7 @@ namespace Cuda
 		ambientRadiance(0.0f),
 		debugNormals(false),
 		debugShaders(false),
-		importanceMode(kImportanceMIS),
-		displayGamma(1.0f)
+		importanceMode(kImportanceMIS)
 	{
 	}
 
@@ -47,7 +46,6 @@ namespace Cuda
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
 		node.AddValue("debugNormals", debugNormals);
 		node.AddValue("debugShaders", debugShaders);
-		node.AddValue("displayGamma", displayGamma);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
 		node.AddEnumeratedParameter("importanceMode", importanceModeIds, importanceMode);
@@ -59,7 +57,6 @@ namespace Cuda
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("debugNormals", debugNormals, flags);
 		node.GetValue("debugShaders", debugShaders, flags);
-		node.GetValue("displayGamma", displayGamma, flags);
 
 		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
 		node.GetEnumeratedParameter("importanceMode", importanceModeIds, importanceMode, flags);
@@ -345,30 +342,7 @@ namespace Cuda
 		}
 
 		m_objects.cu_renderStats->deadRays = occupancyBuffer[0];
-	}
-
-	__device__ void Device::WavefrontTracer::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
-	{
-		const auto accumBuffer = m_objects.cu_camera->GetRenderState().cu_accumBuffer;
-
-		if (viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
-			viewportPos.x >= accumBuffer->Width() || viewportPos.y >= accumBuffer->Height()) {
-			return;
-		}
-
-		// If the texel weight is negative, the texel is ready to be rendered
-		vec4& texel = accumBuffer->At(viewportPos);
-		if (texel.w >= 0.0f) { return; }
-
-		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[kKernelIdx];
-
-		// Flip the weight back to positve
-		texel.w = -texel.w;
-
-		// Normalise and gamma correct
-		const vec3 rgb = pow(texel.xyz / fmax(1.0f, texel.w), vec3(1.0f / m_params.displayGamma));
-		deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
-	}
+	}	
 
 	__host__ void Host::WavefrontTracer::OnDestroyAsset()
 	{
@@ -479,23 +453,6 @@ namespace Cuda
 	__global__ void KernelReduce(Device::WavefrontTracer* tracer)
 	{
 		tracer->Reduce();
-	}
-
-	__global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::WavefrontTracer* tracer)
-	{
-		//if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
-
-		tracer->Composite(kKernelPos<ivec2>(), deviceOutputImage);
-	}
-
-	__host__ void Host::WavefrontTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage)
-	{
-		//std::printf("Composite! %i %i %i\n", m_grid.x, m_grid.y, m_grid.z);
-		if (!m_isInitialised) { return; }
-
-		hostOutputImage->SignalSetWrite(m_hostStream);
-		KernelComposite << < m_hostAccumBuffer->GetGridSize(), m_hostAccumBuffer->GetBlockSize(), 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
-		hostOutputImage->SignalUnsetWrite(m_hostStream);		
 	}
 
 	__host__ void Host::WavefrontTracer::AttachCamera(AssetHandle<Host::Camera>& camera)

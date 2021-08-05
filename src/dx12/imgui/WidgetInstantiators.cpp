@@ -117,6 +117,7 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("F-stop", &p.fStop, 0.0f, 1.0f);
     ImGui::SliderFloat("Focal length", &p.fLength, 0.0f, 1.0f);
     ImGui::SliderFloat("Focal plane", &p.focalPlane, 0.0f, 2.0f);
+    ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 }
 
 void WavefrontTracerShelf::Construct()
@@ -128,7 +129,6 @@ void WavefrontTracerShelf::Construct()
     ImGui::ColorEdit3("Ambient radiance", &p.ambientRadiance[0]);
     ImGui::Checkbox("Debug normals", &p.debugNormals);
     ImGui::Checkbox("Debug shaders", &p.debugShaders);
-    ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 
     const char* labels[3] = { "MIS", "Lights", "BxDFs" };
     const char* selectedLabel = labels[p.importanceMode];  // Label to preview before opening the combo (technically it could be anything)

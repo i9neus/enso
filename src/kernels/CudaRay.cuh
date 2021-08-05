@@ -46,23 +46,21 @@ namespace Cuda
 			sampleIdx(0),
 			depth(0) {}
 
-		RayBasic		od;			// 24 bytes
-		vec3			weight;		// 12 bytes
-		half			pdf;		// 2 bytes
-		uchar			lightId;	// 1 byte
-		struct
-		{
-			ushort		x;			// 2 bytes
-			ushort		y;			// 2 bytes
-		}
-		viewport;
-		uchar   flags;				// 1 byte
-		uchar	depth;				// 1 byte
-		uint	sampleIdx;			// 4 bytes
+		RayBasic	od;				// 24 bytes
+		vec3		weight;			// 12 bytes
+		half		pdf;			// 2 bytes
+		uchar		lightId;		// 1 byte
+		uint		accumIdx;		// 4 bytes		
+		uchar		flags;			// 1 byte
+		uchar		depth;			// 1 byte
+		uint		sampleIdx;		// 4 bytes
+
+		__device__ __forceinline__ ivec2 GetViewportPos() const	{ return ivec2(accumIdx >> 16, accumIdx & 0xffff); }
+		__device__ __forceinline__ void SetViewportPos(const int x, const int y) { accumIdx = (x << 16) | (y & 0xffff);  }
+		__device__ __forceinline__ void SetViewportPos(const ivec2 v) { accumIdx = (v.x << 16) | (v.y & 0xffff); }
 
 		__device__ __forceinline__ void Kill() { flags = 0; }
-		__device__ __forceinline__ bool IsAlive() const { return flags != 0; }		
-		__device__ __forceinline__ ivec2 ViewportPos() const { return ivec2(viewport.x, viewport.y); }
+		__device__ __forceinline__ bool IsAlive() const { return flags != 0; }	
 	};
 
 	// The "full fat" ray objects that most methods will refer to

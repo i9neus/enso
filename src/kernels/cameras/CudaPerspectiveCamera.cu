@@ -23,6 +23,7 @@ namespace Cuda
         focalPlane = 1.0f;
         fLength = 0.45f;
         fStop = 0.45f;
+        displayGamma = 1.0f;
         viewportDims = ivec2(512, 512);
     }
 
@@ -39,6 +40,7 @@ namespace Cuda
         node.AddValue("focalPlane", focalPlane);
         node.AddValue("fLength", fLength);
         node.AddValue("fStop", fStop);
+        node.AddValue("displayGamma", displayGamma);
     }
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -48,6 +50,7 @@ namespace Cuda
         node.GetValue("focalPlane", focalPlane, flags);
         node.GetValue("fLength", fLength, flags);
         node.GetValue("fStop", fStop, flags);
+        node.GetValue("displayGamma", displayGamma, flags);
     }
 
     __host__ bool PerspectiveCameraParams::operator==(const PerspectiveCameraParams& rhs) const
@@ -74,9 +77,30 @@ namespace Cuda
         Prepare();
     }
 
+    __device__ void Device::PerspectiveCamera::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
+    {
+        if (viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
+            viewportPos.x >= m_objects.cu_accumBuffer->Width() || viewportPos.y >= m_objects.cu_accumBuffer->Height()) {
+            return;
+        }
+
+        // If the texel weight is negative, the texel is ready to be rendered
+        vec4& texel = m_objects.cu_accumBuffer->At(viewportPos);
+        if (texel.w >= 0.0f) { return; }
+
+        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
+
+        // Flip the weight back to positve
+        texel.w = -texel.w;
+
+        // Normalise and gamma correct
+        const vec3 rgb = pow(texel.xyz / fmax(1.0f, texel.w), vec3(1.0f / m_params.displayGamma));
+        deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
+    }
+
     __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos)
     {
-        CompressedRay& compressedRay = (*m_renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
+        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
 
         if (!compressedRay.IsAlive())
         {            
@@ -138,8 +162,7 @@ namespace Cuda
         __syncthreads();
 
         // Update the ray with the new properties and generate a random sampler from it
-        ray.viewport.x = viewportPos.x;
-        ray.viewport.y = viewportPos.y;
+        ray.SetViewportPos(viewportPos);
         ray.sampleIdx++;
         ray.depth = 0;
         RNG rng(ray);
@@ -207,7 +230,7 @@ namespace Cuda
 
     __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const vec3& value)
     {
-        m_renderState.cu_accumBuffer->Accumulate(ivec2(ctx.emplacedRay.viewport.x, ctx.emplacedRay.viewport.y), value, ctx.depth, ctx.emplacedRay.IsAlive());
+        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.depth, ctx.emplacedRay.IsAlive());
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
@@ -222,15 +245,15 @@ namespace Cuda
         FromJson(parentNode, ::Json::kRequiredWarn);
 
         // Sychronise the device objects
-        Device::RenderState renderState;
-        renderState.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-        renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
-        renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
-        SynchroniseObjects(cu_deviceData, renderState);
+        Device::PerspectiveCamera::Objects deviceObjects;
+        deviceObjects.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+        deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
+        deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
+        SynchroniseObjects(cu_deviceData, deviceObjects);
 
-        m_block = dim3(16, 16, 1);
-        m_grid = dim3((m_hostAccumBuffer->GetMetadata().Width() + 15) / 16, (m_hostAccumBuffer->GetMetadata().Height() + 15) / 16, 1);
+        m_blockSize = dim3(16, 16, 1);
+        m_gridSize = dim3((m_params.viewportDims.x + 15) / 16, (m_params.viewportDims.y + 15) / 16, 1);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -253,7 +276,8 @@ namespace Cuda
     {
         Host::Camera::FromJson(parentNode, flags);
         
-        SynchroniseObjects(cu_deviceData, PerspectiveCameraParams(parentNode));
+        m_params = PerspectiveCameraParams(parentNode);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::PerspectiveCamera::ClearRenderState()
@@ -270,6 +294,20 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::SeedRayBuffer()
     {
-        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
+        KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData);
+    }
+
+    __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::PerspectiveCamera* camera)
+    {
+        //if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
+
+        camera->Composite(kKernelPos<ivec2>(), deviceOutputImage);
+    }
+
+    __host__ void Host::PerspectiveCamera::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
+    {
+        hostOutputImage->SignalSetWrite(m_hostStream);
+        KernelComposite << < m_blockSize, m_gridSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+        hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
 }

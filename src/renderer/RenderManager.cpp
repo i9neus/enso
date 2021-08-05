@@ -375,7 +375,7 @@ void RenderManager::Run()
 			// If this wavefront tracer is live, update the composite image
 			if (camera == m_liveCamera)
 			{
-				m_wavefrontTracer->Composite(m_compositeImage);
+				camera->Composite(m_compositeImage);
 			}
 
 			checkCudaErrors(cudaStreamSynchronize(m_renderStream));

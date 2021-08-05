@@ -28,7 +28,6 @@ namespace Cuda
 				uint	deadRays = 0;
 			};
 
-			Device::ImageRGBW*				cu_accumBuffer = nullptr;
 			Device::CompressedRayBuffer*	cu_compressedRayBuffer = nullptr;
 			Device::PixelFlagsBuffer*		cu_pixelFlagsBuffer = nullptr;
 			Device::Array<uint>*			cu_blockRayOccupancy = nullptr;
@@ -41,12 +40,7 @@ namespace Cuda
 			__device__ Camera() {}
 
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) = 0;
-			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos) = 0;
-
-			__device__ const Device::RenderState& GetRenderState() const { return m_renderState; }
-		
-		protected:
-			RenderState			m_renderState;
+			__device__ virtual const Device::RenderState& GetRenderState() const = 0;		
 		};
 	}
 
@@ -69,6 +63,7 @@ namespace Cuda
 			__host__ virtual void ClearRenderState() = 0;
 			__host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;
 			__host__ virtual void SeedRayBuffer() = 0;
+			__host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const {};
 
 			__host__ static std::string GetAssetTypeString() { return "camera"; }
 			__host__ bool IsLive() const { return m_isLiveCamera; }

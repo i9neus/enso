@@ -200,7 +200,7 @@ namespace Cuda
         { 
             Initialise(HashOf(uint(ray.sampleIdx), 
                               uint(ray.depth) + 9871251u, 
-                              uint(ray.viewport.x), uint(ray.viewport.y))); 
+                              ray.accumIdx)); 
         }        
 
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
@@ -251,7 +251,7 @@ namespace Cuda
         __device__ QuasiRNG(const CompressedRay& ray) : 
             haltonSeed(HashOf(uint(ray.sampleIdx),
                         uint(ray.depth) + 9871251u,
-                        uint(ray.viewport.x), uint(ray.viewport.y))) {}    
+                        ray.accumIdx)) {}    
 
         template<int B0, int B1, int B2, int B3>
         __device__ __forceinline__ vec4 Rand() const
