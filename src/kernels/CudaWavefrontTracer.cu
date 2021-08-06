@@ -75,20 +75,23 @@ namespace Cuda
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
 	{
 		m_objects = objects;
+		m_activeParams = m_defaultParams;
 
 		// If a camera is attached then load the objects into the block
 		if (objects.cu_camera)
 		{
 			const auto& renderState = objects.cu_camera->GetRenderState();
-			//m_objects.cu_accumBuffer = renderState.cu_accumBuffer;
 			m_objects.cu_compressedRayBuffer = renderState.cu_compressedRayBuffer;
-			//m_objects.cu_pixelFlagsBuffer = renderState.cu_pixelFlagsBuffer;
 			m_objects.cu_blockRayOccupancy = renderState.cu_blockRayOccupancy;
 			m_objects.cu_renderStats = renderState.cu_renderStats;
 
 			assert(m_objects.cu_compressedRayBuffer);
 			assert(m_objects.cu_blockRayOccupancy);
 			assert(m_objects.cu_renderStats);
+		
+			// Override the parameters as necessary
+			const auto& cameraParams = m_objects.cu_camera->GetParams();
+			if (cameraParams.overrides.maxDepth > -1) { m_activeParams.maxDepth = cameraParams.overrides.maxDepth; }
 		}
 
 		m_checkDigit = 31415972;
@@ -96,7 +99,9 @@ namespace Cuda
 
 	__device__ void Device::WavefrontTracer::Synchronise(const WavefrontTracerParams& params)
 	{
-		m_params = params;
+		// We keep two copies of these parameters because attached cameras may need to override them
+		m_defaultParams = params;
+		m_activeParams = params;
 	}
 
 	__device__ void Device::WavefrontTracer::PreFrame(const float& wallTime, const int frameIdx)
@@ -112,8 +117,8 @@ namespace Cuda
 
 	__device__ uchar Device::WavefrontTracer::GetImportanceMode(const RenderCtx& ctx) const
 	{
-		return m_params.importanceMode;
-		//return (ctx.emplacedRay.viewport.x < 256) ? m_params.importanceMode : kImportanceMIS;
+		return m_activeParams.importanceMode;
+		//return (ctx.emplacedRay.viewport.x < 256) ? m_activeParams.importanceMode : kImportanceMIS;
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
@@ -128,7 +133,7 @@ namespace Cuda
 		}
 
 		// If we're at max depth, terminate the ray
-		if (renderCtx.depth >= m_params.maxDepth) { return incandescence; }
+		if (renderCtx.depth >= m_activeParams.maxDepth) { return incandescence; }
 
 		vec2 xi = renderCtx.rng.Rand<2, 3>();
 		const auto numLights = m_objects.cu_deviceLights->Size();
@@ -217,9 +222,13 @@ namespace Cuda
 	{
 		__shared__ uchar deadRays[16 * 16];
 
+		assert(m_objects.cu_compressedRayBuffer);
 		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
+
+		if (!compressedRay.IsAlive()) { return; }
+
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay);
 		vec3 L(0.0f);
@@ -244,7 +253,7 @@ namespace Cuda
 			}
 		}
 
-		if (m_params.debugNormals)
+		if (m_activeParams.debugNormals)
 		{
 			if (hitObject)
 			{
@@ -257,7 +266,7 @@ namespace Cuda
 		if (!hitObject)
 		{
 			// Ray didn't hit anything so add the ambient term multiplied by the weight
-			L = m_params.ambientRadiance * compressedRay.weight;
+			L = m_activeParams.ambientRadiance * compressedRay.weight;
 		}
 		else
 		{
@@ -301,7 +310,7 @@ namespace Cuda
 			}
 		}
 
-		if (m_params.debugShaders)
+		if (m_activeParams.debugShaders)
 		{
 			L = hitCtx.debug;
 			compressedRay.Kill();
@@ -426,7 +435,7 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
 	{
-		Host::RenderObject::FromJson(parentNode, flags);
+		Host::RenderObject::UpdateDAGPath(parentNode);
 
 		SynchroniseObjects(cu_deviceData, WavefrontTracerParams(parentNode, flags));
 
@@ -459,10 +468,6 @@ namespace Cuda
 	{
 		m_hostCameraAsset = camera;
 		if (!m_hostCameraAsset) { return; }		
-
-		auto accumBuffer = m_hostCameraAsset->GetAccumulationBuffer();
-		AssertMsg(accumBuffer, "This camera object does not have an accumulation buffer associated with it.");
-		const auto& accumBuffferMetadata = accumBuffer->GetMetadata();
 
 		// Synchronise the attached camera with the device
 		m_deviceObjects.cu_camera = m_hostCameraAsset->GetDeviceInstance();

@@ -30,7 +30,7 @@ namespace Cuda
         public:
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
             {
-                Host::RenderObject::FromJson(node, flags);
+                Host::RenderObject::UpdateDAGPath(node);
             }
             __host__ virtual Device::BxDF* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kBxDF; }

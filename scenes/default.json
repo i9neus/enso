@@ -16,18 +16,22 @@
     "camera_perspCam": 
     {
       "enabled": true,
-      "live":  true,
+      "live":  false,
       "class": "perspective",
       "pos": [ 0.0, 0.0, 1.5 ],
       "lookAt": [ 0.0, 0.0, 0.0 ],
       "focalPlane": 1.0,
       "fLength": 0.45,
-      "fStop": 0.45
+      "fStop": 0.45,
+      "overrides":
+      {
+        "maxDepth": -1
+      }
     },
     "camera_probeCam": 
     {
       "enabled": true,
-      "live":  false,
+      "live":  true,
       "class": "lightprobe",
       "transform": 
       {
@@ -35,7 +39,12 @@
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 0.99, 0.99, 0.99 ]
       },
-      "gridDensity": [10, 10, 10]
+      "gridDensity": [10, 10, 10],
+      "shOrder": 1,
+      "overrides" :
+      { 
+        "maxDepth": -1
+      }
     }
   },
   "tracables": 

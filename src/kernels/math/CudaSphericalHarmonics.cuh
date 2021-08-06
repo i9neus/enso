@@ -19,7 +19,6 @@ namespace Cuda
 				case -1:	return 0.4886025119029199f * n.y;
 				case 0:		return 0.4886025119029199f * n.z;
 				case 1:		return 0.4886025119029199f * n.x;
-				default:	assert(false);
 				}
 			}
 			case 2:
@@ -31,7 +30,6 @@ namespace Cuda
 				case 0:		return 0.3153915652525200f * (-sqr(n.x) - sqr(n.y) + 2 * sqr(n.z));
 				case 1:		return 1.0925484305920792f * n.z * n.x;
 				case 2:		return 0.5462742152960396f * (sqr(n.x) - sqr(n.y));
-				default:	assert(false);
 				}
 			}
 			case 3:
@@ -45,15 +43,15 @@ namespace Cuda
 				case 1: return 0.4570457994644658f * n.x * (4 * sqr(n.z) - sqr(n.x) - sqr(n.y));
 				case 2: return 1.445305721320277f * (sqr(n.x) - sqr(n.y)) * n.z;
 				case 3: return 0.5900435899266435f * (sqr(n.x) - 4 * sqr(n.y)) * n.x;
-				default:	assert(false);
 				}
 			}
 			}
 
+			printf("Invalid SH index L = %i, M = %i\n", L, M);
 			assert(false);
 		}
 
-		__device__ float Project(const vec3& n, const int idx)
+		__device__ float Project(const vec3& n, const uint idx)
 		{
 			switch (idx)
 			{
@@ -72,9 +70,11 @@ namespace Cuda
 			case 12:	return 0.3731763325901154f * n.z * (2 * sqr(n.z) - 3 * sqr(n.x) - 3 * sqr(n.y));
 			case 13:	return 0.4570457994644658f * n.x * (4 * sqr(n.z) - sqr(n.x) - sqr(n.y));
 			case 14:	return 1.445305721320277f * (sqr(n.x) - sqr(n.y)) * n.z;
-			case 15:	return 0.5900435899266435f * (sqr(n.x) - 4 * sqr(n.y)) * n.x;
-			default:	assert(false);
+			case 15:	return 0.5900435899266435f * (sqr(n.x) - 4 * sqr(n.y)) * n.x;			
 			}
+
+			printf("Invalid SH index %u\n", idx);
+			assert(false);
 		}
 
 		__device__ float GetLegendreCoefficient(const int L, const int M)

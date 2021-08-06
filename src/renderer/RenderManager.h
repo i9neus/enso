@@ -20,6 +20,7 @@ public:
 	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
+	void Prepare();
 	void Build();
 	void Start();
 	void Destroy();

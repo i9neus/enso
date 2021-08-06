@@ -67,7 +67,8 @@ namespace Cuda
 
 		protected:			
 			Objects							m_objects;
-			WavefrontTracerParams			m_params;
+			WavefrontTracerParams			m_defaultParams;
+			WavefrontTracerParams			m_activeParams;
 
 			float							m_wallTime;
 			int								m_frameIdx;

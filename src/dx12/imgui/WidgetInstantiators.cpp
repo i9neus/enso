@@ -147,6 +147,9 @@ void PerspectiveCameraShelf::Construct()
 
     auto& p = m_params[0];
 
+    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
+    ImGui::Checkbox("Live", &p.camera.isLive); 
+    
     ImGui::DragFloat3("Position", &p.position[0], math::max(0.01f, cwiseMax(p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &p.lookAt[0], math::max(0.01f, cwiseMax(p.lookAt) * 0.01f));
 
@@ -154,6 +157,8 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Focal length", &p.fLength, 0.0f, 1.0f);
     ImGui::SliderFloat("Focal plane", &p.focalPlane, 0.0f, 2.0f);
     ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
+
+    ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }
 
 void LightProbeCameraShelf::Construct()
@@ -162,10 +167,14 @@ void LightProbeCameraShelf::Construct()
 
     auto& p = m_params[0];
 
+    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
+    ImGui::Checkbox("Live", &p.camera.isLive);
+
     ConstructTransform(p.transform);
 
     ImGui::DragInt3("Grid density", &p.gridDensity[0], 1, 100);
-    ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.shL);    
+    ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.shOrder);    
+    ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }
 
 

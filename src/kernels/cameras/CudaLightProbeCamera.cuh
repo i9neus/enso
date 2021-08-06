@@ -23,7 +23,8 @@ namespace Cuda
 
 		BidirectionalTransform		transform;
 		ivec3						gridDensity;
-		int							shL;
+		int							shOrder;
+		CameraParams				camera;
 	};
 
 	namespace Device
@@ -41,6 +42,8 @@ namespace Cuda
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
 			__device__ void SeedRayBuffer();
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
+			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
+			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 
 			__device__ void Synchronise(const LightProbeCameraParams& params)
 			{
@@ -60,10 +63,11 @@ namespace Cuda
 			LightProbeCameraParams 		m_params;
 			Objects						m_objects;
 
-			int							m_numProbes;
-			int							m_bucketsPerProbe;
-			int							m_bucketsPerCoefficient;
-			int							m_totalBuckets;
+			uint						m_numProbes;
+			uint						m_bucketsPerProbe;
+			uint						m_bucketsPerCoefficient;
+			uint						m_totalBuckets;
+			uint						m_coefficientsPerProbe;
 		};
 	}
 
@@ -72,7 +76,9 @@ namespace Cuda
 		class LightProbeCamera : public Host::Camera
 		{
 		private:
-			Device::LightProbeCamera* cu_deviceData;
+			Device::LightProbeCamera*			cu_deviceData;
+			Device::LightProbeCamera::Objects	m_deviceObjects;
+			LightProbeCameraParams				m_params;
 
 		public:
 			__host__ LightProbeCamera(const ::Json::Node& parentNode, const std::string& id);
@@ -82,12 +88,14 @@ namespace Cuda
 
 			__host__ virtual void                       OnDestroyAsset() override final;
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
+			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
 			__host__ virtual Device::LightProbeCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return nullptr; }
 			__host__ virtual void						ClearRenderState() override final;
 			__host__ virtual void						SeedRayBuffer() override final;
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Light Probe Camera"; }
+			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
 
 		private:
 			AssetHandle<Host::Array<vec4>>				m_hostAccumBuffer;

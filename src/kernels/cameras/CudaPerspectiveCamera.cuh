@@ -20,16 +20,16 @@ namespace Cuda
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
-		__host__ bool operator==(const PerspectiveCameraParams&) const;
 		
-		vec3 position;
-		vec3 lookAt;
-		float focalPlane;
-		float fLength;
-		float fStop;
-		float displayGamma;
+		vec3			position;
+		vec3			lookAt;
+		float			focalPlane;
+		float			fLength;
+		float			fStop;
+		float			displayGamma;
+		CameraParams	camera;
 
-		ivec2 viewportDims;
+		ivec2			viewportDims; 
 	};
 	
 	namespace Device
@@ -48,6 +48,7 @@ namespace Cuda
 			__device__ void SeedRayBuffer(const ivec2& viewportPos);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
+			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 
 			__device__ void Synchronise(const PerspectiveCameraParams& params)
 			{ 
@@ -99,6 +100,7 @@ namespace Cuda
 			__host__ virtual void						SeedRayBuffer() override final;
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
+			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
 
 		private:
 			AssetHandle<Host::ImageRGBW>				m_hostAccumBuffer;

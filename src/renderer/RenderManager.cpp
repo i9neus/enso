@@ -134,29 +134,8 @@ void RenderManager::Build()
 		m_wavefrontTracer = m_renderObjects->FindFirstOfType<Cuda::Host::WavefrontTracer>();
 		Assert(m_wavefrontTracer, "No wavefront tracer objects were instantiated.");
 
-		// Get a list of active cameras
-		m_activeCameras = m_renderObjects->FindAllOfType<Cuda::Host::Camera>();
-		if (m_activeCameras.empty())
-		{
-			Log::Error("WARNING: No camera objects were instantiated and enabled.\n");
-		}
-		else
-		{
-			// Look for wavefront tracers with live cameras
-			m_liveCamera = nullptr;
-			for (auto& camera : m_activeCameras)
-			{
-				if (camera->IsLive())
-				{
-					m_liveCamera = camera;
-					break;
-				}
-			}
-			if (!m_liveCamera)
-			{
-				Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n");
-			}
-		}
+		// Prepare the scene 
+		Prepare();
 	}
 
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
@@ -303,6 +282,26 @@ void RenderManager::OnJson(const std::string& dagPath, const std::string& newJso
 	m_isDirty = true;
 }
 
+void RenderManager::Prepare()
+{
+	m_liveCamera = nullptr;
+
+	// Get a list of active cameras that are active. 
+	m_activeCameras = m_renderObjects->FindAllOfType<Cuda::Host::Camera>([this](const Cuda::AssetHandle<Cuda::Host::Camera>& object) -> bool
+		{
+			Assert(object);
+			const auto& params = object->GetParams();
+			if (!params.isActive) { return false; }
+
+			if (params.isLive) { m_liveCamera = object; }
+			return true;
+		});
+
+	// Spit out some errors if needs be
+	if (m_activeCameras.empty()) { Log::Error("WARNING: No camera objects were instantiated and enabled.\n"); }
+	else if (!m_liveCamera)		 { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n");	}
+}
+
 void RenderManager::Start()
 {
 	m_threadSignal = kRun;
@@ -332,7 +331,7 @@ void RenderManager::Run()
 		Timer timer;
 
 		// Has the scene graph been dirtied?
-		if (m_isDirty && frameIdx >= 2)
+		if (m_isDirty && (frameIdx >= 2 || m_activeCameras.empty()))
 		{					
 			std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 
@@ -348,6 +347,9 @@ void RenderManager::Run()
 			
 			// Clear the render states of all active camera objects
 			for (auto camera : m_activeCameras) { camera->ClearRenderState(); }
+
+			// Prepare the scene for rendering
+			Prepare();
 
 			// Reset the render manager state
 			m_isDirty = false;

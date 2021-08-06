@@ -8,10 +8,16 @@ namespace Cuda
 
 	enum RayFlags : uchar
 	{
+		// Propoerty flags
 		kRayIndirectSample =		1 << 0,
 		kRayDirectLightSample =		1 << 1,
 		kRayDirectBxDFSample =		1 << 2,
 		kRaySpecular =				1 << 3,
+		kRayLightProbe =			1 << 4,
+		
+		// Flags that persist throughout the path
+		kRayPersistentFlags =		kRayLightProbe,
+		// Constitutes a direct sample
 		kRayDirectSample =			kRayDirectLightSample | kRayDirectBxDFSample
 	};
 
@@ -60,7 +66,9 @@ namespace Cuda
 		__device__ __forceinline__ void SetViewportPos(const ivec2 v) { accumIdx = (v.x << 16) | (v.y & 0xffff); }
 
 		__device__ __forceinline__ void Kill() { flags = 0; }
-		__device__ __forceinline__ bool IsAlive() const { return flags != 0; }	
+		__device__ __forceinline__ bool IsAlive() const { return flags != 0; }
+		__device__ __forceinline__ void Set(const uchar f) { flags |= f; }
+		__device__ __forceinline__ void Unset(const uchar f) { flags &= ~f; }
 	};
 
 	// The "full fat" ray objects that most methods will refer to

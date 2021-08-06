@@ -35,6 +35,8 @@ namespace Cuda
     
     __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
     {
+        camera.ToJson(node);
+        
         node.AddArray("pos", std::vector<float>({ position.x, position.y, position.z }));
         node.AddArray("lookAt", std::vector<float>({ lookAt.x, lookAt.y, lookAt.z }));
         node.AddValue("focalPlane", focalPlane);
@@ -45,21 +47,14 @@ namespace Cuda
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
+        camera.FromJson(node, flags);
+        
         node.GetVector("pos", position, flags);
         node.GetVector("lookAt", lookAt, flags);
         node.GetValue("focalPlane", focalPlane, flags);
         node.GetValue("fLength", fLength, flags);
         node.GetValue("fStop", fStop, flags);
         node.GetValue("displayGamma", displayGamma, flags);
-    }
-
-    __host__ bool PerspectiveCameraParams::operator==(const PerspectiveCameraParams& rhs) const
-    {
-        return position == rhs.position &&
-            lookAt == rhs.lookAt &&
-            focalPlane == rhs.focalPlane &&
-            fLength == rhs.fLength &&
-            fStop == rhs.fStop;
     }
     
     // Returns the polar distance r to the perimeter of an n-sided polygon
@@ -274,7 +269,7 @@ namespace Cuda
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Host::Camera::FromJson(parentNode, flags);
+        Host::RenderObject::UpdateDAGPath(parentNode);
         
         m_params = PerspectiveCameraParams(parentNode);
         SynchroniseObjects(cu_deviceData, m_params);

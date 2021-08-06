@@ -28,7 +28,7 @@ namespace Cuda
         public:            
             __host__ virtual void Bind(RenderObjectContainer& objectContainer) {}
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override;
+            __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node);
 
             __host__ const std::string& GetDAGPath() const { return m_dagPath; }
             __host__ const bool HasDAGPath() const { return !m_dagPath.empty(); }
@@ -117,29 +117,32 @@ namespace Cuda
         {
             auto it = m_dagMap.find(id);
             return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
-        }
+        }        
 
         template<typename T>
-        __host__ AssetHandle<T> FindFirstOfType()
-        {
-            for (auto object : m_objectMap)
-            {
-                auto downcast = object.second.DynamicCast<T>();
-                if (downcast) { return downcast; }
-            }
-            return nullptr;
-        }
-
-        template<typename T>
-        __host__ std::vector<AssetHandle<T>> FindAllOfType()
+        __host__ std::vector<AssetHandle<T>> FindAllOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr, const bool findFirst = false)
         {
             std::vector<AssetHandle<T>> assets;
             for (auto object : m_objectMap)
             {
                 auto downcast = object.second.DynamicCast<T>();
-                if (downcast) { assets.push_back(downcast); }
+                if (downcast) 
+                { 
+                    if (!comparator || comparator(downcast))
+                    {
+                        assets.push_back(downcast);
+                        if (findFirst) { break; }
+                    }
+                }
             }
             return assets;
+        }
+
+        template<typename T>
+        __host__ AssetHandle<T> FindFirstOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr)
+        {
+            auto handles = FindAllOfType<T>(comparator, true);
+            return handles.empty() ? nullptr : handles.front();
         }
 
         __host__ void Bind();

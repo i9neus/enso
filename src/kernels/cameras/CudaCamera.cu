@@ -13,15 +13,42 @@
 
 namespace Cuda
 {
-    __host__ Host::Camera::Camera(const ::Json::Node& node, const std::string& id) : 
-        m_isLiveCamera(false)
+    __host__ __device__ CameraParams::CameraParams() 
+    {
+        isLive = false;
+        isActive = true;
+        overrides.maxDepth = -1;
+    }
+
+    __host__ void CameraParams::ToJson(::Json::Node& node) const
+    {
+        node.AddValue("live", isLive);
+        node.AddValue("active", isActive);
+        
+        auto childNode = node.AddChildObject("overrides");
+        childNode.AddValue("maxDepth", overrides.maxDepth);
+    }
+
+    __host__ void CameraParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        node.GetValue("live", isLive, flags);
+        node.GetValue("active", isActive, flags);
+        
+        auto childNode = node.GetChildObject("overrides", flags);
+        if (childNode)
+        {
+            childNode.GetValue("maxDepth", overrides.maxDepth, flags);
+        }
+    }
+    
+    __host__ Host::Camera::Camera(const ::Json::Node& node, const std::string& id) 
     {
         // Create the packed ray buffer
-        m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>("id_hostCompressedRayBuffer", 512 * 512, m_hostStream);
+        m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), 512 * 512, m_hostStream);
         m_hostCompressedRayBuffer->Clear(CompressedRay());
 
         // Create the occupancy buffer and render stats
-        m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>("id_hostBlockRayOccupancy", 512 * 512 / 32, m_hostStream);
+        m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), 512 * 512 / 32, m_hostStream);
         m_hostRenderStats = AssetHandle < Host::ManagedObject<Device::RenderState::Stats>>(tfm::format("%s_renderStats", id));
     }
 
@@ -30,12 +57,5 @@ namespace Cuda
         m_hostCompressedRayBuffer.DestroyAsset();
         m_hostBlockRayOccupancy.DestroyAsset();
         m_hostRenderStats.DestroyAsset();
-    }
-    
-    __host__ void Host::Camera::FromJson(const ::Json::Node& node, const uint flags)
-    {
-        Host::RenderObject::FromJson(node, flags);
-
-        node.GetValue("live", m_isLiveCamera, flags);
     }
 }

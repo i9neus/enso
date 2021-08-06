@@ -12,7 +12,7 @@ namespace Cuda
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
         gridDensity = ivec3(5, 5, 5);
-        shL = 1;
+        shOrder = 1;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -24,31 +24,37 @@ namespace Cuda
     __host__ void LightProbeCameraParams::ToJson(::Json::Node& node) const
     {
         transform.ToJson(node);
+        camera.ToJson(node);
 
         node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
-        node.AddValue("L", shL);
+        node.AddValue("shOrder", shOrder);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
+        camera.FromJson(node, flags);
 
         node.GetVector("gridDensity", gridDensity, flags);
-        node.GetValue("L", shL, flags);
+        node.GetValue("shOrder", shOrder, flags);
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera()
     {
-        Prepare();
+
     }
 
     __device__ void Device::LightProbeCamera::SeedRayBuffer()
     {
         assert(kKernelIdx < 512 * 512);
-
-        if (kKernelIdx > m_totalBuckets) { return; }
         
         CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
+
+        if (kKernelIdx > m_totalBuckets) 
+        {
+            compressedRay.Kill();
+            return; 
+        }
 
         if (!compressedRay.IsAlive())
         {
@@ -56,18 +62,41 @@ namespace Cuda
         }
     }
 
+    __device__ void Device::LightProbeCamera::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
+    {
+        if (!m_objects.cu_accumBuffer || viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
+            viewportPos.x >= 512 || viewportPos.y >= 512) {
+            return;
+        }
+
+        const auto& texel = (*m_objects.cu_accumBuffer)[viewportPos.y * 512 + viewportPos.x];
+
+        // Normalise and gamma correct
+        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
+        deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
+    }
+
     __device__ void Device::LightProbeCamera::Prepare()
     {
+        if (!m_objects.cu_accumBuffer) return;
+        
+        // Number of coefficients per probe
+        m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder);
         // Number of light probes in the grid
         m_numProbes = m_params.gridDensity.x * m_params.gridDensity.y * m_params.gridDensity.z;
         // Number of sample buckets per probe
         m_bucketsPerProbe = m_objects.cu_accumBuffer->Size() / m_numProbes;
         // Number of sample buckets per SH coefficient per probe
-        m_bucketsPerCoefficient = m_bucketsPerProbe / SH::GetNumCoefficients(m_params.shL);
+        m_bucketsPerCoefficient = m_bucketsPerProbe / m_coefficientsPerProbe;
 
         // Adjust values so everything packs correctly
-        m_bucketsPerProbe = m_bucketsPerCoefficient * SH::GetNumCoefficients(m_params.shL);        
+        m_bucketsPerProbe = m_bucketsPerCoefficient * m_coefficientsPerProbe;
         m_totalBuckets = m_bucketsPerProbe * m_numProbes;
+
+        printf("m_numProbes: %u\n", m_numProbes);
+        printf("m_bucketsPerProbe: %u\n", m_bucketsPerProbe);
+        printf("m_bucketsPerCoefficient: %u\n", m_bucketsPerCoefficient);
+        printf("m_totalBuckets: %u\n", m_totalBuckets);
     }
 
     __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray) const
@@ -81,7 +110,7 @@ namespace Cuda
         ray.od.d = SampleUnitSphere(rng.Rand<0, 1>());      
 
         const int probeIdx = accumIdx / m_bucketsPerProbe;
-        const int coeffIdx = accumIdx % m_bucketsPerCoefficient;
+        const int coeffIdx = accumIdx % m_coefficientsPerProbe;
         const ivec3 gridIdx(probeIdx % m_params.gridDensity.x,
                             (probeIdx / m_params.gridDensity.x) % m_params.gridDensity.y,
                             probeIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
@@ -89,7 +118,7 @@ namespace Cuda
         // Project this direction into SH and pre-normalise
         ray.weight = SH::Project(ray.od.d, coeffIdx) * kFourPi;
         ray.depth = 0;
-        ray.flags = kRaySpecular;
+        ray.flags = kRayLightProbe | kRayIndirectSample;
         ray.od.o = m_params.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.gridDensity) - vec3(0.5f));
     }
 
@@ -107,15 +136,15 @@ namespace Cuda
 
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>();
-        FromJson(parentNode, ::Json::kRequiredWarn);
 
         // Sychronise the device objects
-        Device::LightProbeCamera::Objects objects;
-        objects.cu_accumBuffer = nullptr;
-        objects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-        objects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
-        objects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
-        SynchroniseObjects(cu_deviceData, objects);
+        m_deviceObjects.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+        m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
+        m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
+        SynchroniseObjects(cu_deviceData, m_deviceObjects);
+
+        FromJson(parentNode, ::Json::kRequiredWarn);
 
         m_block = dim3(16 * 16, 1, 1);
         m_grid = dim3(512 * 512 / m_block.x , 1, 1);
@@ -139,9 +168,10 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
-        Host::Camera::FromJson(parentNode, flags);
-
-        SynchroniseObjects(cu_deviceData, LightProbeCameraParams(parentNode));
+        Host::RenderObject::UpdateDAGPath(parentNode);
+        
+        m_params.FromJson(parentNode, flags);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::LightProbeCamera::ClearRenderState()
@@ -159,5 +189,22 @@ namespace Cuda
     __host__ void Host::LightProbeCamera::SeedRayBuffer()
     {
         KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
+    }
+
+    __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::LightProbeCamera* camera)
+    {
+        //if (*(deviceOutputImage->AccessSignal()) != kImageWriteLocked) { return; }
+
+        camera->Composite(kKernelPos<ivec2>(), deviceOutputImage);
+    }
+
+    __host__ void Host::LightProbeCamera::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
+    {
+        dim3 blockSize = dim3(16, 16, 1);
+        dim3 gridSize(512 / 16, 512 / 16, 1);
+        
+        hostOutputImage->SignalSetWrite(m_hostStream);
+        KernelComposite << < blockSize, gridSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+        hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
 }

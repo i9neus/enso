@@ -25,7 +25,7 @@ namespace Cuda
 			emplacedRay.od = od;
 			emplacedRay.weight = weight;
 			emplacedRay.depth++;
-			emplacedRay.flags = kRayIndirectSample;
+			emplacedRay.flags = kRayIndirectSample | (emplacedRay.flags & kRayPersistentFlags);
 		}
 
 		__device__ __forceinline__ void EmplaceDirectSample(const RayBasic& od, const vec3& weight, const float& pdf, const ushort& lightId, const uchar& flags)
@@ -35,7 +35,7 @@ namespace Cuda
 			emplacedRay.lightId = lightId;
 			emplacedRay.pdf = pdf;
 			emplacedRay.depth++;
-			emplacedRay.flags = flags;
+			emplacedRay.flags = flags | (emplacedRay.flags & kRayPersistentFlags);
 		}
 	};
 

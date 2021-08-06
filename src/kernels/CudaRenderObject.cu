@@ -3,7 +3,7 @@
 
 namespace Cuda
 {
-    __host__ void Host::RenderObject::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node)
     {
         if (!GetDAGPath().empty()) { return; }
         
@@ -51,7 +51,7 @@ namespace Cuda
         }
         else
         {
-            Log::Error("Internal error: instantiated object '%s' does not have a valid DAG path.\n", newObject->GetAssetID());
+            Log::Error("Internal error: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
             return;
         }
     }
