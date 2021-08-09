@@ -124,27 +124,33 @@ namespace Cuda
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
 		vec3 albedo;
-		vec3 incandescence(0.0f);
+		vec3 L(0.0f);
 
 		// Don't emit light from backfacing materials
 		if (!hitCtx.backfacing)
 		{
-			material.Evaluate(hitCtx, albedo, incandescence);
-		}
-
-		// If we're at max depth, terminate the ray
-		if (renderCtx.depth >= m_activeParams.maxDepth) { return incandescence; }
-
-		vec2 xi = renderCtx.rng.Rand<2, 3>();
-		const auto numLights = m_objects.cu_deviceLights->Size();
-
+			material.Evaluate(hitCtx, albedo, L);
+		}		
 		const BxDF* bxdf = material.GetBoundBxDF();
 		if (!bxdf)
 		{
-			return incandescence;
+			return L;
 		}
 
+		// If this isn't a probe ray, add in the cached radiance
+		if (!(incidentRay.flags & kRayLightProbe))
+		{
+			L += bxdf->EvaluateCachedRadiance(hitCtx) * albedo;
+		}
+
+		// If we're at max depth, don't spawn any more rays
+		if (renderCtx.depth >= m_activeParams.maxDepth) { return L; }
+		
+		// Generate some random numbers
+		vec2 xi = renderCtx.rng.Rand<2, 3>();
+
 		// If there are no lights in this scene, always sample the BxDF
+		const auto numLights = m_objects.cu_deviceLights->Size();
 		if (GetImportanceMode(renderCtx) == kImportanceBxDF || numLights == 0)
 		{
 			xi.x *= 0.5f;
@@ -206,7 +212,7 @@ namespace Cuda
 			}
 		}
 
-		return incandescence;
+		return L;
 	}
 
 	__device__ void Device::WavefrontTracer::PreBlock() const

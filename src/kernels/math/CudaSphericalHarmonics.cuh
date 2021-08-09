@@ -6,7 +6,7 @@ namespace Cuda
 {
 	namespace SH
 	{
-		__device__ float Project(const vec3& n, const int L, const int M)
+		__host__ __device__ __forceinline__ float Project(const vec3& n, const int L, const int M)
 		{
 			switch (L)
 			{
@@ -51,7 +51,7 @@ namespace Cuda
 			assert(false);
 		}
 
-		__device__ float Project(const vec3& n, const uint idx)
+		__host__ __device__ __forceinline__ float Project(const vec3& n, const uint idx)
 		{
 			switch (idx)
 			{
@@ -77,7 +77,7 @@ namespace Cuda
 			assert(false);
 		}
 
-		__device__ float GetLegendreCoefficient(const int L, const int M)
+		__host__ __device__ __forceinline__ float GetLegendreCoefficient(const int L, const int M)
 		{
 			switch (L)
 			{
@@ -124,6 +124,6 @@ namespace Cuda
 			assert(false);
 		}
 
-		__device__ __forceinline__ int GetNumCoefficients(const int L) { return (L + 1) * (L + 1); }
+		__host__ __device__ __forceinline__ int GetNumCoefficients(const int L) { return (L + 1) * (L + 1); }
 	}
 }

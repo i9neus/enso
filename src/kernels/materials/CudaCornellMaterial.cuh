@@ -8,7 +8,7 @@ namespace Cuda
 {
     namespace Host { class CornellMaterial; }
 
-    struct CornellMaterialParams : public AssetParams
+    struct CornellMaterialParams
     {
         enum _attrs : int { kNumWalls = 6 };
 

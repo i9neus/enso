@@ -22,8 +22,9 @@ namespace Cuda
 			friend HostType;
 			template<typename A, typename B, typename C> friend class Host::ManagedArray;
 		public:
-			__device__ ManagedArray(const uint size, const ManagedArrayLayout& layout, T* data) :
-				m_size(size), m_layout(layout), cu_data(data), m_signal(AccessSignal::kUnlocked) { }
+			__host__ ManagedArray() : cu_data(nullptr) {}
+			__device__ ManagedArray(const ManagedArrayLayout& layout) :
+				m_size(0), m_layout(layout), cu_data(nullptr), m_signal(AccessSignal::kUnlocked) { }
 			__device__ ~ManagedArray() {}
 
 			__host__ __device__ __forceinline__ unsigned int Size() const { return m_size; }
@@ -32,14 +33,22 @@ namespace Cuda
 			__device__ T* GetData() { return cu_data; }
 			__device__ T& operator[](const uint idx) { return cu_data[idx]; }
 			__device__ const T& operator[](const uint idx) const { return cu_data[idx]; }
+
 			__device__ __forceinline__ void Clear(const uint idx, const T& value)
 			{
 				if (idx < m_size) { cu_data[idx] = value; }
 			}
+			
+			__device__ void Synchronise(T* data, const uint size)
+			{
+				assert(data);
+				assert(size > 0);
+
+				cu_data = data;
+				m_size = size;
+			}
 
 		protected:
-			__host__ __device__ ManagedArray() : m_size(0), cu_data(nullptr) {}
-
 			uint				m_size;
 			ManagedArrayLayout	m_layout;
 			T*					cu_data;
@@ -50,9 +59,7 @@ namespace Cuda
 		class Array : public Device::ManagedArray<T, Host::Array<T>, Device::Array<T>>
 		{
 		public:
-			__device__ Array(const uint size, const ManagedArrayLayout& layout, T* data) : ManagedArray<T, Host::Array<T>, Device::Array<T>>(size, layout, data) {}
-		protected:
-			__host__ __device__ Array() : ManagedArray<T, Host::Array<T>, Device::Array<T>>() {}
+			__host__ __device__ Array() : ManagedArray<T, Host::Array<T>, Device::Array<T>>(ManagedArrayLayout::k1D) {}
 		};
 
 		//template class Array<CompressedRay>;
@@ -72,9 +79,9 @@ namespace Cuda
 			int			      m_gridSize;
 
 		public:
-			__host__ ManagedArray() : cu_deviceData(nullptr) { }
+			__host__ ManagedArray(cudaStream_t hostStream);
 			__host__ ManagedArray(const uint size, cudaStream_t hostStream);
-			__host__  ~ManagedArray() { OnDestroyAsset(); }
+			__host__  virtual ~ManagedArray() { }
 
 			__host__  virtual void OnDestroyAsset() override final;
 
@@ -89,12 +96,16 @@ namespace Cuda
 			__host__ inline int GetBlockSize() const { return m_blockSize; }
 			__host__ inline int GetGridSize() const { return m_gridSize; }
 
+			__host__ inline uint Size() const { return m_hostData.m_size; }
+			__host__ inline void Resize(const uint size);
+
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }
 			__host__ inline void SignalUnsetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kReadLocked, AccessSignal::kUnlocked); }
 			__host__ inline void SignalSetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kWriteLocked);	}
 			__host__ inline void SignalUnsetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kWriteLocked, AccessSignal::kUnlocked); }
 			__host__ void Clear(const T& value);
+			__host__ void Test();
 		};
 
 		template<typename T>
@@ -102,9 +113,10 @@ namespace Cuda
 		{
 			using Super = ManagedArray<T, Host::Array<T>, Device::Array<T>>;
 		public:
+			__host__ Array(cudaStream_t hostStream) : Super(hostStream) {}
 			__host__ Array(const uint size, cudaStream_t hostStream) : Super(size, hostStream) {}
 			__host__ virtual ~Array() { OnDestroyAsset(); }
-		};		
+		};	
 	}
 
 	template<typename T>
@@ -114,21 +126,39 @@ namespace Cuda
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
-	__host__ Host::ManagedArray<T, HostType, DeviceType>::ManagedArray(const uint size, cudaStream_t hostStream) :
+	__host__ Host::ManagedArray<T, HostType, DeviceType>::ManagedArray(cudaStream_t hostStream) :
 		cu_deviceData(nullptr)
 	{
 		// Prepare the host data
-		m_hostData.m_size = size;
 		m_hostData.m_signal = AccessSignal::kUnlocked;
 		m_hostData.m_layout = ManagedArrayLayout::k1D;
 
-		SafeAllocDeviceMemory(&m_hostData.cu_data, size);
-
-		cu_deviceData = InstantiateOnDevice<DeviceType>(m_hostData.m_size, m_hostData.m_layout, m_hostData.cu_data);
-
 		m_hostStream = hostStream;
 		m_blockSize = 16 * 16;
+
+		// Create a device instance
+		cu_deviceData = InstantiateOnDevice<DeviceType>();
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ Host::ManagedArray<T, HostType, DeviceType>::ManagedArray(const uint size, cudaStream_t hostStream) :
+		Host::ManagedArray<T, HostType, DeviceType>(hostStream)
+	{
 		m_gridSize = (size + (m_blockSize - 1)) / (m_blockSize);
+
+		// Allocate and sync the memory
+		Resize(size);
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Resize(const uint newSize)
+	{		
+		SafeFreeDeviceMemory(&m_hostData.cu_data);
+		SafeAllocDeviceMemory(&m_hostData.cu_data, newSize);
+
+		m_hostData.m_size = newSize;
+
+		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize); 
 	}
 
 	template<typename T, typename HostType, typename DeviceType>

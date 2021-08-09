@@ -11,11 +11,7 @@
 
 namespace Cuda
 {
-    __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
-    {
-        gridDensity = ivec3(5, 5, 5);
-        shOrder = 1;
-    }
+    __host__ __device__ LightProbeCameraParams::LightProbeCameraParams() {}
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
         LightProbeCameraParams()
@@ -25,26 +21,27 @@ namespace Cuda
 
     __host__ void LightProbeCameraParams::ToJson(::Json::Node& node) const
     {
-        transform.ToJson(node);
+        grid.ToJson(node);
         camera.ToJson(node);
-
-        node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
-        node.AddValue("shOrder", shOrder);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        transform.FromJson(node, flags);
+        grid.FromJson(node, flags);
         camera.FromJson(node, flags);
-
-        node.GetVector("gridDensity", gridDensity, flags);
-        node.GetValue("shOrder", shOrder, flags);
-
-        gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
-        shOrder = clamp(shOrder, 0, 2);
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
+
+    __device__ void Device::LightProbeCamera::Synchronise(const LightProbeCameraParams& params)
+    {
+        m_params = params;
+        Prepare();
+    }
+    __device__ void Device::LightProbeCamera::Synchronise(const Objects& objects)
+    {
+        m_objects = objects;
+    }
 
     __device__ void Device::LightProbeCamera::SeedRayBuffer()
     {
@@ -83,9 +80,9 @@ namespace Cuda
         CudaDeviceAssert(m_objects.cu_accumBuffer);
         
         // Number of coefficients per probe
-        m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder);
+        m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder);
         // Number of light probes in the grid
-        m_numProbes = Volume(m_params.gridDensity);
+        m_numProbes = Volume(m_params.grid.gridDensity);
         // Number of sample buckets per probe
         m_bucketsPerProbe = m_objects.cu_accumBuffer->Size() / m_numProbes;
         // Number of sample buckets per SH coefficient per probe
@@ -100,6 +97,7 @@ namespace Cuda
             m_bucketsPerCoefficientPow2 < m_bucketsPerCoefficient >> 1; 
             m_bucketsPerCoefficientPow2 <<= 1) {}
 
+        CudaPrintVar(m_params.grid.shOrder, i);
         CudaPrintVar(m_coefficientsPerProbe, i);
         CudaPrintVar(m_numProbes, i);
         CudaPrintVar(m_bucketsPerProbe, i);
@@ -122,15 +120,15 @@ namespace Cuda
 
         const int probeIdx = accumIdx / m_bucketsPerProbe;
         const int coeffIdx = (accumIdx / m_bucketsPerCoefficient) % m_coefficientsPerProbe;
-        const ivec3 gridIdx(probeIdx % m_params.gridDensity.x,
-                            (probeIdx / m_params.gridDensity.x) % m_params.gridDensity.y,
-                            probeIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
+        const ivec3 gridIdx(probeIdx % m_params.grid.gridDensity.x,
+                            (probeIdx / m_params.grid.gridDensity.x) % m_params.grid.gridDensity.y,
+                            probeIdx / (m_params.grid.gridDensity.x * m_params.grid.gridDensity.y));
 
         // Project this direction into SH and pre-normalise
         ray.weight = SH::Project(ray.od.d, coeffIdx) * kFourPi;
         ray.depth = 0;
         ray.flags = kRayLightProbe | kRayIndirectSample;
-        ray.od.o = m_params.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.gridDensity) - vec3(0.5f));
+        ray.od.o = m_params.grid.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.grid.gridDensity) - vec3(0.5f));
     }
 
     __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const vec3& value)
@@ -142,6 +140,7 @@ namespace Cuda
     {
         CudaDeviceAssert(m_objects.cu_accumBuffer);
         CudaDeviceAssert(m_objects.cu_reduceBuffer);
+        CudaDeviceAssert(m_objects.cu_probeGrid);
         
         if (kKernelIdx >= m_totalBuckets) { return; }
 
@@ -176,11 +175,16 @@ namespace Cuda
         {
             auto& texel = reduceBuffer[kKernelIdx];
             texel /= max(1.0f, texel.w);
+
+            // Cache the accumulated value in the probe grid
+            const int probeIdx = kKernelIdx / m_bucketsPerProbe;
+            const int coeffIdx = (kKernelIdx / m_bucketsPerCoefficient) % m_coefficientsPerProbe;
+            m_objects.cu_probeGrid->SetSHCoefficient(probeIdx, coeffIdx, texel.xyz);
         }
         else
         {
             reduceBuffer[kKernelIdx] = 0.0f;
-        }        
+        }
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
@@ -191,7 +195,8 @@ namespace Cuda
         m_hostAccumBuffer->Clear(vec4(0.0f));
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), 512 * 512, m_hostStream);
 
-        //m_hostLightProbeGrid = AssetHandle<Host::LightProbeGrid>(tfm::format("%s_probeGrid", id), m_hostStream);
+        const std::string gridId = tfm::format("%s_probeGrid", id);
+        m_hostLightProbeGrid = AssetHandle<Host::LightProbeGrid>(gridId, gridId);
 
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>();
@@ -199,6 +204,7 @@ namespace Cuda
         // Sychronise the device objects
         m_deviceObjects.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
+        m_deviceObjects.cu_probeGrid = m_hostLightProbeGrid->GetDeviceInstance();
         m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
@@ -227,6 +233,16 @@ namespace Cuda
         DestroyOnDevice(cu_deviceData);
     }
 
+    __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeCamera::GetChildObjectHandles() 
+    { 
+        std::vector<AssetHandle<Host::RenderObject>> children;
+        if (m_hostLightProbeGrid)
+        {
+            children.push_back(AssetHandle<Host::RenderObject>(m_hostLightProbeGrid));
+        }
+        return children;
+    }
+
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::RenderObject::UpdateDAGPath(parentNode);
@@ -235,18 +251,20 @@ namespace Cuda
 
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
         const int maxNumProbes = 512 * 512;
-        if (Volume(m_params.gridDensity) > maxNumProbes)
+        if (Volume(m_params.grid.gridDensity) > maxNumProbes)
         {
-            const auto oldDensity = m_params.gridDensity;
-            while (Volume(m_params.gridDensity) > maxNumProbes)
+            const auto oldDensity = m_params.grid.gridDensity;
+            while (Volume(m_params.grid.gridDensity) > maxNumProbes)
             {
-                if (m_params.gridDensity.x > 1) { m_params.gridDensity.x--; }
-                if (m_params.gridDensity.y > 1) { m_params.gridDensity.y--; }
-                if (m_params.gridDensity.z > 1) { m_params.gridDensity.z--; }
+                m_params.grid.gridDensity = max(ivec3(1), m_params.grid.gridDensity - ivec3(1));
             }
-            Log::Error("WARNING: The size of the probe grid %s is too large for the accumulation buffer. Reducing to %s.\n", oldDensity.format(), m_params.gridDensity.format());
+            Log::Error("WARNING: The size of the probe grid %s is too large for the accumulation buffer. Reducing to %s.\n", oldDensity.format(), m_params.grid.gridDensity.format());
         }
 
+        // Prepare the light probe grid with the new parameters
+        m_hostLightProbeGrid->Prepare(m_params.grid);
+
+        // Sync everything with the device
         SynchroniseObjects(cu_deviceData, m_deviceObjects);
         SynchroniseObjects(cu_deviceData, m_params);
     }

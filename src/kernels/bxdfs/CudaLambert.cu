@@ -1,4 +1,6 @@
 ﻿#include "CudaLambert.cuh"
+#include "../CudaLightProbeGrid.cuh"
+#include "../cameras/CudaLightProbeCamera.cuh"
 
 #include "generic/JsonUtils.h"
 
@@ -25,9 +27,9 @@ namespace Cuda
         return true;
     }
 
-    __device__ vec3 Device::LambertBRDF::GetAmbientTerm() const
+    __device__ vec3 Device::LambertBRDF::EvaluateCachedRadiance(const HitCtx& hitCtx) const
     {
-        return vec3(0.0f);
+        return (cu_lightProbeGrid) ? cu_lightProbeGrid->Evaluate(hitCtx) : vec3(0.0f);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LambertBRDF::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -42,10 +44,31 @@ namespace Cuda
     {
         cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();
         Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
+
+        parentNode.GetValue("lightProbeGrid", m_lightProbeGridID, ::Json::kRequiredWarn);
     }
     
     __host__ void Host::LambertBRDF::OnDestroyAsset()
     {
+        m_hostLightProbeGrid = nullptr;
         DestroyOnDevice(cu_deviceData);
+    }
+
+    __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
+    {
+        AssetHandle<Host::LightProbeCamera> cameraObject = sceneObjects.FindByID<Host::LightProbeCamera>(m_lightProbeGridID);
+
+        if (!cameraObject)
+        {
+            Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': camera not found.\n", m_lightProbeGridID, GetAssetID());
+            return;
+        }
+
+        m_hostLightProbeGrid = cameraObject->GetLightProbeGrid();
+        Assert(m_hostLightProbeGrid);
+
+        Cuda::SynchroniseObjects(cu_deviceData, m_hostLightProbeGrid->GetDeviceInstance());
+
+        Log::Write("Bound probe grid '%s' to Lambert BRDF '%s'.\n", m_lightProbeGridID, GetAssetID());
     }
 }

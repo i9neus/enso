@@ -95,6 +95,7 @@ namespace Cuda
                     Log::Indent indent2;
                     for (auto& child : childObjects)
                     {
+                        Assert(child);
                         child->SetHostStream(m_hostStream);
                         renderObjects->Emplace(child);
 

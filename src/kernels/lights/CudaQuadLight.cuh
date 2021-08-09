@@ -11,7 +11,7 @@ namespace Cuda
         class EmitterMaterial;
     }
 
-    struct QuadLightParams : public AssetParams
+    struct QuadLightParams
     {
         __host__ __device__ QuadLightParams();
         __host__ QuadLightParams(const ::Json::Node& node);

@@ -6,7 +6,7 @@ namespace Cuda
 {
     namespace Host { class Plane; }
 
-    struct PlaneParams : public AssetParams
+    struct PlaneParams
     {
         __host__ __device__ PlaneParams() : isBounded(false) {}
         __host__ __device__ PlaneParams(const BidirectionalTransform& transform_, const bool isBounded_) : tracable(transform_), isBounded(isBounded_) {}

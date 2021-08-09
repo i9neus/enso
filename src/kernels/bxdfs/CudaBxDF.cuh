@@ -17,7 +17,7 @@ namespace Cuda
 
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const = 0;
             __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const = 0;
-            __device__ virtual vec3 GetAmbientTerm() const { return vec3(0.0f); }
+            __device__ virtual vec3 EvaluateCachedRadiance(const HitCtx& hitCtx) const { return vec3(0.0f); }
 
         protected:
             __device__ ~BxDF() = default;

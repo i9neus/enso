@@ -16,7 +16,7 @@
     "camera_perspCam": 
     {
       "enabled": true,
-      "live":  false,
+      "live":  true,
       "class": "perspective",
       "pos": [ 0.0, 0.0, 1.5 ],
       "lookAt": [ 0.0, 0.0, 0.0 ],
@@ -25,13 +25,13 @@
       "fStop": 0.45,
       "overrides":
       {
-        "maxDepth": -1
+        "maxDepth": 0
       }
     },
     "camera_probeCam": 
     {
       "enabled": true,
-      "live":  true,
+      "live":  false,
       "class": "lightprobe",
       "transform": 
       {
@@ -145,7 +145,8 @@
     "bxdf_diffuse":
     {
       "enabled": true,
-      "class": "lambert"
+      "class": "lambert",
+      "lightProbeGrid": "camera_probeCam"
     }
   },
   "lights": 

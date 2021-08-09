@@ -15,7 +15,7 @@ namespace Cuda
 
     enum class KIFSType : uint { kTetrahedtron, kCube };
 
-    struct KIFSParams : public AssetParams
+    struct KIFSParams
     {
         __host__ __device__ KIFSParams();
         __host__ KIFSParams(const ::Json::Node& node, const uint flags);

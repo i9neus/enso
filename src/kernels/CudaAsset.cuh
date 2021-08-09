@@ -19,8 +19,6 @@ namespace Cuda
 
     enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight, kCamera, kIntegrator };
 
-    struct AssetParams {};
-
     struct NullParams
     {
         __host__ __device__ NullParams() {}
@@ -90,8 +88,9 @@ namespace Cuda
     template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
     class AssetHandle
     {
+        template<typename T> friend class AssetHandle;
     private:
-        std::shared_ptr<T>          m_ptr;     
+        std::shared_ptr<T>          m_ptr;  
 
     public:
         AssetHandle() = default;
@@ -127,16 +126,12 @@ namespace Cuda
         template<typename NewType>
         AssetHandle<NewType> DynamicCast()
         {
-            AssertMsg(m_ptr, "Invalid asset handle");
-
             return AssetHandle<NewType>(std::dynamic_pointer_cast<NewType>(m_ptr));
         }
 
         template<typename NewType>
         AssetHandle<NewType> StaticCast()
         {
-            AssertMsg(m_ptr, "Invalid asset handle");
-
             return AssetHandle<NewType>(std::static_pointer_cast<NewType>(m_ptr));
         }
 

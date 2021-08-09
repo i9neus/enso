@@ -170,11 +170,14 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
     ImGui::Checkbox("Live", &p.camera.isLive);
 
-    ConstructTransform(p.transform);
+    ConstructTransform(p.grid.transform);
 
-    ImGui::InputInt3("Grid density", &p.gridDensity[0]);
-    ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.shOrder);    
+    ImGui::InputInt3("Grid density", &p.grid.gridDensity[0]);
+    ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.grid.shOrder);    
     ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
+
+    ImGui::Checkbox("Debug grid", &p.grid.debugOutputPRef); ImGui::SameLine();
+    ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
 }
 
 
@@ -224,7 +227,7 @@ std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(
 
         if (!object->HasDAGPath())
         {
-            Log::Error("Error: object '%s' has an invalid DAG path.\n", object->GetAssetID().c_str());
+            Log::Debug("Skipped '%s': invalid DAG path.\n", object->GetAssetID().c_str());
             continue;
         }
 
@@ -240,7 +243,7 @@ std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(
         auto& instantiator = m_instantiators.find(objectClass);
         if(instantiator == m_instantiators.end())
         {
-            Log::Error("Error: '%s' is not a recognised object class.\n", objectClass);
+            Log::Debug("Skipped '%s': not a recognised object class.\n", objectClass);
             continue;
         }
 

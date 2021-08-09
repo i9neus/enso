@@ -15,23 +15,32 @@
 
 #define CudaDeviceAssert(condition)\
         if(!(condition)) {  \
-            printf("Cuda assert: file %s, line %d.\n", __FILE__, __LINE__);  \
+            printf("Cuda assert: %s (file %s, line %d).\n", #condition __FILE__, __LINE__);  \
             assert(condition);  \
         }
 
 #define CudaDeviceAssertMsg(condition, message) \
         if(!(condition)) {  \
-            printf("%s File %s, line %d. ", message, __FILE__, __LINE__);  \
+            printf("Cuda assert: %s (file %s, line %d).\n", message, __FILE__, __LINE__);  \
+            assert(condition);  \
+        }
+
+#define CudaDeviceAssertFmt(condition, message, ...) \
+        if(!(condition)) {  \
+			printf("Cuda assert: "); \
+			printf(message, __VA_ARGS__); \
+            printf(" (file %s, line %d)\n", __FILE__, __LINE__);  \
             assert(condition);  \
         }
 
 #else
 	#define CudaDeviceAssert(condition)
-	#define CudaDeviceAssertMsg(condition, message)
+	#define CudaDeviceAssertMsg(condition, message) 
+	#define CudaDeviceAssertFmt(condition, message, ...)
 #endif
 
 template <typename T>
-__host__ inline void CudaAssert(T result, char const* const func, const char* const file, const int line)
+__host__ inline void CudaHostAssert(T result, char const* const func, const char* const file, const int line)
 {
 	if (result != 0)
 	{
@@ -41,7 +50,7 @@ __host__ inline void CudaAssert(T result, char const* const func, const char* co
 	}
 }
 
-#define IsOk(val) CudaAssert((val), #val, __FILE__, __LINE__)
+#define IsOk(val) CudaHostAssert((val), #val, __FILE__, __LINE__)
 
 #define CudaPrintVar(var, kind) printf(#var ": %" #kind "\n", var)
 
@@ -63,6 +72,9 @@ namespace Cuda
 	{
 		Assert(deviceObject);
 		AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
+
+		if (numElements == 0) { return; }
+
 		const size_t arraySize = sizeof(T) * numElements;
 
 		Log::System("Allocated %i bytes of GPU memory (%i elements)\n", arraySize, numElements);
@@ -80,16 +92,6 @@ namespace Cuda
 		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(T) * numElements, cudaMemcpyHostToDevice));
 	}
 
-	/*template<typename T>
-	inline void SafeCreateDeviceInstance(T** deviceData, const T& instance)
-	{
-		Assert(deviceData);
-		Assert(*deviceData == nullptr);
-
-		IsOk(cudaMalloc((void**)deviceData, sizeof(T)));
-		IsOk(cudaMemcpy(*deviceData, &instance, sizeof(T), cudaMemcpyHostToDevice));
-	}*/
-
 	template<typename T, typename... Pack>
 	__global__ inline void KernelCreateDeviceInstance(T** newInstance, Pack... args)
 	{
@@ -106,7 +108,7 @@ namespace Cuda
 		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
 		IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
 
-		KernelCreateDeviceInstance << < 1, 1 >> > (cu_tempBuffer, args...);
+		KernelCreateDeviceInstance<<<1, 1>>>(cu_tempBuffer, args...);
 		IsOk(cudaDeviceSynchronize());
 
 		ObjectType* cu_data = nullptr;
@@ -131,28 +133,61 @@ namespace Cuda
 
 		IsOk(cudaFree(cu_params));
 		return cu_data;
+	}	
+
+	template<typename T>
+	__host__ bool IsParameterStandardType(const T t) 
+	{ 
+		return std::is_standard_layout<T>::value;
+	}
+
+	template<typename T, typename... Pack>
+	__host__ bool IsParameterStandardType(const T t, const Pack... pack)
+	{
+		if (!IsParameterStandardType(t)) { return false; }
+
+		return IsParameterStandardType(pack...);
+	}
+
+	template<typename ObjectType, typename... ParameterPack>
+	__global__ static void KernelSynchronise(ObjectType* cu_object, ParameterPack... pack)
+	{
+		assert(cu_object);
+		cu_object->Synchronise(pack...);
+	}
+
+	template<typename ObjectType, typename... ParameterPack>
+	__host__ static void Synchronise(ObjectType* cu_object, ParameterPack... pack)
+	{	
+		Assert(cu_object);
+		Assert(IsParameterStandardType(pack...));
+		
+		KernelSynchronise << <1, 1 >> > (cu_object, pack...);
+		IsOk(cudaDeviceSynchronize());
 	}
 
 	template<typename ObjectType, typename ParamsType>
-	__global__ static void KernelSyncObjects(ObjectType* cu_object, const ParamsType* cu_params)
+	__global__ static void KernelSynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
 	{
-		if (cu_params)
-		{
-			cu_object->Synchronise(*cu_params);
-		}
+		// Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
+		assert(cu_object);
+		assert(cu_params);
+		assert(sizeof(ParamsType) == hostParamsSize);
+
+		cu_object->Synchronise(*cu_params);
 	}
 
 	template<typename ObjectType, typename ParamsType>
 	__host__ static void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params)
 	{
-		static_assert(std::is_standard_layout<ParamsType>::value, "Object structure must be standard layout type.");
-
 		Assert(cu_object);
+		AssertMsg(std::is_standard_layout<ParamsType>::value, "Object structure must be standard layout type.");
+
 		ParamsType* cu_params;
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
 		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
-		KernelSyncObjects << <1, 1 >> > (cu_object, cu_params);
+		KernelSynchroniseObjects << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
 		IsOk(cudaDeviceSynchronize());
 
 		IsOk(cudaFree(cu_params));
@@ -165,11 +200,11 @@ namespace Cuda
 	}
 
 	template<typename T>
-	__host__ inline void DestroyOnDevice(T*& cu_data)
+	__host__ static void DestroyOnDevice(T*& cu_data)
 	{
 		if (cu_data == nullptr) { return; }
 		
-		KernelDestroyDeviceInstance << < 1, 1 >> > (cu_data);		
+		KernelDestroyDeviceInstance<<<1, 1>>>(cu_data);		
 		IsOk(cudaDeviceSynchronize());
 
 		cu_data = nullptr;

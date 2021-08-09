@@ -336,6 +336,9 @@
     <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -480,6 +483,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu">
       <Filter>kernels\cameras</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaLightProbeGrid.cu">
+      <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

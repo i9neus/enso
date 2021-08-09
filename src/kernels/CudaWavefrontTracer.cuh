@@ -20,7 +20,7 @@ namespace Cuda
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
 	enum ImportanceMode : uchar { kImportanceMIS, kImportanceLight, kImportanceBxDF };
 
-	struct WavefrontTracerParams : public AssetParams
+	struct WavefrontTracerParams
 	{
 		__host__ __device__ WavefrontTracerParams();
 		__host__ WavefrontTracerParams(const ::Json::Node& node, const uint flags) : WavefrontTracerParams() { FromJson(node, flags); }

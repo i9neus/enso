@@ -8,7 +8,7 @@ namespace Cuda
 {
     namespace Host { class EnvironmentLight; }
 
-    struct EnvironmentLightParams : public AssetParams
+    struct EnvironmentLightParams
     {
         __host__ __device__ EnvironmentLightParams() : intensity(1.0f), colour(1.0f) {}
         __host__ EnvironmentLightParams(const ::Json::Node& node);

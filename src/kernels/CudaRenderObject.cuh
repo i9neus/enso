@@ -112,10 +112,11 @@ namespace Cuda
         __host__ ConstIterator begin() const noexcept { return ConstIterator(m_objectMap.cbegin()); }
         __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
 
-        __host__ AssetHandle<Host::RenderObject> FindByID(const std::string& id)
+        template<typename ObjectType = Host::RenderObject>
+        __host__ AssetHandle<ObjectType> FindByID(const std::string& id)
         {
             auto it = m_objectMap.find(id);
-            return (it == m_objectMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
+            return (it == m_objectMap.end()) ? AssetHandle<ObjectType>(nullptr) : it->second.DynamicCast<ObjectType>();
         }
 
         __host__ AssetHandle<Host::RenderObject> FindByDAG(const std::string& id)

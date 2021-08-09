@@ -6,7 +6,7 @@ namespace Cuda
 {
     namespace Host { class CornellBox; }
 
-    struct CornellBoxParams : public AssetParams
+    struct CornellBoxParams
     {
         __host__ __device__ CornellBoxParams() : isBounded(false) {}
         __host__ __device__ CornellBoxParams(const BidirectionalTransform& transform_, const bool isBounded_) : tracable(transform_), isBounded(isBounded_) {}

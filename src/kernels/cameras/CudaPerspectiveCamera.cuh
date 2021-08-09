@@ -13,7 +13,7 @@ namespace Cuda
 
 	namespace Host { class PerspectiveCamera; }
 
-	struct PerspectiveCameraParams : public AssetParams
+	struct PerspectiveCameraParams
 	{
 		__host__ __device__ PerspectiveCameraParams();
 		__host__ PerspectiveCameraParams(const ::Json::Node& node);
