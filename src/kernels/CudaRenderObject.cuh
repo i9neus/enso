@@ -34,6 +34,11 @@ namespace Cuda
             __host__ const bool HasDAGPath() const { return !m_dagPath.empty(); }
             __host__ bool IsChildObject() const { return m_isChildObject; }
 
+            __host__ virtual void OnPreRender() {}
+            __host__ virtual void OnPostRender() {}
+            __host__ virtual void OnPreRenderPass(const float wallTime, const float frameIdx) {}
+            __host__ virtual void OnPostRenderPass() {}
+
         protected:
             __host__ RenderObject() : m_isChildObject(false) {}
             __host__ virtual ~RenderObject() = default; 

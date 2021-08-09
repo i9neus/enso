@@ -25,6 +25,11 @@ namespace Cuda
         return true;
     }
 
+    __device__ vec3 Device::LambertBRDF::GetAmbientTerm() const
+    {
+        return vec3(0.0f);
+    }
+
     __host__ AssetHandle<Host::RenderObject> Host::LambertBRDF::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
         if (expectedType != AssetType::kBxDF) { return AssetHandle<Host::RenderObject>(); }

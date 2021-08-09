@@ -286,7 +286,7 @@ void RenderManager::Prepare()
 {
 	m_liveCamera = nullptr;
 
-	// Get a list of active cameras that are active. 
+	// Get a list of cameras that are marked as active. 
 	m_activeCameras = m_renderObjects->FindAllOfType<Cuda::Host::Camera>([this](const Cuda::AssetHandle<Cuda::Host::Camera>& object) -> bool
 		{
 			Assert(object);
@@ -364,12 +364,13 @@ void RenderManager::Run()
 			for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
 			{
 				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
-
-				// Seed the buffer with a new batch of rays
-				camera->SeedRayBuffer();
+				
+				// Notify objects that we're about to start the pass
+				m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), frameIdx);
+				camera->OnPreRenderPass(timeDiff.count(), frameIdx);
 
 				// Trace those rays through the wavefront tracer 
-				m_wavefrontTracer->Iterate(timeDiff.count(), frameIdx);
+				m_wavefrontTracer->Trace();
 
 				frameIdx++;
 			}
@@ -379,6 +380,8 @@ void RenderManager::Run()
 			{
 				camera->Composite(m_compositeImage);
 			}
+
+			camera->OnPostRenderPass();
 
 			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		}

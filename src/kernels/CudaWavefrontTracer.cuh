@@ -131,8 +131,10 @@ namespace Cuda
 			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
 			__host__ void SetDirty() { m_isDirty = true; }
 
+			__host__ virtual void OnPreRenderPass(const float wallTime, const float frameIdx) override final;
+
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
-			__host__ void Iterate(const float wallTime, const float frameIdx); 
+			__host__ void Trace(); 
 			__host__ AssetHandle<Host::Camera> GetAttachedCamera() { return m_hostCameraAsset; }
 			__host__ void AttachCamera(AssetHandle<Host::Camera>& camera);
 		};

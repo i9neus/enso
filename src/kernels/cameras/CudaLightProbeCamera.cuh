@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CudaCamera.cuh"
+#include "../CudaLightProbeGrid.cuh"
 
 namespace Json { class Node; }
 
@@ -36,14 +37,17 @@ namespace Cuda
 			{
 				Device::RenderState renderState;
 				Device::Array<vec4>* cu_accumBuffer = nullptr;
+				Device::Array<vec4>* cu_reduceBuffer = nullptr;
+				//Device::LightProbeGrid cu_probeGrid = nullptr;
 			};
 
 			__device__ LightProbeCamera();
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
-			__device__ void SeedRayBuffer();
+			__device__ void SeedRayBuffer();	
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
+			__device__ void ReduceProbeGrid();
 
 			__device__ void Synchronise(const LightProbeCameraParams& params)
 			{
@@ -61,11 +65,12 @@ namespace Cuda
 
 		private:
 			LightProbeCameraParams 		m_params;
-			Objects						m_objects;
+			Objects						m_objects;			
 
 			uint						m_numProbes;
 			uint						m_bucketsPerProbe;
 			uint						m_bucketsPerCoefficient;
+			uint						m_bucketsPerCoefficientPow2;
 			uint						m_totalBuckets;
 			uint						m_coefficientsPerProbe;
 		};
@@ -92,16 +97,22 @@ namespace Cuda
 			__host__ virtual Device::LightProbeCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return nullptr; }
 			__host__ virtual void						ClearRenderState() override final;
-			__host__ virtual void						SeedRayBuffer() override final;
+
+			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
+			__host__ virtual void						OnPostRenderPass() override final;
+
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Light Probe Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
 
 		private:
 			AssetHandle<Host::Array<vec4>>				m_hostAccumBuffer;
+			AssetHandle<Host::Array<vec4>>				m_hostReduceBuffer;
+			AssetHandle<Host::LightProbeGrid>			m_hostLightProbeGrid;
 
 			dim3                    m_block;
 			dim3					m_grid;
+			int						m_frameIdx;
 		};
 	}
 }

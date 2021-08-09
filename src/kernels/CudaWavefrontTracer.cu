@@ -477,14 +477,19 @@ namespace Cuda
 		m_hostAccumBuffer = m_hostCameraAsset->GetAccumulationBuffer();
 	}
 
-	__host__ void Host::WavefrontTracer::Iterate(const float wallTime, const float frameIdx)
+	__host__ void Host::WavefrontTracer::Trace()
 	{
-		if (!m_isInitialised || !m_hostCameraAsset) { return; }
-		
-		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);		
+		if (!m_isInitialised || !m_hostCameraAsset) { return; }		
 
 		KernelTrace << <  m_hostCompressedRayBuffer->GetGridSize(), m_hostCompressedRayBuffer->GetBlockSize(), 0, m_hostStream >> > (cu_deviceData);
 
 		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
+	}
+
+	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime, const float frameIdx)
+	{
+		if (!m_isInitialised || !m_hostCameraAsset) { return; }
+
+		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);
 	}
 }

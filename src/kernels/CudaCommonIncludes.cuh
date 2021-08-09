@@ -9,6 +9,27 @@
 #include "thirdparty/nvidia/helper_cuda.h"
 #include "generic/Constants.h"
 
+//#define CUDA_DEVICE_GLOBAL_ASSERTS
+
+#if defined(CUDA_DEVICE_ASSERTS) || defined(CUDA_DEVICE_GLOBAL_ASSERTS)
+
+#define CudaDeviceAssert(condition)\
+        if(!(condition)) {  \
+            printf("Cuda assert: file %s, line %d.\n", __FILE__, __LINE__);  \
+            assert(condition);  \
+        }
+
+#define CudaDeviceAssertMsg(condition, message) \
+        if(!(condition)) {  \
+            printf("%s File %s, line %d. ", message, __FILE__, __LINE__);  \
+            assert(condition);  \
+        }
+
+#else
+	#define CudaDeviceAssert(condition)
+	#define CudaDeviceAssertMsg(condition, message)
+#endif
+
 template <typename T>
 __host__ inline void CudaAssert(T result, char const* const func, const char* const file, const int line)
 {
@@ -21,6 +42,8 @@ __host__ inline void CudaAssert(T result, char const* const func, const char* co
 }
 
 #define IsOk(val) CudaAssert((val), #val, __FILE__, __LINE__)
+
+#define CudaPrintVar(var, kind) printf(#var ": %" #kind "\n", var)
 
 namespace Cuda
 {		

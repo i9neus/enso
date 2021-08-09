@@ -22,6 +22,7 @@ namespace Cuda
 
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final;
             __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const override final;
+            __device__ virtual vec3 GetAmbientTerm() const override final;
         };
     }
 

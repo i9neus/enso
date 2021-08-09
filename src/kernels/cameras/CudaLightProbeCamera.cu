@@ -1,4 +1,6 @@
-﻿#include "CudaLightProbeCamera.cuh"
+﻿#define CUDA_DEVICE_ASSERTS
+
+#include "CudaLightProbeCamera.cuh"
 #include "generic/JsonUtils.h"
 
 #include "../CudaCtx.cuh"
@@ -37,16 +39,16 @@ namespace Cuda
 
         node.GetVector("gridDensity", gridDensity, flags);
         node.GetValue("shOrder", shOrder, flags);
+
+        gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
+        shOrder = clamp(shOrder, 0, 2);
     }   
 
-    __device__ Device::LightProbeCamera::LightProbeCamera()
-    {
-
-    }
+    __device__ Device::LightProbeCamera::LightProbeCamera() {  }
 
     __device__ void Device::LightProbeCamera::SeedRayBuffer()
     {
-        assert(kKernelIdx < 512 * 512);
+        CudaDeviceAssert(kKernelIdx < 512 * 512);
         
         CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
 
@@ -69,7 +71,7 @@ namespace Cuda
             return;
         }
 
-        const auto& texel = (*m_objects.cu_accumBuffer)[viewportPos.y * 512 + viewportPos.x];
+        const auto& texel = (*m_objects.cu_reduceBuffer)[viewportPos.y * 512 + viewportPos.x];
 
         // Normalise and gamma correct
         const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
@@ -78,12 +80,12 @@ namespace Cuda
 
     __device__ void Device::LightProbeCamera::Prepare()
     {
-        if (!m_objects.cu_accumBuffer) return;
+        CudaDeviceAssert(m_objects.cu_accumBuffer);
         
         // Number of coefficients per probe
         m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder);
         // Number of light probes in the grid
-        m_numProbes = m_params.gridDensity.x * m_params.gridDensity.y * m_params.gridDensity.z;
+        m_numProbes = Volume(m_params.gridDensity);
         // Number of sample buckets per probe
         m_bucketsPerProbe = m_objects.cu_accumBuffer->Size() / m_numProbes;
         // Number of sample buckets per SH coefficient per probe
@@ -93,10 +95,16 @@ namespace Cuda
         m_bucketsPerProbe = m_bucketsPerCoefficient * m_coefficientsPerProbe;
         m_totalBuckets = m_bucketsPerProbe * m_numProbes;
 
-        printf("m_numProbes: %u\n", m_numProbes);
-        printf("m_bucketsPerProbe: %u\n", m_bucketsPerProbe);
-        printf("m_bucketsPerCoefficient: %u\n", m_bucketsPerCoefficient);
-        printf("m_totalBuckets: %u\n", m_totalBuckets);
+        // Used when parallel reducing the accumluation buffer
+        for (m_bucketsPerCoefficientPow2 = 1; 
+            m_bucketsPerCoefficientPow2 < m_bucketsPerCoefficient >> 1; 
+            m_bucketsPerCoefficientPow2 <<= 1) {}
+
+        CudaPrintVar(m_coefficientsPerProbe, i);
+        CudaPrintVar(m_numProbes, i);
+        CudaPrintVar(m_bucketsPerProbe, i);
+        CudaPrintVar(m_bucketsPerCoefficient, i);
+        CudaPrintVar(m_totalBuckets, i);
     }
 
     __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray) const
@@ -107,10 +115,13 @@ namespace Cuda
         ray.depth = 0;
         RNG rng(ray);
 
-        ray.od.d = SampleUnitSphere(rng.Rand<0, 1>());      
+        ray.od.d = SampleUnitSphere(rng.Rand<0, 1>());
+
+        // For i'th probe, coefficients are packed together:
+        // [ [ C0(i), ..., C0(i) ] [ C1(i), ..., C1(i) ], ... , [ Cn(i), ..., Cn(i)] ]
 
         const int probeIdx = accumIdx / m_bucketsPerProbe;
-        const int coeffIdx = accumIdx % m_coefficientsPerProbe;
+        const int coeffIdx = (accumIdx / m_bucketsPerCoefficient) % m_coefficientsPerProbe;
         const ivec3 gridIdx(probeIdx % m_params.gridDensity.x,
                             (probeIdx / m_params.gridDensity.x) % m_params.gridDensity.y,
                             probeIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
@@ -127,24 +138,73 @@ namespace Cuda
         (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx] += vec4(value, float(1 >> ctx.depth));
     }
 
+    __device__ void Device::LightProbeCamera::ReduceProbeGrid()
+    {
+        CudaDeviceAssert(m_objects.cu_accumBuffer);
+        CudaDeviceAssert(m_objects.cu_reduceBuffer);
+        
+        if (kKernelIdx >= m_totalBuckets) { return; }
+
+        auto& accumBuffer = *m_objects.cu_accumBuffer;
+        auto& reduceBuffer = *m_objects.cu_reduceBuffer;        
+        const int subsampleIdx = kKernelIdx % m_bucketsPerCoefficient;
+
+        for (uint i = m_bucketsPerCoefficientPow2; i > 0; i >>= 1)
+        {
+            if (subsampleIdx < i)
+            {          
+                if (i == m_bucketsPerCoefficientPow2)
+                {
+                    reduceBuffer[kKernelIdx] = accumBuffer[kKernelIdx];
+                    if(subsampleIdx + i < m_bucketsPerCoefficient)
+                    {
+                        CudaDeviceAssert(kKernelIdx + i < 512 * 512);
+                        reduceBuffer[kKernelIdx] += accumBuffer[kKernelIdx + i];
+                    }
+                }
+                else
+                {
+                    CudaDeviceAssert(kKernelIdx + i < 512 * 512);
+                    reduceBuffer[kKernelIdx] += reduceBuffer[kKernelIdx + i];
+                }
+            }
+            __syncthreads();
+        } 
+         
+        // Normalise the reduced values
+        if (subsampleIdx == 0)
+        {
+            auto& texel = reduceBuffer[kKernelIdx];
+            texel /= max(1.0f, texel.w);
+        }
+        else
+        {
+            reduceBuffer[kKernelIdx] = 0.0f;
+        }        
+    }
+
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
         Host::Camera(parentNode, id)
     {
-        // Create the accumulation buffer
+        // Create the accumulation and reduce buffers
         m_hostAccumBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer", id), 512 * 512, m_hostStream);
         m_hostAccumBuffer->Clear(vec4(0.0f));
+        m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), 512 * 512, m_hostStream);
+
+        //m_hostLightProbeGrid = AssetHandle<Host::LightProbeGrid>(tfm::format("%s_probeGrid", id), m_hostStream);
 
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>();
 
         // Sychronise the device objects
         m_deviceObjects.cu_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
-        SynchroniseObjects(cu_deviceData, m_deviceObjects);
 
-        FromJson(parentNode, ::Json::kRequiredWarn);
+        // Objects are re-synchronised at every JSON update
+        FromJson(parentNode, ::Json::kRequiredWarn);        
 
         m_block = dim3(16 * 16, 1, 1);
         m_grid = dim3(512 * 512 / m_block.x , 1, 1);
@@ -162,6 +222,7 @@ namespace Cuda
         Host::Camera::OnDestroyAsset();
 
         m_hostAccumBuffer.DestroyAsset();
+        m_hostReduceBuffer.DestroyAsset();
 
         DestroyOnDevice(cu_deviceData);
     }
@@ -171,6 +232,22 @@ namespace Cuda
         Host::RenderObject::UpdateDAGPath(parentNode);
         
         m_params.FromJson(parentNode, flags);
+
+        // Reduce the size of the grid if it exceeds the size of the accumulation buffer
+        const int maxNumProbes = 512 * 512;
+        if (Volume(m_params.gridDensity) > maxNumProbes)
+        {
+            const auto oldDensity = m_params.gridDensity;
+            while (Volume(m_params.gridDensity) > maxNumProbes)
+            {
+                if (m_params.gridDensity.x > 1) { m_params.gridDensity.x--; }
+                if (m_params.gridDensity.y > 1) { m_params.gridDensity.y--; }
+                if (m_params.gridDensity.z > 1) { m_params.gridDensity.z--; }
+            }
+            Log::Error("WARNING: The size of the probe grid %s is too large for the accumulation buffer. Reducing to %s.\n", oldDensity.format(), m_params.gridDensity.format());
+        }
+
+        SynchroniseObjects(cu_deviceData, m_deviceObjects);
         SynchroniseObjects(cu_deviceData, m_params);
     }
 
@@ -186,7 +263,7 @@ namespace Cuda
         camera->SeedRayBuffer();
     }
 
-    __host__ void Host::LightProbeCamera::SeedRayBuffer()
+    __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const float frameIdx)
     {
         KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
     }
@@ -206,5 +283,15 @@ namespace Cuda
         hostOutputImage->SignalSetWrite(m_hostStream);
         KernelComposite << < blockSize, gridSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
         hostOutputImage->SignalUnsetWrite(m_hostStream);
+    }
+
+    __global__ void KernelReduceProbeGrid(Device::LightProbeCamera* camera)
+    {
+        camera->ReduceProbeGrid();
+    }
+
+    __host__ void Host::LightProbeCamera::OnPostRenderPass()
+    {
+        KernelReduceProbeGrid << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
     }
 }

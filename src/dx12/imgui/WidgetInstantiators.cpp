@@ -172,7 +172,7 @@ void LightProbeCameraShelf::Construct()
 
     ConstructTransform(p.transform);
 
-    ImGui::DragInt3("Grid density", &p.gridDensity[0], 1, 100);
+    ImGui::InputInt3("Grid density", &p.gridDensity[0]);
     ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.shOrder);    
     ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }

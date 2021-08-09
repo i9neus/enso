@@ -45,7 +45,7 @@ namespace Cuda
 
 			__device__ PerspectiveCamera();
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
-			__device__ void SeedRayBuffer(const ivec2& viewportPos);
+			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
@@ -97,7 +97,7 @@ namespace Cuda
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return m_hostAccumBuffer; }
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
 			__host__ virtual void						ClearRenderState() override final;
-			__host__ virtual void						SeedRayBuffer() override final;
+			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }

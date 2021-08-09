@@ -50,7 +50,7 @@ namespace Cuda
 			Stats*							cu_renderStats = nullptr;
 		};
 		
-		class Camera : public Device::Asset, public AssetTags<Host::Camera, Device::Camera>
+		class Camera : public Device::RenderObject, public AssetTags<Host::Camera, Device::Camera>
 		{
 		public:
 			__device__ Camera() {}
@@ -78,7 +78,6 @@ namespace Cuda
 			__host__ virtual Device::Camera* GetDeviceInstance() const = 0;
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() = 0;
 			__host__ virtual void ClearRenderState() = 0;
-			__host__ virtual void SeedRayBuffer() = 0;
 			__host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const {};
 
 			__host__ static std::string GetAssetTypeString() { return "camera"; }
