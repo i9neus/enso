@@ -346,6 +346,11 @@ namespace Cuda
         return m;
     }
 
+    template<typename Type>
+    __host__ __device__ __forceinline__ __ivec4<Type> max(const __ivec4<Type>& a, const __ivec4<Type>& b) { return __ivec4<Type>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)); }
+    template<typename Type>
+    __host__ __device__ __forceinline__ __ivec4<Type> min(const __ivec4<Type>& a, const __ivec4<Type>& b) { return __ivec4<Type>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w)); }
+
     // FIXME: Cuda intrinsics aren't working. Why is this?
     //__host__ __device__ __forceinline__ vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }
 

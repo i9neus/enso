@@ -233,6 +233,9 @@ namespace Cuda
     __host__ __device__ __forceinline__ bool operator==(const vec2& lhs, const vec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
     __host__ __device__ __forceinline__ bool operator!=(const vec2& lhs, const vec2& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y; }
 
+    __host__ __device__ __forceinline__ vec2 max(const vec2& a, const vec2& b) { return vec2(max(a.x, b.x), max(a.y, b.y)); }
+    __host__ __device__ __forceinline__ vec2 min(const vec2& a, const vec2& b) { return vec2(min(a.x, b.x), min(a.y, b.y)); }
+
     // FIXME: Cuda intrinsics aren't working. Why is this?
     //__host__ __device__ __forceinline__ vec2 saturate(const vec2& v, const vec2& a, const vec2& b)	{ return { __saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }}
 

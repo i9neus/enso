@@ -58,7 +58,10 @@ namespace Cuda
 		}
 	};
 
+	template<typename T> __host__ __device__ __forceinline__ T max(const T& a, const T& b) { return (a > b) ? a : b; }
+	template<typename T> __host__ __device__ __forceinline__ T min(const T& a, const T& b) { return (a < b) ? a : b; }
 	__host__ __device__ __forceinline__ float clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
+	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return max(a, min(v, b)); }
 	__host__ __device__ __forceinline__ float fract(const float& v) noexcept { return fmodf(v, 1.0f); }
 	__host__ __device__ __forceinline__ float sign(const float& v) noexcept { return copysign(1.0f, v); }
 
