@@ -181,10 +181,10 @@ namespace Cuda
             const int coeffIdx = (kKernelIdx / m_bucketsPerCoefficient) % m_coefficientsPerProbe;
             m_objects.cu_probeGrid->SetSHCoefficient(probeIdx, coeffIdx, texel.xyz);
         }
-        else
+        /*else
         {
             reduceBuffer[kKernelIdx] = 0.0f;
-        }
+        }*/
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :

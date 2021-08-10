@@ -28,6 +28,7 @@ namespace Cuda
 		float			fStop;
 		float			displayGamma;
 		CameraParams	camera;
+		bool			isRealtime;
 
 		ivec2			viewportDims; 
 	};

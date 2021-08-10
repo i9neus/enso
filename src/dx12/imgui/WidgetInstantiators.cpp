@@ -148,7 +148,8 @@ void PerspectiveCameraShelf::Construct()
     auto& p = m_params[0];
 
     ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
-    ImGui::Checkbox("Live", &p.camera.isLive); 
+    ImGui::Checkbox("Live", &p.camera.isLive);  ImGui::SameLine();
+    ImGui::Checkbox("Realtime", &p.isRealtime);
     
     ImGui::DragFloat3("Position", &p.position[0], math::max(0.01f, cwiseMax(p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &p.lookAt[0], math::max(0.01f, cwiseMax(p.lookAt) * 0.01f));

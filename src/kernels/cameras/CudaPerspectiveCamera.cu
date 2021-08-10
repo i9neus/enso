@@ -25,38 +25,41 @@ namespace Cuda
         fStop = 0.45f;
         displayGamma = 1.0f;
         viewportDims = ivec2(512, 512);
+        isRealtime = false;
     }
 
     __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
-        PerspectiveCameraParams() 
-    { 
+        PerspectiveCameraParams()
+    {
         FromJson(node, ::Json::kRequiredWarn);
     }
-    
+
     __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
     {
         camera.ToJson(node);
-        
+
         node.AddArray("pos", std::vector<float>({ position.x, position.y, position.z }));
         node.AddArray("lookAt", std::vector<float>({ lookAt.x, lookAt.y, lookAt.z }));
         node.AddValue("focalPlane", focalPlane);
         node.AddValue("fLength", fLength);
         node.AddValue("fStop", fStop);
         node.AddValue("displayGamma", displayGamma);
+        node.AddValue("isRealtime", isRealtime);
     }
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         camera.FromJson(node, flags);
-        
+
         node.GetVector("pos", position, flags);
         node.GetVector("lookAt", lookAt, flags);
         node.GetValue("focalPlane", focalPlane, flags);
         node.GetValue("fLength", fLength, flags);
         node.GetValue("fStop", fStop, flags);
         node.GetValue("displayGamma", displayGamma, flags);
+        node.GetValue("isRealtime", isRealtime, flags);
     }
-    
+
     // Returns the polar distance r to the perimeter of an n-sided polygon
     __device__ __forceinline__ float Ngon(float phi)
     {
@@ -68,7 +71,7 @@ namespace Cuda
     }
 
     __device__ Device::PerspectiveCamera::PerspectiveCamera()
-    {             
+    {
         Prepare();
     }
 
@@ -98,7 +101,12 @@ namespace Cuda
         CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
 
         if (!compressedRay.IsAlive())
-        {            
+        {
+            if (m_params.isRealtime)
+            {
+                m_objects.cu_accumBuffer->At(compressedRay.GetViewportPos()) = vec4(0.0f);
+            }
+            
             CreateRay(viewportPos, compressedRay);
         }
     }
