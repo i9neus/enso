@@ -24,6 +24,13 @@ namespace Cuda
 
 		LightProbeGridParams		grid;
 		CameraParams				camera;
+
+		uint						numProbes;
+		uint						bucketsPerProbe;
+		uint						bucketsPerCoefficient;
+		uint						reduceBatchSizePow2;
+		uint						totalBuckets;
+		uint						coefficientsPerProbe;
 	};
 
 	namespace Device
@@ -45,7 +52,7 @@ namespace Cuda
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
-			__device__ void ReduceProbeGrid();
+			__device__ void ReduceAccumulationBuffer(const uint batchSizeBegin, const uvec2 batchRange);
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
 			__device__ void Synchronise(const Objects& objects);
@@ -53,17 +60,11 @@ namespace Cuda
 		private:
 			__device__ void Prepare();
 			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray) const;
+			__device__ inline void GetProbeAttributesFromIndex(const uint& accumIdx, int& probeIdx, int& coeffIdx, ivec3& gridIdx) const;
 
 		private:
 			LightProbeCameraParams 		m_params;
 			Objects						m_objects;			
-
-			uint						m_numProbes;
-			uint						m_bucketsPerProbe;
-			uint						m_bucketsPerCoefficient;
-			uint						m_bucketsPerCoefficientPow2;
-			uint						m_totalBuckets;
-			uint						m_coefficientsPerProbe;
 		};
 	}
 

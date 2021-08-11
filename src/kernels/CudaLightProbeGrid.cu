@@ -89,9 +89,9 @@ namespace Cuda
         if (m_params.debugOutputPRef)
         {
             return clamp(hitObject.p + vec3(0.5f), vec3(0.0f), vec3(1.0f));
-        }
+        }        
 
-        hitObject.p = clamp(hitObject.p + vec3(0.5f), vec3(0.0f), vec3(1.0f)) * vec3(m_params.gridDensity);
+        hitObject.p = clamp(hitObject.p + vec3(0.5f), vec3(0.0f), vec3(1.0f)) * vec3(m_params.gridDensity - ivec3(1.0));
         
         // TODO: Use Cuda's built-in 3D surfaces for more efficient texture indexing
 
@@ -134,7 +134,7 @@ namespace Cuda
             
             // Trilinear interpolate
             L += mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
-                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z) * SH::Project(hitObject.n, coeffIdx);
+                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z) * SH::Project(hitObject.n, coeffIdx);           
         }
 
         return L;

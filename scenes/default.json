@@ -39,7 +39,7 @@
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 0.99, 0.99, 0.99 ]
       },
-      "gridDensity": [10, 10, 10],
+      "gridDensity": [4, 4, 4],
       "shOrder": 1,
       "overrides" :
       { 
