@@ -5,6 +5,8 @@ namespace Cuda
 {     
     __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
+        if (ray.flags & kRayLightProbe && m_params.excludeFromBake) { return false; }
+        
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic

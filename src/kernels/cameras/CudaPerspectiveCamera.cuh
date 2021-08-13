@@ -29,6 +29,7 @@ namespace Cuda
 		float			displayGamma;
 		CameraParams	camera;
 		bool			isRealtime;
+		bool			mimicLightProbe;
 
 		ivec2			viewportDims; 
 	};

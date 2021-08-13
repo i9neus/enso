@@ -13,8 +13,8 @@ namespace Cuda
 
     struct TracableParams
     {
-        __host__ __device__ TracableParams() {}
-        __host__ __device__ TracableParams(const BidirectionalTransform& transform_) : transform(transform_) {}
+        __host__ __device__ TracableParams();
+        __host__ __device__ TracableParams(const BidirectionalTransform& transform_) : TracableParams() { transform = transform_;  }
         __host__ TracableParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
@@ -22,7 +22,8 @@ namespace Cuda
 
         bool operator==(const TracableParams&) const;
 
-        BidirectionalTransform transform;
+        BidirectionalTransform  transform;
+        bool                    excludeFromBake;
     };
     
     namespace Device
@@ -41,7 +42,7 @@ namespace Cuda
             };
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const = 0;
-            __device__ virtual void InitialiseKernelConstantData() const {};
+            __device__ virtual void InitialiseKernelConstantData() const {}
 
             __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
             __device__ __forceinline__ const Device::Material* GetBoundMaterial() const { return m_objects.cu_material; }

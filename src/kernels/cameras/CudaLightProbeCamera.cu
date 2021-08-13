@@ -11,7 +11,10 @@
 
 namespace Cuda
 {
-    __host__ __device__ LightProbeCameraParams::LightProbeCameraParams() {}
+    __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
+    {
+        maxSamples = 0;
+    }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
         LightProbeCameraParams()
@@ -23,12 +26,18 @@ namespace Cuda
     {
         grid.ToJson(node);
         camera.ToJson(node);
+
+        node.AddValue("maxSamples", maxSamples);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         grid.FromJson(node, flags);
         camera.FromJson(node, flags);
+
+        node.GetValue("maxSamples", maxSamples, flags);        
+
+        if (maxSamples <= 0) { maxSamples = std::numeric_limits<int>::max(); }
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -43,7 +52,7 @@ namespace Cuda
         m_objects = objects;
     }
 
-    __device__ void Device::LightProbeCamera::SeedRayBuffer()
+    __device__ void Device::LightProbeCamera::SeedRayBuffer(const int frameIdx)
     {
         CudaDeviceAssert(kKernelIdx < 512 * 512);
         
@@ -55,9 +64,10 @@ namespace Cuda
             return; 
         }
 
-        if (!compressedRay.IsAlive())
+        if (!compressedRay.IsAlive() && compressedRay.sampleIdx < m_params.maxSamplesPerBucket)
         {
-            CreateRay(kKernelIdx, compressedRay);
+            //(*m_objects.cu_accumBuffer)[kKernelIdx] = 0.0f;
+            CreateRay(kKernelIdx, compressedRay, frameIdx);
         }
     }
 
@@ -68,12 +78,18 @@ namespace Cuda
             return;
         }
 
-        const auto& texel = (*m_objects.cu_reduceBuffer)[viewportPos.y * 512 + viewportPos.x];
+        const auto& texel = (*m_objects.cu_accumBuffer)[viewportPos.y * 512 + viewportPos.x];
+
+        /*int probeIdx, coeffIdx;
+        ivec3 gridIdx;
+        int accumIdx = kKernelY * 512 + kKernelX;
+        GetProbeAttributesFromIndex(accumIdx, probeIdx, coeffIdx, gridIdx);
+        deviceOutputImage->At(viewportPos) = vec4(vec3(float(coeffIdx) / 3.0f), 1.0f);
+        return;*/
 
         // Normalise and gamma correct
-        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
-        const float lum = mean(rgb);        
-        deviceOutputImage->At(viewportPos) = vec4(((lum < 0.0f) ? kRed : kGreen) * lum, 1.0f);
+        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);       
+        deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
     __device__ void Device::LightProbeCamera::Prepare()
@@ -90,15 +106,28 @@ namespace Cuda
             probeIdx / (m_params.grid.gridDensity.x * m_params.grid.gridDensity.y));
     }
 
-    __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray) const
+    __device__ bool RectilinearViewportToCartesian(const ivec2& viewportPos, vec3& cart)
+    {
+        cart = PolarToCartesian(vec2(kPi * (512 - viewportPos.y) / 512.0f, kTwoPi * viewportPos.x / 512.0f));
+        return true;
+    }
+
+    __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray, const int frameIdx) const
     {
         // Update the ray with the new properties and generate a random sampler from it
         ray.accumIdx = accumIdx;
         ray.sampleIdx++;
-        ray.depth = 0;
+        ray.depth = 1;
         RNG rng(ray);
 
-        ray.od.d = SampleUnitSphere(rng.Rand<0, 1>());
+        const vec2 xi = rng.Rand<0, 1>();
+        ray.od.d = SampleUnitSphere(xi);        
+        
+        /*float theta = kTwoPi * float(frameIdx) / 1000.0f;
+        ray.od.d = vec3(0.0f, cos(theta), sin(theta));
+        if (kKernelIdx == 0) {
+            printf("%f\n", fmodf(float(frameIdx) / 1000.0f, 1.0f));
+        }*/
 
         // For i'th probe, coefficients are packed together:
         // [ [ C0(i), ..., C0(i) ] [ C1(i), ..., C1(i) ], ... , [ Cn(i), ..., Cn(i)] ]
@@ -108,27 +137,49 @@ namespace Cuda
         GetProbeAttributesFromIndex(accumIdx, probeIdx, coeffIdx, gridIdx);
 
         // Project this direction into SH and pre-normalise
-        ray.weight = SH::Project(ray.od.d, coeffIdx) * kFourPi;
-        ray.depth = 0;
+        ray.weight = kOne * SH::Project(ray.od.d, coeffIdx) * kFourPi;
+        ray.depth = 2;
         ray.flags = kRayLightProbe | kRayIndirectSample;
-        ray.od.o = m_params.grid.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.grid.gridDensity) - vec3(0.5f));
+        ray.od.o = m_params.grid.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f));
     }
 
     __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const vec3& value)
-    {
-        if (m_params.grid.debugBakePRef)
-        {
-            int probeIdx, coeffIdx;
-            ivec3 gridIdx;
-            GetProbeAttributesFromIndex(ctx.emplacedRay.accumIdx, probeIdx, coeffIdx, gridIdx);
+    {        
+        int probeIdx, coeffIdx;
+        ivec3 gridIdx;
+        GetProbeAttributesFromIndex(ctx.emplacedRay.accumIdx, probeIdx, coeffIdx, gridIdx);       
+        auto& texel = (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx];
 
-            const vec3 p = vec3(gridIdx) / vec3(m_params.grid.gridDensity - ivec3(1));
-            (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx] += vec4(p, float(1 >> ctx.depth));
+        if (m_params.grid.debugBakePRef)
+        {    
+            const vec3 p = vec3(gridIdx) / vec3(m_params.grid.gridDensity - ivec3(1)) * mean(value);
+            texel.xyz += p;
         }
         else
         {
-            (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx] += vec4(value, float(1 >> ctx.depth));
-        }    
+            texel.xyz += value;
+            /*if (!ctx.emplacedRay.IsAlive() && ctx.emplacedRay.depth == m_params.camera.overrides.maxDepth)//!ctx.emplacedRay.IsAlive())
+            { 
+                texel.xyz += ctx.emplacedRay.probe * 0.5f + 0.5f; 
+            }*/
+        } 
+
+        if (!ctx.emplacedRay.IsAlive())
+        {
+            texel.w += 1.0f;
+        }
+    }
+    __device__ void Device::LightProbeCamera::ReduceAccumulatedSample(vec4& dest, const vec4& source)
+    {
+        if (int(dest.w) >= m_params.maxSamples) { return; }
+        
+        if (dest.w + source.w < m_params.maxSamples)
+        {
+            dest += source;
+            return;
+        }
+
+        dest += source * dest.w / (m_params.maxSamples - source.w);
     }
 
     __device__ void Device::LightProbeCamera::ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange)
@@ -153,19 +204,20 @@ namespace Cuda
                 if (iterationSize == batchSize / 2)
                 {
                     auto& texel = reduceBuffer[kKernelIdx];
-                    texel = accumBuffer[kKernelIdx];
+                    texel = 0.0f;
+                    ReduceAccumulatedSample(texel, accumBuffer[kKernelIdx]);
+
                     if (subsampleIdx + iterationSize < m_params.bucketsPerCoefficient)
                     {
                         CudaDeviceAssert(kKernelIdx + iterationSize < 512 * 512);
-                        texel += accumBuffer[kKernelIdx + iterationSize];
+                        ReduceAccumulatedSample(texel, accumBuffer[kKernelIdx + iterationSize]);
                     }
-                    texel /= max(1.0f, texel.w);
                 }
                 else
                 {
                     CudaDeviceAssert(kKernelIdx + iterationSize < 512 * 512);
                     CudaDeviceAssert(subsampleIdx + iterationSize < m_params.bucketsPerCoefficient);
-                    reduceBuffer[kKernelIdx] += reduceBuffer[kKernelIdx + iterationSize];
+                    ReduceAccumulatedSample(reduceBuffer[kKernelIdx], reduceBuffer[kKernelIdx + iterationSize]);
                 }
             }
             else
@@ -174,7 +226,6 @@ namespace Cuda
             }
 
             __syncthreads();
-            break;
         } 
 
         // After the last operation, cache the accumulated value in the probe grid
@@ -245,6 +296,22 @@ namespace Cuda
         return children;
     }
 
+    template<typename T>
+    __host__ T NearestPow2Ceil(const T& j)
+    {
+        T i = 1;
+        for (; i < j; i <<= 1) {};
+        return i;
+    }
+
+    template<typename T>
+    __host__ T NearestPow2Floor(const T& j)
+    {
+        T i = 1;
+        for (; i <= j; i <<= 1) {};
+        return i >> 1;
+    }
+
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::RenderObject::UpdateDAGPath(parentNode);
@@ -273,17 +340,17 @@ namespace Cuda
         // Number of sample buckets per probe
         m_params.bucketsPerProbe = m_hostAccumBuffer->Size() / m_params.numProbes;
         // Number of sample buckets per SH coefficient per probe
-        m_params.bucketsPerCoefficient = m_params.bucketsPerProbe / m_params.coefficientsPerProbe;
+        m_params.bucketsPerCoefficient = NearestPow2Floor(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
+        // The maximum number of samples per bucket based on the number of buckets per coefficient
+        m_params.maxSamplesPerBucket = (m_params.maxSamples == std::numeric_limits<int>::max()) ? 
+                                        std::numeric_limits<int>::max() : int(std::ceil(float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient)));
 
         // Adjust values so everything packs correctly
         m_params.bucketsPerProbe = m_params.bucketsPerCoefficient * m_params.coefficientsPerProbe;
         m_params.totalBuckets = m_params.bucketsPerProbe * m_params.numProbes;   
 
         // Used when parallel reducing the accumluation buffer
-        uint reduceBatchSizePow2 = 1;
-        for (; reduceBatchSizePow2 < m_params.bucketsPerCoefficient;
-            reduceBatchSizePow2 <<= 1) {
-        }
+        uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.bucketsPerCoefficient);
 
         Log::Debug("coefficientsPerProbe: %i\n", m_params.coefficientsPerProbe);
         Log::Debug("numProbes: %i\n", m_params.numProbes);
@@ -305,14 +372,14 @@ namespace Cuda
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
-    __global__ void KernelSeedRayBuffer(Device::LightProbeCamera* camera)
+    __global__ void KernelSeedRayBuffer(Device::LightProbeCamera* camera, const int frameIdx)
     {
-        camera->SeedRayBuffer();
+        camera->SeedRayBuffer(frameIdx);
     }
 
     __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const float frameIdx)
     {
-        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData);
+        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, int(frameIdx));
     }
 
     __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::LightProbeCamera* camera)
@@ -340,10 +407,7 @@ namespace Cuda
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
     {
         // Used when parallel reducing the accumluation buffer
-        uint reduceBatchSizePow2 = 1;
-        for (;reduceBatchSizePow2 < m_params.bucketsPerCoefficient;
-            reduceBatchSizePow2 <<= 1) {
-        }
+        uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.bucketsPerCoefficient);
         
         // Reduce until the batch range is equal to the size of the block
         uint batchSize = reduceBatchSizePow2;

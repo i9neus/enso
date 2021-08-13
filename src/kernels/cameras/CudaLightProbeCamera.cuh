@@ -25,12 +25,15 @@ namespace Cuda
 		LightProbeGridParams		grid;
 		CameraParams				camera;
 
+		int							maxSamples;
+
 		uint						numProbes;
 		uint						bucketsPerProbe;
 		uint						bucketsPerCoefficient;
 		uint						reduceBatchSizePow2;
 		uint						totalBuckets;
 		uint						coefficientsPerProbe;
+		int							maxSamplesPerBucket;
 	};
 
 	namespace Device
@@ -48,7 +51,7 @@ namespace Cuda
 
 			__device__ LightProbeCamera();
 			__device__ virtual void Accumulate(RenderCtx& ctx, const vec3& value) override final;
-			__device__ void SeedRayBuffer();	
+			__device__ void SeedRayBuffer(const int frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
@@ -59,8 +62,9 @@ namespace Cuda
 
 		private:
 			__device__ void Prepare();
-			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray) const;
+			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray, const int frameIdx) const;
 			__device__ inline void GetProbeAttributesFromIndex(const uint& accumIdx, int& probeIdx, int& coeffIdx, ivec3& gridIdx) const;
+			__device__ __forceinline__ void ReduceAccumulatedSample(vec4& dest, const vec4& source);
 
 		private:
 			LightProbeCameraParams 		m_params;

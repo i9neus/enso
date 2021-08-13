@@ -83,16 +83,16 @@ namespace Cuda
     {  
         CudaDeviceAssert(cu_data);
         
-        HitPoint hitObject = HitToObjectSpace(hitCtx.hit, m_params.transform);
+        vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform);
 
         // Debug the grid 
         if (m_params.debugOutputPRef)
         {
-            return clamp(hitObject.p + vec3(0.5f), vec3(0.0f), vec3(1.0f));
-        }        
+            return clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f));
+        }
 
-        hitObject.p = clamp(hitObject.p + vec3(0.5f), vec3(0.0f), vec3(1.0f)) * vec3(m_params.gridDensity - ivec3(1.0));
-        
+        pGrid = clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f)) * vec3(m_params.gridDensity - ivec3(1.0));
+
         // TODO: Use Cuda's built-in 3D surfaces for more efficient texture indexing
 
         // Extract the probe xyz indices and deltas
@@ -100,20 +100,21 @@ namespace Cuda
         vec3 delta;
         for (int dim = 0; dim < 3; dim++)
         {
-            if (hitObject.p[dim] >= float(m_params.gridDensity[dim] - 1))
+            if (pGrid[dim] >= float(m_params.gridDensity[dim] - 1))
             {
                 gridIdx[dim] = m_params.gridDensity[dim] - 2;
                 delta[dim] = 1.0;
             }
             else
             {
-                gridIdx[dim] = int(hitObject.p[dim]);
-                delta[dim] = fract(hitObject.p[dim]);
+                gridIdx[dim] = int(pGrid[dim]);
+                delta[dim] = fract(pGrid[dim]);
             }
         }
 
         // Accumulate each coefficient projected on the normal
         vec3 L(0.0f);
+        const vec3& n = hitCtx.hit.n;
         for (int coeffIdx = 0; coeffIdx < m_coefficientsPerProbe; coeffIdx++)
         {
             vec3 vert[8];
@@ -134,7 +135,7 @@ namespace Cuda
             
             // Trilinear interpolate
             L += mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
-                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z) * SH::Project(hitObject.n, coeffIdx);           
+                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z) * SH::Project(n, coeffIdx);
         }
 
         return L;

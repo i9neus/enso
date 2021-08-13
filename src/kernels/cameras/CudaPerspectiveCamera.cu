@@ -26,6 +26,7 @@ namespace Cuda
         displayGamma = 1.0f;
         viewportDims = ivec2(512, 512);
         isRealtime = false;
+        mimicLightProbe = false;
     }
 
     __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
@@ -45,6 +46,7 @@ namespace Cuda
         node.AddValue("fStop", fStop);
         node.AddValue("displayGamma", displayGamma);
         node.AddValue("isRealtime", isRealtime);
+        node.AddValue("mimicLightProbe", mimicLightProbe);
     }
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -58,6 +60,7 @@ namespace Cuda
         node.GetValue("fStop", fStop, flags);
         node.GetValue("displayGamma", displayGamma, flags);
         node.GetValue("isRealtime", isRealtime, flags);
+        node.GetValue("mimicLightProbe", mimicLightProbe, flags);
     }
 
     // Returns the polar distance r to the perimeter of an n-sided polygon
@@ -226,14 +229,19 @@ namespace Cuda
         ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
         ray.od.o += cameraPos;
         ray.weight = 1.0f;
-        ray.depth = 0;
+        ray.depth = 1;
         ray.flags = kRaySpecular;
+
+        if (m_params.mimicLightProbe)
+        {
+            ray.flags = kRayLightProbe | kRayIndirectSample;
+        }
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
     __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const vec3& value)
     {
-        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.depth, ctx.emplacedRay.IsAlive());
+        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.emplacedRay.IsAlive());
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :

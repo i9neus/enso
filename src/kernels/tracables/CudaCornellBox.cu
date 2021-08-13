@@ -23,12 +23,14 @@ namespace Cuda
 
     __device__  bool Device::CornellBox::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
+        if (ray.flags & kRayLightProbe && m_params.tracable.excludeFromBake) { return false; }
+        
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.tracable.transform);
 
         float t = ray.tNear;
         vec2 uv;
         HitPoint hit;
-        for (int face = 0; face < 5; face++)
+        for (int face = 0; face < 6; face++)
         {
             int dim = face / 2;
             float side = 2.0f * float(face % 2) - 1.0f;
@@ -44,6 +46,8 @@ namespace Cuda
 
             if (uvFace.x < 0.0f || uvFace.x > 1.0f || uvFace.y < 0.0f || uvFace.y > 1.0f) { continue; }
 
+            if (face == 5 && ray.depth <= 1 && localRay.o.z > 0.5) { break; }
+
             t = tFace;
             hit.n = kZero;
             uv = uvFace + vec2(1.0f, 0.0f) * float(face);
@@ -51,6 +55,7 @@ namespace Cuda
         }
 
         if (t == ray.tNear) { return false; }
+
         ray.tNear = t;
         hit.p = ray.HitPoint();
         hit.n = NormalToWorldSpace(hit.n, m_params.tracable.transform);

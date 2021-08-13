@@ -18,6 +18,7 @@
 
 #include "cameras/CudaPerspectiveCamera.cuh"
 #include "cameras/CudaLightProbeCamera.cuh"
+#include "cameras/CudaFisheyeCamera.cuh"
 
 #include "CudaWavefrontTracer.cuh"
 
@@ -43,6 +44,7 @@ namespace Cuda
 
         m_instantiators[Host::PerspectiveCamera::GetAssetTypeString()] = Host::PerspectiveCamera::Instantiate;
         m_instantiators[Host::LightProbeCamera::GetAssetTypeString()] = Host::LightProbeCamera::Instantiate;
+        m_instantiators[Host::FisheyeCamera::GetAssetTypeString()] = Host::FisheyeCamera::Instantiate;
     }
    
     __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
