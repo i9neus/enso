@@ -52,6 +52,12 @@
     <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\io\USDIO.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generic\FilesystemUtils.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -342,6 +348,12 @@
     <ClInclude Include="src\kernels\cameras\CudaFisheyeCamera.cuh">
       <Filter>kernels\cameras</Filter>
     </ClInclude>
+    <ClInclude Include="src\io\USDIO.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\FilesystemUtils.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -412,6 +424,9 @@
     </Filter>
     <Filter Include="kernels\cameras">
       <UniqueIdentifier>{16ef40bb-a36c-4763-b920-715dbd8179f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="io">
+      <UniqueIdentifier>{972ad3d2-6574-43fd-ae49-d6d9a1e7c4eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -506,6 +521,9 @@
       <Filter>scenes</Filter>
     </None>
     <None Include="scenes\kifs.json">
+      <Filter>scenes</Filter>
+    </None>
+    <None Include="scenes\template.usda">
       <Filter>scenes</Filter>
     </None>
   </ItemGroup>

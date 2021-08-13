@@ -3,7 +3,7 @@
 #include "thirdparty/rapidjson/stringbuffer.h"
 #include "thirdparty/rapidjson/prettywriter.h"
 
-#include <filesystem>
+#include "generic/FilesystemUtils.h"
  
 namespace Json
 {
@@ -201,49 +201,7 @@ namespace Json
 
         m_node = &m_document;
         m_allocator = &m_document.GetAllocator();
-    }
-
-    bool Document::GetFileHandle(const std::string& filePath, std::ifstream& file) const
-    {
-        // Try loading the file using the verbatim path
-        file.open(filePath, std::ios::in);
-        if (file.good()) { return true; }
-        
-        // Otherwise, look for the file in the module directory
-        HMODULE module = GetModuleHandleA(NULL);
-        char modulePath[2048];
-        Assert(GetModuleFileNameA(module, modulePath, 2048) < 2048);
-
-        namespace fs = std::filesystem;
-        fs::path fsPath(modulePath);
-        fsPath.remove_filename();     
-        std::string concatPath = fsPath.string();
-
-#ifdef _DEBUG
-        // We're in debug mode so assume that the Release directory has the actual file we're looking for
-        concatPath += "..\\Release\\";
-        Log::Warning("_DEBUG: Modifying local path to '%s'...\n", concatPath + filePath);
-#endif
-        
-        file.open(concatPath + filePath, std::ios::in);
-        return file.good();
-    }
-
-    std::string Document::LoadTextFile(const std::string& filePath) const
-    {
-        std::ifstream file;
-        AssertMsgFmt(GetFileHandle(filePath, file), "Couldn't open file '%s'", filePath.c_str());
-
-        const int32_t fileSize = file.tellg();
-        std::string data;
-        data.reserve(fileSize + 1);
-
-        data.assign(std::istreambuf_iterator<char>(file),
-            std::istreambuf_iterator<char>());
-
-        file.close();
-        return data;
-    }
+    }   
 
     void Document::Load(const std::string& filePath)
     {

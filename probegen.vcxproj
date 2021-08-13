@@ -18,9 +18,11 @@
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
+    <ClCompile Include="src\generic\FilesystemUtils.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
+    <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\renderer\RenderManager.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
@@ -42,12 +44,14 @@
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
+    <ClInclude Include="src\generic\FilesystemUtils.h" />
     <ClInclude Include="src\generic\JsonUtils.h" />
     <ClInclude Include="src\generic\Log.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
+    <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
@@ -165,6 +169,7 @@
     <None Include="bin\win64\Release\config.json" />
     <None Include="scenes\default.json" />
     <None Include="scenes\kifs.json" />
+    <None Include="scenes\template.usda" />
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
@@ -204,7 +209,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>$(Platform)/$(Configuration)/</IntDir>
-    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)/src;</IncludePath>
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)/src;$(USD_ROOT)/include;$(BOOST_ROOT);$(TBB_LOCATION)/include/;</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -215,6 +220,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>probegen</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -223,7 +231,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;usd_ms.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)/probegen.exe</OutputFile>
     </Link>
