@@ -1,3 +1,9 @@
 {
-    "scene":  "c:/projects/probegen/scenes/default.json"
+  "scene": "c:/projects/probegen/scenes/default.json",
+  "usd": 
+  {
+    "templatePath": "c:/projects/probegen/scenes/template.usda",
+    "pluginDirectory":  "",
+    "exportDirectory": "c:/projects/probegen/data/usd/"
+  }  
 }

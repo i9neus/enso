@@ -12,6 +12,8 @@
 #include "kernels/tracables/CudaTracable.cuh"
 #include "kernels/cameras/CudaCamera.cuh"
 
+#include "io/USDIO.h"
+
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
 	m_isDirty(false)
@@ -85,6 +87,8 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 void RenderManager::Build()
 {
 	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
+
+	USDIO::TestUSD();
 	
 	Log::NL();
 	const Log::Snapshot beginState = Log::GetMessageState();
@@ -143,6 +147,12 @@ void RenderManager::Build()
 	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 }
 
+void RenderManager::ExportLightProbeGrid()
+{
+	Cuda::AssetHandle<Cuda::Host::LightProbeGrid> handle;
+	USDIO::ExportLightProbeGrid(handle);
+}
+
 void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
@@ -153,6 +163,8 @@ void RenderManager::Destroy()
 	m_threadSignal.store(kHalt);	
 	m_managerThread.join();
 	Log::Write("Done!\n");	
+
+	ExportLightProbeGrid();
 	 
 	{
 		Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));

@@ -38,6 +38,7 @@ public:
 
 private:
 	void Run();
+	void ExportLightProbeGrid();
 
 	enum ThreadSignal : int { kRun, kRestart, kHalt };
 

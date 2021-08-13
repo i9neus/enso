@@ -1,0 +1,11 @@
+#usda 1.0
+def Scope "ProbeVolume"
+{
+    string description
+    int sampleNum
+    float3 size
+    float3 resolution
+    float[] coefficients
+    float[] dataValidity
+    float[] dataOctahedralDepth
+}

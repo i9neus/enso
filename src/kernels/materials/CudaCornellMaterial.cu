@@ -22,8 +22,7 @@ namespace Cuda
         node.AddArray("albedo3", std::vector<float>({ albedo[2].x, albedo[2].y, albedo[2].z }));
         node.AddArray("albedo4", std::vector<float>({ albedo[3].x, albedo[3].y, albedo[3].z }));
         node.AddArray("albedo5", std::vector<float>({ albedo[4].x, albedo[4].y, albedo[4].z }));
-        node.AddArray("albedo6", std::vector<float>({ albedo[5].x, albedo[5].y, albedo[5].z }));
-        
+        node.AddArray("albedo6", std::vector<float>({ albedo[5].x, albedo[5].y, albedo[5].z }));        
     }
 
     __host__ void CornellMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
