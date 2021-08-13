@@ -39,11 +39,28 @@
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 0.99, 0.99, 0.99 ]
       },
-      "gridDensity": [4, 4, 4],
+      "gridDensity": [5, 5, 5],
       "shOrder": 1,
       "overrides" :
       { 
-        "maxDepth": -1
+        "maxDepth": 2
+      }
+    },
+    "camera_fisheyeCam": 
+    {
+      "enabled": false,
+      "active": true,
+      "live":  false,
+      "class": "fisheye",
+      "transform": 
+      {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.99, 0.99, 0.99 ]
+      },
+      "overrides" :
+      { 
+        "maxDepth": 2
       }
     }
   },
@@ -77,6 +94,7 @@
     },
     "tracable_sphere": {
       "enabled": true,
+      "excludeFromBake": true,
       "class": "sphere",
       "material": "material_kifs",
       "transform": {
@@ -132,12 +150,12 @@
     {
       "class": "cornellmaterial",
       "bxdf": "bxdf_diffuse",
-      "albedo1": [0.5, 0.0, 0.0],
-      "albedo2": [0.2, 0.5, 0.0],
-      "albedo3": [0.5, 0.5, 0.5],
-      "albedo4": [0.5, 0.5, 0.5],
-      "albedo5": [0.5, 0.5, 0.5],
-      "albedo6": [0.5, 0.5, 0.5]
+      "albedo1": [0.7, 0.14, 0.0],
+      "albedo2": [0.14, 0.7, 0.0],
+      "albedo3": [0.7, 0.7, 0.7],
+      "albedo4": [0.7, 0.7, 0.7],
+      "albedo5": [0.7, 0.7, 0.7],
+      "albedo6": [0.7, 0.7, 0.7]
     }
   },
   "bxdfs": 

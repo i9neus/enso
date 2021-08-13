@@ -75,6 +75,8 @@ void SphereShelf::Construct()
 
     auto& p = m_params[0];
     ConstructTransform(p.transform);
+
+    ImGui::Checkbox("Exclude from bake", &p.excludeFromBake);
 }
 
 void CornellBoxShelf::Construct()
@@ -150,6 +152,7 @@ void PerspectiveCameraShelf::Construct()
     ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
     ImGui::Checkbox("Live", &p.camera.isLive);  ImGui::SameLine();
     ImGui::Checkbox("Realtime", &p.isRealtime);
+    ImGui::Checkbox("Mimic light probe", &p.mimicLightProbe);
     
     ImGui::DragFloat3("Position", &p.position[0], math::max(0.01f, cwiseMax(p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &p.lookAt[0], math::max(0.01f, cwiseMax(p.lookAt) * 0.01f));
@@ -177,8 +180,24 @@ void LightProbeCameraShelf::Construct()
     ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.grid.shOrder);    
     ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 
+    ImGui::DragInt("Max samples", &p.maxSamples);
+
     ImGui::Checkbox("Debug grid", &p.grid.debugOutputPRef); ImGui::SameLine();
     ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
+}
+
+void FisheyeCameraShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+
+    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
+    ImGui::Checkbox("Live", &p.camera.isLive);
+
+    ConstructTransform(p.transform);
+
+    ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }
 
 
@@ -211,6 +230,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
 
     m_instantiators[Cuda::Host::PerspectiveCamera::GetAssetTypeString()] = PerspectiveCameraShelf::Instantiate;
     m_instantiators[Cuda::Host::LightProbeCamera::GetAssetTypeString()] = LightProbeCameraShelf::Instantiate;
+    m_instantiators[Cuda::Host::FisheyeCamera::GetAssetTypeString()] = FisheyeCameraShelf::Instantiate;
 
     m_instantiators[Cuda::Host::WavefrontTracer::GetAssetTypeString()] = WavefrontTracerShelf::Instantiate;
 }

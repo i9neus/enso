@@ -18,6 +18,7 @@
 
 #include "kernels/cameras/CudaPerspectiveCamera.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
+#include "kernels/cameras/CudaFisheyeCamera.cuh"
 
 #include "kernels/CudaWavefrontTracer.cuh"
 
@@ -214,6 +215,17 @@ public:
     virtual ~LightProbeCameraShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Light probe camera
+class FisheyeCameraShelf : public IMGUIShelf<Cuda::Host::FisheyeCamera, Cuda::FisheyeCameraParams>
+{
+public:
+    FisheyeCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~FisheyeCameraShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new FisheyeCameraShelf(json)); }
     virtual void Construct() override final;
 };
 

@@ -51,6 +51,7 @@
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
+    <ClInclude Include="src\kernels\cameras\CudaFisheyeCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaLightProbeCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh" />
@@ -132,6 +133,7 @@
   <ItemGroup>
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu" />
+    <CudaCompile Include="src\kernels\cameras\CudaFisheyeCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />

@@ -339,6 +339,9 @@
     <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\cameras\CudaFisheyeCamera.cuh">
+      <Filter>kernels\cameras</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -486,6 +489,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaLightProbeGrid.cu">
       <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\cameras\CudaFisheyeCamera.cu">
+      <Filter>kernels\cameras</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

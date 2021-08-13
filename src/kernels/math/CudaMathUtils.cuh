@@ -20,7 +20,7 @@ namespace Cuda
 	__host__ __device__ __forceinline__ vec3	mod2(vec3 a, vec3 b)						{ return fmod(fmod(a, b) + b, b); }	
 	__host__ __device__ __forceinline__ int		sum(ivec2 a)								{ return a.x + a.y; }
 	__host__ __device__ __forceinline__ float	luminance(vec3 v)							{ return v.x * 0.17691f + v.y * 0.8124f + v.z * 0.01063f; }
-	__host__ __device__ __forceinline__ float	mean(vec3 v)								{ return v.x / 3 + v.y / 3 + v.z / 3; }
+	__host__ __device__ __forceinline__ float	mean(vec3 v)								{ return (v.x + v.y + v.z) / 3; }
 	__host__ __device__ __forceinline__ float	sin01(float a)								{ return 0.5f * sin(a) + 0.5f; }
 	__host__ __device__ __forceinline__ float	cos01(float a)								{ return 0.5f * cos(a) + 0.5f; }
 	__host__ __device__ __forceinline__ float	saturate(float a)							{ return clamp(a, 0.0, 1.0); }
@@ -38,6 +38,12 @@ namespace Cuda
 	__host__ __device__ __forceinline__ float	Area(const vec2& v)							{ return v.x * v.y; }
 	__host__ __device__ __forceinline__ int		Area(const ivec2& v)						{ return v.x * v.y; }
 	__host__ __device__ __forceinline__ uint	Area(const uvec2& v)						{ return v.x * v.y; }
+
+	__host__ __device__ __forceinline__ vec3	PolarToCartesian(const vec2& polar)
+	{
+		const float sinTheta = sin(polar.x);
+		return vec3(sin(polar.y) * sinTheta, cos(polar.x), cos(polar.y) * sinTheta);
+	}
 
 	#define kOne vec3(1.0f)
 	#define kZero vec3(0.0f)
