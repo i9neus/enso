@@ -9,6 +9,7 @@
 #include "kernels/tracables/CudaCornellBox.cuh"
 
 #include "kernels/lights/CudaQuadLight.cuh"
+#include "kernels/lights/CudaSphereLight.cuh"
 #include "kernels/lights/CudaEnvironmentLight.cuh"
 
 #include "kernels/bxdfs/CudaLambert.cuh"
@@ -160,6 +161,17 @@ public:
     virtual ~QuadLightShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new QuadLightShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Sphere light
+class SphereLightShelf : public IMGUIShelf<Cuda::Host::SphereLight, Cuda::SphereLightParams >
+{
+public:
+    SphereLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~SphereLightShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereLightShelf(json)); }
     virtual void Construct() override final;
 };
 

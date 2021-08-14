@@ -9,6 +9,7 @@
 #include "tracables/CudaCornellBox.cuh"
 
 #include "lights/CudaQuadLight.cuh"
+#include "lights/CudaSphereLight.cuh"
 #include "lights/CudaEnvironmentLight.cuh"
 
 #include "bxdfs/CudaLambert.cuh"
@@ -23,28 +24,38 @@
 #include "CudaWavefrontTracer.cuh"
 
 namespace Cuda
-{        
+{            
     RenderObjectFactory::RenderObjectFactory(cudaStream_t hostStream) :
         m_hostStream(hostStream) 
     {
-        m_instantiators[Host::Sphere::GetAssetTypeString()] = Host::Sphere::Instantiate;
-        m_instantiators[Host::KIFS::GetAssetTypeString()] = Host::KIFS::Instantiate;
-        m_instantiators[Host::Plane::GetAssetTypeString()] = Host::Plane::Instantiate;
-        m_instantiators[Host::CornellBox::GetAssetTypeString()] = Host::CornellBox::Instantiate;
+        AddInstantiator(Host::Sphere::GetAssetTypeString(), InstantiatorLambda(Host::Sphere::Instantiate));
+        AddInstantiator(Host::KIFS::GetAssetTypeString(), InstantiatorLambda(Host::KIFS::Instantiate));
+        AddInstantiator(Host::Plane::GetAssetTypeString(), InstantiatorLambda(Host::Plane::Instantiate));
+        AddInstantiator(Host::CornellBox::GetAssetTypeString(), InstantiatorLambda(Host::CornellBox::Instantiate));
 
-        m_instantiators[Host::QuadLight::GetAssetTypeString()] = Host::QuadLight::Instantiate;
-        m_instantiators[Host::EnvironmentLight::GetAssetTypeString()] = Host::EnvironmentLight::Instantiate;
+        AddInstantiator(Host::QuadLight::GetAssetTypeString(), InstantiatorLambda(Host::QuadLight::Instantiate));
+        AddInstantiator(Host::SphereLight::GetAssetTypeString(), InstantiatorLambda(Host::SphereLight::Instantiate));
+        AddInstantiator(Host::EnvironmentLight::GetAssetTypeString(), InstantiatorLambda(Host::EnvironmentLight::Instantiate));
 
-        m_instantiators[Host::SimpleMaterial::GetAssetTypeString()] = Host::SimpleMaterial::Instantiate;
-        m_instantiators[Host::CornellMaterial::GetAssetTypeString()] = Host::CornellMaterial::Instantiate;
+        AddInstantiator(Host::SimpleMaterial::GetAssetTypeString(), InstantiatorLambda(Host::SimpleMaterial::Instantiate));
+        AddInstantiator(Host::CornellMaterial::GetAssetTypeString(), InstantiatorLambda(Host::CornellMaterial::Instantiate));
 
-        m_instantiators[Host::LambertBRDF::GetAssetTypeString()] = Host::LambertBRDF::Instantiate;
+        AddInstantiator(Host::LambertBRDF::GetAssetTypeString(), InstantiatorLambda(Host::LambertBRDF::Instantiate));
 
-        m_instantiators[Host::WavefrontTracer::GetAssetTypeString()] = Host::WavefrontTracer::Instantiate;
+        AddInstantiator(Host::WavefrontTracer::GetAssetTypeString(), InstantiatorLambda(Host::WavefrontTracer::Instantiate));
 
-        m_instantiators[Host::PerspectiveCamera::GetAssetTypeString()] = Host::PerspectiveCamera::Instantiate;
-        m_instantiators[Host::LightProbeCamera::GetAssetTypeString()] = Host::LightProbeCamera::Instantiate;
-        m_instantiators[Host::FisheyeCamera::GetAssetTypeString()] = Host::FisheyeCamera::Instantiate;
+        AddInstantiator(Host::PerspectiveCamera::GetAssetTypeString(), InstantiatorLambda(Host::PerspectiveCamera::Instantiate));
+        AddInstantiator(Host::LightProbeCamera::GetAssetTypeString(), InstantiatorLambda(Host::LightProbeCamera::Instantiate));
+        AddInstantiator(Host::FisheyeCamera::GetAssetTypeString(), InstantiatorLambda(Host::FisheyeCamera::Instantiate));
+    }
+
+    __host__ void RenderObjectFactory::AddInstantiator(const std::string id, InstantiatorLambda& instantiator)
+    {
+        auto it = m_instantiators.find(id);
+        AssertMsgFmt(it == m_instantiators.end(),
+            "Internal error: a render object instantiator with ID '%s' already exists.\n", id.c_str());
+
+        m_instantiators[id] = instantiator;
     }
    
     __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
@@ -81,7 +92,7 @@ namespace Cuda
                 newObject = (instantiator->second)(newId, expectedType, childNode);
                 if (!newObject)
                 {
-                    Log::Error("Object class '%s' is not a member of group '%s'. Move it to the correct group and try again.\n", newClass.c_str(), objectTypeStr);
+                    Log::Error("Failed to instantiate object '%s' of class '%s'.\n", newId, newClass);
                     continue;
                 }
 

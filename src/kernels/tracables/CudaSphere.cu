@@ -54,6 +54,14 @@ namespace Cuda
          return AssetHandle<Host::RenderObject>(new Host::Sphere(json), id);
      }
 
+     // Constructor used to instantiate child objects e.g. from sphere lights
+     __host__  Host::Sphere::Sphere()
+     {
+         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
+         RenderObject::MakeChildObject();
+     }
+
+     // Constructor for user instantiations
     __host__  Host::Sphere::Sphere(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
@@ -70,5 +78,10 @@ namespace Cuda
     __host__ void Host::Sphere::OnDestroyAsset()
     {
         DestroyOnDevice(cu_deviceData);
+    }
+
+    __host__ void Host::Sphere::UpdateParams(const BidirectionalTransform& transform)
+    {
+        SynchroniseObjects(cu_deviceData, TracableParams(transform));
     }
 }

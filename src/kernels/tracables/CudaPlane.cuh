@@ -64,7 +64,6 @@ namespace Cuda
             __host__ virtual Device::Plane* GetDeviceInstance() const override final { return cu_deviceData; }
 
             __host__ void UpdateParams(const BidirectionalTransform& transform, const bool isBounded);
-            __host__ void SetBoundMaterialID(const std::string& id) { m_materialId = id; }
         };
     }
 }

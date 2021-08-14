@@ -129,6 +129,17 @@ void QuadLightShelf::Construct()
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
+void SphereLightShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+    ConstructTransform(p.transform);
+
+    ImGui::ColorEdit3("Colour", &p.colour[0]);
+    ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
+}
+
 void EnvironmentLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
@@ -224,6 +235,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
     m_instantiators[Cuda::Host::CornellBox::GetAssetTypeString()] = CornellBoxShelf::Instantiate;
 
     m_instantiators[Cuda::Host::QuadLight::GetAssetTypeString()] = QuadLightShelf::Instantiate;
+    m_instantiators[Cuda::Host::SphereLight::GetAssetTypeString()] = SphereLightShelf::Instantiate;
     m_instantiators[Cuda::Host::EnvironmentLight::GetAssetTypeString()] = EnvironmentLightShelf::Instantiate;
 
     //m_instantiators[Cuda::Host::LambertBRDF::GetAssetTypeString()] = LambertBRDFShelf::Instantiate;

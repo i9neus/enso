@@ -81,6 +81,7 @@ namespace Cuda
             __host__ static std::string             GetAssetTypeString() { return "tracable"; }
             
             __host__ void                           SetLightID(const uchar lightId) { m_lightId = lightId; }
+            __host__ void                           SetBoundMaterialID(const std::string& id) { m_materialId = id; }
         };
     }
 }

@@ -354,6 +354,9 @@
     <ClInclude Include="src\generic\FilesystemUtils.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lights\CudaSphereLight.cuh">
+      <Filter>kernels\lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -507,6 +510,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\cameras\CudaFisheyeCamera.cu">
       <Filter>kernels\cameras</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lights\CudaSphereLight.cu">
+      <Filter>kernels\lights</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
