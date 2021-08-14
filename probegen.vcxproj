@@ -23,7 +23,7 @@
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
-    <ClCompile Include="src\renderer\RenderManager.cpp" />
+    <ClCompile Include="src\manager\RenderManager.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui.cpp" />
@@ -100,7 +100,7 @@
     <ClInclude Include="src\kernels\tracables\CudaSDF.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
-    <ClInclude Include="src\renderer\RenderManager.h" />
+    <ClInclude Include="src\manager\RenderManager.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="src\thirdparty\imgui\imconfig.h" />

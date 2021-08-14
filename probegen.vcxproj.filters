@@ -13,9 +13,6 @@
     <ClCompile Include="src\dx12\SecurityAttributes.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderer\RenderManager.cpp">
-      <Filter>renderer</Filter>
-    </ClCompile>
     <ClCompile Include="src\generic\StringUtils.cpp">
       <Filter>generic</Filter>
     </ClCompile>
@@ -58,6 +55,9 @@
     <ClCompile Include="src\generic\FilesystemUtils.cpp">
       <Filter>generic</Filter>
     </ClCompile>
+    <ClCompile Include="src\manager\RenderManager.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -83,9 +83,6 @@
     </ClInclude>
     <ClInclude Include="src\generic\StdIncludes.h">
       <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\renderer\RenderManager.h">
-      <Filter>renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
       <Filter>kernels</Filter>
@@ -357,6 +354,9 @@
     <ClInclude Include="src\kernels\lights\CudaSphereLight.cuh">
       <Filter>kernels\lights</Filter>
     </ClInclude>
+    <ClInclude Include="src\manager\RenderManager.h">
+      <Filter>manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -416,9 +416,6 @@
     <Filter Include="thirdparty\imgui\backends">
       <UniqueIdentifier>{e6b247cc-e6e7-45ae-b0c0-d1b3ee027aa8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderer">
-      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="scenes">
       <UniqueIdentifier>{cf54c47d-ed90-4617-afcb-f24ce6e443c6}</UniqueIdentifier>
     </Filter>
@@ -430,6 +427,9 @@
     </Filter>
     <Filter Include="io">
       <UniqueIdentifier>{972ad3d2-6574-43fd-ae49-d6d9a1e7c4eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="manager">
+      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

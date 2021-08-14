@@ -6,7 +6,7 @@
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include "generic/JsonUtils.h"
-#include "renderer/RenderManager.h"
+#include "manager/RenderManager.h"
 
 #include "WidgetInstantiators.h"
 
