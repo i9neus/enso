@@ -76,7 +76,7 @@
     {
       "enabled": true,
       "class": "spherelight",
-      "intensity": 0.0,
+      "intensity": 2.0,
       "colour": [0.5, 0.85, 1.0],
       "transform" : 
       {

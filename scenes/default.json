@@ -25,12 +25,12 @@
       "fStop": 0.45,
       "overrides":
       {
-        "maxDepth": 0
+        "maxDepth": 2
       }
     },
     "camera_probeCam": 
     {
-      "enabled": true,
+      "enabled": false,
       "live":  false,
       "class": "lightprobe",
       "transform": 
@@ -171,8 +171,8 @@
   {
     "light_mainQuad":
     {
-      "enabled": true,
-      "class": "quad",
+      "enabled": false,
+      "class": "quadlight",
       "intensity": 1.5,
       "colour": [1.0, 1.0, 1.0],
       "transform" : 
@@ -180,6 +180,19 @@
         "pos": [0.0, 0.48, 0.0],
         "rot": [-90.0, 0.0, 0.0],
         "sca": [0.3, 0.3, 0.3]
+      }
+    },
+     "light_sphere":
+    {
+      "enabled": true,
+      "class": "spherelight",
+      "intensity": 0.0,
+      "colour": [1.0, 1.0, 1.0],
+      "transform" : 
+      {
+        "pos": [0.0, 0.48, 0.0],
+        "rot": [-90.0, 0.0, 0.0],
+        "sca": [0.1, 0.1, 0.1]
       }
     }
   }

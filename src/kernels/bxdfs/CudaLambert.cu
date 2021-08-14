@@ -21,8 +21,8 @@ namespace Cuda
     }
     __device__ bool Device::LambertBRDF::Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const
     {
-        weight = dot(extant, hitCtx.hit.n);
-        pdf = weight / kPi;
+        weight = dot(extant, hitCtx.hit.n) / kPi;
+        pdf = weight;
         
         return true;
     }

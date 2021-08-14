@@ -35,8 +35,9 @@ namespace Cuda
         {
             friend Host::SphereLight;
         protected:
-            float                   m_emitterArea;
-            SphereLightParams         m_params;
+            float                   m_discArea;
+            float                   m_discRadius;
+            SphereLightParams       m_params;
 
         public:
             __device__ SphereLight();

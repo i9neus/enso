@@ -286,6 +286,42 @@ namespace Cuda
         return vec2(sin(phi), cos(phi)) * sqrt(xi.x);
     }
 
+    __device__ __forceinline__ vec2 SampleUnitDiscLowDistortion(const vec2& xi)
+    {
+        float phi, r;
+        const float a = 2.0f * xi.x - 1.0f, b = 2.0f * xi.y - 1.0f;
+
+        // From A Low Distortion Map Between Disk and Square (Shirley and Chiu)
+        if (a > -b) // region 1 or 2
+        {
+            if (a > b) // region 1, also |a| > |b|
+            {
+                r = a;
+                phi = (kPi / 4) * (b / a);
+            }
+            else // region 2, also |b| > |a|
+            {
+                r = b;
+                phi = (kPi / 4) * (2 - (a / b));
+            }
+        }
+        else // region 3 or 4
+        {
+            if (a < b) // region 3, also |a| >= |b|, a != 0
+            {
+                r = -a;
+                phi = (kPi / 4) * (4 + (b / a));
+            }
+            else // region 4, |b| >= |a|, but a==0 and b==0 could occur.
+            {
+                r = -b;
+                phi = (b != 0) ? ((kPi / 4) * (6 - (a / b))) : 0;
+            }
+        }
+
+        return vec2(r * cosf(phi), r * sinf(phi));
+    }
+
     __device__ __forceinline__ vec3 SampleUnitSphere(vec2 xi)
     {
         xi.x = xi.x * 2.0 - 1.0;

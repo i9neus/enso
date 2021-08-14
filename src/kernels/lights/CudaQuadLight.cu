@@ -54,7 +54,7 @@ namespace Cuda
         const vec3& hitPos = hitCtx.hit.p;
         const vec3& normal = hitCtx.hit.n;
 
-        const vec2 xi = renderCtx.rng.Rand<0, 1>() - vec2(0.5f);
+        const vec2 xi = renderCtx.rng.Rand<2, 3>() - vec2(0.5f);
         const vec3 lightPos = m_params.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
@@ -71,13 +71,13 @@ namespace Cuda
         if (cosPhi > 0.0f) { return false; }
 
         // Compute the projected solid angle of the light        
-        float solidAngle = -cosPhi * min(1e10f, m_emitterArea / sqr(lightDist));
+        float solidAngle = -cosPhi * m_emitterArea / max(1e-10f, sqr(lightDist));
 
         // Compute the PDFs of the light
         pdfLight = 1.0f / solidAngle;
 
         // Calculate the ray throughput in the event that is hits the light
-        L = m_params.radiance * solidAngle / kPi;
+        L = m_params.radiance * solidAngle;
         return true;
     }
 

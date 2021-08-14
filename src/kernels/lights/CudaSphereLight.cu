@@ -45,58 +45,83 @@ namespace Cuda
 
     __device__ void Device::SphereLight::Prepare()
     {
-        m_emitterArea = m_params.transform.scale.x * m_params.transform.scale.y;
+        m_discArea = kPi * sqr(m_params.transform.scale.x);
+        m_discRadius = m_params.transform.scale.x;
+    }
+
+    __device__ inline mat3 CreateBasisDebug2(vec3 n)
+    {
+        n = normalize(n);
+        vec3 tangent = normalize(cross(n, (fabs(dot(n, vec3(1.0f, 0.0f, 0.0f))) < 0.5f) ? vec3(1.0f, 0.0f, 0.0f) : vec3(0.0f, 1.0f, 0.0f)));
+        vec3 cotangent = cross(tangent, n);
+
+        return mat3(tangent, cotangent, n);
     }
 
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {        
-        vec3 originDirection = m_params.transform.trans - hitCtx.hit.p;
-        const float discRadius = 1.0f * m_params.transform.scale.x;
-        const float distance = length(originDirection);
+        vec3 originDir = m_params.transform.trans - hitCtx.hit.p;
+        float originDist = length(originDir);
 
-        if (distance <= discRadius)
+        // Object inside the emitter? This is invalid, so return black.
+        if (originDist <= m_discRadius)
         {
             pdfLight = 0.0f;
             return false;
         }
 
-        originDirection /= distance;
-        const mat3 basis = CreateBasis(originDirection);
+        originDir /= originDist;
 
-        const float theta = asinf(discRadius / distance);
-        pdfLight = 1.0f / (1.0f - cosf(theta));
-        const float solidAngle = kTwoPi / pdfLight;
+        const float sinTheta = m_discRadius / originDist;
+        originDist -= m_discRadius * sinTheta;
+        const float projectedDiscRadius = m_discRadius *sqrtf(1.0f - sqr(sinTheta));
 
-        const vec3 disc = SampleUnitSphere(renderCtx.rng.Rand<0, 1>()); 
-        const vec3 samplePoint = basis.x * disc[0] * discRadius +
-                                 basis.y * disc[1] * discRadius +
-                                 originDirection * distance;
+        const vec2 disc = SampleUnitDiscLowDistortion(renderCtx.rng.Rand<2, 3>());
+        const mat3 basis = CreateBasisDebug2(originDir);
+        vec3 sampleDir = basis.x * disc.x * projectedDiscRadius +
+                         basis.y * disc.y * projectedDiscRadius +
+                         originDir * originDist;
+        const float sampleDist = length(sampleDir);
+        sampleDir /= sampleDist;
 
-        if (dot(samplePoint, hitCtx.hit.n) <= 0)
+        // If the sample point is behind the shading point, invalidate the sample
+        if (dot(sampleDir, hitCtx.hit.n) <= 0)
         {
             pdfLight = 0;
             return false;
         }
 
-        extant = normalize(samplePoint);
+        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / max(1e-10f, sqr(sampleDist));
+        pdfLight = 1.0f / solidAngle;
+        extant = sampleDir;
         L = m_params.radiance * solidAngle;
         return true;
     }
 
     __device__ bool Device::SphereLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
     {
-        const float radius = 1.0f * m_params.transform.scale.x;
-        const float distance = length(m_params.transform.trans - hitCtx.hit.p);
+        vec3 originDir = m_params.transform.trans - incident.od.o;
+        float originDist = length(originDir);
 
-        if (distance <= radius)
+        // Object inside the emitter? This is invalid, so return black.
+        if (originDist <= m_discRadius)
         {
             pdfLight = 0.0f;
-            L = 0.0f;
             return false;
         }
 
-        const float theta = std::asin(radius / distance);
-        pdfLight = 1.0f / (1.0f - std::cos(theta));
+        originDir /= originDist;
+
+        const float sinTheta = m_discRadius / originDist;
+        originDist -= m_discRadius * sinTheta;
+        const float projectedDiscRadius = m_discRadius * sqrtf(1.0f - sqr(sinTheta));
+       
+        vec3 sampleDir = incident.od.d * originDist / dot(originDir, incident.od.d);
+        const float sampleDist = length(sampleDir);
+        sampleDir /= sampleDist;        
+
+        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / max(1e-10f, sqr(sampleDist));
+        pdfLight = 1.0f / solidAngle;
         L = m_params.radiance;
         return true;
     }
