@@ -13,7 +13,7 @@ namespace Cuda
     namespace SDF { struct PolyhedronData; }
     struct BlockConstantData;
 
-    enum class KIFSType : uint { kTetrahedtron, kCube };
+    enum KIFSPrimitive : int { kKIFSTetrahedtron, kKIFSCube };
     enum KIFSClipShape : int { kKIFSBox, kKIFSSphere, kKIFSTorus };
 
     struct KIFSParams
@@ -33,6 +33,8 @@ namespace Cuda
         float   crustThickness;
         int     numIterations;
         uint    faceMask;
+        int     foldType;
+        int     primitiveType;
 
         struct
         {
@@ -64,6 +66,8 @@ namespace Cuda
                 float                       crustThickness;
                 float                       vertScale;
                 uint                        faceMask;
+                int                         foldType;
+                int                         primitiveType;
 
                 struct
                 {
@@ -79,7 +83,6 @@ namespace Cuda
             __device__ vec4 Field(vec3 p, const mat3& b, uint& code, uint& surfaceDepth) const;
             __device__ void Prepare();
 
-            KIFSType    m_type;
             vec3        m_origin;
 
             KIFSParams      m_params;

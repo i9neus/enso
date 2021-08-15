@@ -14,9 +14,10 @@ namespace Cuda
 		kRayDirectBxDFSample =		1 << 2,
 		kRaySpecular =				1 << 3,
 		kRayLightProbe =			1 << 4,
+		kRayScattered =				1 << 5,
 		
 		// Flags that persist throughout the path
-		kRayPersistentFlags =		kRayLightProbe,
+		kRayPersistentFlags =		kRayLightProbe | kRayScattered,
 		// Constitutes a direct sample
 		kRayDirectSample =			kRayDirectLightSample | kRayDirectBxDFSample
 	};

@@ -42,7 +42,9 @@ namespace Cuda
         vertScale(0.5f),
         crustThickness(0.5f),
         numIterations(1),
-        faceMask(0xffffffff)
+        faceMask(0xffffffff),
+        foldType(kKIFSTetrahedtron),
+        primitiveType(kKIFSTetrahedtron)
     {
         sdf.maxSpecularIterations = 50;
         sdf.maxDiffuseIterations = 15;
@@ -69,6 +71,8 @@ namespace Cuda
         node.AddValue("crustThickness", crustThickness);
         node.AddValue("numIterations", numIterations);
         node.AddValue("faceMask", faceMask);
+        node.AddEnumeratedParameter("foldType", std::vector<std::string>({ "tetrahedron", "cube" }), foldType);
+        node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType); 
 
         ::Json::Node sdfNode = node.AddChildObject("sdf");
         sdfNode.AddValue("maxSpecularIterations", sdf.maxSpecularIterations);
@@ -79,9 +83,7 @@ namespace Cuda
         sdfNode.AddValue("rayKickoff", sdf.rayKickoff);
         sdfNode.AddValue("failThreshold", sdf.failThreshold);
         sdfNode.AddValue("clipCameraRays", sdf.clipCameraRays);
-
-        const std::vector<std::string> clipShapeIds({ "cube", "sphere", "torus" });
-        sdfNode.AddEnumeratedParameter("clipShape", clipShapeIds, sdf.clipShape);
+        sdfNode.AddEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape);
 
         transform.ToJson(node);
     }
@@ -94,6 +96,8 @@ namespace Cuda
         node.GetValue("crustThickness", crustThickness, flags);
         node.GetValue("numIterations", numIterations, flags);
         node.GetValue("faceMask", faceMask, flags);
+        node.GetEnumeratedParameter("foldType", std::vector<std::string>({"tetrahedron", "cube" }), foldType, flags);
+        node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType, flags);
 
         const ::Json::Node sdfNode = node.GetChildObject("sdf", flags);
         if (sdfNode)
@@ -107,8 +111,7 @@ namespace Cuda
             sdfNode.GetValue("failThreshold", sdf.failThreshold, flags);
             sdfNode.GetValue("clipCameraRays", sdf.clipCameraRays, flags);
 
-            const std::vector<std::string> clipShapeIds({ "cube", "sphere", "torus" });
-            sdfNode.GetEnumeratedParameter("clipShape", clipShapeIds, sdf.clipShape, flags);
+            sdfNode.GetEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape, flags);
         }
 
         transform.FromJson(node, flags);
@@ -126,12 +129,15 @@ namespace Cuda
 
     __device__ void Device::KIFS::Prepare()
     {
-        m_kernelConstantData.numIterations = m_params.numIterations;
-        m_kernelConstantData.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale));
-        m_kernelConstantData.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness));
-        m_kernelConstantData.faceMask = m_params.faceMask;
+        auto& kcd = m_kernelConstantData;
+        kcd.numIterations = m_params.numIterations;
+        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale));
+        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness));
+        kcd.faceMask = m_params.faceMask;
+        kcd.foldType = m_params.foldType;
+        kcd.primitiveType = m_params.primitiveType;
 
-        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotate.x);
+            float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotate.x);
         rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
         float rotateBeta = mix(-1.0f, 1.0f, m_params.rotate.y);
         rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
@@ -145,15 +151,13 @@ namespace Cuda
             vec3 theta = (2.0f * kXi[i] - 1.0f) * kPi * (rotateAlpha + rotateBeta * f);
             float iterScale = scaleAlpha * powf(2.0f, float(i) * scaleBeta);
 
-            m_kernelConstantData.iteration[i].matrix = BidirectionalTransform(vec3(0.0f), vec3(theta), vec3(iterScale)).fwd;
-            m_kernelConstantData.iteration[i].scale = iterScale;
+            kcd.iteration[i].matrix = BidirectionalTransform(vec3(0.0f), vec3(theta), vec3(iterScale)).fwd;
+            kcd.iteration[i].scale = iterScale;
         }
     }
 
     __device__ Device::KIFS::KIFS()
     {
-        m_type = KIFSType::kTetrahedtron;
-
         Prepare();
     }
 
@@ -194,6 +198,21 @@ namespace Cuda
             bi[2].zy = -bi[2].yz;
             code |= (1u << (3 * i + 2));
         }
+    } 
+
+    __device__ __forceinline__ void FoldCube(const int& i, vec3& p, mat3& bi, ushort& code)
+    {
+        for (int d = 0; d < 3; d++)
+        {
+            if (p[d] < 0.0)
+            {
+                p[d] = -p[d];
+                bi[0][d] = -bi[0][d];
+                bi[1][d] = -bi[1][d];
+                bi[2][d] = -bi[2][d];
+                code |= (1u << (3 * i + d));
+            }
+        }
     }
 
     __device__ uint Device::KIFS::SizeOfSharedMemory()
@@ -205,7 +224,7 @@ namespace Cuda
     }
 
     template<typename PolyType>
-    __device__ __forceinline__ vec4 PolyhedronFace(const vec3& p, const PolyType& poly, const uint& faceIdx, const float& scale)
+    __device__ __forceinline__ vec4 SDFPolyhedronFace(const vec3& p, const PolyType& poly, const uint& faceIdx, const float& scale)
     {
         const vec3* V = poly.V;
         const uchar* F = &poly.F[faceIdx * PolyType::kPolyOrder];
@@ -230,6 +249,21 @@ namespace Cuda
         // Test against the face itself
         const vec3 v0 = V[F[0]] * scale;
         return (dot(N, p - v0) < 0.0f) ? vec4((dot(p, -N) - dot(v0, -N)), -N) : vec4((dot(p, N) - dot(v0, N)), N);
+    }
+
+    template<typename PolyType>
+     __device__ __forceinline__ void SDFPolyhedron(vec4& F, const Device::KIFS::KernelConstantData& kcd, const float& iterationScale, const vec3& p, const PolyType& poly)
+    {
+         for (int i = 0; i < poly.kNumFaces; i++)
+         {
+             if ((kcd.faceMask & (1 << i)) != 0)
+             {
+                 vec4 FFace = SDFPolyhedronFace(p, poly, i, kcd.vertScale);
+
+                 FFace.x = (FFace.x * iterationScale) - kcd.crustThickness;
+                 if (FFace.x < F.x) { F = FFace; }
+             }
+         }
     }
 
     __device__ vec4 Device::KIFS::Field(vec3 position, const mat3& basis, uint& pathId, uint& surfaceDepth) const
@@ -262,11 +296,14 @@ namespace Cuda
 
             if (i == kcd.numIterations - 1) { break; }
 
-#if kKIFSFoldType == 0
-            FoldTetrahedron(i, p, bi, code);
-#else
-            FoldCube(i, p, bi, code);
-#endif
+            if (kcd.foldType == kKIFSTetrahedtron)
+            {
+                FoldTetrahedron(i, p, bi, code);
+            }
+            else
+            {
+                FoldCube(i, p, bi, code);
+            }
 
             // Scale up around [1, 1, 1]
             p = (p - kOne) * 2.0f + kOne;
@@ -275,18 +312,14 @@ namespace Cuda
 
         // Test this position against each polyhedron face
         F.x = kFltMax;
-        for (i = 0; i < kTetrahedronData.kNumFaces; i++)
+        if (kcd.primitiveType == kKIFSTetrahedtron)
         {
-            if ((kcd.faceMask & (1 << i)) != 0)
-            {
-                vec4 FFace = PolyhedronFace(p, kTetrahedronData, i, kcd.vertScale);
-
-                FFace.x = (FFace.x * iterationScale) - kcd.crustThickness;
-                if (FFace.x < F.x) { F = FFace; }
-            }
+            SDFPolyhedron(F, kcd, iterationScale, p, kTetrahedronData);
+        }  
+        else
+        {
+            SDFPolyhedron(F, kcd, iterationScale, p, kCubeData);
         }
-
-        //F.x *= iterationScale;
 
         // Transform the normal from folded space into object space
         F.yzw = bi * F.yzw;
@@ -317,23 +350,23 @@ namespace Cuda
         bool isSubsurface = false;
         uint code = 0;
         uint surfaceDepth = 0;
-        const int maxIterations = (ray.depth == 0) ? m_params.sdf.maxSpecularIterations : m_params.sdf.maxDiffuseIterations;
+        const int maxIterations = (!(ray.flags & kRayScattered)) ? m_params.sdf.maxSpecularIterations : m_params.sdf.maxDiffuseIterations;
 
         for (i = 0; i < maxIterations; i++)
         {
             F = Field(p, basis, code, surfaceDepth);
 
-            if(ray.depth == 1 && m_params.sdf.clipCameraRays)
+            if(m_params.sdf.clipCameraRays && (ray.depth == 1 || (ray.depth == 2 && ray.flags & kRayDirectSample)))
             {
                 vec4 FClip;
                 switch (m_params.sdf.clipShape)
                 {
                 case kKIFSSphere:
-                    FClip = SDF::Sphere(p, 1.0f); break;
+                    FClip = SDF::Sphere(p, 0.5f / m_params.transform.scale.x); break;
                 case kKIFSTorus:
-                    FClip = SDF::Torus(p, 0.85f, 0.15f); break;
+                    FClip = SDF::Torus(p, 0.4f / m_params.transform.scale.x, 0.1f / m_params.transform.scale.x); break;
                 default:
-                    FClip = SDF::Box(p, 1.0f);
+                    FClip = SDF::Box(p, 0.5f / m_params.transform.scale.x);
                 }
                 if (FClip.x > F.x) { F = FClip; }
             }
@@ -347,8 +380,9 @@ namespace Cuda
 
             // Increment the ray position based on the SDF magnitude
             t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;            
-
-            if (t / localMag > ray.tNear) { hitCtx.debug = vec3(1.0, 1.0f, 0.0f); return false; }
+            
+            // If we've gone beyond t-near, bail out now
+            if (t / localMag > ray.tNear) { hitCtx.debug = vec3(1.0, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
             p = localRay.PointAt(t);
         }

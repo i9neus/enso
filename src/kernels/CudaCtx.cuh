@@ -20,12 +20,12 @@ namespace Cuda
 
 		__device__ __forceinline__ void ResetRay() { emplacedRay.flags = 0; }
 
-		__device__ __forceinline__ void EmplaceIndirectSample(const RayBasic& od, const vec3& weight)
+		__device__ __forceinline__ void EmplaceIndirectSample(const RayBasic& od, const vec3& weight, const uchar& flags)
 		{
 			emplacedRay.od = od;
 			emplacedRay.weight = weight;
 			emplacedRay.depth++;
-			emplacedRay.flags = kRayIndirectSample | (emplacedRay.flags & kRayPersistentFlags);
+			emplacedRay.flags = kRayIndirectSample | (emplacedRay.flags & kRayPersistentFlags) | flags;
 		}
 
 		__device__ __forceinline__ void EmplaceDirectSample(const RayBasic& od, const vec3& weight, const float& pdf, const ushort& lightId, const uchar& flags)

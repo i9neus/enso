@@ -7,7 +7,7 @@
       "class": "wavefront",
       "maxDepth": 3,
       "ambientRadiance": [0.3, 0.3, 0.3],
-      "debugNormals": false,
+      "debugNormals": true,
       "importanceMode": "mis",
       "displayGamma": 1.7
     }    
@@ -27,7 +27,7 @@
       "splatClamp": 10.0,
       "overrides":
       {
-        "maxDepth": 2
+        "maxDepth": 3
       }
     },
     "camera_probeCam": 
@@ -60,36 +60,39 @@
       "bounded": false,
       "transform": 
       {
-        "pos": [ 0.0, 0.0, 0.0 ],
+        "pos": [ 0.0, -0.5, 0.0 ],
         "rot": [ 90.0, 0.0, 0.0 ],
         "sca": [ 1.0, 1.0, 1.0 ]
       }
     },
-    "kifsFractal": 
+    "tracable_kifsFractal":
     {
       "enabled": true,
       "class": "kifs",
       "material": "material_kifs",
-      "rotate": [ 0.5, 0.5 ],
-      "scale": [ 0.5, 0.5 ],
-      "vertScale": 0.5,
-      "crustThickness": 0.5,
-      "sdf": 
-      {
+      "rotate": [ -1.222000002861023, -6.5929999351501469 ],
+      "scale": [ 0.6600000262260437, 0.6800000071525574 ],
+      "vertScale": 0.40400001406669619,
+      "crustThickness": 0.3779999911785126,
+      "numIterations": 6,
+      "faceMask": 4294967250,
+      "foldType": "cube",
+      "primitiveType": "cube",
+      "sdf": {
         "maxSpecularIterations": 50,
-        "maxDifffuseIterations": 50,
-        "cutoffThreshold": 1e-4,
+        "maxDiffuseIterations": 15,
+        "cutoffThreshold": 0.0001,
         "escapeThreshold": 1.0,
         "rayIncrement": 0.9,
-        "failThreshold": 1e-2,
-        "rayKickofff": 1e-4,
-        "clipCameraRays": true,
-        "clipShape": "sphere"      
+        "rayKickoff": 0.001,
+        "failThreshold": 0.01,
+        "clipCameraRays": false,
+        "clipShape": "cube"
       },
       "transform": {
         "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
+        "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
+        "sca": [ 2.361999988555908, 2.361999988555908, 2.361999988555908 ]
       }
     }
   },

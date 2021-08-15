@@ -13,10 +13,12 @@ void SimpleMaterialShelf::Construct()
 
 void IMGUIAbstractShelf::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)
 {
-    const char* selectedLabel = labels[selected].c_str();  // Label to preview before opening the combo (technically it could be anything)
+    std::string badLabel = "[INVALID VALUE]";
+    const char* selectedLabel = (selected < 0 || selected >= labels.size()) ? badLabel.c_str() : labels[selected].c_str(); 
+
     if (ImGui::BeginCombo(name.c_str(), selectedLabel, 0))
     {
-        for (int n = 0; n < 3; n++)
+        for (int n = 0; n < labels.size(); n++)
         {
             const bool isSelected = (selected == n);
             if (ImGui::Selectable(labels[n].c_str(), isSelected))
@@ -99,6 +101,8 @@ void KIFSShelf::Construct()
     ImGui::SliderFloat("Crust thickness", &p.crustThickness, 0.0f, 1.0f);
     ImGui::SliderFloat("Vertex scale", &p.vertScale, 0.0f, 1.0f);
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
+    ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.foldType);
+    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);
 
     for (int i = 0; i < 6; i++)
     {
@@ -111,7 +115,7 @@ void KIFSShelf::Construct()
     ImGui::Text("Face mask");
 
     ImGui::Checkbox("SDF Clip Camera Rays", &p.sdf.clipCameraRays);
-    ConstructComboBox("SDF Clip Shape", { "Cube", "Sphere", "Torus" }, p.sdf.clipShape);
+    ConstructComboBox("SDF Clip Shape", std::vector<std::string>({ "Cube", "Sphere", "Torus" }), p.sdf.clipShape);
     ImGui::DragInt("SDF Max Specular Interations", &p.sdf.maxSpecularIterations, 1, 1, 500);
     ImGui::DragInt("SDF Max Diffuse Iterations", &p.sdf.maxDiffuseIterations, 1, 1, 500);
     ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.00001f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");

@@ -118,15 +118,15 @@ namespace Cuda
             }
         }
     }
-    
-    __host__ void RenderObjectFactory::Instantiate(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
-    {               
+
+    __host__ void RenderObjectFactory::InstantiateSceneObjects(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
+    {
         Assert(renderObjects);
 
         {
             const ::Json::Node childNode = rootNode.GetChildObject("tracables", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kTracable, "tracable", renderObjects);
-        }        
+        }
         {
             const ::Json::Node childNode = rootNode.GetChildObject("lights", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kLight, "light", renderObjects);
@@ -139,6 +139,12 @@ namespace Cuda
             const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kBxDF, "BxDF", renderObjects);
         }
+    }
+    
+    __host__ void RenderObjectFactory::InstantiatePeripherals(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
+    {               
+        Assert(renderObjects);
+
         {
             const ::Json::Node childNode = rootNode.GetChildObject("cameras", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kCamera, "camera", renderObjects);
