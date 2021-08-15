@@ -322,9 +322,13 @@ namespace Cuda
 			}
 			else if (hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags == kRaySpecular)
 			{
-				// Otherwise, it's a BxDF sample so do a regular shade op
-				L = Shade(incidentRay, *(hitObject->GetBoundMaterial()), hitCtx, renderCtx) * compressedRay.weight;
-				//if(compressedRay.IsAlive()) L = compressedRay.od.d * 0.5f + vec3(0.5f);
+				const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
+				if (boundMaterial)
+				{
+					// Otherwise, it's a BxDF sample so do a regular shade op
+					L = Shade(incidentRay, *boundMaterial, hitCtx, renderCtx) * compressedRay.weight;
+				}
+				else { L += kPink;	}
 			}
 		}
 
