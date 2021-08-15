@@ -166,7 +166,7 @@ namespace Cuda
 				vec3 L = renderCtx.emplacedRay.weight * albedo;
 				if (GetImportanceMode(renderCtx) != kImportanceBxDF && numLights != 0) { L *= 2.0f; }
 
-				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L);
+				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, kRayScattered);
 			}
 		}
 		// Direct light sampling
@@ -224,16 +224,29 @@ namespace Cuda
 		}
 	}
 
-	__device__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
+	__device__ __forceinline__ void Device::WavefrontTracer::TraceMultiple(const uint rayIdx) const
 	{
-		__shared__ uchar deadRays[16 * 16];
-
 		assert(m_objects.cu_compressedRayBuffer);
 		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
+		while (compressedRay.IsAlive())
+		{
+			Trace(compressedRay);
+		}
+	}
 
-		if (!compressedRay.IsAlive()) { return; }
+	__device__ __forceinline__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
+	{
+		assert(m_objects.cu_compressedRayBuffer);
+		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
+
+		Trace((*m_objects.cu_compressedRayBuffer)[rayIdx]);
+	}
+
+	__device__ void Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
+	{
+		__shared__ uchar deadRays[16 * 16];
 
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay);

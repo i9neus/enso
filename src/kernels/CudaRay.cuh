@@ -90,6 +90,7 @@ namespace Cuda
 		}
 
 		__device__ __forceinline__ vec3 HitPoint() const { return od.o + od.d * tNear; }
+		__device__ __forceinline__ vec3 PointAt(const float& t) const { return od.o + od.d * t; }
 		__device__ __forceinline__ bool IsDirectSample() const { return flags & kRayDirectSample; }
 		__device__ __forceinline__ bool IsIndirectSample() const { return flags & kRayIndirectSample; }
 	};

@@ -16,6 +16,7 @@
 
 #include "kernels/materials/CudaSimpleMaterial.cuh"
 #include "kernels/materials/CudaCornellMaterial.cuh"
+#include "kernels/materials/CudaKIFSMaterial.cuh"
 
 #include "kernels/cameras/CudaPerspectiveCamera.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
@@ -109,7 +110,18 @@ public:
     virtual void Construct() override final;
 };
 
-// Simple material
+// KIFS code material
+class KIFSMaterialShelf : public IMGUIShelf<Cuda::Host::KIFSMaterial, Cuda::KIFSMaterialParams>
+{
+public:
+    KIFSMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    virtual ~KIFSMaterialShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSMaterialShelf(json)); }
+    virtual void Construct() override final;
+};
+
+// Cornell material
 class CornellMaterialShelf : public IMGUIShelf<Cuda::Host::CornellMaterial, Cuda::CornellMaterialParams>
 {
 public:

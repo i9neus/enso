@@ -1,16 +1,6 @@
 #include "WidgetInstantiators.h"
 #include "generic/JsonUtils.h"
 
-void SimpleMaterialShelf::Construct()
-{
-    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-    auto& p = m_params[0];
-    ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&p.albedo);
-    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);
-    ImGui::Checkbox("Use grid", &p.useGrid);
-}
-
 void IMGUIAbstractShelf::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)
 {
     std::string badLabel = "[INVALID VALUE]";
@@ -47,6 +37,26 @@ void IMGUIAbstractShelf::ConstructTransform(Cuda::BidirectionalTransform& transf
         transform.scale = transform.scale[0];
         ImGui::TreePop();
     }
+}
+
+void SimpleMaterialShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+    ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&p.albedo);
+    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);
+    ImGui::Checkbox("Use grid", &p.useGrid);
+}
+
+void KIFSMaterialShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    auto& p = m_params[0];
+    ImGui::SliderFloat3("HSL lower", &p.hslLower[0], 0.0f, 1.0f);
+    ImGui::SliderFloat3("HSL upper", &p.hslUpper[0], 0.0f, 1.0f);
+    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);    
 }
 
 void CornellMaterialShelf::Construct()
@@ -235,6 +245,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
 {
     m_instantiators[Cuda::Host::SimpleMaterial::GetAssetTypeString()] = SimpleMaterialShelf::Instantiate;
     m_instantiators[Cuda::Host::CornellMaterial::GetAssetTypeString()] = CornellMaterialShelf::Instantiate;
+    m_instantiators[Cuda::Host::KIFSMaterial::GetAssetTypeString()] = KIFSMaterialShelf::Instantiate;
 
     m_instantiators[Cuda::Host::Plane::GetAssetTypeString()] = PlaneShelf::Instantiate;
     m_instantiators[Cuda::Host::Sphere::GetAssetTypeString()] = SphereShelf::Instantiate;

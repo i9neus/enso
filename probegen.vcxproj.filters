@@ -58,6 +58,9 @@
     <ClCompile Include="src\manager\RenderManager.cpp">
       <Filter>manager</Filter>
     </ClCompile>
+    <ClCompile Include="src\manager\SceneGenerator.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -357,6 +360,15 @@
     <ClInclude Include="src\manager\RenderManager.h">
       <Filter>manager</Filter>
     </ClInclude>
+    <ClInclude Include="src\manager\SceneGenerator.h">
+      <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\materials\CudaKIFSMaterial.cuh">
+      <Filter>kernels\materials</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaColourUtils.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -513,6 +525,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaSphereLight.cu">
       <Filter>kernels\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\materials\CudaKIFSMaterial.cu">
+      <Filter>kernels\materials</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

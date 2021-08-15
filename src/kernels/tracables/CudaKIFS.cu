@@ -329,9 +329,9 @@ namespace Cuda
         return F;
     }
 
-    __device__  bool Device::KIFS::Intersect(Ray& ray, HitCtx& hitCtx) const
+    __device__  bool Device::KIFS::Intersect(Ray& globalRay, HitCtx& hitCtx) const
     {
-        RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
+        RayBasic localRay = RayToObjectSpace(globalRay.od, m_params.transform);
 
         float t = Intersector::RayBox(localRay, 1.0f);
         if (t == kNoIntersect) { return false; }
@@ -350,25 +350,33 @@ namespace Cuda
         bool isSubsurface = false;
         uint code = 0;
         uint surfaceDepth = 0;
-        const int maxIterations = (!(ray.flags & kRayScattered)) ? m_params.sdf.maxSpecularIterations : m_params.sdf.maxDiffuseIterations;
+        bool hitBoundSDF = false;
+        const int maxIterations = (!(globalRay.flags & kRayScattered)) ? m_params.sdf.maxSpecularIterations : m_params.sdf.maxDiffuseIterations;
 
         for (i = 0; i < maxIterations; i++)
         {
             F = Field(p, basis, code, surfaceDepth);
+            hitBoundSDF = false;
 
-            if(m_params.sdf.clipCameraRays && (ray.depth == 1 || (ray.depth == 2 && ray.flags & kRayDirectSample)))
+            if(m_params.sdf.clipCameraRays && (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))
             {
+                vec3 pWorld = globalRay.PointAt(t / localMag);
                 vec4 FClip;
                 switch (m_params.sdf.clipShape)
                 {
                 case kKIFSSphere:
-                    FClip = SDF::Sphere(p, 0.5f / m_params.transform.scale.x); break;
+                    FClip = SDF::Sphere(pWorld, 0.5f); break;
                 case kKIFSTorus:
-                    FClip = SDF::Torus(p, 0.4f / m_params.transform.scale.x, 0.1f / m_params.transform.scale.x); break;
+                    FClip = SDF::Torus(pWorld, 0.4f, 0.1f); break;
                 default:
-                    FClip = SDF::Box(p, 0.5f / m_params.transform.scale.x);
+                    FClip = SDF::Box(pWorld, 0.5f);
                 }
-                if (FClip.x > F.x) { F = FClip; }
+                FClip.x *= localMag;
+                if (FClip.x > F.x) 
+                { 
+                    F = FClip; 
+                    hitBoundSDF = true;
+                }
             }
 
             // On the first iteration, simply determine whether we're inside the isosurface or not
@@ -382,7 +390,7 @@ namespace Cuda
             t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;            
             
             // If we've gone beyond t-near, bail out now
-            if (t / localMag > ray.tNear) { hitCtx.debug = vec3(1.0, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
+            if (t / localMag > globalRay.tNear) { hitCtx.debug = vec3(1.0, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
             p = localRay.PointAt(t);
         }
@@ -391,8 +399,12 @@ namespace Cuda
         t /= localMag;
         hitCtx.debug *= F.x;
 
-        ray.tNear = t;
-        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_params.transform)), false, vec2(0.0f), m_params.sdf.rayKickoff);
+        globalRay.tNear = t;
+        hitCtx.Set(HitPoint(globalRay.HitPoint(), 
+                    hitBoundSDF ? F.yzw : NormalToWorldSpace(F.yzw, m_params.transform)),
+                    false, 
+                    vec2(*reinterpret_cast<float*>(&code), 0.0f),  // Dump the bits of the code into the float. FIXME: Not type safe, so fix this
+                    m_params.sdf.rayKickoff);
 
         return true;
     }
