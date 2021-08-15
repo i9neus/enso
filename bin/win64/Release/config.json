@@ -1,9 +1,14 @@
 {
-  "scene": "c:/projects/probegen/scenes/sphereplane.json",
+  "scene": "c:/projects/probegen/scenes/templates/random.json",
   "usd": 
   {
     "templatePath": "c:/projects/probegen/scenes/template.usda",
     "pluginDirectory":  "",
     "exportDirectory": "c:/projects/probegen/data/usd/"
-  }  
+  },
+  "generator":
+   {
+      "baseTemplate": ""
+
+   }
 }

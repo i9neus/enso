@@ -49,7 +49,10 @@ namespace Cuda
         sdf.cutoffThreshold = 1e-4f;
         sdf.escapeThreshold = 1.0f;
         sdf.rayIncrement = 0.9f;
+        sdf.rayKickoff = 1e-4f;
         sdf.failThreshold = 1e-2f;
+        sdf.clipCameraRays = true;
+        sdf.clipShape = kKIFSBox;
     }
 
     __host__ KIFSParams::KIFSParams(const ::Json::Node& node, const uint flags) :
@@ -73,7 +76,12 @@ namespace Cuda
         sdfNode.AddValue("cutoffThreshold", sdf.cutoffThreshold);
         sdfNode.AddValue("escapeThreshold", sdf.escapeThreshold);
         sdfNode.AddValue("rayIncrement", sdf.rayIncrement);
+        sdfNode.AddValue("rayKickoff", sdf.rayKickoff);
         sdfNode.AddValue("failThreshold", sdf.failThreshold);
+        sdfNode.AddValue("clipCameraRays", sdf.clipCameraRays);
+
+        const std::vector<std::string> clipShapeIds({ "cube", "sphere", "torus" });
+        sdfNode.AddEnumeratedParameter("clipShape", clipShapeIds, sdf.clipShape);
 
         transform.ToJson(node);
     }
@@ -95,7 +103,12 @@ namespace Cuda
             sdfNode.GetValue("cutoffThreshold", sdf.cutoffThreshold, flags);
             sdfNode.GetValue("escapeThreshold", sdf.escapeThreshold, flags);
             sdfNode.GetValue("rayIncrement", sdf.rayIncrement, flags);
+            sdfNode.GetValue("rayKickoff", sdf.rayKickoff, flags);
             sdfNode.GetValue("failThreshold", sdf.failThreshold, flags);
+            sdfNode.GetValue("clipCameraRays", sdf.clipCameraRays, flags);
+
+            const std::vector<std::string> clipShapeIds({ "cube", "sphere", "torus" });
+            sdfNode.GetEnumeratedParameter("clipShape", clipShapeIds, sdf.clipShape, flags);
         }
 
         transform.FromJson(node, flags);
@@ -273,8 +286,7 @@ namespace Cuda
             }
         }
 
-        /*F = SDF::Sphere(p, 0.5f);
-        F.x *= iterationScale;*/
+        //F.x *= iterationScale;
 
         // Transform the normal from folded space into object space
         F.yzw = bi * F.yzw;
@@ -311,13 +323,19 @@ namespace Cuda
         {
             F = Field(p, basis, code, surfaceDepth);
 
-            //if(m_params.clipToBound)
+            if(ray.depth == 1 && m_params.sdf.clipCameraRays)
             {
-                vec4 FBox = SDF::Box(p, 1.0f);
-                //vec4 FBox = SDF::Torus(p, 0.4, 0.1);
-                //vec4 FBox = SDF::Sphere(p, 0.5f);
-                if (FBox.x > F.x) { F = FBox; }
-                //F = FBox;
+                vec4 FClip;
+                switch (m_params.sdf.clipShape)
+                {
+                case kKIFSSphere:
+                    FClip = SDF::Sphere(p, 1.0f); break;
+                case kKIFSTorus:
+                    FClip = SDF::Torus(p, 0.85f, 0.15f); break;
+                default:
+                    FClip = SDF::Box(p, 1.0f);
+                }
+                if (FClip.x > F.x) { F = FClip; }
             }
 
             // On the first iteration, simply determine whether we're inside the isosurface or not
@@ -327,17 +345,20 @@ namespace Cuda
 
             if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
-            t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;
+            // Increment the ray position based on the SDF magnitude
+            t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;            
+
+            if (t / localMag > ray.tNear) { hitCtx.debug = float(i) / float(maxIterations); return false; }
+
             p = localRay.PointAt(t);
         }
 
+        if (F.x > m_params.sdf.failThreshold) { hitCtx.debug = vec3(0.0f, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
         t /= localMag;
-        if (F.x > m_params.sdf.failThreshold || t > ray.tNear) { hitCtx.debug = vec3(0.0f, 1.0f, 0.0f) * float(i) / float(maxIterations); return false; }
-
         hitCtx.debug *= F.x;
 
         ray.tNear = t;
-        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_params.transform)), false, vec2(0.0f), 1e-4f);
+        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(F.yzw, m_params.transform)), false, vec2(0.0f), m_params.sdf.rayKickoff);
 
         return true;
     }

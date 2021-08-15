@@ -14,6 +14,7 @@ namespace Cuda
     struct BlockConstantData;
 
     enum class KIFSType : uint { kTetrahedtron, kCube };
+    enum KIFSClipShape : int { kKIFSBox, kKIFSSphere, kKIFSTorus };
 
     struct KIFSParams
     {
@@ -41,6 +42,10 @@ namespace Cuda
             float escapeThreshold;
             float rayIncrement;
             float failThreshold;
+            float rayKickoff;
+            
+            bool clipCameraRays;
+            int clipShape;
         }
         sdf;
 

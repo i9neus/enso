@@ -110,11 +110,14 @@ void KIFSShelf::Construct()
     }
     ImGui::Text("Face mask");
 
+    ImGui::Checkbox("SDF Clip Camera Rays", &p.sdf.clipCameraRays);
+    ConstructComboBox("SDF Clip Shape", { "Cube", "Sphere", "Torus" }, p.sdf.clipShape);
     ImGui::DragInt("SDF Max Specular Interations", &p.sdf.maxSpecularIterations, 1, 1, 500);
     ImGui::DragInt("SDF Max Diffuse Iterations", &p.sdf.maxDiffuseIterations, 1, 1, 500);
     ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.00001f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     ImGui::DragFloat("SDF Escape Threshold", &p.sdf.escapeThreshold, math::max(0.01f, p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
     ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
+    ImGui::DragFloat("SDF Ray Kickoff", &p.sdf.rayKickoff, math::max(0.01f, p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
     ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.00001f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
 }
 
