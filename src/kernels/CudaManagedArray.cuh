@@ -105,7 +105,6 @@ namespace Cuda
 			__host__ inline void SignalSetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kWriteLocked);	}
 			__host__ inline void SignalUnsetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kWriteLocked, AccessSignal::kUnlocked); }
 			__host__ void Clear(const T& value);
-			__host__ void Test();
 		};
 
 		template<typename T>

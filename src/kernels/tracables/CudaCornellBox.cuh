@@ -57,6 +57,7 @@ namespace Cuda
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
             __host__ static std::string GetAssetTypeString() { return "cornellbox"; }
             __host__ static std::string GetAssetDescriptionString() { return "Cornell Box"; }
+            __host__ virtual int GetIntersectionCostHeuristic() const override final { return 10; };
 
             __host__ virtual void OnDestroyAsset() override final;
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;

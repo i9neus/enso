@@ -249,9 +249,8 @@ namespace Cuda
 		hitCtx.debug = 0.0f;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
-		auto I = tracables.Size();
-		int check = m_checkDigit;
-		for (int i = 0; i < I; i++)
+		const int numTracables = tracables.Size();
+		for (int i = 0; i < numTracables; i++)
 		{
 			if (tracables[i]->Intersect(incidentRay, hitCtx))
 			{
@@ -394,6 +393,7 @@ namespace Cuda
 	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
 	{
 		Log::Indent indent;
+
 		for (auto& object : sceneObjects)
 		{
 			const auto type = object->GetAssetType();
@@ -422,6 +422,13 @@ namespace Cuda
 				m_hostLights->Push(light);
 			}
 		}
+		
+		// Sort the tracables by intersection cost
+		auto functor = [](const AssetHandle<Host::Tracable>& lhs, const AssetHandle<Host::Tracable>& rhs)
+		{
+			return lhs->GetIntersectionCostHeuristic() < rhs->GetIntersectionCostHeuristic();
+		};
+		m_hostTracables->SetSortFunctor(functor);		
 
 		// Synchronise the container objects managed by this instance
 		m_hostTracables->Synchronise();

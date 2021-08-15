@@ -121,6 +121,7 @@ namespace Cuda
             __host__ static std::string GetAssetTypeString() { return "kifs"; }
             __host__ static std::string GetAssetDescriptionString() { return "KIFS Fractal"; }
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final { return cu_deviceData; }
+            __host__ virtual int GetIntersectionCostHeuristic() const override final { return 100; };
         };
     }
 }

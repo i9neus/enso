@@ -57,6 +57,8 @@ namespace Cuda
 			public Host::Asset, 
 			public AssetTags<Host::AssetContainer<typename ElementType::HostVariant>, Device::AssetContainer<typename ElementType::DeviceVariant>>
 		{
+			using SortFunctor = std::function<bool(const AssetHandle<ElementType>&, AssetHandle<ElementType>&)>;
+
 		public:
 			class Iterator
 			{
@@ -72,16 +74,19 @@ namespace Cuda
 			};
 
 		private:
-			Device::AssetContainer<typename ElementType::DeviceVariant>*				cu_deviceData;
+			Device::AssetContainer<typename ElementType::DeviceVariant>*						cu_deviceData;
 			typename Device::AssetContainer<typename ElementType::DeviceVariant>::Objects		m_deviceObjects;
 
-			std::map<std::string, AssetHandle<ElementType>>					m_assetMap;
+			std::map<std::string, AssetHandle<ElementType>>		m_assetMap;
+			SortFunctor											m_sortFunctor;
 
 		public:
 			__host__ AssetContainer() : cu_deviceData(nullptr) 
 			{
 				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
 			}
+
+			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
 
 			__host__ AssetHandle<ElementType> Find(const std::string& id)
 			{
@@ -94,6 +99,14 @@ namespace Cuda
 				m_assetMap[newAsset->GetAssetID()] = newAsset;
 			}
 
+			__host__ void Push(std::vector<AssetHandle<ElementType>>& assetList)
+			{
+				for (auto& element : assetList)
+				{
+					Push(element);
+				}
+			}
+
 			__host__ size_t Size() const { return m_assetMap.size(); }
 
 			__host__ virtual void Synchronise() override final
@@ -104,15 +117,37 @@ namespace Cuda
 				if (!m_assetMap.empty())
 				{
 					// Create an array of the asset device instances ready to upload to the device
-					std::vector<typename ElementType::DeviceVariant*> hostArray;
-					hostArray.reserve(m_assetMap.size());
-					for (auto& asset : m_assetMap)
+					std::vector<typename ElementType::DeviceVariant*> deviceInstArray;
+					deviceInstArray.reserve(m_assetMap.size());
+					
+					// If this map needs to be sorted, do it now
+					if (m_sortFunctor)
 					{
-						hostArray.push_back(asset.second->GetDeviceInstance());
+						// FIXME: This is a hack designed to get around the limitations of ManagedArray. Make something better.
+						std::vector<AssetHandle<ElementType>> hostArray;
+						hostArray.reserve(m_assetMap.size());
+						for (auto& asset : m_assetMap)
+						{
+							hostArray.push_back(asset.second);
+						}
+
+						std::sort(hostArray.begin(), hostArray.end(), m_sortFunctor);
+
+						for (auto& asset : hostArray)
+						{
+							deviceInstArray.push_back(asset->GetDeviceInstance());
+						}
+					}
+					else
+					{
+						for (auto& asset : m_assetMap)
+						{
+							deviceInstArray.push_back(asset.second->GetDeviceInstance());
+						}
 					}
 
 					// Upload the array of device pointers
-					SafeAllocAndCopyToDeviceMemory(&m_deviceObjects.cu_data, m_assetMap.size(), hostArray.data());
+					SafeAllocAndCopyToDeviceMemory(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
 					m_deviceObjects.numElements = m_assetMap.size();
 				}
 				else

@@ -348,7 +348,7 @@ namespace Cuda
             // Increment the ray position based on the SDF magnitude
             t += (isSubsurface ? -F.x : F.x) * m_params.sdf.rayIncrement;            
 
-            if (t / localMag > ray.tNear) { hitCtx.debug = float(i) / float(maxIterations); return false; }
+            if (t / localMag > ray.tNear) { hitCtx.debug = vec3(1.0, 1.0f, 0.0f); return false; }
 
             p = localRay.PointAt(t);
         }
