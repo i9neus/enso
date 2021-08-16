@@ -406,7 +406,7 @@ namespace Cuda
         globalRay.tNear = t;
         hitCtx.Set(HitPoint(globalRay.HitPoint(), 
                     hitBoundSDF ? F.yzw : NormalToWorldSpace(F.yzw, m_params.transform)),
-                    false, 
+                    isSubsurface,
                     vec2(*reinterpret_cast<float*>(&code), 0.0f),  // Dump the bits of the code into the float. FIXME: Not type safe, so fix this
                     m_params.sdf.rayKickoff);
 

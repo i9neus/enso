@@ -22,6 +22,7 @@ namespace Cuda
         int							shOrder;
 
         bool                        debugOutputPRef;
+        bool                        debugOutputValidity;
         bool                        debugBakePRef;
     };
 
@@ -38,6 +39,8 @@ namespace Cuda
             __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
 
         private:
+            __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
+
             LightProbeGridParams    m_params;
             Device::Array<vec3>*    cu_data = nullptr;
 

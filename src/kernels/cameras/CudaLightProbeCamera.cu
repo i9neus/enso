@@ -137,6 +137,8 @@ namespace Cuda
         ivec3 gridIdx;
         GetProbeAttributesFromIndex(accumIdx, probeIdx, coeffIdx, gridIdx);
 
+        CudaDeviceAssert(accumIdx < 512 * 512);
+
         // Project this direction into SH and pre-normalise
         ray.accumIdx = accumIdx;
         ray.weight = kOne * SH::Project(ray.od.d, coeffIdx) * kFourPi;
@@ -145,29 +147,32 @@ namespace Cuda
         ray.od.o = m_params.grid.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f));
     }
 
-    __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const vec3& value)
+    __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value)
     {        
+        //CudaDeviceAssert(ctx.emplacedRay.accumIdx < 512 * 512);
+        if (ctx.emplacedRay.accumIdx >= 512 * 512)
+        {
+            //CudaPrintVar(ctx.emplacedRay.accumIdx, u);
+            return;
+        }
+        
         int probeIdx, coeffIdx;
         ivec3 gridIdx;
         GetProbeAttributesFromIndex(ctx.emplacedRay.accumIdx, probeIdx, coeffIdx, gridIdx);       
         auto& texel = (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx];
-
-        if (m_params.grid.debugBakePRef)
-        {    
-            const vec3 p = vec3(gridIdx) / vec3(m_params.grid.gridDensity - ivec3(1)) * mean(value);
-            texel.xyz += p;
-        }
-        else
+        
+        // Accumualte SH coefficients
+        if (coeffIdx < m_params.coefficientsPerProbe - 1)
         {
             texel.xyz += value;
-            /*if (!ctx.emplacedRay.IsAlive() && ctx.emplacedRay.depth == m_params.camera.overrides.maxDepth)//!ctx.emplacedRay.IsAlive())
-            { 
-                texel.xyz += ctx.emplacedRay.probe * 0.5f + 0.5f; 
-            }*/
-        } 
-
-        if (!ctx.emplacedRay.IsAlive())
+            if (!ctx.emplacedRay.IsAlive()) { texel.w += 1.0f; }
+        }
+        // Accumulate probe validity
+        else if(ctx.depth == 2)
         {
+            // A probe sample is invalid if, on the first hit, it intersects with a back-facing surface
+            float validity = float(!hitCtx.backfacing);
+            texel.x += validity;
             texel.w += 1.0f;
         }
     }
@@ -336,7 +341,7 @@ namespace Cuda
         m_hostLightProbeGrid->Prepare(m_params.grid);
 
         // Number of coefficients per probe
-        m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder);
+        m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder) + 1;
         // Number of light probes in the grid
         m_params.numProbes = Volume(m_params.grid.gridDensity);
         // Number of sample buckets per probe

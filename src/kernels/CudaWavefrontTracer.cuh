@@ -83,7 +83,7 @@ namespace Cuda
 			__device__ WavefrontTracer();
 
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
-			__device__ void Trace(CompressedRay& compressedRay) const;
+			__device__ bool Trace(CompressedRay& compressedRay) const;
 			__device__ __forceinline__ void Trace(const uint rayIdx) const;
 			__device__ __forceinline__ void TraceMultiple(const uint rayIdx) const;
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);

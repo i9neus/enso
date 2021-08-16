@@ -24,7 +24,7 @@
       }
     },
     "camera_probeCam": {
-      "enabled": false,
+      "enabled": true,
       "live": false,
       "class": "lightprobe",
       "transform": {
@@ -35,21 +35,7 @@
       "gridDensity": [ 5, 5, 5 ],
       "shOrder": 1,
       "overrides": {
-        "maxDepth": 2
-      }
-    },
-    "camera_fisheyeCam": {
-      "enabled": false,
-      "active": true,
-      "live": false,
-      "class": "fisheye",
-      "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.99, 0.99, 0.99 ]
-      },
-      "overrides": {
-        "maxDepth": 2
+        "maxDepth": 3
       }
     }
   },
@@ -78,13 +64,24 @@
     },
     "tracable_sphere": {
       "enabled": true,
-      "excludeFromBake": true,
+      "excludeFromBake": false,
       "class": "sphere",
       "material": "material_kifs",
       "transform": {
         "pos": [ 0.0, 0.0, 0.0 ],
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 0.2, 0.2, 0.2 ]
+      }
+    },
+    "tracable_sphere2": {
+      "enabled": true,
+      "excludeFromBake": true,
+      "class": "sphere",
+      "material": "material_kifs",
+      "transform": {
+        "pos": [ 0.3, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.1, 0.1, 0.1 ]
       }
     },
     "kifsFractal": {
@@ -146,7 +143,7 @@
   },
   "lights": {
     "light_mainQuad": {
-      "enabled": false,
+      "enabled": true,
       "class": "quadlight",
       "intensity": 1.5,
       "colour": [ 1.0, 1.0, 1.0 ],
@@ -157,7 +154,7 @@
       }
     },
     "light_sphere": {
-      "enabled": true,
+      "enabled": false,
       "class": "spherelight",
       "intensity": 0.0,
       "colour": [ 1.0, 1.0, 1.0 ],

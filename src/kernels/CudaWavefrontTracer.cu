@@ -125,17 +125,16 @@ namespace Cuda
 	{
 		vec3 albedo;
 		vec3 L(0.0f);
-
-		// Don't emit light from backfacing materials
 		if (!hitCtx.backfacing)
 		{
 			material.Evaluate(hitCtx, albedo, L);
-		}		
-		const BxDF* bxdf = material.GetBoundBxDF();
-		if (!bxdf)
-		{
-			return L;
 		}
+	
+		const BxDF* bxdf = material.GetBoundBxDF();
+		if (!bxdf) { return L; }
+		
+		// Only shade back-facing surfaces if this BxDF supports it
+		if (hitCtx.backfacing && !bxdf->IsTwoSided()) { return kZero; }		
 
 		// If this isn't a probe ray, add in the cached radiance
 		if (!(incidentRay.flags & kRayLightProbe))
@@ -230,10 +229,12 @@ namespace Cuda
 		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
 
 		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
-		while (compressedRay.IsAlive())
-		{
-			Trace(compressedRay);
-		}
+		bool isNextRay;
+		do
+		{			
+			isNextRay = Trace(compressedRay);
+		} 
+		while (isNextRay);
 	}
 
 	__device__ __forceinline__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
@@ -244,8 +245,10 @@ namespace Cuda
 		Trace((*m_objects.cu_compressedRayBuffer)[rayIdx]);
 	}
 
-	__device__ void Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
+	__device__ bool Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
 	{
+		if (!compressedRay.IsAlive()) { return false; }
+		
 		__shared__ uchar deadRays[16 * 16];
 
 		Ray incidentRay(compressedRay);
@@ -277,8 +280,8 @@ namespace Cuda
 			{
 				L = hitCtx.hit.n * 0.5f + vec3(0.5f);
 			}
-			m_objects.cu_camera->Accumulate(renderCtx, L);
-			return;
+			m_objects.cu_camera->Accumulate(renderCtx, hitCtx, L);
+			return false;
 		}
 
 		if (!hitObject)
@@ -287,7 +290,7 @@ namespace Cuda
 			L = m_activeParams.ambientRadiance * compressedRay.weight;
 		}
 		else
-		{
+		{	
 			// Ray is a direct sample 
 			if (incidentRay.IsDirectSample())
 			{
@@ -338,7 +341,7 @@ namespace Cuda
 			compressedRay.Kill();
 		}
 
-		m_objects.cu_camera->Accumulate(renderCtx, L);
+		m_objects.cu_camera->Accumulate(renderCtx, hitCtx, L);
 
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 
@@ -357,6 +360,8 @@ namespace Cuda
 		{
 			(*m_objects.cu_blockRayOccupancy)[kBlockIdx * 8 + kThreadIdx] = deadRays[0];
 		}
+
+		return compressedRay.IsAlive();
 	}
 
 	__device__ void Device::WavefrontTracer::Reduce()
@@ -486,7 +491,7 @@ namespace Cuda
 		}
 		__syncthreads();
 
-		tracer->Trace(kKernelIdx);
+		tracer->TraceMultiple(kKernelIdx);
 	}
 
 	__global__ void KernelReduce(Device::WavefrontTracer* tracer)

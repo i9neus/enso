@@ -12,7 +12,8 @@ namespace Cuda
     {
         gridDensity = ivec3(5, 5, 5);
         shOrder = 1;
-        debugOutputPRef = false;
+        debugOutputPRef = false; 
+        debugOutputValidity = false;
         debugBakePRef = false;
     }
 
@@ -29,6 +30,7 @@ namespace Cuda
         node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
         node.AddValue("shOrder", shOrder);
         node.AddValue("debugOutputPRef", debugOutputPRef);
+        node.AddValue("debugOutputValidity", debugOutputValidity);
         node.AddValue("debugBakePRef", debugBakePRef);
     }
 
@@ -39,6 +41,7 @@ namespace Cuda
         node.GetVector("gridDensity", gridDensity, flags);
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("debugOutputPRef", debugOutputPRef, flags);
+        node.GetValue("debugOutputValidity", debugOutputValidity, flags);
         node.GetValue("debugBakePRef", debugBakePRef, flags);
 
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
@@ -79,6 +82,31 @@ namespace Cuda
         return object;
     }
 
+    __device__ vec3 Device::LightProbeGrid::InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const
+    {
+        vec3 vert[8];
+        for (int z = 0, idx = 0; z < 2; z++)
+        {
+            for (int y = 0; y < 2; y++)
+            {
+                for (int x = 0; x < 2; x++, idx++)
+                {
+                    const ivec3 vertCoord = gridIdx + ivec3(x, y, z);
+                    const int sampleIdx = coeffIdx + m_coefficientsPerProbe *
+                        (vertCoord.z * (m_params.gridDensity.x * m_params.gridDensity.y) + vertCoord.y * m_params.gridDensity.x + vertCoord.x);
+
+                    assert(sampleIdx < cu_data->Size());
+
+                    vert[idx] = (*cu_data)[sampleIdx];
+                }
+            }
+        }
+
+        // Trilinear interpolate
+        return mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
+                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z);
+    }
+
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
     {  
         CudaDeviceAssert(cu_data);
@@ -115,29 +143,16 @@ namespace Cuda
         // Accumulate each coefficient projected on the normal
         vec3 L(0.0f);
         const vec3& n = hitCtx.hit.n;
-        for (int coeffIdx = 0; coeffIdx < m_coefficientsPerProbe - 1; coeffIdx++)
+        if (m_params.debugOutputValidity)
         {
-            vec3 vert[8];
-            for (int z = 0, idx = 0; z < 2; z++)
+            return mix(kRed, kGreen, InterpolateCoefficient(gridIdx, m_coefficientsPerProbe - 1, delta).x);
+        }
+        else
+        {
+            for (int coeffIdx = 0; coeffIdx < m_coefficientsPerProbe - 1; coeffIdx++)
             {
-                for (int y = 0; y < 2; y++)
-                {
-                    for (int x = 0; x < 2; x++, idx++)
-                    {
-                        const ivec3 vertCoord = gridIdx + ivec3(x, y, z);
-                        const int sampleIdx = coeffIdx + m_coefficientsPerProbe * 
-                                (vertCoord.z * (m_params.gridDensity.x * m_params.gridDensity.y) + vertCoord.y * m_params.gridDensity.x + vertCoord.x);
-
-                        assert(sampleIdx < cu_data->Size());
-                        
-                        vert[idx] = (*cu_data)[sampleIdx];
-                    }
-                }
+                L += InterpolateCoefficient(gridIdx, coeffIdx, delta) * SH::Project(n, coeffIdx);
             }
-            
-            // Trilinear interpolate
-            L += mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
-                mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z) * SH::Project(n, coeffIdx);
         }
 
         return L;
@@ -169,7 +184,7 @@ namespace Cuda
     {
         m_params = params;
         const int numProbes = Volume(params.gridDensity);
-        const int numCoeffsPerProbe = SH::GetNumCoefficients(params.shOrder);
+        const int numCoeffsPerProbe = SH::GetNumCoefficients(params.shOrder) + 1;
         const int newSize = numProbes * numCoeffsPerProbe;
         int arraySize = m_data->Size();
 

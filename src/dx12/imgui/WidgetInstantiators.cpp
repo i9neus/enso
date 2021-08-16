@@ -212,7 +212,8 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::DragInt("Max samples", &p.maxSamples);
 
-    ImGui::Checkbox("Debug grid", &p.grid.debugOutputPRef); ImGui::SameLine();
+    ImGui::Checkbox("Debug PRef", &p.grid.debugOutputPRef); ImGui::SameLine();
+    ImGui::Checkbox("Debug validity", &p.grid.debugOutputValidity); ImGui::SameLine();
     ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
 }
 

@@ -239,7 +239,7 @@ namespace Cuda
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
-    __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const vec3& value)
+    __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value)
     {
         m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.emplacedRay.IsAlive());
     }

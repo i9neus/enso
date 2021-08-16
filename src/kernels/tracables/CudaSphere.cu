@@ -42,7 +42,7 @@ namespace Cuda
         hit.p = ray.HitPoint();
         hit.n = NormalToWorldSpace(hit.n, m_params.transform);
 
-        hitCtx.Set(hit, false, vec2(0.0f), 1e-5f);
+        hitCtx.Set(hit, length2(localRay.o) < 1.0f, vec2(0.0f), 1e-5f);
 
         return true;
     }

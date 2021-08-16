@@ -129,7 +129,7 @@ namespace Cuda
         ray.flags = kRayLightProbe | kRayIndirectSample;
     }
 
-    __device__ void Device::FisheyeCamera::Accumulate(RenderCtx& ctx, const vec3& value)
+    __device__ void Device::FisheyeCamera::Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value)
     {
         m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.emplacedRay.IsAlive());
     }

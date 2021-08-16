@@ -23,6 +23,7 @@ namespace Cuda
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final;
             __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const override final;
             __device__ virtual vec3 EvaluateCachedRadiance(const HitCtx& hitCtx) const override final;
+            __device__ virtual bool IsTwoSided() const override final { return false; }
 
             __device__ void Synchronise(Device::LightProbeGrid* lightProbeGrid) { cu_lightProbeGrid = lightProbeGrid; }
 
