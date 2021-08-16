@@ -115,7 +115,8 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::CreateRay(const uint& accumIdx, CompressedRay& ray, const int frameIdx) const
     {
         // Update the ray with the new properties and generate a random sampler from it
-        ray.accumIdx = accumIdx;
+        // FIXME: This is horribly inefficient. Make it better.
+        ray.accumIdx = accumIdx / m_params.coefficientsPerProbe;
         ray.sampleIdx++;
         ray.depth = 1;
         RNG rng(ray);
@@ -137,6 +138,7 @@ namespace Cuda
         GetProbeAttributesFromIndex(accumIdx, probeIdx, coeffIdx, gridIdx);
 
         // Project this direction into SH and pre-normalise
+        ray.accumIdx = accumIdx;
         ray.weight = kOne * SH::Project(ray.od.d, coeffIdx) * kFourPi;
         ray.depth = 2;
         ray.flags = kRayLightProbe | kRayIndirectSample;

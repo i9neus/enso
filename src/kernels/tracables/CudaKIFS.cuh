@@ -51,6 +51,7 @@ namespace Cuda
         }
         sdf;
 
+        TracableParams tracable;
         BidirectionalTransform transform;
     };
 

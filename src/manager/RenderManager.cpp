@@ -113,7 +113,8 @@ void RenderManager::Build()
 			Log::Indent indent("Creating scene objects...\n");
 
 			Cuda::RenderObjectFactory objectFactory(m_renderStream);
-			objectFactory.Instantiate(m_sceneJson, m_renderObjects);
+			objectFactory.InstantiateSceneObjects(m_sceneJson, m_renderObjects);
+			objectFactory.InstantiatePeripherals(m_sceneJson, m_renderObjects);
 		}
 		Log::Write("Successfully created %i objects\n", m_renderObjects->Size());
 

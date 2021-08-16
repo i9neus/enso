@@ -5,18 +5,22 @@
 #include <cuda_runtime.h>
 #include "generic/JsonUtils.h"
 #include "generic/FilesystemUtils.h"
+#include "generic/Log.h"
 
-/*#include <pxr/usd/usd/prim.h>
+#ifndef _DEBUG 
+
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/sdf/fileFormat.h>
-#include <pxr/base/plug/registry.h>*/
+#include <pxr/base/plug/registry.h>
 
-#include "generic/Log.h"
+#endif
 
 namespace USDIO
 {
+
 #ifndef _DEBUG   
     
     using namespace pxr;

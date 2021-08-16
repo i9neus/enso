@@ -16,7 +16,8 @@ namespace Cuda
     public:
         __host__ RenderObjectFactory(cudaStream_t stream);
 
-        __host__ void Instantiate(const ::Json::Node& json, AssetHandle<RenderObjectContainer>& renderObjects);
+        __host__ void InstantiateSceneObjects(const ::Json::Node& json, AssetHandle<RenderObjectContainer>& renderObjects);
+        __host__ void InstantiatePeripherals(const ::Json::Node& json, AssetHandle<RenderObjectContainer>& renderObjects);
 
     private:
         __host__ void InstantiateList(const ::Json::Node& node, const AssetType& assetType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects);

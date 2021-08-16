@@ -190,7 +190,8 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Focal plane", &p.focalPlane, 0.0f, 2.0f);
     ImGui::SliderFloat("Display gamma", &p.displayGamma, 0.01f, 5.0f);
 
-    ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
+    ImGui::SliderInt("Max path depth", &p.camera.overrides.maxDepth, -1, 20);
+    ImGui::DragFloat("Splat clamp", &p.camera.splatClamp, math::max(0.01f, p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 }
 
 void LightProbeCameraShelf::Construct()
@@ -206,7 +207,8 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::InputInt3("Grid density", &p.grid.gridDensity[0]);
     ConstructComboBox("SH order", {"L0", "L1", "L2"}, p.grid.shOrder);    
-    ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
+    ImGui::SliderInt("Max path depth", &p.camera.overrides.maxDepth, -1, 20);
+    ImGui::DragFloat("Splat clamp", &p.camera.splatClamp, math::max(0.01f, p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 
     ImGui::DragInt("Max samples", &p.maxSamples);
 

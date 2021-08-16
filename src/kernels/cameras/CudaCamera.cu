@@ -24,6 +24,7 @@ namespace Cuda
     {
         node.AddValue("live", isLive);
         node.AddValue("active", isActive);
+        node.AddValue("splatClamp", splatClamp);
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -33,6 +34,7 @@ namespace Cuda
     {
         node.GetValue("live", isLive, flags);
         node.GetValue("active", isActive, flags);
+        node.GetValue("splatClamp", splatClamp, flags);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)

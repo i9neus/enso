@@ -7,7 +7,8 @@
       "class": "wavefront",
       "maxDepth": 3,
       "ambientRadiance": [0.3, 0.3, 0.3],
-      "debugNormals": true,
+      "debugNormals": false,
+      "debugShaders": false,
       "importanceMode": "mis",
       "displayGamma": 1.7
     }    
@@ -17,6 +18,7 @@
     "camera_perspCam": 
     {
       "enabled": true,
+      "active": true,
       "live":  true,
       "class": "perspective",
       "pos": [ 0.0, 1.0, 1.5 ],
@@ -33,17 +35,19 @@
     "camera_probeCam": 
     {
       "enabled": true,
+      "active": true,
       "live":  false,
       "class": "lightprobe",
+      "maxSamples": 0,
       "transform": 
       {
         "pos": [ 0.0, 0.0, 0.0 ],
         "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
+        "sca": [ 0.99, 0.99, 0.99 ]
       },
-      "gridDensity": [5, 5, 5],
+      "gridDensity": [10, 10, 10],
       "shOrder": 1,
-      "splatClamp": 10.0,
+      "splatClamp": 100000.0,
       "overrides" :
       { 
         "maxDepth": 2
@@ -70,14 +74,15 @@
       "enabled": true,
       "class": "kifs",
       "material": "material_kifs",
-      "rotate": [ -1.222000002861023, -6.5929999351501469 ],
+      "rotate": [ 0.5, 0.5 ],
       "scale": [ 0.6600000262260437, 0.6800000071525574 ],
       "vertScale": 0.40400001406669619,
       "crustThickness": 0.3779999911785126,
       "numIterations": 6,
-      "faceMask": 4294967250,
+      "faceMask": 4294967295,
       "foldType": "cube",
       "primitiveType": "cube",
+      "excludeFromBake": true,
       "sdf": 
       {
         "maxSpecularIterations": 50,
@@ -87,7 +92,7 @@
         "rayIncrement": 0.9,
         "rayKickoff": 0.001,
         "failThreshold": 0.01,
-        "clipCameraRays": false,
+        "clipCameraRays": true,
         "clipShape": "cube"
       },
       "transform": 
@@ -95,6 +100,17 @@
         "pos": [ 0.0, 0.0, 0.0 ],
         "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
         "sca": [ 2.361999988555908, 2.361999988555908, 2.361999988555908 ]
+      }
+    },
+    "tracable_sphere": {
+      "enabled": false,
+      "excludeFromBake": true,
+      "class": "sphere",
+      "material": "material_kifs",
+      "transform": {
+        "pos": [ 0.0, 0.0, 0.0 ],
+        "rot": [ 0.0, 0.0, 0.0 ],
+        "sca": [ 0.2, 0.2, 0.2 ]
       }
     }
   },
@@ -118,9 +134,8 @@
     {
       "class": "kifsmaterial",
       "bxdf": "bxdf_diffuse",
-      "hue" : [0.0, 1.0],
-      "saturation" : [0.0, 1.0],
-      "lightness" : [0.0, 1.0],
+      "hslLower" : [0.0, 1.0, 0.5],
+      "hslUpper" : [0.1, 1.0, 0.5],
       "incandescence" : [0.0, 0.0, 0.0]
     }
   },

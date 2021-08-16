@@ -85,6 +85,7 @@ namespace Cuda
         sdfNode.AddValue("clipCameraRays", sdf.clipCameraRays);
         sdfNode.AddEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape);
 
+        tracable.ToJson(node);
         transform.ToJson(node);
     }
 
@@ -114,6 +115,7 @@ namespace Cuda
             sdfNode.GetEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape, flags);
         }
 
+        tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
     }
 
@@ -331,6 +333,8 @@ namespace Cuda
 
     __device__  bool Device::KIFS::Intersect(Ray& globalRay, HitCtx& hitCtx) const
     {
+        if (globalRay.flags & kRayLightProbe && m_params.tracable.excludeFromBake) { return false; }
+        
         RayBasic localRay = RayToObjectSpace(globalRay.od, m_params.transform);
 
         float t = Intersector::RayBox(localRay, 1.0f);

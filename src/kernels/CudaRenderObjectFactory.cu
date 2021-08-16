@@ -16,6 +16,7 @@
 
 #include "materials/CudaSimpleMaterial.cuh"
 #include "materials/CudaCornellMaterial.cuh"
+#include "materials/CudaKIFSMaterial.cuh"
 
 #include "cameras/CudaPerspectiveCamera.cuh"
 #include "cameras/CudaLightProbeCamera.cuh"
@@ -39,6 +40,7 @@ namespace Cuda
 
         AddInstantiator(Host::SimpleMaterial::GetAssetTypeString(), InstantiatorLambda(Host::SimpleMaterial::Instantiate));
         AddInstantiator(Host::CornellMaterial::GetAssetTypeString(), InstantiatorLambda(Host::CornellMaterial::Instantiate));
+        AddInstantiator(Host::KIFSMaterial::GetAssetTypeString(), InstantiatorLambda(Host::KIFSMaterial::Instantiate));
 
         AddInstantiator(Host::LambertBRDF::GetAssetTypeString(), InstantiatorLambda(Host::LambertBRDF::Instantiate));
 

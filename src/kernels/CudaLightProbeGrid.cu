@@ -53,7 +53,7 @@ namespace Cuda
     __device__ void Device::LightProbeGrid::Synchronise(const LightProbeGridParams& params) 
     { 
         m_params = params; 
-        m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder);
+        m_coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder) + 1;
         m_numProbes = Volume(m_params.gridDensity);
     }
 
@@ -115,7 +115,7 @@ namespace Cuda
         // Accumulate each coefficient projected on the normal
         vec3 L(0.0f);
         const vec3& n = hitCtx.hit.n;
-        for (int coeffIdx = 0; coeffIdx < m_coefficientsPerProbe; coeffIdx++)
+        for (int coeffIdx = 0; coeffIdx < m_coefficientsPerProbe - 1; coeffIdx++)
         {
             vec3 vert[8];
             for (int z = 0, idx = 0; z < 2; z++)
@@ -126,7 +126,9 @@ namespace Cuda
                     {
                         const ivec3 vertCoord = gridIdx + ivec3(x, y, z);
                         const int sampleIdx = coeffIdx + m_coefficientsPerProbe * 
-                                (vertCoord.z * (m_params.gridDensity.x * m_params.gridDensity.y) + vertCoord.y * m_params.gridDensity.x + vertCoord.x);       
+                                (vertCoord.z * (m_params.gridDensity.x * m_params.gridDensity.y) + vertCoord.y * m_params.gridDensity.x + vertCoord.x);
+
+                        assert(sampleIdx < cu_data->Size());
                         
                         vert[idx] = (*cu_data)[sampleIdx];
                     }
