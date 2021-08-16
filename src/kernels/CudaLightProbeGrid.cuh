@@ -36,7 +36,12 @@ namespace Cuda
             __device__ void Synchronise(Device::Array<vec3>* data) { cu_data = data; }
 
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
+            __device__ vec3 GetSHCoefficient(const int probeIdx, const int coeffIdx) const;
             __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
+            __device__ __forceinline__ vec3& operator[](const int idx) const 
+            {                         
+                return (*cu_data)[idx]; 
+            }
 
         private:
             __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
@@ -60,6 +65,7 @@ namespace Cuda
             __host__ void Prepare(const LightProbeGridParams& params);
             __host__  virtual void OnDestroyAsset() override final;
             __host__ Device::LightProbeGrid* GetDeviceInstance() { return cu_deviceData; }
+            __host__ void IsConverged() const;
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;

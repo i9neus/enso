@@ -36,8 +36,6 @@ namespace Cuda
         camera.FromJson(node, flags);
 
         node.GetValue("maxSamples", maxSamples, flags);        
-
-        if (maxSamples <= 0) { maxSamples = std::numeric_limits<int>::max(); }
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -45,6 +43,8 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::Synchronise(const LightProbeCameraParams& params)
     {
         m_params = params;
+        if (m_params.maxSamples == 0) { m_params.maxSamples = INT_MAX; }
+
         Prepare();
     }
     __device__ void Device::LightProbeCamera::Synchronise(const Objects& objects)
@@ -177,20 +177,23 @@ namespace Cuda
         }
     }
     __device__ void Device::LightProbeCamera::ReduceAccumulatedSample(vec4& dest, const vec4& source)
-    {
-        if (int(dest.w) >= m_params.maxSamples) { return; }
+    {              
+        if (int(dest.w) >= m_params.maxSamples - 1) 
+        {             
+            return;
+        }
         
-        if (dest.w + source.w < m_params.maxSamples)
-        {
+        if (int(dest.w + source.w) < m_params.maxSamples)
+        {           
             dest += source;
             return;
         }
 
-        dest += source * dest.w / (m_params.maxSamples - source.w);
+        dest += source * (m_params.maxSamples - dest.w) / source.w;
     }
 
     __device__ void Device::LightProbeCamera::ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange)
-    {
+    {         
         CudaDeviceAssert(m_objects.cu_accumBuffer);
         CudaDeviceAssert(m_objects.cu_reduceBuffer);
         CudaDeviceAssert(m_objects.cu_probeGrid);
@@ -202,6 +205,9 @@ namespace Cuda
         auto& accumBuffer = *m_objects.cu_accumBuffer;
         auto& reduceBuffer = *m_objects.cu_reduceBuffer;
         const int subsampleIdx = kKernelIdx % m_params.bucketsPerCoefficient;
+
+        const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
+        const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
 
         for (uint iterationSize = batchRange[0] / 2; iterationSize > batchRange[1] / 2; iterationSize >>= 1)
         {
@@ -217,13 +223,18 @@ namespace Cuda
                     if (subsampleIdx + iterationSize < m_params.bucketsPerCoefficient)
                     {
                         CudaDeviceAssert(kKernelIdx + iterationSize < 512 * 512);
+                        //if (probeIdx == 0 && coeffIdx == 0) { printf("%i: %f + %f = %f\n", iterationSize, texel.w, accumBuffer[kKernelIdx + iterationSize].w, texel.w + accumBuffer[kKernelIdx + iterationSize].w); }
                         ReduceAccumulatedSample(texel, accumBuffer[kKernelIdx + iterationSize]);
+                        
                     }
+                    //else
+                    //    if (probeIdx == 0 && coeffIdx == 0) { printf("%i: %f\n", iterationSize, texel.w); }
                 }
                 else
                 {
                     CudaDeviceAssert(kKernelIdx + iterationSize < 512 * 512);
                     CudaDeviceAssert(subsampleIdx + iterationSize < m_params.bucketsPerCoefficient);
+                    //if (probeIdx == 0 && coeffIdx == 0) { printf("%i: %f + %f = %f\n", iterationSize, reduceBuffer[kKernelIdx].w, reduceBuffer[kKernelIdx + iterationSize].w, reduceBuffer[kKernelIdx].w + reduceBuffer[kKernelIdx + iterationSize].w); }
                     ReduceAccumulatedSample(reduceBuffer[kKernelIdx], reduceBuffer[kKernelIdx + iterationSize]);
                 }
             }
@@ -236,15 +247,58 @@ namespace Cuda
         } 
 
         // After the last operation, cache the accumulated value in the probe grid
-        if (subsampleIdx == 0 && batchRange[1] == 2)
+        if (subsampleIdx == 0 && batchRange[0] == 2)
         {
-            auto& texel = reduceBuffer[kKernelIdx];
-            texel /= max(1.0f, texel.w);
+            auto& texel = reduceBuffer[kKernelIdx];           
 
-            const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
-            const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
+            //const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
+            //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
+            if (coeffIdx == m_params.coefficientsPerProbe - 1)
+            {
+               // Store the validity value and the sample count in the final coefficient
+               texel.x /= max(1.0f, texel.w);
+               texel.y = texel.w;
+            }
+            else
+            {
+                texel /= max(1.0f, texel.w);
+            }
+
             m_objects.cu_probeGrid->SetSHCoefficient(probeIdx, coeffIdx, texel.xyz);
         }
+    }
+
+    __device__ vec2 Device::LightProbeCamera::GetProbeMinMaxSampleCount() const
+    {
+        __shared__ vec2 localMinMax[256];
+
+        if (kKernelIdx == 0)
+        {
+            for (int i = 0; i < 256; i++) { localMinMax[i] = vec2(kFltMax, 0.0f); }
+        }
+
+        __syncthreads();
+
+        const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
+        const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
+        for (int i = startIdx; i <= endIdx; i++)
+        {
+            const float coeff = m_objects.cu_probeGrid->GetSHCoefficient(startIdx, m_params.coefficientsPerProbe - 1).y;
+            localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeff), max(localMinMax[kKernelIdx].y, coeff));
+        }        
+
+        __syncthreads();
+
+        vec2 globalMinMax = localMinMax[0];
+        if (kKernelIdx == 0)
+        {
+            for (int i = 1; i < 256; i++) 
+            { 
+                globalMinMax = vec2(min(localMinMax[kKernelIdx].x, globalMinMax.x), max(localMinMax[kKernelIdx].y, globalMinMax.y));
+            }
+        }
+
+        return globalMinMax;
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
@@ -347,10 +401,10 @@ namespace Cuda
         // Number of sample buckets per probe
         m_params.bucketsPerProbe = m_hostAccumBuffer->Size() / m_params.numProbes;
         // Number of sample buckets per SH coefficient per probe
-        m_params.bucketsPerCoefficient = NearestPow2Floor(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
+        m_params.bucketsPerCoefficient = /*NearestPow2Floor*/(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
         // The maximum number of samples per bucket based on the number of buckets per coefficient
-        m_params.maxSamplesPerBucket = (m_params.maxSamples == std::numeric_limits<int>::max()) ? 
-                                        std::numeric_limits<int>::max() : int(std::ceil(float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient)));
+        m_params.maxSamplesPerBucket = (m_params.maxSamples == 0) ? 
+                                        std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));
 
         // Adjust values so everything packs correctly
         m_params.bucketsPerProbe = m_params.bucketsPerCoefficient * m_params.coefficientsPerProbe;
@@ -365,6 +419,7 @@ namespace Cuda
         Log::Debug("bucketsPerCoefficient: %i\n", m_params.bucketsPerCoefficient);
         Log::Debug("bucketsPerProbe: %i\n", m_params.bucketsPerProbe);
         Log::Debug("totalBuckets: %i\n", m_params.totalBuckets);
+        Log::Debug("maxSamplesPerBucket: %i\n", m_params.maxSamplesPerBucket);
         Log::Debug("reduceBatchSizePow2: %i\n", reduceBatchSizePow2);
 
         // Sync everything with the device
@@ -408,7 +463,14 @@ namespace Cuda
 
     __global__ void KernelReduceAccumulationBuffer(Device::LightProbeCamera* camera, const uint reduceBatchSize, const uvec2 batchRange)
     {
+        //if (kKernelIdx == 0) printf("%u [%u, %u]\n", reduceBatchSize, batchRange.x, batchRange.y);
+        
         camera->ReduceAccumulationBuffer(reduceBatchSize, batchRange);
+    }
+
+    __global__ void KernelGetProbeMinMaxSampleCount(Device::LightProbeCamera* camera, vec2* minSampleCount)
+    {
+        *minSampleCount = camera->GetProbeMinMaxSampleCount();
     }
 
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
@@ -418,13 +480,24 @@ namespace Cuda
         
         // Reduce until the batch range is equal to the size of the block
         uint batchSize = reduceBatchSizePow2;
-        while (batchSize > 16 * 16)
+        while (batchSize > 1)
         {
             KernelReduceAccumulationBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
             batchSize >>= 1;
         }
         // Reduce the block in a single operation
-        KernelReduceAccumulationBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
+        //KernelReduceAccumulationBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
+         
+        vec2* cu_minSampleCount;
+        vec2 minSampleCount;
+        IsOk(cudaMalloc(&cu_minSampleCount, sizeof(vec2)));
+
+        KernelGetProbeMinMaxSampleCount << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_minSampleCount);
+        IsOk(cudaStreamSynchronize(m_hostStream));
+        
+        IsOk(cudaMemcpy(&minSampleCount, cu_minSampleCount, sizeof(vec2), cudaMemcpyDeviceToHost));
+        IsOk(cudaFree(cu_minSampleCount));
+        Log::Debug("Min: %f, Max: %i\n", minSampleCount.x, minSampleCount.y);
 
         IsOk(cudaStreamSynchronize(m_hostStream));
     }

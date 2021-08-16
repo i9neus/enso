@@ -32,8 +32,9 @@
         "rot": [ 0.0, 0.0, 0.0 ],
         "sca": [ 0.99, 0.99, 0.99 ]
       },
-      "gridDensity": [ 5, 5, 5 ],
+      "gridDensity": [ 10, 10, 10 ],
       "shOrder": 1,
+      "maxSamples": 865,
       "overrides": {
         "maxDepth": 3
       }

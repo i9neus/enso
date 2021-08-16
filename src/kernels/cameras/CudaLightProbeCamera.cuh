@@ -56,6 +56,7 @@ namespace Cuda
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__device__ void ReduceAccumulationBuffer(const uint batchSizeBegin, const uvec2 batchRange);
+			__device__ vec2 GetProbeMinMaxSampleCount() const;
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
 			__device__ void Synchronise(const Objects& objects);

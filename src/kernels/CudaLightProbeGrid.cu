@@ -72,6 +72,11 @@ namespace Cuda
         (*cu_data)[idx] = L;
     }
 
+    __device__ vec3 Device::LightProbeGrid::GetSHCoefficient(const int probeIdx, const int coeffIdx) const
+    {
+        return (*cu_data)[probeIdx * m_coefficientsPerProbe + coeffIdx];
+    }
+
     __device__ inline HitPoint HitToObjectSpace(const HitPoint& world, const BidirectionalTransform& bdt)
     {
         HitPoint object;
