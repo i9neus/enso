@@ -36,19 +36,19 @@ namespace Cuda
 		ambientRadiance(0.0f),
 		debugNormals(false),
 		debugShaders(false),
-		importanceMode(kImportanceMIS)
+		importanceMode(kImportanceMIS),
+		traceMode(kTracePath)
 	{
 	}
 
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
-		node.AddValue("maxDepth", maxDepth);
+		node.AddValue("maxDepth", maxDepth); 
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
 		node.AddValue("debugNormals", debugNormals);
 		node.AddValue("debugShaders", debugShaders);
-
-		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
-		node.AddEnumeratedParameter("importanceMode", importanceModeIds, importanceMode);
+		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
+		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -57,9 +57,7 @@ namespace Cuda
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("debugNormals", debugNormals, flags);
 		node.GetValue("debugShaders", debugShaders, flags);
-
-		const std::vector<std::string> importanceModeIds({ "mis", "light", "bxdf" });
-		node.GetEnumeratedParameter("importanceMode", importanceModeIds, importanceMode, flags);
+		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 	}
 
 	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
@@ -228,6 +226,9 @@ namespace Cuda
 		assert(m_objects.cu_compressedRayBuffer);
 		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
 
+		if (kThreadIdx == 0) { PreBlock(); }
+		__syncthreads();
+
 		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
 		bool isNextRay;
 		do
@@ -241,6 +242,9 @@ namespace Cuda
 	{
 		assert(m_objects.cu_compressedRayBuffer);
 		if (rayIdx >= m_objects.cu_compressedRayBuffer->Size()) { return; }
+
+		if (kThreadIdx == 0) { PreBlock(); }
+		__syncthreads();
 
 		Trace((*m_objects.cu_compressedRayBuffer)[rayIdx]);
 	}
@@ -472,7 +476,8 @@ namespace Cuda
 	{
 		Host::RenderObject::UpdateDAGPath(parentNode);
 
-		SynchroniseObjects(cu_deviceData, WavefrontTracerParams(parentNode, flags));
+		m_params.FromJson(parentNode, flags);
+		SynchroniseObjects(cu_deviceData, m_params);
 
 		parentNode.GetValue("camera", m_cameraId, flags);
 		m_isDirty = true;
@@ -484,13 +489,12 @@ namespace Cuda
 	}
 
 	__global__ void KernelTrace(Device::WavefrontTracer* tracer)
-	{
-		if (kThreadIdx == 0)
-		{
-			tracer->PreBlock();
-		}
-		__syncthreads();
+	{	
+		tracer->Trace(kKernelIdx);
+	}
 
+	__global__ void KernelTraceMultiple(Device::WavefrontTracer* tracer)
+	{
 		tracer->TraceMultiple(kKernelIdx);
 	}
 
@@ -516,7 +520,15 @@ namespace Cuda
 	{
 		if (!m_isInitialised || !m_hostCameraAsset) { return; }		
 
-		KernelTrace << <  m_hostCompressedRayBuffer->GetGridSize(), m_hostCompressedRayBuffer->GetBlockSize(), 0, m_hostStream >> > (cu_deviceData);
+		switch (m_params.traceMode)
+		{
+		case kTraceWavefront:
+			KernelTrace << <  m_hostCompressedRayBuffer->GetGridSize(), m_hostCompressedRayBuffer->GetBlockSize(), 0, m_hostStream >> > (cu_deviceData);
+			break;
+		case kTracePath:
+			KernelTraceMultiple << <  m_hostCompressedRayBuffer->GetGridSize(), m_hostCompressedRayBuffer->GetBlockSize(), 0, m_hostStream >> > (cu_deviceData);
+			break;
+		}
 
 		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}

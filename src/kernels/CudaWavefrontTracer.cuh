@@ -19,6 +19,7 @@ namespace Cuda
 
 	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
 	enum ImportanceMode : uchar { kImportanceMIS, kImportanceLight, kImportanceBxDF };
+	enum TraceMode : int { kTraceWavefront, kTracePath };
 
 	struct WavefrontTracerParams
 	{
@@ -30,11 +31,12 @@ namespace Cuda
 
 		bool operator==(const WavefrontTracerParams&) const;
 
-		int maxDepth;
-		bool debugNormals;
-		bool debugShaders;
-		vec3 ambientRadiance;
-		int importanceMode;
+		int			maxDepth;
+		bool		debugNormals;
+		bool		debugShaders;
+		vec3		ambientRadiance;
+		int			importanceMode;
+		int			traceMode;
 	};
 	
 	namespace Device
@@ -115,6 +117,8 @@ namespace Cuda
 			AssetHandle<Host::Camera>							m_hostCameraAsset;
 			AssetHandle<Host::CompressedRayBuffer>				m_hostCompressedRayBuffer;
 			AssetHandle<Host::ImageRGBW>						m_hostAccumBuffer;
+
+			WavefrontTracerParams								m_params;
 
 			bool					m_isDirty;
 			bool					m_isInitialised;
