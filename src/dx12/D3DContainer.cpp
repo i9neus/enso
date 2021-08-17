@@ -305,10 +305,34 @@ void D3DContainer::LoadAssets()
 #else
 		UINT compileFlags = 0;
 #endif
-		std::wstring filePath = L"C:/projects/probegen/src/dx12/hlsl/helloshaders.hlsl";
-		LPCWSTR result = filePath.c_str();
-		ThrowIfFailed(D3DCompileFromFile(result, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(result, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+
+		static const char* shadersHLSL =
+			"struct PSInput\
+            {\
+                float4 position : SV_POSITION;\
+                float2 uv : TEXCOORD;\
+            };\
+            \
+            Texture2D g_texture : register(t0);\
+            SamplerState g_sampler : register(s0);\
+            \
+            PSInput VSMain(float4 position : POSITION, float4 uv : TEXCOORD)\
+            {\
+                PSInput result;\
+                result.position = position;\
+                result.uv = uv;\
+                return result;\
+            }\
+            \
+            float4 PSMain(PSInput input) : SV_TARGET\
+            {\
+                float4 tx = g_texture.Sample(g_sampler, input.uv);\
+                tx.w = 1.0;\
+                return tx;\
+            }";
+
+		ThrowIfFailed(D3DCompile(shadersHLSL, strlen(shadersHLSL), nullptr, nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+		ThrowIfFailed(D3DCompile(shadersHLSL, strlen(shadersHLSL), nullptr, nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
