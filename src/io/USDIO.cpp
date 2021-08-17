@@ -11,6 +11,9 @@
 
 #ifndef _DEBUG 
 
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/vt/array.h>
+
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
@@ -32,10 +35,10 @@ namespace USDIO
         // Not specified? Look in the module directory.
         if (usdPluginDirectory.empty()) { usdPluginDirectory = GetModuleDirectory(); }
         
-        auto& registry = PlugRegistry::GetInstance();
+        auto& registry = pxr::PlugRegistry::GetInstance();
         auto plugs = registry.RegisterPlugins(usdPluginDirectory);
 
-        auto extensions = SdfFileFormat::FindAllFileFormatExtensions();
+        auto extensions = pxr::SdfFileFormat::FindAllFileFormatExtensions();
         AssertMsg(!extensions.empty(), "Unable to initialise USD: could not find any plugins");
 
         Log::Debug("Found %i USD extensions:\n", extensions.size());
@@ -43,44 +46,86 @@ namespace USDIO
         {
             Log::Debug(" - .%s\n", ex);
         }
-    }   
+    }
 
-    void WriteGridDataUSD(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& grid)
+    template<typename Type>
+    void SetUSDAttribute(pxr::UsdPrim& prim, const std::string& id, const Type& data)
+    {
+        pxr::UsdAttribute attr = prim.GetAttribute(pxr::TfToken(id));
+        if (!attr) { Log::Error("Internal error: USD attribute '%s' not found.\n'", id); }
+
+        attr.Set(data);
+    }
+
+    void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams)
     {
         // Load the root config
         Json::Document configJson;
         configJson.Load("config.json");
 
-        Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredAssert);
+        Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredWarn);
+        if (!usdJson) { Log::Error("Error\n");  return; }
 
         std::string usdTemplatePath;
-        std::string usdExportDirectory;
-        usdJson.GetValue("templatePath", usdTemplatePath, Json::kRequiredAssert);
-        usdJson.GetValue("exportDirectory", usdExportDirectory, Json::kRequiredAssert);
+        std::string usdExportPath;
+        std::string usdDescription;
+        if (!usdJson.GetValue("templatePath", usdTemplatePath, Json::kRequiredWarn) ||
+            !usdJson.GetValue("exportPath", usdExportPath, Json::kRequiredWarn)) { return; }
+
+        usdJson.GetValue("description", usdDescription, Json::kSilent);
 
         const std::string layerTemplateStr = LoadTextFile(usdTemplatePath);
         Assert(!layerTemplateStr.empty());
 
-        const std::string usdExportPath = SlashifyPath(usdExportDirectory) + "test.usda";
+        //const std::string& usdExportPath = grid->GetUSDExportPath();
         
         InitialiseUSD(usdJson);       
         
-        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        pxr::UsdStageRefPtr stage = pxr::UsdStage::CreateInMemory();
 
         Assert(stage);
         auto root = stage->GetRootLayer();
         Assert(root);
         root->ImportFromString(layerTemplateStr);
 
-        const SdfPath path("/ProbeVolume");
-        UsdPrim prim = stage->GetPrimAtPath(path);  
+        const pxr::SdfPath path("/ProbeVolume");
+        pxr::UsdPrim prim = stage->GetPrimAtPath(path);
         Assert(prim);
+
+        const int numSamples = int(gridData[gridParams.coefficientsPerProbe - 1].y + 0.5f);
         
-        UsdAttribute attr = prim.GetAttribute(TfToken("description"));
-        attr.Set("hello");
+        SetUSDAttribute(prim, "description", usdDescription);
+        SetUSDAttribute(prim, "sampleNum", numSamples);
+        SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale.x, gridParams.transform.scale.y, gridParams.transform.scale.z));
+        SetUSDAttribute(prim, "resolution", pxr::GfVec3f(gridParams.gridDensity.x, gridParams.gridDensity.y, gridParams.gridDensity.z));
+
+        pxr::VtFloatArray coeffs(gridParams.numProbes * (gridParams.coefficientsPerProbe - 1) * 3);
+        pxr::VtFloatArray dataValidity(gridParams.numProbes);
+
+        for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
+        {            
+            // Set the SH coefficients
+            for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx)
+            {
+                const int destIdx = probeIdx * (gridParams.coefficientsPerProbe - 1) + coeffIdx;
+                const int sourceIdx = probeIdx * gridParams.coefficientsPerProbe + coeffIdx;
+                coeffs[destIdx * 3] = gridData[sourceIdx].x;
+                coeffs[destIdx * 3 + 1] = gridData[sourceIdx].y;
+                coeffs[destIdx * 3 + 2] = gridData[sourceIdx].z;
+            }
+
+            // Set the validity coefficients
+            const int sourceIdx = probeIdx * gridParams.coefficientsPerProbe + (gridParams.coefficientsPerProbe - 1);
+            dataValidity[probeIdx] = gridData[sourceIdx].x;
+        }
+
+        SetUSDAttribute(prim, "coefficients", coeffs);
+        SetUSDAttribute(prim, "dataValidity", dataValidity);
 
         stage->SetDefaultPrim(prim);
         stage->Export(usdExportPath);
+
+        Log::Write("Exported USD file to '%s'\n", usdExportPath);
     }
 
     void TestUSD()
@@ -92,7 +137,7 @@ namespace USDIO
 
     #define USD_DISABLED_FUNCTION(func) func { Log::Debug("***** Warning: USD exporting is disabled in debug mode. ****\n"); } 
 
-    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>& rawData))
+    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&))
     USD_DISABLED_FUNCTION(void TestUSD())   
 
 #endif
@@ -149,6 +194,8 @@ namespace USDIO
                 swizzledData[swizzledProbeIdx * gridParams.coefficientsPerProbe + coeffIdx] = rawData[probeIdx * gridParams.coefficientsPerProbe + coeffIdx];
             }
         }
+
+        WriteGridDataUSD(swizzledData, gridParams);
 
         /*Log::Debug("%i elements\n", rawData.size());
         for (int i = 0; i < gridParams.numProbes; i++)

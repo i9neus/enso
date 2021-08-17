@@ -4,7 +4,7 @@
   {
     "templatePath": "c:/projects/probegen/scenes/template.usda",
     "pluginDirectory":  "",
-    "exportDirectory": "c:/projects/probegen/data/usd/"
+    "exportPath": "c:/projects/probegen/data/usd/test.usda"
   },
   "generator":
    {

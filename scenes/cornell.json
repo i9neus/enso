@@ -23,7 +23,8 @@
         "maxDepth": 2
       }
     },
-    "camera_probeCam": {
+    "camera_probeCam": 
+    {
       "enabled": true,
       "live": false,
       "class": "lightprobe",      
@@ -40,10 +41,12 @@
         "axisSwizzle": "xyz",
         "invertX": false,
         "invertY": false,
-        "invertZ": false
+        "invertZ": false,
+        "usdExportPath": ""
       },
-      "maxSamples": 865,
-      "overrides": {
+      "maxSamples": 1024,
+      "overrides": 
+      {
         "maxDepth": 3
       }
     }
