@@ -80,17 +80,20 @@ namespace Cuda
 
             __host__ void Prepare(const LightProbeGridParams& params);
             __host__  virtual void OnDestroyAsset() override final;
+            __host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
             __host__ Device::LightProbeGrid* GetDeviceInstance() { return cu_deviceData; }
             __host__ void IsConverged() const;
             __host__ bool IsValid() const;
             __host__ void GetRawData(std::vector<vec3>& data) const;
             __host__ const LightProbeGridParams& GetParams() const { return m_params; }
+            __host__ const std::string& GetUSDExportPath() const { return m_usdExportPath; }
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;
 
             AssetHandle<Host::Array<vec3>>  m_data;
             LightProbeGridParams            m_params;
+            std::string                     m_usdExportPath;
         };
     }
 }

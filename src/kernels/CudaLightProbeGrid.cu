@@ -61,7 +61,7 @@ namespace Cuda
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
         shOrder = clamp(shOrder, 0, 2);
         axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
-    }
+    }        
 
     __host__ __device__ Device::LightProbeGrid::LightProbeGrid()
     {
@@ -217,6 +217,16 @@ namespace Cuda
         }        
 
         Cuda::SynchroniseObjects(cu_deviceData, m_params);
+    }
+
+    __host__ void Host::LightProbeGrid::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        std::string usdExportPath;
+        if (node.GetValue("usdExportPath", usdExportPath, ::Json::kSilent))
+        {
+            m_usdExportPath = usdExportPath;
+            Log::Debug("USD export path: %s\n", usdExportPath);
+        }
     }
 
     __host__ void Host::LightProbeGrid::GetRawData(std::vector<vec3>& rawData) const

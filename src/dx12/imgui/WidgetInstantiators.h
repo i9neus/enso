@@ -79,7 +79,7 @@ public:
 
     bool IsDirty() const
     {
-        static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
+        //static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
 
         for (int i = 0; i < sizeof(ParamsType); i++)
         {
@@ -169,7 +169,7 @@ public:
     virtual void Construct() override final;
 };
 
-// Quad light
+// Quad 
 class QuadLightShelf : public IMGUIShelf<Cuda::Host::QuadLight, Cuda::QuadLightParams >
 {
 public:
@@ -235,8 +235,35 @@ public:
     virtual void Construct() override final;
 };
 
+struct LightProbeCameraParamsUI : public Cuda::LightProbeCameraParams
+{
+    LightProbeCameraParamsUI() : LightProbeCameraParams() 
+    { 
+        hasPathChanged = false;
+        usdExportPath = nullptr;
+    }
+    LightProbeCameraParamsUI(const Json::Node& node) : LightProbeCameraParamsUI() 
+    { 
+        LightProbeCameraParams::LightProbeCameraParams(node);
+    }
+
+    void ToJson(Json::Node& node) const;
+    void FromJson(const Json::Node& node, const int flags);
+
+    /*LightProbeCameraParamsUI& operator=(const LightProbeCameraParamsUI& other)
+    {
+        static_cast<LightProbeCameraParams&>(*this) = static_cast<const LightProbeCameraParams&>(other);
+
+        usdExportPath = other.usdExportPath;
+        hasPathChanged = other.hasPathChanged;
+    }*/
+
+    std::string*         usdExportPath;
+    bool                 hasPathChanged;
+};
+
 // Light probe camera
-class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
+class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, LightProbeCameraParamsUI>
 {
 public:
     LightProbeCameraShelf(const Json::Node& json);
@@ -247,7 +274,9 @@ public:
     virtual void Reset() override final;
 
 private:
-    std::vector<std::string> m_swizzleLabels;
+    std::vector<std::string>    m_swizzleLabels;
+    std::vector<char>           m_pathData;
+    std::string                 m_usdExportPath[2];
 };
 
 // Fisheye camera

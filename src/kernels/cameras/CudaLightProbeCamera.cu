@@ -45,7 +45,7 @@ namespace Cuda
 
         node.GetValue("maxSamples", maxSamples, flags);
         node.GetValue("doExport", doExport, flags);
-    }   
+    }      
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
 
@@ -377,6 +377,8 @@ namespace Cuda
         
         m_params.FromJson(parentNode, flags);
 
+        parentNode.GetValue("usdExportPath", m_usdExportPath, flags);
+
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
         const int maxNumProbes = 512 * 512;
         if (Volume(m_params.grid.gridDensity) > maxNumProbes)
@@ -390,6 +392,11 @@ namespace Cuda
         }
 
         // Prepare the light probe grid with the new parameters
+        /*::Json::Node gridNode = parentNode.GetChildObject("grid", flags);
+        if (gridNode)
+        {
+            m_hostLightProbeGrid->FromJson(gridNode, flags);
+        }*/
         m_hostLightProbeGrid->Prepare(m_params.grid);
 
         // Number of coefficients per probe
@@ -495,7 +502,7 @@ namespace Cuda
 
         try
         {
-            USDIO::ExportLightProbeGrid(m_hostLightProbeGrid);
+            USDIO::ExportLightProbeGrid(m_hostLightProbeGrid, m_usdExportPath);
         }
         catch (const std::runtime_error& err)
         {

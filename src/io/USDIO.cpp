@@ -57,7 +57,7 @@ namespace USDIO
         attr.Set(data);
     }
 
-    void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams)
+    void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, std::string usdExportPath)
     {
         // Load the root config
         Json::Document configJson;
@@ -67,10 +67,13 @@ namespace USDIO
         if (!usdJson) { Log::Error("Error\n");  return; }
 
         std::string usdTemplatePath;
-        std::string usdExportPath;
         std::string usdDescription;
-        if (!usdJson.GetValue("templatePath", usdTemplatePath, Json::kRequiredWarn) ||
-            !usdJson.GetValue("exportPath", usdExportPath, Json::kRequiredWarn)) { return; }
+        if (!usdJson.GetValue("templatePath", usdTemplatePath, Json::kRequiredWarn)) { return; }
+
+        if(usdExportPath.empty())
+        {
+            if (!usdJson.GetValue("exportPath", usdExportPath, Json::kRequiredWarn)) { return; }
+        }
 
         usdJson.GetValue("description", usdDescription, Json::kSilent);
 
@@ -128,11 +131,6 @@ namespace USDIO
         Log::Write("Exported USD file to '%s'\n", usdExportPath);
     }
 
-    void TestUSD()
-    {
-        ExportLightProbeGrid(Cuda::AssetHandle<Cuda::Host::LightProbeGrid>());
-    }
-
 #else 
 
     #define USD_DISABLED_FUNCTION(func) func { Log::Debug("***** Warning: USD exporting is disabled in debug mode. ****\n"); } 
@@ -142,7 +140,7 @@ namespace USDIO
 
 #endif
 
-    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset)
+    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset, const std::string& usdExportPath)
     {
         Assert(gridAsset);         
         
@@ -195,7 +193,7 @@ namespace USDIO
             }
         }
 
-        WriteGridDataUSD(swizzledData, gridParams);
+        WriteGridDataUSD(swizzledData, gridParams, usdExportPath);
 
         /*Log::Debug("%i elements\n", rawData.size());
         for (int i = 0; i < gridParams.numProbes; i++)

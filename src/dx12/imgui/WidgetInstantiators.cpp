@@ -197,7 +197,21 @@ void PerspectiveCameraShelf::Construct()
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
     : IMGUIShelf(json)
 {
-    m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
+    m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };  
+    m_pathData.resize(2048);
+    m_pathData[0] = '\0';
+}
+
+void LightProbeCameraParamsUI::ToJson(Json::Node& node) const
+{
+    LightProbeCameraParams::ToJson(node);
+    node.AddValue("usdExportPath", *usdExportPath);
+}
+
+void LightProbeCameraParamsUI::FromJson(const Json::Node& node, const int flags)
+{
+    LightProbeCameraParams::FromJson(node, flags);
+    node.GetValue("usdExportPath", *usdExportPath, flags);
 }
 
 void LightProbeCameraShelf::Construct()
@@ -223,19 +237,30 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
 
     if (ImGui::Button("Export")) { p.doExport = true; }
-            
-    ConstructComboBox("Swizzle", m_swizzleLabels, p.grid.axisSwizzle);
     
+    // FIXME: This is incredibly ugly. Fix it asap.
+    m_params[0].usdExportPath = m_params[1].usdExportPath = &m_usdExportPath[1];
+    ImGui::InputText("USD path", m_pathData.data(), m_pathData.size(), ImGuiInputTextFlags_EnterReturnsTrue);
+    {
+        m_usdExportPath[1] = m_pathData.data();
+        if (m_usdExportPath[1] != m_usdExportPath[0])
+        {
+            p.hasPathChanged = true;
+        }
+        m_usdExportPath[0] = m_usdExportPath[1];
+    }
+
+    ConstructComboBox("Swizzle", m_swizzleLabels, p.grid.axisSwizzle);    
     ImGui::Text("Invert axes"); ImGui::SameLine();
     ImGui::Checkbox("X", &p.grid.invertX); ImGui::SameLine();
     ImGui::Checkbox("Y", &p.grid.invertY); ImGui::SameLine();
-    ImGui::Checkbox("Z", &p.grid.invertZ);
-    
+    ImGui::Checkbox("Z", &p.grid.invertZ);    
 }
 
 void LightProbeCameraShelf::Reset()
 {
     m_params[0].doExport = m_params[1].doExport = false;
+    m_params[0].hasPathChanged = m_params[1].hasPathChanged = false;
 }
 
 void FisheyeCameraShelf::Construct()
@@ -263,6 +288,7 @@ void WavefrontTracerShelf::Construct()
     ImGui::Checkbox("Debug normals", &p.debugNormals);
     ImGui::Checkbox("Debug shaders", &p.debugShaders);
     ConstructComboBox("Importance mode", { "MIS", "Lights", "BxDFs" }, p.importanceMode);
+    ConstructComboBox("Trace mode", { "Wavefront", "Path" }, p.traceMode);
 }
 
 IMGUIShelfFactory::IMGUIShelfFactory()

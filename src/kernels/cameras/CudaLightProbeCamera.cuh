@@ -114,8 +114,8 @@ namespace Cuda
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 
-			std::string									m_probeGridOutputPath;
 			bool										m_isProbeExported;
+			std::string									m_usdExportPath;
 		};
 	}
 }
