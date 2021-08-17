@@ -70,8 +70,12 @@ public:
         m_params[0].ToJson(newNode);
         newJson = newNode.Stringify();
 
+        Reset();
+
         return true;
     }
+
+    virtual void Reset() {}
 
     bool IsDirty() const
     {
@@ -235,14 +239,18 @@ public:
 class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
 {
 public:
-    LightProbeCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    LightProbeCameraShelf(const Json::Node& json);
     virtual ~LightProbeCameraShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
+    virtual void Reset() override final;
+
+private:
+    std::vector<std::string> m_swizzleLabels;
 };
 
-// Light probe camera
+// Fisheye camera
 class FisheyeCameraShelf : public IMGUIShelf<Cuda::Host::FisheyeCamera, Cuda::FisheyeCameraParams>
 {
 public:

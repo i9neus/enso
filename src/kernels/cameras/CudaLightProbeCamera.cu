@@ -9,11 +9,14 @@
 
 #include "../math/CudaSphericalHarmonics.cuh"
 
+#include "../../io/USDIO.h"
+
 namespace Cuda
 {
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
         maxSamples = 0;
+        doExport = false;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -24,18 +27,24 @@ namespace Cuda
 
     __host__ void LightProbeCameraParams::ToJson(::Json::Node& node) const
     {
-        grid.ToJson(node);
+        auto gridNode = node.AddChildObject("grid");
+        grid.ToJson(gridNode);
+
         camera.ToJson(node);
 
         node.AddValue("maxSamples", maxSamples);
+        node.AddValue("doExport", doExport);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        grid.FromJson(node, flags);
+        auto gridNode = node.GetChildObject("grid", flags);
+        grid.FromJson(gridNode, flags);
+
         camera.FromJson(node, flags);
 
-        node.GetValue("maxSamples", maxSamples, flags);        
+        node.GetValue("maxSamples", maxSamples, flags);
+        node.GetValue("doExport", doExport, flags);
     }   
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -97,15 +106,6 @@ namespace Cuda
         CudaDeviceAssert(m_objects.cu_accumBuffer);
     }
 
-    __device__ void Device::LightProbeCamera::GetProbeAttributesFromIndex(const uint& accumIdx, int& probeIdx, int& coeffIdx, ivec3& gridIdx) const
-    {
-        probeIdx = accumIdx / m_params.bucketsPerProbe;
-        coeffIdx = (accumIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
-        gridIdx = ivec3(probeIdx % m_params.grid.gridDensity.x,
-            (probeIdx / m_params.grid.gridDensity.x) % m_params.grid.gridDensity.y,
-            probeIdx / (m_params.grid.gridDensity.x * m_params.grid.gridDensity.y));
-    }
-
     __device__ bool RectilinearViewportToCartesian(const ivec2& viewportPos, vec3& cart)
     {
         cart = PolarToCartesian(vec2(kPi * (512 - viewportPos.y) / 512.0f, kTwoPi * viewportPos.x / 512.0f));
@@ -133,9 +133,9 @@ namespace Cuda
         // For i'th probe, coefficients are packed together:
         // [ [ C0(i), ..., C0(i) ] [ C1(i), ..., C1(i) ], ... , [ Cn(i), ..., Cn(i)] ]
 
-        int probeIdx, coeffIdx;
-        ivec3 gridIdx;
-        GetProbeAttributesFromIndex(accumIdx, probeIdx, coeffIdx, gridIdx);
+        const int probeIdx = accumIdx / m_params.bucketsPerProbe;
+        const int coeffIdx = (accumIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
+        const ivec3 gridIdx = GridIdxFromProbeIdx(probeIdx, m_params.grid.gridDensity);
 
         CudaDeviceAssert(accumIdx < 512 * 512);
 
@@ -156,9 +156,7 @@ namespace Cuda
             return;
         }
         
-        int probeIdx, coeffIdx;
-        ivec3 gridIdx;
-        GetProbeAttributesFromIndex(ctx.emplacedRay.accumIdx, probeIdx, coeffIdx, gridIdx);       
+        const int coeffIdx = (ctx.emplacedRay.accumIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
         auto& texel = (*m_objects.cu_accumBuffer)[ctx.emplacedRay.accumIdx];
         
         // Accumualte SH coefficients
@@ -473,6 +471,32 @@ namespace Cuda
         *minSampleCount = camera->GetProbeMinMaxSampleCount();
     }
 
+    __host__ void Host::LightProbeCamera::ExportProbeGrid()
+    {
+        if (!m_hostLightProbeGrid->IsValid()) { return; }
+        
+        vec2* cu_minMax;
+        vec2 minMax;
+        IsOk(cudaMalloc(&cu_minMax, sizeof(vec2)));
+
+        KernelGetProbeMinMaxSampleCount << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_minMax);
+        IsOk(cudaStreamSynchronize(m_hostStream));
+
+        IsOk(cudaMemcpy(&minMax, cu_minMax, sizeof(vec2), cudaMemcpyDeviceToHost));
+        IsOk(cudaFree(cu_minMax));
+
+        if (int(minMax.x + 1) < m_params.maxSamples) 
+        {
+            Log::Debug("Baking... %i\n", int(minMax.x + 1));
+            return;            
+        }
+
+        Log::Debug("Export!\n");
+
+        USDIO::ExportLightProbeGrid(m_hostLightProbeGrid);
+        m_params.doExport = false;
+    }
+
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
     {
         // Used when parallel reducing the accumluation buffer
@@ -488,16 +512,10 @@ namespace Cuda
         // Reduce the block in a single operation
         //KernelReduceAccumulationBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
          
-        vec2* cu_minSampleCount;
-        vec2 minSampleCount;
-        IsOk(cudaMalloc(&cu_minSampleCount, sizeof(vec2)));
-
-        KernelGetProbeMinMaxSampleCount << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_minSampleCount);
-        IsOk(cudaStreamSynchronize(m_hostStream));
-        
-        IsOk(cudaMemcpy(&minSampleCount, cu_minSampleCount, sizeof(vec2), cudaMemcpyDeviceToHost));
-        IsOk(cudaFree(cu_minSampleCount));
-        Log::Debug("Min: %f, Max: %i\n", minSampleCount.x, minSampleCount.y);
+        if (m_params.doExport)
+        {
+            ExportProbeGrid();
+        }
 
         IsOk(cudaStreamSynchronize(m_hostStream));
     }

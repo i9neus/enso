@@ -98,6 +98,7 @@ namespace Cuda
 
 			__host__ inline uint Size() const { return m_hostData.m_size; }
 			__host__ inline void Resize(const uint size);
+			__host__ void Download(std::vector<T>& rawData) const;
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }
@@ -186,5 +187,16 @@ namespace Cuda
 	{
 		DestroyOnDevice(cu_deviceData);
 		SafeFreeDeviceMemory(&m_hostData.cu_data);
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Download(std::vector<T>& rawData) const
+	{
+		Assert(m_hostData.cu_data);
+		if (m_hostData.m_size == 0) { return; }
+
+		rawData.resize(m_hostData.m_size);
+
+		IsOk(cudaMemcpy(rawData.data(), m_hostData.cu_data, sizeof(T) * m_hostData.m_size, cudaMemcpyDeviceToHost));
 	}
 }

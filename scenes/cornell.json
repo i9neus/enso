@@ -26,14 +26,22 @@
     "camera_probeCam": {
       "enabled": true,
       "live": false,
-      "class": "lightprobe",
-      "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.99, 0.99, 0.99 ]
+      "class": "lightprobe",      
+      "grid":
+      {
+        "transform": 
+        {
+          "pos": [ 0.0, 0.0, 0.0 ],
+          "rot": [ 0.0, 0.0, 0.0 ],
+          "sca": [ 0.99, 0.99, 0.99 ]
+        },
+        "gridDensity": [ 10, 10, 10 ],
+        "shOrder": 1,
+        "axisSwizzle": "xyz",
+        "invertX": false,
+        "invertY": false,
+        "invertZ": false
       },
-      "gridDensity": [ 10, 10, 10 ],
-      "shOrder": 1,
       "maxSamples": 865,
       "overrides": {
         "maxDepth": 3

@@ -87,8 +87,6 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 void RenderManager::Build()
 {
 	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
-
-	USDIO::TestUSD();
 	
 	Log::NL();
 	const Log::Snapshot beginState = Log::GetMessageState();
@@ -150,8 +148,8 @@ void RenderManager::Build()
 
 void RenderManager::ExportLightProbeGrid()
 {
-	Cuda::AssetHandle<Cuda::Host::LightProbeGrid> handle;
-	USDIO::ExportLightProbeGrid(handle);
+	//Cuda::AssetHandle<Cuda::Host::LightProbeGrid> handle;
+	//USDIO::ExportLightProbeGrid(handle);
 }
 
 void RenderManager::Destroy()

@@ -7,6 +7,8 @@
 #include "generic/FilesystemUtils.h"
 #include "generic/Log.h"
 
+#include "kernels/CudaLightProbeGrid.cuh"
+
 #ifndef _DEBUG 
 
 #include <pxr/usd/usd/prim.h>
@@ -20,11 +22,8 @@
 
 namespace USDIO
 {
-
 #ifndef _DEBUG   
     
-    using namespace pxr;
-
     void InitialiseUSD(const Json::Node& usdJson)
     {
         std::string usdPluginDirectory;
@@ -46,7 +45,7 @@ namespace USDIO
         }
     }   
 
-    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& grid)
+    void WriteGridDataUSD(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& grid)
     {
         // Load the root config
         Json::Document configJson;
@@ -93,9 +92,74 @@ namespace USDIO
 
     #define USD_DISABLED_FUNCTION(func) func { Log::Debug("***** Warning: USD exporting is disabled in debug mode. ****\n"); } 
 
-    USD_DISABLED_FUNCTION(void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& grid))
-    USD_DISABLED_FUNCTION(void TestUSD())
-   
+    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>& rawData))
+    USD_DISABLED_FUNCTION(void TestUSD())   
 
 #endif
+
+    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset)
+    {
+        Assert(gridAsset);         
+        
+        std::vector<Cuda::vec3> rawData;
+        gridAsset->GetRawData(rawData);
+        const Cuda::LightProbeGridParams& gridParams = gridAsset->GetParams();
+
+        int dataSize = gridParams.numProbes * gridParams.coefficientsPerProbe;
+        Assert(dataSize > 0);
+        std::vector<Cuda::vec3> swizzledData;
+        swizzledData.resize(dataSize);
+
+        auto SwizzleIndex = [&](const Cuda::ivec3& idx) -> Cuda::ivec3
+        {
+            // Swizzle the axes
+            switch (gridParams.axisSwizzle)
+            {
+            case Cuda::kXZY: return idx.xzy; 
+            case Cuda::kYXZ: return idx.yxz; 
+            case Cuda::kYZX: return idx.yzx; 
+            case Cuda::kZXY: return idx.zxy; 
+            case Cuda::kZYX: return idx.zyx; 
+            }
+            return idx;
+        };        
+
+        const Cuda::ivec3 swizzledGridDensity = SwizzleIndex(gridParams.gridDensity);
+
+        // Step through each probe in XYZ space and remap it to the swizzled space specified by the grid parameters
+        for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
+        {
+            Cuda::ivec3 gridIdx = Cuda::GridIdxFromProbeIdx(probeIdx, gridParams.gridDensity);            
+
+            // Invert the axes where appropriate
+            if (gridParams.invertX) { gridIdx.x = gridParams.gridDensity.x - gridIdx.x - 1; }
+            if (gridParams.invertY) { gridIdx.y = gridParams.gridDensity.y - gridIdx.y - 1; }
+            if (gridParams.invertZ) { gridIdx.z = gridParams.gridDensity.z - gridIdx.z - 1; }
+            
+            // Swizzle the grid index
+            Cuda::ivec3 swizzledGridIdx = SwizzleIndex(gridIdx);
+
+            // Map back onto the data array
+            const uint swizzledProbeIdx = ProbeIdxFromGridIdx(swizzledGridIdx, swizzledGridDensity);
+            Assert(swizzledProbeIdx < gridParams.numProbes);
+
+            // Copy the coefficient data 
+            for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe; ++coeffIdx)
+            {
+                swizzledData[swizzledProbeIdx * gridParams.coefficientsPerProbe + coeffIdx] = rawData[probeIdx * gridParams.coefficientsPerProbe + coeffIdx];
+            }
+        }
+
+        /*Log::Debug("%i elements\n", rawData.size());
+        for (int i = 0; i < gridParams.numProbes; i++)
+        {
+            Log::Debug("  - %i\n", i);
+            for (int j = 0; j < gridParams.coefficientsPerProbe; j++)
+            {
+                const auto& raw = rawData[i * gridParams.coefficientsPerProbe + j];
+                const auto& swizzled = swizzledData[i * gridParams.coefficientsPerProbe + j];
+                Log::Debug("    - %i: %s -> %i\n", j, raw.format(), swizzled.format());
+            }
+        }*/
+    }
 }

@@ -34,6 +34,7 @@ namespace Cuda
 		uint						totalBuckets;
 		uint						coefficientsPerProbe;
 		int							maxSamplesPerBucket;
+		bool						doExport;
 	};
 
 	namespace Device
@@ -64,7 +65,6 @@ namespace Cuda
 		private:
 			__device__ void Prepare();
 			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray, const int frameIdx) const;
-			__device__ inline void GetProbeAttributesFromIndex(const uint& accumIdx, int& probeIdx, int& coeffIdx, ivec3& gridIdx) const;
 			__device__ __forceinline__ void ReduceAccumulatedSample(vec4& dest, const vec4& source);
 
 		private:
@@ -98,6 +98,7 @@ namespace Cuda
 			__host__ static std::string					GetAssetDescriptionString() { return "Light Probe Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid() { return m_hostLightProbeGrid; }
+			__host__ void								ExportProbeGrid();
 
 		private:
 			Device::LightProbeCamera*					cu_deviceData;
@@ -112,6 +113,9 @@ namespace Cuda
 			dim3										m_grid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
+
+			std::string									m_probeGridOutputPath;
+			bool										m_isProbeExported;
 		};
 	}
 }

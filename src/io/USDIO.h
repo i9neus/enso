@@ -5,7 +5,5 @@
 
 namespace USDIO
 {
-    void TestUSD();
-
     void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& grid);
 }

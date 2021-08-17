@@ -77,6 +77,7 @@ void IMGUIContainer::Render()
     {
         ImGui::PushID(shelf->GetID().c_str());        
         shelf->Construct();
+        ImGui::Separator();
         ImGui::PopID();
     }
 

@@ -1,16 +1,28 @@
 ﻿#pragma once
 
 #include "CudaRenderObject.cuh"
-#include "CudaManagedArray.cuh"
 
 namespace Cuda
 {
     namespace Host { class LightProbeGrid; }
-
     struct HitCtx;
 
-    struct LightProbeGridParams
+    enum AxisSwizzle : int { kXYZ, kXZY, kYXZ, kYZX, kZXY, kZYX };
+
+    __host__ __device__ inline ivec3 GridIdxFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
     {
+        return ivec3(probeIdx % gridDensity.x, 
+                     (probeIdx / gridDensity.x) % gridDensity.y,
+                     probeIdx / (gridDensity.x * gridDensity.y));
+    }
+
+    __host__ __device__ inline int ProbeIdxFromGridIdx(const ivec3& gridIdx, const ivec3& gridDensity)
+    {
+        return gridIdx.z * gridDensity.x * gridDensity.y + gridIdx.y * gridDensity.x + gridIdx.x;
+    }
+
+    struct LightProbeGridParams
+    {        
         __host__ __device__ LightProbeGridParams();
         __host__ LightProbeGridParams(const ::Json::Node& node);
 
@@ -21,13 +33,22 @@ namespace Cuda
         ivec3						gridDensity;
         int							shOrder;
 
+        int                         axisSwizzle;
+        vec3                        axisMultiplier;
+
         bool                        debugOutputPRef;
         bool                        debugOutputValidity;
         bool                        debugBakePRef;
+        bool                        invertX, invertY, invertZ;
+
+        int                         coefficientsPerProbe;
+        int                         numProbes;
     };
 
     namespace Device
     {
+        template<typename T> class Array;
+        
         class LightProbeGrid : public Device::RenderObject, public AssetTags<Host::LightProbeGrid, Device::LightProbeGrid>
         {
         public:
@@ -37,25 +58,20 @@ namespace Cuda
 
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
             __device__ vec3 GetSHCoefficient(const int probeIdx, const int coeffIdx) const;
-            __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
-            __device__ __forceinline__ vec3& operator[](const int idx) const 
-            {                         
-                return (*cu_data)[idx]; 
-            }
+            __device__ vec3 Evaluate(const HitCtx& hitCtx) const;           
 
         private:
             __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
 
             LightProbeGridParams    m_params;
             Device::Array<vec3>*    cu_data = nullptr;
-
-            int                     m_coefficientsPerProbe;
-            int                     m_numProbes;
         };
     }
 
     namespace Host
     {
+        template<typename T> class Array;
+        
         class LightProbeGrid : public Host::RenderObject, public AssetTags<Host::LightProbeGrid, Device::LightProbeGrid>
         {
         public:
@@ -66,6 +82,9 @@ namespace Cuda
             __host__  virtual void OnDestroyAsset() override final;
             __host__ Device::LightProbeGrid* GetDeviceInstance() { return cu_deviceData; }
             __host__ void IsConverged() const;
+            __host__ bool IsValid() const;
+            __host__ void GetRawData(std::vector<vec3>& data) const;
+            __host__ const LightProbeGridParams& GetParams() const { return m_params; }
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;

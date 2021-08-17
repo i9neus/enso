@@ -194,6 +194,12 @@ void PerspectiveCameraShelf::Construct()
     ImGui::DragFloat("Splat clamp", &p.camera.splatClamp, math::max(0.01f, p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 }
 
+LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
+    : IMGUIShelf(json)
+{
+    m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
+}
+
 void LightProbeCameraShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -215,6 +221,21 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Debug PRef", &p.grid.debugOutputPRef); ImGui::SameLine();
     ImGui::Checkbox("Debug validity", &p.grid.debugOutputValidity); ImGui::SameLine();
     ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
+
+    if (ImGui::Button("Export")) { p.doExport = true; }
+            
+    ConstructComboBox("Swizzle", m_swizzleLabels, p.grid.axisSwizzle);
+    
+    ImGui::Text("Invert axes"); ImGui::SameLine();
+    ImGui::Checkbox("X", &p.grid.invertX); ImGui::SameLine();
+    ImGui::Checkbox("Y", &p.grid.invertY); ImGui::SameLine();
+    ImGui::Checkbox("Z", &p.grid.invertZ);
+    
+}
+
+void LightProbeCameraShelf::Reset()
+{
+    m_params[0].doExport = m_params[1].doExport = false;
 }
 
 void FisheyeCameraShelf::Construct()
