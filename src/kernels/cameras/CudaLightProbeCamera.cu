@@ -493,7 +493,14 @@ namespace Cuda
 
         Log::Debug("Export!\n");
 
-        USDIO::ExportLightProbeGrid(m_hostLightProbeGrid);
+        try
+        {
+            USDIO::ExportLightProbeGrid(m_hostLightProbeGrid);
+        }
+        catch (const std::runtime_error& err)
+        {
+            Log::Error("Error: %s\n", err.what());
+        }
         m_params.doExport = false;
     }
 
