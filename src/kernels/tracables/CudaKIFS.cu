@@ -37,14 +37,17 @@ namespace Cuda
     };
 
     __host__ __device__ KIFSParams::KIFSParams() :
-        rotate(0.0f),
-        scale(0.5f),
-        vertScale(0.5f),
-        crustThickness(0.5f),
+        rotateA(0.5f, 0.0f, 0.0f),
+        rotateB(0.5f, 0.0f, 0.0f),
+        scaleA(0.5f, 0.0f, 0.0f),
+        scaleB(0.5f, 0.0f, 0.0f),
+        vertScale(0.5f, 0.0f, 0.0f),
+        crustThickness(0.5f, 0.0f, 0.0f),        
         numIterations(1),
         faceMask(0xffffffff),
         foldType(kKIFSTetrahedtron),
-        primitiveType(kKIFSTetrahedtron)
+        primitiveType(kKIFSTetrahedtron),
+        doTakeSnapshot(false)
     {
         sdf.maxSpecularIterations = 50;
         sdf.maxDiffuseIterations = 15;
@@ -65,10 +68,13 @@ namespace Cuda
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("rotate", std::vector<float>({ rotate.x, rotate.y}));
-        node.AddArray("scale", std::vector<float>({ scale.x, scale.y }));
-        node.AddValue("vertScale", vertScale);
-        node.AddValue("crustThickness", crustThickness);
+        node.AddArray("rotateA", std::vector<float>({ rotateA.x, rotateA.y, rotateA.z}));
+        node.AddArray("rotateB", std::vector<float>({ rotateB.x, rotateB.y, rotateB.z }));
+        node.AddArray("scaleA", std::vector<float>({ scaleA.x, scaleA.y, scaleA.z }));
+        node.AddArray("scaleB", std::vector<float>({ scaleB.x, scaleB.y, scaleB.z }));
+        node.AddArray("crustThickness", std::vector<float>({ crustThickness.x, crustThickness.y, crustThickness.z }));
+        node.AddArray("vertScale", std::vector<float>({ vertScale.x, vertScale.y, vertScale.z }));
+
         node.AddValue("numIterations", numIterations);
         node.AddValue("faceMask", faceMask);
         node.AddEnumeratedParameter("foldType", std::vector<std::string>({ "tetrahedron", "cube" }), foldType);
@@ -91,10 +97,13 @@ namespace Cuda
 
     __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("rotate", rotate, flags);
-        node.GetVector("scale", scale, flags);
-        node.GetValue("vertScale", vertScale, flags);
-        node.GetValue("crustThickness", crustThickness, flags);
+        node.GetVector("rotateA", rotateA, flags);
+        node.GetVector("rotateB", rotateB, flags);
+        node.GetVector("scaleA", scaleA, flags);
+        node.GetVector("scaleB", scaleB, flags);
+        node.GetVector("vertScale", vertScale, flags);
+        node.GetVector("crustThickness", crustThickness, flags);
+
         node.GetValue("numIterations", numIterations, flags);
         node.GetValue("faceMask", faceMask, flags);
         node.GetEnumeratedParameter("foldType", std::vector<std::string>({"tetrahedron", "cube" }), foldType, flags);
@@ -119,33 +128,23 @@ namespace Cuda
         transform.FromJson(node, flags);
     }
 
-    __host__ bool KIFSParams::operator==(const KIFSParams& rhs) const
-    {
-        return rotate == rhs.rotate &&
-            scale == rhs.scale &&
-            vertScale == rhs.vertScale &&
-            crustThickness == rhs.crustThickness &&
-            numIterations == rhs.numIterations &&
-            faceMask == rhs.faceMask;
-    }
-
     __device__ void Device::KIFS::Prepare()
     {
         auto& kcd = m_kernelConstantData;
         kcd.numIterations = m_params.numIterations;
-        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale));
-        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness));
+        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale.x));
+        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness.x));
         kcd.faceMask = m_params.faceMask;
         kcd.foldType = m_params.foldType;
         kcd.primitiveType = m_params.primitiveType;
 
-            float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotate.x);
+            float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA.x);
         rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
-        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotate.y);
+        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB.x);
         rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
 
-        float scaleAlpha = mix(0.5, 1.5, m_params.scale.x);
-        float scaleBeta = mix(-1.0, 1.0, m_params.scale.y);
+        float scaleAlpha = mix(0.5, 1.5, m_params.scaleA.x);
+        float scaleBeta = mix(-1.0, 1.0, m_params.scaleB.x);
 
         for (int i = 0; i < kSDFMaxIterations; i++)
         {

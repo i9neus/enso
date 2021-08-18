@@ -1,6 +1,8 @@
 #include "WidgetInstantiators.h"
 #include "generic/JsonUtils.h"
 
+#define SL ImGui::SameLine()
+
 void IMGUIAbstractShelf::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)
 {
     std::string badLabel = "[INVALID VALUE]";
@@ -104,21 +106,61 @@ void KIFSShelf::Construct()
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
-    ConstructTransform(p.transform);
+    ConstructTransform(p.transform);   
 
-    ImGui::DragFloat2("Rotation", &p.rotate[0], math::max(0.01f, cwiseMax(p.rotate) * 0.01f));
-    ImGui::DragFloat2("Scaling", &p.scale[0], math::max(0.01f, cwiseMax(p.scale) * 0.01f), 0.0f, 1.0f);
-    ImGui::SliderFloat("Crust thickness", &p.crustThickness, 0.0f, 1.0f);
-    ImGui::SliderFloat("Vertex scale", &p.vertScale, 0.0f, 1.0f);
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+
+    auto ConstructRow = [](const std::string& label, Cuda::vec3& value, int row) -> void
+    {
+        ImGui::TableNextRow();
+        ImGui::PushID(row);
+        for (int column = 0; column < 2; column++)
+        {
+            ImGui::TableSetColumnIndex(column);
+            if (column == 0)
+            {
+                ImGui::Text(label.c_str());
+            }
+            else
+            {
+                ImGui::PushItemWidth(140);
+                ImGui::DragFloat("+/-", &value[0], math::max(0.01f, value[0] * 0.01f), 0.0f, 1.0f); SL;
+                ImGui::PopItemWidth();
+                ImGui::PushItemWidth(80);
+                ImGui::DragFloat("~", &value[1], math::max(0.01f, value[1] * 0.01f), 0.0f, 1.0f); SL;
+                ImGui::SliderFloat("", &value[2], 0.0f, 1.0f);
+                ImGui::PopItemWidth();
+            }
+        }
+        ImGui::PopID();
+    };
+
+    if (ImGui::BeginTable("", 2))
+    {
+        // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);       
+
+        ConstructRow("Rotation A", p.rotateA, 0);
+        ConstructRow("Rotation B", p.rotateB, 1);
+        ConstructRow("Scale A", p.scaleA, 2);
+        ConstructRow("Scale B", p.scaleB, 3);
+        ConstructRow("Crust thickness", p.crustThickness, 4);
+        ConstructRow("Vertex scale", p.vertScale, 5);
+        
+        ImGui::EndTable();
+    }
+
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
     ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.foldType);
     ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);
 
+    if (ImGui::Button("Snapshot")) { p.doTakeSnapshot = true; }
+
     for (int i = 0; i < 6; i++)
     {
         bool faceMaskBool = p.faceMask & (1 << i);
-        ImGui::Checkbox(tfm::format("%i", i).c_str(), &faceMaskBool); 
-        ImGui::SameLine();
+        ImGui::Checkbox(tfm::format("%i", i).c_str(), &faceMaskBool); SL;
         p.faceMask = (p.faceMask & ~(1 << i)) | (int(faceMaskBool) << i);
 
     }
@@ -133,6 +175,10 @@ void KIFSShelf::Construct()
     ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
     ImGui::DragFloat("SDF Ray Kickoff", &p.sdf.rayKickoff, math::max(0.01f, p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
     ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.00001f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+}
+
+void KIFSShelf::Reset() 
+{
 }
 
 void QuadLightShelf::Construct()
@@ -177,8 +223,8 @@ void PerspectiveCameraShelf::Construct()
 
     auto& p = m_params[0];
 
-    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
-    ImGui::Checkbox("Live", &p.camera.isLive);  ImGui::SameLine();
+    ImGui::Checkbox("Active", &p.camera.isActive); SL;
+    ImGui::Checkbox("Live", &p.camera.isLive);  SL;
     ImGui::Checkbox("Realtime", &p.isRealtime);
     ImGui::Checkbox("Mimic light probe", &p.mimicLightProbe);
     
@@ -220,7 +266,7 @@ void LightProbeCameraShelf::Construct()
 
     auto& p = m_params[0];
 
-    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
+    ImGui::Checkbox("Active", &p.camera.isActive); SL;
     ImGui::Checkbox("Live", &p.camera.isLive);
 
     ConstructTransform(p.grid.transform);
@@ -232,8 +278,8 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::DragInt("Max samples", &p.maxSamples);
 
-    ImGui::Checkbox("Debug PRef", &p.grid.debugOutputPRef); ImGui::SameLine();
-    ImGui::Checkbox("Debug validity", &p.grid.debugOutputValidity); ImGui::SameLine();
+    ImGui::Checkbox("Debug PRef", &p.grid.debugOutputPRef); SL;
+    ImGui::Checkbox("Debug validity", &p.grid.debugOutputValidity); SL;
     ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
 
     if (ImGui::Button("Export")) { p.doExport = true; }
@@ -251,9 +297,9 @@ void LightProbeCameraShelf::Construct()
     }
 
     ConstructComboBox("Swizzle", m_swizzleLabels, p.grid.axisSwizzle);    
-    ImGui::Text("Invert axes"); ImGui::SameLine();
-    ImGui::Checkbox("X", &p.grid.invertX); ImGui::SameLine();
-    ImGui::Checkbox("Y", &p.grid.invertY); ImGui::SameLine();
+    ImGui::Text("Invert axes"); SL;
+    ImGui::Checkbox("X", &p.grid.invertX); SL;
+    ImGui::Checkbox("Y", &p.grid.invertY); SL;
     ImGui::Checkbox("Z", &p.grid.invertZ);    
 }
 
@@ -269,14 +315,13 @@ void FisheyeCameraShelf::Construct()
 
     auto& p = m_params[0];
 
-    ImGui::Checkbox("Active", &p.camera.isActive); ImGui::SameLine();
+    ImGui::Checkbox("Active", &p.camera.isActive); SL;
     ImGui::Checkbox("Live", &p.camera.isLive);
 
     ConstructTransform(p.transform);
 
     ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }
-
 
 void WavefrontTracerShelf::Construct()
 {

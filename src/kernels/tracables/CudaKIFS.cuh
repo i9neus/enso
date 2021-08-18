@@ -24,13 +24,13 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        bool operator==(const KIFSParams&) const;
+        vec3    rotateA;
+        vec3    rotateB;
+        vec3    scaleA;
+        vec3    scaleB;
+        vec3    vertScale;
+        vec3    crustThickness;
 
-        vec2    rotate;
-        vec2    scale;
-
-        float   vertScale;
-        float   crustThickness;
         int     numIterations;
         uint    faceMask;
         int     foldType;
@@ -53,6 +53,8 @@ namespace Cuda
 
         TracableParams tracable;
         BidirectionalTransform transform;
+
+        bool doTakeSnapshot;
     };
 
     namespace Device
