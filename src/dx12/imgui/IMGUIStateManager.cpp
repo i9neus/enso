@@ -129,7 +129,7 @@ void RenderObjectStateManager::Restore(const std::string& id)
             continue;
         }
 
-        shelfIt->second->FromJson(childNode, Json::kSilent);
+        shelfIt->second->FromJson(childNode, Json::kSilent, true);
     }
 
     Log::Debug("Restored state '%s' from library.\n", id);

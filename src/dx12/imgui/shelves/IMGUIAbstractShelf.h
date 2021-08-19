@@ -17,7 +17,7 @@ public:
     IMGUIAbstractShelf() = default;
     
     virtual void Construct() = 0;
-    virtual void FromJson(const Json::Node& json, const int flags) = 0;
+    virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) = 0;
     virtual bool ToJson(std::string& newJson) = 0;
     virtual void ToJson(Json::Node& json) = 0;
 
@@ -49,15 +49,18 @@ class IMGUIShelf : public IMGUIAbstractShelf
 public:
     IMGUIShelf(const Json::Node& json)
     {
-        FromJson(json, Json::kRequiredWarn);
+        FromJson(json, Json::kRequiredWarn, false);
     }
 
     virtual ~IMGUIShelf() = default;
 
-    virtual void FromJson(const Json::Node& json, const int flags) override final
+    virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) override final
     {
         m_params[0].FromJson(json, flags);
-        m_params[1] = m_params[0];
+        if (!dirtySceneGraph)
+        {
+            m_params[1] = m_params[0];
+        }
     }
 
     virtual bool ToJson(std::string& newJson) override final
