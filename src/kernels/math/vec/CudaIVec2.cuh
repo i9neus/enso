@@ -62,8 +62,8 @@ namespace Cuda
 
         __host__ __device__ __vec_swizzle& operator=(const Type& v) { x = v; y = v; return *this; }
 
-        __host__ __device__ __forceinline__ const float& operator[](const unsigned int idx) const { return data[idx]; }
-        __host__ __device__ __forceinline__ float& operator[](const unsigned int idx) { return data[idx]; }
+        __host__ __device__ __forceinline__ const Type& operator[](const unsigned int idx) const { return data[idx]; }
+        __host__ __device__ __forceinline__ Type& operator[](const unsigned int idx) { return data[idx]; }
 
         __host__ inline std::string format() const { return tfm::format("{%i, %i}", x, y); }
     };

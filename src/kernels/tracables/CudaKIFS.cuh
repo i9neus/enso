@@ -32,7 +32,7 @@ namespace Cuda
         vec3    crustThickness;
 
         int     numIterations;
-        uint    faceMask;
+        uvec2   faceMask;
         int     foldType;
         int     primitiveType;
 

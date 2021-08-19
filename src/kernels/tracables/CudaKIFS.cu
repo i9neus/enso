@@ -76,7 +76,7 @@ namespace Cuda
         node.AddArray("vertScale", std::vector<float>({ vertScale.x, vertScale.y, vertScale.z }));
 
         node.AddValue("numIterations", numIterations);
-        node.AddValue("faceMask", faceMask);
+        node.AddArray("faceMask", std::vector<uint>({ faceMask.x, faceMask.y }));
         node.AddEnumeratedParameter("foldType", std::vector<std::string>({ "tetrahedron", "cube" }), foldType);
         node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType); 
 
@@ -105,7 +105,7 @@ namespace Cuda
         node.GetVector("crustThickness", crustThickness, flags);
 
         node.GetValue("numIterations", numIterations, flags);
-        node.GetValue("faceMask", faceMask, flags);
+        node.GetVector("faceMask", faceMask, flags);
         node.GetEnumeratedParameter("foldType", std::vector<std::string>({"tetrahedron", "cube" }), foldType, flags);
         node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType, flags);
 
@@ -126,6 +126,13 @@ namespace Cuda
 
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
+
+        rotateA.x += rotateA.y * (rotateA.z * 2.0f - 1.0f);
+        rotateB.x += rotateB.y * (rotateB.z * 2.0f - 1.0f);
+        scaleA.x += scaleA.y * (scaleA.z * 2.0f - 1.0f);
+        scaleB.x += scaleB.y * (scaleB.z * 2.0f - 1.0f);
+        vertScale.x += vertScale.y * (vertScale.z * 2.0f - 1.0f);
+        crustThickness.x += crustThickness.y * (crustThickness.z * 2.0f - 1.0f);
     }
 
     __device__ void Device::KIFS::Prepare()
@@ -134,11 +141,11 @@ namespace Cuda
         kcd.numIterations = m_params.numIterations;
         kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale.x));
         kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness.x));
-        kcd.faceMask = m_params.faceMask;
+        kcd.faceMask = m_params.faceMask.x;
         kcd.foldType = m_params.foldType;
         kcd.primitiveType = m_params.primitiveType;
 
-            float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA.x);
+        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA.x);
         rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
         float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB.x);
         rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
@@ -146,10 +153,10 @@ namespace Cuda
         float scaleAlpha = mix(0.5, 1.5, m_params.scaleA.x);
         float scaleBeta = mix(-1.0, 1.0, m_params.scaleB.x);
 
-        for (int i = 0; i < kSDFMaxIterations; i++)
+        for (int i = 0; i < m_params.numIterations; i++)
         {
-            float f = float(i + 1) / float(max(1, kSDFMaxIterations));
-            vec3 theta = (2.0f * kXi[i] - 1.0f) * kPi * (rotateAlpha + rotateBeta * f);
+            float f = float(i + 1) / float(max(1, m_params.numIterations));
+            vec3 theta = (2.0f * kXi[i] - 1.0f) * kPi * 10.0f * (rotateAlpha + rotateBeta * f);
             float iterScale = scaleAlpha * powf(2.0f, float(i) * scaleBeta);
 
             kcd.iteration[i].matrix = BidirectionalTransform(vec3(0.0f), vec3(theta), vec3(iterScale)).fwd;

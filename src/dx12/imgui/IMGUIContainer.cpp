@@ -2,6 +2,9 @@
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
+#include "shelves/IMGUIShelves.h"
+#include "shelves/IMGUIKIFSShelf.h"
+
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
     m_cudaRenderer(cudaRenderer)
 {
@@ -75,9 +78,21 @@ void IMGUIContainer::Render()
 
     for (const auto& shelf : m_shelves)
     {
-        ImGui::PushID(shelf->GetID().c_str());        
+        ImGui::PushID(shelf->GetID().c_str()); 
+
+        /*float hue = 
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(i / 7.0f, 0.6f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.7f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(i / 7.0f, 0.9f, 0.9f));*/
+        //ImGui::BeginChild(shelf->GetID().c_str());
+
         shelf->Construct();
         ImGui::Separator();
+
+        //ImGui::PopStyleColor(4);
+        //ImGui::EndChild();
+
         ImGui::PopID();
     }
 
@@ -111,4 +126,71 @@ void IMGUIContainer::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& comm
     commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
     ImGui::ImplDX12_RenderDrawData(drawData, commandList.Get());
+}
+
+IMGUIShelfFactory::IMGUIShelfFactory()
+{
+    m_instantiators[Cuda::Host::SimpleMaterial::GetAssetTypeString()] = SimpleMaterialShelf::Instantiate;
+    m_instantiators[Cuda::Host::CornellMaterial::GetAssetTypeString()] = CornellMaterialShelf::Instantiate;
+    m_instantiators[Cuda::Host::KIFSMaterial::GetAssetTypeString()] = KIFSMaterialShelf::Instantiate;
+
+    m_instantiators[Cuda::Host::Plane::GetAssetTypeString()] = PlaneShelf::Instantiate;
+    m_instantiators[Cuda::Host::Sphere::GetAssetTypeString()] = SphereShelf::Instantiate;
+    m_instantiators[Cuda::Host::KIFS::GetAssetTypeString()] = KIFSShelf::Instantiate;
+    m_instantiators[Cuda::Host::CornellBox::GetAssetTypeString()] = CornellBoxShelf::Instantiate;
+
+    m_instantiators[Cuda::Host::QuadLight::GetAssetTypeString()] = QuadLightShelf::Instantiate;
+    m_instantiators[Cuda::Host::SphereLight::GetAssetTypeString()] = SphereLightShelf::Instantiate;
+    m_instantiators[Cuda::Host::EnvironmentLight::GetAssetTypeString()] = EnvironmentLightShelf::Instantiate;
+
+    //m_instantiators[Cuda::Host::LambertBRDF::GetAssetTypeString()] = LambertBRDFShelf::Instantiate;
+
+    m_instantiators[Cuda::Host::PerspectiveCamera::GetAssetTypeString()] = PerspectiveCameraShelf::Instantiate;
+    m_instantiators[Cuda::Host::LightProbeCamera::GetAssetTypeString()] = LightProbeCameraShelf::Instantiate;
+    m_instantiators[Cuda::Host::FisheyeCamera::GetAssetTypeString()] = FisheyeCameraShelf::Instantiate;
+
+    m_instantiators[Cuda::Host::WavefrontTracer::GetAssetTypeString()] = WavefrontTracerShelf::Instantiate;
+}
+
+std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(const Json::Document& rootNode, const Cuda::RenderObjectContainer& renderObjects)
+{
+    Log::Indent indent("Setting up IMGUI shelves...\n");
+
+    std::vector<std::shared_ptr<IMGUIAbstractShelf>> shelves;
+
+    for (auto& object : renderObjects)
+    {
+        // Ignore objects instantiated by other objects
+        if (object->IsChildObject()) { continue; }
+
+        if (!object->HasDAGPath())
+        {
+            Log::Debug("Skipped '%s': invalid DAG path.\n", object->GetAssetID().c_str());
+            continue;
+        }
+
+        const std::string& dagPath = object->GetDAGPath();
+        const Json::Node childNode = rootNode.GetChildObject(dagPath, Json::kSilent);
+
+        AssertMsgFmt(childNode, "DAG path '%s' refers to missing or invalid JSON node.", dagPath.c_str());
+
+        std::string objectClass;
+        AssertMsgFmt(childNode.GetValue("class", objectClass, Json::kSilent),
+            "Missing 'class' element in JSON object '%s'.", dagPath.c_str());
+
+        auto& instantiator = m_instantiators.find(objectClass);
+        if (instantiator == m_instantiators.end())
+        {
+            Log::Debug("Skipped '%s': not a recognised object class.\n", objectClass);
+            continue;
+        }
+
+        auto newShelf = (instantiator->second)(childNode);
+        newShelf->SetIDAndDAGPath(object->GetAssetID(), dagPath);
+        shelves.emplace_back(newShelf);
+
+        Log::Debug("Instantiated IMGUI shelf for '%s'.\n", dagPath);
+    }
+
+    return shelves;
 }

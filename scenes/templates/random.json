@@ -13,113 +13,105 @@
       "displayGamma": 1.7
     }    
   },
-  "cameras": 
-  {
-    "camera_perspCam": 
-    {
-      "enabled": true,
-      "active": true,
-      "live":  true,
-      "class": "perspective",
-      "pos": [ 0.0, 1.0, 1.5 ],
-      "lookAt": [ 0.0, 0.0, 0.0 ],
-      "focalPlane": 1.0,
-      "fLength": 0.45,
-      "fStop": 0.45,
-      "splatClamp": 10.0,
-      "overrides":
-      {
-        "maxDepth": 3
-      }
-    },
-    "camera_probeCam": 
-    {
-      "enabled": true,
-      "live": false,
-      "class": "lightprobe",      
-      "grid":
-      {
-        "transform": 
+    "cameras": {
+        "camera_perspCam":
         {
-          "pos": [ 0.0, 0.0, 0.0 ],
-          "rot": [ 0.0, 0.0, 0.0 ],
-          "sca": [ 0.99, 0.99, 0.99 ]
+            "class": "perspective",
+            "enabled": true,
+            "active": true,
+            "live": true,
+            "splatClamp": 11.256999969482422,
+            "overrides": { "maxDepth": 2 },
+            "pos": [ -0.03500000014901161, -0.032999999821186069, 0.39800000190734866 ],
+            "lookAt": [ 0.0, -0.3700000047683716, -0.07999999821186066 ],
+            "focalPlane": 1.0,
+            "fLength": 0.44999998807907107,
+            "fStop": 0.44999998807907107,
+            "displayGamma": 1.2039999961853028,
+            "isRealtime": false,
+            "mimicLightProbe": false
         },
-        "gridDensity": [ 10, 10, 10 ],
-        "shOrder": 1,
-        "axisSwizzle": "xyz",
-        "invertX": false,
-        "invertY": false,
-        "invertZ": false
-      },
-      "maxSamples": 1024,
-      "usdExportPath": "",
-      "overrides": 
-      {
-        "maxDepth": 3
-      }
-    }
-  },
-  "tracables": 
-  {
-    "tracable_groundPlane": 
-    {
-      "enabled": true,
-      "class": "plane",
-      "material": "material_groundPlane",
-      "bounded": false,
-      "transform": 
-      {
-        "pos": [ 0.0, -0.5, 0.0 ],
-        "rot": [ 90.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
-      }
+        "camera_probeCam": {
+            "enabled": true,
+            "live": false,
+            "class": "lightprobe",
+            "grid": {
+                "transform": {
+                    "pos": [ 0.0, 0.0, 0.0 ],
+                    "rot": [ 0.0, 0.0, 0.0 ],
+                    "sca": [ 0.99, 0.99, 0.99 ]
+                },
+                "gridDensity": [ 10, 10, 10 ],
+                "shOrder": 1,
+                "axisSwizzle": "xyz",
+                "invertX": false,
+                "invertY": false,
+                "invertZ": false
+            },
+            "maxSamples": 1024,
+            "overrides": {
+                "maxDepth": 3
+            }
+        }
     },
-    "tracable_kifsFractal":
-    {
-      "enabled": true,
-      "class": "kifs",
-      "material": "material_kifs",
-      "rotate": [ 0.5, 0.5 ],
-      "scale": [ 0.6600000262260437, 0.6800000071525574 ],
-      "vertScale": 0.40400001406669619,
-      "crustThickness": 0.3779999911785126,
-      "numIterations": 6,
-      "faceMask": 4294967295,
-      "foldType": "cube",
-      "primitiveType": "cube",
-      "excludeFromBake": true,
-      "sdf": 
-      {
-        "maxSpecularIterations": 50,
-        "maxDiffuseIterations": 15,
-        "cutoffThreshold": 0.0001,
-        "escapeThreshold": 1.0,
-        "rayIncrement": 0.9,
-        "rayKickoff": 0.001,
-        "failThreshold": 0.01,
-        "clipCameraRays": true,
-        "clipShape": "cube"
-      },
-      "transform": 
-      {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
-        "sca": [ 2.361999988555908, 2.361999988555908, 2.361999988555908 ]
-      }
+    "tracables": {
+        "tracable_groundPlane": {
+            "enabled": true,
+            "class": "plane",
+            "material": "material_groundPlane",
+            "bounded": false,
+            "transform": {
+                "pos": [ 0.0, -0.5, 0.0 ],
+                "rot": [ 90.0, 0.0, 0.0 ],
+                "sca": [ 1.0, 1.0, 1.0 ]
+            }
+        },
+        "tracable_kifsFractal":
+        {
+            "enabled": true,
+            "class": "kifs",
+            "material": "material_kifs",
+            "rotateA": [ 0.5299999713897705, 0.0, 0.0 ],
+            "rotateB": [ 0.5199999809265137, 0.0, 0.0 ],
+            "scaleA": [ 0.5, 0.0, 0.0 ],
+            "scaleB": [ 0.5, 0.0, 0.0 ],
+            "crustThickness": [ 0.3499999940395355, 0.0, 0.0 ],
+            "vertScale": [ 0.5239999890327454, 0.0, 0.0 ],
+            "numIterations": 6,
+            "faceMask": [ 4294967265, 4294967232 ],
+            "foldType": "cube",
+            "primitiveType": "cube",
+            "sdf": {
+                "maxSpecularIterations": 96,
+                "maxDiffuseIterations": 15,
+                "cutoffThreshold": 0.00009999999747378752,
+                "escapeThreshold": 1.0,
+                "rayIncrement": 0.8999999761581421,
+                "rayKickoff": 0.0010000000474974514,
+                "failThreshold": 0.009999999776482582,
+                "clipCameraRays": false,
+                "clipShape": "box"
+            },
+            "transform": {
+                "pos": [ 0.5699999928474426, 0.0, 0.0 ],
+                "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
+                "sca": [ 4.303999900817871, 4.303999900817871, 4.303999900817871 ]
+            },
+            "excludeFromBake": false,
+            "transform": null
+        },
+        "tracable_sphere": {
+            "enabled": false,
+            "excludeFromBake": true,
+            "class": "sphere",
+            "material": "material_kifs",
+            "transform": {
+                "pos": [ 0.0, 0.0, 0.0 ],
+                "rot": [ 0.0, 0.0, 0.0 ],
+                "sca": [ 0.2, 0.2, 0.2 ]
+            }
+        }
     },
-    "tracable_sphere": {
-      "enabled": false,
-      "excludeFromBake": true,
-      "class": "sphere",
-      "material": "material_kifs",
-      "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.2, 0.2, 0.2 ]
-      }
-    }
-  },
   "materials": 
   {
     "material_groundPlane":

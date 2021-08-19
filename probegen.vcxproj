@@ -16,7 +16,9 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
-    <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelves.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
@@ -41,7 +43,9 @@
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\imgui\IMGUIContainer.h" />
-    <ClInclude Include="src\dx12\imgui\WidgetInstantiators.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelves.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
@@ -177,6 +181,7 @@
     <None Include="scenes\default.json" />
     <None Include="scenes\kifs.json" />
     <None Include="scenes\template.usda" />
+    <None Include="scenes\templates\random.json" />
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>

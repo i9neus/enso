@@ -43,12 +43,6 @@
     <ClCompile Include="src\generic\Log.cpp">
       <Filter>generic</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
-      <Filter>dx12\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\WidgetInstantiators.cpp">
-      <Filter>dx12\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="src\io\USDIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
@@ -60,6 +54,18 @@
     </ClCompile>
     <ClCompile Include="src\manager\SceneGenerator.cpp">
       <Filter>manager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
+      <Filter>dx12\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -312,12 +318,6 @@
     <ClInclude Include="src\kernels\math\CudaMathUtils.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\WidgetInstantiators.h">
-      <Filter>dx12\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\IMGUIContainer.h">
-      <Filter>dx12\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh">
       <Filter>kernels\materials</Filter>
     </ClInclude>
@@ -368,6 +368,18 @@
     </ClInclude>
     <ClInclude Include="src\kernels\math\CudaColourUtils.cuh">
       <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\IMGUIContainer.h">
+      <Filter>dx12\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -442,6 +454,12 @@
     </Filter>
     <Filter Include="manager">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scenes\templates">
+      <UniqueIdentifier>{0afe1a2b-f5f3-4e00-ab6a-2cc694a8dd07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\imgui\shelves">
+      <UniqueIdentifier>{6761ba89-09d2-4b5d-9c9a-7041f3ab478c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -546,6 +564,9 @@
     </None>
     <None Include="scenes\template.usda">
       <Filter>scenes</Filter>
+    </None>
+    <None Include="scenes\templates\random.json">
+      <Filter>scenes\templates</Filter>
     </None>
   </ItemGroup>
 </Project>

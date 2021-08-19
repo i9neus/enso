@@ -8,7 +8,7 @@
 #include "generic/JsonUtils.h"
 #include "manager/RenderManager.h"
 
-#include "WidgetInstantiators.h"
+#include "shelves/IMGUIAbstractShelf.h"
 
 using namespace Cuda;
 
@@ -30,6 +30,17 @@ inline void SafeRelease(T*& resource)
         resource = nullptr;
     }
 }
+
+class IMGUIShelfFactory
+{
+public:
+    IMGUIShelfFactory();
+
+    std::vector<std::shared_ptr<IMGUIAbstractShelf>> Instantiate(const Json::Document& document, const Cuda::RenderObjectContainer& objectContainer);
+
+private:
+    std::map<std::string, std::function<std::shared_ptr<IMGUIAbstractShelf>(const ::Json::Node&)>>    m_instantiators;
+};
 
 class IMGUIContainer
 {
