@@ -15,14 +15,19 @@ class IMGUIAbstractShelf
 {
 public:
     IMGUIAbstractShelf() = default;
+    
     virtual void Construct() = 0;
-    virtual bool Update(std::string& newJson) = 0;
+    virtual bool ToJson(std::string& newJson) = 0;
+
     const std::string& GetDAGPath() const { return m_dagPath; }
     const std::string& GetID() const { return m_id; }
-    void SetIDAndDAGPath(const std::string& id, const std::string& dagPath)
+    bool IsJitterable() const { return m_isJitterable; }
+
+    void SetRenderObjectAttributes(const std::string& id, const std::string& dagPath, const bool isJitterable)
     {
         m_id = id;
         m_dagPath = dagPath;
+        m_isJitterable = isJitterable;
     }
 
 protected:
@@ -31,6 +36,7 @@ protected:
 
     std::string m_dagPath;
     std::string m_id;
+    bool        m_isJitterable;
 };
 
 using IMGUIAbstractShelfMap = std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>>;
@@ -41,13 +47,18 @@ class IMGUIShelf : public IMGUIAbstractShelf
 public:
     IMGUIShelf(const Json::Node& json)
     {
-        m_params[0].FromJson(json, Json::kRequiredWarn);
-        m_params[1] = m_params[0];
+        FromJson(json, Json::kRequiredWarn);
     }
 
     virtual ~IMGUIShelf() = default;
 
-    virtual bool Update(std::string& newJson) override final
+    void FromJson(const Json::Node& json, const int flags)
+    {
+        m_params[0].FromJson(json, flags);
+        m_params[1] = m_params[0];
+    }
+
+    virtual bool ToJson(std::string& newJson) override final
     {
         //if (m_params[0] == m_params[1]) { return false; }
         if (!IsDirty()) { return false; }

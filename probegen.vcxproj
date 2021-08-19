@@ -19,6 +19,7 @@
     <ClCompile Include="src\dx12\imgui\IMGUIStateManager.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelves.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
@@ -47,6 +48,7 @@
     <ClInclude Include="src\dx12\imgui\IMGUIStateManager.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelves.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />

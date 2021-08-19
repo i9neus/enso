@@ -70,6 +70,9 @@
     <ClCompile Include="src\dx12\imgui\IMGUIStateManager.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -386,6 +389,9 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\IMGUIStateManager.h">
       <Filter>dx12\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h">
+      <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

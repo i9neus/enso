@@ -106,8 +106,7 @@ void KIFSStateContainer::ToJson(Json::Document& document)
 {
 }
 
-KIFSShelf::KIFSShelf(const Json::Node& json) : 
-    IMGUIShelf(json)
+KIFSShelf::KIFSShelf(const Json::Node& json) : IMGUIShelf(json)
 {
     m_stateListCurrentIdx = -1;
     m_stateIDData.resize(2048);
@@ -119,11 +118,6 @@ KIFSShelf::KIFSShelf(const Json::Node& json) :
 
     m_stateContainer.SetJsonPath(m_stateJsonPath);
     m_stateContainer.ReadJson();
-}
-
-KIFSShelf::~KIFSShelf()
-{
-    
 }
 
 void KIFSShelf::Construct()
@@ -194,7 +188,7 @@ void KIFSShelf::Construct()
  
     if (ImGui::TreeNode("State manager"))
     {
-        auto& stateMap = m_stateContainer.GetStateMap();
+        /*auto& stateMap = m_stateContainer.GetStateMap();
         if (ImGui::BeginListBox("States"))
         {
             KIFSStateContainer::StateMap::const_iterator it = stateMap.begin();
@@ -239,7 +233,7 @@ void KIFSShelf::Construct()
         if (ImGui::Button("Erase") && m_stateListCurrentIdx >= 0 && !stateMap.empty())
         {
             m_stateContainer.Erase(m_stateListCurrentId);
-        }
+        }*/
         ImGui::TreePop();
     }
 

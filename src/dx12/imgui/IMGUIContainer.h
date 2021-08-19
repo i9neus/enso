@@ -9,6 +9,7 @@
 #include "manager/RenderManager.h"
 
 #include "shelves/IMGUIAbstractShelf.h"
+#include "shelves/IMGUIShelfFactory.h"
 
 using namespace Cuda;
 
@@ -30,17 +31,6 @@ inline void SafeRelease(T*& resource)
         resource = nullptr;
     }
 }
-
-class IMGUIShelfFactory
-{
-public:
-    IMGUIShelfFactory();
-
-    IMGUIAbstractShelfMap Instantiate(const Json::Document& document, const Cuda::RenderObjectContainer& objectContainer);
-
-private:
-    std::map<std::string, std::function<std::shared_ptr<IMGUIAbstractShelf>(const ::Json::Node&)>>    m_instantiators;
-};
 
 class IMGUIContainer
 {

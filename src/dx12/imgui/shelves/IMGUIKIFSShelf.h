@@ -24,7 +24,7 @@ public:
     const StateMap& GetStateMap() const { return m_stateMap; }
 
 private:
-    StateMap    m_stateMap;
+    StateMap                m_stateMap;
 
     std::string             m_jsonPath;
 };
@@ -34,7 +34,7 @@ class KIFSShelf : public IMGUIShelf<Cuda::Host::KIFS, Cuda::KIFSParams>
 {
 public:
     KIFSShelf(const Json::Node& json);
-    virtual ~KIFSShelf();
+    virtual ~KIFSShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSShelf(json)); }
     virtual void            Construct() override final;

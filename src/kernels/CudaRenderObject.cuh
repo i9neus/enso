@@ -70,7 +70,11 @@ namespace Cuda
             } 
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
-            __host__ void SetRenderObjectFlags(const uint flags) { m_renderObjectFlags = flags; }            
+            __host__ void SetRenderObjectFlags(const uint flags, const bool set = true) 
+            { 
+                if (set) { m_renderObjectFlags |= flags; }
+                else { m_renderObjectFlags &= ~flags; }
+            }
 
         private:
             std::string         m_dagPath;
