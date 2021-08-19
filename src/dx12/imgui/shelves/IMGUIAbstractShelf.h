@@ -33,6 +33,8 @@ protected:
     std::string m_id;
 };
 
+using IMGUIAbstractShelfMap = std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>>;
+
 template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {

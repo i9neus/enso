@@ -36,7 +36,7 @@ class IMGUIShelfFactory
 public:
     IMGUIShelfFactory();
 
-    std::vector<std::shared_ptr<IMGUIAbstractShelf>> Instantiate(const Json::Document& document, const Cuda::RenderObjectContainer& objectContainer);
+    IMGUIAbstractShelfMap Instantiate(const Json::Document& document, const Cuda::RenderObjectContainer& objectContainer);
 
 private:
     std::map<std::string, std::function<std::shared_ptr<IMGUIAbstractShelf>(const ::Json::Node&)>>    m_instantiators;
@@ -48,7 +48,7 @@ private:
     ComPtr<ID3D12DescriptorHeap>    m_srvHeap;
     HWND                            m_hWnd;
     RenderManager&                  m_cudaRenderer;
-    std::vector<std::shared_ptr<IMGUIAbstractShelf>> m_shelves;
+    IMGUIAbstractShelfMap           m_shelves;
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);

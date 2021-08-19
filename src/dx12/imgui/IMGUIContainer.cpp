@@ -57,11 +57,11 @@ void IMGUIContainer::UpdateParameters()
     for (const auto& shelf : m_shelves)
     {        
         std::string newJson;
-        if (!shelf->Update(newJson)) { continue; }
+        if (!shelf.second->Update(newJson)) { continue; }
 
-        m_cudaRenderer.OnJson(shelf->GetDAGPath(), newJson);
+        m_cudaRenderer.OnJson(shelf.second->GetDAGPath(), newJson);
 
-        Log::Debug("Updated! %s, %s\n", shelf->GetID(), newJson);
+        Log::Debug("Updated! %s, %s\n", shelf.second->GetID(), newJson);
         return;
     }
 }
@@ -72,7 +72,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 
     for (const auto& shelf : m_shelves)
     {
-        ImGui::PushID(shelf->GetID().c_str());
+        ImGui::PushID(shelf.second->GetID().c_str());
 
         /*float hue =
         ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
@@ -81,7 +81,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
         ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(i / 7.0f, 0.9f, 0.9f));*/
         //ImGui::BeginChild(shelf->GetID().c_str());
 
-        shelf->Construct();
+        shelf.second->Construct();
         ImGui::Separator();
 
         //ImGui::PopStyleColor(4);
@@ -109,6 +109,36 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 void IMGUIContainer::ConstructStateManager()
 {
     ImGui::Begin("State Manager");
+
+    if (ImGui::BeginListBox("States"))
+    {
+       
+        ImGui::EndListBox();
+    }   
+
+    // Save the current state to the container
+    if (ImGui::Button("New"))
+    {
+
+    }
+    SL;
+    // Overwrite the currently selected state
+    if (ImGui::Button("Overwrite"))
+    {
+       
+    }
+    SL;
+    // Load a saved state to the UI
+    if (ImGui::Button("Load"))
+    {
+       
+    }
+    SL;
+    // Erase a saved state from the container
+    if (ImGui::Button("Erase"))
+    {
+
+    }
 
     ImGui::End();
 }
@@ -166,11 +196,11 @@ IMGUIShelfFactory::IMGUIShelfFactory()
     m_instantiators[Cuda::Host::WavefrontTracer::GetAssetTypeString()] = WavefrontTracerShelf::Instantiate;
 }
 
-std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(const Json::Document& rootNode, const Cuda::RenderObjectContainer& renderObjects)
+std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(const Json::Document& rootNode, const Cuda::RenderObjectContainer& renderObjects)
 {
     Log::Indent indent("Setting up IMGUI shelves...\n");
 
-    std::vector<std::shared_ptr<IMGUIAbstractShelf>> shelves;
+    std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> shelves;
 
     for (auto& object : renderObjects)
     {
@@ -201,7 +231,7 @@ std::vector<std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(
 
         auto newShelf = (instantiator->second)(childNode);
         newShelf->SetIDAndDAGPath(object->GetAssetID(), dagPath);
-        shelves.emplace_back(newShelf);
+        shelves[object->GetDAGPath()] = newShelf;
 
         Log::Debug("Instantiated IMGUI shelf for '%s'.\n", dagPath);
     }
