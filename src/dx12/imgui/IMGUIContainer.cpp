@@ -6,7 +6,8 @@
 #include "shelves/IMGUIKIFSShelf.h"
 
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
-    m_cudaRenderer(cudaRenderer)
+    m_cudaRenderer(cudaRenderer),
+    m_stateManager(m_shelves)
 {
 
 }
@@ -41,6 +42,8 @@ void IMGUIContainer::Build()
     
     IMGUIShelfFactory shelfFactory;
     m_shelves = shelfFactory.Instantiate(json, *renderObjects);
+
+    m_stateManager.Initialise(json);
 }
 
 void IMGUIContainer::Destroy()
@@ -107,43 +110,6 @@ void IMGUIContainer::ConstructRenderObjectShelves()
     ImGui::End();
 }
 
-void IMGUIContainer::ConstructStateManager()
-{
-    ImGui::Begin("State Manager");
-
-    if (ImGui::BeginListBox("States"))
-    {
-       
-        ImGui::EndListBox();
-    }   
-
-    // Save the current state to the container
-    if (ImGui::Button("New"))
-    {
-
-    }
-    SL;
-    // Overwrite the currently selected state
-    if (ImGui::Button("Overwrite"))
-    {
-       
-    }
-    SL;
-    // Load a saved state to the UI
-    if (ImGui::Button("Load"))
-    {
-       
-    }
-    SL;
-    // Erase a saved state from the container
-    if (ImGui::Button("Erase"))
-    {
-
-    }
-
-    ImGui::End();
-}
-
 void IMGUIContainer::Render()
 {
     // Start the Dear ImGui frame
@@ -155,8 +121,7 @@ void IMGUIContainer::Render()
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
     ConstructRenderObjectShelves();
-
-    ConstructStateManager();
+    m_stateManager.ConstructIMGUI();
 
     ImGui::PopStyleColor(1);
 

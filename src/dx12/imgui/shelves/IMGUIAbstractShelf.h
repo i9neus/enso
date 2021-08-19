@@ -17,7 +17,9 @@ public:
     IMGUIAbstractShelf() = default;
     
     virtual void Construct() = 0;
+    virtual void FromJson(const Json::Node& json, const int flags) = 0;
     virtual bool ToJson(std::string& newJson) = 0;
+    virtual void ToJson(Json::Node& json) = 0;
 
     const std::string& GetDAGPath() const { return m_dagPath; }
     const std::string& GetID() const { return m_id; }
@@ -52,7 +54,7 @@ public:
 
     virtual ~IMGUIShelf() = default;
 
-    void FromJson(const Json::Node& json, const int flags)
+    virtual void FromJson(const Json::Node& json, const int flags) override final
     {
         m_params[0].FromJson(json, flags);
         m_params[1] = m_params[0];
@@ -71,6 +73,11 @@ public:
         Reset();
 
         return true;
+    }
+
+    virtual void ToJson(Json::Node& node) override final
+    {
+        m_params[0].ToJson(node);
     }
 
     virtual void Reset() {}

@@ -10,6 +10,7 @@
 
 #include "shelves/IMGUIAbstractShelf.h"
 #include "shelves/IMGUIShelfFactory.h"
+#include "IMGUIStateManager.h"
 
 using namespace Cuda;
 
@@ -39,6 +40,7 @@ private:
     HWND                            m_hWnd;
     RenderManager&                  m_cudaRenderer;
     IMGUIAbstractShelfMap           m_shelves;
+    RenderObjectStateManager        m_stateManager;
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);
@@ -51,6 +53,5 @@ public:
     void UpdateParameters();
 
     void ConstructRenderObjectShelves();
-    void ConstructStateManager();
 
 };
