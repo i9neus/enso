@@ -58,7 +58,7 @@ namespace Cuda
      __host__  Host::Sphere::Sphere()
      {
          cu_deviceData = InstantiateOnDevice<Device::Sphere>();
-         RenderObject::MakeChildObject();
+         RenderObject::SetRenderObjectFlags(kIsChildObject);
      }
 
      // Constructor for user instantiations

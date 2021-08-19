@@ -37,40 +37,48 @@ namespace Cuda
 			vec3(sinTheta, cosTheta, 0.0),
 			vec3(0.0, 0.0, 1.0));
 	}
+
+	struct TransformParams
+	{
+		__host__ void FromJson(const ::Json::Node& json, const uint flags, const std::string& id);
+		__host__ void ToJson(::Json::Node& json, const std::string& id) const;
+		__host__ __device__ void MakeIdentity();
+		__host__ __device__ void Zero();
+		
+		vec3 trans;
+		vec3 rot;
+		vec3 scale;
+	};
 	
 	class BidirectionalTransform
 	{
 	public:
+		TransformParams p;
+		TransformParams dpdt;
+		TransformParams t;
+
 		vec3 trans;
 		vec3 rot;
 		vec3 scale;
-
 		mat3 fwd;
 		mat3 inv;
 		mat3 nInv;
 
 		__host__ void FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
-		__host__ bool operator==(const BidirectionalTransform&) const;
+		__host__ void Randomise(const float xi0 = 0.0f, const float xi1 = 1.0f);
+		__host__ void ApplyJitter(); 
 
-		__host__ __device__ BidirectionalTransform()
-		{
-			MakeIdentity();
-		}
-
+		__host__ __device__ BidirectionalTransform();
 		__host__ BidirectionalTransform(const ::Json::Node& json, const uint flags);
 
-		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& t, const vec3& r, const vec3& s)
+		__host__ __device__ __forceinline__ BidirectionalTransform(const vec3& trans, const vec3& rot, const vec3& scale)
 		{
-			Create(t, r, s);
+			Create(trans, rot, scale);
 		}
 
-		__host__ __device__ __forceinline__ void Create(const vec3& t, const vec3& r, const vec3& s)
+		__host__ __device__ __forceinline__ void Create(const vec3& trans, const vec3& rot, const vec3& scale)
 		{
-			trans = t;
-			rot = r;
-			scale = s;
-
 			fwd = mat3::Indentity();
 
 			if (rot.x != 0.0) { fwd *= RotXMat3(toRad(rot.x)); }
@@ -79,17 +87,15 @@ namespace Cuda
 
 			nInv = transpose(fwd);
 
-			if (scale != vec3(1.0)) { fwd *= ScaleMat3(scale); }
+			if (scale != vec3(1.0f)) { fwd *= ScaleMat3(scale); }
 
 			inv = inverse(fwd);
 		}
 
 		__host__ __device__ __forceinline__ void MakeIdentity()
 		{
-			trans = 0.0f;
-			rot = 0.0f;
+			trans = rot = 0.0f;
 			scale = 1.0f;
-
 			fwd = inv = nInv = mat3::Indentity();
 		}
 

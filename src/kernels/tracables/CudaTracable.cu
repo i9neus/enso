@@ -23,11 +23,6 @@ namespace Cuda
 
         node.GetValue("excludeFromBake", excludeFromBake, flags);
     }
-
-    __host__ bool TracableParams::operator==(const TracableParams& rhs) const
-    {
-        return transform == rhs.transform;
-    }
     
     __host__ void Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)
     {

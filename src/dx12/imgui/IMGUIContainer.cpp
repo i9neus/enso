@@ -66,21 +66,15 @@ void IMGUIContainer::UpdateParameters()
     }
 }
 
-void IMGUIContainer::Render()
+void IMGUIContainer::ConstructRenderObjectShelves()
 {
-    // Start the Dear ImGui frame
-    ImGui::ImplDX12_NewFrame();
-    ImGui::ImplWin32_NewFrame();
-
-    ImGui::NewFrame();
-
-    ImGui::Begin("Generator"); 
+    ImGui::Begin("Render Objects");
 
     for (const auto& shelf : m_shelves)
     {
-        ImGui::PushID(shelf->GetID().c_str()); 
+        ImGui::PushID(shelf->GetID().c_str());
 
-        /*float hue = 
+        /*float hue =
         ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
         ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(i / 7.0f, 0.6f, 0.5f));
         ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.7f, 0.5f));
@@ -110,6 +104,26 @@ void IMGUIContainer::Render()
     ImGui::Text("Dead rays: %i", deadRays);
 
     ImGui::End();
+}
+
+void IMGUIContainer::ConstructStateManager()
+{
+    ImGui::Begin("State Manager");
+
+    ImGui::End();
+}
+
+void IMGUIContainer::Render()
+{
+    // Start the Dear ImGui frame
+    ImGui::ImplDX12_NewFrame();
+    ImGui::ImplWin32_NewFrame();
+
+    ImGui::NewFrame();
+
+    ConstructRenderObjectShelves();
+
+    ConstructStateManager();
 
     // Rendering
     ImGui::Render();

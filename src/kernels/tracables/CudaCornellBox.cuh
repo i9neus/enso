@@ -15,8 +15,6 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        bool operator==(const CornellBoxParams&) const;
-
         TracableParams tracable;
         bool isBounded;
     };

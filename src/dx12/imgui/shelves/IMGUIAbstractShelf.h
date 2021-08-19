@@ -26,7 +26,7 @@ public:
     }
 
 protected:
-    void ConstructTransform(Cuda::BidirectionalTransform& transform);
+    void ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isDifferentiable);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
 
     std::string m_dagPath;

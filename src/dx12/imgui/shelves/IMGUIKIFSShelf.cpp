@@ -131,7 +131,7 @@ void KIFSShelf::Construct()
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     auto& p = m_params[0];
-    ConstructTransform(p.transform);
+    ConstructTransform(p.transform, true);
 
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
 
@@ -183,13 +183,13 @@ void KIFSShelf::Construct()
     // Jitter the current state to generate a new scene
     if (ImGui::Button("Randomise"))
     {
-        JitterKIFSParameters();
+        p.Randomise();
     } 
     SL;
     // Reset all the jittered values to their midpoints
     if (ImGui::Button("Reset jitter"))
     {
-        p.SetRandomSeeds(std::vector<float>(6, 0.5f));
+        p.Randomise(0.5f, 0.5f);
     }
  
     if (ImGui::TreeNode("State manager"))
@@ -276,11 +276,5 @@ void KIFSShelf::Reset()
 
 void KIFSShelf::JitterKIFSParameters()
 {
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_real_distribution<> realRng(0.0, 1.0);
-
-    std::vector<float> xi(6);
-    std::generate(xi.begin(), xi.end(), [&] { return realRng(mt); } );
-    m_params[0].SetRandomSeeds(xi);
+    
 }

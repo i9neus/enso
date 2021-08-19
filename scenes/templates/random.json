@@ -1,21 +1,18 @@
 {
-  "integrators": 
-  {
-    "integrator_wfTracer": 
-    {
-      "enabled": true,
-      "class": "wavefront",
-      "maxDepth": 3,
-      "ambientRadiance": [0.3, 0.3, 0.3],
-      "debugNormals": false,
-      "debugShaders": false,
-      "importanceMode": "mis",
-      "displayGamma": 1.7
-    }    
-  },
+    "integrators": {
+        "integrator_wfTracer": {
+            "enabled": true,
+            "class": "wavefront",
+            "maxDepth": 3,
+            "ambientRadiance": [ 0.3, 0.3, 0.3 ],
+            "debugNormals": false,
+            "debugShaders": false,
+            "importanceMode": "mis",
+            "displayGamma": 1.7
+        }
+    },
     "cameras": {
-        "camera_perspCam":
-        {
+        "camera_perspCam": {
             "class": "perspective",
             "enabled": true,
             "active": true,
@@ -37,9 +34,11 @@
             "class": "lightprobe",
             "grid": {
                 "transform": {
-                    "pos": [ 0.0, 0.0, 0.0 ],
-                    "rot": [ 0.0, 0.0, 0.0 ],
-                    "sca": [ 0.99, 0.99, 0.99 ]
+                    "p": {
+                        "pos": [ 0.0, 0.0, 0.0 ],
+                        "rot": [ 0.0, 0.0, 0.0 ],
+                        "sca": [ 0.99, 0.99, 0.99 ]
+                    }
                 },
                 "gridDensity": [ 10, 10, 10 ],
                 "shOrder": 1,
@@ -61,13 +60,14 @@
             "material": "material_groundPlane",
             "bounded": false,
             "transform": {
-                "pos": [ 0.0, -0.5, 0.0 ],
-                "rot": [ 90.0, 0.0, 0.0 ],
-                "sca": [ 1.0, 1.0, 1.0 ]
+                "p": {
+                    "pos": [ 0.0, -0.5, 0.0 ],
+                    "rot": [ 90.0, 0.0, 0.0 ],
+                    "sca": [ 1.0, 1.0, 1.0 ]
+                }
             }
         },
-        "tracable_kifsFractal":
-        {
+        "tracable_kifsFractal": {
             "enabled": true,
             "class": "kifs",
             "material": "material_kifs",
@@ -93,9 +93,11 @@
                 "clipShape": "box"
             },
             "transform": {
-                "pos": [ 0.5699999928474426, 0.0, 0.0 ],
-                "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
-                "sca": [ 4.303999900817871, 4.303999900817871, 4.303999900817871 ]
+                "p": {
+                    "pos": [ 0.5699999928474426, 0.0, 0.0 ],
+                    "rot": [ 0.0, 1.4769999980926514, -0.28999999165534975 ],
+                    "sca": [ 4.303999900817871, 4.303999900817871, 4.303999900817871 ]
+                }
             },
             "excludeFromBake": false,
             "transform": null
@@ -106,60 +108,57 @@
             "class": "sphere",
             "material": "material_kifs",
             "transform": {
-                "pos": [ 0.0, 0.0, 0.0 ],
-                "rot": [ 0.0, 0.0, 0.0 ],
-                "sca": [ 0.2, 0.2, 0.2 ]
+                "p": {
+                    "pos": [ 0.0, 0.0, 0.0 ],
+                    "rot": [ 0.0, 0.0, 0.0 ],
+                    "sca": [ 0.2, 0.2, 0.2 ]
+                }
             }
         }
     },
-  "materials": 
-  {
-    "material_groundPlane":
-    {
-      "class": "simple",
-      "bxdf": "bxdf_diffuse",
-      "albedo": [0.5, 0.5, 0.5],
-      "incandescence" : [0.0, 0.0, 0.0],
-      "useGrid" : true,
-      "transform" : 
-      {
-        "pos": [0.0, 0.0, 0.0],
-        "rot": [0.0, 0.0, 0.0],
-        "sca": [1.0, 1.0, 1.0]
-      }
+    "materials": {
+        "material_groundPlane": {
+            "class": "simple",
+            "bxdf": "bxdf_diffuse",
+            "albedo": [ 0.5, 0.5, 0.5 ],
+            "incandescence": [ 0.0, 0.0, 0.0 ],
+            "useGrid": true,
+            "transform": {
+                "p": {
+                    "pos": [ 0.0, 0.0, 0.0 ],
+                    "rot": [ 0.0, 0.0, 0.0 ],
+                    "sca": [ 1.0, 1.0, 1.0 ]
+                }
+            }
+        },
+        "material_kifs": {
+            "class": "kifsmaterial",
+            "bxdf": "bxdf_diffuse",
+            "hslLower": [ 0.0, 1.0, 0.5 ],
+            "hslUpper": [ 0.1, 1.0, 0.5 ],
+            "incandescence": [ 0.0, 0.0, 0.0 ]
+        }
     },
-    "material_kifs":
-    {
-      "class": "kifsmaterial",
-      "bxdf": "bxdf_diffuse",
-      "hslLower" : [0.0, 1.0, 0.5],
-      "hslUpper" : [0.1, 1.0, 0.5],
-      "incandescence" : [0.0, 0.0, 0.0]
+    "bxdfs": {
+        "bxdf_diffuse": {
+            "enabled": true,
+            "class": "lambert",
+            "lightProbeGrid": "camera_probeCam"
+        }
+    },
+    "lights": {
+        "light_sphere": {
+            "enabled": true,
+            "class": "spherelight",
+            "intensity": 0.0,
+            "colour": [ 1.0, 1.0, 1.0 ],
+            "transform": {
+                "p": {
+                    "pos": [ 0.0, 0.48, 0.0 ],
+                    "rot": [ -90.0, 0.0, 0.0 ],
+                    "sca": [ 0.1, 0.1, 0.1 ]
+                }
+            }
+        }
     }
-  },
-  "bxdfs": 
-  {
-    "bxdf_diffuse":
-    {
-      "enabled": true,
-      "class": "lambert",
-      "lightProbeGrid": "camera_probeCam"
-    }
-  },
-  "lights": 
-  {
-     "light_sphere":
-    {
-      "enabled": true,
-      "class": "spherelight",
-      "intensity": 0.0,
-      "colour": [1.0, 1.0, 1.0],
-      "transform" : 
-      {
-        "pos": [0.0, 0.48, 0.0],
-        "rot": [-90.0, 0.0, 0.0],
-        "sca": [0.1, 0.1, 0.1]
-      }
-    }
-  }
 }

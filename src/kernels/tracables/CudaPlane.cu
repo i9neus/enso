@@ -15,12 +15,6 @@ namespace Cuda
         tracable.FromJson(node, flags);
     }
 
-    __host__ bool PlaneParams::operator==(const PlaneParams& rhs) const
-    {
-        return isBounded == rhs.isBounded &&
-            tracable == rhs.tracable;
-    }
-    
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.tracable.transform);
@@ -55,7 +49,7 @@ namespace Cuda
     __host__  Host::Plane::Plane()
     {        
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
-        RenderObject::MakeChildObject();
+        RenderObject::SetRenderObjectFlags(kIsChildObject);
     }
 
     // Constructor for user instantiations

@@ -30,18 +30,21 @@ namespace Cuda
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
             __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node);
 
-            __host__ const std::string& GetDAGPath() const { return m_dagPath; }
-            __host__ const bool HasDAGPath() const { return !m_dagPath.empty(); }
-            __host__ bool IsChildObject() const { return m_isChildObject; }
+            __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
+            __host__ const bool             HasDAGPath() const { return !m_dagPath.empty(); }
+            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kIsChildObject; }
+            __host__ bool                   IsJitterable() const { return m_renderObjectFlags & kIsJitterable;  }
 
-            __host__ virtual void OnPreRender() {}
-            __host__ virtual void OnPostRender() {}
-            __host__ virtual void OnPreRenderPass(const float wallTime, const float frameIdx) {}
-            __host__ virtual void OnPostRenderPass() {}
+            __host__ virtual void           OnPreRender() {}
+            __host__ virtual void           OnPostRender() {}
+            __host__ virtual void           OnPreRenderPass(const float wallTime, const float frameIdx) {}
+            __host__ virtual void           OnPostRenderPass() {}
 
         protected:
-            __host__ RenderObject() : m_isChildObject(false) {}
+            __host__ RenderObject() : m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
+
+            enum RenderObjectFlags : uint { kIsChildObject, kIsJitterable };
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)
@@ -67,11 +70,11 @@ namespace Cuda
             } 
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
-            __host__ void MakeChildObject(const bool isChild = true) { m_isChildObject = isChild; }
+            __host__ void SetRenderObjectFlags(const uint flags) { m_renderObjectFlags = flags; }            
 
         private:
             std::string         m_dagPath;
-            bool                m_isChildObject;
+            uint                m_renderObjectFlags;
         };     
     }  
 

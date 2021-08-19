@@ -2,6 +2,8 @@
 #include "CudaSDF.cuh"
 #include "generic/JsonUtils.h"
 
+#include <random>
+
 namespace Cuda
 {
 #define kKIFSPolyhedronType 0
@@ -66,19 +68,23 @@ namespace Cuda
         FromJson(node, flags); 
     }
 
-    __host__ void KIFSParams::SetRandomSeeds(const std::vector<float>& xi)
+    __host__ void KIFSParams::Randomise(const float xi0, const float xi1)
     {
-        Assert(xi.size() == 6);
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<> rng(xi0, xi1);
         
-        rotateA.z = xi[0];
-        rotateB.z = xi[1];
-        scaleA.z = xi[2];
-        scaleB.z = xi[3];
-        vertScale.z = xi[4];
-        crustThickness.z = xi[5];
+        rotateA.z = rng(mt);
+        rotateB.z = rng(mt);
+        scaleA.z = rng(mt);
+        scaleB.z = rng(mt);
+        vertScale.z = rng(mt);
+        crustThickness.z = rng(mt);
+
+        transform.Randomise();
     }
 
-    __host__ void KIFSParams::Jitter()
+    __host__ void KIFSParams::ApplyJitter()
     {
         rotateA.x += rotateA.y * (rotateA.z * 2.0f - 1.0f);
         rotateB.x += rotateB.y * (rotateB.z * 2.0f - 1.0f);
@@ -149,7 +155,7 @@ namespace Cuda
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
 
-        Jitter();
+        ApplyJitter();
     }
 
     __device__ void Device::KIFS::Prepare()

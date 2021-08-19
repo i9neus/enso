@@ -15,12 +15,6 @@ namespace Cuda
         tracable.FromJson(node, ::Json::kRequiredWarn);
     }
 
-    __host__ bool CornellBoxParams::operator==(const CornellBoxParams& rhs) const
-    {
-        return isBounded == rhs.isBounded &&
-            tracable == rhs.tracable;
-    }
-
     __device__  bool Device::CornellBox::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
         if (ray.flags & kRayLightProbe && m_params.tracable.excludeFromBake) { return false; }
@@ -77,7 +71,7 @@ namespace Cuda
     __host__  Host::CornellBox::CornellBox()
     {
         cu_deviceData = InstantiateOnDevice<Device::CornellBox>();
-        RenderObject::MakeChildObject();
+        RenderObject::SetRenderObjectFlags(kIsChildObject);
     }
 
     // Constructor for user instantiations

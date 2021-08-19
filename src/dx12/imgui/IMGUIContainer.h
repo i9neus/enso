@@ -60,4 +60,7 @@ public:
     void Destroy();
     void UpdateParameters();
 
+    void ConstructRenderObjectShelves();
+    void ConstructStateManager();
+
 };

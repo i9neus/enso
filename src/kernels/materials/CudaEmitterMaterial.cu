@@ -5,7 +5,7 @@ namespace Cuda
     __host__ Host::EmitterMaterial::EmitterMaterial() :
         cu_deviceData(nullptr)
     {
-        MakeChildObject();
+        RenderObject::SetRenderObjectFlags(kIsChildObject);
         cu_deviceData = InstantiateOnDevice<Device::EmitterMaterial>();
     }
 

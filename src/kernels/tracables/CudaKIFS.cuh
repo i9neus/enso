@@ -24,8 +24,8 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        __host__ void SetRandomSeeds(const std::vector<float>& xi);
-        __host__ void Jitter();
+        __host__ void Randomise(const float xi0 = 0.0f, const float xi1 = 1.0f);
+        __host__ void ApplyJitter();
 
         vec3    rotateA;
         vec3    rotateB;
