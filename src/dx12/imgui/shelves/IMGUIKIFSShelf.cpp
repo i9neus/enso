@@ -1,5 +1,73 @@
 #include "IMGUIKIFSShelf.h"
 
+#include <random>
+
+KIFSStateContainer::KIFSStateContainer()
+{
+
+}
+
+void KIFSStateContainer::Insert(const std::string& id, const Cuda::KIFSParams& kifsParams, bool overwriteIfExists)
+{
+    if (id.empty()) { Log::Error("Error: KIFS state ID must not be blank.\n");  return; }
+
+    auto it = m_stateMap.find(id);
+    std::shared_ptr<Json::Document> jsonPtr;
+    if (it != m_stateMap.end()) 
+    { 
+        if (!overwriteIfExists) { Log::Error("Error: KIFS state with ID '%s' already exists.\n", id); return; }
+
+        Assert(it->second);
+        jsonPtr = it->second;
+        jsonPtr->Clear();
+
+        Log::Debug("Updated KIFS state '%s' in library.\n", id);
+    }
+    else
+    {        
+        auto& statePtr = m_stateMap[id];
+        statePtr.reset(new Json::Document());
+        jsonPtr = statePtr;
+
+        Log::Debug("Added KIFS state '%s' to library.\n", id);
+    }
+
+    kifsParams.ToJson(*jsonPtr);   
+
+    for (auto& e : m_stateMap) { Log::Debug("  - %s\n", e.first); }
+}
+
+void KIFSStateContainer::Erase(const std::string& id)
+{
+    auto it = m_stateMap.find(id);
+    if (it == m_stateMap.end()) { Log::Error("Error: KIFS state with ID '%s' does not exist.\n", id); return; }
+
+    m_stateMap.erase(it);
+    Log::Debug("Removed KIFS state '%s' from library.\n", id);
+}
+
+void KIFSStateContainer::Restore(const std::string& id, Cuda::KIFSParams& kifsParams)
+{
+    auto it = m_stateMap.find(id);
+    if (it == m_stateMap.end()) { Log::Error("Error: KIFS state with ID '%s' does not exist.\n", id); return; }
+
+    Assert(it->second);
+    kifsParams.FromJson(*(it->second), Json::kSilent);
+    Log::Debug("Restored KIFS state '%s' from library.\n", id);
+}
+
+void KIFSStateContainer::ToJson(Json::Document& document)
+{
+}
+
+KIFSShelf::KIFSShelf(const Json::Node& json) : 
+    IMGUIShelf(json)
+{
+    m_stateListCurrentIdx = -1;
+    m_stateIDData.resize(2048);
+    std::memset(m_stateIDData.data(), '\0', sizeof(char) * m_stateIDData.size());
+}
+
 void KIFSShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -23,10 +91,10 @@ void KIFSShelf::Construct()
             else
             {
                 ImGui::PushItemWidth(140);
-                ImGui::DragFloat("+/-", &value[0], math::max(0.01f, value[0] * 0.01f), 0.0f, 1.0f); SL;
+                ImGui::DragFloat("+/-", &value[0], 0.001f, 0.0f, 1.0f, "%.6f"); SL;
                 ImGui::PopItemWidth();
                 ImGui::PushItemWidth(80);
-                ImGui::DragFloat("~", &value[1], math::max(0.01f, value[1] * 0.01f), 0.0f, 1.0f); SL;
+                ImGui::DragFloat("~", &value[1], math::max(0.00001f, value[1] * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
                 ImGui::SliderFloat("", &value[2], 0.0f, 1.0f);
                 ImGui::PopItemWidth();
             }
@@ -52,26 +120,69 @@ void KIFSShelf::Construct()
 
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
     ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.foldType);
-    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);
+    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);    
 
-    if (ImGui::Button("Take snapshot")) { p.doTakeSnapshot = true; } SL;
-    if (ImGui::Button("Load snapshot")) {}
-
-    const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
-    static int item_current_idx = 0; // Here we store our selection data as an index.
-    if (ImGui::BeginListBox("listbox 1"))
+    // Jitter the current state to generate a new scene
+    if (ImGui::Button("Randomise"))
     {
-        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+        JitterKIFSParameters();
+    } 
+    SL;
+    // Reset all the jittered values to their midpoints
+    if (ImGui::Button("Reset jitter"))
+    {
+        p.SetRandomSeeds(std::vector<float>(6, 0.5f));
+    }
+ 
+    if (ImGui::TreeNode("State manager"))
+    {
+        auto& stateMap = m_stateContainer.GetStateMap();
+        if (ImGui::BeginListBox("States"))
         {
-            const bool is_selected = (item_current_idx == n);
-            if (ImGui::Selectable(items[n], is_selected))
-                item_current_idx = n;
-
-            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-            if (is_selected)
-                ImGui::SetItemDefaultFocus();
+            KIFSStateContainer::StateMap::const_iterator it = stateMap.begin();
+            for (int n = 0; n < stateMap.size(); n++, ++it)
+            {
+                const bool isSelected = (m_stateListCurrentIdx == n);
+                if (ImGui::Selectable(it->first.c_str(), isSelected))
+                {
+                    m_stateListCurrentId = it->first;
+                    m_stateListCurrentIdx = n;
+                }
+                if (isSelected) { ImGui::SetItemDefaultFocus(); }
+            }
+            ImGui::EndListBox();
         }
-        ImGui::EndListBox();
+        ImGui::InputText("State ID", m_stateIDData.data(), m_stateIDData.size());
+
+        // Save the current state to the container
+        if (ImGui::Button("New"))
+        {
+            m_stateContainer.Insert(std::string(m_stateIDData.data()), m_params[0], false);
+            std::memset(m_stateIDData.data(), '\0', sizeof(char) * m_stateIDData.size());
+        }
+        SL;
+        // Overwrite the currently selected state
+        if (ImGui::Button("Overwrite"))
+        {
+            if (m_stateListCurrentIdx < 0) { Log::Warning("Select a state from the list to overwrite it.\n"); }
+            else
+            {
+                m_stateContainer.Insert(m_stateListCurrentId, m_params[0], true);
+            }
+        }
+        SL;
+        // Load a saved state to the UI
+        if (ImGui::Button("Load") && m_stateListCurrentIdx >= 0 && !stateMap.empty())
+        {
+            m_stateContainer.Restore(m_stateListCurrentId, m_params[0]);
+        }
+        SL;
+        // Erase a saved state from the container
+        if (ImGui::Button("Erase") && m_stateListCurrentIdx >= 0 && !stateMap.empty())
+        {
+            m_stateContainer.Erase(m_stateListCurrentId);
+        }
+        ImGui::TreePop();
     }
 
     auto ConstructMaskCheckboxes = [](const std::string& label, uint& value, const int row) -> void
@@ -103,4 +214,15 @@ void KIFSShelf::Construct()
 
 void KIFSShelf::Reset()
 {
+}
+
+void KIFSShelf::JitterKIFSParameters()
+{
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_real_distribution<> realRng(0.0, 1.0);
+
+    std::vector<float> xi(6);
+    std::generate(xi.begin(), xi.end(), [&] { return realRng(mt); } );
+    m_params[0].SetRandomSeeds(xi);
 }

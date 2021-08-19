@@ -135,7 +135,7 @@ namespace USDIO
 
     #define USD_DISABLED_FUNCTION(func) func { Log::Debug("***** Warning: USD exporting is disabled in debug mode. ****\n"); } 
 
-    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&))
+    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&, std::string usdExportPath))
     USD_DISABLED_FUNCTION(void TestUSD())   
 
 #endif

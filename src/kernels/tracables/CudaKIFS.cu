@@ -37,12 +37,12 @@ namespace Cuda
     };
 
     __host__ __device__ KIFSParams::KIFSParams() :
-        rotateA(0.5f, 0.0f, 0.0f),
-        rotateB(0.5f, 0.0f, 0.0f),
-        scaleA(0.5f, 0.0f, 0.0f),
-        scaleB(0.5f, 0.0f, 0.0f),
-        vertScale(0.5f, 0.0f, 0.0f),
-        crustThickness(0.5f, 0.0f, 0.0f),        
+        rotateA(0.5f, 0.0f, 0.5f),
+        rotateB(0.5f, 0.0f, 0.5f),
+        scaleA(0.5f, 0.0f, 0.5f),
+        scaleB(0.5f, 0.0f, 0.5f),
+        vertScale(0.5f, 0.0f, 0.5f),
+        crustThickness(0.5f, 0.0f, 0.5f),        
         numIterations(1),
         faceMask(0xffffffff),
         foldType(kKIFSTetrahedtron),
@@ -64,6 +64,28 @@ namespace Cuda
         KIFSParams()
     { 
         FromJson(node, flags); 
+    }
+
+    __host__ void KIFSParams::SetRandomSeeds(const std::vector<float>& xi)
+    {
+        Assert(xi.size() == 6);
+        
+        rotateA.z = xi[0];
+        rotateB.z = xi[1];
+        scaleA.z = xi[2];
+        scaleB.z = xi[3];
+        vertScale.z = xi[4];
+        crustThickness.z = xi[5];
+    }
+
+    __host__ void KIFSParams::Jitter()
+    {
+        rotateA.x += rotateA.y * (rotateA.z * 2.0f - 1.0f);
+        rotateB.x += rotateB.y * (rotateB.z * 2.0f - 1.0f);
+        scaleA.x += scaleA.y * (scaleA.z * 2.0f - 1.0f);
+        scaleB.x += scaleB.y * (scaleB.z * 2.0f - 1.0f);
+        vertScale.x += vertScale.y * (vertScale.z * 2.0f - 1.0f);
+        crustThickness.x += crustThickness.y * (crustThickness.z * 2.0f - 1.0f);
     }
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
@@ -127,12 +149,7 @@ namespace Cuda
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
 
-        rotateA.x += rotateA.y * (rotateA.z * 2.0f - 1.0f);
-        rotateB.x += rotateB.y * (rotateB.z * 2.0f - 1.0f);
-        scaleA.x += scaleA.y * (scaleA.z * 2.0f - 1.0f);
-        scaleB.x += scaleB.y * (scaleB.z * 2.0f - 1.0f);
-        vertScale.x += vertScale.y * (vertScale.z * 2.0f - 1.0f);
-        crustThickness.x += crustThickness.y * (crustThickness.z * 2.0f - 1.0f);
+        Jitter();
     }
 
     __device__ void Device::KIFS::Prepare()
