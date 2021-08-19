@@ -1,10 +1,52 @@
 #include "IMGUIKIFSShelf.h"
+#include "generic/FilesystemUtils.h"
 
 #include <random>
 
 KIFSStateContainer::KIFSStateContainer()
 {
 
+}
+
+void KIFSStateContainer::SetJsonPath(const std::string& filePath)
+{
+    m_jsonPath = filePath;
+}
+
+void KIFSStateContainer::ReadJson()
+{
+    Log::Debug("Trying to restore KIFS state library...\n");
+
+    Json::Document rootDocument;
+    try
+    {
+        rootDocument.Load(m_jsonPath);
+    }
+    catch (const std::runtime_error& err)
+    {
+        Log::Debug("Failed: %s.\n", err.what());
+    }
+
+    for (Json::Node::Iterator it = rootDocument.begin(); it != rootDocument.end(); ++it)
+    {
+        std::string newId = it.Name();
+        Json::Node childNode = *it;
+
+        Cuda::KIFSParams kifsParams(childNode, Json::kSilent);
+        Insert(newId, kifsParams, false);
+    }
+}
+
+void KIFSStateContainer::WriteJson()
+{
+    Json::Document rootDocument;
+    for (auto& state : m_stateMap)
+    {
+        Json::Node childNode = rootDocument.AddChildObject(state.first);
+        childNode.DeepCopy(*state.second);
+    }
+
+    rootDocument.WriteFile(m_jsonPath);
 }
 
 void KIFSStateContainer::Insert(const std::string& id, const Cuda::KIFSParams& kifsParams, bool overwriteIfExists)
@@ -32,9 +74,10 @@ void KIFSStateContainer::Insert(const std::string& id, const Cuda::KIFSParams& k
         Log::Debug("Added KIFS state '%s' to library.\n", id);
     }
 
-    kifsParams.ToJson(*jsonPtr);   
+    kifsParams.ToJson(*jsonPtr);
+    WriteJson();
 
-    for (auto& e : m_stateMap) { Log::Debug("  - %s\n", e.first); }
+    //for (auto& e : m_stateMap) { Log::Debug("  - %s\n", e.first); }
 }
 
 void KIFSStateContainer::Erase(const std::string& id)
@@ -43,6 +86,8 @@ void KIFSStateContainer::Erase(const std::string& id)
     if (it == m_stateMap.end()) { Log::Error("Error: KIFS state with ID '%s' does not exist.\n", id); return; }
 
     m_stateMap.erase(it);
+    WriteJson();
+
     Log::Debug("Removed KIFS state '%s' from library.\n", id);
 }
 
@@ -53,6 +98,7 @@ void KIFSStateContainer::Restore(const std::string& id, Cuda::KIFSParams& kifsPa
 
     Assert(it->second);
     kifsParams.FromJson(*(it->second), Json::kSilent);
+
     Log::Debug("Restored KIFS state '%s' from library.\n", id);
 }
 
@@ -66,6 +112,18 @@ KIFSShelf::KIFSShelf(const Json::Node& json) :
     m_stateListCurrentIdx = -1;
     m_stateIDData.resize(2048);
     std::memset(m_stateIDData.data(), '\0', sizeof(char) * m_stateIDData.size());
+
+    m_stateJsonPath = json.GetRootDocument().GetOriginFilePath();
+    std::string jsonStem = GetFileStem(m_stateJsonPath);
+    ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
+
+    m_stateContainer.SetJsonPath(m_stateJsonPath);
+    m_stateContainer.ReadJson();
+}
+
+KIFSShelf::~KIFSShelf()
+{
+    
 }
 
 void KIFSShelf::Construct()
@@ -167,7 +225,7 @@ void KIFSShelf::Construct()
             if (m_stateListCurrentIdx < 0) { Log::Warning("Select a state from the list to overwrite it.\n"); }
             else
             {
-                m_stateContainer.Insert(m_stateListCurrentId, m_params[0], true);
+                m_stateContainer.Insert(m_stateListCurrentId, m_params[0], true);                
             }
         }
         SL;

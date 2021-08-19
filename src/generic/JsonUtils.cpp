@@ -176,10 +176,10 @@ namespace Json
         return true;
     }
 
-    void Document::DeepCopy(const Document& other)
+    void Node::DeepCopy(const Node& other)
     {
-        m_document.SetObject();
-        m_document.CopyFrom(other.m_document, m_document.GetAllocator());
+        m_node->SetObject();
+        m_node->CopyFrom(*other.m_node, *m_allocator);
     }
 
     void Document::Parse(const std::string& data)
@@ -205,7 +205,8 @@ namespace Json
 
     void Document::Load(const std::string& filePath)
     {
-        std::string raw = LoadTextFile(filePath);
+        m_originFilePath = filePath;
+        std::string raw = ReadTextFile(filePath);
 
         // Erase commented-out blocks
         for (int i = 0; i < raw.size() && raw[i] != '\0'; i++)
@@ -222,6 +223,11 @@ namespace Json
         }
 
         Parse(raw);
+    }
+
+    void Document::WriteFile(const std::string& filePath)
+    {
+        WriteTextFile(filePath, Stringify());
     }
 
     std::string Document::Stringify()

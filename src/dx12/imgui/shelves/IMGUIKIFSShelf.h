@@ -11,6 +11,10 @@ public:
 
     KIFSStateContainer();
 
+    void SetJsonPath(const std::string& filePath);
+    void ReadJson();
+    void WriteJson();
+
     void Insert(const std::string& id, const Cuda::KIFSParams& kifsParams, const bool overwriteIfExists);
     void Erase(const std::string& id);
     void Restore(const std::string& id, Cuda::KIFSParams& kifsParams);
@@ -21,6 +25,8 @@ public:
 
 private:
     StateMap    m_stateMap;
+
+    std::string             m_jsonPath;
 };
 
 // KIFS tracable
@@ -28,11 +34,11 @@ class KIFSShelf : public IMGUIShelf<Cuda::Host::KIFS, Cuda::KIFSParams>
 {
 public:
     KIFSShelf(const Json::Node& json);
-    virtual ~KIFSShelf() = default;
+    virtual ~KIFSShelf();
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSShelf(json)); }
-    virtual void Construct() override final;
-    virtual void Reset() override final;
+    virtual void            Construct() override final;
+    virtual void            Reset() override final;
 
 private:
     void                    JitterKIFSParameters();

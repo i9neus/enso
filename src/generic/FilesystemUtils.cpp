@@ -75,9 +75,9 @@ bool ReplaceFilename(std::string& absolutePath, const std::string& newFilename)
     return true;
 }
 
-std::string GetFileStem(const std::string& absolutePath)
+std::string GetFileStem(const std::string& path)
 {
-    fs::path fsPath(absolutePath.c_str());
+    fs::path fsPath(path.c_str());
     return fsPath.stem().string();
 }
 
@@ -107,10 +107,11 @@ std::string GetModuleDirectory()
     return fsPath.remove_filename().string();
 }
 
-bool GetFileHandle(const std::string& filePath, std::ifstream& file)
+template<typename HandleType>
+bool GetFileHandle(const std::string& filePath, HandleType& file, std::ios_base::openmode mode)
 {
     // Try loading the file using the verbatim path
-    file.open(filePath, std::ios::in);
+    file.open(filePath, mode);
     if (file.good()) { return true; }
 
     // Get a path to the module directory
@@ -122,14 +123,24 @@ bool GetFileHandle(const std::string& filePath, std::ifstream& file)
     Log::Warning("_DEBUG: Modifying local path to '%s'...\n", concatPath + filePath);
 #endif
 
-    file.open(concatPath + filePath, std::ios::in);
+    file.open(concatPath + filePath, mode);
     return file.good();
 }
 
-std::string LoadTextFile(const std::string& filePath)
+bool GetInputFileHandle(const std::string& filePath, std::ifstream& file)
+{
+    return GetFileHandle(filePath, file, std::ios::in);
+}
+
+bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file)
+{
+    return GetFileHandle(filePath, file, std::ios::out);
+}
+
+std::string ReadTextFile(const std::string& filePath)
 {
     std::ifstream file;
-    AssertMsgFmt(GetFileHandle(filePath, file), "Couldn't open file '%s'", filePath.c_str());
+    AssertMsgFmt(GetInputFileHandle(filePath, file), "Couldn't open file '%s'", filePath.c_str());
 
     const int32_t fileSize = file.tellg();
     std::string data;
@@ -140,4 +151,19 @@ std::string LoadTextFile(const std::string& filePath)
 
     file.close();
     return data;
+}
+
+void WriteTextFile(const std::string& filePath, const std::string& data)
+{
+    std::ofstream file;
+    AssertMsgFmt(GetOutputFileHandle(filePath, file), "Couldn't open file '%s'", filePath.c_str());
+
+    file.write(data.data(), sizeof(char) * data.size());
+
+    file.close();
+}
+
+bool IsAbsolutePath(const std::string& path)
+{
+    return path.find('\\') != std::string::npos || path.find('\\') != std::string::npos;
 }

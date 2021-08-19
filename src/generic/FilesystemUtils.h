@@ -21,22 +21,31 @@ bool CreateDirectory(const std::string absolutePath);
 bool ReplaceExtension(std::string& absolutePath, const std::string& newExtension);
 
 // Get the extension for the path
-std::string GetExtension(const std::string& absolutePath);
+std::string GetExtension(const std::string& path);
 
 // Get the filename for the path
-std::string GetFilename(const std::string& absolutePath);
+std::string GetFilename(const std::string& path);
+
+// Get the file stem for the path
+std::string GetFileStem(const std::string& path);
 
 // Replace with a filename with a new one
 bool ReplaceFilename(std::string& absolutePath, const std::string& newFilename);
-
-// Get the file step for the path
-std::string GetFileStem(const std::string& absolutePath);
 
 // Get the directory that the executable is situated in
 std::string GetModuleDirectory();
 
 // Load a text file into a string
-std::string LoadTextFile(const std::string& filePath);
+std::string ReadTextFile(const std::string& filePath);
+
+// Write a string to a text file 
+void WriteTextFile(const std::string& filePath, const std::string& data);
 
 // Get a file handle to the specified path
-bool GetFileHandle(const std::string& filePath, std::ifstream& file);
+bool GetInputFileHandle(const std::string& filePath, std::ifstream& file);
+
+// Get a file handle to the specified path
+bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file);
+
+// Returns true if the path is absolute i.e. it has at least one slash character
+inline bool IsAbsolutePath(const std::string& path);

@@ -11,20 +11,23 @@
 namespace Json
 {        
     enum RequiredFlags : uint { kSilent, kRequiredWarn, kRequiredAssert };
+
+    class Document;
     
     class Node
     {
     protected:
         rapidjson::Value*                       m_node;
+        const Document*                         m_rootDocument;
         rapidjson::Document::AllocatorType*     m_allocator;
         std::string                             m_dagPath;
         static const char                       kDAGDelimiter = '/';
 
-        Node() : m_node(nullptr), m_allocator(nullptr) {}
-        Node(const std::nullptr_t&) : m_node(nullptr), m_allocator(nullptr) {}
-        Node(rapidjson::Value* node, const Node& parent) : m_node(node), m_allocator(parent.m_allocator) {}
+        Node() : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
+        Node(const std::nullptr_t&) : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
+        Node(rapidjson::Value* node, const Node& parent) : m_node(node), m_rootDocument(parent.m_rootDocument), m_allocator(parent.m_allocator) {}
         Node(rapidjson::Value* node, const Node& parent, const ::std::string& id) : 
-            m_node(node), m_allocator(parent.m_allocator)
+            m_node(node), m_rootDocument(parent.m_rootDocument), m_allocator(parent.m_allocator)
         {
             m_dagPath = (parent.m_dagPath.empty()) ? id : (parent.m_dagPath + kDAGDelimiter + id);
         }
@@ -80,6 +83,8 @@ namespace Json
 
     public:
         inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
+        const Document& GetRootDocument() const { Assert(m_rootDocument); return *m_rootDocument; }
+        void DeepCopy(const Node& other);
         
         inline bool HasDAGPath() const { return !m_dagPath.empty(); }
         inline const std::string& GetDAGPath() const { return m_dagPath; }
@@ -193,6 +198,7 @@ namespace Json
             m_document.SetObject();
             m_node = &m_document; 
             m_allocator = &m_document.GetAllocator(); 
+            m_rootDocument = this;
         }
 
         void Clear()
@@ -203,11 +209,15 @@ namespace Json
 
         void Parse(const std::string& data);
         void Load(const std::string& filePath);
-        void DeepCopy(const Document& other);
+        void WriteFile(const std::string& filePath);
         std::string Stringify();
+
+        const std::string& GetOriginFilePath() const { return m_originFilePath; }
 
     private:
         rapidjson::Document m_document;
+
+        std::string m_originFilePath;
     };
 
     template<> struct Node::GetValueImpl<true, true>

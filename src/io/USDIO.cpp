@@ -77,7 +77,7 @@ namespace USDIO
 
         usdJson.GetValue("description", usdDescription, Json::kSilent);
 
-        const std::string layerTemplateStr = LoadTextFile(usdTemplatePath);
+        const std::string layerTemplateStr = ReadTextFile(usdTemplatePath);
         Assert(!layerTemplateStr.empty());
 
         //const std::string& usdExportPath = grid->GetUSDExportPath();
