@@ -120,20 +120,20 @@ namespace Cuda
         __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
 
         template<typename ObjectType = Host::RenderObject>
-        __host__ AssetHandle<ObjectType> FindByID(const std::string& id)
+        __host__ AssetHandle<ObjectType> FindByID(const std::string& id) const
         {
             auto it = m_objectMap.find(id);
             return (it == m_objectMap.end()) ? AssetHandle<ObjectType>(nullptr) : it->second.DynamicCast<ObjectType>();
         }
 
-        __host__ AssetHandle<Host::RenderObject> FindByDAG(const std::string& id)
+        __host__ AssetHandle<Host::RenderObject> FindByDAG(const std::string& id) const
         {
             auto it = m_dagMap.find(id);
             return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
         }        
 
         template<typename T>
-        __host__ std::vector<AssetHandle<T>> FindAllOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr, const bool findFirst = false)
+        __host__ std::vector<AssetHandle<T>> FindAllOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr, const bool findFirst = false) const
         {
             std::vector<AssetHandle<T>> assets;
             for (auto object : m_objectMap)
@@ -152,7 +152,7 @@ namespace Cuda
         }
 
         template<typename T>
-        __host__ AssetHandle<T> FindFirstOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr)
+        __host__ AssetHandle<T> FindFirstOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr) const
         {
             auto handles = FindAllOfType<T>(comparator, true);
             return handles.empty() ? nullptr : handles.front();

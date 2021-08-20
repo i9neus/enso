@@ -43,7 +43,7 @@ void IMGUIContainer::Build()
     IMGUIShelfFactory shelfFactory;
     m_shelves = shelfFactory.Instantiate(json, *renderObjects);
 
-    m_stateManager.Initialise(json);
+    m_stateManager.Initialise(json, renderObjects);
 }
 
 void IMGUIContainer::Destroy()
@@ -120,7 +120,8 @@ void IMGUIContainer::Render()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
-    m_stateManager.ConstructIMGUI();
+    m_stateManager.ConstructUI();
+
     ConstructRenderObjectShelves();
 
     ImGui::PopStyleColor(1);

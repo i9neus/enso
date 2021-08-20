@@ -17,7 +17,7 @@
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\IMGUIStateManager.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIElement.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelves.cpp" />
@@ -47,6 +47,7 @@
     <ClInclude Include="src\dx12\imgui\IMGUIContainer.h" />
     <ClInclude Include="src\dx12\imgui\IMGUIStateManager.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIElement.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelves.h" />

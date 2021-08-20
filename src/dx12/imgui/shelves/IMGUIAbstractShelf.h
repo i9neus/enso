@@ -1,17 +1,8 @@
 #pragma once
 
-#include "thirdparty/imgui/imgui.h"
-#include "generic/Math.h"
-#include "generic/StdIncludes.h"
-#include "generic/JsonUtils.h"
+#include "IMGUIElement.h"
 
-#include "kernels/math/CudaMath.cuh"
-
-#define SL ImGui::SameLine()
-
-namespace Json { class Document; class Node; }
-
-class IMGUIAbstractShelf
+class IMGUIAbstractShelf : public IMGUIElement
 {
 public:
     enum RandomiseFlags : int { kReset = 1 };
@@ -37,9 +28,6 @@ public:
     }
 
 protected:
-    void ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable);
-    void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
-
     std::string m_dagPath;
     std::string m_id;
     bool        m_isJitterable;

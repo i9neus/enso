@@ -1,20 +1,40 @@
 #include "IMGUIStateManager.h"
 #include "generic/FilesystemUtils.h"
 
-RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves) : m_imguiShelves(imguiShelves)
-{
-    m_stateListCurrentIdx = -1;
-    m_stateIDData.resize(2048);
-    std::memset(m_stateIDData.data(), '\0', sizeof(char) * m_stateIDData.size());
+#include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-   
+RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves) :
+    m_imguiShelves(imguiShelves),
+    m_stateList("Parameter states", "Add state", "Overwrite state", "Delete state"),
+    m_sampleCountList("Sample counts", "+", "", "-"),
+    m_numPermutations(1),
+    m_isBaking(false)
+{
 }
 
-void RenderObjectStateManager::Initialise(const Json::Node& node)
+void RenderObjectStateManager::Initialise(const Json::Node& node, const Cuda::AssetHandle<Cuda::RenderObjectContainer>& renderObjects)
 {
     m_stateJsonPath = node.GetRootDocument().GetOriginFilePath();
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
+
+    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool { return Insert(id, false); };
+    m_stateList.SetOnAdd(onAddState);
+
+    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool { return Insert(id, true); };
+    m_stateList.SetOnOverwrite(onOverwriteState);
+
+    std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool { return Erase(id); };
+    m_stateList.SetOnDelete(onOverwriteState);
+
+    std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
+    m_stateList.SetOnDeleteAll(onDeleteAllState);
+
+    m_lightProbeCameraAsset = renderObjects->FindFirstOfType<Cuda::Host::LightProbeCamera>();
+    if (m_lightProbeCameraAsset)
+    {
+        Log::Warning("FOUND!");
+    }
 
     ReadJson();
 }
@@ -45,6 +65,12 @@ void RenderObjectStateManager::ReadJson()
         statePtr.reset(new Json::Document());
         statePtr->DeepCopy(childNode);
     }
+
+    m_stateList.Clear();
+    for (auto element : m_stateMap)
+    {
+        m_stateList.Insert(element.first);
+    }
 }
 
 void RenderObjectStateManager::WriteJson()
@@ -59,15 +85,15 @@ void RenderObjectStateManager::WriteJson()
     rootDocument.WriteFile(m_stateJsonPath);
 }
 
-void RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExists)
+bool RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExists)
 {
-    if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return; }
+    if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return false; }
 
     auto it = m_stateMap.find(id);
     std::shared_ptr<Json::Document> jsonPtr;
     if (it != m_stateMap.end())
     {
-        if (!overwriteIfExists) { Log::Error("Error: state with ID '%s' already exists.\n", id); return; }
+        if (!overwriteIfExists) { Log::Error("Error: state with ID '%s' already exists.\n", id); return false; }
 
         Assert(it->second);
         jsonPtr = it->second;
@@ -95,23 +121,30 @@ void RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExi
     }
 
     WriteJson();
+    return true;
 }
 
-void RenderObjectStateManager::Erase(const std::string& id)
+bool RenderObjectStateManager::Erase(const std::string& id)
 {
     auto it = m_stateMap.find(id);
-    if (it == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return; }
+    if (it == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
 
     m_stateMap.erase(it);
     WriteJson();
 
-    Log::Debug("Removed state '%s' from library.\n", id);
+    Log::Debug("Removed state '%s' from library.\n", id); 
+    return true;
 }
 
-void RenderObjectStateManager::Restore(const std::string& id)
+void RenderObjectStateManager::Clear()
+{
+    
+}
+
+bool RenderObjectStateManager::Restore(const std::string& id)
 {
     auto stateIt = m_stateMap.find(id);
-    if (stateIt == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return; }
+    if (stateIt == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
 
     Assert(stateIt->second);
     const auto& node = *(stateIt->second);
@@ -135,54 +168,17 @@ void RenderObjectStateManager::Restore(const std::string& id)
     Log::Debug("Restored state '%s' from library.\n", id);
 }
 
-void RenderObjectStateManager::ConstructIMGUI()
+void RenderObjectStateManager::ConstructStateManagerUI()
 {
-    ImGui::PushID("State Manager");
-    
-    if (ImGui::BeginListBox("States"))
-    {
-        StateMap::const_iterator it = m_stateMap.begin();
-        for (int n = 0; n < m_stateMap.size(); n++, ++it)
-        {
-            const bool isSelected = (m_stateListCurrentIdx == n);
-            if (ImGui::Selectable(it->first.c_str(), isSelected))
-            {
-                m_stateListCurrentId = it->first;
-                m_stateListCurrentIdx = n;
-            }
-            if (isSelected) { ImGui::SetItemDefaultFocus(); }
-        }
-        ImGui::EndListBox();
-    }
-    ImGui::InputText("State ID", m_stateIDData.data(), m_stateIDData.size());
+    if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    // Save the current state to the container
-    if (ImGui::Button("New"))
-    {
-        Insert(std::string(m_stateIDData.data()), false);
-        std::memset(m_stateIDData.data(), '\0', sizeof(char) * m_stateIDData.size());
-    }
-    SL;
-    // Overwrite the currently selected state
-    if (ImGui::Button("Overwrite"))
-    {
-        if (m_stateListCurrentIdx < 0) { Log::Warning("Select a state from the list to overwrite it.\n"); }
-        else
-        {
-            Insert(m_stateListCurrentId, true);
-        }
-    }
-    SL;
+    m_stateList.Construct();
+
     // Load a saved state to the UI
-    if (ImGui::Button("Load") && m_stateListCurrentIdx >= 0 && !m_stateMap.empty())
-    {
-        Restore(m_stateListCurrentId);
-    }
     SL;
-    // Erase a saved state from the container
-    if (ImGui::Button("Erase") && m_stateListCurrentIdx >= 0 && !m_stateMap.empty())
+    if (ImGui::Button("Load") && m_stateList.IsSelected())
     {
-        Erase(m_stateListCurrentId);
+        Restore(m_stateList.GetCurrentlySelectedText());
     }
 
     // Jitter the current state to generate a new scene
@@ -196,6 +192,34 @@ void RenderObjectStateManager::ConstructIMGUI()
     {
         for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(IMGUIAbstractShelf::kReset); }
     }
+}
 
-    ImGui::PopID();
+void RenderObjectStateManager::ConstructBatchProcessorUI()
+{
+    if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+    
+    m_sampleCountList.Construct();
+
+    ImGui::DragInt("Permutations", &m_numPermutations, 1, 1, 100000);
+    
+    // Reset all the jittered values to their midpoints
+    ImVec2 size = ImGui::GetItemRectSize();
+    size.y *= 2;
+    std::string actionText = m_isBaking ? "Abort" : "Bake";
+    if (ImGui::Button(actionText.c_str(), size))
+    {
+        m_isBaking = !m_isBaking;
+    }
+   
+}
+
+void RenderObjectStateManager::ConstructUI()
+{
+    ImGui::Begin("Combinatorics");
+    
+    ConstructStateManagerUI();
+
+    ConstructBatchProcessorUI();
+
+    ImGui::End();
 }

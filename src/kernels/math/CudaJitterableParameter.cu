@@ -99,7 +99,7 @@ namespace Cuda
     __host__ void JitterableVec<PType, TType>::Randomise(vec2 range)
     {
         // Clamp and constrain 
-        range[1] = clamp(range[1], 1.0f, 1.0f);
+        range[1] = clamp(range[1], range[0], 1.0f);
         range[0] = clamp(range[0], 0.0f, range[1]);
 
         std::random_device rd;

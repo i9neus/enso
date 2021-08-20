@@ -124,13 +124,13 @@ namespace Cuda
         }
 
         template<typename NewType>
-        AssetHandle<NewType> DynamicCast()
+        AssetHandle<NewType> DynamicCast() const
         {
             return AssetHandle<NewType>(std::dynamic_pointer_cast<NewType>(m_ptr));
         }
 
         template<typename NewType>
-        AssetHandle<NewType> StaticCast()
+        AssetHandle<NewType> StaticCast() const
         {
             return AssetHandle<NewType>(std::static_pointer_cast<NewType>(m_ptr));
         }

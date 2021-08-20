@@ -55,9 +55,6 @@
     <ClCompile Include="src\manager\SceneGenerator.cpp">
       <Filter>manager</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
@@ -71,6 +68,9 @@
       <Filter>dx12\imgui</Filter>
     </ClCompile>
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIElement.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
   </ItemGroup>
@@ -395,6 +395,9 @@
     </ClInclude>
     <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh">
       <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIElement.h">
+      <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
