@@ -120,8 +120,8 @@ void IMGUIContainer::Render()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
-    ConstructRenderObjectShelves();
     m_stateManager.ConstructIMGUI();
+    ConstructRenderObjectShelves();
 
     ImGui::PopStyleColor(1);
 

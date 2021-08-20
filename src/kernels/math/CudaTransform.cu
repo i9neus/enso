@@ -14,11 +14,11 @@ namespace Cuda
         MakeIdentity();
     }
 
-    __host__ void BidirectionalTransform::Randomise(const float xi0, const float xi1)
+    __host__ void BidirectionalTransform::Randomise(const vec2& range)
     {
-        jitterable.trans.Randomise(xi0, xi1);
-        jitterable.rot.Randomise(xi0, xi1);
-        jitterable.scale.Randomise(xi0, xi1);
+        jitterable.trans.Randomise(range);
+        jitterable.rot.Randomise(range);
+        jitterable.scale.Randomise(range);
 
         EvaulateJitterables();
     }

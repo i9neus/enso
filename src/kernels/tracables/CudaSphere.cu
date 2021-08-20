@@ -64,6 +64,8 @@ namespace Cuda
      // Constructor for user instantiations
     __host__  Host::Sphere::Sphere(const ::Json::Node& node)
     {
+        RenderObject::SetRenderObjectFlags(kIsJitterable);
+        
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
         FromJson(node, ::Json::kRequiredWarn);
     }

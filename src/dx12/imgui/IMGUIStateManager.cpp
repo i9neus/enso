@@ -87,7 +87,7 @@ void RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExi
     // Dump the data from each shelf into the new JSON node
     for (const auto& shelf : m_imguiShelves)
     {
-        if (shelf.second->IsJitterable())
+        //if (shelf.second->IsJitterable())
         {
             Json::Node shelfNode = jsonPtr->AddChildObject(shelf.first);
             shelf.second->ToJson(shelfNode);
@@ -137,6 +137,8 @@ void RenderObjectStateManager::Restore(const std::string& id)
 
 void RenderObjectStateManager::ConstructIMGUI()
 {
+    ImGui::PushID("State Manager");
+    
     if (ImGui::BeginListBox("States"))
     {
         StateMap::const_iterator it = m_stateMap.begin();
@@ -182,4 +184,18 @@ void RenderObjectStateManager::ConstructIMGUI()
     {
         Erase(m_stateListCurrentId);
     }
+
+    // Jitter the current state to generate a new scene
+    if (ImGui::Button("Randomise"))
+    {
+        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(0); }
+    }
+    SL;
+    // Reset all the jittered values to their midpoints
+    if (ImGui::Button("Reset jitter"))
+    {
+        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(IMGUIAbstractShelf::kReset); }
+    }
+
+    ImGui::PopID();
 }

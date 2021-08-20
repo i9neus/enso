@@ -99,7 +99,7 @@ namespace USDIO
         
         SetUSDAttribute(prim, "description", usdDescription);
         SetUSDAttribute(prim, "sampleNum", numSamples);
-        SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.p.scale.x, gridParams.transform.p.scale.y, gridParams.transform.p.scale.z));
+        SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale.x, gridParams.transform.scale.y, gridParams.transform.scale.z));
         SetUSDAttribute(prim, "resolution", pxr::GfVec3f(gridParams.gridDensity.x, gridParams.gridDensity.y, gridParams.gridDensity.z));
 
         pxr::VtFloatArray coeffs(gridParams.numProbes * (gridParams.coefficientsPerProbe - 1) * 3);

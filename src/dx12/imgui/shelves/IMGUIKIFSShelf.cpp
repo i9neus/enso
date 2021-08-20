@@ -59,20 +59,8 @@ void KIFSShelf::Construct()
 
     ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
     ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.foldType);
-    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);    
+    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);
 
-    // Jitter the current state to generate a new scene
-    if (ImGui::Button("Randomise"))
-    {
-        p.Randomise();
-    } 
-    SL;
-    // Reset all the jittered values to their midpoints
-    if (ImGui::Button("Reset jitter"))
-    {
-        p.Randomise(0.5f, 0.5f);
-    }
- 
     auto ConstructMaskCheckboxes = [](const std::string& label, uint& value, const int row) -> void
     {
         ImGui::PushID(row);
@@ -102,6 +90,12 @@ void KIFSShelf::Construct()
 
 void KIFSShelf::Reset()
 {
+}
+
+void KIFSShelf::Randomise(const int flags)
+{
+    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    m_params[0].Randomise(randomRange);
 }
 
 void KIFSShelf::JitterKIFSParameters()

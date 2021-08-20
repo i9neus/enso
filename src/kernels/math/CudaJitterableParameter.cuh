@@ -13,7 +13,7 @@ namespace Cuda
         
         __host__ void FromJson(const std::string& id, const ::Json::Node& json, const uint flags);
         __host__ void ToJson(const std::string& id, ::Json::Node& json) const;
-        __host__ void Randomise(float xi0, float xi1);
+        __host__ void Randomise(vec2 range);
         __host__ inline PType Evaluate() const;
 
         __device__ __host__ JitterableScalar& operator=(const PType& other)
@@ -39,7 +39,7 @@ namespace Cuda
 
         __host__ void FromJson(const std::string& id, const ::Json::Node& json, const uint flags);
         __host__ void ToJson(const std::string& id, ::Json::Node& json) const;
-        __host__ void Randomise(float xi0, float xi1);
+        __host__ void Randomise(vec2 range);
         __host__  inline PType Evaluate() const;
 
         __device__ __host__  JitterableVec& operator=(const PType& other)

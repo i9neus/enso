@@ -37,15 +37,15 @@ namespace Cuda
     }
 
     template<typename PType>
-    __host__ void JitterableScalar<PType>::Randomise(float xi0 = 0.0f, float xi1 = 1.0f)
+    __host__ void JitterableScalar<PType>::Randomise(vec2 range)
     {        
         // Clamp and constrain 
-        xi1 = clamp(xi1, 1.0f, 1.0f);
-        xi0 = clamp(xi0, 0.0f, xi1);        
-        
+        range[1] = clamp(range[1], 1.0f, 1.0f);
+        range[0] = clamp(range[0], 0.0f, range[1]);
+
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(xi0, xi1);
+        std::uniform_real_distribution<> rng(range[0], range[1]);
 
         t = rng(mt);
     }
@@ -64,7 +64,7 @@ namespace Cuda
         }
         for (int row = 0; row < matrix.size(); ++row)
         {
-            if (matrix[row].size() != PType::kDims) 
+            if (matrix[row].size() != PType::kDims)
             {
                 Json::ReportError(flags, "Error: jitterable vec%i '%s': row %i should have %i columns but found %i.\n", PType::kDims, id, PType::kDims, matrix[row].size());
                 return;
@@ -96,15 +96,15 @@ namespace Cuda
     }
 
     template<typename PType, typename TType>
-    __host__ void JitterableVec<PType, TType>::Randomise(float xi0 = 0.0f, float xi1 = 1.0f)
+    __host__ void JitterableVec<PType, TType>::Randomise(vec2 range)
     {
         // Clamp and constrain 
-        xi1 = clamp(xi1, 1.0f, 1.0f);
-        xi0 = clamp(xi0, 0.0f, xi1);
+        range[1] = clamp(range[1], 1.0f, 1.0f);
+        range[0] = clamp(range[0], 0.0f, range[1]);
 
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(xi0, xi1);
+        std::uniform_real_distribution<> rng(range[0], range[1]);
 
         for (int i = 0; i < TType::kDims; ++i) { t[i] = rng(mt); }
     }

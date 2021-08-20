@@ -14,12 +14,16 @@ namespace Json { class Document; class Node; }
 class IMGUIAbstractShelf
 {
 public:
+    enum RandomiseFlags : int { kReset = 1 };
+
     IMGUIAbstractShelf() = default;
     
     virtual void Construct() = 0;
     virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) = 0;
     virtual bool ToJson(std::string& newJson) = 0;
     virtual void ToJson(Json::Node& json) = 0;
+
+    virtual void Randomise(int flags) {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }
     const std::string& GetID() const { return m_id; }
@@ -33,7 +37,7 @@ public:
     }
 
 protected:
-    void ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isDifferentiable);
+    void ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
 
     std::string m_dagPath;

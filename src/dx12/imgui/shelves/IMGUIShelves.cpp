@@ -10,6 +10,13 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &p.useGrid);
 }
 
+void SimpleMaterialShelf::Randomise(int flags)
+{
+    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KIFSMaterialShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -19,6 +26,12 @@ void KIFSMaterialShelf::Construct()
     ImGui::SliderFloat3("HSL upper", &p.hslUpper[0], 0.0f, 1.0f);
     ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);
 }
+void KIFSMaterialShelf::Randomise(int flags)
+{
+    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void CornellMaterialShelf::Construct()
 {
@@ -33,6 +46,8 @@ void CornellMaterialShelf::Construct()
     ImGui::ColorEdit3("Albedo 6", (float*)&p.albedo[5]);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void PlaneShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -41,6 +56,15 @@ void PlaneShelf::Construct()
     ConstructTransform(p.tracable.transform, true);
     ImGui::Checkbox("Bounded", &p.isBounded);
 }
+
+void PlaneShelf::Randomise(int flags)
+{
+    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    
+    m_params[0].tracable.transform.Randomise(randomRange);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SphereShelf::Construct()
 {
@@ -52,6 +76,13 @@ void SphereShelf::Construct()
     ImGui::Checkbox("Exclude from bake", &p.excludeFromBake);
 }
 
+void SphereShelf::Randomise(int flags)
+{
+    m_params[0].transform.Randomise((flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f));
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void CornellBoxShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -59,6 +90,9 @@ void CornellBoxShelf::Construct()
     auto& p = m_params[0];
     ConstructTransform(p.tracable.transform, true);
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void QuadLightShelf::Construct()
 {
@@ -71,6 +105,13 @@ void QuadLightShelf::Construct()
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
+void QuadLightShelf::Randomise(int flags)
+{
+    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void SphereLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -82,6 +123,13 @@ void SphereLightShelf::Construct()
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
+void SphereLightShelf::Randomise(int flags)
+{
+    m_params[0].transform.Randomise((flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f));
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void EnvironmentLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
@@ -89,12 +137,16 @@ void EnvironmentLightShelf::Construct()
     ImGui::Text("[No attributes]");
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void LambertBRDFShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
 
     ImGui::Text("[No attributes]");
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void PerspectiveCameraShelf::Construct()
 {
@@ -188,6 +240,8 @@ void LightProbeCameraShelf::Reset()
     m_params[0].hasPathChanged = m_params[1].hasPathChanged = false;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void FisheyeCameraShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -201,6 +255,8 @@ void FisheyeCameraShelf::Construct()
 
     ImGui::SliderInt("Override max path depth", &p.camera.overrides.maxDepth, -1, 20);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void WavefrontTracerShelf::Construct()
 {

@@ -75,16 +75,16 @@ namespace Cuda
         FromJson(node, flags); 
     }
 
-    __host__ void KIFSParams::Randomise(const float xi0, const float xi1)
+    __host__ void KIFSParams::Randomise(const vec2& range)
     {
-        jitterable.rotateA.Randomise(xi0, xi1);
-        jitterable.rotateB.Randomise(xi0, xi1);
-        jitterable.scaleA.Randomise(xi0, xi1);
-        jitterable.scaleB.Randomise(xi0, xi1);
-        jitterable.vertScale.Randomise(xi0, xi1);
-        jitterable.crustThickness.Randomise(xi0, xi1);
+        jitterable.rotateA.Randomise(range);
+        jitterable.rotateB.Randomise(range);
+        jitterable.scaleA.Randomise(range);
+        jitterable.scaleB.Randomise(range);
+        jitterable.vertScale.Randomise(range);
+        jitterable.crustThickness.Randomise(range);
 
-        transform.Randomise(xi0, xi1);
+        transform.Randomise(range);
 
         EvaulateJitterables();
     }

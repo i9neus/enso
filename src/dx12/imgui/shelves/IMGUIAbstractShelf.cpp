@@ -40,9 +40,9 @@ void IMGUIAbstractShelf::ConstructTransform(Cuda::BidirectionalTransform& transf
         if (isJitterable)
         {
             ImGui::PushID("dpdt");
-            ImGui::DragFloat3("+/- Position", &transform.jitterable.trans.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.trans.dpdt) * 0.01f));
-            ImGui::DragFloat3("+/- Rotation", &transform.jitterable.rot.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.rot.dpdt) * 0.01f));
-            ImGui::DragFloat(" +/- Scale", &transform.jitterable.scale.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.scale.dpdt) * 0.01f));
+            ImGui::DragFloat3("+/- Position", &transform.jitterable.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.trans.dpdt) * 0.01f));
+            ImGui::DragFloat3("+/- Rotation", &transform.jitterable.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.rot.dpdt) * 0.01f));
+            ImGui::DragFloat(" +/- Scale", &transform.jitterable.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.scale.dpdt) * 0.01f));
             transform.jitterable.scale.dpdt = transform.jitterable.scale.dpdt[0];
             ImGui::PopID();
 

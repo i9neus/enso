@@ -61,6 +61,8 @@ namespace Cuda
     __host__ Host::SimpleMaterial::SimpleMaterial(const ::Json::Node& node) :
         cu_deviceData(nullptr)
     {
+        RenderObject::SetRenderObjectFlags(kIsJitterable);
+        
         cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
         FromJson(node, ::Json::kRequiredWarn);
     }
