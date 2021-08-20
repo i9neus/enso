@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "CudaJitterableParameter.cuh"
 #include "CudaMathUtils.cuh"
 
 namespace Json { class Node; }
@@ -38,24 +39,16 @@ namespace Cuda
 			vec3(0.0, 0.0, 1.0));
 	}
 
-	struct TransformParams
-	{
-		__host__ void FromJson(const ::Json::Node& json, const uint flags, const std::string& id);
-		__host__ void ToJson(::Json::Node& json, const std::string& id) const;
-		__host__ __device__ void MakeIdentity();
-		__host__ __device__ void Zero();
-		
-		vec3 trans;
-		vec3 rot;
-		vec3 scale;
-	};
-	
 	class BidirectionalTransform
 	{
 	public:
-		TransformParams p;
-		TransformParams dpdt;
-		TransformParams t;
+		struct
+		{
+			JitterableVec3 trans;
+			JitterableVec3 rot;
+			JitterableVec3 scale;
+		}
+		jitterable;
 
 		vec3 trans;
 		vec3 rot;
@@ -67,7 +60,7 @@ namespace Cuda
 		__host__ void FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
 		__host__ void Randomise(const float xi0 = 0.0f, const float xi1 = 1.0f);
-		__host__ void ApplyJitter(); 
+		__host__ void EvaulateJitterables();
 
 		__host__ __device__ BidirectionalTransform();
 		__host__ BidirectionalTransform(const ::Json::Node& json, const uint flags);

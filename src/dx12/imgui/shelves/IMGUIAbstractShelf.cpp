@@ -31,26 +31,26 @@ void IMGUIAbstractShelf::ConstructTransform(Cuda::BidirectionalTransform& transf
     if (ImGui::TreeNode("Transform"))
     {
         ImGui::PushID("p");
-        ImGui::DragFloat3("Position", &transform.p.trans[0], math::max(0.01f, cwiseMax(transform.p.trans) * 0.01f));
-        ImGui::DragFloat3("Rotation", &transform.p.rot[0], math::max(0.01f, cwiseMax(transform.p.rot) * 0.01f));
-        ImGui::DragFloat("Scale", &transform.p.scale[0], math::max(0.01f, cwiseMax(transform.p.scale) * 0.01f));
-        transform.p.scale = transform.p.scale[0];
+        ImGui::DragFloat3("Position", &transform.jitterable.trans.p[0], math::max(0.01f, cwiseMax(transform.jitterable.trans.p) * 0.01f));
+        ImGui::DragFloat3("Rotation", &transform.jitterable.rot.p[0], math::max(0.01f, cwiseMax(transform.jitterable.rot.p) * 0.01f));
+        ImGui::DragFloat("Scale", &transform.jitterable.scale.p[0], math::max(0.01f, cwiseMax(transform.jitterable.scale.p) * 0.01f));
+        transform.jitterable.scale.p = transform.jitterable.scale.p[0];
         ImGui::PopID();
 
         if (isJitterable)
         {
             ImGui::PushID("dpdt");
-            ImGui::DragFloat3("+/- Position", &transform.dpdt.trans[0], math::max(0.01f, cwiseMax(transform.dpdt.trans) * 0.01f));
-            ImGui::DragFloat3("+/- Rotation", &transform.dpdt.rot[0], math::max(0.01f, cwiseMax(transform.dpdt.rot) * 0.01f));
-            ImGui::DragFloat("+/- Scale", &transform.dpdt.scale[0], math::max(0.01f, cwiseMax(transform.dpdt.scale) * 0.01f));
-            transform.dpdt.scale = transform.dpdt.scale[0];
+            ImGui::DragFloat3("+/- Position", &transform.jitterable.trans.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.trans.dpdt) * 0.01f));
+            ImGui::DragFloat3("+/- Rotation", &transform.jitterable.rot.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.rot.dpdt) * 0.01f));
+            ImGui::DragFloat(" +/- Scale", &transform.jitterable.scale.dpdt[0], math::max(0.01f, cwiseMax(transform.jitterable.scale.dpdt) * 0.01f));
+            transform.jitterable.scale.dpdt = transform.jitterable.scale.dpdt[0];
             ImGui::PopID();
 
             ImGui::PushID("t");
-            ImGui::SliderFloat3("~ Position", &transform.t.trans[0],0.0f, 1.0f);
-            ImGui::SliderFloat3("~ Rotation", &transform.t.rot[0], 0.0f, 1.0f);
-            ImGui::SliderFloat("~ Scale", &transform.t.scale[0], 0.0f, 1.0f);
-            transform.t.scale = transform.t.scale[0];
+            ImGui::SliderFloat3("~ Position", &transform.jitterable.trans.t[0], 0.0f, 1.0f);
+            ImGui::SliderFloat3("~ Rotation", &transform.jitterable.rot.t[0], 0.0f, 1.0f);
+            ImGui::SliderFloat3("~ Scale", &transform.jitterable.scale.t[0], 0.0f, 1.0f);
+            transform.jitterable.scale.t = transform.jitterable.scale.t[0];
             ImGui::PopID();
         }
 

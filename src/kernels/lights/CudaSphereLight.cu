@@ -161,7 +161,6 @@ namespace Cuda
 
         // Pull the parameters from the JSON dictionary and create a transform
         m_params.FromJson(node, flags);
-        m_params.transform.FromJson(node, flags);
 
         // Update the attributes of the child objects
         m_lightSphereAsset->UpdateParams(m_params.transform);

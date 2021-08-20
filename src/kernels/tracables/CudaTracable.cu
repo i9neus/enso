@@ -19,7 +19,7 @@ namespace Cuda
 
     __host__ void TracableParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        transform.FromJson(node, ::Json::kRequiredWarn);
+        transform.FromJson(node, flags);
 
         node.GetValue("excludeFromBake", excludeFromBake, flags);
     }

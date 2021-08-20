@@ -16,7 +16,7 @@ void KIFSShelf::Construct()
 
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
 
-    auto ConstructRow = [](const std::string& label, Cuda::vec3& value, int row) -> void
+    auto ConstructRow = [](const std::string& label, Cuda::JitterableFloat& value, int row) -> void
     {
         ImGui::TableNextRow();
         ImGui::PushID(row);
@@ -30,11 +30,11 @@ void KIFSShelf::Construct()
             else
             {
                 ImGui::PushItemWidth(140);
-                ImGui::DragFloat("+/-", &value[0], 0.001f, 0.0f, 1.0f, "%.6f"); SL;
+                ImGui::DragFloat("+/-", &value.p, 0.001f, 0.0f, 1.0f, "%.6f"); SL;
                 ImGui::PopItemWidth();
                 ImGui::PushItemWidth(80);
-                ImGui::DragFloat("~", &value[1], math::max(0.00001f, value[1] * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
-                ImGui::SliderFloat("", &value[2], 0.0f, 1.0f);
+                ImGui::DragFloat("~", &value.dpdt, math::max(0.00001f, value.dpdt * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
+                ImGui::SliderFloat("", &value.t, 0.0f, 1.0f);
                 ImGui::PopItemWidth();
             }
         }
@@ -47,12 +47,12 @@ void KIFSShelf::Construct()
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
 
-        ConstructRow("Rotation A", p.rotateA, 0);
-        ConstructRow("Rotation B", p.rotateB, 1);
-        ConstructRow("Scale A", p.scaleA, 2);
-        ConstructRow("Scale B", p.scaleB, 3);
-        ConstructRow("Crust thickness", p.crustThickness, 4);
-        ConstructRow("Vertex scale", p.vertScale, 5);
+        ConstructRow("Rotation A", p.jitterable.rotateA, 0);
+        ConstructRow("Rotation B", p.jitterable.rotateB, 1);
+        ConstructRow("Scale A", p.jitterable.scaleA, 2);
+        ConstructRow("Scale B", p.jitterable.scaleB, 3);
+        ConstructRow("Crust thickness", p.jitterable.crustThickness, 4);
+        ConstructRow("Vertex scale", p.jitterable.vertScale, 5);
 
         ImGui::EndTable();
     }

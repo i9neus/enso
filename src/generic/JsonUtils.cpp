@@ -143,7 +143,7 @@ namespace Json
             AssertMsgFmt(flags != kRequiredAssert, "Required parameter '%s' not specified.", parameterName.c_str());
             if (flags == kRequiredWarn)
             {
-                Log::Warning("JSON node/attribute '%s' was expected but not foun\n", parameterName);
+                Log::Warning("JSON node/attribute '%s' was expected but not found\n", parameterName);
             }
             return false;
         }

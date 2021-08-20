@@ -393,6 +393,9 @@
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h">
       <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -558,6 +561,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\materials\CudaKIFSMaterial.cu">
       <Filter>kernels\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu">
+      <Filter>kernels\math</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

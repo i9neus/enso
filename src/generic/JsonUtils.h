@@ -11,6 +11,19 @@
 namespace Json
 {        
     enum RequiredFlags : uint { kSilent, kRequiredWarn, kRequiredAssert };
+    
+    template<typename... Pack>
+    inline void ReportError(const uint flags, const std::string message, Pack... pack)
+    {
+        if (flags == kRequiredWarn) { Log::Warning(message, pack...);       }
+        else if (flags == kRequiredAssert) { AssertMsgFmt(false, message.c_str(), pack...); }
+    }
+
+    inline void ReportError(const uint flags, const std::string message)
+    {
+        if (flags == kRequiredWarn) { Log::Warning(message); }
+        else if (flags == kRequiredAssert) { AssertMsg(false, message); }
+    }
 
     class Document;
     
@@ -112,6 +125,26 @@ namespace Json
         void AddArray(const std::string& name, const std::vector<std::string>& values);
 
         template<typename T>
+        void AddArray2D(const std::string& name, const std::vector<std::vector<T>>& values)
+        {
+            static_assert(std::is_arithmetic<T>::value, "Can only add arithmetic values to 2D arrays for now.");
+            
+            CheckOk();
+            rapidjson::Value rowArray(rapidjson::kArrayType);            
+            for (const auto& row : values)
+            {
+                rapidjson::Value colArray(rapidjson::kArrayType);
+                for (const auto& col : row)
+                {
+                    colArray.PushBack(col, *m_allocator);
+                }
+                rowArray.PushBack(colArray, *m_allocator);
+            }
+
+            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rowArray, *m_allocator);     
+        }
+
+        template<typename T>
         void AddEnumeratedParameter(const std::string& parameterName, const std::vector<std::string>& ids, const T& parameterValue)
         {
             AssertMsgFmt(parameterValue >= 0 && parameterValue < ids.size(), 
@@ -161,6 +194,45 @@ namespace Json
             return true;
         }
 
+        template<typename Type>
+        bool GetArray2DValues(const std::string& name, std::vector<std::vector<Type>>& values, const uint flags) const
+        {            
+            const Node child = GetChildArray(name, flags);
+            if (!child) { return false; }
+            rapidjson::Value& rowArray = *child.m_node;
+
+            if (!rowArray.IsArray())
+            {
+                ReportError(flags, "Error: JSON 2D array '%s' expected objects as elements.", name.c_str());
+                return false;
+            }
+
+            values.resize(rowArray.Size());
+
+            for (size_t row = 0; row < rowArray.Size(); row++)
+            {
+                if (!rowArray[row].IsArray())
+                {
+                    ReportError(flags, "Error: JSON 2D array '%s' expected objects as elements.", name.c_str());
+                    return false;
+                }
+
+                rapidjson::Value& colArray = rowArray[row];
+                values[row].reserve(colArray.Size());
+
+                for (size_t col = 0; col < colArray.Size(); col++)
+                {
+                    Type value;
+                    GetValueImpl< std::is_arithmetic<Type>::value,
+                        std::is_integral<Type>::value >::f(colArray[col],
+                            "[unknown; getVector()]",
+                            value);
+                    values[row].emplace_back(value);
+                }                
+            }
+            return true;
+        }
+
         template<typename VecType>
         bool GetVector(const std::string& name, VecType& vec, const uint flags) const
         {
@@ -177,7 +249,7 @@ namespace Json
                 return false;
             }
 
-            for (int i = 0; i < values.size(); i++) { vec[i] = values[i]; }           
+            for (int i = 0; i < values.size(); i++) { vec[i] = values[i]; }
             return true;
         }
 

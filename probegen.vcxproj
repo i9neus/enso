@@ -90,6 +90,7 @@
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh" />
     <ClInclude Include="src\kernels\math\CudaColourUtils.cuh" />
+    <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh" />
     <ClInclude Include="src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh" />
@@ -170,6 +171,7 @@
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObjectFactory.cu" />
     <CudaCompile Include="src\kernels\materials\CudaSimpleMaterial.cu" />
+    <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />

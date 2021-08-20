@@ -39,18 +39,25 @@ namespace Cuda
     };
 
     __host__ __device__ KIFSParams::KIFSParams() :
-        rotateA(0.5f, 0.0f, 0.5f),
-        rotateB(0.5f, 0.0f, 0.5f),
-        scaleA(0.5f, 0.0f, 0.5f),
-        scaleB(0.5f, 0.0f, 0.5f),
-        vertScale(0.5f, 0.0f, 0.5f),
-        crustThickness(0.5f, 0.0f, 0.5f),        
+        rotateA(0.5f),
+        rotateB(0.5f),
+        scaleA(0.5f),
+        scaleB(0.5f),
+        vertScale(0.5f),
+        crustThickness(0.5f),        
         numIterations(1),
         faceMask(0xffffffff),
         foldType(kKIFSTetrahedtron),
         primitiveType(kKIFSTetrahedtron),
         doTakeSnapshot(false)
     {
+        jitterable.rotateA = rotateA;
+        jitterable.rotateB = rotateB;
+        jitterable.scaleA = scaleA;
+        jitterable.scaleB = scaleB;
+        jitterable.vertScale = vertScale;
+        jitterable.crustThickness = crustThickness;
+        
         sdf.maxSpecularIterations = 50;
         sdf.maxDiffuseIterations = 15;
         sdf.cutoffThreshold = 1e-4f;
@@ -70,38 +77,36 @@ namespace Cuda
 
     __host__ void KIFSParams::Randomise(const float xi0, const float xi1)
     {
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(xi0, xi1);
-        
-        rotateA.z = rng(mt);
-        rotateB.z = rng(mt);
-        scaleA.z = rng(mt);
-        scaleB.z = rng(mt);
-        vertScale.z = rng(mt);
-        crustThickness.z = rng(mt);
+        jitterable.rotateA.Randomise(xi0, xi1);
+        jitterable.rotateB.Randomise(xi0, xi1);
+        jitterable.scaleA.Randomise(xi0, xi1);
+        jitterable.scaleB.Randomise(xi0, xi1);
+        jitterable.vertScale.Randomise(xi0, xi1);
+        jitterable.crustThickness.Randomise(xi0, xi1);
 
-        transform.Randomise();
+        transform.Randomise(xi0, xi1);
+
+        EvaulateJitterables();
     }
 
-    __host__ void KIFSParams::ApplyJitter()
+    __host__ void KIFSParams::EvaulateJitterables()
     {
-        rotateA.x += rotateA.y * (rotateA.z * 2.0f - 1.0f);
-        rotateB.x += rotateB.y * (rotateB.z * 2.0f - 1.0f);
-        scaleA.x += scaleA.y * (scaleA.z * 2.0f - 1.0f);
-        scaleB.x += scaleB.y * (scaleB.z * 2.0f - 1.0f);
-        vertScale.x += vertScale.y * (vertScale.z * 2.0f - 1.0f);
-        crustThickness.x += crustThickness.y * (crustThickness.z * 2.0f - 1.0f);
+        rotateA = jitterable.rotateA.Evaluate();
+        rotateB = jitterable.rotateB.Evaluate();
+        scaleA = jitterable.scaleA.Evaluate();
+        scaleB = jitterable.scaleB.Evaluate();
+        vertScale = jitterable.vertScale.Evaluate();
+        crustThickness = jitterable.crustThickness.Evaluate();
     }
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("rotateA", std::vector<float>({ rotateA.x, rotateA.y, rotateA.z}));
-        node.AddArray("rotateB", std::vector<float>({ rotateB.x, rotateB.y, rotateB.z }));
-        node.AddArray("scaleA", std::vector<float>({ scaleA.x, scaleA.y, scaleA.z }));
-        node.AddArray("scaleB", std::vector<float>({ scaleB.x, scaleB.y, scaleB.z }));
-        node.AddArray("crustThickness", std::vector<float>({ crustThickness.x, crustThickness.y, crustThickness.z }));
-        node.AddArray("vertScale", std::vector<float>({ vertScale.x, vertScale.y, vertScale.z }));
+        jitterable.rotateA.ToJson("rotateA", node);
+        jitterable.rotateB.ToJson("rotateB", node);
+        jitterable.scaleA.ToJson("scaleA", node);
+        jitterable.scaleB.ToJson("scaleB", node);
+        jitterable.crustThickness.ToJson("crustThickness", node);
+        jitterable.vertScale.ToJson("vertScale", node);
 
         node.AddValue("numIterations", numIterations);
         node.AddArray("faceMask", std::vector<uint>({ faceMask.x, faceMask.y }));
@@ -125,12 +130,12 @@ namespace Cuda
 
     __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("rotateA", rotateA, flags);
-        node.GetVector("rotateB", rotateB, flags);
-        node.GetVector("scaleA", scaleA, flags);
-        node.GetVector("scaleB", scaleB, flags);
-        node.GetVector("vertScale", vertScale, flags);
-        node.GetVector("crustThickness", crustThickness, flags);
+        jitterable.rotateA.FromJson("rotateA", node, flags);
+        jitterable.rotateB.FromJson("rotateB", node, flags);
+        jitterable.scaleA.FromJson("scaleA", node, flags);
+        jitterable.scaleB.FromJson("scaleB", node, flags);
+        jitterable.vertScale.FromJson("vertScale", node, flags);
+        jitterable.crustThickness.FromJson("crustThickness", node, flags);
 
         node.GetValue("numIterations", numIterations, flags);
         node.GetVector("faceMask", faceMask, flags);
@@ -155,26 +160,26 @@ namespace Cuda
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
 
-        ApplyJitter();
+        EvaulateJitterables();
     }
 
     __device__ void Device::KIFS::Prepare()
     {
         auto& kcd = m_kernelConstantData;
         kcd.numIterations = m_params.numIterations;
-        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale.x));
-        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness.x));
+        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale));
+        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness));
         kcd.faceMask = m_params.faceMask.x;
         kcd.foldType = m_params.foldType;
         kcd.primitiveType = m_params.primitiveType;
 
-        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA.x);
+        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA);
         rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
-        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB.x);
+        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB);
         rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
 
-        float scaleAlpha = mix(0.5, 1.5, m_params.scaleA.x);
-        float scaleBeta = mix(-1.0, 1.0, m_params.scaleB.x);
+        float scaleAlpha = mix(0.5, 1.5, m_params.scaleA);
+        float scaleBeta = mix(-1.0, 1.0, m_params.scaleB);
 
         for (int i = 0; i < m_params.numIterations; i++)
         {
