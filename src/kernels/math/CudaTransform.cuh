@@ -42,17 +42,9 @@ namespace Cuda
 	class BidirectionalTransform
 	{
 	public:
-		struct
-		{
-			JitterableVec3 trans;
-			JitterableVec3 rot;
-			JitterableVec3 scale;
-		}
-		jitterable;
-
-		vec3 trans;
-		vec3 rot;
-		vec3 scale;
+		JitterableVec3 trans;
+		JitterableVec3 rot;
+		JitterableVec3 scale;
 		mat3 fwd;
 		mat3 inv;
 		mat3 nInv;
@@ -60,7 +52,6 @@ namespace Cuda
 		__host__ void FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
 		__host__ void Randomise(const vec2& range);
-		__host__ void EvaulateJitterables();
 
 		__host__ __device__ BidirectionalTransform();
 		__host__ BidirectionalTransform(const ::Json::Node& json, const uint flags);
@@ -87,14 +78,14 @@ namespace Cuda
 
 		__host__ __device__ __forceinline__ void MakeIdentity()
 		{
-			trans = rot = 0.0f;
-			scale = 1.0f;
+			trans = rot = vec3(0.0f);
+			scale = vec3(1.0f);
 			fwd = inv = nInv = mat3::Indentity();
 		}
 
 		__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& object) const
 		{
-			return (inv * object) + trans;
+			return (inv * object) + trans();
 		}
 	};
 

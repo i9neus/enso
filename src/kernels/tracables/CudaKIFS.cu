@@ -50,14 +50,7 @@ namespace Cuda
         foldType(kKIFSTetrahedtron),
         primitiveType(kKIFSTetrahedtron),
         doTakeSnapshot(false)
-    {
-        jitterable.rotateA = rotateA;
-        jitterable.rotateB = rotateB;
-        jitterable.scaleA = scaleA;
-        jitterable.scaleB = scaleB;
-        jitterable.vertScale = vertScale;
-        jitterable.crustThickness = crustThickness;
-        
+    {        
         sdf.maxSpecularIterations = 50;
         sdf.maxDiffuseIterations = 15;
         sdf.cutoffThreshold = 1e-4f;
@@ -77,36 +70,24 @@ namespace Cuda
 
     __host__ void KIFSParams::Randomise(const vec2& range)
     {
-        jitterable.rotateA.Randomise(range);
-        jitterable.rotateB.Randomise(range);
-        jitterable.scaleA.Randomise(range);
-        jitterable.scaleB.Randomise(range);
-        jitterable.vertScale.Randomise(range);
-        jitterable.crustThickness.Randomise(range);
+        rotateA.Randomise(range);
+        rotateB.Randomise(range);
+        scaleA.Randomise(range);
+        scaleB.Randomise(range);
+        vertScale.Randomise(range);
+        crustThickness.Randomise(range);
 
         transform.Randomise(range);
-
-        EvaulateJitterables();
-    }
-
-    __host__ void KIFSParams::EvaulateJitterables()
-    {
-        rotateA = jitterable.rotateA.Evaluate();
-        rotateB = jitterable.rotateB.Evaluate();
-        scaleA = jitterable.scaleA.Evaluate();
-        scaleB = jitterable.scaleB.Evaluate();
-        vertScale = jitterable.vertScale.Evaluate();
-        crustThickness = jitterable.crustThickness.Evaluate();
     }
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const
     {
-        jitterable.rotateA.ToJson("rotateA", node);
-        jitterable.rotateB.ToJson("rotateB", node);
-        jitterable.scaleA.ToJson("scaleA", node);
-        jitterable.scaleB.ToJson("scaleB", node);
-        jitterable.crustThickness.ToJson("crustThickness", node);
-        jitterable.vertScale.ToJson("vertScale", node);
+        rotateA.ToJson("rotateA", node);
+        rotateB.ToJson("rotateB", node);
+        scaleA.ToJson("scaleA", node);
+        scaleB.ToJson("scaleB", node);
+        crustThickness.ToJson("crustThickness", node);
+        vertScale.ToJson("vertScale", node);
 
         node.AddValue("numIterations", numIterations);
         node.AddArray("faceMask", std::vector<uint>({ faceMask.x, faceMask.y }));
@@ -130,12 +111,12 @@ namespace Cuda
 
     __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        jitterable.rotateA.FromJson("rotateA", node, flags);
-        jitterable.rotateB.FromJson("rotateB", node, flags);
-        jitterable.scaleA.FromJson("scaleA", node, flags);
-        jitterable.scaleB.FromJson("scaleB", node, flags);
-        jitterable.vertScale.FromJson("vertScale", node, flags);
-        jitterable.crustThickness.FromJson("crustThickness", node, flags);
+        rotateA.FromJson("rotateA", node, flags);
+        rotateB.FromJson("rotateB", node, flags);
+        scaleA.FromJson("scaleA", node, flags);
+        scaleB.FromJson("scaleB", node, flags);
+        vertScale.FromJson("vertScale", node, flags);
+        crustThickness.FromJson("crustThickness", node, flags);
 
         node.GetValue("numIterations", numIterations, flags);
         node.GetVector("faceMask", faceMask, flags);
@@ -159,27 +140,25 @@ namespace Cuda
 
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
-
-        EvaulateJitterables();
     }
 
     __device__ void Device::KIFS::Prepare()
     {
         auto& kcd = m_kernelConstantData;
         kcd.numIterations = m_params.numIterations;
-        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale));
-        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness));
+        kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale()));
+        kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness()));
         kcd.faceMask = m_params.faceMask.x;
         kcd.foldType = m_params.foldType;
         kcd.primitiveType = m_params.primitiveType;
 
-        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA);
+        float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA());
         rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
-        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB);
+        float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB());
         rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
 
-        float scaleAlpha = mix(0.5, 1.5, m_params.scaleA);
-        float scaleBeta = mix(-1.0, 1.0, m_params.scaleB);
+        float scaleAlpha = mix(0.5, 1.5, m_params.scaleA());
+        float scaleBeta = mix(-1.0, 1.0, m_params.scaleB());
 
         for (int i = 0; i < m_params.numIterations; i++)
         {
@@ -500,6 +479,7 @@ namespace Cuda
     {
         Host::Tracable::FromJson(node, flags);
         
-        SynchroniseObjects(cu_deviceData, KIFSParams(node, flags));
+        m_params.FromJson(node, flags);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

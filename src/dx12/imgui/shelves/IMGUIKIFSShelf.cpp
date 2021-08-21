@@ -47,12 +47,12 @@ void KIFSShelf::Construct()
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
 
-        ConstructRow("Rotation A", p.jitterable.rotateA, 0);
-        ConstructRow("Rotation B", p.jitterable.rotateB, 1);
-        ConstructRow("Scale A", p.jitterable.scaleA, 2);
-        ConstructRow("Scale B", p.jitterable.scaleB, 3);
-        ConstructRow("Crust thickness", p.jitterable.crustThickness, 4);
-        ConstructRow("Vertex scale", p.jitterable.vertScale, 5);
+        ConstructRow("Rotation A", p.rotateA, 0);
+        ConstructRow("Rotation B", p.rotateB, 1);
+        ConstructRow("Scale A", p.scaleA, 2);
+        ConstructRow("Scale B", p.scaleB, 3);
+        ConstructRow("Crust thickness", p.crustThickness, 4);
+        ConstructRow("Vertex scale", p.vertScale, 5);
 
         ImGui::EndTable();
     }

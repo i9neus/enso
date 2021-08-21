@@ -23,27 +23,14 @@ namespace Cuda
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
-
         __host__ void Randomise(const vec2& range);
-        __host__ void EvaulateJitterables();
 
-        struct
-        {
-            JitterableFloat    rotateA;
-            JitterableFloat    rotateB;
-            JitterableFloat    scaleA;
-            JitterableFloat    scaleB;
-            JitterableFloat    vertScale;
-            JitterableFloat    crustThickness;
-        }
-        jitterable;
-        
-        float    rotateA;
-        float    rotateB;
-        float    scaleA;
-        float    scaleB;
-        float    vertScale;
-        float    crustThickness;
+        JitterableFloat    rotateA;
+        JitterableFloat    rotateB;
+        JitterableFloat    scaleA;
+        JitterableFloat    scaleB;
+        JitterableFloat    vertScale;
+        JitterableFloat    crustThickness;
 
         int     numIterations;
         uvec2   faceMask;
@@ -129,6 +116,7 @@ namespace Cuda
         {
         private:
             Device::KIFS* cu_deviceData;
+            KIFSParams m_params;
 
         public:
             __host__ KIFS(const ::Json::Node& node);

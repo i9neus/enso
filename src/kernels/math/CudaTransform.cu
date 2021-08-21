@@ -7,20 +7,18 @@ namespace Cuda
 {
     __host__ __device__ BidirectionalTransform::BidirectionalTransform()
     {
-        jitterable.trans = vec3(0.0f);
-        jitterable.rot = vec3(0.0f);
-        jitterable.scale = vec3(1.0f);
+        trans = vec3(0.0f);
+        rot = vec3(0.0f);
+        scale = vec3(1.0f);
         
         MakeIdentity();
     }
 
     __host__ void BidirectionalTransform::Randomise(const vec2& range)
     {
-        jitterable.trans.Randomise(range);
-        jitterable.rot.Randomise(range);
-        jitterable.scale.Randomise(range);
-
-        EvaulateJitterables();
+        trans.Randomise(range);
+        rot.Randomise(range);
+        scale.Randomise(range);
     }
     
     __host__ void BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
@@ -28,34 +26,25 @@ namespace Cuda
         const auto transNode = node.GetChildObject("transform", flags);
         if (!transNode) { return; }        
 
-        jitterable.trans.FromJson("pos", transNode, flags);
-        jitterable.rot.FromJson("rot", transNode, ::Json::kSilent);
-        jitterable.scale.FromJson("sca", transNode, ::Json::kSilent);
-
-        EvaulateJitterables();
+        trans.FromJson("pos", transNode, flags);
+        rot.FromJson("rot", transNode, ::Json::kSilent);
+        scale.FromJson("sca", transNode, ::Json::kSilent);
         
         // Build the transform
-        Create(trans, rot, scale);
+        Create(trans(), rot(), scale());
     }
 
     __host__ void BidirectionalTransform::ToJson(Json::Node& parentNode) const
     {
         auto transNode = parentNode.AddChildObject("transform");
 
-        jitterable.trans.ToJson("pos", transNode);
-        jitterable.rot.ToJson("rot", transNode);
-        jitterable.scale.ToJson("sca", transNode);
+        trans.ToJson("pos", transNode);
+        rot.ToJson("rot", transNode);
+        scale.ToJson("sca", transNode);
     }
 
     __host__ BidirectionalTransform::BidirectionalTransform(const ::Json::Node& node, const uint flags)
     {
         FromJson(node, flags);
-    }
-
-    __host__ void BidirectionalTransform::EvaulateJitterables()
-    {
-        trans = jitterable.trans.Evaluate();
-        rot = jitterable.rot.Evaluate();
-        scale = jitterable.scale.Evaluate();
     }
 }

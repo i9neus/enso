@@ -35,7 +35,7 @@ namespace Cuda
         node.GetValue("intensity", intensity, flags);
         node.GetVector("colour", colour, flags);
 
-        radiance = colour * std::pow(2.0f, intensity) / (transform.scale.x * transform.scale.y * kFourPi * 0.25f);
+        radiance = colour * std::pow(2.0f, intensity) / (transform.scale().x * transform.scale().y * kFourPi * 0.25f);
     }
 
     __device__ Device::SphereLight::SphereLight()
@@ -45,8 +45,8 @@ namespace Cuda
 
     __device__ void Device::SphereLight::Prepare()
     {
-        m_discArea = kPi * sqr(m_params.transform.scale.x);
-        m_discRadius = m_params.transform.scale.x;
+        m_discArea = kPi * sqr(m_params.transform.scale().x);
+        m_discRadius = m_params.transform.scale().x;
     }
 
     __device__ inline mat3 CreateBasisDebug2(vec3 n)
@@ -60,7 +60,7 @@ namespace Cuda
 
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {        
-        vec3 originDir = m_params.transform.trans - hitCtx.hit.p;
+        vec3 originDir = m_params.transform.trans() - hitCtx.hit.p;
         float originDist = length(originDir);
 
         // Object inside the emitter? This is invalid, so return black.
@@ -100,7 +100,7 @@ namespace Cuda
 
     __device__ bool Device::SphereLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
     {
-        vec3 originDir = m_params.transform.trans - incident.od.o;
+        vec3 originDir = m_params.transform.trans() - incident.od.o;
         float originDist = length(originDir);
 
         // Object inside the emitter? This is invalid, so return black.
@@ -185,5 +185,11 @@ namespace Cuda
         AssertMsgFmt(m_lightSphereAsset, "SphereLight object '%s' was not properly initialised.", GetAssetID().c_str());
 
         return m_lightSphereAsset.StaticCast<Host::Tracable>();
+    }
+
+    __host__ void Host::SphereLight::Randomise()
+    {
+        Assert(m_lightSphereAsset);
+        m_lightSphereAsset->Randomise();
     }
 }

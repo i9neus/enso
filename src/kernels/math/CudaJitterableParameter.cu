@@ -19,13 +19,15 @@ namespace Cuda
         p = data[0];
         dpdt = data[1];
         t = data[2];
+
+        Evaluate();
     }
 
     template<typename PType>
-    __host__ PType JitterableScalar<PType>::Evaluate() const 
+    __host__ void JitterableScalar<PType>::Evaluate()
     { 
         // For integral types, increase the sampleable value by one so we capture the full range
-        return (std::is_integral<PType>::value) ? 
+        eval =(std::is_integral<PType>::value) ? 
                 PType(p + (dpdt + 0.99999f) * (t * 2.0f - 1.0f)) : 
                 PType(p + dpdt * (t * 2.0f - 1.0f));
     }
@@ -48,6 +50,8 @@ namespace Cuda
         std::uniform_real_distribution<> rng(range[0], range[1]);
 
         t = rng(mt);
+
+        Evaluate();
     }
 
     template<typename PType, typename TType>
@@ -79,6 +83,8 @@ namespace Cuda
             dpdt[col] = (matrix.size() >= 2) ? matrix[1][col] : 0.0f;
             t[col] = (matrix.size() == 3) ? matrix[2][col] : 0.5f;
         }
+
+        Evaluate();
     }
 
     template<typename PType, typename TType>
@@ -107,13 +113,15 @@ namespace Cuda
         std::uniform_real_distribution<> rng(range[0], range[1]);
 
         for (int i = 0; i < TType::kDims; ++i) { t[i] = rng(mt); }
+        
+        Evaluate();
     }
 
     template<typename PType, typename TType>
-    __host__ PType JitterableVec<PType, TType>::Evaluate() const
+    __host__ void JitterableVec<PType, TType>::Evaluate()
     {
         // For integral types, increase the sampleable value by one so we capture the full range
-        return (std::is_integral<typename PType::kType>::value) ?
+        eval = (std::is_integral<typename PType::kType>::value) ?
                 PType(p + (dpdt + 0.99999f) * (t * 2.0f - 1.0f)) :
                 PType(p + dpdt * (t * 2.0f - 1.0f));
     }

@@ -35,15 +35,15 @@ namespace Cuda
 	__device__ inline RayBasic RayToObjectSpace(const RayBasic& world, const BidirectionalTransform& bdt) 
 	{
 		RayBasic object;
-		object.o = world.o - bdt.trans;
+		object.o = world.o - bdt.trans();
 		object.d = world.d + object.o;
 		object.o = bdt.fwd * object.o;
 		object.d = (bdt.fwd * object.d) - object.o;
 		return object;
 	}
 
-	__device__ __forceinline__ vec3 PointToObjectSpace(const vec3& p, const BidirectionalTransform& bdt) { return bdt.fwd * (p - bdt.trans); }
-	__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& p, const BidirectionalTransform& bdt) { return (bdt.inv * p) + bdt.trans; }
+	__device__ __forceinline__ vec3 PointToObjectSpace(const vec3& p, const BidirectionalTransform& bdt) { return bdt.fwd * (p - bdt.trans()); }
+	__device__ __forceinline__ vec3 PointToWorldSpace(const vec3& p, const BidirectionalTransform& bdt) { return (bdt.inv * p) + bdt.trans(); }
 	__device__ __forceinline__ vec3 NormalToWorldSpace(const vec3& n, const BidirectionalTransform& bdt) { return bdt.nInv * n; }
 
 	struct CompressedRay

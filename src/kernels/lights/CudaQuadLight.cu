@@ -35,7 +35,7 @@ namespace Cuda
         node.GetValue("intensity", intensity, flags);
         node.GetVector("colour", colour, flags);
 
-        radiance = colour * std::pow(2.0f, intensity) / (transform.scale.x * transform.scale.y);
+        radiance = colour * std::pow(2.0f, intensity) / (transform.scale().x * transform.scale().y);
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -45,7 +45,7 @@ namespace Cuda
 
     __device__ void Device::QuadLight::Prepare()
     {        
-        m_emitterArea = m_params.transform.scale.x * m_params.transform.scale.y;
+        m_emitterArea = m_params.transform.scale().x * m_params.transform.scale().y;
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const

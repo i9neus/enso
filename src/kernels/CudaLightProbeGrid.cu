@@ -93,7 +93,7 @@ namespace Cuda
     __device__ inline HitPoint HitToObjectSpace(const HitPoint& world, const BidirectionalTransform& bdt)
     {
         HitPoint object;
-        object.p = world.p - bdt.trans;
+        object.p = world.p - bdt.trans();
         object.n = world.n + object.p;
         object.p = bdt.fwd * object.p;
         object.n = normalize((bdt.fwd * object.n) - object.p);

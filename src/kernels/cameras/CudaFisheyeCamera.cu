@@ -122,7 +122,7 @@ namespace Cuda
 
         ray.SetViewportPos(viewportPos);
         ray.od.d = NormalToWorldSpace(cartesian, m_params.transform);
-        ray.od.o = m_params.transform.trans;
+        ray.od.o = m_params.transform.trans();
         ray.sampleIdx++;
         ray.weight = kOne;
         ray.depth = 2;
