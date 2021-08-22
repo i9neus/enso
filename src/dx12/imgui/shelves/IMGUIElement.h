@@ -20,6 +20,7 @@ public:
     void    Construct();
     void    Clear();
     void    Insert(const std::string& str);
+    const std::list<std::string>& GetListItems() const { return m_listItems; }
 
     bool    IsSelected() const { return m_currentIdx >= 0 && m_currentIdx < m_listItems.size(); }
     std::string GetCurrentlySelectedText() const;

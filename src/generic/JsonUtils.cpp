@@ -4,6 +4,8 @@
 #include "thirdparty/rapidjson/prettywriter.h"
 
 #include "generic/FilesystemUtils.h"
+
+#undef GetObject
  
 namespace Json
 {
@@ -237,5 +239,15 @@ namespace Json
         m_document.Accept(writer);
 
         return buffer.GetString();
+    }
+
+    bool Node::IsObject() const { CheckOk(); return m_node->IsObject(); }
+
+    int Node::NumMembers() const
+    {
+        CheckOk();
+        if (!m_node->IsObject()) { return 0; }
+
+        return m_node->GetObject().MemberCount();
     }
 }

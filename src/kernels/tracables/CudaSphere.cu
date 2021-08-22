@@ -74,7 +74,8 @@ namespace Cuda
     {
         Host::Tracable::FromJson(node, flags);
         
-        SynchroniseObjects(cu_deviceData, TracableParams(node, flags));
+        m_params.FromJson(node, flags);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()
@@ -84,6 +85,7 @@ namespace Cuda
 
     __host__ void Host::Sphere::UpdateParams(const BidirectionalTransform& transform)
     {
-        SynchroniseObjects(cu_deviceData, TracableParams(transform));
+        m_params = TracableParams(transform);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

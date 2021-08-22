@@ -186,10 +186,4 @@ namespace Cuda
 
         return m_lightSphereAsset.StaticCast<Host::Tracable>();
     }
-
-    __host__ void Host::SphereLight::Randomise()
-    {
-        Assert(m_lightSphereAsset);
-        m_lightSphereAsset->Randomise();
-    }
 }

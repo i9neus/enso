@@ -35,7 +35,7 @@ namespace Cuda
         {
         private:
             Device::Sphere* cu_deviceData;
-            Device::Sphere  m_hostData;
+            TracableParams  m_params;
 
         public:
             __host__ Sphere();

@@ -300,7 +300,8 @@ namespace Cuda
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
-        Host::Camera(parentNode, id)
+        Host::Camera(parentNode, id), 
+        m_exporterState(kDisarmed)
     {
         // Create the accumulation and reduce buffers
         m_hostAccumBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer", id), 512 * 512, m_hostStream);
@@ -377,8 +378,11 @@ namespace Cuda
         
         m_params.FromJson(parentNode, flags);
 
-        parentNode.GetValue("usdExportPath", m_usdExportPath, flags);
+        Prepare();        
+    }
 
+    __host__ void Host::LightProbeCamera::Prepare()
+    {
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
         const int maxNumProbes = 512 * 512;
         if (Volume(m_params.grid.gridDensity) > maxNumProbes)
@@ -392,11 +396,6 @@ namespace Cuda
         }
 
         // Prepare the light probe grid with the new parameters
-        /*::Json::Node gridNode = parentNode.GetChildObject("grid", flags);
-        if (gridNode)
-        {
-            m_hostLightProbeGrid->FromJson(gridNode, flags);
-        }*/
         m_hostLightProbeGrid->Prepare(m_params.grid);
 
         // Number of coefficients per probe
@@ -408,12 +407,12 @@ namespace Cuda
         // Number of sample buckets per SH coefficient per probe
         m_params.bucketsPerCoefficient = /*NearestPow2Floor*/(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
         // The maximum number of samples per bucket based on the number of buckets per coefficient
-        m_params.maxSamplesPerBucket = (m_params.maxSamples == 0) ? 
-                                        std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));
+        m_params.maxSamplesPerBucket = (m_params.maxSamples == 0) ?
+            std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));
 
         // Adjust values so everything packs correctly
         m_params.bucketsPerProbe = m_params.bucketsPerCoefficient * m_params.coefficientsPerProbe;
-        m_params.totalBuckets = m_params.bucketsPerProbe * m_params.numProbes;   
+        m_params.totalBuckets = m_params.bucketsPerProbe * m_params.numProbes;
 
         // Used when parallel reducing the accumluation buffer
         uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.bucketsPerCoefficient);
@@ -478,9 +477,9 @@ namespace Cuda
         *minSampleCount = camera->GetProbeMinMaxSampleCount();
     }
 
-    __host__ void Host::LightProbeCamera::ExportProbeGrid()
+    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath)
     {
-        if (!m_hostLightProbeGrid->IsValid()) { return; }
+        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }
         
         vec2* cu_minMax;
         vec2 minMax;
@@ -495,20 +494,28 @@ namespace Cuda
         if (int(minMax.x + 1) < m_params.maxSamples) 
         {
             Log::Debug("Baking... %i\n", int(minMax.x + 1));
-            return;            
+            return false;            
         }
 
         Log::Debug("Export!\n");
 
-        try
+        /*try
         {
             USDIO::ExportLightProbeGrid(m_hostLightProbeGrid, m_usdExportPath);
         }
         catch (const std::runtime_error& err)
         {
             Log::Error("Error: %s\n", err.what());
-        }
-        m_params.doExport = false;
+        }*/
+
+        m_exporterState = kFired;
+        return true;
+    }
+
+    __host__ void Host::LightProbeCamera::SetLightProbeCameraParams(const LightProbeCameraParams& params)
+    {
+        m_params = params;
+        Prepare();
     }
 
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
@@ -525,11 +532,6 @@ namespace Cuda
         }
         // Reduce the block in a single operation
         //KernelReduceAccumulationBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
-         
-        if (m_params.doExport)
-        {
-            ExportProbeGrid();
-        }
 
         IsOk(cudaStreamSynchronize(m_hostStream));
     }

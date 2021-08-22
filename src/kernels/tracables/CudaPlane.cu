@@ -68,13 +68,13 @@ namespace Cuda
 
     __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
     {
-        Host::Tracable::FromJson(node, flags);
-        
+        Host::Tracable::FromJson(node, flags);        
         SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
     }
 
     __host__ void Host::Plane::UpdateParams(const BidirectionalTransform& transform, const bool isBounded)
     {
-        SynchroniseObjects(cu_deviceData, PlaneParams(transform, isBounded));
+        m_params = PlaneParams(transform, isBounded);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

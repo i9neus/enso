@@ -90,11 +90,13 @@ namespace Cuda
     {
         Host::Tracable::FromJson(node, flags);
 
-        SynchroniseObjects(cu_deviceData, CornellBoxParams(node, flags));
+        m_params.FromJson(node, flags);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::CornellBox::UpdateParams(const BidirectionalTransform& transform, const bool isBounded)
     {
-        SynchroniseObjects(cu_deviceData, CornellBoxParams(transform, isBounded));
+        m_params = CornellBoxParams(transform, isBounded);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

@@ -78,6 +78,8 @@ namespace Cuda
 		class LightProbeCamera : public Host::Camera
 		{
 		public:
+			enum ExporterState : int { kDisarmed, kArmed, kFired };
+			
 			__host__ LightProbeCamera(const ::Json::Node& parentNode, const std::string& id);
 			__host__ virtual ~LightProbeCamera() { OnDestroyAsset(); }
 
@@ -90,6 +92,7 @@ namespace Cuda
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return nullptr; }
 			__host__ virtual void						ClearRenderState() override final;
 			__host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
+			__host__ void								Prepare();
 
 			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
 			__host__ virtual void						OnPostRenderPass() override final;
@@ -97,8 +100,13 @@ namespace Cuda
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Light Probe Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
+			__host__ void								SetLightProbeCameraParams(const LightProbeCameraParams& params);
+			__host__ const LightProbeCameraParams&		GetLightProbeCameraParams() const { return m_params; }
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid() { return m_hostLightProbeGrid; }
-			__host__ void								ExportProbeGrid();
+
+			__host__ bool								ExportProbeGrid(const std::string& usdExportPath);
+			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
+			__host__ int								GetExporterState() const { return m_exporterState; }
 
 		private:
 			Device::LightProbeCamera*					cu_deviceData;
@@ -114,7 +122,7 @@ namespace Cuda
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 
-			bool										m_isProbeExported;
+			std::atomic<int>							m_exporterState;
 			std::string									m_usdExportPath;
 		};
 	}

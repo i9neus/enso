@@ -10,6 +10,19 @@
 #include "kernels/CudaWavefrontTracer.cuh"
 #include "kernels/CudaAsset.cuh"
 #include "kernels/CudaRenderObject.cuh"
+#include "kernels/cameras/CudaLightProbeCamera.cuh"
+
+struct BakeState
+{
+	enum _statusFlags : int { kIdle, kStart, kRunning, kAbort, kComplete };
+
+	BakeState() : status(kIdle), progress(0.0f) {}
+
+	std::atomic<int>	status;
+	float				progress;
+
+	std::string			usdExportPath;
+};
 
 class RenderManager
 {
@@ -24,7 +37,12 @@ public:
 	void Build();
 	void Start();
 	void Destroy();
-	void OnJson(const std::string& dagPath, const std::string& newJson);
+
+	void OnJson(const Json::Document& patchJson);
+
+	void StartBake(const std::string& usdExportPath);
+	void AbortBake();
+	void GetBakeStatus(int& status, float& progress);
 
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
 	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
@@ -38,18 +56,25 @@ public:
 
 private:
 	void Run();
-	void ExportLightProbeGrid();
+	void ClearRenderStates();
+	void HandleBakeOperations();
+	void OnBakePreFrame();
+	void OnBakePostFrame();
+	void PatchSceneObjects();
 
 	enum ThreadSignal : int { kRun, kRestart, kHalt };
+	enum DirtyState : int { kClean, kSoftReset, kHardReset };
 
 	std::mutex		    m_renderResourceMutex;
 	std::mutex			m_jsonMutex;
 	std::thread			m_managerThread;
 	std::atomic<int>	m_threadSignal;
-	Json::Document		m_renderParamsJson;
+	Json::Document		m_paramsPatchJson;
 	Json::Document		m_sceneJson;
 	Json::Document		m_configJson;
-	std::atomic<bool>	m_isDirty; 
+	std::atomic<int>	m_dirtiness; 
+	int					m_frameIdx;
+	int					m_iterationIdx;
 	
 	struct
 	{
@@ -86,10 +111,13 @@ private:
 	uint32_t				     m_clientWidth;
 	uint32_t                     m_clientHeight;
 
+	BakeState					 m_bakeState;
+
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;
 
 	std::vector<Cuda::AssetHandle<Cuda::Host::Camera>>			m_activeCameras;
 	Cuda::AssetHandle<Cuda::Host::Camera>						m_liveCamera;
+	Cuda::AssetHandle<Cuda::Host::LightProbeCamera>				m_lightProbeCamera;
 
 };

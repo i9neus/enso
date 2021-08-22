@@ -589,5 +589,8 @@
     <None Include="scenes\templates\random.json">
       <Filter>scenes\templates</Filter>
     </None>
+    <None Include="scenes\cornell.json">
+      <Filter>scenes</Filter>
+    </None>
   </ItemGroup>
 </Project>

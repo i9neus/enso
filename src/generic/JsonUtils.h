@@ -107,6 +107,9 @@ namespace Json
         ConstIterator begin() const { CheckOk(); return ConstIterator(m_node->MemberBegin(), *this); }
         ConstIterator end() const { CheckOk(); return ConstIterator(m_node->MemberEnd(), *this); }
 
+        bool IsObject() const;
+        int NumMembers() const;
+
         template<typename T>
         void AddValue(const std::string& name, const T& value)
         {

@@ -185,6 +185,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="bin\win64\Release\config.json" />
+    <None Include="scenes\cornell.json" />
     <None Include="scenes\default.json" />
     <None Include="scenes\kifs.json" />
     <None Include="scenes\template.usda" />

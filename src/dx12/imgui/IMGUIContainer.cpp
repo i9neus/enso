@@ -7,7 +7,7 @@
 
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
     m_cudaRenderer(cudaRenderer),
-    m_stateManager(m_shelves)
+    m_stateManager(m_shelves, cudaRenderer)
 {
 
 }
@@ -43,7 +43,7 @@ void IMGUIContainer::Build()
     IMGUIShelfFactory shelfFactory;
     m_shelves = shelfFactory.Instantiate(json, *renderObjects);
 
-    m_stateManager.Initialise(json, renderObjects);
+    m_stateManager.Initialise(json);
 }
 
 void IMGUIContainer::Destroy()
@@ -57,15 +57,25 @@ void IMGUIContainer::Destroy()
 
 void IMGUIContainer::UpdateParameters()
 {
+    std::unique_ptr<Json::Document> patchJson;
     for (const auto& shelf : m_shelves)
     {        
-        std::string newJson;
-        if (!shelf.second->ToJson(newJson)) { continue; }
+        if (shelf.second->IsDirty())
+        {
+            if (!patchJson)
+            {
+                patchJson.reset(new Json::Document);
+            }
+            Json::Node shelfPatch = patchJson->AddChildObject(shelf.second->GetDAGPath());
 
-        m_cudaRenderer.OnJson(shelf.second->GetDAGPath(), newJson);
+            shelf.second->ToJson(shelfPatch);
+            shelf.second->MakeClean();
+        }
+    }
 
-        Log::Debug("Updated! %s, %s\n", shelf.second->GetID(), newJson);
-        return;
+    if (patchJson)
+    {        
+        m_cudaRenderer.OnJson(*patchJson);
     }
 }
 

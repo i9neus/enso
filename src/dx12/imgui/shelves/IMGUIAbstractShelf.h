@@ -11,8 +11,10 @@ public:
     
     virtual void Construct() = 0;
     virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) = 0;
-    virtual bool ToJson(std::string& newJson) = 0;
+    
     virtual void ToJson(Json::Node& json) = 0;
+    virtual bool IsDirty() const = 0;
+    virtual void MakeClean() = 0;
 
     virtual void Randomise(int flags) {}
 
@@ -55,29 +57,12 @@ public:
         }
     }
 
-    virtual bool ToJson(std::string& newJson) override final
+    virtual void ToJson(Json::Node& json) override final
     {
-        //if (m_params[0] == m_params[1]) { return false; }
-        if (!IsDirty()) { return false; }
-        m_params[1] = m_params[0];
-
-        Json::Document newNode;
-        m_params[0].ToJson(newNode);
-        newJson = newNode.Stringify();
-
-        Reset();
-
-        return true;
+        m_params[0].ToJson(json);
     }
 
-    virtual void ToJson(Json::Node& node) override final
-    {
-        m_params[0].ToJson(node);
-    }
-
-    virtual void Reset() {}
-
-    bool IsDirty() const
+    virtual bool IsDirty() const override final
     {
         //static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
 
@@ -87,6 +72,14 @@ public:
         }
         return false;
     }
+
+    virtual void MakeClean() override final
+    {
+        Reset();
+        m_params[1] = m_params[0];
+    }
+
+    virtual void Reset() {}
 
     std::string GetShelfTitle()
     {

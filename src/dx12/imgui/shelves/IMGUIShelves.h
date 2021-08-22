@@ -152,35 +152,8 @@ public:
     virtual void Construct() override final;
 };
 
-struct LightProbeCameraParamsUI : public Cuda::LightProbeCameraParams
-{
-    LightProbeCameraParamsUI() : LightProbeCameraParams()
-    {
-        hasPathChanged = false;
-        usdExportPath = nullptr;
-    }
-    LightProbeCameraParamsUI(const Json::Node& node) : LightProbeCameraParamsUI()
-    {
-        LightProbeCameraParams::LightProbeCameraParams(node);
-    }
-
-    void ToJson(Json::Node& node) const;
-    void FromJson(const Json::Node& node, const int flags);
-
-    /*LightProbeCameraParamsUI& operator=(const LightProbeCameraParamsUI& other)
-    {
-        static_cast<LightProbeCameraParams&>(*this) = static_cast<const LightProbeCameraParams&>(other);
-
-        usdExportPath = other.usdExportPath;
-        hasPathChanged = other.hasPathChanged;
-    }*/
-
-    std::string* usdExportPath;
-    bool                 hasPathChanged;
-};
-
 // Light probe camera
-class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, LightProbeCameraParamsUI>
+class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
 {
 public:
     LightProbeCameraShelf(const Json::Node& json);

@@ -5,10 +5,10 @@ namespace Cuda
 {
     __host__ EnvironmentLightParams::EnvironmentLightParams(const ::Json::Node& node) :
         EnvironmentLightParams()
-    { 
-        FromJson(node, ::Json::kRequiredWarn); 
+    {
+        FromJson(node, ::Json::kRequiredWarn);
     }
-    
+
     __host__ void EnvironmentLightParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("intensity", intensity);
@@ -54,7 +54,7 @@ namespace Cuda
 
     __host__ AssetHandle<Host::RenderObject> Host::EnvironmentLight::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
-        if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
+        if (expectedType != AssetType::kLight) { return AssetHandle<Host::RenderObject>(); }
 
         return AssetHandle<Host::RenderObject>(new Host::EnvironmentLight(json), id);
     }
@@ -74,7 +74,7 @@ namespace Cuda
     __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Light::FromJson(parentNode, flags);
-        
+
         SynchroniseObjects(cu_deviceData, EnvironmentLightParams(parentNode));
     }
 }

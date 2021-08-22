@@ -47,7 +47,7 @@ namespace Cuda
         {
         private:
             Device::Plane* cu_deviceData;
-            Device::Plane  m_hostData;
+            PlaneParams    m_params;
 
         public:
             __host__ Plane();

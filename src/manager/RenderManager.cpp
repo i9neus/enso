@@ -16,7 +16,9 @@
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
-	m_isDirty(false)
+	m_dirtiness(kClean),
+	m_frameIdx(0),
+	m_iterationIdx(0)
 {
 }
 
@@ -146,12 +148,6 @@ void RenderManager::Build()
 	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 }
 
-void RenderManager::ExportLightProbeGrid()
-{
-	//Cuda::AssetHandle<Cuda::Host::LightProbeGrid> handle;
-	//USDIO::ExportLightProbeGrid(handle);
-}
-
 void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
@@ -162,8 +158,6 @@ void RenderManager::Destroy()
 	m_threadSignal.store(kHalt);	
 	m_managerThread.join();
 	Log::Write("Done!\n");	
-
-	ExportLightProbeGrid();
 	 
 	{
 		Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
@@ -283,14 +277,52 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
 }
 
-void RenderManager::OnJson(const std::string& dagPath, const std::string& newJson)
+void RenderManager::OnJson(const Json::Document& patchJson)
 {
 	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 
-	m_paramsPatch.dagPath = dagPath;
-	m_paramsPatch.json.Parse(newJson);
+	m_paramsPatchJson.Clear();
+	m_paramsPatchJson.DeepCopy(patchJson);
 
-	m_isDirty = true;
+	Log::Debug("Updated! %s\n", m_paramsPatchJson.Stringify());
+
+	m_dirtiness = kSoftReset;
+}
+
+void RenderManager::StartBake(const std::string& usdExportPath)
+{
+	if (!m_lightProbeCamera) 
+	{  
+		Log::Error("ERROR: Can't start a bake because there are no light probe cameras in this scene.\n");
+		return; 
+	}
+
+	Assert(!usdExportPath.empty());
+	AssertMsg(m_bakeState.status == BakeState::kIdle || m_bakeState.status == BakeState::kComplete,
+		"A bake has already been started. Wait for it to complete or abort it before starting a new one.");
+	
+	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+
+	m_bakeState.status = BakeState::kStart;
+	m_bakeState.usdExportPath = usdExportPath;
+	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
+	m_dirtiness = kHardReset;
+}
+
+void RenderManager::AbortBake()
+{
+	if (!m_lightProbeCamera) { return; }
+
+	m_bakeState.status = BakeState::kIdle;
+	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
+}
+
+void RenderManager::GetBakeStatus(int& status, float& progress)
+{
+	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+
+	status = m_bakeState.status;
+	progress = m_bakeState.progress;
 }
 
 void RenderManager::Prepare()
@@ -308,9 +340,17 @@ void RenderManager::Prepare()
 			return true;
 		});
 
+	// Get a handle to the light probe camera (if any)
+	for (auto& camera : m_activeCameras)
+	{
+		if (m_lightProbeCamera = camera.DynamicCast<Cuda::Host::LightProbeCamera>()) { break; }
+	}
+
 	// Spit out some errors if needs be
 	if (m_activeCameras.empty()) { Log::Error("WARNING: No camera objects were instantiated and enabled.\n"); }
 	else if (!m_liveCamera)		 { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n");	}
+
+	if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
 
 void RenderManager::Start()
@@ -323,14 +363,25 @@ void RenderManager::Start()
 	Assert(m_managerThread.joinable());
 }
 
+void RenderManager::ClearRenderStates()
+{
+	// Clear the render states of all active camera objects
+	for (auto camera : m_activeCameras) { camera->ClearRenderState(); }
+
+	// Reset the render manager state
+	m_frameIdx = 0;
+	m_dirtiness = kClean;
+}
+
 void RenderManager::Run()
 {		
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 	
-	int iterationIdx = 0, frameIdx = 0;
 	constexpr float kTargetFps = 60.0f;
 	constexpr int kMaxSubframes = 1;
 	int numSubframes = kMaxSubframes;
+	m_frameIdx = 0;
+	m_iterationIdx = 0;
 
 	while (m_threadSignal.load() == kRun)
 	{				
@@ -342,31 +393,18 @@ void RenderManager::Run()
 		Timer timer;
 
 		// Has the scene graph been dirtied?
-		if (m_isDirty && (frameIdx >= 2 || m_activeCameras.empty()))
+		if (m_dirtiness != kClean && !m_activeCameras.empty())
 		{					
-			std::lock_guard<std::mutex> lock(m_renderResourceMutex);
-
-			Json::Node node = m_sceneJson.GetChildObject(m_paramsPatch.dagPath, Json::kSilent);
-			if (node)
+			if (m_dirtiness == kHardReset || m_frameIdx >= 2)
 			{
-				Cuda::AssetHandle<Cuda::Host::RenderObject> asset = m_renderObjects->FindByDAG(m_paramsPatch.dagPath);
-				if (asset)
-				{
-					asset->FromJson(m_paramsPatch.json, Json::kSilent);
-				}
+				PatchSceneObjects();
 			}
-			
-			// Clear the render states of all active camera objects
-			for (auto camera : m_activeCameras) { camera->ClearRenderState(); }
 
-			// Prepare the scene for rendering
-			Prepare();
-
-			// Reset the render manager state
-			m_isDirty = false;
-			frameIdx = 0;
+			// Reset the render state
+			ClearRenderStates();	
 		}
 		
+		// Render a pass through each camera to its render state
 		for (auto& camera : m_activeCameras)
 		{
 			m_wavefrontTracer->AttachCamera(camera);
@@ -377,13 +415,13 @@ void RenderManager::Run()
 				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 				
 				// Notify objects that we're about to start the pass
-				m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), frameIdx);
-				camera->OnPreRenderPass(timeDiff.count(), frameIdx);
+				m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), m_frameIdx);
+				camera->OnPreRenderPass(timeDiff.count(), m_frameIdx);
 
 				// Trace those rays through the wavefront tracer 
 				m_wavefrontTracer->Trace();
 
-				frameIdx++;
+				m_frameIdx++;
 			}
 
 			// If this wavefront tracer is live, update the composite image
@@ -396,15 +434,18 @@ void RenderManager::Run()
 
 			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		}
+		
+		// Handle any post-frame baking operations
+		OnBakePostFrame();
 
-		iterationIdx++;
-		m_frameTimes[frameIdx % m_frameTimes.size()] = timer.Get();
+		m_iterationIdx++;
+		m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
 		float meanFrameTime = 0.0f;
 		for (const auto& ft : m_frameTimes)
 		{
 			meanFrameTime += ft;
 		}
-		meanFrameTime /= math::min(frameIdx, int(m_frameTimes.size()));
+		meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
 
 		if(m_liveCamera)
 		{
@@ -415,10 +456,40 @@ void RenderManager::Run()
 			m_renderStatsJson.Clear();
 			m_renderStatsJson.AddValue("frameTime", timer.Get());
 			m_renderStatsJson.AddValue("meanFrameTime", meanFrameTime);
-			m_renderStatsJson.AddValue("deadRays", stats.deadRays);
-			
+			m_renderStatsJson.AddValue("deadRays", stats.deadRays);			
 		}
 		
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
+void RenderManager::PatchSceneObjects()
+{
+	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+
+	if (!m_paramsPatchJson.NumMembers()) { return; }
+
+	int validPatches = 0;
+	for (Json::Node::Iterator it = m_paramsPatchJson.begin(); it != m_paramsPatchJson.end(); ++it)
+	{
+		Cuda::AssetHandle<Cuda::Host::RenderObject> asset = m_renderObjects->FindByDAG(it.Name());
+		if (asset)
+		{
+			asset->FromJson(*it, Json::kSilent);
+			validPatches++;
+		}
+	}
+
+	// Prepare the scene for rendering
+	if (validPatches > 0) { Prepare(); }
+
+	m_paramsPatchJson.Clear();
+}
+
+void RenderManager::OnBakePostFrame()
+{
+	if (m_bakeState.status == BakeState::kRunning && m_lightProbeCamera->ExportProbeGrid(m_bakeState.usdExportPath))
+	{
+		m_bakeState.status = BakeState::kComplete;
 	}
 }

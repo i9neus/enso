@@ -101,13 +101,14 @@ void QuadLightShelf::Construct()
     auto& p = m_params[0];
     ConstructTransform(p.transform, true);
 
-    ImGui::ColorEdit3("Colour", &p.colour[0]);
+    ImGui::ColorEdit3("Colour", &p.colour[0], ImGuiColorEditFlags_InputHSV);
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
 void QuadLightShelf::Randomise(int flags)
 {
     const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    m_params[0].transform.Randomise(randomRange);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,18 +180,6 @@ LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
     m_pathData[0] = '\0';
 }
 
-void LightProbeCameraParamsUI::ToJson(Json::Node& node) const
-{
-    LightProbeCameraParams::ToJson(node);
-    node.AddValue("usdExportPath", *usdExportPath);
-}
-
-void LightProbeCameraParamsUI::FromJson(const Json::Node& node, const int flags)
-{
-    LightProbeCameraParams::FromJson(node, flags);
-    node.GetValue("usdExportPath", *usdExportPath, flags);
-}
-
 void LightProbeCameraShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -211,21 +200,7 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::Checkbox("Debug PRef", &p.grid.debugOutputPRef); SL;
     ImGui::Checkbox("Debug validity", &p.grid.debugOutputValidity); SL;
-    ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);
-
-    if (ImGui::Button("Export")) { p.doExport = true; }
-
-    // FIXME: This is incredibly ugly. Fix it asap.
-    m_params[0].usdExportPath = m_params[1].usdExportPath = &m_usdExportPath[1];
-    ImGui::InputText("USD path", m_pathData.data(), m_pathData.size(), ImGuiInputTextFlags_EnterReturnsTrue);
-    {
-        m_usdExportPath[1] = m_pathData.data();
-        if (m_usdExportPath[1] != m_usdExportPath[0])
-        {
-            p.hasPathChanged = true;
-        }
-        m_usdExportPath[0] = m_usdExportPath[1];
-    }
+    ImGui::Checkbox("Debug bake", &p.grid.debugBakePRef);    
 
     ConstructComboBox("Swizzle", m_swizzleLabels, p.grid.axisSwizzle);
     ImGui::Text("Invert axes"); SL;
@@ -236,8 +211,7 @@ void LightProbeCameraShelf::Construct()
 
 void LightProbeCameraShelf::Reset()
 {
-    m_params[0].doExport = m_params[1].doExport = false;
-    m_params[0].hasPathChanged = m_params[1].hasPathChanged = false;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

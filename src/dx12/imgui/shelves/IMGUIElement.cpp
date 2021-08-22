@@ -31,6 +31,8 @@ void IMGUIListBox::Construct()
         }
         ImGui::EndListBox();
     }
+
+    // New element input control
     ImGui::InputText("", m_newItemIDData.data(), m_newItemIDData.size());
 
     // Save the current state to the container
@@ -139,26 +141,26 @@ void IMGUIElement::ConstructTransform(Cuda::BidirectionalTransform& transform, c
     if (ImGui::TreeNode("Transform"))
     {
         ImGui::PushID("p");
-        ImGui::DragFloat3("Position", &transform.jitterable.trans.p[0], math::max(0.01f, cwiseMax(transform.jitterable.trans.p) * 0.01f));
-        ImGui::DragFloat3("Rotation", &transform.jitterable.rot.p[0], math::max(0.01f, cwiseMax(transform.jitterable.rot.p) * 0.01f));
-        ImGui::DragFloat("Scale", &transform.jitterable.scale.p[0], math::max(0.01f, cwiseMax(transform.jitterable.scale.p) * 0.01f));
-        transform.jitterable.scale.p = transform.jitterable.scale.p[0];
+        ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
+        ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
+        ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+        transform.scale.p = transform.scale.p[0];
         ImGui::PopID();
 
         if (isJitterable)
         {
             ImGui::PushID("dpdt");
-            ImGui::DragFloat3("+/- Position", &transform.jitterable.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.trans.dpdt) * 0.01f));
-            ImGui::DragFloat3("+/- Rotation", &transform.jitterable.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.rot.dpdt) * 0.01f));
-            ImGui::DragFloat(" +/- Scale", &transform.jitterable.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.jitterable.scale.dpdt) * 0.01f));
-            transform.jitterable.scale.dpdt = transform.jitterable.scale.dpdt[0];
+            ImGui::DragFloat3("+/- Position", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
+            ImGui::DragFloat3("+/- Rotation", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
+            ImGui::DragFloat(" +/- Scale", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+            transform.scale.dpdt = transform.scale.dpdt[0];
             ImGui::PopID();
 
             ImGui::PushID("t");
-            ImGui::SliderFloat3("~ Position", &transform.jitterable.trans.t[0], 0.0f, 1.0f);
-            ImGui::SliderFloat3("~ Rotation", &transform.jitterable.rot.t[0], 0.0f, 1.0f);
-            ImGui::SliderFloat3("~ Scale", &transform.jitterable.scale.t[0], 0.0f, 1.0f);
-            transform.jitterable.scale.t = transform.jitterable.scale.t[0];
+            ImGui::SliderFloat3("~ Position", &transform.trans.t[0], 0.0f, 1.0f);
+            ImGui::SliderFloat3("~ Rotation", &transform.rot.t[0], 0.0f, 1.0f);
+            ImGui::SliderFloat("~ Scale", &transform.scale.t[0], 0.0f, 1.0f);
+            transform.scale.t = transform.scale.t[0];
             ImGui::PopID();
         }
 

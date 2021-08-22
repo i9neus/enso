@@ -32,9 +32,9 @@
       {
         "transform": 
         {
-          "pos": [ 0.0, 0.0, 0.0 ],
-          "rot": [ 0.0, 0.0, 0.0 ],
-          "sca": [ 0.99, 0.99, 0.99 ]
+            "pos": [[ 0.0, 0.0, 0.0 ]],
+            "rot": [[ 0.0, 0.0, 0.0 ]],
+            "sca": [[ 0.99, 0.99, 0.99 ]]
         },
         "gridDensity": [ 10, 10, 10 ],
         "shOrder": 1,
@@ -51,27 +51,16 @@
       }
     }
   },
-  "tracables": {
-    "tracable_groundPlane": {
-      "enabled": false,
-      "class": "plane",
-      "material": "material_groundPlane",
-      "bounded": false,
-      "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 90.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
-      }
-    },
+  "tracables": {   
     "cornellBox": {
       "enabled": true,
       "class": "cornellbox",
       "material": "material_cornell",
       "bounded": false,
       "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
+        "pos": [[ 0.0, 0.0, 0.0 ]],
+        "rot": [[ 0.0, 0.0, 0.0 ]],
+        "sca": [[ 1.0, 1.0, 1.0 ]]
       }
     },
     "tracable_sphere": {
@@ -80,9 +69,9 @@
       "class": "sphere",
       "material": "material_kifs",
       "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.2, 0.2, 0.2 ]
+        "pos": [[ 0.0, 0.0, 0.0 ]],
+        "rot": [[ 0.0, 0.0, 0.0 ]],
+        "sca": [[ 0.2, 0.2, 0.2 ]]
       }
     },
     "tracable_sphere2": {
@@ -91,27 +80,9 @@
       "class": "sphere",
       "material": "material_kifs",
       "transform": {
-        "pos": [ 0.3, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.1, 0.1, 0.1 ]
-      }
-    },
-    "kifsFractal": {
-      "enabled": false,
-      "class": "kifs",
-      "material": "material_kifs",
-      "rotate": [ 0.0, 0.0, 0.0 ],
-      "scale": [ 0.0, 0.0 ],
-      "vertScale": 0.5,
-      "crustThickness": 0.5,
-      "numIterations": 0,
-      "sdfTracer": {
-        "maxIterations": 50
-      },
-      "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 0.2, 0.2, 0.2 ]
+        "pos": [[ 0.3, 0.0, 0.0 ]],
+        "rot": [[ 0.0, 0.0, 0.0 ]],
+        "sca": [[ 0.1, 0.1, 0.1 ]]
       }
     }
   },
@@ -123,9 +94,9 @@
       "incandescence": [ 0.0, 0.0, 0.0 ],
       "useGrid": true,
       "transform": {
-        "pos": [ 0.0, 0.0, 0.0 ],
-        "rot": [ 0.0, 0.0, 0.0 ],
-        "sca": [ 1.0, 1.0, 1.0 ]
+        "pos": [[ 0.0, 0.0, 0.0 ]],
+        "rot": [[ 0.0, 0.0, 0.0 ]],
+        "sca": [[ 1.0, 1.0, 1.0 ]]
       }
     },
     "material_kifs": {
@@ -160,9 +131,9 @@
       "intensity": 1.5,
       "colour": [ 1.0, 1.0, 1.0 ],
       "transform": {
-        "pos": [ 0.0, 0.48, 0.0 ],
-        "rot": [ -90.0, 0.0, 0.0 ],
-        "sca": [ 0.3, 0.3, 0.3 ]
+        "pos": [[ 0.0, 0.48, 0.0 ]],
+        "rot": [[ -90.0, 0.0, 0.0] ],
+        "sca": [[ 0.3, 0.3, 0.3 ]]
       }
     },
     "light_sphere": {
@@ -171,9 +142,9 @@
       "intensity": 0.0,
       "colour": [ 1.0, 1.0, 1.0 ],
       "transform": {
-        "pos": [ 0.0, 0.48, 0.0 ],
-        "rot": [ -90.0, 0.0, 0.0 ],
-        "sca": [ 0.1, 0.1, 0.1 ]
+        "pos": [[ 0.0, 0.48, 0.0 ]],
+        "rot": [[ -90.0, 0.0, 0.0] ],
+        "sca": [[ 0.1, 0.1, 0.1 ]]
       }
     }
   }

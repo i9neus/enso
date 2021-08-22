@@ -45,7 +45,7 @@ namespace Cuda
         {
         private:
             Device::CornellBox* cu_deviceData;
-            Device::CornellBox  m_hostData;
+            CornellBoxParams    m_params;
 
         public:
             __host__ CornellBox();
