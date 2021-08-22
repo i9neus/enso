@@ -50,6 +50,21 @@ private:
     int                         m_lastIdx;
 };
 
+class IMGUIColourPicker
+{
+public:
+    IMGUIColourPicker(Cuda::JitterableVec3& param, const std::string& id) : m_param(param), m_id(id) {}
+
+    void Construct();
+    void Update();
+
+private:
+    Cuda::vec3                  m_hsv[2];
+    Cuda::vec3                  m_jitter;
+    Cuda::JitterableVec3&       m_param;
+    std::string                 m_id;
+};
+
 class IMGUIElement
 {
 public:

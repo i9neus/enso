@@ -62,6 +62,7 @@ std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::In
 
         auto newShelf = (instantiator->second)(childNode);
         newShelf->SetRenderObjectAttributes(object->GetAssetID(), dagPath, object->IsJitterable());
+        newShelf->Update();
         shelves[object->GetDAGPath()] = newShelf;
 
         Log::Debug("Instantiated IMGUI shelf for '%s'.\n", dagPath);

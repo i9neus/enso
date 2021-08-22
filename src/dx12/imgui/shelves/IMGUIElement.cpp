@@ -58,11 +58,9 @@ void IMGUIListBox::Construct()
         std::advance(it, m_currentIdx);
         if (it != m_listItems.end())
         {
-            std::string overwriteElement = std::string(m_newItemIDData.data());
-            if (!m_onOverwrite || m_onOverwrite(overwriteElement))
+            if (m_onOverwrite)
             {
-                *it = overwriteElement;
-                std::memset(m_newItemIDData.data(), '\0', sizeof(char) * m_newItemIDData.size());
+                m_onOverwrite(*it);
             }
         }
     }
@@ -112,8 +110,28 @@ std::string IMGUIListBox::GetCurrentlySelectedText() const
 
     std::list<std::string>::const_iterator it = m_listItems.begin();
     std::advance(it, m_currentIdx);
-    return (it != m_listItems.end()) ? *it : "";
-    
+    return (it != m_listItems.end()) ? *it : "";    
+}
+
+void IMGUIColourPicker::Construct()
+{
+    ImGui::PushID(m_id.c_str());
+
+    ImGui::ColorEdit3(tfm::format("%s from", m_id).c_str(), &m_hsv[0][0], ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV);
+    ImGui::ColorEdit3(tfm::format("%s to", m_id).c_str(), &m_hsv[1][0], ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV);
+    ImGui::SliderFloat3("~", &m_param.t[0], 0.0f, 1.0f);
+
+    m_param.p = mix(m_hsv[0], m_hsv[1], 0.5f);
+    m_param.dpdt = abs(m_hsv[0] - m_hsv[1]) * 0.5f;
+
+    ImGui::PopID();
+
+}
+
+void IMGUIColourPicker::Update()
+{
+    m_hsv[0] = m_param.p - m_param.dpdt;
+    m_hsv[1] = m_param.p + m_param.dpdt;
 }
 
 void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)

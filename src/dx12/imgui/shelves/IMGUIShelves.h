@@ -53,11 +53,16 @@ public:
 class CornellMaterialShelf : public IMGUIShelf<Cuda::Host::CornellMaterial, Cuda::CornellMaterialParams>
 {
 public:
-    CornellMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    CornellMaterialShelf(const Json::Node& json);
     virtual ~CornellMaterialShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellMaterialShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
+    virtual void Update() override final;
+
+private:
+    std::array<IMGUIColourPicker, 6>    m_pickers;
 };
 
 // Plane tracable

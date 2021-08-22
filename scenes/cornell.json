@@ -109,12 +109,12 @@
     "material_cornell": {
       "class": "cornellmaterial",
       "bxdf": "bxdf_diffuse",
-      "albedo1": [ 0.7, 0.14, 0.0 ],
-      "albedo2": [ 0.14, 0.7, 0.0 ],
-      "albedo3": [ 0.7, 0.7, 0.7 ],
-      "albedo4": [ 0.7, 0.7, 0.7 ],
-      "albedo5": [ 0.7, 0.7, 0.7 ],
-      "albedo6": [ 0.7, 0.7, 0.7 ]
+      "albedo1": [[ 0.05, 1.0, 0.7]],
+      "albedo2": [[ 0.4, 1.0, 0.7 ]],
+      "albedo3": [[ 0.0, 0.0, 0.7 ]],
+      "albedo4": [[ 0.0, 0.0, 0.7 ]],
+      "albedo5": [[ 0.0, 0.0, 0.7 ]],
+      "albedo6": [[ 0.0, 0.0, 0.7 ]]
     }
   },
   "bxdfs": {

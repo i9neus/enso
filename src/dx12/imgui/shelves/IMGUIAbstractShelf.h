@@ -17,6 +17,7 @@ public:
     virtual void MakeClean() = 0;
 
     virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) {}
+    virtual void Update() {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }
     const std::string& GetID() const { return m_id; }
@@ -41,7 +42,9 @@ template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {
 public:
-    IMGUIShelf(const Json::Node& json)
+    IMGUIShelf() : m_p(m_paramsBuffer[0]) {}
+
+    IMGUIShelf(const Json::Node& json) : IMGUIShelf()
     {
         FromJson(json, Json::kRequiredWarn, false);
     }
@@ -50,16 +53,16 @@ public:
 
     virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) override final
     {
-        m_params[0].FromJson(json, flags);
+        m_paramsBuffer[0].FromJson(json, flags);
         if (!dirtySceneGraph)
         {
-            m_params[1] = m_params[0];
+            m_paramsBuffer[1] = m_paramsBuffer[0];
         }
     }
 
     virtual void ToJson(Json::Node& json) override final
     {
-        m_params[0].ToJson(json);
+        m_paramsBuffer[0].ToJson(json);
     }
 
     virtual bool IsDirty() const override final
@@ -68,7 +71,7 @@ public:
 
         for (int i = 0; i < sizeof(ParamsType); i++)
         {
-            if (reinterpret_cast<const unsigned char*>(&m_params[0])[i] != reinterpret_cast<const unsigned char*>(&m_params[1])[i]) { return true; }
+            if (reinterpret_cast<const unsigned char*>(&m_paramsBuffer[0])[i] != reinterpret_cast<const unsigned char*>(&m_paramsBuffer[1])[i]) { return true; }
         }
         return false;
     }
@@ -76,12 +79,12 @@ public:
     virtual void MakeClean() override final
     {
         Reset();
-        m_params[1] = m_params[0];
+        m_paramsBuffer[1] = m_paramsBuffer[0];
     }
 
     virtual void Reset() {}
 
-    ParamsType& GetParamsObject() { return m_params[0]; }
+    ParamsType& GetParamsObject() { return m_paramsBuffer[0]; }
 
     std::string GetShelfTitle()
     {
@@ -95,5 +98,6 @@ public:
     }
 
 protected:
-    std::array<ParamsType, 2> m_params;
+    std::array<ParamsType, 2>   m_paramsBuffer;
+    ParamsType&                 m_p;
 };

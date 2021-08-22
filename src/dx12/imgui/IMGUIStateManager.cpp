@@ -247,6 +247,7 @@ bool RenderObjectStateMap::Restore(const std::pair<std::string, StateObject>& el
         }
 
         shelfIt->second->FromJson(childNode, Json::kSilent, true);
+        shelfIt->second->Update();
     }
 
     Log::Debug("Restored state '%s' from library.\n", element.first);

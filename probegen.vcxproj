@@ -172,6 +172,7 @@
     <CudaCompile Include="src\kernels\materials\CudaMaterial.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObjectFactory.cu" />
     <CudaCompile Include="src\kernels\materials\CudaSimpleMaterial.cu" />
+    <CudaCompile Include="src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />

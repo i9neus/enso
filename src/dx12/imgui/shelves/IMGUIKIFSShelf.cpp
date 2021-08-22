@@ -11,8 +11,7 @@ void KIFSShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    auto& p = m_params[0];
-    ConstructTransform(p.transform, true);
+    ConstructTransform(m_p.transform, true);
 
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
 
@@ -47,19 +46,19 @@ void KIFSShelf::Construct()
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
 
-        ConstructRow("Rotation A", p.rotateA, 0);
-        ConstructRow("Rotation B", p.rotateB, 1);
-        ConstructRow("Scale A", p.scaleA, 2);
-        ConstructRow("Scale B", p.scaleB, 3);
-        ConstructRow("Crust thickness", p.crustThickness, 4);
-        ConstructRow("Vertex scale", p.vertScale, 5);
+        ConstructRow("Rotation A", m_p.rotateA, 0);
+        ConstructRow("Rotation B", m_p.rotateB, 1);
+        ConstructRow("Scale A", m_p.scaleA, 2);
+        ConstructRow("Scale B", m_p.scaleB, 3);
+        ConstructRow("Crust thickness", m_p.crustThickness, 4);
+        ConstructRow("Vertex scale", m_p.vertScale, 5);
 
         ImGui::EndTable();
     }
 
-    ImGui::SliderInt("Iterations ", &p.numIterations, 0, kSDFMaxIterations);
-    ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.foldType);
-    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), p.primitiveType);
+    ImGui::SliderInt("Iterations ", &m_p.numIterations, 0, kSDFMaxIterations);
+    ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), m_p.foldType);
+    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), m_p.primitiveType);
 
     auto ConstructMaskCheckboxes = [](const std::string& label, uint& value, const int row) -> void
     {
@@ -74,18 +73,18 @@ void KIFSShelf::Construct()
         ImGui::Text(label.c_str());
     };
 
-    ConstructMaskCheckboxes("Face mask", p.faceMask.x, 0);
-    ConstructMaskCheckboxes("Perturb", p.faceMask.y, 1);
+    ConstructMaskCheckboxes("Face mask", m_p.faceMask.x, 0);
+    ConstructMaskCheckboxes("Perturb", m_p.faceMask.y, 1);
 
-    ImGui::Checkbox("SDF Clip Camera Rays", &p.sdf.clipCameraRays);
-    ConstructComboBox("SDF Clip Shape", std::vector<std::string>({ "Cube", "Sphere", "Torus" }), p.sdf.clipShape);
-    ImGui::DragInt("SDF Max Specular Interations", &p.sdf.maxSpecularIterations, 1, 1, 500);
-    ImGui::DragInt("SDF Max Diffuse Iterations", &p.sdf.maxDiffuseIterations, 1, 1, 500);
-    ImGui::DragFloat("SDF Cutoff Threshold", &p.sdf.cutoffThreshold, math::max(0.00001f, p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
-    ImGui::DragFloat("SDF Escape Threshold", &p.sdf.escapeThreshold, math::max(0.01f, p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
-    ImGui::DragFloat("SDF Ray Increment", &p.sdf.rayIncrement, math::max(0.01f, p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
-    ImGui::DragFloat("SDF Ray Kickoff", &p.sdf.rayKickoff, math::max(0.01f, p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
-    ImGui::DragFloat("SDF Fail Threshold", &p.sdf.failThreshold, math::max(0.00001f, p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::Checkbox("SDF Clip Camera Rays", &m_p.sdf.clipCameraRays);
+    ConstructComboBox("SDF Clip Shape", std::vector<std::string>({ "Cube", "Sphere", "Torus" }), m_p.sdf.clipShape);
+    ImGui::DragInt("SDF Max Specular Interations", &m_p.sdf.maxSpecularIterations, 1, 1, 500);
+    ImGui::DragInt("SDF Max Diffuse Iterations", &m_p.sdf.maxDiffuseIterations, 1, 1, 500);
+    ImGui::DragFloat("SDF Cutoff Threshold", &m_p.sdf.cutoffThreshold, math::max(0.00001f, m_p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::DragFloat("SDF Escape Threshold", &m_p.sdf.escapeThreshold, math::max(0.01f, m_p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
+    ImGui::DragFloat("SDF Ray Increment", &m_p.sdf.rayIncrement, math::max(0.01f, m_p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
+    ImGui::DragFloat("SDF Ray Kickoff", &m_p.sdf.rayKickoff, math::max(0.01f, m_p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("SDF Fail Threshold", &m_p.sdf.failThreshold, math::max(0.00001f, m_p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
 }
 
 void KIFSShelf::Reset()
@@ -94,7 +93,7 @@ void KIFSShelf::Reset()
 
 void KIFSShelf::Randomise(const Cuda::vec2 range)
 {
-    m_params[0].Randomise(range);
+    m_p.Randomise(range);
 }
 
 void KIFSShelf::JitterKIFSParameters()
