@@ -15,7 +15,7 @@ public:
     virtual void            Construct() override final;
     virtual void            Reset() override final;
 
-    virtual void            Randomise(int flags) override final;
+    virtual void            Randomise(const Cuda::vec2 range) override final;
 
 private:
     void                    JitterKIFSParameters();

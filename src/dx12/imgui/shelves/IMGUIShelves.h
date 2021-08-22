@@ -34,7 +34,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SimpleMaterialShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // KIFS code material
@@ -46,7 +46,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSMaterialShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Cornell material
@@ -69,7 +69,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PlaneShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Sphere tracable
@@ -81,7 +81,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Quad 
@@ -93,7 +93,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new QuadLightShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Sphere light
@@ -105,7 +105,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereLightShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(int flags) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Environment light

@@ -18,7 +18,9 @@ RenderManager::RenderManager() :
 	m_threadSignal(kHalt),
 	m_dirtiness(kClean),
 	m_frameIdx(0),
-	m_iterationIdx(0)
+	m_iterationIdx(0),
+	m_bakeStatus(BakeStatus::kReady),
+	m_bakeProgress(0.0f)
 {
 }
 
@@ -26,7 +28,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 {
 	Log::NL();
 	Log::Indent indent("Initialising Cuda...\n");
-	
+
 	int num_cuda_devices = 0;
 	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
 
@@ -37,7 +39,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	for (UINT devId = 0; devId < (UINT)num_cuda_devices; devId++)
 	{
 		Log::Indent indent1;
-		
+
 		cudaDeviceProp devProp;
 		checkCudaErrors(cudaGetDeviceProperties(&devProp, devId));
 
@@ -51,7 +53,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 			IsOk(cudaDeviceGetStreamPriorityRange(&pLow, &pHigh));
 
 			Log::Debug("Stream priority range: [%i, %i]\n", pLow, pHigh);
-			
+
 			IsOk(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
 			m_nodeMask = devProp.luidDeviceNodeMask;
@@ -71,12 +73,12 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 
 	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
 
-	checkCudaErrors(cudaEventCreate(&m_renderEvent));	
+	checkCudaErrors(cudaEventCreate(&m_renderEvent));
 
 	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
 
 	// Create some Cuda objects
-	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);	
+	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);
 	//m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 
 	Cuda::VerifyTypeSizes();
@@ -89,7 +91,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 void RenderManager::Build()
 {
 	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
-	
+
 	Log::NL();
 	const Log::Snapshot beginState = Log::GetMessageState();
 	{
@@ -152,13 +154,13 @@ void RenderManager::Destroy()
 {
 	if (!m_managerThread.joinable()) { return; }
 
-	Log::Indent("Shutting down...\n");	
+	Log::Indent("Shutting down...\n");
 
 	Log::Write("Halting renderer...\n");
-	m_threadSignal.store(kHalt);	
+	m_threadSignal.store(kHalt);
 	m_managerThread.join();
-	Log::Write("Done!\n");	
-	 
+	Log::Write("Done!\n");
+
 	{
 		Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
 		Cuda::AR().Report();
@@ -224,11 +226,11 @@ void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr
 }
 
 void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
-{				
+{
 	/*cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
 	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
 	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
-	externalSemaphoreWaitParams.flags = 0;	
+	externalSemaphoreWaitParams.flags = 0;
 
 	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));*/
 
@@ -262,7 +264,7 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 {
 	m_d3dFence = d3dFence;
 	m_fenceEvent = fenceEvent;
-	
+
 	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
 
 	memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
@@ -291,38 +293,32 @@ void RenderManager::OnJson(const Json::Document& patchJson)
 
 void RenderManager::StartBake(const std::string& usdExportPath)
 {
-	if (!m_lightProbeCamera) 
-	{  
+	if (!m_lightProbeCamera)
+	{
 		Log::Error("ERROR: Can't start a bake because there are no light probe cameras in this scene.\n");
-		return; 
+		return;
 	}
 
 	Assert(!usdExportPath.empty());
-	AssertMsg(m_bakeState.status == BakeState::kIdle || m_bakeState.status == BakeState::kComplete,
-		"A bake has already been started. Wait for it to complete or abort it before starting a new one.");
-	
-	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+	AssertMsg(m_bakeStatus == BakeStatus::kReady, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
 
-	m_bakeState.status = BakeState::kStart;
-	m_bakeState.usdExportPath = usdExportPath;
+	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+	 
+	m_usdExportPath = usdExportPath;
 	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
+	
 	m_dirtiness = kHardReset;
+	m_bakeStatus = BakeStatus::kRunning;
 }
 
 void RenderManager::AbortBake()
 {
-	if (!m_lightProbeCamera) { return; }
+	m_bakeStatus = BakeStatus::kHalt;
 
-	m_bakeState.status = BakeState::kIdle;
-	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
-}
-
-void RenderManager::GetBakeStatus(int& status, float& progress)
-{
-	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
-
-	status = m_bakeState.status;
-	progress = m_bakeState.progress;
+	if (m_lightProbeCamera)
+	{
+		m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
+	}
 }
 
 void RenderManager::Prepare()
@@ -348,7 +344,7 @@ void RenderManager::Prepare()
 
 	// Spit out some errors if needs be
 	if (m_activeCameras.empty()) { Log::Error("WARNING: No camera objects were instantiated and enabled.\n"); }
-	else if (!m_liveCamera)		 { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n");	}
+	else if (!m_liveCamera) { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n"); }
 
 	if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
@@ -374,9 +370,9 @@ void RenderManager::ClearRenderStates()
 }
 
 void RenderManager::Run()
-{		
+{
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
-	
+
 	constexpr float kTargetFps = 60.0f;
 	constexpr int kMaxSubframes = 1;
 	int numSubframes = kMaxSubframes;
@@ -384,9 +380,9 @@ void RenderManager::Run()
 	m_iterationIdx = 0;
 
 	while (m_threadSignal.load() == kRun)
-	{				
-		/*Timer timer([&](float elapsed) -> std::string 
-			{ 
+	{
+		/*Timer timer([&](float elapsed) -> std::string
+			{
 				const float fps = 1.0f / elapsed;
 				return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
 			});*/
@@ -394,26 +390,26 @@ void RenderManager::Run()
 
 		// Has the scene graph been dirtied?
 		if (m_dirtiness != kClean && !m_activeCameras.empty())
-		{					
+		{
 			if (m_dirtiness == kHardReset || m_frameIdx >= 2)
 			{
 				PatchSceneObjects();
 			}
 
 			// Reset the render state
-			ClearRenderStates();	
+			ClearRenderStates();
 		}
-		
+
 		// Render a pass through each camera to its render state
 		for (auto& camera : m_activeCameras)
 		{
 			m_wavefrontTracer->AttachCamera(camera);
-			
+
 			// Render up to N subframes
 			for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
 			{
 				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
-				
+
 				// Notify objects that we're about to start the pass
 				m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), m_frameIdx);
 				camera->OnPreRenderPass(timeDiff.count(), m_frameIdx);
@@ -434,7 +430,7 @@ void RenderManager::Run()
 
 			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		}
-		
+
 		// Handle any post-frame baking operations
 		OnBakePostFrame();
 
@@ -447,7 +443,7 @@ void RenderManager::Run()
 		}
 		meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
 
-		if(m_liveCamera)
+		if (m_liveCamera)
 		{
 			std::lock_guard<std::mutex> lock(m_jsonMutex);
 			Cuda::Device::RenderState::Stats stats;
@@ -456,9 +452,9 @@ void RenderManager::Run()
 			m_renderStatsJson.Clear();
 			m_renderStatsJson.AddValue("frameTime", timer.Get());
 			m_renderStatsJson.AddValue("meanFrameTime", meanFrameTime);
-			m_renderStatsJson.AddValue("deadRays", stats.deadRays);			
+			m_renderStatsJson.AddValue("deadRays", stats.deadRays);
 		}
-		
+
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
@@ -488,8 +484,28 @@ void RenderManager::PatchSceneObjects()
 
 void RenderManager::OnBakePostFrame()
 {
-	if (m_bakeState.status == BakeState::kRunning && m_lightProbeCamera->ExportProbeGrid(m_bakeState.usdExportPath))
+	if (m_bakeStatus == BakeStatus::kHalt)
 	{
-		m_bakeState.status = BakeState::kComplete;
+		// Do shutdown stuff here
+		m_bakeStatus = BakeStatus::kReady;
+	}
+
+	else if (m_bakeStatus == BakeStatus::kRunning && m_dirtiness == kClean)
+	{
+		if (m_lightProbeCamera->GetExporterState() == Cuda::Host::LightProbeCamera::kArmed)
+		{
+			m_bakeProgress = m_lightProbeCamera->GetBakeProgress();
+			if (m_bakeProgress == 1.0f)
+			{
+				m_lightProbeCamera->ExportProbeGrid(m_usdExportPath);
+				m_bakeStatus = BakeStatus::kReady;
+				Log::Debug("Export!");
+			}
+		}
+		else
+		{
+			Log::Warning("Internal warning: probe grid exporter is not armed.\n");
+			m_bakeStatus = BakeStatus::kReady;
+		}
 	}
 }

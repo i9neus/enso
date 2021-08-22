@@ -29,7 +29,7 @@ void IMGUIListBox::Construct()
             }
             if (isSelected) { ImGui::SetItemDefaultFocus(); }
         }
-        ImGui::EndListBox();
+        ImGui::EndListBox(); 
     }
 
     // New element input control

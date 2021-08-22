@@ -1,18 +1,94 @@
 #include "IMGUIStateManager.h"
 #include "generic/FilesystemUtils.h"
 #include "manager/RenderManager.h"
+#include "shelves/IMGUIShelves.h"
+
+BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves) : m_imguiShelves(imguiShelves)
+{    
+    Clear();
+}
+
+void BakePermutor::Clear()
+{
+    m_sampleCountSet.clear();
+    m_sampleCountIt = m_sampleCountSet.end();
+    m_numIterations = 0;
+    m_iterationIdx = -1;
+    m_numPermutations = 0;
+    m_permutationIdx = 0;
+}
+
+void BakePermutor::Prepare(const int numIterations, const std::string& templatePath)
+{
+    m_sampleCountIt = m_sampleCountSet.begin();
+    m_numIterations = numIterations;
+    m_iterationIdx = -1;
+    m_numPermutations = m_sampleCountSet.size() * m_numIterations;
+    m_permutationIdx = -1;
+    m_templatePath = templatePath;
+
+    for (auto& shelf : m_imguiShelves)
+    {
+        m_lightProbeCameraShelf = std::dynamic_pointer_cast<LightProbeCameraShelf>(shelf.second);
+        if (m_lightProbeCameraShelf) { break; }
+    }
+
+    if (!m_lightProbeCameraShelf) { Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n"); }
+}
+
+bool BakePermutor::Advance()
+{
+    if (m_sampleCountIt == m_sampleCountSet.end() || !m_lightProbeCameraShelf) { return false; }
+    
+    // Increment to the next permutation
+    ++m_iterationIdx;
+    if (m_iterationIdx == m_numIterations)
+    {
+        ++m_sampleCountIt;
+        m_iterationIdx = 0;
+        if (m_sampleCountIt == m_sampleCountSet.end())
+        {
+            return false;
+        }
+    }
+    ++m_permutationIdx;
+
+    // Randomise all the shelves
+    for (auto& shelf : m_imguiShelves)
+    {
+        shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
+    }
+
+    // Set the sample count on the light probe camera
+    m_lightProbeCameraShelf->GetParamsObject().maxSamples = *m_sampleCountIt;
+
+    Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx, m_numPermutations);
+
+    return true;
+}
+
+float BakePermutor::GetProgress() const
+{
+    return float(min(m_permutationIdx, m_numPermutations)) / float(max(1, m_numPermutations));
+}
+
+std::string BakePermutor::GenerateExportPath() const
+{
+    return m_templatePath;
+}
 
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
-    m_stateList("Parameter states", "Add state", "Overwrite state", "Delete state"),
-    m_sampleCountList("Sample counts", "+", "", "-"),
-    m_numPermutations(1),
-    m_isBaking(false)
+    m_stateListUI("Parameter states", "Add state", "Overwrite state", "Delete state"),
+    m_sampleCountListUI("Sample counts", "+", "", "-"),
+    m_numBakePermutations(1),
+    m_isBaking(false),
+    m_permutor(imguiShelves)
 {
     m_usdPathData.resize(2048);
     std::memset(m_usdPathData.data(), '\0', sizeof(char) * m_usdPathData.size());
-    
+
     std::string defaultUSDPath = "probeVolume.#####.###.usd";
     std::memcpy(m_usdPathData.data(), defaultUSDPath.data(), sizeof(char) * defaultUSDPath.length());
 }
@@ -24,16 +100,16 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
 
     std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool { return Insert(id, false); };
-    m_stateList.SetOnAdd(onAddState);
+    m_stateListUI.SetOnAdd(onAddState);
 
     std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool { return Insert(id, true); };
-    m_stateList.SetOnOverwrite(onOverwriteState);
+    m_stateListUI.SetOnOverwrite(onOverwriteState);
 
     std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool { return Erase(id); };
-    m_stateList.SetOnDelete(onOverwriteState);
+    m_stateListUI.SetOnDelete(onOverwriteState);
 
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
-    m_stateList.SetOnDeleteAll(onDeleteAllState);
+    m_stateListUI.SetOnDeleteAll(onDeleteAllState);
 
     ReadJson();
 }
@@ -65,10 +141,10 @@ void RenderObjectStateManager::ReadJson()
         statePtr->DeepCopy(childNode);
     }
 
-    m_stateList.Clear();
+    m_stateListUI.Clear();
     for (auto element : m_stateMap)
     {
-        m_stateList.Insert(element.first);
+        m_stateListUI.Insert(element.first);
     }
 }
 
@@ -131,13 +207,13 @@ bool RenderObjectStateManager::Erase(const std::string& id)
     m_stateMap.erase(it);
     WriteJson();
 
-    Log::Debug("Removed state '%s' from library.\n", id); 
+    Log::Debug("Removed state '%s' from library.\n", id);
     return true;
 }
 
 void RenderObjectStateManager::Clear()
 {
-    
+
 }
 
 bool RenderObjectStateManager::Restore(const std::string& id)
@@ -171,25 +247,25 @@ void RenderObjectStateManager::ConstructStateManagerUI()
 {
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    m_stateList.Construct();
+    m_stateListUI.Construct();
 
     // Load a saved state to the UI
     SL;
-    if (ImGui::Button("Load") && m_stateList.IsSelected())
+    if (ImGui::Button("Load") && m_stateListUI.IsSelected())
     {
-        Restore(m_stateList.GetCurrentlySelectedText());
+        Restore(m_stateListUI.GetCurrentlySelectedText());
     }
 
     // Jitter the current state to generate a new scene
     if (ImGui::Button("Randomise"))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(0); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f)); }
     }
     SL;
     // Reset all the jittered values to their midpoints
     if (ImGui::Button("Reset jitter"))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(IMGUIAbstractShelf::kReset); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(Cuda::vec2(0.5f)); }
     }
 }
 
@@ -197,57 +273,72 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
 {
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
     
-    m_sampleCountList.Construct();
-
-    ImGui::DragInt("Permutations", &m_numPermutations, 1, 1, 100000);
+    m_sampleCountListUI.Construct();
+    
+    ImGui::DragInt("Permutations", &m_numBakePermutations, 1, 1, 100000);
 
     // New element input control
-    ImGui::InputText("USD export path", m_usdPathData.data(), m_usdPathData.size());
+    ImGui::InputText("USD export path", m_usdPathData.data(), m_usdPathData.size());    
 
-    bool isBakeRunning = false;
-    //float bakeProgress;
-    //m_renderManager.GetBakeStatus(isBakeRunning, bakeProgress);
-    
-    // Reset all the jittered values to their midpoints
+     // Reset all the jittered values to their midpoints
+    const BakeStatus bakeStatus = m_renderManager.GetBakeStatus();
     ImVec2 size = ImGui::GetItemRectSize();
     size.y *= 2;
-    std::string actionText = isBakeRunning ? "Abort" : "Bake";
+    const std::string actionText = (bakeStatus != BakeStatus::kReady) ? "Abort" : "Bake";
     if (ImGui::Button(actionText.c_str(), size))
     {
-        /*if (isBakeRunning)
-        {
-            m_renderManager.AbortBake();
-        }
-        else
-        {
-            const auto& sampleList = m_sampleCountList.GetListItems();
-            if (sampleList.empty())
-            {
-                Log::Error("ERROR: Can't start bake; no sample counts were specified.\n");
-            }
-            else
-            {
-                RenderManager::BakeParams bakeParams;
-                for (const auto& item : sampleList)
-                {
-                    const int count = std::atoi(item.c_str());
-                    constexpr int kMaxSampleCount = 100000000;
-                    if (count >= 1 && count <= kMaxSampleCount)
-                    {
-                        bakeParams.sampleCountList.push_back(count);
-                    }
-                }
-
-                bakeParams.numPermutations = m_numPermutations;
-                bakeParams.usdPathTemplate = std::string(m_usdPathData.data());
-
-                m_renderManager.StartBake(bakeParams);
-            }
-        }*/
+        ToggleBake();
     }
 
-    //ImGui::ProgressBar(bakeProgress, ImVec2(0.0f, 0.0f));
-   
+    ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
+    ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
+}
+
+void RenderObjectStateManager::ToggleBake()
+{
+    // If a bake is in progress, abort it
+    if (m_isBaking)
+    {
+        m_renderManager.AbortBake();
+        m_isBaking = false;
+        return;
+    }
+    
+    const auto& sampleList = m_sampleCountListUI.GetListItems();
+    if (sampleList.empty())
+    {
+        Log::Error("ERROR: Can't start bake; no sample counts were specified.\n");
+        return;
+    }
+
+    m_permutor.Clear();
+    for (const auto& item : sampleList)
+    {
+        const int count = std::atoi(item.c_str());
+        if (count >= 1)
+        {
+            m_permutor.GetSampleCountSet().insert(count);
+        }
+    }
+    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathData.data()));
+
+    m_isBaking = true;
+}
+
+void RenderObjectStateManager::HandleBakeIteration()
+{
+    // Start a new iteration only if a bake has been requested and the renderer is ready
+    if (!m_isBaking || m_renderManager.GetBakeStatus() != BakeStatus::kReady) { return; }
+    
+    // Advance to the next permutation. If this fails, we're done. 
+    if (m_permutor.Advance())
+    {       
+        m_renderManager.StartBake(m_permutor.GenerateExportPath());
+    }
+    else
+    {
+        m_isBaking = false;
+    }
 }
 
 void RenderObjectStateManager::ConstructUI()
@@ -257,6 +348,8 @@ void RenderObjectStateManager::ConstructUI()
     ConstructStateManagerUI();
 
     ConstructBatchProcessorUI();
+
+    HandleBakeIteration();
 
     ImGui::End();
 }

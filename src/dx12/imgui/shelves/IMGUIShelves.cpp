@@ -10,9 +10,9 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &p.useGrid);
 }
 
-void SimpleMaterialShelf::Randomise(int flags)
+void SimpleMaterialShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    const Cuda::vec2 randomRange = range;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -26,9 +26,9 @@ void KIFSMaterialShelf::Construct()
     ImGui::SliderFloat3("HSL upper", &p.hslUpper[0], 0.0f, 1.0f);
     ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&p.incandescence);
 }
-void KIFSMaterialShelf::Randomise(int flags)
+void KIFSMaterialShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    const Cuda::vec2 randomRange = range;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,11 +57,9 @@ void PlaneShelf::Construct()
     ImGui::Checkbox("Bounded", &p.isBounded);
 }
 
-void PlaneShelf::Randomise(int flags)
+void PlaneShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
-    
-    m_params[0].tracable.transform.Randomise(randomRange);
+    m_params[0].tracable.transform.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,9 +74,9 @@ void SphereShelf::Construct()
     ImGui::Checkbox("Exclude from bake", &p.excludeFromBake);
 }
 
-void SphereShelf::Randomise(int flags)
+void SphereShelf::Randomise(const Cuda::vec2 range)
 {
-    m_params[0].transform.Randomise((flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f));
+    m_params[0].transform.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,9 +103,9 @@ void QuadLightShelf::Construct()
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
-void QuadLightShelf::Randomise(int flags)
+void QuadLightShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
+    const Cuda::vec2 randomRange = range;
     m_params[0].transform.Randomise(randomRange);
 }
 
@@ -124,9 +122,9 @@ void SphereLightShelf::Construct()
     ImGui::SliderFloat("Intensity", &p.intensity, -10.0f, 10.0f);
 }
 
-void SphereLightShelf::Randomise(int flags)
+void SphereLightShelf::Randomise(const Cuda::vec2 range)
 {
-    m_params[0].transform.Randomise((flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f));
+    m_params[0].transform.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

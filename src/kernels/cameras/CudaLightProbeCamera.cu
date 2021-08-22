@@ -477,10 +477,8 @@ namespace Cuda
         *minSampleCount = camera->GetProbeMinMaxSampleCount();
     }
 
-    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath)
+    __host__ float Host::LightProbeCamera::GetBakeProgress() const
     {
-        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }
-        
         vec2* cu_minMax;
         vec2 minMax;
         IsOk(cudaMalloc(&cu_minMax, sizeof(vec2)));
@@ -490,14 +488,14 @@ namespace Cuda
 
         IsOk(cudaMemcpy(&minMax, cu_minMax, sizeof(vec2), cudaMemcpyDeviceToHost));
         IsOk(cudaFree(cu_minMax));
+        
+        return clamp((minMax.x + 1.0f) / float(m_params.maxSamples), 0.0f, 1.0f);
 
-        if (int(minMax.x + 1) < m_params.maxSamples) 
-        {
-            Log::Debug("Baking... %i\n", int(minMax.x + 1));
-            return false;            
-        }
+    }
 
-        Log::Debug("Export!\n");
+    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath)
+    {
+        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }    
 
         /*try
         {

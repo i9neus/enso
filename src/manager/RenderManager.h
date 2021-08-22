@@ -12,17 +12,7 @@
 #include "kernels/CudaRenderObject.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-struct BakeState
-{
-	enum _statusFlags : int { kIdle, kStart, kRunning, kAbort, kComplete };
-
-	BakeState() : status(kIdle), progress(0.0f) {}
-
-	std::atomic<int>	status;
-	float				progress;
-
-	std::string			usdExportPath;
-};
+enum class BakeStatus : int { kReady, kRunning, kHalt };
 
 class RenderManager
 {
@@ -42,7 +32,8 @@ public:
 
 	void StartBake(const std::string& usdExportPath);
 	void AbortBake();
-	void GetBakeStatus(int& status, float& progress);
+	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
+	float GetBakeProgress() const { return m_bakeProgress; }
 
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
 	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
@@ -92,26 +83,28 @@ private:
 	TimePoint					m_renderStartTime;
 
 	// CUDA objects
-	cudaExternalMemory_t	     m_externalTextureMemory;
-	cudaExternalSemaphore_t      m_externalSemaphore;
-	cudaStream_t				 m_D3DStream;
-	cudaStream_t				 m_renderStream;
-	LUID						 m_dx12deviceluid;
-	UINT						 m_cudaDeviceID;
-	UINT						 m_nodeMask;
-	float						 m_AnimTime;
-	void*						 m_cudaTexturePtr = NULL;
-	cudaSurfaceObject_t          m_cuSurface;
-	cudaEvent_t                  m_renderEvent;
-	ComPtr<ID3D12Fence>		     m_d3dFence;
-	HANDLE						 m_fenceEvent;
+	cudaExternalMemory_t	    m_externalTextureMemory;
+	cudaExternalSemaphore_t     m_externalSemaphore;
+	cudaStream_t				m_D3DStream;
+	cudaStream_t				m_renderStream;
+	LUID						m_dx12deviceluid;
+	UINT						m_cudaDeviceID;
+	UINT						m_nodeMask;
+	float						m_AnimTime;
+	void*						m_cudaTexturePtr = NULL;
+	cudaSurfaceObject_t         m_cuSurface;
+	cudaEvent_t                 m_renderEvent;
+	ComPtr<ID3D12Fence>		    m_d3dFence;
+	HANDLE						m_fenceEvent;
 
-	uint32_t					 m_D3DTextureWidth;
-	uint32_t				     m_D3DTextureHeight;
-	uint32_t				     m_clientWidth;
-	uint32_t                     m_clientHeight;
+	uint32_t					m_D3DTextureWidth;
+	uint32_t				    m_D3DTextureHeight;
+	uint32_t				    m_clientWidth;
+	uint32_t                    m_clientHeight;
 
-	BakeState					 m_bakeState;
+	std::atomic<BakeStatus>		m_bakeStatus;
+	float						m_bakeProgress;
+	std::string					m_usdExportPath;
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;

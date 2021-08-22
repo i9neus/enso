@@ -92,10 +92,9 @@ void KIFSShelf::Reset()
 {
 }
 
-void KIFSShelf::Randomise(const int flags)
+void KIFSShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = (flags & IMGUIAbstractShelf::kReset) ? Cuda::vec2(0.5f) : Cuda::vec2(0.0f, 1.0f);
-    m_params[0].Randomise(randomRange);
+    m_params[0].Randomise(range);
 }
 
 void KIFSShelf::JitterKIFSParameters()

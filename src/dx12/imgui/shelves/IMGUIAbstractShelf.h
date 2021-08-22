@@ -16,7 +16,7 @@ public:
     virtual bool IsDirty() const = 0;
     virtual void MakeClean() = 0;
 
-    virtual void Randomise(int flags) {}
+    virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }
     const std::string& GetID() const { return m_id; }
@@ -80,6 +80,8 @@ public:
     }
 
     virtual void Reset() {}
+
+    ParamsType& GetParamsObject() { return m_params[0]; }
 
     std::string GetShelfTitle()
     {
