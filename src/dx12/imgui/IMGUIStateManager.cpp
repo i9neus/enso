@@ -3,7 +3,9 @@
 #include "manager/RenderManager.h"
 #include "shelves/IMGUIShelves.h"
 
-BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves) : m_imguiShelves(imguiShelves)
+BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap) : 
+    m_imguiShelves(imguiShelves),
+    m_stateMap(stateMap)
 {    
     Clear();
 }
@@ -12,6 +14,7 @@ void BakePermutor::Clear()
 {
     m_sampleCountSet.clear();
     m_sampleCountIt = m_sampleCountSet.end();
+    m_stateIt = m_stateMap.GetStateData().end();
     m_numIterations = 0;
     m_iterationIdx = -1;
     m_numPermutations = 0;
@@ -24,9 +27,12 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_sampleCountIt = m_sampleCountSet.begin();
     m_numIterations = numIterations;
     m_iterationIdx = -1;
-    m_numPermutations = m_sampleCountSet.size() * m_numIterations;
+    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_stateMap.GetNumPermutableStates();
     m_permutationIdx = -1;
     m_templatePath = templatePath;
+    m_stateIt = m_stateMap.GetStateData().begin();
+
+    const auto r = *(m_stateIt);
 
     m_templateTokens.clear();
     Lexer lex(templatePath);
@@ -57,20 +63,30 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
 
 bool BakePermutor::Advance()
 {
-    if (m_sampleCountIt == m_sampleCountSet.end() || !m_lightProbeCameraShelf) { return false; }
+    if (m_stateIt == m_stateMap.GetStateData().end() || 
+        m_sampleCountIt == m_sampleCountSet.end() ||
+        m_iterationIdx >= m_numIterations ||
+        !m_lightProbeCameraShelf) { return false; }
     
     // Increment to the next permutation
     ++m_iterationIdx;
     if (m_iterationIdx == m_numIterations)
     {
-        ++m_sampleCountIt;
         m_iterationIdx = 0;
-        if (m_sampleCountIt == m_sampleCountSet.end())
+        if (++m_sampleCountIt == m_sampleCountSet.end())
         {
-            return false;
+            m_sampleCountIt = m_sampleCountSet.begin();
+            do
+            {
+                if (++m_stateIt == m_stateMap.GetStateData().end()) { return false; }
+            } 
+            while (!m_stateIt->second.isPermutable);
         }
     }
     ++m_permutationIdx;
+
+    // Restore the state pointed
+    m_stateMap.Restore(*m_stateIt);
 
     // Randomise all the shelves
     for (auto& shelf : m_imguiShelves)
@@ -115,6 +131,138 @@ std::string BakePermutor::GenerateExportPath() const
     return exportPath;
 }
 
+void RenderObjectStateMap::FromJson(const Json::Node& node, const int flags)
+{
+    for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
+    {
+        std::string newId = it.Name();
+        Json::Node versionNode = *it;
+
+        auto& newState = m_stateMap[newId];
+        newState.json.reset(new Json::Document());
+
+        Json::Node patchNode = versionNode.GetChildObject("patch", flags);
+        if (patchNode)
+        {
+            newState.json->DeepCopy(patchNode);
+        }
+
+        versionNode.GetValue("isPermutable", newState.isPermutable, flags);
+    }
+}
+
+void RenderObjectStateMap::ToJson(Json::Node& node) const
+{
+    for (auto& state : m_stateMap)
+    {
+        Json::Node versionNode = node.AddChildObject(state.first);
+
+        versionNode.AddValue("isPermutable", state.second.isPermutable);
+
+        Json::Node patchNode = versionNode.AddChildObject("patch");
+        patchNode.DeepCopy(*state.second.json);
+    }
+}
+
+bool RenderObjectStateMap::Insert(const std::string& id, const bool isPermutable, bool overwriteIfExists)
+{
+    if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return false; }
+
+    auto it = m_stateMap.find(id);
+    StateObject* stateObjectPtr = nullptr;
+    if (it != m_stateMap.end())
+    {
+        if (!overwriteIfExists) { Log::Error("Error: state with ID '%s' already exists.\n", id); return false; }
+
+        stateObjectPtr = &(it->second);
+        Assert(stateObjectPtr);
+        Assert(stateObjectPtr->json);
+        stateObjectPtr->json->Clear();
+
+        Log::Debug("Updated state '%s' in library.\n", id);
+    }
+    else
+    {
+        stateObjectPtr = &(m_stateMap[id]);
+        stateObjectPtr->json.reset(new Json::Document());
+
+        Log::Debug("Added KIFS state '%s' to library.\n", id);
+    }
+
+    stateObjectPtr->isPermutable = isPermutable;
+
+    // Dump the data from each shelf into the new JSON node
+    for (const auto& shelf : m_imguiShelves)
+    {
+        //if (shelf.second->IsJitterable())
+        {
+            Json::Node shelfNode = stateObjectPtr->json->AddChildObject(shelf.first);
+            shelf.second->ToJson(shelfNode);
+        }
+    }
+
+    return true;
+}
+
+bool RenderObjectStateMap::Erase(const std::string& id)
+{
+    auto it = m_stateMap.find(id);
+    if (it == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
+
+    m_stateMap.erase(it);
+
+    Log::Debug("Removed state '%s' from library.\n", id);
+    return true;
+}
+
+void RenderObjectStateMap::Clear()
+{
+
+}
+
+bool RenderObjectStateMap::Restore(const std::string& id)
+{
+    auto stateIt = m_stateMap.find(id);
+    if (stateIt == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
+
+    return Restore(*stateIt);
+}
+
+bool RenderObjectStateMap::Restore(const std::pair<std::string, StateObject>& element)
+{    
+    Assert(element.second.json);
+    const auto& node = *(element.second.json);
+
+    for (Json::Node::ConstIterator stateIt = node.begin(); stateIt != node.end(); ++stateIt)
+    {
+        const std::string dagPath = stateIt.Name();
+        Json::Node childNode = *stateIt;
+
+        auto shelfIt = m_imguiShelves.find(dagPath);
+
+        if (shelfIt == m_imguiShelves.end())
+        {
+            Log::Debug("Error: trying to restore render object state '%s', but object does not exist in shelf map.\n", dagPath);
+            continue;
+        }
+
+        shelfIt->second->FromJson(childNode, Json::kSilent, true);
+    }
+
+    Log::Debug("Restored state '%s' from library.\n", element.first);
+    return true;
+}
+
+int RenderObjectStateMap::GetNumPermutableStates() const
+{
+    int numPermutableStates = 0;
+    for (auto state : m_stateMap)
+    {
+        if (state.second.isPermutable) { numPermutableStates++; }
+    }
+    return numPermutableStates;
+}
+
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
@@ -122,8 +270,9 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_sampleCountListUI("Sample counts", "+", "", "-"),
     m_numBakePermutations(1),
     m_isBaking(false),
-    m_permutor(imguiShelves),
-    m_isPermutableUI(true)
+    m_permutor(imguiShelves, m_stateMap),
+    m_isPermutableUI(true),
+    m_stateMap(imguiShelves)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -143,13 +292,37 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
 
-    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool { return Insert(id, m_isPermutableUI, false); };
+    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool 
+    { 
+        if (m_stateMap.Insert(id, m_isPermutableUI, false))
+        {
+            SerialiseJson();
+            return true;
+        }
+        return false;
+    };
     m_stateListUI.SetOnAdd(onAddState);
 
-    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool { return Insert(id, m_isPermutableUI, true); };
+    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool 
+    { 
+        if (m_stateMap.Insert(id, m_isPermutableUI, true))
+        {
+            SerialiseJson();
+            return true;
+        }
+        return false;
+    };
     m_stateListUI.SetOnOverwrite(onOverwriteState);
 
-    std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool { return Erase(id); };
+    std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool 
+    { 
+        if (m_stateMap.Erase(id))
+        {
+            SerialiseJson();
+            return true;
+        }
+        return false;
+    };
     m_stateListUI.SetOnDelete(onDeleteState);
 
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
@@ -157,8 +330,8 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
 
     std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void  
     { 
-        auto it = m_stateMap.find(id);
-        if (it != m_stateMap.end()) { m_isPermutableUI = it->second.isPermutable; }
+        auto it = m_stateMap.GetStateData().find(id);
+        if (it != m_stateMap.GetStateData().end()) { m_isPermutableUI = it->second.isPermutable; }
     };
     m_stateListUI.SetOnSelect(onSelectItemState);
 
@@ -180,32 +353,16 @@ void RenderObjectStateManager::DeserialiseJson()
         return;
     }
 
-    m_stateMap.clear();
     const int jsonWarningLevel = Json::kRequiredWarn;
 
     // Rebuild the state map from the JSON dictionary
     Json::Node stateNode = rootDocument.GetChildObject("states", jsonWarningLevel);
     if (stateNode)
     {
-        for (Json::Node::Iterator it = stateNode.begin(); it != stateNode.end(); ++it)
-        {            
-            std::string newId = it.Name();
-            Json::Node versionNode = *it;
-
-            auto& newState = m_stateMap[newId];
-            newState.json.reset(new Json::Document());
-
-            Json::Node patchNode = versionNode.GetChildObject("patch", jsonWarningLevel);
-            if (patchNode)
-            {
-                newState.json->DeepCopy(patchNode);
-            }
-
-            versionNode.GetValue("isPermutable", newState.isPermutable, jsonWarningLevel);
-        }
+        m_stateMap.FromJson(stateNode, jsonWarningLevel);
 
         m_stateListUI.Clear();
-        for (auto element : m_stateMap)
+        for (auto element : m_stateMap.GetStateData())
         {
             m_stateListUI.Insert(element.first);
         }
@@ -227,20 +384,12 @@ void RenderObjectStateManager::DeserialiseJson()
     }
 }
 
-void RenderObjectStateManager::SerialiseJson()
+void RenderObjectStateManager::SerialiseJson() const
 {
     Json::Document rootDocument;
     
     Json::Node stateNode = rootDocument.AddChildObject("states");
-    for (auto& state : m_stateMap)
-    {
-        Json::Node versionNode = stateNode.AddChildObject(state.first);
-
-        versionNode.AddValue("isPermutable", state.second.isPermutable);
-        
-        Json::Node patchNode = versionNode.AddChildObject("patch");
-        patchNode.DeepCopy(*state.second.json);
-    }
+    m_stateMap.ToJson(stateNode);    
 
     Json::Node permJson = rootDocument.AddChildObject("permutations");
     {
@@ -254,91 +403,6 @@ void RenderObjectStateManager::SerialiseJson()
     rootDocument.Serialise(m_stateJsonPath);
 }
 
-bool RenderObjectStateManager::Insert(const std::string& id, const bool isPermutable, bool overwriteIfExists)
-{
-    if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return false; }
-
-    auto it = m_stateMap.find(id);
-    StateObject* stateObjectPtr = nullptr;
-    if (it != m_stateMap.end())
-    {
-        if (!overwriteIfExists) { Log::Error("Error: state with ID '%s' already exists.\n", id); return false; }
-
-        stateObjectPtr = &(it->second);
-        Assert(stateObjectPtr);
-        Assert(stateObjectPtr->json);
-        stateObjectPtr->json->Clear();
-
-        Log::Debug("Updated state '%s' in library.\n", id);
-    }
-    else
-    {
-        stateObjectPtr = &(m_stateMap[id]);       
-        stateObjectPtr->json.reset(new Json::Document());
-
-        Log::Debug("Added KIFS state '%s' to library.\n", id);
-    }
-
-    stateObjectPtr->isPermutable = isPermutable;
-
-    // Dump the data from each shelf into the new JSON node
-    for (const auto& shelf : m_imguiShelves)
-    {
-        //if (shelf.second->IsJitterable())
-        {
-            Json::Node shelfNode = stateObjectPtr->json->AddChildObject(shelf.first);
-            shelf.second->ToJson(shelfNode);
-        }
-    }
-
-    SerialiseJson();
-    return true;
-}
-
-bool RenderObjectStateManager::Erase(const std::string& id)
-{
-    auto it = m_stateMap.find(id);
-    if (it == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
-
-    m_stateMap.erase(it);
-    SerialiseJson();
-
-    Log::Debug("Removed state '%s' from library.\n", id);
-    return true;
-}
-
-void RenderObjectStateManager::Clear()
-{
-
-}
-
-bool RenderObjectStateManager::Restore(const std::string& id)
-{
-    auto stateIt = m_stateMap.find(id);
-    if (stateIt == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
-
-    Assert(stateIt->second.json);
-    const auto& node = *(stateIt->second.json);
-
-    for (Json::Node::ConstIterator stateIt = node.begin(); stateIt != node.end(); ++stateIt)
-    {
-        const std::string dagPath = stateIt.Name();
-        Json::Node childNode = *stateIt;
-
-        auto shelfIt = m_imguiShelves.find(dagPath);
-
-        if (shelfIt == m_imguiShelves.end())
-        {
-            Log::Debug("Error: trying to restore render object state '%s', but object does not exist in shelf map.\n", dagPath);
-            continue;
-        }
-
-        shelfIt->second->FromJson(childNode, Json::kSilent, true);
-    }
-
-    Log::Debug("Restored state '%s' from library.\n", id);
-}
-
 void RenderObjectStateManager::ConstructStateManagerUI()
 {
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -348,7 +412,7 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     SL;
     if (ImGui::Button("Load") && m_stateListUI.IsSelected())
     {
-        Restore(m_stateListUI.GetCurrentlySelectedText());
+        m_stateMap.Restore(m_stateListUI.GetCurrentlySelectedText());
     }
 
     ImGui::Checkbox("Permutable", &m_isPermutableUI);
