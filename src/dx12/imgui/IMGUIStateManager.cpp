@@ -108,6 +108,7 @@ std::string BakePermutor::GenerateExportPath() const
         if (token == "{$ITERATION}")            { exportPath += tfm::format("%i", m_iterationIdx); }
         else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", *m_sampleCountIt); }
         else if (token == "{PERMUTATION}")      { exportPath += tfm::format("%i", m_permutationIdx); }
+        //else if (token == "{STATE}")            { exportPath += ; }
         else                                    { exportPath += token; }
     }
 
@@ -121,13 +122,19 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_sampleCountListUI("Sample counts", "+", "", "-"),
     m_numBakePermutations(1),
     m_isBaking(false),
-    m_permutor(imguiShelves)
+    m_permutor(imguiShelves),
+    m_isPermutableUI(true)
 {
-    m_usdPathData.resize(2048);
-    std::memset(m_usdPathData.data(), '\0', sizeof(char) * m_usdPathData.size());
+    m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
+    
+    m_usdPathUIData.resize(2048);
+    std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
+    std::memcpy(m_usdPathUIData.data(), m_usdPathTemplate.data(), sizeof(char) * m_usdPathTemplate.length());
+}
 
-    std::string defaultUSDPath = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
-    std::memcpy(m_usdPathData.data(), defaultUSDPath.data(), sizeof(char) * defaultUSDPath.length());
+RenderObjectStateManager::~RenderObjectStateManager()
+{
+    SerialiseJson();
 }
 
 void RenderObjectStateManager::Initialise(const Json::Node& node)
@@ -136,17 +143,24 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
 
-    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool { return Insert(id, false); };
+    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool { return Insert(id, m_isPermutableUI, false); };
     m_stateListUI.SetOnAdd(onAddState);
 
-    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool { return Insert(id, true); };
+    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool { return Insert(id, m_isPermutableUI, true); };
     m_stateListUI.SetOnOverwrite(onOverwriteState);
 
     std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool { return Erase(id); };
-    m_stateListUI.SetOnDelete(onOverwriteState);
+    m_stateListUI.SetOnDelete(onDeleteState);
 
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
     m_stateListUI.SetOnDeleteAll(onDeleteAllState);
+
+    std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void  
+    { 
+        auto it = m_stateMap.find(id);
+        if (it != m_stateMap.end()) { m_isPermutableUI = it->second.isPermutable; }
+    };
+    m_stateListUI.SetOnSelect(onSelectItemState);
 
     DeserialiseJson();
 }
@@ -163,71 +177,116 @@ void RenderObjectStateManager::DeserialiseJson()
     catch (const std::runtime_error& err)
     {
         Log::Debug("Failed: %s.\n", err.what());
+        return;
     }
 
     m_stateMap.clear();
+    const int jsonWarningLevel = Json::kRequiredWarn;
 
     // Rebuild the state map from the JSON dictionary
-    for (Json::Node::Iterator it = rootDocument.begin(); it != rootDocument.end(); ++it)
+    Json::Node stateNode = rootDocument.GetChildObject("states", jsonWarningLevel);
+    if (stateNode)
     {
-        std::string newId = it.Name();
-        Json::Node childNode = *it;
+        for (Json::Node::Iterator it = stateNode.begin(); it != stateNode.end(); ++it)
+        {            
+            std::string newId = it.Name();
+            Json::Node versionNode = *it;
 
-        auto& statePtr = m_stateMap[newId];
-        statePtr.reset(new Json::Document());
-        statePtr->DeepCopy(childNode);
+            auto& newState = m_stateMap[newId];
+            newState.json.reset(new Json::Document());
+
+            Json::Node patchNode = versionNode.GetChildObject("patch", jsonWarningLevel);
+            if (patchNode)
+            {
+                newState.json->DeepCopy(patchNode);
+            }
+
+            versionNode.GetValue("isPermutable", newState.isPermutable, jsonWarningLevel);
+        }
+
+        m_stateListUI.Clear();
+        for (auto element : m_stateMap)
+        {
+            m_stateListUI.Insert(element.first);
+        }
     }
 
-    m_stateListUI.Clear();
-    for (auto element : m_stateMap)
+    // Rebuild the permutation settings
+    Json::Node permNode = rootDocument.GetChildObject("permutations", jsonWarningLevel);
+    if (permNode)
     {
-        m_stateListUI.Insert(element.first);
+        std::vector<int> sampleCounts;
+        permNode.GetArrayValues("sampleCounts", sampleCounts, jsonWarningLevel);
+        for (auto item : sampleCounts) { m_sampleCountListUI.Insert(tfm::format("%i", item)); }
+        permNode.GetValue("iterations", m_numBakePermutations, jsonWarningLevel);
+        if (permNode.GetValue("usdPathTemplate", m_usdPathTemplate, jsonWarningLevel))
+        {
+            std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
+            std::memcpy(m_usdPathUIData.data(), m_usdPathTemplate.data(), sizeof(char) * m_usdPathTemplate.length());
+        }
     }
 }
 
 void RenderObjectStateManager::SerialiseJson()
 {
     Json::Document rootDocument;
+    
+    Json::Node stateNode = rootDocument.AddChildObject("states");
     for (auto& state : m_stateMap)
     {
-        Json::Node childNode = rootDocument.AddChildObject(state.first);
-        childNode.DeepCopy(*state.second);
+        Json::Node versionNode = stateNode.AddChildObject(state.first);
+
+        versionNode.AddValue("isPermutable", state.second.isPermutable);
+        
+        Json::Node patchNode = versionNode.AddChildObject("patch");
+        patchNode.DeepCopy(*state.second.json);
+    }
+
+    Json::Node permJson = rootDocument.AddChildObject("permutations");
+    {
+        std::vector<int> sampleCounts;
+        for (const auto& item : m_sampleCountListUI.GetListItems()) { sampleCounts.push_back(std::atoi(item.c_str())); }
+        permJson.AddArray("sampleCounts", sampleCounts);
+        permJson.AddValue("iterations", m_numBakePermutations);
+        permJson.AddValue("usdPathTemplate", m_usdPathTemplate);
     }
 
     rootDocument.Serialise(m_stateJsonPath);
 }
 
-bool RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExists)
+bool RenderObjectStateManager::Insert(const std::string& id, const bool isPermutable, bool overwriteIfExists)
 {
     if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return false; }
 
     auto it = m_stateMap.find(id);
-    std::shared_ptr<Json::Document> jsonPtr;
+    StateObject* stateObjectPtr = nullptr;
     if (it != m_stateMap.end())
     {
         if (!overwriteIfExists) { Log::Error("Error: state with ID '%s' already exists.\n", id); return false; }
 
-        Assert(it->second);
-        jsonPtr = it->second;
-        jsonPtr->Clear();
+        stateObjectPtr = &(it->second);
+        Assert(stateObjectPtr);
+        Assert(stateObjectPtr->json);
+        stateObjectPtr->json->Clear();
 
         Log::Debug("Updated state '%s' in library.\n", id);
     }
     else
     {
-        auto& statePtr = m_stateMap[id];
-        statePtr.reset(new Json::Document());
-        jsonPtr = statePtr;
+        stateObjectPtr = &(m_stateMap[id]);       
+        stateObjectPtr->json.reset(new Json::Document());
 
         Log::Debug("Added KIFS state '%s' to library.\n", id);
     }
+
+    stateObjectPtr->isPermutable = isPermutable;
 
     // Dump the data from each shelf into the new JSON node
     for (const auto& shelf : m_imguiShelves)
     {
         //if (shelf.second->IsJitterable())
         {
-            Json::Node shelfNode = jsonPtr->AddChildObject(shelf.first);
+            Json::Node shelfNode = stateObjectPtr->json->AddChildObject(shelf.first);
             shelf.second->ToJson(shelfNode);
         }
     }
@@ -258,8 +317,8 @@ bool RenderObjectStateManager::Restore(const std::string& id)
     auto stateIt = m_stateMap.find(id);
     if (stateIt == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
 
-    Assert(stateIt->second);
-    const auto& node = *(stateIt->second);
+    Assert(stateIt->second.json);
+    const auto& node = *(stateIt->second.json);
 
     for (Json::Node::ConstIterator stateIt = node.begin(); stateIt != node.end(); ++stateIt)
     {
@@ -285,13 +344,14 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     m_stateListUI.Construct();
-
     // Load a saved state to the UI
     SL;
     if (ImGui::Button("Load") && m_stateListUI.IsSelected())
     {
         Restore(m_stateListUI.GetCurrentlySelectedText());
     }
+
+    ImGui::Checkbox("Permutable", &m_isPermutableUI);
 
     // Jitter the current state to generate a new scene
     if (ImGui::Button("Randomise"))
@@ -315,7 +375,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::DragInt("Permutations", &m_numBakePermutations, 1, 1, 100000);
 
     // New element input control
-    ImGui::InputText("USD export path", m_usdPathData.data(), m_usdPathData.size());    
+    ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
 
      // Reset all the jittered values to their midpoints
     const BakeStatus bakeStatus = m_renderManager.GetBakeStatus();
@@ -357,7 +417,7 @@ void RenderObjectStateManager::ToggleBake()
             m_permutor.GetSampleCountSet().insert(count);
         }
     }
-    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathData.data()));
+    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()));
 
     m_isBaking = true;
 }

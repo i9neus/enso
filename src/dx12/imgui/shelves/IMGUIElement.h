@@ -30,12 +30,14 @@ public:
     void    SetOnOverwrite(const std::function<bool(const std::string&)>& onOverwrite) { m_onOverwrite = onOverwrite; }
     void    SetOnDelete(const std::function<bool(const std::string&)>& onDelete) { m_onDelete = onDelete; }
     void    SetOnDeleteAll(const std::function<bool()>& onDeleteAll) { m_onDeleteAll = onDeleteAll; }
+    void    SetOnSelect(const std::function<void(const std::string&)>& onSelectItem) { m_onSelectItem = onSelectItem; }
 
 private:
     std::function<bool(const std::string&)>       m_onAdd;
     std::function<bool(const std::string&)>       m_onOverwrite;
     std::function<bool(const std::string&)>       m_onDelete;
     std::function<bool()>                         m_onDeleteAll;
+    std::function<void(const std::string&)>       m_onSelectItem;
 
     std::string                 m_addLabel;
     std::string                 m_overwriteLabel;
@@ -45,6 +47,7 @@ private:
     std::list<std::string>      m_listItems;
     std::vector<char>           m_newItemIDData;
     int                         m_currentIdx;
+    int                         m_lastIdx;
 };
 
 class IMGUIElement

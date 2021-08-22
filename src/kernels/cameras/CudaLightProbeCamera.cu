@@ -495,7 +495,9 @@ namespace Cuda
 
     __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath)
     {
-        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }    
+        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }  
+
+        Log::Debug("Exporting to '%s'...\n", usdExportPath);
 
         /*try
         {

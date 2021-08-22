@@ -36,10 +36,21 @@ private:
 
 class RenderObjectStateManager : public IMGUIElement
 {
+private:
+    struct StateObject
+    {
+        StateObject() : isPermutable(true) {}
+        StateObject(std::shared_ptr<Json::Document> json_, bool isPermutable_) : json(json_), isPermutable(isPermutable_) {}
+
+        std::shared_ptr<Json::Document>     json;
+        bool                                isPermutable;
+    };
+
 public:
-    using StateMap = std::map<const std::string, std::shared_ptr<Json::Document>>;
+    using StateMap = std::map<const std::string, StateObject>;
 
     RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager);
+    ~RenderObjectStateManager();
 
     void Initialise(const Json::Node& node);
     
@@ -48,7 +59,7 @@ public:
     void DeserialiseJson();
     void SerialiseJson();
 
-    bool Insert(const std::string& id, const bool overwriteIfExists);
+    bool Insert(const std::string& id, const bool isPermutable, const bool overwriteIfExists);
     bool Erase(const std::string& id);
     bool Restore(const std::string& id);
     void Clear();
@@ -74,7 +85,8 @@ private:
     bool                    m_isBaking;
     std::string             m_usdPathTemplate;
 
-    std::vector<char>       m_usdPathData;
+    std::vector<char>       m_usdPathUIData;
+    bool                    m_isPermutableUI;
     std::string             m_stateJsonPath;
 
     IMGUIListBox            m_sampleCountListUI;

@@ -2,13 +2,13 @@
 #include "generic/JsonUtils.h"
 
 IMGUIListBox::IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel) :
-    m_currentIdx(-1),
     m_listBoxID(id),
     m_addLabel(addLabel),
     m_overwriteLabel(overwriteLabel),
-    m_deleteLabel(deleteLabel)
+    m_deleteLabel(deleteLabel),
+    m_currentIdx(-1),
+    m_lastIdx(-1)
 {
-    m_currentIdx = -1;
     m_newItemIDData.resize(2048);
     std::memset(m_newItemIDData.data(), '\0', sizeof(char) * m_newItemIDData.size());
 }
@@ -26,6 +26,11 @@ void IMGUIListBox::Construct()
             if (ImGui::Selectable(it->c_str(), isSelected))
             {
                 m_currentIdx = n;
+                if (m_onSelectItem && m_currentIdx != m_lastIdx)
+                {
+                    m_onSelectItem(*it);
+                    m_lastIdx = m_currentIdx;
+                }
             }
             if (isSelected) { ImGui::SetItemDefaultFocus(); }
         }
@@ -54,7 +59,7 @@ void IMGUIListBox::Construct()
         if (it != m_listItems.end())
         {
             std::string overwriteElement = std::string(m_newItemIDData.data());
-            if (!m_onAdd || m_onAdd(overwriteElement))
+            if (!m_onOverwrite || m_onOverwrite(overwriteElement))
             {
                 *it = overwriteElement;
                 std::memset(m_newItemIDData.data(), '\0', sizeof(char) * m_newItemIDData.size());
@@ -129,7 +134,7 @@ void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<
             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
             if (isSelected)
             {
-                ImGui::SetItemDefaultFocus();
+                ImGui::SetItemDefaultFocus();               
             }
         }
         ImGui::EndCombo();
