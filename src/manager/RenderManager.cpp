@@ -99,13 +99,13 @@ void RenderManager::Build()
 
 		// Load the root config
 		Log::Write("Loading 'config.json'...\n");
-		m_configJson.Load("config.json");
+		m_configJson.Deserialise("config.json");
 
 		std::string sceneJsonPath;
 		m_configJson.GetValue("scene", sceneJsonPath, Json::kRequiredAssert);
 
 		Log::Write("Loading scene file '%s'...\n", sceneJsonPath);
-		m_sceneJson.Load(sceneJsonPath);
+		m_sceneJson.Deserialise(sceneJsonPath);
 
 		// Create a container for the render objects
 		m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");

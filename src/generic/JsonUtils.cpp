@@ -205,7 +205,7 @@ namespace Json
         m_allocator = &m_document.GetAllocator();
     }   
 
-    void Document::Load(const std::string& filePath)
+    void Document::Deserialise(const std::string& filePath)
     {
         m_originFilePath = filePath;
         std::string raw = ReadTextFile(filePath);
@@ -227,7 +227,7 @@ namespace Json
         Parse(raw);
     }
 
-    void Document::WriteFile(const std::string& filePath)
+    void Document::Serialise(const std::string& filePath)
     {
         WriteTextFile(filePath, Stringify());
     }

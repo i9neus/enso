@@ -44,8 +44,8 @@ public:
     
     void ConstructUI();
 
-    void ReadJson();
-    void WriteJson();
+    void DeserialiseJson();
+    void SerialiseJson();
 
     bool Insert(const std::string& id, const bool overwriteIfExists);
     bool Erase(const std::string& id);

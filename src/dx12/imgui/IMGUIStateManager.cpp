@@ -111,17 +111,17 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
     m_stateListUI.SetOnDeleteAll(onDeleteAllState);
 
-    ReadJson();
+    DeserialiseJson();
 }
 
-void RenderObjectStateManager::ReadJson()
+void RenderObjectStateManager::DeserialiseJson()
 {
     Log::Debug("Trying to restore KIFS state library...\n");
 
     Json::Document rootDocument;
     try
     {
-        rootDocument.Load(m_stateJsonPath);
+        rootDocument.Deserialise(m_stateJsonPath);
     }
     catch (const std::runtime_error& err)
     {
@@ -148,7 +148,7 @@ void RenderObjectStateManager::ReadJson()
     }
 }
 
-void RenderObjectStateManager::WriteJson()
+void RenderObjectStateManager::SerialiseJson()
 {
     Json::Document rootDocument;
     for (auto& state : m_stateMap)
@@ -157,7 +157,7 @@ void RenderObjectStateManager::WriteJson()
         childNode.DeepCopy(*state.second);
     }
 
-    rootDocument.WriteFile(m_stateJsonPath);
+    rootDocument.Serialise(m_stateJsonPath);
 }
 
 bool RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExists)
@@ -195,7 +195,7 @@ bool RenderObjectStateManager::Insert(const std::string& id, bool overwriteIfExi
         }
     }
 
-    WriteJson();
+    SerialiseJson();
     return true;
 }
 
@@ -205,7 +205,7 @@ bool RenderObjectStateManager::Erase(const std::string& id)
     if (it == m_stateMap.end()) { Log::Error("Error: state with ID '%s' does not exist.\n", id); return false; }
 
     m_stateMap.erase(it);
-    WriteJson();
+    SerialiseJson();
 
     Log::Debug("Removed state '%s' from library.\n", id);
     return true;
