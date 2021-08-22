@@ -27,6 +27,7 @@ private:
     int                         m_numPermutations;
 
     std::string                 m_templatePath;
+    std::vector<std::string>    m_templateTokens;
 
     IMGUIAbstractShelfMap&      m_imguiShelves;
     std::shared_ptr<LightProbeCameraShelf> m_lightProbeCameraShelf;

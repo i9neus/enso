@@ -16,6 +16,7 @@ void BakePermutor::Clear()
     m_iterationIdx = -1;
     m_numPermutations = 0;
     m_permutationIdx = 0;
+    m_templateTokens.clear();
 }
 
 void BakePermutor::Prepare(const int numIterations, const std::string& templatePath)
@@ -26,6 +27,24 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_numPermutations = m_sampleCountSet.size() * m_numIterations;
     m_permutationIdx = -1;
     m_templatePath = templatePath;
+
+    m_templateTokens.clear();
+    Lexer lex(templatePath);
+    while (lex)
+    {
+        std::string newToken;
+        if (lex.ParseToken(newToken, [](const char c) { return c != '{'; }))
+        {
+            m_templateTokens.push_back(newToken);
+        }
+        if (lex && *lex == '{')
+        {
+            if (lex.ParseToken(newToken, [](const char c) { return c != '}'; }, Lexer::IncludeDelimiter))
+            {
+                m_templateTokens.push_back(newToken);
+            }
+        }
+    }   
 
     for (auto& shelf : m_imguiShelves)
     {
@@ -74,7 +93,25 @@ float BakePermutor::GetProgress() const
 
 std::string BakePermutor::GenerateExportPath() const
 {
-    return m_templatePath;
+    Assert(m_permutationIdx < m_numPermutations);
+    
+    std::string exportPath;
+    for (const auto& token : m_templateTokens)
+    {
+        Assert(!token.empty());
+        if (token[0] != '{') 
+        {
+            exportPath += token;
+            continue;
+        }
+
+        if (token == "{$ITERATION}")            { exportPath += tfm::format("%i", m_iterationIdx); }
+        else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", *m_sampleCountIt); }
+        else if (token == "{PERMUTATION}")      { exportPath += tfm::format("%i", m_permutationIdx); }
+        else                                    { exportPath += token; }
+    }
+
+    return exportPath;
 }
 
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
@@ -89,7 +126,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_usdPathData.resize(2048);
     std::memset(m_usdPathData.data(), '\0', sizeof(char) * m_usdPathData.size());
 
-    std::string defaultUSDPath = "probeVolume.#####.###.usd";
+    std::string defaultUSDPath = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     std::memcpy(m_usdPathData.data(), defaultUSDPath.data(), sizeof(char) * defaultUSDPath.length());
 }
 
