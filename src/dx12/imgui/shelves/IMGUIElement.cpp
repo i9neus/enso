@@ -10,7 +10,6 @@
 
 UIStyle::UIStyle(const int shelfIdx)
 {
-
     /*const float alpha = 0.8f * shelfIdx++ / float(::max(1ull, m_shelves.size() - 1));
     ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(alpha, 0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(alpha, 0.6f, 0.5f));
@@ -212,7 +211,7 @@ void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<
     }
 }
 
-void IMGUIJitteredParameterTable::Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec2& range)
+void IMGUIJitteredParameterTable::Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec3& range)
 {
     Assert(!label.empty());
 
@@ -243,11 +242,11 @@ void IMGUIJitteredParameterTable::Construct()
                 }
                 else
                 {
-                    ImGui::PushItemWidth(140);
-                    ImGui::DragFloat("+/-", &param.p, 0.001f, range.x, range.y, "%.6f"); SL;
+                    ImGui::PushItemWidth(100);
+                    ImGui::DragFloat("+/-", &param.p, range.z * 0.01f, range.x, range.y, "%.6f"); SL;
                     ImGui::PopItemWidth();
-                    ImGui::PushItemWidth(80);
-                    ImGui::DragFloat("~", &param.dpdt, math::max(0.00001f, param.dpdt * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
+                    ImGui::PushItemWidth(50);
+                    ImGui::DragFloat("~", &param.dpdt, math::max(0.01f * range.z, param.dpdt * range.z), range.x, range.y, "%.6f"); SL;
                     ImGui::SliderFloat("", &param.t, 0.0f, 1.0f);
                     ImGui::PopItemWidth();
                 }

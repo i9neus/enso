@@ -100,16 +100,16 @@ public:
     struct Element
     {
         Element() = default;
-        Element(const std::string& l, Cuda::JitterableFloat& p, const Cuda::vec2& r) : label(l), param(&p), range(r) {}
+        Element(const std::string& l, Cuda::JitterableFloat& p, const Cuda::vec3& r) : label(l), param(&p), range(r) {}
 
         std::string             label;
         Cuda::JitterableFloat*  param;
-        Cuda::vec2              range;
+        Cuda::vec3              range;
     };
 public:
     IMGUIJitteredParameterTable(const std::string& id) : m_id(id) {}
 
-    void Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec2& range);
+    void Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec3& range);
     void Construct();
 
 private:
@@ -121,7 +121,7 @@ class IMGUIJitteredParameter : public IMGUIJitteredParameterTable
 {
 public:
     IMGUIJitteredParameter(const std::string& id) : IMGUIJitteredParameterTable(id) {}
-    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const Cuda::vec2& range) : IMGUIJitteredParameterTable(label) 
+    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const Cuda::vec3& range) : IMGUIJitteredParameterTable(label) 
     {
         IMGUIJitteredParameterTable::Push(label, param, range);
     }

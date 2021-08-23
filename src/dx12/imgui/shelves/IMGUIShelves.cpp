@@ -127,7 +127,7 @@ void CornellBoxShelf::Randomise(const Cuda::vec2 range)
 QuadLightShelf::QuadLightShelf(const Json::Node& json) : 
     IMGUIShelf(json),
     m_colourPicker(m_p.colourHSV, "Colour"),
-    m_intensity(m_p.intensity, "Intensity", Cuda::vec2(-10.0f, 10.0f))
+    m_intensity(m_p.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f))
 {}
 
 void QuadLightShelf::Construct()
@@ -152,7 +152,7 @@ void QuadLightShelf::Randomise(const Cuda::vec2 range)
 SphereLightShelf::SphereLightShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_colourPicker(m_p.colourHSV, "Colour"),
-    m_intensity(m_p.intensity, "Intensity", Cuda::vec2(-10.0f, 10.0f))
+    m_intensity(m_p.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f))
 {}
 
 void SphereLightShelf::Construct()

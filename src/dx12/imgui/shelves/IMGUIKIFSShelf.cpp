@@ -9,12 +9,12 @@ KIFSShelf::KIFSShelf(const Json::Node& json) :
     m_jitteredParamTable("KIFS Params")
 {
     m_faceFlags.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
-    m_jitteredParamTable.Push("Rotation A", m_p.rotateA, Cuda::vec2(0.0f, 1.0f));
-    m_jitteredParamTable.Push("Rotation B", m_p.rotateB, Cuda::vec2(0.0f, 1.0f));
-    m_jitteredParamTable.Push("Scale A", m_p.scaleA, Cuda::vec2(0.0f, 1.0f));
-    m_jitteredParamTable.Push("Scale B", m_p.scaleB, Cuda::vec2(0.0f, 1.0f));
-    m_jitteredParamTable.Push("Crust thickness", m_p.crustThickness, Cuda::vec2(0.0f, 1.0f));
-    m_jitteredParamTable.Push("Vertex scale", m_p.vertScale, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Rotation A", m_p.rotateA, Cuda::vec3(0.0f, 1.0f, 0.01f));
+    m_jitteredParamTable.Push("Rotation B", m_p.rotateB, Cuda::vec3(0.0f, 1.0f, 0.01f));
+    m_jitteredParamTable.Push("Scale A", m_p.scaleA, Cuda::vec3(0.0f, 1.0f, 0.01f));
+    m_jitteredParamTable.Push("Scale B", m_p.scaleB, Cuda::vec3(0.0f, 1.0f, 0.01f));
+    m_jitteredParamTable.Push("Crust thickness", m_p.crustThickness, Cuda::vec3(0.0f, 1.0f, 0.01f));
+    m_jitteredParamTable.Push("Vertex scale", m_p.vertScale, Cuda::vec3(0.0f, 1.0f, 0.01f));
 }
 
 void KIFSShelf::Construct()
