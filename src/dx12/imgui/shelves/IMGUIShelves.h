@@ -166,7 +166,6 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
-    virtual void Reset() override final;
 
 private:
     std::vector<std::string>    m_swizzleLabels;

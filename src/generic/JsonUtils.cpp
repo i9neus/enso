@@ -229,14 +229,22 @@ namespace Json
 
     void Document::Serialise(const std::string& filePath)
     {
-        WriteTextFile(filePath, Stringify());
+        WriteTextFile(filePath, Stringify(true));
     }
 
-    std::string Document::Stringify()
+    std::string Document::Stringify(const bool pretty)
     {
         rapidjson::StringBuffer buffer;
-        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-        m_document.Accept(writer);
+        if (pretty)
+        {
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+            m_document.Accept(writer);
+        }
+        else
+        {
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            m_document.Accept(writer);
+        }
 
         return buffer.GetString();
     }

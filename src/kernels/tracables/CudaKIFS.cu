@@ -46,7 +46,7 @@ namespace Cuda
         vertScale(0.5f),
         crustThickness(0.5f),        
         numIterations(1),
-        faceMask(0xffffffff),
+        faceMask(0xffffffff, 6),
         foldType(kKIFSTetrahedtron),
         primitiveType(kKIFSTetrahedtron),
         doTakeSnapshot(false)
@@ -88,9 +88,9 @@ namespace Cuda
         scaleB.ToJson("scaleB", node);
         crustThickness.ToJson("crustThickness", node);
         vertScale.ToJson("vertScale", node);
+        faceMask.ToJson("faceMask", node);
 
         node.AddValue("numIterations", numIterations);
-        node.AddArray("faceMask", std::vector<uint>({ faceMask.x, faceMask.y }));
         node.AddEnumeratedParameter("foldType", std::vector<std::string>({ "tetrahedron", "cube" }), foldType);
         node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType); 
 
@@ -117,9 +117,9 @@ namespace Cuda
         scaleB.FromJson("scaleB", node, flags);
         vertScale.FromJson("vertScale", node, flags);
         crustThickness.FromJson("crustThickness", node, flags);
+        faceMask.FromJson("faceMask", node, flags);
 
         node.GetValue("numIterations", numIterations, flags);
-        node.GetVector("faceMask", faceMask, flags);
         node.GetEnumeratedParameter("foldType", std::vector<std::string>({"tetrahedron", "cube" }), foldType, flags);
         node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType, flags);
 
@@ -148,7 +148,7 @@ namespace Cuda
         kcd.numIterations = m_params.numIterations;
         kcd.vertScale = powf(2.0, mix(-8.0f, 8.0f, m_params.vertScale()));
         kcd.crustThickness = powf(2.0f, mix(-15.0f, 0.0f, m_params.crustThickness()));
-        kcd.faceMask = m_params.faceMask.x;
+        kcd.faceMask = m_params.faceMask();
         kcd.foldType = m_params.foldType;
         kcd.primitiveType = m_params.primitiveType;
 

@@ -7,7 +7,7 @@ class IMGUIAbstractShelf : public IMGUIElement
 public:
     enum RandomiseFlags : int { kReset = 1 };
 
-    IMGUIAbstractShelf() = default;
+    IMGUIAbstractShelf() :  m_isJitterable(false) {}
     
     virtual void Construct() = 0;
     virtual void FromJson(const Json::Node& json, const int flags, bool dirtySceneGraph) = 0;
@@ -15,6 +15,7 @@ public:
     virtual void ToJson(Json::Node& json) = 0;
     virtual bool IsDirty() const = 0;
     virtual void MakeClean() = 0;
+    virtual void MakeDirty() = 0;
 
     virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) {}
     virtual void Update() {}
@@ -42,7 +43,7 @@ template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {
 public:
-    IMGUIShelf() : m_p(m_paramsBuffer[0]) {}
+    IMGUIShelf() : m_p(m_paramsBuffer[0]), m_isDirty(false) {}
 
     IMGUIShelf(const Json::Node& json) : IMGUIShelf()
     {
@@ -57,6 +58,7 @@ public:
         if (!dirtySceneGraph)
         {
             m_paramsBuffer[1] = m_paramsBuffer[0];
+            m_isDirty = true;
         }
     }
 
@@ -67,6 +69,7 @@ public:
 
     virtual bool IsDirty() const override final
     {
+        if (m_isDirty) { return true; }
         //static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
 
         for (int i = 0; i < sizeof(ParamsType); i++)
@@ -76,13 +79,19 @@ public:
         return false;
     }
 
+    virtual void MakeDirty() override final
+    {
+        m_isDirty = true;
+    }
+
     virtual void MakeClean() override final
     {
         Reset();
         m_paramsBuffer[1] = m_paramsBuffer[0];
+        m_isDirty = false;
     }
 
-    virtual void Reset() {}
+    virtual void Reset() { Update(); }
 
     ParamsType& GetParamsObject() { return m_paramsBuffer[0]; }
 
@@ -100,4 +109,5 @@ public:
 protected:
     std::array<ParamsType, 2>   m_paramsBuffer;
     ParamsType&                 m_p;
+    bool                        m_isDirty;
 };

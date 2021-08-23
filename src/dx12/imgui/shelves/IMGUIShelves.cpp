@@ -66,7 +66,7 @@ void PlaneShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.tracable.transform, true);
+    ConstructJitteredTransform(m_p.tracable.transform, true);
     ImGui::Checkbox("Bounded", &m_p.isBounded);
 }
 
@@ -81,7 +81,7 @@ void SphereShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.transform, true);
+    ConstructJitteredTransform(m_p.transform, true);
 
     ImGui::Checkbox("Exclude from bake", &m_p.excludeFromBake);
 }
@@ -97,7 +97,7 @@ void CornellBoxShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.tracable.transform, true);
+    ConstructJitteredTransform(m_p.tracable.transform, true);
 }
 
 
@@ -107,7 +107,7 @@ void QuadLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.transform, true);
+    ConstructJitteredTransform(m_p.transform, true);
 
     ImGui::ColorEdit3("Colour", &m_p.colour[0], ImGuiColorEditFlags_InputHSV);
     ImGui::SliderFloat("Intensity", &m_p.intensity, -10.0f, 10.0f);
@@ -125,7 +125,7 @@ void SphereLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.transform, true);
+    ConstructJitteredTransform(m_p.transform, true);
 
     ImGui::ColorEdit3("Colour", &m_p.colour[0]);
     ImGui::SliderFloat("Intensity", &m_p.intensity, -10.0f, 10.0f);
@@ -192,7 +192,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Active", &m_p.camera.isActive); SL;
     ImGui::Checkbox("Live", &m_p.camera.isLive);
 
-    ConstructTransform(m_p.grid.transform, false);
+    ConstructJitteredTransform(m_p.grid.transform, false);
 
     ImGui::InputInt3("Grid density", &m_p.grid.gridDensity[0]);
     ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
@@ -212,11 +212,6 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Z", &m_p.grid.invertZ);
 }
 
-void LightProbeCameraShelf::Reset()
-{
-
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void FisheyeCameraShelf::Construct()
@@ -226,7 +221,7 @@ void FisheyeCameraShelf::Construct()
     ImGui::Checkbox("Active", &m_p.camera.isActive); SL;
     ImGui::Checkbox("Live", &m_p.camera.isLive);
 
-    ConstructTransform(m_p.transform, false);
+    ConstructJitteredTransform(m_p.transform, false);
 
     ImGui::SliderInt("Override max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
 }

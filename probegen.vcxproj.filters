@@ -565,10 +565,10 @@
     <CudaCompile Include="src\kernels\materials\CudaKIFSMaterial.cu">
       <Filter>kernels\materials</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu">
+    <CudaCompile Include="src\kernels\math\CudaColourUtils.cu">
       <Filter>kernels\math</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\math\CudaColourUtils.cu">
+    <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu">
       <Filter>kernels\math</Filter>
     </CudaCompile>
   </ItemGroup>

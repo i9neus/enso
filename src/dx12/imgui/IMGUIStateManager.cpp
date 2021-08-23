@@ -247,7 +247,7 @@ bool RenderObjectStateMap::Restore(const std::pair<std::string, StateObject>& el
         }
 
         shelfIt->second->FromJson(childNode, Json::kSilent, true);
-        shelfIt->second->Update();
+        shelfIt->second->Update();        
     }
 
     Log::Debug("Restored state '%s' from library.\n", element.first);
@@ -387,6 +387,8 @@ void RenderObjectStateManager::DeserialiseJson()
 
 void RenderObjectStateManager::SerialiseJson() const
 {
+    if (m_stateJsonPath.empty()) { return; }
+    
     Json::Document rootDocument;
     
     Json::Node stateNode = rootDocument.AddChildObject("states");

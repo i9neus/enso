@@ -1,5 +1,6 @@
 #include "IMGUIElement.h"
 #include "generic/JsonUtils.h"
+#include "kernels/CudaHash.cuh"
 
 IMGUIListBox::IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel) :
     m_listBoxID(id),
@@ -159,7 +160,130 @@ void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<
     }
 }
 
-void IMGUIElement::ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable)
+void IMGUIJitteredParameterTable::Initialise(const std::vector<Cuda::JitterableFloat*>& params, const std::vector<std::string>& labels)
+{
+    Assert(params.size() == labels.size());
+    Assert(!params.empty());
+
+    m_params = params;
+    m_paramLabels = labels;
+}
+
+void IMGUIJitteredParameterTable::Construct()
+{
+    if (ImGui::BeginTable("", 2))
+    {
+        // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
+
+        for (int idx = 0; idx < m_params.size(); ++idx)
+        {
+            const auto& label = m_paramLabels[idx];
+            auto& param = *m_params[idx];
+            ImGui::TableNextRow();
+            ImGui::PushID(label.c_str());
+            for (int column = 0; column < 2; column++)
+            {
+                ImGui::TableSetColumnIndex(column);
+                if (column == 0)
+                {
+                    ImGui::Text(label.c_str());
+                }
+                else
+                {
+                    ImGui::PushItemWidth(140);
+                    ImGui::DragFloat("+/-", &param.p, 0.001f, 0.0f, 1.0f, "%.6f"); SL;
+                    ImGui::PopItemWidth();
+                    ImGui::PushItemWidth(80);
+                    ImGui::DragFloat("~", &param.dpdt, math::max(0.00001f, param.dpdt * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
+                    ImGui::SliderFloat("", &param.t, 0.0f, 1.0f);
+                    ImGui::PopItemWidth();
+                }
+            }
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+    }
+}
+
+IMGUIJitteredFlagArray::IMGUIJitteredFlagArray(Cuda::JitterableFlags& param, const std::string& id) :
+    m_param(param),
+    m_t(0.0f)
+{
+    m_id = id;
+
+    m_pId = tfm::format("%s p", m_id);
+    m_dpdtId = tfm::format("%s dpdt", m_id);
+    m_tId = tfm::format("%s t", m_id);
+}
+
+void IMGUIJitteredFlagArray::Initialise(const std::vector<std::string>& flagLabels)
+{
+    Assert(!flagLabels.empty() && flagLabels.size() <= 32);
+    m_flagLabels = flagLabels;
+
+    m_flags[0].resize(flagLabels.size());
+    m_flags[1].resize(flagLabels.size());
+}
+
+void IMGUIJitteredFlagArray::Update()
+{
+    for (int bit = 0; bit < m_flags[0].size(); bit++)
+    {
+        m_flags[0][bit] = (m_param.p >> bit) & 1;
+        m_flags[1][bit] = (m_param.dpdt >> bit) & 1;
+    }
+}
+
+void IMGUIJitteredFlagArray::Construct()
+{
+    m_param.p = 0;
+    m_param.dpdt = 0;
+    
+    // P flags
+    ImGui::PushID(m_pId.c_str());
+    for (int bit = 0; bit < m_flags[0].size(); ++bit)
+    {
+        bool value = m_flags[0][bit];
+        ImGui::Checkbox(m_flagLabels[bit].c_str(), &value); SL;
+        m_flags[0][bit] = value;
+
+        m_param.p |= (1 << bit) * uint(value);
+    }
+    ImGui::Text(m_id.c_str());
+    ImGui::PopID();
+
+    // dPdT flags
+    ImGui::PushID(m_dpdtId.c_str());
+    for (int bit = 0; bit < m_flags[1].size(); ++bit)
+    {
+        bool value = m_flags[1][bit];
+        ImGui::Checkbox(m_flagLabels[bit].c_str(), &value); SL;
+        m_flags[1][bit] = value;
+
+        m_param.dpdt |= (1 << bit) * uint(value);
+    }
+    ImGui::Text("+/-");
+    ImGui::PopID();
+
+    ImGui::PushID(m_tId.c_str());
+    if (ImGui::SliderFloat("~", &m_t, 0.0f, 1.0f))
+    {
+        // For the t parameter, use a hash of the slider value rather than try and randomise each flag in turn
+        const uint hash = Cuda::HashOf(uint(m_t * float(std::numeric_limits<uint>::max())));
+        m_param.t = 0;
+        for (int bit = 0; bit < m_flags[0].size(); ++bit)
+        {
+            m_param.t |= hash & (1 << bit);
+        }
+        Log::Error("Mask: %i\n", m_param.t);
+    }
+    ImGui::PopID();
+}
+
+void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable)
 {
     if (ImGui::TreeNode("Transform"))
     {
@@ -190,4 +314,6 @@ void IMGUIElement::ConstructTransform(Cuda::BidirectionalTransform& transform, c
         ImGui::TreePop();
     }
 } 
+
+
 

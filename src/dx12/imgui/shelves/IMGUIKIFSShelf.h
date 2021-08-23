@@ -13,7 +13,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSShelf(json)); }
     virtual void            Construct() override final;
-    virtual void            Reset() override final;
+    virtual void            Update() override final;
 
     virtual void            Randomise(const Cuda::vec2 range) override final;
 
@@ -24,4 +24,7 @@ private:
     std::string             m_stateListCurrentId;
     std::vector<char>       m_stateIDData;
     std::string             m_stateJsonPath;
+
+    IMGUIJitteredFlagArray      m_faceFlags;
+    IMGUIJitteredParameterTable m_jitteredParamTable;
 };

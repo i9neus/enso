@@ -286,7 +286,7 @@ void RenderManager::OnJson(const Json::Document& patchJson)
 	m_paramsPatchJson.Clear();
 	m_paramsPatchJson.DeepCopy(patchJson);
 
-	Log::Debug("Updated! %s\n", m_paramsPatchJson.Stringify());
+	Log::Debug("Updated! %s\n", m_paramsPatchJson.Stringify(true));
 
 	m_dirtiness = kSoftReset;
 }

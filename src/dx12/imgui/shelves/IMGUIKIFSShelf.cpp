@@ -3,58 +3,23 @@
 
 #include <random>
 
-KIFSShelf::KIFSShelf(const Json::Node& json) : IMGUIShelf(json)
+KIFSShelf::KIFSShelf(const Json::Node& json) : 
+    IMGUIShelf(json),
+    m_faceFlags(m_p.faceMask, "Faces"),
+    m_jitteredParamTable("KIFS Params")
 {
+    m_faceFlags.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
+    m_jitteredParamTable.Initialise(std::vector<Cuda::JitterableFloat*>({ &m_p.rotateA, &m_p.rotateB, &m_p.scaleA, &m_p.scaleB, &m_p.crustThickness, &m_p.vertScale }),
+        std::vector<std::string>({ "Rotation A", "Rotation B", "Scale A", "Scale B", "Crust thickness", "Vertex scale" }));
 }
 
 void KIFSShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructTransform(m_p.transform, true);
+    ConstructJitteredTransform(m_p.transform, true);
 
-    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
-
-    auto ConstructRow = [](const std::string& label, Cuda::JitterableFloat& value, int row) -> void
-    {
-        ImGui::TableNextRow();
-        ImGui::PushID(row);
-        for (int column = 0; column < 2; column++)
-        {
-            ImGui::TableSetColumnIndex(column);
-            if (column == 0)
-            {
-                ImGui::Text(label.c_str());
-            }
-            else
-            {
-                ImGui::PushItemWidth(140);
-                ImGui::DragFloat("+/-", &value.p, 0.001f, 0.0f, 1.0f, "%.6f"); SL;
-                ImGui::PopItemWidth();
-                ImGui::PushItemWidth(80);
-                ImGui::DragFloat("~", &value.dpdt, math::max(0.00001f, value.dpdt * 0.01f), 0.0f, 1.0f, "%.6f"); SL;
-                ImGui::SliderFloat("", &value.t, 0.0f, 1.0f);
-                ImGui::PopItemWidth();
-            }
-        }
-        ImGui::PopID();
-    };
-
-    if (ImGui::BeginTable("", 2))
-    {
-        // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
-
-        ConstructRow("Rotation A", m_p.rotateA, 0);
-        ConstructRow("Rotation B", m_p.rotateB, 1);
-        ConstructRow("Scale A", m_p.scaleA, 2);
-        ConstructRow("Scale B", m_p.scaleB, 3);
-        ConstructRow("Crust thickness", m_p.crustThickness, 4);
-        ConstructRow("Vertex scale", m_p.vertScale, 5);
-
-        ImGui::EndTable();
-    }
+    m_jitteredParamTable.Construct();
 
     ImGui::SliderInt("Iterations ", &m_p.numIterations, 0, kSDFMaxIterations);
     ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), m_p.foldType);
@@ -73,8 +38,7 @@ void KIFSShelf::Construct()
         ImGui::Text(label.c_str());
     };
 
-    ConstructMaskCheckboxes("Face mask", m_p.faceMask.x, 0);
-    ConstructMaskCheckboxes("Perturb", m_p.faceMask.y, 1);
+    m_faceFlags.Construct();
 
     ImGui::Checkbox("SDF Clip Camera Rays", &m_p.sdf.clipCameraRays);
     ConstructComboBox("SDF Clip Shape", std::vector<std::string>({ "Cube", "Sphere", "Torus" }), m_p.sdf.clipShape);
@@ -87,8 +51,9 @@ void KIFSShelf::Construct()
     ImGui::DragFloat("SDF Fail Threshold", &m_p.sdf.failThreshold, math::max(0.00001f, m_p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
 }
 
-void KIFSShelf::Reset()
+void KIFSShelf::Update()
 {
+    m_faceFlags.Update();
 }
 
 void KIFSShelf::Randomise(const Cuda::vec2 range)

@@ -25,17 +25,17 @@ namespace Cuda
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
         __host__ void Randomise(const vec2& range);
 
-        JitterableFloat    rotateA;
-        JitterableFloat    rotateB;
-        JitterableFloat    scaleA;
-        JitterableFloat    scaleB;
-        JitterableFloat    vertScale;
-        JitterableFloat    crustThickness;
+        JitterableFloat     rotateA;
+        JitterableFloat     rotateB;
+        JitterableFloat     scaleA;
+        JitterableFloat     scaleB;
+        JitterableFloat     vertScale;
+        JitterableFloat     crustThickness;
+        JitterableFlags     faceMask;
 
-        int     numIterations;
-        uvec2   faceMask;
-        int     foldType;
-        int     primitiveType;
+        int                 numIterations;
+        int                 foldType;
+        int                 primitiveType;
 
         struct
         {

@@ -285,7 +285,7 @@ namespace Json
         void Parse(const std::string& data);
         void Deserialise(const std::string& filePath);
         void Serialise(const std::string& filePath);
-        std::string Stringify();
+        std::string Stringify(const bool pretty);
 
         const std::string& GetOriginFilePath() const { return m_originFilePath; }
 

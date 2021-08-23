@@ -65,13 +65,49 @@ private:
     std::string                 m_id;
 };
 
+class IMGUIJitteredFlagArray
+{
+public: 
+    IMGUIJitteredFlagArray(Cuda::JitterableFlags& param, const std::string& id);
+
+    void Initialise(const std::vector<std::string>& flagLabels);
+    void Construct();
+    void Update();
+
+private:
+    std::vector<std::string>            m_flagLabels;
+    std::array<std::vector<bool>, 2>    m_flags;
+    float                               m_t;
+
+    std::string                         m_id;
+    std::string                         m_pId, m_dpdtId, m_tId;
+
+    Cuda::JitterableFlags&              m_param;
+
+};
+
+class IMGUIJitteredParameterTable
+{
+public:
+    IMGUIJitteredParameterTable(const std::string& id) : m_id(id) {}
+
+    void Initialise(const std::vector<Cuda::JitterableFloat*>& param, const std::vector<std::string>& flagLabels);
+    void Construct();
+
+private:
+    std::vector<std::string>                m_paramLabels;
+    std::vector<Cuda::JitterableFloat*>     m_params;
+    std::string                             m_id;
+};
+
 class IMGUIElement
 {
 public:
     IMGUIElement() = default;
 
 protected:
-    void ConstructTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable);
+    void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable);
+    void ConstructJitteredFloat(Cuda::JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
     
     template<typename T>

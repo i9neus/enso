@@ -29,12 +29,10 @@ namespace Cuda
         }
 
     public:
+        PType eval;
         float p;
         float dpdt;
         float t;
-
-    private:
-        PType eval;
     };
 
     template<typename PType, typename TType = PType>
@@ -66,6 +64,42 @@ namespace Cuda
         TType p;
         TType dpdt;
         TType t;
+    };
+
+    struct JitterableFlags
+    {
+        __device__ __host__ JitterableFlags() : eval(0), p(0), dpdt(0), t(0), validBits(0) {}
+        __device__ __host__ JitterableFlags(const uint& v, const uchar bits) : eval(v), p(v), dpdt(0), t(0), validBits(bits) {}
+        __host__ JitterableFlags(const std::string& id, const uchar bits, const ::Json::Node& json, const uint flags) : JitterableFlags() 
+        { 
+            validBits = bits;
+            FromJson(id, json, flags); 
+        }
+
+        __device__ __host__ __forceinline__ const uint& operator()(void) const { return eval; }
+        __device__ __host__ __forceinline__ const bool operator()(const uint bit) const { return (eval >> bit) & 1; }
+
+        __host__ void FromJson(const std::string& id, const ::Json::Node& json, const uint flags);
+        __host__ void ToJson(const std::string& id, ::Json::Node& json) const;
+        __host__ void Randomise(vec2 range);
+        __host__  inline void Evaluate();
+
+        __device__ __host__  JitterableFlags& operator=(const uint& other)
+        {
+            eval = other;
+            p = other;
+            dpdt = 0;
+            t = 0;
+
+            return *this;
+        }
+
+    public:
+        uint eval;
+        uint p;
+        uint dpdt;
+        uint t;
+        uchar validBits;
     };
 
     template JitterableScalar<float>;
