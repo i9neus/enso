@@ -19,6 +19,7 @@ namespace Cuda
         axisSwizzle = kXYZ;
         axisMultiplier = 1.0f;
         invertX = invertY = invertZ = false;
+        aspectRatio = vec3(1.0f);
     }
 
     __host__ LightProbeGridParams::LightProbeGridParams(const ::Json::Node& node) :
@@ -129,7 +130,7 @@ namespace Cuda
     {  
         CudaDeviceAssert(cu_data);
         
-        vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform);
+        vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform) / m_params.aspectRatio;
 
         // Debug the grid 
         if (m_params.debugOutputPRef)
@@ -203,6 +204,7 @@ namespace Cuda
         m_params = params;
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder) + 1;
         m_params.numProbes = Volume(m_params.gridDensity);
+        m_params.aspectRatio = vec3(m_params.gridDensity) / cwiseMax(m_params.gridDensity);
 
         const int newSize = m_params.numProbes * m_params.coefficientsPerProbe;
         int arraySize = m_data->Size();

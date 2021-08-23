@@ -35,6 +35,7 @@ namespace Cuda
 		uint						coefficientsPerProbe;
 		int							maxSamplesPerBucket;
 		bool						doExport;
+		vec3						aspectRatio;
 	};
 
 	namespace Device

@@ -43,6 +43,7 @@ namespace Cuda
 
         int                         coefficientsPerProbe;
         int                         numProbes;
+        vec3						aspectRatio;
     };
 
     namespace Device

@@ -144,7 +144,9 @@ namespace Cuda
         ray.weight = kOne * SH::Project(ray.od.d, coeffIdx) * kFourPi;
         ray.depth = 2;
         ray.flags = kRayLightProbe | kRayIndirectSample;
-        ray.od.o = m_params.grid.transform.PointToWorldSpace(vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f));
+
+        ray.od.o = m_params.grid.aspectRatio * vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f);
+        ray.od.o = m_params.grid.transform.PointToWorldSpace(ray.od.o);
     }
 
     __device__ void Device::LightProbeCamera::Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value)
@@ -408,7 +410,7 @@ namespace Cuda
         m_params.bucketsPerCoefficient = /*NearestPow2Floor*/(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
         // The maximum number of samples per bucket based on the number of buckets per coefficient
         m_params.maxSamplesPerBucket = (m_params.maxSamples == 0) ?
-            std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));
+            std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));        
 
         // Adjust values so everything packs correctly
         m_params.bucketsPerProbe = m_params.bucketsPerCoefficient * m_params.coefficientsPerProbe;
