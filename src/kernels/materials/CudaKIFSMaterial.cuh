@@ -16,9 +16,11 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        vec3            incandescence;
-        vec3            hslLower;
-        vec3            hslUpper;
+        JitterableVec3  albedoHSV;
+        JitterableVec3  incandescenceHSV;
+
+        vec3            albedoRGB;
+        vec3            incandescenceRGB;
     };
 
     namespace Device

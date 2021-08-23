@@ -6,9 +6,10 @@
 namespace Cuda
 {
     __host__ __device__ KIFSMaterialParams::KIFSMaterialParams() :
-        incandescence(0.0f),
-        hslLower(0.0f),
-        hslUpper(1.0f)
+        incandescenceHSV(vec3(0.0f)),
+        albedoHSV(vec3(0.0f, 0.0f, 0.7f)),
+        incandescenceRGB(vec3(0.0f)),
+        albedoRGB(0.0f)
     {}
 
     __host__ KIFSMaterialParams::KIFSMaterialParams(const ::Json::Node& node, const uint flags) :
@@ -19,16 +20,17 @@ namespace Cuda
 
     __host__ void KIFSMaterialParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("incandescence", std::vector<float>({ incandescence.x, incandescence.y, incandescence.z }));
-        node.AddArray("hslLower", std::vector<float>({ hslLower.x, hslLower.y, hslLower.z }));
-        node.AddArray("hslUpper", std::vector<float>({ hslUpper.x, hslUpper.y, hslUpper.z }));
+        incandescenceHSV.ToJson("incandescence", node);
+        albedoHSV.ToJson("albedo", node);
     }
 
     __host__ void KIFSMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("incandescence", incandescence, flags);
-        node.GetVector("hslLower", hslLower, flags);
-        node.GetVector("hslUpper", hslUpper, flags);
+        incandescenceHSV.FromJson("incandescence", node, flags);
+        albedoHSV.FromJson("albedo", node, flags);
+        
+        incandescenceRGB = HSVToRGB(incandescenceHSV());
+        albedoRGB = HSVToRGB(albedoHSV());
     }
 
     __device__ void Device::KIFSMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -39,8 +41,8 @@ namespace Cuda
                     ((code >> 10) & ((1 << 10) - 1)) / float((1 << 10) - 1),
                     ((code >> 20) & ((1 << 10) - 1)) / float((1 << 10) - 1));
 
-        incandescence = m_params.incandescence;
-        albedo = HSLToRGB(cwiseMix(m_params.hslLower, m_params.hslUpper, alpha));
+        incandescence = m_params.incandescenceRGB;
+        albedo = m_params.albedoRGB;
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::KIFSMaterial::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

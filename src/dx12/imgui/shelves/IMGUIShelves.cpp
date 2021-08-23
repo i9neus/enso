@@ -16,14 +16,21 @@ void SimpleMaterialShelf::Randomise(const Cuda::vec2 range)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+KIFSMaterialShelf::KIFSMaterialShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_albedoPicker(m_p.albedoHSV, "Albedo"),
+    m_incandPicker(m_p.incandescenceHSV, "Incandescence")
+{
+}
+
 void KIFSMaterialShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::SliderFloat3("HSL lower", &m_p.hslLower[0], 0.0f, 1.0f);
-    ImGui::SliderFloat3("HSL upper", &m_p.hslUpper[0], 0.0f, 1.0f);
-    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&m_p.incandescence);
+    m_albedoPicker.Construct();
+    m_incandPicker.Construct();
 }
+
 void KIFSMaterialShelf::Randomise(const Cuda::vec2 range)
 {
     const Cuda::vec2 randomRange = range;

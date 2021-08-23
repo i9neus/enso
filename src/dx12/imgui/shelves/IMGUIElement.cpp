@@ -118,15 +118,33 @@ void IMGUIColourPicker::Construct()
 {
     ImGui::PushID(m_id.c_str());
 
-    ImGui::ColorEdit3(tfm::format("%s from", m_id).c_str(), &m_hsv[0][0], ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV);
-    ImGui::ColorEdit3(tfm::format("%s to", m_id).c_str(), &m_hsv[1][0], ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV);
-    ImGui::SliderFloat3("~", &m_param.t[0], 0.0f, 1.0f);
+    m_hsv[0] = m_param.p - m_param.dpdt;
+    m_hsv[1] = m_param.p + m_param.dpdt;
+
+    if (ImGui::BeginTable("", 2))
+    {
+        // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text(m_id.c_str()); 
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::ColorEdit3("->", &m_hsv[0][0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV); SL;
+        ImGui::ColorEdit3("~", &m_hsv[1][0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV); SL;
+        ImGui::PushItemWidth(200);
+        ImGui::SliderFloat3("", &m_param.t[0], 0.0f, 1.0f);
+        ImGui::PopItemWidth();
+
+        ImGui::EndTable();
+    }
 
     m_param.p = mix(m_hsv[0], m_hsv[1], 0.5f);
     m_param.dpdt = abs(m_hsv[0] - m_hsv[1]) * 0.5f;
 
     ImGui::PopID();
-
 }
 
 void IMGUIColourPicker::Update()

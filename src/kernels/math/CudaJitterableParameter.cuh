@@ -7,8 +7,8 @@ namespace Cuda
     template<typename PType>
     struct JitterableScalar
     {
-        __device__ __host__ JitterableScalar() : p(0.0f), dpdt(0.0f), t(0.5f) {}
-        __device__ __host__ JitterableScalar(const PType& v) : p(float(v)), dpdt(0.0f), t(0.5f) {}
+        __device__ __host__ JitterableScalar() : eval(0.0f), p(0.0f), dpdt(0.0f), t(0.5f) {}
+        __device__ __host__ JitterableScalar(const PType& v) : eval(v), p(float(v)), dpdt(0.0f), t(0.5f) {}
         __host__ JitterableScalar(const std::string& id, const ::Json::Node& json, const uint flags) : JitterableScalar() { FromJson(id, json, flags);  }
 
         __device__ __host__ __forceinline__ const PType& operator()(void) const { return eval; }
@@ -38,8 +38,8 @@ namespace Cuda
     template<typename PType, typename TType = PType>
     struct JitterableVec
     {
-        __device__ __host__ JitterableVec() : p(0.0f), dpdt(0.0f), t(0.5f) {}
-        __device__ __host__ JitterableVec(const PType& v) : p(TType(v)), dpdt(0.0f), t(0.5f) {}
+        __device__ __host__ JitterableVec() : eval(PType::kType(0)), p(TType::kType(0)), dpdt(TType::kType(0)), t(0.5f) {}
+        __device__ __host__ JitterableVec(const PType& v) : eval(TType(v)), p(TType(v)), dpdt(TType::kType(0)), t(TType::kType(0.5)) {}
         __host__ JitterableVec(const std::string& id, const ::Json::Node& json, const uint flags) : JitterableVec() { FromJson(id, json, flags); }
 
         __device__ __host__ __forceinline__ const PType& operator()(void) const { return eval; }

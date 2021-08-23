@@ -41,12 +41,15 @@ public:
 class KIFSMaterialShelf : public IMGUIShelf<Cuda::Host::KIFSMaterial, Cuda::KIFSMaterialParams>
 {
 public:
-    KIFSMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    KIFSMaterialShelf(const Json::Node& json);
     virtual ~KIFSMaterialShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSMaterialShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+private:
+    IMGUIColourPicker                   m_albedoPicker;
+    IMGUIColourPicker                   m_incandPicker;
 };
 
 // Cornell material
