@@ -346,7 +346,7 @@ void RenderManager::Prepare()
 	if (m_activeCameras.empty()) { Log::Error("WARNING: No camera objects were instantiated and enabled.\n"); }
 	else if (!m_liveCamera) { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n"); }
 
-	if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
+	//if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
 
 void RenderManager::Start()

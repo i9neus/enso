@@ -1,17 +1,26 @@
 #include "IMGUIShelves.h"
 
+SimpleMaterialShelf::SimpleMaterialShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_albedoPicker(m_p.albedoHSV, "Albedo"),
+    m_incandPicker(m_p.incandescenceHSV, "Incandescence")
+{
+}
+
 void SimpleMaterialShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::ColorEdit3(tfm::format("Albedo (%s)", m_id).c_str(), (float*)&m_p.albedo);
-    ImGui::ColorEdit3(tfm::format("Incandescence (%s)", m_id).c_str(), (float*)&m_p.incandescence);
+    m_albedoPicker.Construct();
+    m_incandPicker.Construct();
+
     ImGui::Checkbox("Use grid", &m_p.useGrid);
 }
 
 void SimpleMaterialShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = range;
+    m_p.albedoHSV.Randomise(range);
+    m_p.incandescenceHSV.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,19 +42,20 @@ void KIFSMaterialShelf::Construct()
 
 void KIFSMaterialShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = range;
+    m_p.albedoHSV.Randomise(range);
+    m_p.incandescenceHSV.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 CornellMaterialShelf::CornellMaterialShelf(const Json::Node& json) :
     IMGUIShelf(json),
-    m_pickers({ IMGUIColourPicker(m_p.albedoHSV[0], "Colour 1"),
-                IMGUIColourPicker(m_p.albedoHSV[1], "Colour 2"),
-                IMGUIColourPicker(m_p.albedoHSV[2], "Colour 3"),
-                IMGUIColourPicker(m_p.albedoHSV[3], "Colour 4"),
-                IMGUIColourPicker(m_p.albedoHSV[4], "Colour 5"),
-                IMGUIColourPicker(m_p.albedoHSV[5], "Colour 6") })
+    m_pickers({ IMGUIJitteredColourPicker(m_p.albedoHSV[0], "Colour 1"),
+                IMGUIJitteredColourPicker(m_p.albedoHSV[1], "Colour 2"),
+                IMGUIJitteredColourPicker(m_p.albedoHSV[2], "Colour 3"),
+                IMGUIJitteredColourPicker(m_p.albedoHSV[3], "Colour 4"),
+                IMGUIJitteredColourPicker(m_p.albedoHSV[4], "Colour 5"),
+                IMGUIJitteredColourPicker(m_p.albedoHSV[5], "Colour 6") })
 {
 }
 
@@ -107,8 +117,18 @@ void CornellBoxShelf::Construct()
     ConstructJitteredTransform(m_p.tracable.transform, true);
 }
 
+void CornellBoxShelf::Randomise(const Cuda::vec2 range)
+{
+    m_p.tracable.transform.Randomise(range);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+QuadLightShelf::QuadLightShelf(const Json::Node& json) : 
+    IMGUIShelf(json),
+    m_colourPicker(m_p.colourHSV, "Colour"),
+    m_intensity(m_p.intensity, "Intensity", Cuda::vec2(-10.0f, 10.0f))
+{}
 
 void QuadLightShelf::Construct()
 {
@@ -116,17 +136,24 @@ void QuadLightShelf::Construct()
 
     ConstructJitteredTransform(m_p.transform, true);
 
-    ImGui::ColorEdit3("Colour", &m_p.colour[0], ImGuiColorEditFlags_InputHSV);
-    ImGui::SliderFloat("Intensity", &m_p.intensity, -10.0f, 10.0f);
+    m_colourPicker.Construct();
+    m_intensity.Construct();
 }
 
 void QuadLightShelf::Randomise(const Cuda::vec2 range)
 {
-    const Cuda::vec2 randomRange = range;
-    m_p.transform.Randomise(randomRange);
+    m_p.transform.Randomise(range);
+    m_p.colourHSV.Randomise(range);
+    m_p.intensity.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+SphereLightShelf::SphereLightShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_colourPicker(m_p.colourHSV, "Colour"),
+    m_intensity(m_p.intensity, "Intensity", Cuda::vec2(-10.0f, 10.0f))
+{}
 
 void SphereLightShelf::Construct()
 {
@@ -134,13 +161,15 @@ void SphereLightShelf::Construct()
 
     ConstructJitteredTransform(m_p.transform, true);
 
-    ImGui::ColorEdit3("Colour", &m_p.colour[0]);
-    ImGui::SliderFloat("Intensity", &m_p.intensity, -10.0f, 10.0f);
+    m_colourPicker.Construct();
+    m_intensity.Construct();
 }
 
 void SphereLightShelf::Randomise(const Cuda::vec2 range)
 {
     m_p.transform.Randomise(range);
+    m_p.colourHSV.Randomise(range);
+    m_p.intensity.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,6 +179,11 @@ void EnvironmentLightShelf::Construct()
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
 
     ImGui::Text("[No attributes]");
+}
+
+void EnvironmentLightShelf::Randomise(const Cuda::vec2 range)
+{
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

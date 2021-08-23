@@ -114,7 +114,7 @@ std::string IMGUIListBox::GetCurrentlySelectedText() const
     return (it != m_listItems.end()) ? *it : "";    
 }
 
-void IMGUIColourPicker::Construct()
+void IMGUIJitteredColourPicker::Construct()
 {
     ImGui::PushID(m_id.c_str());
 
@@ -129,7 +129,7 @@ void IMGUIColourPicker::Construct()
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::Text(m_id.c_str()); 
+        ImGui::Text(m_id.c_str());
 
         ImGui::TableSetColumnIndex(1);
         ImGui::ColorEdit3("->", &m_hsv[0][0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV); SL;
@@ -147,7 +147,7 @@ void IMGUIColourPicker::Construct()
     ImGui::PopID();
 }
 
-void IMGUIColourPicker::Update()
+void IMGUIJitteredColourPicker::Update()
 {
     m_hsv[0] = m_param.p - m_param.dpdt;
     m_hsv[1] = m_param.p + m_param.dpdt;
@@ -178,13 +178,11 @@ void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<
     }
 }
 
-void IMGUIJitteredParameterTable::Initialise(const std::vector<Cuda::JitterableFloat*>& params, const std::vector<std::string>& labels)
+void IMGUIJitteredParameterTable::Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec2& range)
 {
-    Assert(params.size() == labels.size());
-    Assert(!params.empty());
+    Assert(!label.empty());
 
-    m_params = params;
-    m_paramLabels = labels;
+    m_params.emplace_back(label, param, range);
 }
 
 void IMGUIJitteredParameterTable::Construct()
@@ -197,8 +195,9 @@ void IMGUIJitteredParameterTable::Construct()
 
         for (int idx = 0; idx < m_params.size(); ++idx)
         {
-            const auto& label = m_paramLabels[idx];
-            auto& param = *m_params[idx];
+            const auto& label = m_params[idx].label;
+            auto& param = *(m_params[idx].param);
+            const auto& range = m_params[idx].range;
             ImGui::TableNextRow();
             ImGui::PushID(label.c_str());
             for (int column = 0; column < 2; column++)
@@ -211,7 +210,7 @@ void IMGUIJitteredParameterTable::Construct()
                 else
                 {
                     ImGui::PushItemWidth(140);
-                    ImGui::DragFloat("+/-", &param.p, 0.001f, 0.0f, 1.0f, "%.6f"); SL;
+                    ImGui::DragFloat("+/-", &param.p, 0.001f, range.x, range.y, "%.6f"); SL;
                     ImGui::PopItemWidth();
                     ImGui::PushItemWidth(80);
                     ImGui::DragFloat("~", &param.dpdt, math::max(0.00001f, param.dpdt * 0.01f), 0.0f, 1.0f, "%.6f"); SL;

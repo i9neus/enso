@@ -76,6 +76,7 @@ namespace Cuda
         scaleB.Randomise(range);
         vertScale.Randomise(range);
         crustThickness.Randomise(range);
+        faceMask.Randomise(range);
 
         transform.Randomise(range);
     }

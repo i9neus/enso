@@ -50,10 +50,10 @@ private:
     int                         m_lastIdx;
 };
 
-class IMGUIColourPicker
+class IMGUIJitteredColourPicker
 {
 public:
-    IMGUIColourPicker(Cuda::JitterableVec3& param, const std::string& id) : m_param(param), m_id(id) {}
+    IMGUIJitteredColourPicker(Cuda::JitterableVec3& param, const std::string& id) : m_param(param), m_id(id) {}
 
     void Construct();
     void Update();
@@ -89,15 +89,34 @@ private:
 class IMGUIJitteredParameterTable
 {
 public:
+    struct Element
+    {
+        Element() = default;
+        Element(const std::string& l, Cuda::JitterableFloat& p, const Cuda::vec2& r) : label(l), param(&p), range(r) {}
+
+        std::string             label;
+        Cuda::JitterableFloat*  param;
+        Cuda::vec2              range;
+    };
+public:
     IMGUIJitteredParameterTable(const std::string& id) : m_id(id) {}
 
-    void Initialise(const std::vector<Cuda::JitterableFloat*>& param, const std::vector<std::string>& flagLabels);
+    void Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec2& range);
     void Construct();
 
 private:
-    std::vector<std::string>                m_paramLabels;
-    std::vector<Cuda::JitterableFloat*>     m_params;
-    std::string                             m_id;
+    std::vector<Element>                m_params;
+    std::string                         m_id;
+};
+
+class IMGUIJitteredParameter : public IMGUIJitteredParameterTable
+{
+public:
+    IMGUIJitteredParameter(const std::string& id) : IMGUIJitteredParameterTable(id) {}
+    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const Cuda::vec2& range) : IMGUIJitteredParameterTable(label) 
+    {
+        IMGUIJitteredParameterTable::Push(label, param, range);
+    }
 };
 
 class IMGUIElement

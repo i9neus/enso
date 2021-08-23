@@ -61,7 +61,7 @@ namespace USDIO
     {
         // Load the root config
         Json::Document configJson;
-        configJson.Load("config.json");
+        configJson.Deserialise("config.json");
 
         Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredWarn);
         if (!usdJson) { Log::Error("Error\n");  return; }
@@ -99,7 +99,7 @@ namespace USDIO
         
         SetUSDAttribute(prim, "description", usdDescription);
         SetUSDAttribute(prim, "sampleNum", numSamples);
-        SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale.x, gridParams.transform.scale.y, gridParams.transform.scale.z));
+        SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale().x, gridParams.transform.scale().y, gridParams.transform.scale().z));
         SetUSDAttribute(prim, "resolution", pxr::GfVec3f(gridParams.gridDensity.x, gridParams.gridDensity.y, gridParams.gridDensity.z));
 
         pxr::VtFloatArray coeffs(gridParams.numProbes * (gridParams.coefficientsPerProbe - 1) * 3);

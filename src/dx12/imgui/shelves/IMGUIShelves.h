@@ -29,12 +29,16 @@
 class SimpleMaterialShelf : public IMGUIShelf<Cuda::Host::SimpleMaterial, Cuda::SimpleMaterialParams>
 {
 public:
-    SimpleMaterialShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    SimpleMaterialShelf(const Json::Node& json);
     virtual ~SimpleMaterialShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SimpleMaterialShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker                   m_albedoPicker;
+    IMGUIJitteredColourPicker                   m_incandPicker;
 };
 
 // KIFS code material
@@ -47,9 +51,10 @@ public:
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new KIFSMaterialShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
 private:
-    IMGUIColourPicker                   m_albedoPicker;
-    IMGUIColourPicker                   m_incandPicker;
+    IMGUIJitteredColourPicker                   m_albedoPicker;
+    IMGUIJitteredColourPicker                   m_incandPicker;
 };
 
 // Cornell material
@@ -65,7 +70,7 @@ public:
     virtual void Update() override final;
 
 private:
-    std::array<IMGUIColourPicker, 6>    m_pickers;
+    std::array<IMGUIJitteredColourPicker, 6>    m_pickers;
 };
 
 // Plane tracable
@@ -90,30 +95,39 @@ public:
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
 };
 
 // Quad 
 class QuadLightShelf : public IMGUIShelf<Cuda::Host::QuadLight, Cuda::QuadLightParams >
 {
 public:
-    QuadLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    QuadLightShelf(const Json::Node& json);
     virtual ~QuadLightShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new QuadLightShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker   m_colourPicker;
+    IMGUIJitteredParameter      m_intensity;
 };
 
 // Sphere light
 class SphereLightShelf : public IMGUIShelf<Cuda::Host::SphereLight, Cuda::SphereLightParams >
 {
 public:
-    SphereLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    SphereLightShelf(const Json::Node& json);
     virtual ~SphereLightShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereLightShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker   m_colourPicker;
+    IMGUIJitteredParameter      m_intensity;
 };
 
 // Environment light
@@ -125,6 +139,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new EnvironmentLightShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Lambertian BRDF
@@ -136,6 +151,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LambertBRDFShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Wavefront tracer
@@ -147,6 +163,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new WavefrontTracerShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final { }
 };
 
 // Perspective camera
@@ -158,6 +175,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PerspectiveCameraShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final {}
 };
 
 // Light probe camera
@@ -169,6 +187,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final {}
 
 private:
     std::vector<std::string>    m_swizzleLabels;
@@ -185,6 +204,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new FisheyeCameraShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final {}
 };
 
 // Cornell box
@@ -196,4 +216,5 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellBoxShelf(json)); }
     virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };

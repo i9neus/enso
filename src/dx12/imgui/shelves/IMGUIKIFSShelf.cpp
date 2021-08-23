@@ -9,8 +9,12 @@ KIFSShelf::KIFSShelf(const Json::Node& json) :
     m_jitteredParamTable("KIFS Params")
 {
     m_faceFlags.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
-    m_jitteredParamTable.Initialise(std::vector<Cuda::JitterableFloat*>({ &m_p.rotateA, &m_p.rotateB, &m_p.scaleA, &m_p.scaleB, &m_p.crustThickness, &m_p.vertScale }),
-        std::vector<std::string>({ "Rotation A", "Rotation B", "Scale A", "Scale B", "Crust thickness", "Vertex scale" }));
+    m_jitteredParamTable.Push("Rotation A", m_p.rotateA, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Rotation B", m_p.rotateB, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Scale A", m_p.scaleA, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Scale B", m_p.scaleB, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Crust thickness", m_p.crustThickness, Cuda::vec2(0.0f, 1.0f));
+    m_jitteredParamTable.Push("Vertex scale", m_p.vertScale, Cuda::vec2(0.0f, 1.0f));
 }
 
 void KIFSShelf::Construct()

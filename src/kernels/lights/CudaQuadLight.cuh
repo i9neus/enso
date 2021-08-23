@@ -19,11 +19,12 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        JitterableFloat   intensity;
+        JitterableVec3    colourHSV;
+        
         vec3 position;
         vec3 orientation;
         vec3 scale;
-        float intensity;
-        vec3 colour;
         vec3 radiance;
 
         BidirectionalTransform transform;

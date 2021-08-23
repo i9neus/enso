@@ -1,6 +1,7 @@
 ﻿#include "CudaQuadLight.cuh"
 #include "../tracables/CudaPlane.cuh"
 #include "../materials/CudaEmitterMaterial.cuh"
+#include "../math/CudaColourUtils.cuh"
 
 #include "generic/JsonUtils.h"
 
@@ -11,8 +12,8 @@ namespace Cuda
         orientation(0.0f), 
         scale(1.0f), 
         intensity(1.0f), 
-        colour(1.0f), 
-        radiance(1.0f) {}
+        colourHSV(vec3(0.0f, 0.0f, 1.0f)),
+        radiance(0.0f) {}
     
     __host__ QuadLightParams::QuadLightParams(const ::Json::Node& node) :
         QuadLightParams()
@@ -24,18 +25,18 @@ namespace Cuda
     {
         transform.ToJson(node);
 
-        node.AddValue("intensity", intensity);
-        node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
+        colourHSV.ToJson("colour", node);
+        intensity.ToJson("intensity", node);
     }
 
     __host__ void QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
 
-        node.GetValue("intensity", intensity, flags);
-        node.GetVector("colour", colour, flags);
+        colourHSV.FromJson("colour", node, flags);
+        intensity.FromJson("intensity", node, flags);
 
-        radiance = colour * std::pow(2.0f, intensity) / (transform.scale().x * transform.scale().y);
+        radiance = HSVToRGB(colourHSV()) * std::pow(2.0f, intensity()) / (transform.scale().x * transform.scale().y);
     }
     
     __device__ Device::QuadLight::QuadLight()

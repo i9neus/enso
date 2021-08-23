@@ -1,12 +1,15 @@
 ﻿#include "CudaSimpleMaterial.cuh"
 #include "generic/JsonUtils.h" 
 #include "../bxdfs/CudaBxDF.cuh"
+#include "../math/CudaColourUtils.cuh"
 
 namespace Cuda
 {
     __host__ __device__ SimpleMaterialParams::SimpleMaterialParams() :
-        albedo(0.5f),
-        incandescence(0.0f),
+        incandescenceHSV(vec3(0.0f)),
+        albedoHSV(vec3(0.0f, 0.0f, 0.7f)),
+        incandescenceRGB(HSVToRGB(incandescenceHSV())),
+        albedoRGB(HSVToRGB(albedoHSV())),
         useGrid(false) {}
 
     __host__ SimpleMaterialParams::SimpleMaterialParams(const ::Json::Node& node, const uint flags) :
@@ -17,24 +20,27 @@ namespace Cuda
 
     __host__ void SimpleMaterialParams::ToJson(::Json::Node& node) const
     {
-        node.AddArray("albedo", std::vector<float>({ albedo.x, albedo.y, albedo.z }));
-        node.AddArray("incandescence", std::vector<float>({ incandescence.x, incandescence.y, incandescence.z }));
+        incandescenceHSV.ToJson("incandescence", node);
+        albedoHSV.ToJson("albedo", node);
         node.AddValue("useGrid", useGrid);
     }
 
     __host__ void SimpleMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetVector("albedo", albedo, flags);
-        node.GetVector("incandescence", incandescence, flags);
+        incandescenceHSV.FromJson("incandescence", node, flags);
+        albedoHSV.FromJson("albedo", node, flags);
         node.GetValue("useGrid", useGrid, flags);
+
+        incandescenceRGB = HSVToRGB(incandescenceHSV());
+        albedoRGB = HSVToRGB(albedoHSV());
     }
 
     __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
     {
         constexpr float kGridScale = 5.0f;
 
-        incandescence = m_params.incandescence;
-        albedo = m_params.albedo;
+        incandescence = m_params.incandescenceRGB;
+        albedo = m_params.albedoRGB;
 
         if (m_params.useGrid)
         {

@@ -17,7 +17,7 @@ public:
     virtual void MakeClean() = 0;
     virtual void MakeDirty() = 0;
 
-    virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) {}
+    virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) = 0;
     virtual void Update() {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }

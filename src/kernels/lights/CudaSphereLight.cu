@@ -1,6 +1,7 @@
 ﻿#include "CudaSphereLight.cuh"
 #include "../tracables/CudaSphere.cuh"
 #include "../materials/CudaEmitterMaterial.cuh"
+#include "../math/CudaColourUtils.cuh"
 
 #include "generic/JsonUtils.h"
 
@@ -11,7 +12,7 @@ namespace Cuda
         orientation(0.0f),
         scale(1.0f),
         intensity(1.0f),
-        colour(1.0f),
+        colourHSV(vec3(0.0f, 0.0, 1.0f)),
         radiance(1.0f) {}
 
     __host__ SphereLightParams::SphereLightParams(const ::Json::Node& node) :
@@ -24,18 +25,18 @@ namespace Cuda
     {
         transform.ToJson(node);
 
-        node.AddValue("intensity", intensity);
-        node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
+        colourHSV.ToJson("colour", node);
+        intensity.ToJson("intensity", node);
     }
 
     __host__ void SphereLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
 
-        node.GetValue("intensity", intensity, flags);
-        node.GetVector("colour", colour, flags);
+        colourHSV.FromJson("colour", node, flags);
+        intensity.FromJson("intensity", node, flags);
 
-        radiance = colour * std::pow(2.0f, intensity) / (transform.scale().x * transform.scale().y * kFourPi * 0.25f);
+        radiance = HSVToRGB(colourHSV()) * std::pow(2.0f, intensity()) / (transform.scale().x * transform.scale().y * kFourPi * 0.25f);
     }
 
     __device__ Device::SphereLight::SphereLight()
