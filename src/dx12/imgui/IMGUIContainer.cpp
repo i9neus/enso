@@ -86,20 +86,12 @@ void IMGUIContainer::ConstructRenderObjectShelves()
     int shelfIdx = 0;
     for (const auto& shelf : m_shelves)
     {
-        ImGui::PushID(shelf.second->GetID().c_str());
-
-        const float alpha = 0.8f * shelfIdx++ / float(::max(1ull, m_shelves.size() - 1));
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(alpha, 0.5f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(alpha, 0.6f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(alpha, 0.7f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.9f));
-        ImGui::PushStyleColor(ImGuiCol_Header, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.8f));
+        UIStyle style(shelfIdx++);
+        
+        ImGui::PushID(shelf.second->GetID().c_str());        
 
         shelf.second->Construct();
-        ImGui::Separator();
-
-        ImGui::PopStyleColor(6);
+        ImGui::Separator();        
 
         ImGui::PopID();
     }

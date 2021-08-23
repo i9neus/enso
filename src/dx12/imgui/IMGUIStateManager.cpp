@@ -408,6 +408,8 @@ void RenderObjectStateManager::SerialiseJson() const
 
 void RenderObjectStateManager::ConstructStateManagerUI()
 {
+    UIStyle style(0);
+    
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     m_stateListUI.Construct();
@@ -435,6 +437,8 @@ void RenderObjectStateManager::ConstructStateManagerUI()
 
 void RenderObjectStateManager::ConstructBatchProcessorUI()
 {
+    UIStyle style(1);
+    
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
     
     m_sampleCountListUI.Construct();

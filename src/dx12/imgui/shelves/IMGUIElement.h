@@ -12,6 +12,14 @@
 
 namespace Json { class Document; class Node; }
 
+class UIStyle
+{
+public:
+    UIStyle(const int shelfIdx);
+    ~UIStyle();
+};
+
+
 class IMGUIListBox
 {
 public:

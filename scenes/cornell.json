@@ -67,7 +67,7 @@
       "enabled": true,
       "excludeFromBake": false,
       "class": "sphere",
-      "material": "material_kifs",
+      "material": "material_objects",
       "transform": {
         "pos": [[ 0.0, 0.0, 0.0 ]],
         "rot": [[ 0.0, 0.0, 0.0 ]],
@@ -78,7 +78,7 @@
       "enabled": true,
       "excludeFromBake": true,
       "class": "sphere",
-      "material": "material_kifs",
+      "material": "material_objects",
       "transform": {
         "pos": [[ 0.3, 0.0, 0.0 ]],
         "rot": [[ 0.0, 0.0, 0.0 ]],
@@ -87,19 +87,7 @@
     }
   },
   "materials": {
-    "material_groundPlane": {
-      "class": "simple",
-      "bxdf": "bxdf_diffuse",
-      "albedo": [ 0.5, 0.5, 0.5 ],
-      "incandescence": [ 0.0, 0.0, 0.0 ],
-      "useGrid": true,
-      "transform": {
-        "pos": [[ 0.0, 0.0, 0.0 ]],
-        "rot": [[ 0.0, 0.0, 0.0 ]],
-        "sca": [[ 1.0, 1.0, 1.0 ]]
-      }
-    },
-    "material_kifs": {
+    "material_objects": {
       "class": "simple",
       "bxdf": "bxdf_diffuse",
       "albedo": [ 1.0, 1.0, 1.0 ],
@@ -128,8 +116,8 @@
     "light_mainQuad": {
       "enabled": true,
       "class": "quadlight",
-      "intensity": 1.5,
-      "colour": [ 1.0, 1.0, 1.0 ],
+        "intensity": [ 1.5 ],
+        "colour": [ [ 0.0, 0.0, 1.0 ] ],
       "transform": {
         "pos": [[ 0.0, 0.48, 0.0 ]],
         "rot": [[ -90.0, 0.0, 0.0] ],
@@ -139,8 +127,8 @@
     "light_sphere": {
       "enabled": false,
       "class": "spherelight",
-      "intensity": 0.0,
-      "colour": [ 1.0, 1.0, 1.0 ],
+      "intensity": [ 0.0 ],
+      "colour": [ [ 0.0, 0.0, 1.0 ] ],
       "transform": {
         "pos": [[ 0.0, 0.48, 0.0 ]],
         "rot": [[ -90.0, 0.0, 0.0] ],

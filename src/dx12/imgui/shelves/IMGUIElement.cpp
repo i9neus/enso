@@ -1,6 +1,40 @@
 #include "IMGUIElement.h"
+#include "thirdparty/imgui/imgui.h"
+#include "generic/Math.h"
+#include "generic/StdIncludes.h"
 #include "generic/JsonUtils.h"
+
+#include "kernels/math/CudaMath.cuh"
 #include "kernels/CudaHash.cuh"
+#include "kernels/CudaAsset.cuh"
+
+UIStyle::UIStyle(const int shelfIdx)
+{
+
+    /*const float alpha = 0.8f * shelfIdx++ / float(::max(1ull, m_shelves.size() - 1));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(alpha, 0.5f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(alpha, 0.6f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(alpha, 0.7f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.9f));
+    ImGui::PushStyleColor(ImGuiCol_Header, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.7f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, (ImVec4)ImColor::HSV(alpha, 0.9f, 0.8f));*/
+
+    const float lightness = Cuda::mix(0.5f, 0.35f, float(shelfIdx % 2));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.5f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.5f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.5f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.9f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_Header, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.6f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.6f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.6f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.9f * lightness));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, (ImVec4)ImColor::HSV(0.0f, 0.0f, 1.0f));    
+}
+
+UIStyle::~UIStyle()
+{
+    ImGui::PopStyleColor(9);
+}
 
 IMGUIListBox::IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel) :
     m_listBoxID(id),
