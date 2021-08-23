@@ -20,6 +20,7 @@ void BakePermutor::Clear()
     m_numPermutations = 0;
     m_permutationIdx = 0;
     m_templateTokens.clear();
+    m_isIdle = true;
 }
 
 void BakePermutor::Prepare(const int numIterations, const std::string& templatePath)
@@ -30,7 +31,8 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_stateMap.GetNumPermutableStates();
     m_permutationIdx = -1;
     m_templatePath = templatePath;
-    m_stateIt = m_stateMap.GetStateData().begin();
+    m_stateIt = m_stateMap.GetFirstPermutableState();
+    m_isIdle = false;
 
     const auto r = *(m_stateIt);
 
@@ -78,7 +80,11 @@ bool BakePermutor::Advance()
             m_sampleCountIt = m_sampleCountSet.begin();
             do
             {
-                if (++m_stateIt == m_stateMap.GetStateData().end()) { return false; }
+                if (++m_stateIt == m_stateMap.GetStateData().end()) 
+                { 
+                    m_isIdle = true;
+                    return false; 
+                }
             } 
             while (!m_stateIt->second.isPermutable);
         }
@@ -104,7 +110,7 @@ bool BakePermutor::Advance()
 
 float BakePermutor::GetProgress() const
 {
-    return float(min(m_permutationIdx, m_numPermutations)) / float(max(1, m_numPermutations));
+    return m_isIdle ? 0.0f : (float(min(m_permutationIdx, m_numPermutations)) / float(max(1, m_numPermutations)));
 }
 
 std::string BakePermutor::GenerateExportPath() const
@@ -123,8 +129,8 @@ std::string BakePermutor::GenerateExportPath() const
 
         if (token == "{$ITERATION}")            { exportPath += tfm::format("%i", m_iterationIdx); }
         else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", *m_sampleCountIt); }
-        else if (token == "{PERMUTATION}")      { exportPath += tfm::format("%i", m_permutationIdx); }
-        //else if (token == "{STATE}")            { exportPath += ; }
+        else if (token == "{$PERMUTATION}")     { exportPath += tfm::format("%i", m_permutationIdx); }
+        else if (token == "{$STATE}")           { exportPath += m_stateIt->first; }
         else                                    { exportPath += token; }
     }
 
@@ -264,6 +270,17 @@ int RenderObjectStateMap::GetNumPermutableStates() const
     return numPermutableStates;
 }
 
+RenderObjectStateMap::StateMap::const_iterator RenderObjectStateMap::GetFirstPermutableState() const
+{
+    RenderObjectStateMap::StateMap::const_iterator it = m_stateMap.cbegin();
+    do
+    {
+        Assert(++it != m_stateMap.cend());
+    } 
+    while (!it->second.isPermutable);
+    return it;
+}
+
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
@@ -273,7 +290,8 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_isBaking(false),
     m_permutor(imguiShelves, m_stateMap),
     m_isPermutableUI(true),
-    m_stateMap(imguiShelves)
+    m_stateMap(imguiShelves),
+    m_exportToUSD(false)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -400,7 +418,7 @@ void RenderObjectStateManager::SerialiseJson() const
         for (const auto& item : m_sampleCountListUI.GetListItems()) { sampleCounts.push_back(std::atoi(item.c_str())); }
         permJson.AddArray("sampleCounts", sampleCounts);
         permJson.AddValue("iterations", m_numBakePermutations);
-        permJson.AddValue("usdPathTemplate", m_usdPathTemplate);
+        permJson.AddValue("usdPathTemplate", std::string(m_usdPathUIData.data()));
     }
 
     rootDocument.Serialise(m_stateJsonPath);
@@ -458,6 +476,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         ToggleBake();
     }
 
+    ImGui::Checkbox("Export to USD", &m_exportToUSD);
+
     ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
 }
@@ -501,7 +521,7 @@ void RenderObjectStateManager::HandleBakeIteration()
     // Advance to the next permutation. If this fails, we're done. 
     if (m_permutor.Advance())
     {       
-        m_renderManager.StartBake(m_permutor.GenerateExportPath());
+        m_renderManager.StartBake(m_permutor.GenerateExportPath(), m_exportToUSD);
     }
     else
     {

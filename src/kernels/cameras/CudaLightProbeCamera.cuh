@@ -106,7 +106,7 @@ namespace Cuda
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid() { return m_hostLightProbeGrid; }
 
 			__host__ float								GetBakeProgress() const;
-			__host__ bool								ExportProbeGrid(const std::string& usdExportPath);
+			__host__ bool								ExportProbeGrid(const std::string& usdExportPath, const bool exportToUSD);
 			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
 			__host__ int								GetExporterState() const { return m_exporterState; }
 
@@ -125,7 +125,6 @@ namespace Cuda
 			std::string									m_probeGridID;
 
 			std::atomic<int>							m_exporterState;
-			std::string									m_usdExportPath;
 		};
 	}
 }

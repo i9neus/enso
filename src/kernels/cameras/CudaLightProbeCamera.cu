@@ -495,20 +495,26 @@ namespace Cuda
 
     }
 
-    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath)
+    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::string& usdExportPath, const bool exportToUSD)
     {
-        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }  
+        if (!m_hostLightProbeGrid->IsValid() || m_exporterState != kArmed) { return false; }          
 
-        Log::Debug("Exporting to '%s'...\n", usdExportPath);
-
-        /*try
+        if (exportToUSD)
         {
-            USDIO::ExportLightProbeGrid(m_hostLightProbeGrid, m_usdExportPath);
+            Log::Debug("Exporting to '%s'...\n", usdExportPath);
+            try
+            {
+                USDIO::ExportLightProbeGrid(m_hostLightProbeGrid, usdExportPath);
+            }
+            catch (const std::runtime_error& err)
+            {
+                Log::Error("Error: %s\n", err.what());
+            }
         }
-        catch (const std::runtime_error& err)
+        else
         {
-            Log::Error("Error: %s\n", err.what());
-        }*/
+            Log::Warning("Warning: Skipped USD export to '%s' because setting was not enabled.\n", usdExportPath);
+        }
 
         m_exporterState = kFired;
         return true;

@@ -32,6 +32,7 @@ public:
     bool Restore(const std::pair<std::string, StateObject>& it);
     void Clear();
     int GetNumPermutableStates() const;
+    RenderObjectStateMap::StateMap::const_iterator GetFirstPermutableState() const;
 
     inline const StateMap& GetStateData() const { return m_stateMap; }
 
@@ -51,6 +52,7 @@ public:
     bool Advance();
     float GetProgress() const;
     std::string GenerateExportPath() const;
+    bool IsIdle() const { return m_isIdle; }
 
 private:
     std::set<int>               m_sampleCountSet;
@@ -59,6 +61,7 @@ private:
     int                         m_iterationIdx;
     int                         m_permutationIdx;
     int                         m_numPermutations;
+    bool                        m_isIdle;
     RenderObjectStateMap::StateMap::const_iterator m_stateIt;
 
     std::string                 m_templatePath;
@@ -106,6 +109,7 @@ private:
     std::vector<char>       m_usdPathUIData;
     bool                    m_isPermutableUI;
     std::string             m_stateJsonPath;
+    bool                    m_exportToUSD;
 
     IMGUIListBox            m_sampleCountListUI;
     IMGUIListBox            m_stateListUI;

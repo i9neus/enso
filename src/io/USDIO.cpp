@@ -59,6 +59,8 @@ namespace USDIO
 
     void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, std::string usdExportPath)
     {
+        Assert(!usdExportPath.empty());
+        
         // Load the root config
         Json::Document configJson;
         configJson.Deserialise("config.json");
@@ -69,11 +71,11 @@ namespace USDIO
         std::string usdTemplatePath;
         std::string usdDescription;
         if (!usdJson.GetValue("templatePath", usdTemplatePath, Json::kRequiredWarn)) { return; }
-
-        if(usdExportPath.empty())
-        {
-            if (!usdJson.GetValue("exportPath", usdExportPath, Json::kRequiredWarn)) { return; }
-        }
+        
+        //if(usdExportPath.empty())
+        //{
+        //    if (!usdJson.GetValue("exportPath", usdExportPath, Json::kRequiredWarn)) { return; }
+        //}
 
         usdJson.GetValue("description", usdDescription, Json::kSilent);
 

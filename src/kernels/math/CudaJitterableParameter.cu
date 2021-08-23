@@ -16,9 +16,10 @@ namespace Cuda
             Json::ReportError(flags, "Warning: jitterable scalar '%s' should have at least 1 element.\n", id);
             return;
         }
+        
         p = data[0];
-        dpdt = data[1];
-        t = data[2];
+        dpdt = (data.size() >= 2) ? data[1] : 0.0f;
+        t = (data.size() >= 3) ? data[2] : 0.0f;
 
         Evaluate();
     }

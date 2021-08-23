@@ -30,10 +30,10 @@ public:
 
 	void OnJson(const Json::Document& patchJson);
 
-	void StartBake(const std::string& usdExportPath);
+	void StartBake(const std::string& usdExportPath, const bool exportToUSD);
 	void AbortBake();
 	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
-	float GetBakeProgress() const { return m_bakeProgress; }
+	float GetBakeProgress() const { return (m_bakeStatus == BakeStatus::kRunning) ? m_bakeProgress : 0.0f; }
 
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
 	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
@@ -105,6 +105,7 @@ private:
 	std::atomic<BakeStatus>		m_bakeStatus;
 	float						m_bakeProgress;
 	std::string					m_usdExportPath;
+	bool						m_exportToUSD;
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;

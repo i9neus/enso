@@ -291,7 +291,7 @@ void RenderManager::OnJson(const Json::Document& patchJson)
 	m_dirtiness = kSoftReset;
 }
 
-void RenderManager::StartBake(const std::string& usdExportPath)
+void RenderManager::StartBake(const std::string& usdExportPath, const bool exportToUSD)
 {
 	if (!m_lightProbeCamera)
 	{
@@ -305,6 +305,7 @@ void RenderManager::StartBake(const std::string& usdExportPath)
 	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 	 
 	m_usdExportPath = usdExportPath;
+	m_exportToUSD = exportToUSD;
 	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
 	
 	m_dirtiness = kHardReset;
@@ -497,7 +498,7 @@ void RenderManager::OnBakePostFrame()
 			m_bakeProgress = m_lightProbeCamera->GetBakeProgress();
 			if (m_bakeProgress == 1.0f)
 			{
-				m_lightProbeCamera->ExportProbeGrid(m_usdExportPath);
+				m_lightProbeCamera->ExportProbeGrid(m_usdExportPath, m_exportToUSD);
 				m_bakeStatus = BakeStatus::kReady;
 				Log::Debug("Export!");
 			}
