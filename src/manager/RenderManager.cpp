@@ -390,12 +390,9 @@ void RenderManager::Run()
 		Timer timer;
 
 		// Has the scene graph been dirtied?
-		if (m_dirtiness != kClean && !m_activeCameras.empty())
+		if (!m_activeCameras.empty() && (m_dirtiness == kHardReset || (m_dirtiness == kSoftReset && m_frameIdx >= 2)))
 		{
-			if (m_dirtiness == kHardReset || m_frameIdx >= 2)
-			{
-				PatchSceneObjects();
-			}
+			PatchSceneObjects();
 
 			// Reset the render state
 			ClearRenderStates();
