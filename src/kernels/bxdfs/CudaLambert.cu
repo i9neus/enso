@@ -23,7 +23,7 @@ namespace Cuda
     {
         weight = dot(extant, hitCtx.hit.n) / kPi;
         pdf = weight;
-        
+
         return true;
     }
 
@@ -38,7 +38,7 @@ namespace Cuda
 
         return AssetHandle<Host::RenderObject>(new Host::LambertBRDF(json), id);
     }
-    
+
     __host__ Host::LambertBRDF::LambertBRDF(const ::Json::Node& parentNode) :
         cu_deviceData(nullptr)
     {
@@ -47,7 +47,7 @@ namespace Cuda
 
         parentNode.GetValue("lightProbeGrid", m_lightProbeGridID, ::Json::kRequiredWarn);
     }
-    
+
     __host__ void Host::LambertBRDF::OnDestroyAsset()
     {
         m_hostLightProbeGrid = nullptr;
@@ -56,21 +56,29 @@ namespace Cuda
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
     {
+        if (m_lightProbeGridID.empty()) { return; }
+        
         AssetHandle<Host::LightProbeCamera> cameraObject = sceneObjects.FindByID<Host::LightProbeCamera>(m_lightProbeGridID);
-
         if (!cameraObject)
         {
             Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': camera not found.\n", m_lightProbeGridID, GetAssetID());
             return;
         }
 
-        if (!cameraObject->GetLightProbeCameraParams().camera.isActive) { return; }
+        Device::LightProbeGrid* cu_grid = nullptr;
+        if (cameraObject->GetLightProbeCameraParams().camera.isActive)
+        {
+            m_hostLightProbeGrid = cameraObject->GetLightProbeGrid();
+            cu_grid = m_hostLightProbeGrid->GetDeviceInstance();
+            Log::Write("Bound probe grid '%s' to Lambert BRDF '%s'.\n", m_lightProbeGridID, GetAssetID());
+        }
 
-        m_hostLightProbeGrid = cameraObject->GetLightProbeGrid();
-        Assert(m_hostLightProbeGrid);
+        Cuda::SynchroniseObjects(cu_deviceData, cu_grid);
+    }
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_hostLightProbeGrid->GetDeviceInstance());
-
-        Log::Write("Bound probe grid '%s' to Lambert BRDF '%s'.\n", m_lightProbeGridID, GetAssetID());
+    __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    {
+        // Do a complete re-bind when the scene graph updates
+        Bind(sceneObjects);
     }
 }

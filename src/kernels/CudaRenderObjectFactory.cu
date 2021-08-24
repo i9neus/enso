@@ -49,10 +49,91 @@ namespace Cuda
         AddInstantiator<Host::PerspectiveCamera>();
         AddInstantiator<Host::LightProbeCamera>();
         AddInstantiator<Host::FisheyeCamera>();
+    }    
+
+    struct RenderObjectParams2
+    {
+        __device__ RenderObjectParams2() {}
+        __host__ RenderObjectParams2(const ::Json::Node& node, const uint flags) : RenderObjectParams2() {  }
+
+        JitterableFlags     flags;
+    };
+
+
+    struct TestStruct
+    {
+        JitterableFloat     rotateA;
+        JitterableFloat     rotateB;
+        JitterableFloat     scaleA;
+        JitterableFloat     scaleB;
+        JitterableFloat     vertScale;
+        JitterableFloat     crustThickness;
+        JitterableFlags     faceMask;
+
+        int                 numIterations;
+        int                 foldType;
+        int                 primitiveType;
+
+        struct
+        {
+            int maxSpecularIterations;
+            int maxDiffuseIterations;
+            float cutoffThreshold;
+            float escapeThreshold;
+            float rayIncrement;
+            float failThreshold;
+            float rayKickoff;
+
+            bool clipCameraRays;
+            int clipShape;
+        }
+        sdf;
+
+        RenderObjectParams2 tracable;
+        //BidirectionalTransform transform;
+
+        bool doTakeSnapshot;
+    };
+
+    template<typename T, typename... Pack>
+    __global__ inline void KernelCreateDeviceInstance2(T** newInstance, Pack... args)
+    {
+        assert(newInstance);
+        assert(!*newInstance);
+
+        T* newObj = new T;
     }
+
+    template<typename ObjectType, typename... Pack>
+    __host__ inline ObjectType* InstantiateOnDevice2(Pack... args)
+    {
+        ObjectType** cu_tempBuffer;
+        IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
+        IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
+
+        KernelCreateDeviceInstance2 << <1, 1 >> > (cu_tempBuffer, args...);
+        IsOk(cudaDeviceSynchronize());
+
+        ObjectType* cu_data = nullptr;
+        IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
+        IsOk(cudaFree(cu_tempBuffer));
+
+        Log::System("Instantiated device object at 0x%x\n", cu_data);
+        return cu_data;
+    }
+
+    void Test()
+    {
+        auto cu_deviceData = InstantiateOnDevice2<TestStruct>();
+
+        if(cu_deviceData) DestroyOnDevice(cu_deviceData);
+    }         
    
     __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
     {
+        //Test();
+        //return;
+        
         for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
             AssetHandle<Host::RenderObject> newObject;

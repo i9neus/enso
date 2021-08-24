@@ -50,7 +50,7 @@ namespace Cuda
 
     __device__ float Device::SphereLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
     {
-        return 1.0f;
+        return cwiseMax(m_params.radiance) / max(sqr(m_discRadius), length2(m_params.light.transform.trans() - hitCtx.hit.p));
     }
 
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const

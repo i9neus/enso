@@ -51,6 +51,7 @@ namespace Cuda
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string&, const AssetType&, const ::Json::Node&);
             __host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
+            __host__ virtual void OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
 
             __host__ virtual void OnDestroyAsset() override final;
             __host__ static std::string GetAssetTypeString() { return "lambert"; }

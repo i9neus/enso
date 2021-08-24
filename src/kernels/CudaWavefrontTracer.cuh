@@ -113,7 +113,7 @@ namespace Cuda
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
 			__device__ void Reduce();
-			__device__ bool SelectLight(const float& xi, int& lightIdx, float& weight) const;
+			__device__ bool SelectLight(const Ray& incident, const HitCtx& hitCtx, const float& xi, int& lightIdx, float& weight) const;
 
 			__device__ void Synchronise(const Objects& objects);
 			__device__ void Synchronise(const WavefrontTracerParams& params);

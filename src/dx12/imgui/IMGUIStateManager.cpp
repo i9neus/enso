@@ -21,9 +21,10 @@ void BakePermutor::Clear()
     m_permutationIdx = 0;
     m_templateTokens.clear();
     m_isIdle = true;
+    m_disableLiveView = true;
 }
 
-void BakePermutor::Prepare(const int numIterations, const std::string& templatePath)
+void BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView)
 {
     m_sampleCountIt = m_sampleCountSet.begin();
     m_numIterations = numIterations;
@@ -33,6 +34,7 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_templatePath = templatePath;
     m_stateIt = m_stateMap.GetFirstPermutableState();
     m_isIdle = false;
+    m_disableLiveView = disableLiveView;
 
     const auto r = *(m_stateIt);
 
@@ -56,8 +58,14 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
 
     for (auto& shelf : m_imguiShelves)
     {
-        m_lightProbeCameraShelf = std::dynamic_pointer_cast<LightProbeCameraShelf>(shelf.second);
-        if (m_lightProbeCameraShelf) { break; }
+        if (!m_lightProbeCameraShelf)
+        {
+            m_lightProbeCameraShelf = std::dynamic_pointer_cast<LightProbeCameraShelf>(shelf.second);
+        }
+        if (!m_perspectiveCameraShelf)
+        {
+            m_perspectiveCameraShelf = std::dynamic_pointer_cast<PerspectiveCameraShelf>(shelf.second);
+        }
     }
 
     if (!m_lightProbeCameraShelf) { Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n"); }
@@ -68,7 +76,14 @@ bool BakePermutor::Advance()
     if (m_stateIt == m_stateMap.GetStateData().end() || 
         m_sampleCountIt == m_sampleCountSet.end() ||
         m_iterationIdx >= m_numIterations ||
-        !m_lightProbeCameraShelf) { return false; }
+        !m_lightProbeCameraShelf) 
+    { 
+        if (m_disableLiveView && m_perspectiveCameraShelf)
+        { 
+            m_perspectiveCameraShelf->GetParamsObject().camera.isActive = true; 
+        }
+        return false; 
+    }
     
     // Increment to the next permutation
     ++m_iterationIdx;
@@ -102,6 +117,12 @@ bool BakePermutor::Advance()
 
     // Set the sample count on the light probe camera
     m_lightProbeCameraShelf->GetParamsObject().maxSamples = *m_sampleCountIt;
+
+    // Deactivate the perspective camera
+    if (m_disableLiveView && m_perspectiveCameraShelf)
+    { 
+        m_perspectiveCameraShelf->GetParamsObject().camera.isActive = false; 
+    }
 
     Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx, m_numPermutations);
 
@@ -273,11 +294,10 @@ int RenderObjectStateMap::GetNumPermutableStates() const
 RenderObjectStateMap::StateMap::const_iterator RenderObjectStateMap::GetFirstPermutableState() const
 {
     RenderObjectStateMap::StateMap::const_iterator it = m_stateMap.cbegin();
-    do
+    while (!it->second.isPermutable)
     {
         Assert(++it != m_stateMap.cend());
     } 
-    while (!it->second.isPermutable);
     return it;
 }
 
@@ -292,7 +312,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_isPermutableUI(true),
     m_stateMap(imguiShelves),
     m_exportToUSD(false),
-    m_disableLiveView(false)
+    m_disableLiveView(true)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -510,7 +530,7 @@ void RenderObjectStateManager::ToggleBake()
             m_permutor.GetSampleCountSet().insert(count);
         }
     }
-    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()));
+    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView);
 
     m_isBaking = true;
 }

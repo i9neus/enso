@@ -5,6 +5,7 @@
 
 class RenderManager;
 class LightProbeCameraShelf;
+class PerspectiveCameraShelf;
 
 class RenderObjectStateMap
 {
@@ -48,7 +49,7 @@ public:
 
     void Clear();
     std::set<int>& GetSampleCountSet() { return m_sampleCountSet; }
-    void Prepare(const int numIterations, const std::string& templatePath);
+    void Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView);
     bool Advance();
     float GetProgress() const;
     std::string GenerateExportPath() const;
@@ -62,13 +63,15 @@ private:
     int                         m_permutationIdx;
     int                         m_numPermutations;
     bool                        m_isIdle;
+    bool                        m_disableLiveView;
     RenderObjectStateMap::StateMap::const_iterator m_stateIt;
 
     std::string                 m_templatePath;
     std::vector<std::string>    m_templateTokens;
 
     IMGUIAbstractShelfMap&      m_imguiShelves;
-    std::shared_ptr<LightProbeCameraShelf> m_lightProbeCameraShelf;
+    std::shared_ptr<LightProbeCameraShelf>  m_lightProbeCameraShelf;
+    std::shared_ptr<PerspectiveCameraShelf> m_perspectiveCameraShelf;
     RenderObjectStateMap&       m_stateMap;
 
 };

@@ -21,6 +21,8 @@
 
 #include "generic/JsonUtils.h"
 
+#define kMaxLights 5
+
 namespace Cuda
 {
 	__host__ WavefrontTracerParams::WavefrontTracerParams() :
@@ -29,7 +31,7 @@ namespace Cuda
 		debugNormals(false),
 		debugShaders(false),
 		importanceMode(kImportanceMIS),
-		lightSelectionMode(kLightSelectionWeighted),
+		lightSelectionMode(kLightSelectionNaive),
 		traceMode(kTracePath)
 	{
 	}
@@ -88,6 +90,7 @@ namespace Cuda
 		}
 
 		m_numLights = m_objects.cu_deviceLights->Size();
+		assert(m_numLights <= kMaxLights);
 	}
 
 	__device__ void Device::WavefrontTracer::Synchronise(const WavefrontTracerParams& params)
@@ -114,18 +117,42 @@ namespace Cuda
 		//return (ctx.emplacedRay.viewport.x < 256) ? m_activeParams.importanceMode : kImportanceMIS;
 	}
 
-	__device__ bool Device::WavefrontTracer::SelectLight(const float& xi, int& lightIdx, float& weight) const
+	template<typename T>
+	__device__ __inline__ int LowerBound(int i0, int i1, const T* pmf, const float& xi)
 	{
-		if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+		while (i1 - i0 > 1)
 		{
-			lightIdx = min(m_numLights - 1, int(xi * m_numLights));
-			weight = m_numLights;
-			return true;
+			const int iMid = i0 + (i1 - i0) / 2;
+			if (pmf[iMid] < xi) { i0 = iMid; }
+			else { i1 = iMid; }
 		}
 
-		
+		if (pmf[i1] < xi) { return i1 + 1; }
+		else if (pmf[i0] < xi) { return i0 + 1; }
+		return i0;
+	}
 
-		return false;
+	__device__ bool Device::WavefrontTracer::SelectLight(const Ray& incident, const HitCtx& hitCtx, const float& xi, int& lightIdx, float& weight) const
+	{		
+		float pmf[kMaxLights + 1];
+		pmf[0] = 0.0f;
+		for (int idx = 0; idx < m_numLights && idx < kMaxLights; ++idx)
+		{
+			float estimate = (*m_objects.cu_deviceLights)[idx]->Estimate(incident, hitCtx);
+			if (estimate < 1e-6f) { estimate = 0.0f; }
+			
+			pmf[1 + idx] = pmf[idx] + estimate;
+		}
+
+		// No lights are in range to sample
+		if (pmf[m_numLights] == 0.0f) { return false; }
+
+		lightIdx = LowerBound(1, m_numLights, pmf, xi * pmf[m_numLights]) - 1;
+		weight = pmf[m_numLights] / (pmf[lightIdx + 1] - pmf[lightIdx]);
+
+		assert(lightIdx >= 0 && lightIdx < m_numLights);
+
+		return true;
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
@@ -183,10 +210,15 @@ namespace Cuda
 			// Select a light to sample or evaluate
 			int lightIdx;
 			float weightLight;
-			if (!SelectLight(xi.y, lightIdx, weightLight)) 
-			{ 
-				return L;
+			if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+			{
+				lightIdx = min(m_numLights - 1, int(xi.y * m_numLights));
+				weightLight = m_numLights;
 			}
+			else if (!SelectLight(incidentRay, hitCtx, xi.y, lightIdx, weightLight))
+			{
+				return L;
+			}			
 
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
 

@@ -25,7 +25,7 @@ namespace Cuda
 
     struct RenderObjectParams
     {
-        RenderObjectParams();
+        __host__ __device__ RenderObjectParams();
         __host__ RenderObjectParams(const ::Json::Node& node, const uint flags) : RenderObjectParams() { FromJson(node, flags);  }
 
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
