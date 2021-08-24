@@ -29,35 +29,26 @@ namespace Cuda
     RenderObjectFactory::RenderObjectFactory(cudaStream_t hostStream) :
         m_hostStream(hostStream) 
     {
-        AddInstantiator(Host::Sphere::GetAssetTypeString(), InstantiatorLambda(Host::Sphere::Instantiate));
-        AddInstantiator(Host::KIFS::GetAssetTypeString(), InstantiatorLambda(Host::KIFS::Instantiate));
-        AddInstantiator(Host::Plane::GetAssetTypeString(), InstantiatorLambda(Host::Plane::Instantiate));
-        AddInstantiator(Host::CornellBox::GetAssetTypeString(), InstantiatorLambda(Host::CornellBox::Instantiate));
+        AddInstantiator<Host::Sphere>();
+        AddInstantiator<Host::KIFS>();
+        AddInstantiator<Host::Plane>();
+        AddInstantiator<Host::CornellBox>();
 
-        AddInstantiator(Host::QuadLight::GetAssetTypeString(), InstantiatorLambda(Host::QuadLight::Instantiate));
-        AddInstantiator(Host::SphereLight::GetAssetTypeString(), InstantiatorLambda(Host::SphereLight::Instantiate));
-        AddInstantiator(Host::EnvironmentLight::GetAssetTypeString(), InstantiatorLambda(Host::EnvironmentLight::Instantiate));
+        AddInstantiator<Host::QuadLight>();
+        AddInstantiator<Host::SphereLight>();
+        AddInstantiator<Host::EnvironmentLight>();
 
-        AddInstantiator(Host::SimpleMaterial::GetAssetTypeString(), InstantiatorLambda(Host::SimpleMaterial::Instantiate));
-        AddInstantiator(Host::CornellMaterial::GetAssetTypeString(), InstantiatorLambda(Host::CornellMaterial::Instantiate));
-        AddInstantiator(Host::KIFSMaterial::GetAssetTypeString(), InstantiatorLambda(Host::KIFSMaterial::Instantiate));
+        AddInstantiator<Host::SimpleMaterial>();
+        AddInstantiator<Host::CornellMaterial>();
+        AddInstantiator<Host::KIFSMaterial>();
 
-        AddInstantiator(Host::LambertBRDF::GetAssetTypeString(), InstantiatorLambda(Host::LambertBRDF::Instantiate));
+        AddInstantiator<Host::LambertBRDF>();
 
-        AddInstantiator(Host::WavefrontTracer::GetAssetTypeString(), InstantiatorLambda(Host::WavefrontTracer::Instantiate));
+        AddInstantiator<Host::WavefrontTracer>();
 
-        AddInstantiator(Host::PerspectiveCamera::GetAssetTypeString(), InstantiatorLambda(Host::PerspectiveCamera::Instantiate));
-        AddInstantiator(Host::LightProbeCamera::GetAssetTypeString(), InstantiatorLambda(Host::LightProbeCamera::Instantiate));
-        AddInstantiator(Host::FisheyeCamera::GetAssetTypeString(), InstantiatorLambda(Host::FisheyeCamera::Instantiate));
-    }
-
-    __host__ void RenderObjectFactory::AddInstantiator(const std::string id, InstantiatorLambda& instantiator)
-    {
-        auto it = m_instantiators.find(id);
-        AssertMsgFmt(it == m_instantiators.end(),
-            "Internal error: a render object instantiator with ID '%s' already exists.\n", id.c_str());
-
-        m_instantiators[id] = instantiator;
+        AddInstantiator<Host::PerspectiveCamera>();
+        AddInstantiator<Host::LightProbeCamera>();
+        AddInstantiator<Host::FisheyeCamera>();
     }
    
     __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
@@ -74,13 +65,7 @@ namespace Cuda
                 continue;
             }
 
-            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }
-
-            int numInstances = 1;
-            if (childNode.GetValue("instances", numInstances, ::Json::kSilent) && (numInstances < 1 || numInstances > 10))
-            {
-                Log::Warning("Warning: instances out of range. Resetting to 1.\n");
-            }
+            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }        
 
             std::string newClass;
             if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
@@ -93,6 +78,26 @@ namespace Cuda
                 {
                     Log::Error("Error: '%s' is not a valid render object type.\n", newClass);
                     continue;
+                }
+
+                // Get the object instance flags
+                auto& flagsFunctor = m_instanceFlagFunctors.find(newClass);
+                Assert(flagsFunctor != m_instanceFlagFunctors.end());
+                const uint instanceFlags = (flagsFunctor->second)();
+
+                int numInstances = 1;
+                if (childNode.GetValue("instances", numInstances, ::Json::kSilent))
+                {                    
+                    // Check if this class allows for multiple instances from the same object
+                    if (!(instanceFlags & kInstanceFlagsAllowMultipleInstances))
+                    {
+                        numInstances = 1;
+                        Log::Warning("Warning: render objects of type '%s' do not allow multiple instantiation.\n", newClass);
+                    }
+                    else if (numInstances < 1 || numInstances > 10)
+                    {
+                        Log::Warning("Warning: instances out of range. Resetting to 1.\n");
+                    }
                 }
 
                 Log::Debug("Instantiating %i new %s....\n", numInstances, objectTypeStr);

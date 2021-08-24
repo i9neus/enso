@@ -21,10 +21,21 @@ namespace Cuda
 
     private:
         __host__ void InstantiateList(const ::Json::Node& node, const AssetType& assetType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects);
-        
-        __host__ void AddInstantiator(const std::string id, InstantiatorLambda& instantiator);
+
+        template<typename HostClass>
+        __host__ void AddInstantiator()
+        {
+            const auto id = HostClass::GetAssetTypeString();
+            auto it = m_instantiators.find(id);
+            AssertMsgFmt(it == m_instantiators.end(),
+                "Internal error: a render object instantiator with ID '%s' already exists.\n", id);
+
+            m_instantiators[id] = HostClass::Instantiate;
+            m_instanceFlagFunctors[id] = HostClass::GetInstanceFlags;
+        }
 
         std::map<std::string, std::function<AssetHandle<Host::RenderObject>(const std::string&, const AssetType&, const ::Json::Node&)>>    m_instantiators;
+        std::map<std::string, std::function<uint()>> m_instanceFlagFunctors;
         cudaStream_t m_hostStream;
     };
 }

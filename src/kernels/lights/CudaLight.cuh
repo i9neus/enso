@@ -62,6 +62,7 @@ namespace Cuda
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;
             __host__ virtual AssetType GetAssetType() const override final { return AssetType::kLight; }
             __host__ static std::string GetAssetTypeString() { return "light"; }
+            __host__ static uint GetInstanceFlags() { return kInstanceFlagsAllowMultipleInstances; }
             __host__ virtual AssetHandle<Host::Tracable> GetTracableHandle();
             __host__ virtual void Synchronise() override final;
 

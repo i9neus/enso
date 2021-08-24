@@ -10,10 +10,17 @@ namespace Cuda
 
     enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
     enum LightIDFlags : uchar { kNotALight = 0xff };
+
     enum RenderObjectFlags : uint 
     { 
         kRenderObjectDisabled = 1 << 0,
         kRenderObjectExcludeFromBake = 1 << 1
+    };
+
+    enum RenderObjectInstanceFlags : uint
+    {
+        kInstanceFlagsAllowMultipleInstances = 1 << 0,
+        kInstanceSingleton = 1 << 2
     };
 
     struct RenderObjectParams
@@ -53,6 +60,7 @@ namespace Cuda
 
             __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kIsChildObject; }
             __host__ bool                   IsJitterable() const { return m_renderObjectFlags & kIsJitterable;  }
+            __host__ static uint            GetInstanceFlags() { return 0; }
 
             __host__ virtual void           OnPreRender() {}
             __host__ virtual void           OnPostRender() {}
