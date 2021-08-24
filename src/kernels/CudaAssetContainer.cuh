@@ -88,6 +88,11 @@ namespace Cuda
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
 
+			__host__ void Clear()
+			{
+				m_assetMap.clear();
+			}
+
 			__host__ AssetHandle<ElementType> Find(const std::string& id)
 			{
 				auto it = m_assetMap.find(id);

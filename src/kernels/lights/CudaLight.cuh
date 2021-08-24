@@ -12,6 +12,21 @@ namespace Cuda
         class Tracable;
     }
 
+    struct LightParams
+    {
+        __host__ __device__ LightParams();
+        __host__ LightParams(const ::Json::Node& node);
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+        JitterableFloat   intensity;
+        JitterableVec3    colourHSV;
+
+        RenderObjectParams renderObject;
+        BidirectionalTransform transform;
+    };
+
     namespace Device
     {
         class Light : public Device::RenderObject, public AssetTags<Host::Light, Device::Light>

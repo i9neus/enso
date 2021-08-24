@@ -19,15 +19,8 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        JitterableFloat   intensity;
-        JitterableVec3    colourHSV;
-
-        vec3 position;
-        vec3 orientation;
-        vec3 scale;
-        vec3 radiance;
-
-        BidirectionalTransform transform;
+        LightParams     light;
+        vec3            radiance;
     };
 
     namespace Device

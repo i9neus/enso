@@ -9,7 +9,23 @@ namespace Cuda
     class RenderObjectContainer;
 
     enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
-    enum LightIdFlags : uchar { kNotALight = 0xff };
+    enum LightIDFlags : uchar { kNotALight = 0xff };
+    enum RenderObjectFlags : uint 
+    { 
+        kRenderObjectDisabled = 1 << 0
+    };
+
+    struct RenderObjectParams
+    {
+        RenderObjectParams();
+        __host__ RenderObjectParams(const ::Json::Node& node, const uint flags) : RenderObjectParams() { FromJson(node, flags);  }
+
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void Randomise(const vec2& range);
+
+        JitterableFlags     flags;
+    };
     
     namespace Device
     {
@@ -26,12 +42,14 @@ namespace Cuda
         class RenderObject : public Host::Asset
         {
         public:            
-            __host__ virtual void Bind(RenderObjectContainer& objectContainer) {}
-            __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
-            __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node);
-
+            __host__ virtual void                                           Bind(RenderObjectContainer& objectContainer) {}
+            __host__ virtual std::vector<AssetHandle<Host::RenderObject>>   GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
+            __host__ virtual const RenderObjectParams*                      GetRenderObjectParams() const { return false; }
+            
+            __host__ void                   UpdateDAGPath(const ::Json::Node& node);
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
             __host__ const bool             HasDAGPath() const { return !m_dagPath.empty(); }
+
             __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kIsChildObject; }
             __host__ bool                   IsJitterable() const { return m_renderObjectFlags & kIsJitterable;  }
 
@@ -39,6 +57,7 @@ namespace Cuda
             __host__ virtual void           OnPostRender() {}
             __host__ virtual void           OnPreRenderPass(const float wallTime, const float frameIdx) {}
             __host__ virtual void           OnPostRenderPass() {}
+            __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) {}
 
         protected:
             __host__ RenderObject() : m_renderObjectFlags(0) {}

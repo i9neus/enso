@@ -417,13 +417,24 @@ namespace Cuda
 	}
 
 	__host__ void Host::WavefrontTracer::Bind(RenderObjectContainer& sceneObjects)
-	{
+	{		
 		Log::Indent indent;
 
-		for (auto& object : sceneObjects)
+		// Do some clean-up...
+		m_hostTracables->Clear();
+		m_hostLights->Clear();
+		
+		// Loop over the scene objects and look for tracables and lights
+		for (const auto& object : sceneObjects)
 		{
+			// Don't push objects belonging to other objects. We'll do this explicitly later.
+			if (object->IsChildObject()) { continue; }
+			
+			// If the object is flagged as disabled, exclude it.
+			const RenderObjectParams* objectParams = object->GetRenderObjectParams();
+			if (objectParams && objectParams->flags() & kRenderObjectDisabled) { continue; }
+			
 			const auto type = object->GetAssetType();
-
 			if (type == AssetType::kTracable)
 			{
 				Log::Debug("Linked tracable '%s' to wavefront tracer.\n", object->GetAssetID());
@@ -445,7 +456,9 @@ namespace Cuda
 				light->SetLightID(lightId);
 				tracable->SetLightID(lightId);
 
+				// Push both the light and tracable into the list
 				m_hostLights->Push(light);
+				m_hostTracables->Push(tracable);
 			}
 		}
 		
@@ -470,6 +483,12 @@ namespace Cuda
 		{
 			Log::Write("Bound tracables and lights to wavefront tracer '%s'.\n", GetAssetID());
 		}
+	}
+
+	__host__ void Host::WavefrontTracer::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+	{
+		// Do a complete re-bind when the scene graph updates
+		Bind(sceneObjects);
 	}
 
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)

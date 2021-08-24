@@ -110,6 +110,7 @@ private:
     bool                    m_isPermutableUI;
     std::string             m_stateJsonPath;
     bool                    m_exportToUSD;
+    bool                    m_disableLiveView;
 
     IMGUIListBox            m_sampleCountListUI;
     IMGUIListBox            m_stateListUI;

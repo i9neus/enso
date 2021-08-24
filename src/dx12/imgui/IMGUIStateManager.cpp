@@ -291,7 +291,8 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_permutor(imguiShelves, m_stateMap),
     m_isPermutableUI(true),
     m_stateMap(imguiShelves),
-    m_exportToUSD(false)
+    m_exportToUSD(false),
+    m_disableLiveView(false)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -476,7 +477,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         ToggleBake();
     }
 
-    ImGui::Checkbox("Export to USD", &m_exportToUSD);
+    ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
+    ImGui::Checkbox("Disable live view", &m_disableLiveView);
 
     ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");

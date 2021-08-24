@@ -7,12 +7,7 @@
 
 namespace Cuda
 {
-    __host__ __device__ SphereLightParams::SphereLightParams() :
-        position(0.0f),
-        orientation(0.0f),
-        scale(1.0f),
-        intensity(1.0f),
-        colourHSV(vec3(0.0f, 0.0, 1.0f)),
+    __host__ __device__ SphereLightParams::SphereLightParams() :     
         radiance(1.0f) {}
 
     __host__ SphereLightParams::SphereLightParams(const ::Json::Node& node) :
@@ -23,20 +18,14 @@ namespace Cuda
 
     __host__ void SphereLightParams::ToJson(::Json::Node& node) const
     {
-        transform.ToJson(node);
-
-        colourHSV.ToJson("colour", node);
-        intensity.ToJson("intensity", node);
+        light.ToJson(node);
     }
 
     __host__ void SphereLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        transform.FromJson(node, flags);
+        light.FromJson(node, flags);
 
-        colourHSV.FromJson("colour", node, flags);
-        intensity.FromJson("intensity", node, flags);
-
-        radiance = HSVToRGB(colourHSV()) * std::pow(2.0f, intensity()) / (transform.scale().x * transform.scale().y * kFourPi * 0.25f);
+        radiance = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity()) / (light.transform.scale().x * light.transform.scale().y * kFourPi * 0.25f);
     }
 
     __device__ Device::SphereLight::SphereLight()
@@ -46,8 +35,8 @@ namespace Cuda
 
     __device__ void Device::SphereLight::Prepare()
     {
-        m_discArea = kPi * sqr(m_params.transform.scale().x);
-        m_discRadius = m_params.transform.scale().x;
+        m_discArea = kPi * sqr(m_params.light.transform.scale().x);
+        m_discRadius = m_params.light.transform.scale().x;
     }
 
     __device__ inline mat3 CreateBasisDebug2(vec3 n)
@@ -61,7 +50,7 @@ namespace Cuda
 
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {        
-        vec3 originDir = m_params.transform.trans() - hitCtx.hit.p;
+        vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;
         float originDist = length(originDir);
 
         // Object inside the emitter? This is invalid, so return black.
@@ -101,7 +90,7 @@ namespace Cuda
 
     __device__ bool Device::SphereLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
     {
-        vec3 originDir = m_params.transform.trans() - incident.od.o;
+        vec3 originDir = m_params.light.transform.trans() - incident.od.o;
         float originDist = length(originDir);
 
         // Object inside the emitter? This is invalid, so return black.
@@ -138,11 +127,11 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(), id + "_material");
+        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kIsChildObject), id + "_material");
         Assert(m_lightMaterialAsset);
 
         // Instantiate the sphere tracable
-        m_lightSphereAsset = AssetHandle<Host::Sphere>(new Host::Sphere(), id + "_planeTracable");
+        m_lightSphereAsset = AssetHandle<Host::Sphere>(new Host::Sphere(kIsChildObject), id + "_planeTracable");
         Assert(m_lightSphereAsset);
         m_lightSphereAsset->SetBoundMaterialID(id + "_material");
 
@@ -164,7 +153,7 @@ namespace Cuda
         m_params.FromJson(node, flags);
 
         // Update the attributes of the child objects
-        m_lightSphereAsset->UpdateParams(m_params.transform);
+        m_lightSphereAsset->UpdateParams(m_params.light.transform);
         m_lightMaterialAsset->UpdateParams(m_params.radiance);
 
         // Synchronise with the decvice

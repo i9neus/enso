@@ -46,10 +46,10 @@ namespace Cuda
     }
 
     // Constructor used to instantiate child objects e.g. from quad lights
-    __host__  Host::Plane::Plane()
+    __host__  Host::Plane::Plane(const uint flags)
     {        
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
-        RenderObject::SetRenderObjectFlags(kIsChildObject);
+        RenderObject::SetRenderObjectFlags(flags);
     }
 
     // Constructor for user instantiations

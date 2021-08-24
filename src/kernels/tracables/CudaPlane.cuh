@@ -50,7 +50,7 @@ namespace Cuda
             PlaneParams    m_params;
 
         public:
-            __host__ Plane();
+            __host__ Plane(const uint flags);
             __host__ Plane(const ::Json::Node& node);
             __host__ virtual ~Plane() = default;
 

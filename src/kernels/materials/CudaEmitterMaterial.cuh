@@ -40,7 +40,7 @@ namespace Cuda
             Device::EmitterMaterial* cu_deviceData;
 
         public:
-            __host__ EmitterMaterial();
+            __host__ EmitterMaterial(const uint flags);
             __host__ EmitterMaterial(const vec3& radiance);
             __host__ virtual ~EmitterMaterial() = default;
 

@@ -1,7 +1,38 @@
 ﻿#include "CudaLight.cuh"
+#include "../math/CudaColourUtils.cuh"
+
+#include "generic/JsonUtils.h"
 
 namespace Cuda
 {
+    __host__ __device__ LightParams::LightParams() :
+        intensity(1.0f),
+        colourHSV(vec3(0.0f, 0.0f, 1.0f)) {}
+
+    __host__ LightParams::LightParams(const ::Json::Node& node) :
+        LightParams()
+    {
+        FromJson(node, ::Json::kRequiredWarn);
+    }
+
+    __host__ void LightParams::ToJson(::Json::Node& node) const
+    {
+        renderObject.ToJson(node);
+        transform.ToJson(node);
+
+        colourHSV.ToJson("colour", node);
+        intensity.ToJson("intensity", node);
+    }
+
+    __host__ void LightParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        renderObject.FromJson(node, flags);
+        transform.FromJson(node, flags);
+
+        colourHSV.FromJson("colour", node, flags);
+        intensity.FromJson("intensity", node, flags);
+    }
+    
     __host__ void Host::Light::Synchronise()
     {
         Device::Light::Objects objects;

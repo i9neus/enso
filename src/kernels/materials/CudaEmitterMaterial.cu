@@ -2,10 +2,10 @@
 
 namespace Cuda
 {
-    __host__ Host::EmitterMaterial::EmitterMaterial() :
+    __host__ Host::EmitterMaterial::EmitterMaterial(const uint flags) :
         cu_deviceData(nullptr)
     {
-        RenderObject::SetRenderObjectFlags(kIsChildObject);
+        RenderObject::SetRenderObjectFlags(flags);
         cu_deviceData = InstantiateOnDevice<Device::EmitterMaterial>();
     }
 

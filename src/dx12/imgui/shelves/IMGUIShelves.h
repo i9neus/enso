@@ -89,13 +89,15 @@ public:
 class SphereShelf : public IMGUIShelf<Cuda::Host::Sphere, Cuda::TracableParams>
 {
 public:
-    SphereShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    SphereShelf(const Json::Node& json);
     virtual ~SphereShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
 
+private:
+    IMGUIJitteredFlagArray  m_flags;
 };
 
 // Quad 

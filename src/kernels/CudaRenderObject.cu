@@ -3,6 +3,24 @@
 
 namespace Cuda
 {
+    RenderObjectParams::RenderObjectParams() : 
+        flags(0, 1) {}
+
+    __host__ void RenderObjectParams::ToJson(::Json::Node& node) const
+    {
+        flags.ToJson("objectFlags", node);
+    }
+
+    __host__ void RenderObjectParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        this->flags.FromJson("objectFlags", node, flags);
+    }
+
+    __host__ void RenderObjectParams::Randomise(const vec2& range)
+    {
+        flags.Randomise(range);
+    }
+    
     __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node)
     {
         if (!GetDAGPath().empty()) { return; }

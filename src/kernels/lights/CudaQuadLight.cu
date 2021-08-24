@@ -7,12 +7,8 @@
 
 namespace Cuda
 {
-    __host__ __device__ QuadLightParams::QuadLightParams() : 
-        position(0.0f), 
-        orientation(0.0f), 
-        scale(1.0f), 
-        intensity(1.0f), 
-        colourHSV(vec3(0.0f, 0.0f, 1.0f)),
+    __host__ __device__ QuadLightParams::QuadLightParams() :
+        light(),
         radiance(0.0f) {}
     
     __host__ QuadLightParams::QuadLightParams(const ::Json::Node& node) :
@@ -23,20 +19,14 @@ namespace Cuda
     
     __host__ void QuadLightParams::ToJson(::Json::Node& node) const
     {
-        transform.ToJson(node);
-
-        colourHSV.ToJson("colour", node);
-        intensity.ToJson("intensity", node);
+        light.ToJson(node);
     }
 
     __host__ void QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        transform.FromJson(node, flags);
+        light.FromJson(node, flags);
 
-        colourHSV.FromJson("colour", node, flags);
-        intensity.FromJson("intensity", node, flags);
-
-        radiance = HSVToRGB(colourHSV()) * std::pow(2.0f, intensity()) / (transform.scale().x * transform.scale().y);
+        radiance = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity()) / (light.transform.scale().x * light.transform.scale().y);
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -46,7 +36,7 @@ namespace Cuda
 
     __device__ void Device::QuadLight::Prepare()
     {        
-        m_emitterArea = m_params.transform.scale().x * m_params.transform.scale().y;
+        m_emitterArea = m_params.light.transform.scale().x * m_params.light.transform.scale().y;
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
@@ -56,7 +46,7 @@ namespace Cuda
         const vec3& normal = hitCtx.hit.n;
 
         const vec2 xi = renderCtx.rng.Rand<2, 3>() - vec2(0.5f);
-        const vec3 lightPos = m_params.transform.PointToWorldSpace(vec3(xi, 0.0f));
+        const vec3 lightPos = m_params.light.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
         extant = lightPos - hitPos;
@@ -67,7 +57,7 @@ namespace Cuda
         if (dot(extant, normal) <= 0.0f) { return false; }
 
         // Test if the emitter is rotated away from the shading point
-        vec3 lightNormal = m_params.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
+        vec3 lightNormal = m_params.light.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
         float cosPhi = dot(extant, normalize(lightNormal));
         if (cosPhi > 0.0f) { return false; }
 
@@ -107,11 +97,11 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(), id + "_material");
+        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kIsChildObject), id + "_material");
         Assert(m_lightMaterialAsset);
 
         // Instantiate the plane tracable
-        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(), id + "_planeTracable");
+        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(kIsChildObject), id + "_planeTracable");
         Assert(m_lightPlaneAsset);
         m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
 
@@ -131,10 +121,10 @@ namespace Cuda
 
         // Pull the parameters from the JSON dictionary and create a transform
         m_params.FromJson(node, flags);
-        m_params.transform.FromJson(node, flags);
+        m_params.light.transform.FromJson(node, flags);
        
         // Update the attributes of the child objects
-        m_lightPlaneAsset->UpdateParams(m_params.transform, true);
+        m_lightPlaneAsset->UpdateParams(m_params.light.transform, true);
         m_lightMaterialAsset->UpdateParams(m_params.radiance);
      
         // Synchronise with the decvice

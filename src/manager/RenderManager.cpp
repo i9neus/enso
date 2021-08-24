@@ -477,6 +477,12 @@ void RenderManager::PatchSceneObjects()
 		}
 	}
 
+	// Some objects may need to adjust their bindings now that the scene graph has been dirtied
+	for (auto& object : *m_renderObjects)
+	{
+		object->OnUpdateSceneGraph(*m_renderObjects);
+	}
+
 	// Prepare the scene for rendering
 	if (validPatches > 0) { Prepare(); }
 
