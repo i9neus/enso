@@ -5,15 +5,7 @@
 #include "CudaAsset.cuh"
 #include "CudaRay.cuh" 
 
-/*#include "bxdfs/CudaLambert.cuh"
-#include "tracables/CudaSphere.cuh"
-#include "tracables/CudaPlane.cuh"
-#include "tracables/CudaCornellBox.cuh"
-#include "tracables/CudaKIFS.cuh"
-#include "materials/CudaMaterial.cuh"
-#include "lights/CudaQuadLight.cuh"
-#include "cameras/CudaPerspectiveCamera.cuh"
-#include "cameras/CudaLightProbeCamera.cuh"*/
+#include <thrust/sort.h>
 
 #include "bxdfs/CudaBxDF.cuh"
 #include "materials/CudaMaterial.cuh"
@@ -37,6 +29,7 @@ namespace Cuda
 		debugNormals(false),
 		debugShaders(false),
 		importanceMode(kImportanceMIS),
+		lightSelectionMode(kLightSelectionWeighted),
 		traceMode(kTracePath)
 	{
 	}
@@ -49,6 +42,7 @@ namespace Cuda
 		node.AddValue("debugShaders", debugShaders);
 		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
+		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -58,6 +52,7 @@ namespace Cuda
 		node.GetValue("debugNormals", debugNormals, flags);
 		node.GetValue("debugShaders", debugShaders, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
+		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
 	}
 
 	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
@@ -92,7 +87,7 @@ namespace Cuda
 			if (cameraParams.overrides.maxDepth > -1) { m_activeParams.maxDepth = cameraParams.overrides.maxDepth; }
 		}
 
-		m_checkDigit = 31415972;
+		m_numLights = m_objects.cu_deviceLights->Size();
 	}
 
 	__device__ void Device::WavefrontTracer::Synchronise(const WavefrontTracerParams& params)
@@ -117,6 +112,20 @@ namespace Cuda
 	{
 		return m_activeParams.importanceMode;
 		//return (ctx.emplacedRay.viewport.x < 256) ? m_activeParams.importanceMode : kImportanceMIS;
+	}
+
+	__device__ bool Device::WavefrontTracer::SelectLight(const float& xi, int& lightIdx, float& weight) const
+	{
+		if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+		{
+			lightIdx = min(m_numLights - 1, int(xi * m_numLights));
+			weight = m_numLights;
+			return true;
+		}
+
+		
+
+		return false;
 	}
 
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
@@ -147,8 +156,7 @@ namespace Cuda
 		vec2 xi = renderCtx.rng.Rand<2, 3>();
 
 		// If there are no lights in this scene, always sample the BxDF
-		const auto numLights = m_objects.cu_deviceLights->Size();
-		if (GetImportanceMode(renderCtx) == kImportanceBxDF || numLights == 0)
+		if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_numLights == 0)
 		{
 			xi.x *= 0.5f;
 		}
@@ -161,7 +169,7 @@ namespace Cuda
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
 				vec3 L = renderCtx.emplacedRay.weight * albedo;
-				if (GetImportanceMode(renderCtx) != kImportanceBxDF && numLights != 0) { L *= 2.0f; }
+				if (GetImportanceMode(renderCtx) != kImportanceBxDF && m_numLights != 0) { L *= 2.0f; }
 
 				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, kRayScattered);
 			}
@@ -172,8 +180,14 @@ namespace Cuda
 			// Rescale the random number
 			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
 
-			// Randomly select a light
-			const int lightIdx = min(numLights - 1, uint(xi.y * numLights));
+			// Select a light to sample or evaluate
+			int lightIdx;
+			float weightLight;
+			if (!SelectLight(xi.y, lightIdx, weightLight)) 
+			{ 
+				return L;
+			}
+
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
 
 			float pdfBxDF, pdfLight;
@@ -185,9 +199,7 @@ namespace Cuda
 				if (light.Sample(incidentRay, hitCtx, renderCtx, extantDir, L, pdfLight))
 				{
 					float weightBxDF;
-					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
-
-					const float weightLight = numLights;
+					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);					
 
 					L *= renderCtx.emplacedRay.weight * albedo * 2.0f * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
 

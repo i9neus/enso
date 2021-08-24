@@ -48,6 +48,11 @@ namespace Cuda
         return mat3(tangent, cotangent, n);
     }
 
+    __device__ float Device::SphereLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
+    {
+        return 1.0f;
+    }
+
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {        
         vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;

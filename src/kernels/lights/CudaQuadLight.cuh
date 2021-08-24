@@ -39,6 +39,8 @@ namespace Cuda
             __device__ void Prepare(); 
             __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;
             __device__ bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const override final;
+            __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const override final;
+
             __device__ void Synchronise(const QuadLightParams& params)
             {  
                 m_params = params; 

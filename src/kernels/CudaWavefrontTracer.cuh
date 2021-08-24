@@ -17,9 +17,29 @@ namespace Cuda
 	
 	namespace Host { class WavefrontTracer; }	
 
-	enum TracerPixelFlags : uchar { kTracerPixelChanged = 1 };
-	enum ImportanceMode : uchar { kImportanceMIS, kImportanceLight, kImportanceBxDF };
-	enum TraceMode : int { kTraceWavefront, kTracePath };
+	enum TracerPixelFlags : uchar 
+	{ 
+		kTracerPixelChanged = 1 
+	};
+	
+	enum ImportanceMode : int 
+	{ 
+		kImportanceMIS, 
+		kImportanceLight, 
+		kImportanceBxDF 
+	};
+
+	enum LightSelectionMode : int 
+	{ 
+		kLightSelectionNaive, 
+		kLightSelectionWeighted 
+	};
+
+	enum TraceMode : int 
+	{ 
+		kTraceWavefront, 
+		kTracePath 
+	};
 
 	struct WavefrontTracerParams
 	{
@@ -37,6 +57,7 @@ namespace Cuda
 		vec3		ambientRadiance;
 		int			importanceMode;
 		int			traceMode;
+		int			lightSelectionMode;
 	};
 	
 	namespace Device
@@ -75,7 +96,8 @@ namespace Cuda
 			float							m_wallTime;
 			int								m_frameIdx;
 			int								m_maxRayDepth;
-			uint							m_checkDigit;			
+			uint							m_checkDigit;
+			int                             m_numLights;
 
 			__device__ uchar GetImportanceMode(const RenderCtx& ctx) const;
 			__device__ vec3 Shade(const Ray& incidentRay, const Device::Material& hitMaterial, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
@@ -91,6 +113,8 @@ namespace Cuda
 			__device__ void PreFrame(const float& wallTime, const int frameIdx);
 			__device__ void PreBlock() const;
 			__device__ void Reduce();
+			__device__ bool SelectLight(const float& xi, int& lightIdx, float& weight) const;
+
 			__device__ void Synchronise(const Objects& objects);
 			__device__ void Synchronise(const WavefrontTracerParams& params);
 

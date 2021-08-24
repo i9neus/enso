@@ -38,6 +38,11 @@ namespace Cuda
     {        
         m_emitterArea = m_params.light.transform.scale().x * m_params.light.transform.scale().y;
     }
+
+    __device__ float Device::QuadLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
+    {
+        return 1.0f;
+    }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
     {

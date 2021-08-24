@@ -312,4 +312,5 @@ void WavefrontTracerShelf::Construct()
     ImGui::Checkbox("Debug shaders", &m_p.debugShaders);
     ConstructComboBox("Importance mode", { "MIS", "Lights", "BxDFs" }, m_p.importanceMode);
     ConstructComboBox("Trace mode", { "Wavefront", "Path" }, m_p.traceMode);
+    ConstructComboBox("Light selection mode", { "Naive", "Weighted" }, m_p.lightSelectionMode);
 }

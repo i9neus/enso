@@ -38,6 +38,7 @@ namespace Cuda
             __device__ void Prepare();
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;
             __device__ virtual bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const override final;
+            __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const override final { return 0.0; }
             __device__ void Synchronise(const EnvironmentLightParams& params)
             {
                 m_params = params;

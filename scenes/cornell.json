@@ -5,8 +5,7 @@
             "class": "wavefront",
             "maxDepth": 3,
             "debugNormals": false,
-            "importanceMode": "mis",
-            "displayGamma": 1.7
+            "importanceMode": "mis"
         }
     },
     "cameras": {
@@ -19,6 +18,7 @@
             "focalPlane": 1.0,
             "fLength": 0.45,
             "fStop": 0.45,
+            "displayGamma": 1.7,
             "overrides": {
                 "maxDepth": 2
             }
@@ -124,7 +124,7 @@
             "enabled": true,
             "instances":  2,
             "class": "spherelight",
-            "intensity": [ 0.0 ],
+            "intensity": [ -2.0 ],
             "colour": [ [ 0.0, 0.0, 1.0 ] ],
             "transform": {
                 "pos": [
