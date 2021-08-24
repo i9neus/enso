@@ -68,7 +68,19 @@ namespace Cuda
             std::string newId = it.Name();
             ::Json::Node childNode = *it;
 
+            if (newId.empty())
+            {
+                Log::Warning("Warning: skipping object with empty ID.\n");
+                continue;
+            }
+
             if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }
+
+            int numInstances = 1;
+            if (childNode.GetValue("instances", numInstances, ::Json::kSilent) && (numInstances < 1 || numInstances > 10))
+            {
+                Log::Warning("Warning: instances out of range. Resetting to 1.\n");
+            }
 
             std::string newClass;
             if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
@@ -83,38 +95,49 @@ namespace Cuda
                     continue;
                 }
 
-                Log::Debug("Instantiating new %s....\n", objectTypeStr);
+                Log::Debug("Instantiating %i new %s....\n", numInstances, objectTypeStr);
 
-                if (renderObjects->Exists(newId))
+                std::string instanceId;
+                for (int instanceIdx = 0; instanceIdx < numInstances; ++instanceIdx)
                 {
-                    Log::Error("Error: an object with ID '%s' has alread been instantiated.\n", newId);
-                    continue;
-                }
+                    // If the ID is a number, append it with an underscore to avoid breaking the DAG convention
+                    const std::string instanceId = (numInstances == 1) ? newId : tfm::format("%s%i", newId, instanceIdx + 1);
 
-                newObject = (instantiator->second)(newId, expectedType, childNode);
-                if (!newObject)
-                {
-                    Log::Error("Failed to instantiate object '%s' of class '%s'.\n", newId, newClass);
-                    continue;
-                }
-
-                // Emplace the newly created object
-                newObject->SetHostStream(m_hostStream);
-                renderObjects->Emplace(newObject);
-
-                // The render object may have generated some of its own assets. Add them to the object list. 
-                std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
-                if(!childObjects.empty())
-                {
-                    Log::Debug("Captured %i child objects:\n", childObjects.size());
-                    Log::Indent indent2;
-                    for (auto& child : childObjects)
+                    if (renderObjects->Exists(instanceId))
                     {
-                        Assert(child);
-                        child->SetHostStream(m_hostStream);
-                        renderObjects->Emplace(child);
+                        Log::Error("Error: an object with ID '%s' has alread been instantiated.\n", instanceId);
+                        continue;
+                    }
 
-                        Log::Debug("%s\n", child->GetAssetID());
+                    newObject = (instantiator->second)(instanceId, expectedType, childNode);
+                    if (!newObject)
+                    {
+                        Log::Error("Failed to instantiate object '%s' of class '%s'.\n", instanceId, newClass);
+                        continue;
+                    }
+                    
+                    // Instanced objects have virtual DAG paths, so replace the trailing ID from the JSON file with the actual ID from the asset
+                    const std::string instancedDAGPath = tfm::format("%s%c%i", childNode.GetDAGPath(), Json::Node::kDAGDelimiter, instanceIdx + 1);
+                    newObject->SetDAGPath(instancedDAGPath);                   
+
+                    // Emplace the newly created object
+                    newObject->SetHostStream(m_hostStream);
+                    renderObjects->Emplace(newObject);
+
+                    // The render object may have generated some of its own assets. Add them to the object list. 
+                    std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
+                    if (!childObjects.empty())
+                    {
+                        Log::Debug("Captured %i child objects:\n", childObjects.size());
+                        Log::Indent indent2;
+                        for (auto& child : childObjects)
+                        {
+                            Assert(child);
+                            child->SetHostStream(m_hostStream);
+                            renderObjects->Emplace(child);
+
+                            Log::Debug("%s\n", child->GetAssetID());
+                        }
                     }
                 }
             }

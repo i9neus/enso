@@ -34,7 +34,6 @@ namespace Json
         const Document*                         m_rootDocument;
         rapidjson::Document::AllocatorType*     m_allocator;
         std::string                             m_dagPath;
-        static const char                       kDAGDelimiter = '/';
 
         Node() : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
         Node(const std::nullptr_t&) : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
@@ -48,6 +47,8 @@ namespace Json
         rapidjson::Value* GetChildImpl(const std::string& path, uint flags) const;
 
     public:    
+        static const char                       kDAGDelimiter = '/';
+
         template<bool IsConst>
         class __Iterator
         {

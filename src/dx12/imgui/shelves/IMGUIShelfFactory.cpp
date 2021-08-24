@@ -40,18 +40,28 @@ std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::In
 
         if (!object->HasDAGPath())
         {
-            Log::Debug("Skipped '%s': invalid DAG path.\n", object->GetAssetID().c_str());
+            Log::Debug("Skipped '%s': missing DAG path.\n", object->GetAssetID().c_str());
             continue;
         }
 
-        const std::string& dagPath = object->GetDAGPath();
-        const Json::Node childNode = rootNode.GetChildObject(dagPath, Json::kSilent);
+        // Virtual DAG paths are appended with the instance index. Remove that to get the actual DAG path.
+        const std::string& virtualDAGPath = object->GetDAGPath();
+        std::string jsonDAGPath = virtualDAGPath;
+        while (std::isdigit(jsonDAGPath.back())) { jsonDAGPath.pop_back(); }
+        if (jsonDAGPath.empty() || jsonDAGPath.back() != Json::Node::kDAGDelimiter)
+        {
+            Log::Debug("Skipped '%s': invalid DAG path '%s'.\n", object->GetAssetID().c_str(), virtualDAGPath);
+            continue;
+        }
+        jsonDAGPath.pop_back();
 
-        AssertMsgFmt(childNode, "DAG path '%s' refers to missing or invalid JSON node.", dagPath.c_str());
+        const Json::Node childNode = rootNode.GetChildObject(jsonDAGPath, Json::kSilent);
+
+        AssertMsgFmt(childNode, "DAG path '%s' refers to missing or invalid JSON node.", jsonDAGPath.c_str());
 
         std::string objectClass;
         AssertMsgFmt(childNode.GetValue("class", objectClass, Json::kSilent),
-            "Missing 'class' element in JSON object '%s'.", dagPath.c_str());
+            "Missing 'class' element in JSON object '%s'.", jsonDAGPath.c_str());
 
         auto& instantiator = m_instantiators.find(objectClass);
         if (instantiator == m_instantiators.end())
@@ -68,12 +78,12 @@ std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::In
             cast->GetAssetID();
         }
 
-        newShelf->SetRenderObjectAttributes(object->GetAssetID(), dagPath, object->IsJitterable());
+        newShelf->SetRenderObjectAttributes(object->GetAssetID(), virtualDAGPath, object->IsJitterable());
         newShelf->MakeClean();       
 
-        shelves[object->GetDAGPath()] = newShelf;
+        shelves[virtualDAGPath] = newShelf;
 
-        Log::Debug("Instantiated IMGUI shelf for '%s'.\n", dagPath);
+        Log::Debug("Instantiated IMGUI shelf for '%s'.\n", virtualDAGPath);
     }
 
     return shelves;

@@ -59,7 +59,7 @@ namespace Json
             parentID = childID;
         } 
 
-        AssertMsg(false, "Shouldn't be here!");
+        AssertMsgFmt(false, "Encountered improperly formatted JSON path '%s'", path.c_str());
         return nullptr;
     }
 

@@ -1,5 +1,6 @@
 ﻿#include "CudaRenderObject.cuh"
 #include "generic/JsonUtils.h"
+#include "generic/FilesystemUtils.h"
 
 namespace Cuda
 {
@@ -23,16 +24,13 @@ namespace Cuda
     
     __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node)
     {
-        if (!GetDAGPath().empty()) { return; }
-        
-        if (node.HasDAGPath())
-        {
-            SetDAGPath(node.GetDAGPath());
-        }
-        else
+        if (!node.HasDAGPath())
         {
             Log::Error("Internal error: JSON node for '%s' has no DAG path.\n", GetAssetID());
-        }       
+            return;
+        }
+
+        SetDAGPath(node.GetDAGPath());
     }
 
     __host__ void RenderObjectContainer::Finalise() const

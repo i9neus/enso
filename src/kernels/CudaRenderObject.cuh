@@ -60,6 +60,13 @@ namespace Cuda
             __host__ virtual void           OnPostRenderPass() {}
             __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) {}
 
+            __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
+            __host__ void SetRenderObjectFlags(const uint flags, const bool set = true)
+            {
+                if (set) { m_renderObjectFlags |= flags; }
+                else { m_renderObjectFlags &= ~flags; }
+            }
+
         protected:
             __host__ RenderObject() : m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
@@ -92,13 +99,6 @@ namespace Cuda
                 Log::Write("Bound %s '%s' to %s '%s'.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID());
                 return downcastAsset;
             } 
-
-            __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
-            __host__ void SetRenderObjectFlags(const uint flags, const bool set = true) 
-            { 
-                if (set) { m_renderObjectFlags |= flags; }
-                else { m_renderObjectFlags &= ~flags; }
-            }
 
         private:
             std::string         m_dagPath;
