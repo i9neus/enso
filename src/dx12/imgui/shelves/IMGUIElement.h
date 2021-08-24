@@ -83,12 +83,16 @@ public:
     void Update();
 
 private:
+    enum StateFlag : int { kFlagOff, kFlagOn, kFlagRnd };
+
     std::vector<std::string>            m_flagLabels;
     std::array<std::vector<bool>, 2>    m_flags;
     float                               m_t;
-
     std::string                         m_id;
     std::string                         m_pId, m_dpdtId, m_tId;
+    std::vector<int>                    m_states;
+    int                                 m_numBits;
+    const std::array<std::string, 3>    m_switchLabels;
 
     Cuda::JitterableFlags&              m_param;
 

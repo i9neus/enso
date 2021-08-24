@@ -5,7 +5,7 @@ namespace Cuda
 {     
     __device__  bool Device::Sphere::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        if (ray.flags & kRayLightProbe && m_params.excludeFromBake) { return false; }
+        if (ray.flags & kRayLightProbe && m_params.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
         
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
@@ -58,7 +58,7 @@ namespace Cuda
      __host__  Host::Sphere::Sphere(const uint flags)
      {
          cu_deviceData = InstantiateOnDevice<Device::Sphere>();
-         RenderObject::SetRenderObjectFlags(flags);
+         RenderObject::SetRenderObjectFlags(flags | kIsJitterable);
      }
 
      // Constructor for user instantiations

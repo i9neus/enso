@@ -17,7 +17,7 @@ namespace Cuda
 
     __device__  bool Device::CornellBox::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        if (ray.flags & kRayLightProbe && m_params.tracable.excludeFromBake) { return false; }
+        if (ray.flags & kRayLightProbe && m_params.tracable.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
         
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.tracable.transform);
 
@@ -70,14 +70,15 @@ namespace Cuda
     // Constructor used to instantiate child objects e.g. from quad lights
     __host__  Host::CornellBox::CornellBox()
     {
-        cu_deviceData = InstantiateOnDevice<Device::CornellBox>();
-        RenderObject::SetRenderObjectFlags(kIsChildObject);
+        AssertMsg(false, "Wrong ctor.");
     }
 
     // Constructor for user instantiations
     __host__  Host::CornellBox::CornellBox(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::CornellBox>();
+        RenderObject::SetRenderObjectFlags(kIsJitterable);
+
         FromJson(node, ::Json::kRequiredWarn);
     }
 

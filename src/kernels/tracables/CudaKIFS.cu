@@ -347,8 +347,8 @@ namespace Cuda
 
     __device__  bool Device::KIFS::Intersect(Ray& globalRay, HitCtx& hitCtx) const
     {
-        if (globalRay.flags & kRayLightProbe && m_params.tracable.excludeFromBake) { return false; }
-        
+        if (globalRay.flags & kRayLightProbe && m_params.tracable.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
+
         RayBasic localRay = RayToObjectSpace(globalRay.od, m_params.transform);
 
         float t = Intersector::RayBox(localRay, 1.0f);

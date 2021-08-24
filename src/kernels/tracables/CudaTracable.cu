@@ -7,21 +7,18 @@ namespace Cuda
 
     __host__ __device__ TracableParams::TracableParams()
     {
-        excludeFromBake = false;
     }
 
     __host__ void TracableParams::ToJson(::Json::Node& node) const
     {
+        renderObject.ToJson(node);
         transform.ToJson(node);
-
-        node.AddValue("excludeFromBake", excludeFromBake);
     }
 
     __host__ void TracableParams::FromJson(const ::Json::Node& node, const uint flags)
     {
+        renderObject.FromJson(node, flags);
         transform.FromJson(node, flags);
-
-        node.GetValue("excludeFromBake", excludeFromBake, flags);
     }
     
     __host__ void Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)

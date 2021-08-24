@@ -12,7 +12,8 @@ namespace Cuda
     enum LightIDFlags : uchar { kNotALight = 0xff };
     enum RenderObjectFlags : uint 
     { 
-        kRenderObjectDisabled = 1 << 0
+        kRenderObjectDisabled = 1 << 0,
+        kRenderObjectExcludeFromBake = 1 << 1
     };
 
     struct RenderObjectParams
@@ -44,7 +45,7 @@ namespace Cuda
         public:            
             __host__ virtual void                                           Bind(RenderObjectContainer& objectContainer) {}
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>>   GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
-            __host__ virtual const RenderObjectParams*                      GetRenderObjectParams() const { return false; }
+            __host__ virtual const RenderObjectParams*                      GetRenderObjectParams() const { return nullptr; }
             
             __host__ void                   UpdateDAGPath(const ::Json::Node& node);
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
@@ -63,7 +64,11 @@ namespace Cuda
             __host__ RenderObject() : m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
 
-            enum RenderObjectFlags : uint { kIsChildObject, kIsJitterable };
+            enum RenderObjectFlags : uint 
+            { 
+                kIsChildObject = 1 << 0,
+                kIsJitterable = 1 << 1
+            };
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)

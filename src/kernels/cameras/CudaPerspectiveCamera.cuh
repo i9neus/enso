@@ -103,6 +103,7 @@ namespace Cuda
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
+			__host__ virtual bool						IsBakingCamera() const override final { return m_params.mimicLightProbe; }
 
 		private:
 			AssetHandle<Host::ImageRGBW>				m_hostAccumBuffer;

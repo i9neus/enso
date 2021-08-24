@@ -85,6 +85,7 @@ namespace Cuda
 			__host__ virtual const CameraParams& GetParams() const = 0;
 			__host__ AssetHandle<Host::ManagedObject<Device::RenderState::Stats>> GetRenderStats() { return m_hostRenderStats; }
 			__host__ AssetHandle<Host::CompressedRayBuffer> GetCompressedRayBuffer() { return m_hostCompressedRayBuffer; }
+			__host__ virtual bool IsBakingCamera() const = 0;
 
 		protected:
 			AssetHandle<Host::ManagedObject<Device::RenderState::Stats>>	m_hostRenderStats;

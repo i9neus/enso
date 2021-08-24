@@ -79,16 +79,25 @@ void CornellMaterialShelf::Update()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+PlaneShelf::PlaneShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.tracable.renderObject.flags, "Object flags")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
 void PlaneShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
+    m_flags.Construct();
     ConstructJitteredTransform(m_p.tracable.transform, true);
     ImGui::Checkbox("Bounded", &m_p.isBounded);
 }
 
 void PlaneShelf::Randomise(const Cuda::vec2 range)
 {
+    m_p.tracable.renderObject.flags.Randomise(range);
     m_p.tracable.transform.Randomise(range);
 }
 
@@ -98,18 +107,15 @@ SphereShelf::SphereShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_flags(m_p.renderObject.flags, "Object flags")
 {
-    m_flags.Initialise(std::vector<std::string>({"Visible"}));
+    m_flags.Initialise(std::vector<std::string>({"Visible", "Exclude from bake"}));
 }
 
 void SphereShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    m_flags.Construct();
-    
+    m_flags.Construct();    
     ConstructJitteredTransform(m_p.transform, true);
-
-    ImGui::Checkbox("Exclude from bake", &m_p.excludeFromBake);
 }
 
 void SphereShelf::Randomise(const Cuda::vec2 range)
@@ -120,15 +126,24 @@ void SphereShelf::Randomise(const Cuda::vec2 range)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+CornellBoxShelf::CornellBoxShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.tracable.renderObject.flags, "Object flags")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
 void CornellBoxShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
+    m_flags.Construct();
     ConstructJitteredTransform(m_p.tracable.transform, true);
 }
 
 void CornellBoxShelf::Randomise(const Cuda::vec2 range)
 {
+    m_p.tracable.renderObject.flags.Randomise(range);
     m_p.tracable.transform.Randomise(range);
 }
 
@@ -137,15 +152,18 @@ void CornellBoxShelf::Randomise(const Cuda::vec2 range)
 QuadLightShelf::QuadLightShelf(const Json::Node& json) : 
     IMGUIShelf(json),
     m_colourPicker(m_p.light.colourHSV, "Colour"),
-    m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f))
-{}
+    m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f)),
+    m_flags(m_p.light.renderObject.flags, "Light flags")
+{
+    m_flags.Initialise({ "Visible", "Exclude from bake" });
+}
 
 void QuadLightShelf::Construct()
-{
+{   
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
+    m_flags.Construct();    
     ConstructJitteredTransform(m_p.light.transform, true);
-
     m_colourPicker.Construct();
     m_intensity.Construct();
 }
@@ -155,6 +173,7 @@ void QuadLightShelf::Randomise(const Cuda::vec2 range)
     m_p.light.transform.Randomise(range);
     m_p.light.colourHSV.Randomise(range);
     m_p.light.intensity.Randomise(range);
+    m_p.light.renderObject.flags.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,15 +181,18 @@ void QuadLightShelf::Randomise(const Cuda::vec2 range)
 SphereLightShelf::SphereLightShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_colourPicker(m_p.light.colourHSV, "Colour"),
-    m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f))
-{}
+    m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f)),
+    m_flags(m_p.light.renderObject.flags, { "Light flags" })
+{
+    m_flags.Initialise({ "Visible", "Exclude from bake" });
+}
 
 void SphereLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
+    m_flags.Construct();
     ConstructJitteredTransform(m_p.light.transform, true);
-
     m_colourPicker.Construct();
     m_intensity.Construct();
 }
@@ -180,6 +202,7 @@ void SphereLightShelf::Randomise(const Cuda::vec2 range)
     m_p.light.transform.Randomise(range);
     m_p.light.colourHSV.Randomise(range);
     m_p.light.intensity.Randomise(range);
+    m_p.light.renderObject.flags.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -260,22 +260,21 @@ void IMGUIJitteredParameterTable::Construct()
 
 IMGUIJitteredFlagArray::IMGUIJitteredFlagArray(Cuda::JitterableFlags& param, const std::string& id) :
     m_param(param),
-    m_t(0.0f)
+    m_t(0.0f),
+    m_switchLabels({ "Off", "On", "Rnd" })
 {
-    m_id = id;
-
-    m_pId = tfm::format("%s p", m_id);
-    m_dpdtId = tfm::format("%s dpdt", m_id);
-    m_tId = tfm::format("%s t", m_id);
+    m_id = tfm::format("%s", id);    
 }
 
 void IMGUIJitteredFlagArray::Initialise(const std::vector<std::string>& flagLabels)
 {
     Assert(!flagLabels.empty() && flagLabels.size() <= 32);
     m_flagLabels = flagLabels;
+    m_numBits = m_flagLabels.size();
+    m_states.resize(m_numBits);
 
-    m_flags[0].resize(flagLabels.size());
-    m_flags[1].resize(flagLabels.size());
+    m_flags[0].resize(m_numBits);
+    m_flags[1].resize(m_numBits);
 }
 
 void IMGUIJitteredFlagArray::Update()
@@ -289,37 +288,45 @@ void IMGUIJitteredFlagArray::Update()
 
 void IMGUIJitteredFlagArray::Construct()
 {
-    m_param.p = 0;
-    m_param.dpdt = 0;
-    
-    // P flags
-    ImGui::PushID(m_pId.c_str());
-    for (int bit = 0; bit < m_flags[0].size(); ++bit)
-    {
-        bool value = m_flags[0][bit];
-        ImGui::Checkbox(m_flagLabels[bit].c_str(), &value); SL;
-        m_flags[0][bit] = value;
-
-        m_param.p |= (1 << bit) * uint(value);
-    }
     ImGui::Text(m_id.c_str());
-    ImGui::PopID();
+    ImGui::PushID(m_pId.c_str());
+    ImGui::PushItemWidth(30);
+    for (int bit = 0; bit < m_numBits; ++bit)
+    {        
+        if (m_param.dpdt & (1 << bit)) { m_states[bit] = kFlagRnd; }
+        else
+        {
+            m_states[bit] = (m_param.p >> bit) & 1;
+        }
 
-    // dPdT flags
-    ImGui::PushID(m_dpdtId.c_str());
-    for (int bit = 0; bit < m_flags[1].size(); ++bit)
-    {
-        bool value = m_flags[1][bit];
-        ImGui::Checkbox(m_flagLabels[bit].c_str(), &value); SL;
-        m_flags[1][bit] = value;
-
-        m_param.dpdt |= (1 << bit) * uint(value);
+        if (ImGui::SliderInt(m_flagLabels[bit].c_str(), &m_states[bit], 0, 2, m_switchLabels[m_states[bit]].c_str()))
+        {
+            const uint mask = 1 << bit;
+            switch(m_states[bit])
+            {
+            case kFlagOff:
+                m_param.p &= ~mask;
+                m_param.dpdt &= ~mask;
+                break;
+            case kFlagOn:
+                m_param.p |= mask;
+                m_param.dpdt &= ~mask;
+                break;
+            case kFlagRnd:
+                m_param.p |= mask;
+                m_param.dpdt |= mask;
+                break;
+            }
+        }
+        ImGui::SameLine();
     }
-    ImGui::Text("+/-");
+    ImGui::PopItemWidth();
     ImGui::PopID();
 
     ImGui::PushID(m_tId.c_str());
-    if (ImGui::SliderFloat("~", &m_t, 0.0f, 1.0f))
+    ImGui::Text(" ~"); SL;
+    ImGui::PushItemWidth(60);
+    if (ImGui::SliderFloat("", &m_t, 0.0f, 1.0f))
     {
         // For the t parameter, use a hash of the slider value rather than try and randomise each flag in turn
         const uint hash = Cuda::HashOf(uint(m_t * float(std::numeric_limits<uint>::max())));
@@ -328,8 +335,8 @@ void IMGUIJitteredFlagArray::Construct()
         {
             m_param.t |= hash & (1 << bit);
         }
-        Log::Error("Mask: %i\n", m_param.t);
     }
+    ImGui::PopItemWidth();
     ImGui::PopID();
 }
 

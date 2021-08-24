@@ -22,7 +22,6 @@ namespace Cuda
 
         RenderObjectParams      renderObject;
         BidirectionalTransform  transform;
-        bool                    excludeFromBake;
     };
     
     namespace Device

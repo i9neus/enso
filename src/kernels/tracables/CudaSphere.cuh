@@ -49,6 +49,7 @@ namespace Cuda
             __host__ static std::string GetAssetTypeString() { return "sphere"; }
             __host__ static std::string GetAssetDescriptionString() { return "Sphere"; }
             __host__ virtual int GetIntersectionCostHeuristic() const override final { return 10; };
+            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.renderObject; }
             
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ void UpdateParams(const BidirectionalTransform& transform);

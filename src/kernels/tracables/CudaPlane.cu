@@ -17,6 +17,8 @@ namespace Cuda
 
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
     { 
+        if (ray.flags & kRayLightProbe && m_params.tracable.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
+        
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.tracable.transform);
 
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
@@ -49,7 +51,7 @@ namespace Cuda
     __host__  Host::Plane::Plane(const uint flags)
     {        
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
-        RenderObject::SetRenderObjectFlags(flags);
+        RenderObject::SetRenderObjectFlags(flags | kIsJitterable);
     }
 
     // Constructor for user instantiations

@@ -97,6 +97,7 @@ namespace Cuda
 			__host__ static std::string					GetAssetTypeString() { return "fisheye"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Fisheye Camera"; }
 			__host__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
+			__host__ virtual bool						IsBakingCamera() const override final { return false; }
 
 		private:
 			AssetHandle<Host::ImageRGBW>				m_hostAccumBuffer;

@@ -94,6 +94,7 @@ namespace Cuda
 			__host__ virtual void						ClearRenderState() override final;
 			__host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
 			__host__ void								Prepare();
+			__host__ virtual bool						IsBakingCamera() const override final { return true; }
 
 			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
 			__host__ virtual void						OnPostRenderPass() override final;

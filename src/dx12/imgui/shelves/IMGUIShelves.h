@@ -77,12 +77,15 @@ private:
 class PlaneShelf : public IMGUIShelf<Cuda::Host::Plane, Cuda::PlaneParams>
 {
 public:
-    PlaneShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    PlaneShelf(const Json::Node& json);
     virtual ~PlaneShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PlaneShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredFlagArray      m_flags;
 };
 
 // Sphere tracable
@@ -100,7 +103,22 @@ private:
     IMGUIJitteredFlagArray  m_flags;
 };
 
-// Quad 
+// Cornell box
+class CornellBoxShelf : public IMGUIShelf<Cuda::Host::CornellBox, Cuda::CornellBoxParams>
+{
+public:
+    CornellBoxShelf(const Json::Node& json);
+    virtual ~CornellBoxShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellBoxShelf(json)); }
+    virtual void Construct() override final;
+    virtual void Randomise(const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredFlagArray  m_flags;
+};
+
+// Quad light
 class QuadLightShelf : public IMGUIShelf<Cuda::Host::QuadLight, Cuda::QuadLightParams >
 {
 public:
@@ -114,6 +132,7 @@ public:
 private:
     IMGUIJitteredColourPicker   m_colourPicker;
     IMGUIJitteredParameter      m_intensity;
+    IMGUIJitteredFlagArray      m_flags;
 };
 
 // Sphere light
@@ -130,6 +149,7 @@ public:
 private:
     IMGUIJitteredColourPicker   m_colourPicker;
     IMGUIJitteredParameter      m_intensity;
+    IMGUIJitteredFlagArray      m_flags;
 };
 
 // Environment light
@@ -207,16 +227,4 @@ public:
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new FisheyeCameraShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const Cuda::vec2 range) override final {}
-};
-
-// Cornell box
-class CornellBoxShelf : public IMGUIShelf<Cuda::Host::CornellBox, Cuda::CornellBoxParams>
-{
-public:
-    CornellBoxShelf(const Json::Node& json) : IMGUIShelf(json) {}
-    virtual ~CornellBoxShelf() = default;
-
-    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new CornellBoxShelf(json)); }
-    virtual void Construct() override final;
-    virtual void Randomise(const Cuda::vec2 range) override final;
 };

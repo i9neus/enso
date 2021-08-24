@@ -4,7 +4,7 @@
 namespace Cuda
 {
     RenderObjectParams::RenderObjectParams() : 
-        flags(0, 1) {}
+        flags(0, 2) {}
 
     __host__ void RenderObjectParams::ToJson(::Json::Node& node) const
     {

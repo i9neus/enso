@@ -130,6 +130,7 @@ namespace Cuda
             __host__ static std::string GetAssetDescriptionString() { return "KIFS Fractal"; }
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ virtual int GetIntersectionCostHeuristic() const override final { return 100; };
+            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.tracable.renderObject; }
         };
     }
 }
