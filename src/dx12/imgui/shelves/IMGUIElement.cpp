@@ -288,7 +288,8 @@ void IMGUIJitteredFlagArray::Update()
 
 void IMGUIJitteredFlagArray::Construct()
 {
-    ImGui::Text(m_id.c_str());
+    if (!ImGui::TreeNodeEx(m_id.c_str(), 0)) { return; }
+
     ImGui::PushID(m_pId.c_str());
     ImGui::PushItemWidth(30);
     for (int bit = 0; bit < m_numBits; ++bit)
@@ -338,38 +339,38 @@ void IMGUIJitteredFlagArray::Construct()
     }
     ImGui::PopItemWidth();
     ImGui::PopID();
+    ImGui::TreePop();
 }
 
 void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable)
 {
-    if (ImGui::TreeNode("Transform"))
+    if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
+ 
+    ImGui::PushID("p");
+    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
+    ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
+    ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+    transform.scale.p = transform.scale.p[0];
+    ImGui::PopID();
+
+    if (isJitterable)
     {
-        ImGui::PushID("p");
-        ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
-        ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
-        ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
-        transform.scale.p = transform.scale.p[0];
+        ImGui::PushID("dpdt");
+        ImGui::DragFloat3("+/- Position", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
+        ImGui::DragFloat3("+/- Rotation", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
+        ImGui::DragFloat(" +/- Scale", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+        transform.scale.dpdt = transform.scale.dpdt[0];
         ImGui::PopID();
 
-        if (isJitterable)
-        {
-            ImGui::PushID("dpdt");
-            ImGui::DragFloat3("+/- Position", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
-            ImGui::DragFloat3("+/- Rotation", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
-            ImGui::DragFloat(" +/- Scale", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
-            transform.scale.dpdt = transform.scale.dpdt[0];
-            ImGui::PopID();
-
-            ImGui::PushID("t");
-            ImGui::SliderFloat3("~ Position", &transform.trans.t[0], 0.0f, 1.0f);
-            ImGui::SliderFloat3("~ Rotation", &transform.rot.t[0], 0.0f, 1.0f);
-            ImGui::SliderFloat("~ Scale", &transform.scale.t[0], 0.0f, 1.0f);
-            transform.scale.t = transform.scale.t[0];
-            ImGui::PopID();
-        }
-
-        ImGui::TreePop();
+        ImGui::PushID("t");
+        ImGui::SliderFloat3("~ Position", &transform.trans.t[0], 0.0f, 1.0f);
+        ImGui::SliderFloat3("~ Rotation", &transform.rot.t[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("~ Scale", &transform.scale.t[0], 0.0f, 1.0f);
+        transform.scale.t = transform.scale.t[0];
+        ImGui::PopID();
     }
+
+    ImGui::TreePop(); 
 } 
 
 

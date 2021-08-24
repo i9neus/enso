@@ -64,6 +64,8 @@ namespace Cuda
             return;
         }
 
+        if (!cameraObject->GetLightProbeCameraParams().camera.isActive) { return; }
+
         m_hostLightProbeGrid = cameraObject->GetLightProbeGrid();
         Assert(m_hostLightProbeGrid);
 
