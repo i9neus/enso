@@ -154,9 +154,9 @@ namespace Cuda
         kcd.primitiveType = m_params.primitiveType;
 
         float rotateAlpha = mix(-1.0f, 1.0f, m_params.rotateA());
-        rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 2.0f) * sign(rotateAlpha);
+        rotateAlpha = 2.0 * powf(fabsf(rotateAlpha), 1.0f) * sign(rotateAlpha);
         float rotateBeta = mix(-1.0f, 1.0f, m_params.rotateB());
-        rotateBeta = 2.0 * powf(fabsf(rotateBeta), 2.0f) * sign(rotateBeta);
+        rotateBeta = 2.0 * powf(fabsf(rotateBeta), 1.0f) * sign(rotateBeta);
 
         float scaleAlpha = mix(0.5, 1.5, m_params.scaleA());
         float scaleBeta = mix(-1.0, 1.0, m_params.scaleB());
