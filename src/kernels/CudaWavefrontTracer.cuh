@@ -41,6 +41,14 @@ namespace Cuda
 		kTracePath 
 	};
 
+	enum ShadingMode : int
+	{
+		kShadeFull,
+		kShadeSimple,
+		kShadeNormals,
+		kShadeDebug
+	};
+
 	struct WavefrontTracerParams
 	{
 		__host__ __device__ WavefrontTracerParams();
@@ -52,12 +60,11 @@ namespace Cuda
 		bool operator==(const WavefrontTracerParams&) const;
 
 		int			maxDepth;
-		bool		debugNormals;
-		bool		debugShaders;
 		vec3		ambientRadiance;
 		int			importanceMode;
 		int			traceMode;
 		int			lightSelectionMode;
+		int			shadingMode;
 	};
 	
 	namespace Device

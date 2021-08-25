@@ -43,7 +43,7 @@ namespace Cuda
     __device__ void Device::QuadLight::Prepare()
     {        
         m_emitterArea = m_params.light.transform.scale().x * m_params.light.transform.scale().y;
-        m_boundingRadius = length(m_params.light.transform.scale());
+        m_boundingRadius = length(m_params.light.transform.scale() * 0.5f);
         m_lightNormal = normalize(m_params.light.transform.fwd[2]);
     }
 

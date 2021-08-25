@@ -29,8 +29,7 @@ namespace Cuda
 	__host__ WavefrontTracerParams::WavefrontTracerParams() :
 		maxDepth(1),
 		ambientRadiance(0.0f),
-		debugNormals(false),
-		debugShaders(false),
+		shadingMode(kShadeFull),
 		importanceMode(kImportanceMIS),
 		lightSelectionMode(kLightSelectionNaive),
 		traceMode(kTracePath)
@@ -41,22 +40,20 @@ namespace Cuda
 	{
 		node.AddValue("maxDepth", maxDepth); 
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
-		node.AddValue("debugNormals", debugNormals);
-		node.AddValue("debugShaders", debugShaders);
 		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
+		node.AddEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
-		node.GetValue("debugNormals", debugNormals, flags);
-		node.GetValue("debugShaders", debugShaders, flags);
 		node.GetEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
+		node.GetEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode, flags);
 	}
 
 	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
@@ -164,6 +161,8 @@ namespace Cuda
 		{
 			material.Evaluate(hitCtx, albedo, L);
 		}
+
+		if (m_activeParams.shadingMode == kShadeSimple) { return albedo; }
 	
 		const BxDF* bxdf = material.GetBoundBxDF();
 		if (!bxdf) { return L; }
@@ -330,7 +329,7 @@ namespace Cuda
 			}
 		}
 
-		if (m_activeParams.debugNormals)
+		if (m_activeParams.shadingMode == kShadeNormals)
 		{
 			if (hitObject)
 			{
@@ -350,6 +349,18 @@ namespace Cuda
 		}
 		else
 		{	
+			if (m_activeParams.shadingMode == kShadeSimple)
+			{
+				const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
+				if (boundMaterial)
+				{
+					vec3 albedo;
+					boundMaterial->Evaluate(hitCtx, albedo, L);
+					m_objects.cu_camera->Accumulate(renderCtx, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n));
+				}
+				return false;
+			}
+			
 			// Ray is a direct sample 
 			if (incidentRay.IsDirectSample())
 			{
@@ -394,7 +405,7 @@ namespace Cuda
 			}
 		}
 
-		if (m_activeParams.debugShaders)
+		if (m_activeParams.shadingMode == kShadeDebug)
 		{
 			L = hitCtx.debug;
 			compressedRay.Kill();
