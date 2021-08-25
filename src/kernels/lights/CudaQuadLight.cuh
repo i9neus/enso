@@ -36,6 +36,7 @@ namespace Cuda
             float                   m_emitterArea;
             float                   m_boundingRadius;
             QuadLightParams         m_params;
+            vec3                    m_lightNormal;
 
         public:
             __device__ QuadLight();

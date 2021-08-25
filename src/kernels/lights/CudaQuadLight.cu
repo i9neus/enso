@@ -44,6 +44,7 @@ namespace Cuda
     {        
         m_emitterArea = m_params.light.transform.scale().x * m_params.light.transform.scale().y;
         m_boundingRadius = length(m_params.light.transform.scale());
+        m_lightNormal = normalize(m_params.light.transform.fwd[2]);
     }
 
     __device__ float Device::QuadLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
@@ -58,7 +59,7 @@ namespace Cuda
         }   
 
         // Fast approx estimate of irradiance
-        const float peakIrradiance = m_params.peakRadiantIntensity / originDist2;
+        float peakIrradiance = m_params.peakRadiantIntensity / originDist2;
 
         // Slower but more accurate estimate of peak irradiance
         //const float peakIrradiance = m_params.peakRadiance * kTwoPi * (1 - sqrt(originDist2 - sqr(m_discRadius)) / sqrt(originDist2));
@@ -73,7 +74,9 @@ namespace Cuda
         // If the entire bounding sphere of the light is below the horizon, exclude the light.
         // TODO: This is an approximation of the real visibility function, but it works okay. Find a better function later. 
         float cosTheta = dot(originDir, hitCtx.hit.n);
-        return (cosTheta > 0.0f || sqr(cosTheta) < sqr(m_boundingRadius)) ? peakIrradiance : 0.0f;
+        if (cosTheta < 0.0f && sqr(cosTheta) > sqr(m_boundingRadius)) { return 0.0f; }
+
+        return peakIrradiance * max(0.0f, -dot(originDir / sqrt(originDist2), m_lightNormal));
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
