@@ -12,6 +12,7 @@
 #include "lights/CudaLight.cuh"
 #include "tracables/CudaTracable.cuh"
 #include "cameras/CudaCamera.cuh"
+#include "math/CudaColourUtils.cuh"
 
 #include "CudaManagedArray.cuh"
 
@@ -21,7 +22,7 @@
 
 #include "generic/JsonUtils.h"
 
-#define kMaxLights 5
+#define kMaxLights 10
 
 namespace Cuda
 {
@@ -53,6 +54,7 @@ namespace Cuda
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("debugNormals", debugNormals, flags);
 		node.GetValue("debugShaders", debugShaders, flags);
+		node.GetEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
 	}
@@ -139,7 +141,6 @@ namespace Cuda
 		for (int idx = 0; idx < m_numLights && idx < kMaxLights; ++idx)
 		{
 			float estimate = (*m_objects.cu_deviceLights)[idx]->Estimate(incident, hitCtx);
-			if (estimate < 1e-6f) { estimate = 0.0f; }
 			
 			pmf[1 + idx] = pmf[idx] + estimate;
 		}
@@ -195,10 +196,10 @@ namespace Cuda
 			float pdfBxDF;
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
-				vec3 L = renderCtx.emplacedRay.weight * albedo;
-				if (GetImportanceMode(renderCtx) != kImportanceBxDF && m_numLights != 0) { L *= 2.0f; }
+				vec3 LIndirect = renderCtx.emplacedRay.weight* albedo;
+				if (GetImportanceMode(renderCtx) != kImportanceBxDF && m_numLights != 0) { LIndirect *= 2.0f; }
 
-				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, kRayScattered);
+				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LIndirect, kRayScattered);
 			}
 		}
 		// Direct light sampling
@@ -208,17 +209,24 @@ namespace Cuda
 			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
 
 			// Select a light to sample or evaluate
-			int lightIdx;
-			float weightLight;
-			if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+			int lightIdx = 0;
+			float weightLight = 1.0f;
+			if (m_numLights > 1)
 			{
-				lightIdx = min(m_numLights - 1, int(xi.y * m_numLights));
-				weightLight = m_numLights;
+				// Weight each light equally. Cheap to sample but noisy for scenes with lots of lights.
+				if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+					//if (renderCtx.emplacedRay.GetViewportPos().x < 256)
+				{
+					lightIdx = min(m_numLights - 1, int(xi.y * m_numLights));
+					weightLight = m_numLights;
+				}
+				// Build a PMF based on a crude estiamte of the irradiance at the shading point. Expensive, but 
+				// significantly reduces noise. 
+				else if (!SelectLight(incidentRay, hitCtx, xi.y, lightIdx, weightLight))
+				{
+					return L;
+				}
 			}
-			else if (!SelectLight(incidentRay, hitCtx, xi.y, lightIdx, weightLight))
-			{
-				return L;
-			}			
 
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
 
@@ -334,8 +342,11 @@ namespace Cuda
 
 		if (!hitObject)
 		{
-			// Ray didn't hit anything so add the ambient term multiplied by the weight
-			L = m_activeParams.ambientRadiance * compressedRay.weight;
+			if (incidentRay.IsIndirectSample())
+			{
+				// Ray didn't hit anything so add the ambient term multiplied by the weight
+				L = m_activeParams.ambientRadiance * compressedRay.weight;
+			}
 		}
 		else
 		{	

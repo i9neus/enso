@@ -126,6 +126,10 @@ namespace Cuda
 				 { _det2(m.i10, m.i11, m.i20, m.i21) * invDet, -_det2(m.i00, m.i01, m.i20, m.i21) * invDet, _det2(m.i00, m.i01, m.i10, m.i11) * invDet } };
 	}
 
+	__host__ __device__ __forceinline__ vec3 BasisU(const mat3& m) { return vec3(m.i00, m.i10, m.i20); }
+	__host__ __device__ __forceinline__ vec3 BasisV(const mat3& m) { return vec3(m.i01, m.i11, m.i21); }
+	__host__ __device__ __forceinline__ vec3 BasisW(const mat3& m) { return vec3(m.i02, m.i12, m.i22); }
+
 	__host__ __device__ __forceinline__ bool operator ==(const mat3& a, const mat3& b)
 	{
 		for (int i = 0; i < 3; i++)

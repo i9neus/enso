@@ -21,6 +21,10 @@ namespace Cuda
 
         LightParams     light;
         vec3            radiance;
+        vec3            radiantPower;
+        vec3            radiantIntensity;
+        float           peakRadiantIntensity;
+        float           peakRadiance;
     };
 
     namespace Device

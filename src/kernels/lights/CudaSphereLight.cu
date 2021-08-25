@@ -5,6 +5,8 @@
 
 #include "generic/JsonUtils.h"
 
+#define kPeakIntensityMinThreshold 1e-6f
+
 namespace Cuda
 {
     __host__ __device__ SphereLightParams::SphereLightParams() :     
@@ -25,7 +27,11 @@ namespace Cuda
     {
         light.FromJson(node, flags);
 
-        radiance = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity()) / (light.transform.scale().x * light.transform.scale().y * kFourPi * 0.25f);
+        radiantPower = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity());
+        radiantIntensity = radiantPower / kFourPi;
+        peakRadiantIntensity = cwiseMax(radiantIntensity);
+        radiance = radiantIntensity / (light.transform.scale().x * light.transform.scale().y);
+        peakRadiance = cwiseMax(radiance);
     }
 
     __device__ Device::SphereLight::SphereLight()
@@ -50,7 +56,26 @@ namespace Cuda
 
     __device__ float Device::SphereLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
     {
-        return cwiseMax(m_params.radiance) / max(sqr(m_discRadius), length2(m_params.light.transform.trans() - hitCtx.hit.p));
+        const vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;
+        const float originDist2 = length2(originDir);
+
+        // Shading point is inside the light
+        if (originDist2 < sqr(m_discRadius)) { return 0.0f; }
+
+        // Fast approx estimate of irradiance
+        const float peakIrradiance = m_params.peakRadiantIntensity / originDist2;
+
+        // Slower but more accurate estimate of peak irradiance
+        //const float peakIrradiance = m_params.peakRadiance * kTwoPi * (1 - sqrt(originDist2 - sqr(m_discRadius)) / sqrt(originDist2));
+        
+        // Light is too far away to make a contribution. 
+        // FIXME: This needs to be corrected in the event that we start using non-Lambertian BRDFs
+        if (peakIrradiance < kPeakIntensityMinThreshold) { return 0.0f; }
+
+        // If the entire bounding sphere of the light is below the horizon, exclude the light.
+        // TODO: This is an approximation of the real visibility function, but it works okay. Find a better function later. 
+        float cosTheta = dot(originDir, hitCtx.hit.n);
+        return (cosTheta > 0.0f || sqr(cosTheta) < sqr(m_discRadius)) ? peakIrradiance : 0.0f;
     }
 
     __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const

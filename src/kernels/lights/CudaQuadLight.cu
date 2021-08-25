@@ -5,6 +5,8 @@
 
 #include "generic/JsonUtils.h"
 
+#define kPeakIntensityMinThreshold 1e-6f
+
 namespace Cuda
 {
     __host__ __device__ QuadLightParams::QuadLightParams() :
@@ -26,7 +28,11 @@ namespace Cuda
     {
         light.FromJson(node, flags);
 
-        radiance = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity()) / (light.transform.scale().x * light.transform.scale().y);
+        radiantPower = HSVToRGB(light.colourHSV()) * std::pow(2.0f, light.intensity());
+        radiantIntensity = radiantPower / kPi;
+        peakRadiantIntensity = cwiseMax(radiantIntensity);
+        radiance = radiantIntensity / (light.transform.scale().x * light.transform.scale().y);
+        peakRadiance = cwiseMax(radiance);
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -37,11 +43,37 @@ namespace Cuda
     __device__ void Device::QuadLight::Prepare()
     {        
         m_emitterArea = m_params.light.transform.scale().x * m_params.light.transform.scale().y;
+        m_boundingRadius = length(m_params.light.transform.scale());
     }
 
     __device__ float Device::QuadLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
-    {
-        return 1.0f;
+    {  
+        const vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;
+        const float originDist2 = length2(originDir);
+
+        // Shading point is inside the bounding radius, so cap it
+        if (originDist2 <= sqr(m_boundingRadius))
+        {
+            return m_params.peakRadiantIntensity / sqr(m_boundingRadius);
+        }   
+
+        // Fast approx estimate of irradiance
+        const float peakIrradiance = m_params.peakRadiantIntensity / originDist2;
+
+        // Slower but more accurate estimate of peak irradiance
+        //const float peakIrradiance = m_params.peakRadiance * kTwoPi * (1 - sqrt(originDist2 - sqr(m_discRadius)) / sqrt(originDist2));
+
+        // Light is too far away to make a contribution. 
+        // FIXME: This needs to be corrected in the event that we start using non-Lambertian BRDFs
+        if (peakIrradiance < kPeakIntensityMinThreshold) { return 0.0f; }
+
+        // If the light is rotated away from the shading normal, we're done
+        if (dot(m_params.light.transform.fwd[2], originDir) >= 0.0f) { return 0.0f; }
+
+        // If the entire bounding sphere of the light is below the horizon, exclude the light.
+        // TODO: This is an approximation of the real visibility function, but it works okay. Find a better function later. 
+        float cosTheta = dot(originDir, hitCtx.hit.n);
+        return (cosTheta > 0.0f || sqr(cosTheta) < sqr(m_boundingRadius)) ? peakIrradiance : 0.0f;
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
@@ -60,10 +92,11 @@ namespace Cuda
 
         // Test if the emitter is behind the shading point
         if (dot(extant, normal) <= 0.0f) { return false; }
-
-        // Test if the emitter is rotated away from the shading point
+      
         vec3 lightNormal = m_params.light.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
         float cosPhi = dot(extant, normalize(lightNormal));
+        
+        // Test if the emitter is rotated away from the shading point
         if (cosPhi > 0.0f) { return false; }
 
         // Compute the projected solid angle of the light        
