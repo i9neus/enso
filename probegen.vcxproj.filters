@@ -595,5 +595,8 @@
     <None Include="scenes\cornell.json">
       <Filter>scenes</Filter>
     </None>
+    <None Include="scenes\lighttest.json">
+      <Filter>scenes</Filter>
+    </None>
   </ItemGroup>
 </Project>

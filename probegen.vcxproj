@@ -189,6 +189,7 @@
     <None Include="scenes\cornell.json" />
     <None Include="scenes\default.json" />
     <None Include="scenes\kifs.json" />
+    <None Include="scenes\lighttest.json" />
     <None Include="scenes\template.usda" />
     <None Include="scenes\templates\random.json" />
     <None Include="src\dx12\hlsl\helloshaders.hlsl">

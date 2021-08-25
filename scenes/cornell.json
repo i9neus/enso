@@ -122,9 +122,9 @@
         },
         "light_sphere": {
             "enabled": true,
-            "instances":  2,
+            "instances":  5,
             "class": "spherelight",
-            "intensity": [ -2.0 ],
+            "intensity": [ -3.0 ],
             "colour": [ [ 0.0, 0.0, 1.0 ] ],
             "transform": {
                 "pos": [
