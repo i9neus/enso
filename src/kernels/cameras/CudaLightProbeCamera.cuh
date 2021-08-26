@@ -25,14 +25,16 @@ namespace Cuda
 		LightProbeGridParams		grid;
 		CameraParams				camera;
 
-		uint						numProbes;
-		uint						bucketsPerProbe;
-		uint						bucketsPerCoefficient;
-		uint						reduceBatchSizePow2;
-		uint						totalBuckets;
-		uint						coefficientsPerProbe;
-		int							maxSamplesPerBucket;
-		bool						doExport;
+		uint						numProbes; //					<-- The number of light probes in the grid (W x H x D)
+		uint						subsamplesPerProbe;	//			<-- A sub-sample is a set of SH coefficients plus data.
+		uint						coefficientsPerProbe; //		<-- The number of Ln SH coefficients, plus additional data.
+		uint						bucketsPerProbe; //				<-- The total number of accumulation units per probe
+
+		uint						totalBuckets; //				<-- The total number of accumulation units in the grid
+		uint						totalSubsamples; //				<-- The total number of subsamples in the grid
+
+		int							maxSamplesPerBucket; // 		<-- The maximum number of samples that should be taken per bucket
+		int							maxSamplesPerProbe;
 		vec3						aspectRatio;
 	};
 
@@ -53,7 +55,7 @@ namespace Cuda
 			__device__ virtual void Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value) override final;
 			__device__ void SeedRayBuffer(const int frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
-			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
+			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__device__ void ReduceAccumulationBuffer(const uint batchSizeBegin, const uvec2 batchRange);
 			__device__ vec2 GetProbeMinMaxSampleCount() const;
@@ -110,6 +112,8 @@ namespace Cuda
 			__host__ int								GetExporterState() const { return m_exporterState; }
 
 		private:
+			__host__ vec2								GetProbeMinMaxSampleCount() const;
+
 			Device::LightProbeCamera*					cu_deviceData;
 			Device::LightProbeCamera::Objects			m_deviceObjects;
 			LightProbeCameraParams						m_params;
@@ -119,7 +123,7 @@ namespace Cuda
 			AssetHandle<Host::LightProbeGrid>			m_hostLightProbeGrid;
 
 			dim3										m_block;
-			dim3										m_grid;
+			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 

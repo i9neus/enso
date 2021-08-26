@@ -61,6 +61,7 @@ namespace Cuda
 		uchar		flags;			// 1 byte
 		uchar		depth;			// 1 byte
 		uint		sampleIdx;		// 4 bytes
+		vec3		probeDir;		// 4 bytes
 
 		__device__ __forceinline__ void Reset()
 		{

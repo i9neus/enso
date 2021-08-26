@@ -65,7 +65,6 @@ private:
 	Json::Document		m_configJson;
 	std::atomic<int>	m_dirtiness; 
 	int					m_frameIdx;
-	int					m_iterationIdx;
 	
 	struct
 	{

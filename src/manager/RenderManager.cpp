@@ -18,7 +18,6 @@ RenderManager::RenderManager() :
 	m_threadSignal(kHalt),
 	m_dirtiness(kClean),
 	m_frameIdx(0),
-	m_iterationIdx(0),
 	m_bakeStatus(BakeStatus::kReady),
 	m_bakeProgress(0.0f)
 {
@@ -78,7 +77,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
 
 	// Create some Cuda objects
-	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", 512, 512, m_renderStream);
+	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
 	//m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
 
 	Cuda::VerifyTypeSizes();
@@ -363,7 +362,10 @@ void RenderManager::Start()
 void RenderManager::ClearRenderStates()
 {
 	// Clear the render states of all active camera objects
-	for (auto camera : m_activeCameras) { camera->ClearRenderState(); }
+	for (auto& camera : m_activeCameras) { camera->ClearRenderState(); }
+
+	// Notify scene objects that the render has been restarted
+	for (auto& object : *m_renderObjects) { object->OnPreRender(); }
 
 	// Reset the render manager state
 	m_frameIdx = 0;
@@ -378,7 +380,6 @@ void RenderManager::Run()
 	constexpr int kMaxSubframes = 1;
 	int numSubframes = kMaxSubframes;
 	m_frameIdx = 0;
-	m_iterationIdx = 0;
 
 	while (m_threadSignal.load() == kRun)
 	{
@@ -414,8 +415,6 @@ void RenderManager::Run()
 
 				// Trace those rays through the wavefront tracer 
 				m_wavefrontTracer->Trace();
-
-				m_frameIdx++;
 			}
 
 			// If this wavefront tracer is live, update the composite image
@@ -432,7 +431,7 @@ void RenderManager::Run()
 		// Handle any post-frame baking operations
 		OnBakePostFrame();
 
-		m_iterationIdx++;
+		m_frameIdx++;
 		m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
 		float meanFrameTime = 0.0f;
 		for (const auto& ft : m_frameTimes)

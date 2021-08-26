@@ -78,18 +78,15 @@ namespace Cuda
         Prepare();
     }
 
-    __device__ void Device::PerspectiveCamera::Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const
-    {
-        if (viewportPos.x >= deviceOutputImage->Width() || viewportPos.y >= deviceOutputImage->Height() ||
-            viewportPos.x >= m_objects.cu_accumBuffer->Width() || viewportPos.y >= m_objects.cu_accumBuffer->Height()) {
-            return;
-        }
+    __device__ void Device::PerspectiveCamera::Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const
+    {        
+        const ivec2 viewportPos = accumPos + deviceOutputImage->Dimensions() / 2 - m_objects.cu_accumBuffer->Dimensions() / 2;        
+        if (viewportPos.x < 0 || viewportPos.x >= deviceOutputImage->Width() || 
+            viewportPos.y < 0 || viewportPos.y >= deviceOutputImage->Height()) { return; }
 
         // If the texel weight is negative, the texel is ready to be rendered
-        vec4& texel = m_objects.cu_accumBuffer->At(viewportPos);
+        vec4& texel = m_objects.cu_accumBuffer->At(accumPos);
         if (texel.w >= 0.0f) { return; }
-
-        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
 
         // Flip the weight back to positve
         texel.w = -texel.w;
@@ -328,7 +325,7 @@ namespace Cuda
     __host__ void Host::PerspectiveCamera::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         hostOutputImage->SignalSetWrite(m_hostStream);
-        KernelComposite << < m_blockSize, m_gridSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+        KernelComposite << < m_gridSize, m_blockSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
         hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
 }

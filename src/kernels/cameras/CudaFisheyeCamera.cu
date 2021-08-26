@@ -208,7 +208,7 @@ namespace Cuda
     __host__ void Host::FisheyeCamera::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         hostOutputImage->SignalSetWrite(m_hostStream);
-        KernelComposite << < m_blockSize, m_gridSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
+        KernelComposite << < m_gridSize, m_blockSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
         hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
 }

@@ -248,7 +248,7 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Focal plane", &m_p.focalPlane, 0.0f, 2.0f);
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
 
-    ImGui::DragInt("Max samples", &m_p.camera.maxSamples);
+    ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
     ImGui::InputInt("Seed", &m_p.camera.seed);   
     ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
 
@@ -290,7 +290,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 
-    ImGui::DragInt("Max samples", &m_p.camera.maxSamples);
+    ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
     ImGui::InputInt("Seed", &m_p.camera.seed);
     ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
 
