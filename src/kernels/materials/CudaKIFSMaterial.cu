@@ -8,9 +8,10 @@ namespace Cuda
     __host__ __device__ KIFSMaterialParams::KIFSMaterialParams() :
         incandescenceHSV(vec3(0.0f)),
         albedoHSV(vec3(0.0f, 0.0f, 0.7f)),
-        incandescenceRGB(vec3(0.0f)),
-        albedoRGB(0.0f)
-    {}
+        incandescenceRGB(vec3(0.0f))
+    {
+        albedoHSVRange[0] = albedoHSVRange[1] = vec3(0.0f, 0.0f, 1.0f);
+    }
 
     __host__ KIFSMaterialParams::KIFSMaterialParams(const ::Json::Node& node, const uint flags) :
         KIFSMaterialParams()
@@ -28,9 +29,10 @@ namespace Cuda
     {
         incandescenceHSV.FromJson("incandescence", node, flags);
         albedoHSV.FromJson("albedo", node, flags);
+        albedoHSVRange[0] = albedoHSV.p - albedoHSV.dpdt;
+        albedoHSVRange[1] = albedoHSV.p + albedoHSV.dpdt;
         
         incandescenceRGB = HSVToRGB(incandescenceHSV());
-        albedoRGB = HSVToRGB(albedoHSV());
     }
 
     __device__ void Device::KIFSMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -42,7 +44,7 @@ namespace Cuda
                     ((code >> 20) & ((1 << 10) - 1)) / float((1 << 10) - 1));
 
         incandescence = m_params.incandescenceRGB;
-        albedo = m_params.albedoRGB;
+        albedo =  HSVToRGB(cwiseMix(m_params.albedoHSVRange[0], m_params.albedoHSVRange[1], alpha));
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::KIFSMaterial::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

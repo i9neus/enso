@@ -17,9 +17,9 @@ namespace Cuda
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         JitterableVec3  albedoHSV;
-        JitterableVec3  incandescenceHSV;
+        vec3            albedoHSVRange[2];
 
-        vec3            albedoRGB;
+        JitterableVec3  incandescenceHSV;
         vec3            incandescenceRGB;
     };
 
