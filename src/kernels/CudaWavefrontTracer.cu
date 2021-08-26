@@ -168,7 +168,7 @@ namespace Cuda
 		if (!bxdf) { return L; }
 		
 		// Only shade back-facing surfaces if this BxDF supports it
-		if (hitCtx.backfacing && !bxdf->IsTwoSided()) { return kZero; }		
+		if (hitCtx.backfacing && !bxdf->IsTwoSided()) { return kZero; }
 
 		// If this isn't a probe ray, add in the cached radiance
 		if (!(incidentRay.flags & kRayLightProbe))
@@ -176,16 +176,27 @@ namespace Cuda
 			L += bxdf->EvaluateCachedRadiance(hitCtx) * albedo;
 		}
 
-		// If we're at max depth, don't spawn any more rays
-		if (renderCtx.depth >= m_activeParams.maxDepth) { return L; }
-		
+		// If we're beyond max depth, just return incandescence
+		if (renderCtx.depth > m_activeParams.maxDepth) { return L; }
+
 		// Generate some random numbers
 		vec2 xi = renderCtx.rng.Rand<2, 3>();
+		// Weight to compensate for stochastic branching
+		float stochasticWeight = 2.0f;
+
+		// If we're at max depth, only do NEE 
+		if (renderCtx.depth == m_activeParams.maxDepth)
+		{
+			if (m_numLights == 0) { return L; }
+			xi = xi * 0.5f + 0.5f;
+			stochasticWeight = 1.0f;
+		}
 
 		// If there are no lights in this scene, always sample the BxDF
-		if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_numLights == 0)
+		else if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_numLights == 0)
 		{
 			xi.x *= 0.5f;
+			stochasticWeight = 1.0f;
 		}
 
 		// Indirect light sampling
@@ -196,7 +207,7 @@ namespace Cuda
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
 				vec3 LIndirect = renderCtx.emplacedRay.weight* albedo;
-				if (GetImportanceMode(renderCtx) != kImportanceBxDF && m_numLights != 0) { LIndirect *= 2.0f; }
+				LIndirect *= stochasticWeight;
 
 				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LIndirect, kRayScattered);
 			}
@@ -240,7 +251,7 @@ namespace Cuda
 					float weightBxDF;
 					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);					
 
-					L *= renderCtx.emplacedRay.weight * albedo * 2.0f * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+					L *= renderCtx.emplacedRay.weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
 
 					// If MIS is enabled, weight the ray using the power heuristic
 					if (GetImportanceMode(renderCtx) == kImportanceMIS)
@@ -255,7 +266,7 @@ namespace Cuda
 			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
 				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir),
-					renderCtx.emplacedRay.weight * albedo * 2.0f,
+					renderCtx.emplacedRay.weight * albedo * stochasticWeight,
 					pdfBxDF, lightIdx, kRayDirectBxDFSample);
 			}
 		}
