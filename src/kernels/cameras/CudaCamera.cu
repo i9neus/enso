@@ -18,6 +18,9 @@ namespace Cuda
         isLive = false;
         isActive = true;
         overrides.maxDepth = -1;
+        seed = 0;
+        randomiseSeed = false;
+        maxSamples = -1;
     }
 
     __host__ void CameraParams::ToJson(::Json::Node& node) const
@@ -25,6 +28,10 @@ namespace Cuda
         node.AddValue("live", isLive);
         node.AddValue("active", isActive);
         node.AddValue("splatClamp", splatClamp);
+        node.AddValue("maxSamples", maxSamples);
+        node.AddValue("seed", seed);
+        node.AddValue("randomiseSeed", randomiseSeed);
+
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -35,6 +42,9 @@ namespace Cuda
         node.GetValue("live", isLive, flags);
         node.GetValue("active", isActive, flags);
         node.GetValue("splatClamp", splatClamp, flags);
+        node.GetValue("maxSamples", maxSamples, ::Json::kSilent);
+        node.GetValue("seed", seed, ::Json::kSilent);
+        node.GetValue("randomiseSeed", randomiseSeed, ::Json::kSilent);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)

@@ -99,11 +99,18 @@ namespace Cuda
         deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
-    __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos)
+    __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos, const uint frameIdx)
     {
         CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
 
-        if (!compressedRay.IsAlive())
+        if (frameIdx == 0)
+        {
+            compressedRay.Reset();
+            compressedRay.sampleIdx = m_seedOffset;
+        }
+
+        if (!compressedRay.IsAlive() &&
+            (m_params.camera.maxSamples < 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.camera.maxSamples))
         {
             if (m_params.isRealtime)
             {
@@ -116,6 +123,9 @@ namespace Cuda
 
     __device__ void Device::PerspectiveCamera::Prepare()
     { 
+        // Only use the lower 31 bits for the seed because we need to deduce the actual sample count from it
+        m_seedOffset = HashOf(m_params.camera.seed) & ((1 << 31) - 1);
+        
         //float theta = kTwoPi * (m_cameraPos.x - 0.5f);
         //vec3 cameraPos = vec3(cos(theta), m_cameraPos.y, sin(theta)) * 5.0f * powf(2.0f, mix(-5.0f, 1.0f, m_cameraFLength.x));
         m_cameraPos = m_params.position;
@@ -298,14 +308,14 @@ namespace Cuda
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
-    __global__ void KernelSeedRayBuffer(Device::PerspectiveCamera* camera)
+    __global__ void KernelSeedRayBuffer(Device::PerspectiveCamera* camera, const uint frameIdx)
     {
-        camera->SeedRayBuffer(kKernelPos<ivec2>());
+        camera->SeedRayBuffer(kKernelPos<ivec2>(), frameIdx);
     }
 
-    __host__ void Host::PerspectiveCamera::OnPreRenderPass(const float wallTime, const float frameIdx)
+    __host__ void Host::PerspectiveCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
     {
-        KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData);
+        KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData, frameIdx);
     }
 
     __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::PerspectiveCamera* camera)

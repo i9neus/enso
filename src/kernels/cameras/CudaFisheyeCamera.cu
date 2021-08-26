@@ -193,7 +193,7 @@ namespace Cuda
         camera->SeedRayBuffer(kKernelPos<ivec2>());
     }
 
-    __host__ void Host::FisheyeCamera::OnPreRenderPass(const float wallTime, const float frameIdx)
+    __host__ void Host::FisheyeCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
     {
         KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData);
     }

@@ -197,7 +197,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new PerspectiveCameraShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(const Cuda::vec2 range) override final {}
+    virtual void Randomise(const Cuda::vec2 range) override final;
 };
 
 // Light probe camera
@@ -209,12 +209,10 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(const Cuda::vec2 range) override final {}
+    virtual void Randomise(const Cuda::vec2 range) override final;
 
 private:
     std::vector<std::string>    m_swizzleLabels;
-    std::vector<char>           m_pathData;
-    std::string                 m_usdExportPath[2];
 };
 
 // Fisheye camera

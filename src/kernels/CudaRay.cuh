@@ -62,6 +62,11 @@ namespace Cuda
 		uchar		depth;			// 1 byte
 		uint		sampleIdx;		// 4 bytes
 
+		__device__ __forceinline__ void Reset()
+		{
+			memset(this, 0, sizeof(CompressedRay));
+		}
+
 		__device__ __forceinline__ ivec2 GetViewportPos() const	{ return ivec2(accumIdx >> 16, accumIdx & 0xffff); }
 		__device__ __forceinline__ void SetViewportPos(const int x, const int y) { accumIdx = (x << 16) | (y & 0xffff);  }
 		__device__ __forceinline__ void SetViewportPos(const ivec2 v) { accumIdx = (v.x << 16) | (v.y & 0xffff); }

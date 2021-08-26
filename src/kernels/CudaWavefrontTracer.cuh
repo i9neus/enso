@@ -169,7 +169,7 @@ namespace Cuda
 			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
 			__host__ void SetDirty() { m_isDirty = true; }
 
-			__host__ virtual void OnPreRenderPass(const float wallTime, const float frameIdx) override final;
+			__host__ virtual void OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
 
 			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void Trace(); 

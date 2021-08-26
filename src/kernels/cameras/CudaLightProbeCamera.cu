@@ -15,8 +15,7 @@ namespace Cuda
 {
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
-        maxSamples = 0;
-        doExport = false;
+
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -32,7 +31,6 @@ namespace Cuda
 
         camera.ToJson(node);
 
-        node.AddValue("maxSamples", maxSamples);
         node.AddValue("doExport", doExport);
     }
 
@@ -42,9 +40,6 @@ namespace Cuda
         grid.FromJson(gridNode, flags);
 
         camera.FromJson(node, flags);
-
-        node.GetValue("maxSamples", maxSamples, flags);
-        node.GetValue("doExport", doExport, flags);
     }      
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -52,7 +47,7 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::Synchronise(const LightProbeCameraParams& params)
     {
         m_params = params;
-        if (m_params.maxSamples == 0) { m_params.maxSamples = INT_MAX; }
+        if (m_params.camera.maxSamples == 0) { m_params.camera.maxSamples = INT_MAX; }
 
         Prepare();
     }
@@ -73,7 +68,15 @@ namespace Cuda
             return; 
         }
 
-        if (!compressedRay.IsAlive() && compressedRay.sampleIdx < m_params.maxSamplesPerBucket)
+        // On the first frame, reset the ray and the sample index
+        if (frameIdx == 0)
+        {
+            compressedRay.Reset();
+            compressedRay.sampleIdx = m_seedOffset;
+        }
+
+        if (!compressedRay.IsAlive() && 
+            (m_params.camera.maxSamples < 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.maxSamplesPerBucket))
         {
             //(*m_objects.cu_accumBuffer)[kKernelIdx] = 0.0f;
             CreateRay(kKernelIdx, compressedRay, frameIdx);
@@ -104,6 +107,9 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::Prepare()
     {
         CudaDeviceAssert(m_objects.cu_accumBuffer);
+
+        // Only use the lower 31 bits for the seed because we need to deduce the actual sample count from it
+        m_seedOffset = HashOf(m_params.camera.seed & ((1 << 31) - 1));
     }
 
     __device__ bool RectilinearViewportToCartesian(const ivec2& viewportPos, vec3& cart)
@@ -178,18 +184,18 @@ namespace Cuda
     }
     __device__ void Device::LightProbeCamera::ReduceAccumulatedSample(vec4& dest, const vec4& source)
     {              
-        if (int(dest.w) >= m_params.maxSamples - 1) 
+        if (int(dest.w) >= m_params.camera.maxSamples - 1) 
         {             
             return;
         }
         
-        if (int(dest.w + source.w) < m_params.maxSamples)
+        if (int(dest.w + source.w) < m_params.camera.maxSamples)
         {           
             dest += source;
             return;
         }
 
-        dest += source * (m_params.maxSamples - dest.w) / source.w;
+        dest += source * (m_params.camera.maxSamples - dest.w) / source.w;
     }
 
     __device__ void Device::LightProbeCamera::ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange)
@@ -409,8 +415,8 @@ namespace Cuda
         // Number of sample buckets per SH coefficient per probe
         m_params.bucketsPerCoefficient = /*NearestPow2Floor*/(m_params.bucketsPerProbe / m_params.coefficientsPerProbe);
         // The maximum number of samples per bucket based on the number of buckets per coefficient
-        m_params.maxSamplesPerBucket = (m_params.maxSamples == 0) ?
-            std::numeric_limits<int>::max() : int(1.0f + float(m_params.maxSamples) / float(m_params.bucketsPerCoefficient));        
+        m_params.maxSamplesPerBucket = (m_params.camera.maxSamples == 0) ?
+            std::numeric_limits<int>::max() : int(1.0f + float(m_params.camera.maxSamples) / float(m_params.bucketsPerCoefficient));        
 
         // Adjust values so everything packs correctly
         m_params.bucketsPerProbe = m_params.bucketsPerCoefficient * m_params.coefficientsPerProbe;
@@ -445,9 +451,9 @@ namespace Cuda
         camera->SeedRayBuffer(frameIdx);
     }
 
-    __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const float frameIdx)
+    __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
     {
-        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, int(frameIdx));
+        KernelSeedRayBuffer << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, frameIdx);
     }
 
     __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::LightProbeCamera* camera)
@@ -491,7 +497,7 @@ namespace Cuda
         IsOk(cudaMemcpy(&minMax, cu_minMax, sizeof(vec2), cudaMemcpyDeviceToHost));
         IsOk(cudaFree(cu_minMax));
         
-        return clamp((minMax.x + 1.0f) / float(m_params.maxSamples), 0.0f, 1.0f);
+        return clamp((minMax.x + 1.0f) / float(m_params.camera.maxSamples), 0.0f, 1.0f);
 
     }
 

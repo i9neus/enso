@@ -25,8 +25,6 @@ namespace Cuda
 		LightProbeGridParams		grid;
 		CameraParams				camera;
 
-		int							maxSamples;
-
 		uint						numProbes;
 		uint						bucketsPerProbe;
 		uint						bucketsPerCoefficient;
@@ -70,7 +68,7 @@ namespace Cuda
 
 		private:
 			LightProbeCameraParams 		m_params;
-			Objects						m_objects;			
+			Objects						m_objects;				
 		};
 	}
 
@@ -96,7 +94,7 @@ namespace Cuda
 			__host__ void								Prepare();
 			__host__ virtual bool						IsBakingCamera() const override final { return true; }
 
-			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
+			__host__ virtual void						OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
 			__host__ virtual void						OnPostRenderPass() override final;
 
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }

@@ -1,4 +1,5 @@
 #include "IMGUIShelves.h"
+#include <random>
 
 SimpleMaterialShelf::SimpleMaterialShelf(const Json::Node& json) :
     IMGUIShelf(json),
@@ -247,16 +248,32 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Focal plane", &m_p.focalPlane, 0.0f, 2.0f);
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
 
+    ImGui::DragInt("Max samples", &m_p.camera.maxSamples);
+    ImGui::InputInt("Seed", &m_p.camera.seed);   
+    ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
+
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+
+    m_p.camera.seed = max(0, m_p.camera.seed);
+}
+
+void PerspectiveCameraShelf::Randomise(const Cuda::vec2 range)
+{
+    if (m_p.camera.randomiseSeed)
+    {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
+
+        m_p.camera.seed = rng(mt);
+    }
 }
 
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
     : IMGUIShelf(json)
 {
     m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
-    m_pathData.resize(2048);
-    m_pathData[0] = '\0';
 }
 
 void LightProbeCameraShelf::Construct()
@@ -273,7 +290,9 @@ void LightProbeCameraShelf::Construct()
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 
-    ImGui::DragInt("Max samples", &m_p.maxSamples);
+    ImGui::DragInt("Max samples", &m_p.camera.maxSamples);
+    ImGui::InputInt("Seed", &m_p.camera.seed);
+    ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
 
     ImGui::Checkbox("Debug PRef", &m_p.grid.debugOutputPRef); SL;
     ImGui::Checkbox("Debug validity", &m_p.grid.debugOutputValidity); SL;
@@ -284,6 +303,20 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("X", &m_p.grid.invertX); SL;
     ImGui::Checkbox("Y", &m_p.grid.invertY); SL;
     ImGui::Checkbox("Z", &m_p.grid.invertZ);
+
+    m_p.camera.seed = max(0, m_p.camera.seed);
+}
+
+void LightProbeCameraShelf::Randomise(const Cuda::vec2 range)
+{
+    if (m_p.camera.randomiseSeed)
+    {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
+
+        m_p.camera.seed = rng(mt);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

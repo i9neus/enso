@@ -19,9 +19,13 @@ namespace Cuda
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-		bool isLive;
-		bool isActive;
-		float splatClamp;
+		bool				isLive;
+		bool				isActive;
+		float				splatClamp;	
+		int					maxSamples;
+
+		int					seed;
+		bool				randomiseSeed;
 
 		struct
 		{
@@ -59,6 +63,9 @@ namespace Cuda
 			__device__ virtual void							Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value) = 0;
 			__device__ virtual const Device::RenderState&	GetRenderState() const = 0;
 			__device__ virtual const CameraParams&			GetParams() const = 0;
+		protected:
+
+			uint m_seedOffset;
 		};
 	}
 

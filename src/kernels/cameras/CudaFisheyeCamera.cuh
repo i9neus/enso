@@ -93,7 +93,7 @@ namespace Cuda
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return m_hostAccumBuffer; }
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
 			__host__ virtual void						ClearRenderState() override final;
-			__host__ virtual void						OnPreRenderPass(const float wallTime, const float frameIdx) override final;
+			__host__ virtual void						OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
 			__host__ static std::string					GetAssetTypeString() { return "fisheye"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Fisheye Camera"; }
 			__host__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }

@@ -618,7 +618,7 @@ namespace Cuda
 		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}
 
-	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime, const float frameIdx)
+	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime, const uint frameIdx)
 	{
 		if (!m_isInitialised || !m_hostCameraAsset) { return; }
 

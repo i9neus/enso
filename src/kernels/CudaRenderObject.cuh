@@ -64,7 +64,7 @@ namespace Cuda
 
             __host__ virtual void           OnPreRender() {}
             __host__ virtual void           OnPostRender() {}
-            __host__ virtual void           OnPreRenderPass(const float wallTime, const float frameIdx) {}
+            __host__ virtual void           OnPreRenderPass(const float wallTime, const uint frameIdx) {}
             __host__ virtual void           OnPostRenderPass() {}
             __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) {}
 

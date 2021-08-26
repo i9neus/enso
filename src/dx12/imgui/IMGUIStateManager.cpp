@@ -109,14 +109,17 @@ bool BakePermutor::Advance()
     // Restore the state pointed
     m_stateMap.Restore(*m_stateIt);
 
-    // Randomise all the shelves
-    for (auto& shelf : m_imguiShelves)
+    if (m_iterationIdx > 0)
     {
-        shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
+        // Randomise all the shelves
+        for (auto& shelf : m_imguiShelves)
+        {
+            shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
+        }
     }
 
     // Set the sample count on the light probe camera
-    m_lightProbeCameraShelf->GetParamsObject().maxSamples = *m_sampleCountIt;
+    m_lightProbeCameraShelf->GetParamsObject().camera.maxSamples = *m_sampleCountIt;
 
     // Deactivate the perspective camera
     if (m_disableLiveView && m_perspectiveCameraShelf)
