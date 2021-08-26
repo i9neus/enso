@@ -17,6 +17,8 @@ void MakeUppercase(std::string& input);
 std::string Uppercase(const std::string& input);
 bool IsUppercase(const std::string& input);
 
+std::string FormatElapsedTime(const float time);
+
 class Lexer
 {
 private:

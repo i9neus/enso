@@ -503,10 +503,10 @@ namespace Cuda
     __host__ float Host::LightProbeCamera::GetBakeProgress() const
     {
         // FIXME: This is a horrible hack to prevent having to manually scan the accumulation buffer every frame.
-        if (m_frameIdx < m_params.maxSamplesPerProbe)
+        /*if (m_frameIdx < m_params.maxSamplesPerProbe)
         {
             return clamp(m_frameIdx / float(m_params.maxSamplesPerProbe), 0.0f, 1.0f);
-        }
+        }*/
         
         vec2 minMax = GetProbeMinMaxSampleCount();        
         return clamp((minMax.x + 1.0f) / float(m_params.maxSamplesPerProbe), 0.0f, 1.0f);

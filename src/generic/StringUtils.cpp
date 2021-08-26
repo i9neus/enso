@@ -78,3 +78,13 @@ bool IsUppercase(const std::string& input)
     for (auto c : input) { if (std::islower(c)) { return false; } }
     return true;
 }
+
+std::string FormatElapsedTime(const float time)
+{
+    const int seconds = int(time);
+    std::string formatted;
+
+    if (seconds >= 86000) { formatted += tfm::format("%i:", seconds / 86000); }
+    if (seconds >= 3600) { formatted += tfm::format("%2.i:", (seconds / 3600) % 24); }
+    return formatted + tfm::format("%.2i:%.2i", (seconds / 60) % 60, seconds % 60);
+}

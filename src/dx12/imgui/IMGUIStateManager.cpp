@@ -13,12 +13,13 @@ BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStat
 void BakePermutor::Clear()
 {
     m_sampleCountSet.clear();
-    m_sampleCountIt = m_sampleCountSet.end();
     m_stateIt = m_stateMap.GetStateData().end();
     m_numIterations = 0;
     m_iterationIdx = -1;
     m_numPermutations = 0;
     m_permutationIdx = 0;
+    m_totalSamples = 0;
+    m_completedSamples = 0;
     m_templateTokens.clear();
     m_isIdle = true;
     m_disableLiveView = true;
@@ -26,10 +27,20 @@ void BakePermutor::Clear()
 
 void BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView)
 {
-    m_sampleCountIt = m_sampleCountSet.begin();
+    m_totalSamples = m_completedSamples = 0;
+    m_sampleCountIdx = 0; 
+    m_sampleCountList.clear();
+    for (auto element : m_sampleCountSet)
+    {
+        m_sampleCountList.push_back(element);
+        m_totalSamples += element;
+    }
+
     m_numIterations = numIterations;
     m_iterationIdx = -1;
-    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_stateMap.GetNumPermutableStates();
+    m_numStates = m_stateMap.GetNumPermutableStates();
+    m_stateIdx = 0;
+    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates;
     m_permutationIdx = -1;
     m_templatePath = templatePath;
     m_stateIt = m_stateMap.GetFirstPermutableState();
@@ -69,12 +80,15 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     }
 
     if (!m_lightProbeCameraShelf) { Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n"); }
+
+    m_startTime = std::chrono::high_resolution_clock::now();
 }
 
 bool BakePermutor::Advance()
 {
-    if (m_stateIt == m_stateMap.GetStateData().end() || 
-        m_sampleCountIt == m_sampleCountSet.end() ||
+    if (m_isIdle ||
+        m_stateIt == m_stateMap.GetStateData().end() ||
+        m_sampleCountIdx >= m_sampleCountList.size() ||
         m_iterationIdx >= m_numIterations ||
         !m_lightProbeCameraShelf) 
     { 
@@ -90,11 +104,14 @@ bool BakePermutor::Advance()
     if (m_iterationIdx == m_numIterations)
     {
         m_iterationIdx = 0;
-        if (++m_sampleCountIt == m_sampleCountSet.end())
+        m_completedSamples += m_sampleCountList[m_sampleCountIdx];
+        ++m_sampleCountIdx;
+        if (m_sampleCountIdx == m_sampleCountList.size())
         {
-            m_sampleCountIt = m_sampleCountSet.begin();
+            m_sampleCountIdx = 0;
             do
             {
+                ++m_stateIdx;
                 if (++m_stateIt == m_stateMap.GetStateData().end()) 
                 { 
                     m_isIdle = true;
@@ -119,7 +136,7 @@ bool BakePermutor::Advance()
     }
 
     // Set the sample count on the light probe camera
-    m_lightProbeCameraShelf->GetParamsObject().camera.maxSamples = *m_sampleCountIt;
+    m_lightProbeCameraShelf->GetParamsObject().camera.maxSamples = m_sampleCountList[m_sampleCountIdx];
 
     // Deactivate the perspective camera
     if (m_disableLiveView && m_perspectiveCameraShelf)
@@ -152,13 +169,27 @@ std::string BakePermutor::GenerateExportPath() const
         }
 
         if (token == "{$ITERATION}")            { exportPath += tfm::format("%i", m_iterationIdx); }
-        else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", *m_sampleCountIt); }
+        else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", m_sampleCountList[m_sampleCountIdx]); }
         else if (token == "{$PERMUTATION}")     { exportPath += tfm::format("%i", m_permutationIdx); }
         else if (token == "{$STATE}")           { exportPath += m_stateIt->first; }
         else                                    { exportPath += token; }
     }
 
     return exportPath;
+}
+
+float BakePermutor::GetElapsedTime() const
+{
+    return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
+}
+
+float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
+{
+    const float elapsedTime = GetElapsedTime();
+    const float stateProgress = (m_completedSamples + m_sampleCountList[m_sampleCountIdx] * bakeProgress) / m_totalSamples;
+    const float batchProgress = (m_stateIdx + stateProgress) / float(m_numStates);
+
+    return elapsedTime * (1.0f - stateProgress) / max(1e-6f, stateProgress);
 }
 
 void RenderObjectStateMap::FromJson(const Json::Node& node, const int flags)
@@ -505,6 +536,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
 
     ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
+    ImGui::Text("%s elapsed", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
+    ImGui::Text("%s remaining", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_renderManager.GetBakeProgress())).c_str() : "00:00");
 }
 
 void RenderObjectStateManager::ToggleBake()

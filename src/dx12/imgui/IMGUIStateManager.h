@@ -55,9 +55,13 @@ public:
     std::string GenerateExportPath() const;
     bool IsIdle() const { return m_isIdle; }
 
+    float GetElapsedTime() const;
+    float EstimateRemainingTime(const float bakeProgress) const;
+
 private:
     std::set<int>               m_sampleCountSet;
-    std::set<int>::iterator     m_sampleCountIt;
+    std::vector<int>            m_sampleCountList;
+    int                         m_sampleCountIdx;
     int                         m_numIterations;
     int                         m_iterationIdx;
     int                         m_permutationIdx;
@@ -65,6 +69,8 @@ private:
     bool                        m_isIdle;
     bool                        m_disableLiveView;
     RenderObjectStateMap::StateMap::const_iterator m_stateIt;
+    int                         m_stateIdx;
+    int                         m_numStates;
 
     std::string                 m_templatePath;
     std::vector<std::string>    m_templateTokens;
@@ -74,6 +80,9 @@ private:
     std::shared_ptr<PerspectiveCameraShelf> m_perspectiveCameraShelf;
     RenderObjectStateMap&       m_stateMap;
 
+    std::chrono::time_point<std::chrono::high_resolution_clock>  m_startTime;
+    int                         m_totalSamples;
+    int                         m_completedSamples;
 };
 
 class RenderObjectStateManager : public IMGUIElement
