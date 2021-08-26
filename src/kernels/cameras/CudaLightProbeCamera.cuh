@@ -13,6 +13,12 @@ namespace Cuda
 	class QuasiRNG;
 
 	namespace Host { class LightProbeCamera; }
+	 
+	enum ProbeBakeLightingMode : int
+	{
+		kBakeLightingCombined,
+		kBakeLightingSeparated
+	};
 
 	struct LightProbeCameraParams
 	{
@@ -36,6 +42,8 @@ namespace Cuda
 		int							maxSamplesPerBucket; // 		<-- The maximum number of samples that should be taken per bucket
 		int							maxSamplesPerProbe;
 		vec3						aspectRatio;
+
+		int							lightingMode;
 	};
 
 	namespace Device
@@ -46,18 +54,18 @@ namespace Cuda
 			struct Objects
 			{
 				Device::RenderState renderState;
-				Device::Array<vec4>* cu_accumBuffer = nullptr;
+				Device::Array<vec4>* cu_accumBuffers[2] = { nullptr, nullptr };
 				Device::Array<vec4>* cu_reduceBuffer = nullptr;
-				Device::LightProbeGrid* cu_probeGrid = nullptr;
+				Device::LightProbeGrid* cu_probeGrids[2] = { nullptr, nullptr };
 			};
 
 			__device__ LightProbeCamera();
-			__device__ virtual void Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value) override final;
+			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value) override final;
 			__device__ void SeedRayBuffer(const int frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
-			__device__ void ReduceAccumulationBuffer(const uint batchSizeBegin, const uvec2 batchRange);
+			__device__ void ReduceAccumulationBuffer(Device::Array<vec4>* accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSizeBegin, const uvec2 batchRange);
 			__device__ vec2 GetProbeMinMaxSampleCount() const;
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
@@ -104,10 +112,10 @@ namespace Cuda
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
 			__host__ void								SetLightProbeCameraParams(const LightProbeCameraParams& params);
 			__host__ const LightProbeCameraParams&		GetLightProbeCameraParams() const { return m_params; }
-			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid() { return m_hostLightProbeGrid; }
+			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid(const int idx) { return m_hostLightProbeGrids[idx]; }
 
 			__host__ float								GetBakeProgress() const;
-			__host__ bool								ExportProbeGrid(const std::string& usdExportPath, const bool exportToUSD);
+			__host__ bool								ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
 			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
 			__host__ int								GetExporterState() const { return m_exporterState; }
 
@@ -118,14 +126,15 @@ namespace Cuda
 			Device::LightProbeCamera::Objects			m_deviceObjects;
 			LightProbeCameraParams						m_params;
 
-			AssetHandle<Host::Array<vec4>>				m_hostAccumBuffer;
+			AssetHandle<Host::Array<vec4>>				m_hostAccumBuffers[2];
+			AssetHandle<Host::LightProbeGrid>			m_hostLightProbeGrids[2];
 			AssetHandle<Host::Array<vec4>>				m_hostReduceBuffer;
-			AssetHandle<Host::LightProbeGrid>			m_hostLightProbeGrid;
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
+			int											m_numActiveGrids;
 
 			std::atomic<int>							m_exporterState;
 		};

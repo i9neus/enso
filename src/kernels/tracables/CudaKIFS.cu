@@ -422,7 +422,9 @@ namespace Cuda
                     hitBoundSDF ? F.yzw : NormalToWorldSpace(F.yzw, m_params.transform)),
                     isSubsurface,
                     vec2(*reinterpret_cast<float*>(&code), 0.0f),  // Dump the bits of the code into the float. FIXME: Not type safe, so fix this
-                    m_params.sdf.rayKickoff);
+                    m_params.sdf.rayKickoff,
+                    kNotALight
+            );
 
         return true;
     }

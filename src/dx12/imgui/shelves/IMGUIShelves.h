@@ -165,7 +165,7 @@ public:
 };
 
 // Lambertian BRDF
-class LambertBRDFShelf : public IMGUIShelf<Cuda::Host::LambertBRDF, Cuda::NullParams>
+class LambertBRDFShelf : public IMGUIShelf<Cuda::Host::LambertBRDF, Cuda::LambertBRDFParams>
 {
 public:
     LambertBRDFShelf(const Json::Node& json) : IMGUIShelf(json) {}
@@ -173,7 +173,7 @@ public:
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LambertBRDFShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(const Cuda::vec2 range) override final;
+    virtual void Randomise(const Cuda::vec2 range) override final {}
 };
 
 // Wavefront tracer

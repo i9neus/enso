@@ -2,6 +2,9 @@
 #include "generic/FilesystemUtils.h"
 #include "manager/RenderManager.h"
 #include "shelves/IMGUIShelves.h"
+#include "kernels/cameras/CudaLightProbeCamera.cuh"
+
+#include <random>
 
 BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap) : 
     m_imguiShelves(imguiShelves),
@@ -29,13 +32,8 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
 {
     m_totalSamples = m_completedSamples = 0;
     m_sampleCountIdx = 0; 
-    m_sampleCountList.clear();
-    for (auto element : m_sampleCountSet)
-    {
-        m_sampleCountList.push_back(element);
-        m_totalSamples += element;
-    }
-
+    m_sampleCountIt = m_sampleCountSet.cbegin();
+    m_totalSamples = 0;
     m_numIterations = numIterations;
     m_iterationIdx = -1;
     m_numStates = m_stateMap.GetNumPermutableStates();
@@ -47,7 +45,7 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_isIdle = false;
     m_disableLiveView = disableLiveView;
 
-    const auto r = *(m_stateIt);
+    for (auto element : m_sampleCountSet) { m_totalSamples += element; }
 
     m_templateTokens.clear();
     Lexer lex(templatePath);
@@ -88,7 +86,7 @@ bool BakePermutor::Advance()
 {
     if (m_isIdle ||
         m_stateIt == m_stateMap.GetStateData().end() ||
-        m_sampleCountIdx >= m_sampleCountList.size() ||
+        m_sampleCountIt == m_sampleCountSet.cend() ||
         m_iterationIdx >= m_numIterations ||
         !m_lightProbeCameraShelf) 
     { 
@@ -100,15 +98,15 @@ bool BakePermutor::Advance()
     }
     
     // Increment to the next permutation
-    ++m_iterationIdx;
-    if (m_iterationIdx == m_numIterations)
+    if (++m_iterationIdx == m_numIterations)
     {
         m_iterationIdx = 0;
-        m_completedSamples += m_sampleCountList[m_sampleCountIdx];
+        m_completedSamples += *m_sampleCountIt;
         ++m_sampleCountIdx;
-        if (m_sampleCountIdx == m_sampleCountList.size())
+        if (++m_sampleCountIt == m_sampleCountSet.cend())
         {
             m_sampleCountIdx = 0;
+            m_sampleCountIt = m_sampleCountSet.cbegin();
             do
             {
                 ++m_stateIdx;
@@ -126,7 +124,7 @@ bool BakePermutor::Advance()
     // Restore the state pointed
     m_stateMap.Restore(*m_stateIt);
 
-    if (m_iterationIdx > 0)
+    //if (m_iterationIdx > 0)
     {
         // Randomise all the shelves
         for (auto& shelf : m_imguiShelves)
@@ -136,7 +134,12 @@ bool BakePermutor::Advance()
     }
 
     // Set the sample count on the light probe camera
-    m_lightProbeCameraShelf->GetParamsObject().camera.maxSamples = m_sampleCountList[m_sampleCountIdx];
+    auto& probeParams = m_lightProbeCameraShelf->GetParamsObject();
+    probeParams.camera.maxSamples = *m_sampleCountIt;
+    
+    // Get some parameters that we'll need to generate the file paths
+    m_bakeLightingMode == probeParams.lightingMode;
+    m_bakeSeed = probeParams.camera.seed;   
 
     // Deactivate the perspective camera
     if (m_disableLiveView && m_perspectiveCameraShelf)
@@ -145,7 +148,6 @@ bool BakePermutor::Advance()
     }
 
     Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx, m_numPermutations);
-
     return true;
 }
 
@@ -154,28 +156,48 @@ float BakePermutor::GetProgress() const
     return m_isIdle ? 0.0f : (float(min(m_permutationIdx, m_numPermutations)) / float(max(1, m_numPermutations)));
 }
 
-std::string BakePermutor::GenerateExportPath() const
+std::vector<std::string> BakePermutor::GenerateExportPaths() const
 {
+    // Naming convention:
+    // SceneNameXXX.random10digits.6digitsSampleCount.usd
+    
     Assert(m_permutationIdx < m_numPermutations);
     
-    std::string exportPath;
-    for (const auto& token : m_templateTokens)
+    std::vector<std::string> exportPaths(2);
+    for(int pathIdx = 0; pathIdx < 2; pathIdx++)
     {
-        Assert(!token.empty());
-        if (token[0] != '{') 
+        auto& path = exportPaths[pathIdx];
+        for (const auto& token : m_templateTokens)
         {
-            exportPath += token;
-            continue;
-        }
+            Assert(!token.empty());
+            if (token[0] != '{') 
+            {
+                path += token;
+                continue;
+            }
 
-        if (token == "{$ITERATION}")            { exportPath += tfm::format("%i", m_iterationIdx); }
-        else if (token == "{$SAMPLE_COUNT}")    { exportPath += tfm::format("%i", m_sampleCountList[m_sampleCountIdx]); }
-        else if (token == "{$PERMUTATION}")     { exportPath += tfm::format("%i", m_permutationIdx); }
-        else if (token == "{$STATE}")           { exportPath += m_stateIt->first; }
-        else                                    { exportPath += token; }
+            if (token == "{$COMPONENT}")
+            {
+                path += (m_bakeLightingMode == Cuda::kBakeLightingCombined) ? "combined" : ((pathIdx == 0) ? "direct" : "indirect");
+            }
+            else if (token == "{$RANDOM_DIGITS}")
+            {
+                // 10 random digit string
+                std::random_device rd;
+                std::mt19937 mt(rd());
+                std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
+                path += tfm::format("%10.i", rng(mt) % 10000000000);
+            }
+            else if (token == "{$ITERATION}")       { path += tfm::format("%i", m_iterationIdx); }
+            else if (token == "{$SAMPLE_COUNT}")    { path += tfm::format("%i", *m_sampleCountIt); }
+            else if (token == "{$PERMUTATION}")     { path += tfm::format("%i", m_permutationIdx); }
+            else if (token == "{$SEED}")            { path += tfm::format("%.6i", m_bakeSeed % 1000000); }
+            else if (token == "{$STATE}")           { path += m_stateIt->first; }            
+            else                                    { path += token; }
+        }
     }
 
-    return exportPath;
+    return exportPaths;
 }
 
 float BakePermutor::GetElapsedTime() const
@@ -186,7 +208,7 @@ float BakePermutor::GetElapsedTime() const
 float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
 {
     const float elapsedTime = GetElapsedTime();
-    const float stateProgress = (m_completedSamples + m_sampleCountList[m_sampleCountIdx] * bakeProgress) / m_totalSamples;
+    const float stateProgress = (m_completedSamples + *m_sampleCountIt * bakeProgress) / m_totalSamples;
     const float batchProgress = (m_stateIdx + stateProgress) / float(m_numStates);
 
     return elapsedTime * (1.0f - stateProgress) / max(1e-6f, stateProgress);
@@ -579,7 +601,7 @@ void RenderObjectStateManager::HandleBakeIteration()
     // Advance to the next permutation. If this fails, we're done. 
     if (m_permutor.Advance())
     {       
-        m_renderManager.StartBake(m_permutor.GenerateExportPath(), m_exportToUSD);
+        m_renderManager.StartBake(m_permutor.GenerateExportPaths(), m_exportToUSD);
     }
     else
     {

@@ -9,7 +9,6 @@ namespace Cuda
     class RenderObjectContainer;
 
     enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
-    enum LightIDFlags : uchar { kNotALight = 0xff };
 
     enum RenderObjectFlags : uint 
     { 

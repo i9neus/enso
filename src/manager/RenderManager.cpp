@@ -290,7 +290,7 @@ void RenderManager::OnJson(const Json::Document& patchJson)
 	m_dirtiness = kSoftReset;
 }
 
-void RenderManager::StartBake(const std::string& usdExportPath, const bool exportToUSD)
+void RenderManager::StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)
 {
 	if (!m_lightProbeCamera)
 	{
@@ -298,12 +298,12 @@ void RenderManager::StartBake(const std::string& usdExportPath, const bool expor
 		return;
 	}
 
-	Assert(!usdExportPath.empty());
+	Assert(!usdExportPaths.empty());
 	AssertMsg(m_bakeStatus == BakeStatus::kReady, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
 
 	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 	 
-	m_usdExportPath = usdExportPath;
+	m_usdExportPaths = usdExportPaths;
 	m_exportToUSD = exportToUSD;
 	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
 	
@@ -500,7 +500,7 @@ void RenderManager::OnBakePostFrame()
 			m_bakeProgress = m_lightProbeCamera->GetBakeProgress();
 			if (m_bakeProgress == 1.0f)
 			{
-				m_lightProbeCamera->ExportProbeGrid(m_usdExportPath, m_exportToUSD);
+				m_lightProbeCamera->ExportProbeGrid(m_usdExportPaths, m_exportToUSD);
 				m_bakeStatus = BakeStatus::kReady;
 				Log::Debug("Export!");
 			}

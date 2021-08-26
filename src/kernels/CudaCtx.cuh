@@ -6,6 +6,8 @@ namespace Cuda
 {
 	using RNG = PseudoRNG;
 
+	enum LightIDFlags : uchar { kNotALight = 0xff };
+
 	struct RenderCtx
 	{
 		__device__ __forceinline__ RenderCtx(CompressedRay& compressed) :
@@ -57,18 +59,20 @@ namespace Cuda
 		bool		isValid;
 		vec3        albedo;
 		vec3		debug;
+		uchar		lightID;
 
-		__device__ HitCtx() : isValid(false) {}
+		__device__ HitCtx() : isValid(false), lightID(kNotALight) {}
 
 		__device__ __forceinline__ vec3 ExtantOrigin() const { return hit.p + hit.n * kickoff; }
 
-		__device__ void Set(const HitPoint& hit_, bool back, const vec2& uv_, const float kick)
+		__device__ void Set(const HitPoint& hit_, bool back, const vec2& uv_, const float kick, const uchar ID)
 		{
 			hit = hit_;
 			backfacing = back;
 			uv = uv_;
 			kickoff = kick;
 			isValid = true;
+			lightID = ID;
 		}
 	};
 }

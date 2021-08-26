@@ -6,6 +6,19 @@
 
 namespace Cuda
 {
+    __host__ LambertBRDFParams::LambertBRDFParams(const ::Json::Node& node) : LambertBRDFParams() { FromJson(node, ::Json::kRequiredWarn); }
+
+    __host__ void LambertBRDFParams::ToJson(::Json::Node& node) const
+    {
+        node.AddValue("lightProbeGridIndex", lightProbeGridIdx);
+    }
+
+    __host__ void LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        node.GetValue("lightProbeGridIndex", lightProbeGridIdx, ::Json::kRequiredWarn);
+        lightProbeGridIdx = clamp(lightProbeGridIdx, 0, 1);
+    }
+    
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const
     {
         const vec2 xi = renderCtx.rng.Rand<0, 1>();
@@ -43,9 +56,8 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();
-        Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
 
-        parentNode.GetValue("lightProbeGrid", m_lightProbeGridID, ::Json::kRequiredWarn);
+        FromJson(parentNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::LambertBRDF::OnDestroyAsset()
@@ -54,23 +66,31 @@ namespace Cuda
         DestroyOnDevice(cu_deviceData);
     }
 
+    __host__ void Host::LambertBRDF::FromJson(const ::Json::Node& parentNode, const uint flags)
+    {      
+        Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
+        m_params.FromJson(parentNode, ::Json::kRequiredWarn);
+
+        parentNode.GetValue("lightProbeGrid", m_lightProbeGridID, ::Json::kRequiredWarn);
+    }
+
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
     {
         if (m_lightProbeGridID.empty()) { return; }
         
-        AssetHandle<Host::LightProbeCamera> cameraObject = sceneObjects.FindByID<Host::LightProbeCamera>(m_lightProbeGridID);
-        if (!cameraObject)
+        AssetHandle<Host::LightProbeCamera> probeCamera = sceneObjects.FindByID<Host::LightProbeCamera>(m_lightProbeGridID);
+        if (!probeCamera)
         {
             Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': camera not found.\n", m_lightProbeGridID, GetAssetID());
             return;
         }
 
         Device::LightProbeGrid* cu_grid = nullptr;
-        if (cameraObject->GetLightProbeCameraParams().camera.isActive)
+        if (probeCamera->GetLightProbeCameraParams().camera.isActive)
         {
-            m_hostLightProbeGrid = cameraObject->GetLightProbeGrid();
+            m_hostLightProbeGrid = probeCamera->GetLightProbeGrid(m_params.lightProbeGridIdx);
             cu_grid = m_hostLightProbeGrid->GetDeviceInstance();
-            Log::Write("Bound probe grid '%s' to Lambert BRDF '%s'.\n", m_lightProbeGridID, GetAssetID());
+            Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", m_params.lightProbeGridIdx, m_lightProbeGridID, GetAssetID());
         }
 
         Cuda::SynchroniseObjects(cu_deviceData, cu_grid);

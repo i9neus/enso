@@ -8,6 +8,17 @@ namespace Cuda
 {
     namespace Host { class LambertBRDF; }
 
+    struct LambertBRDFParams
+    {
+        __host__ __device__ LambertBRDFParams() : lightProbeGridIdx(0) {}
+        __host__ LambertBRDFParams(const ::Json::Node& node);
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+        int     lightProbeGridIdx;
+    };
+
     namespace Device
     {
         class LightProbeGrid;
@@ -44,12 +55,14 @@ namespace Cuda
             AssetHandle<Host::LightProbeGrid>	    m_hostLightProbeGrid;
 
             std::string         m_lightProbeGridID;
+            LambertBRDFParams   m_params;
 
         public:
             __host__ LambertBRDF(const ::Json::Node&);
             __host__ virtual ~LambertBRDF() { OnDestroyAsset(); }
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string&, const AssetType&, const ::Json::Node&);
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
             __host__ virtual void OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
 

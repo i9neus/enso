@@ -225,8 +225,10 @@ void EnvironmentLightShelf::Randomise(const Cuda::vec2 range)
 void LambertBRDFShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
-
-    ImGui::Text("[No attributes]");
+    
+    ImGui::PushItemWidth(50);
+    ImGui::SliderInt("Probe volume grid", &m_p.lightProbeGridIdx, 0, 1);
+    ImGui::PopItemWidth();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,8 +239,7 @@ void PerspectiveCameraShelf::Construct()
 
     ImGui::Checkbox("Active", &m_p.camera.isActive); SL;
     ImGui::Checkbox("Live", &m_p.camera.isLive);  SL;
-    ImGui::Checkbox("Realtime", &m_p.isRealtime);
-    ImGui::Checkbox("Mimic light probe", &m_p.mimicLightProbe);
+    ImGui::Checkbox("Realtime", &m_p.isRealtime);    
 
     ImGui::DragFloat3("Position", &m_p.position[0], math::max(0.01f, cwiseMax(m_p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &m_p.lookAt[0], math::max(0.01f, cwiseMax(m_p.lookAt) * 0.01f));
@@ -253,21 +254,23 @@ void PerspectiveCameraShelf::Construct()
     ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
 
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max()); 
+
+    ConstructComboBox("Emulate light probe", { "None", "All", "Direct only", "Indirect only" }, m_p.lightProbeEmulation);
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 }
 
 void PerspectiveCameraShelf::Randomise(const Cuda::vec2 range)
 {
-    if (m_p.camera.randomiseSeed)
+    /*if (m_p.camera.randomiseSeed)
     {
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
 
         m_p.camera.seed = rng(mt);
-    }
+    }*/
 }
 
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
@@ -288,6 +291,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::InputInt3("Grid density", &m_p.grid.gridDensity[0]);
     ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
+    ConstructComboBox("Lighting mode", { "Combined", "Separated"}, m_p.lightingMode);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 
     ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());

@@ -76,12 +76,12 @@ namespace Cuda
 
     __device__ void Device::LightProbeGrid::SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L)
     {
-        CudaDeviceAssert(cu_data);
-        CudaDeviceAssert(probeIdx < m_params.numProbes);
-        CudaDeviceAssert(coeffIdx < m_params.coefficientsPerProbe);
+        assert(cu_data);
+        assert(probeIdx < m_params.numProbes);
+        assert(coeffIdx < m_params.coefficientsPerProbe);
 
         const int idx = probeIdx * m_params.coefficientsPerProbe + coeffIdx;
-        CudaDeviceAssert(idx < cu_data->Size());
+        assert(idx < cu_data->Size());
 
         (*cu_data)[idx] = L;
     }
@@ -128,7 +128,7 @@ namespace Cuda
 
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
     {  
-        CudaDeviceAssert(cu_data);
+        assert(cu_data);
         
         vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform) / m_params.aspectRatio;
 

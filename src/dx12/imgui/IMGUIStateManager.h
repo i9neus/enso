@@ -52,7 +52,7 @@ public:
     void Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView);
     bool Advance();
     float GetProgress() const;
-    std::string GenerateExportPath() const;
+    std::vector<std::string> GenerateExportPaths() const;
     bool IsIdle() const { return m_isIdle; }
 
     float GetElapsedTime() const;
@@ -60,7 +60,7 @@ public:
 
 private:
     std::set<int>               m_sampleCountSet;
-    std::vector<int>            m_sampleCountList;
+    std::set<int>::const_iterator m_sampleCountIt;
     int                         m_sampleCountIdx;
     int                         m_numIterations;
     int                         m_iterationIdx;
@@ -79,6 +79,10 @@ private:
     std::shared_ptr<LightProbeCameraShelf>  m_lightProbeCameraShelf;
     std::shared_ptr<PerspectiveCameraShelf> m_perspectiveCameraShelf;
     RenderObjectStateMap&       m_stateMap;
+
+    int                         m_bakeLightingMode;
+    int                         m_bakeSeed;
+    std::string                 m_randomDigitString;
 
     std::chrono::time_point<std::chrono::high_resolution_clock>  m_startTime;
     int                         m_totalSamples;

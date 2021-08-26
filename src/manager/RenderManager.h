@@ -30,7 +30,7 @@ public:
 
 	void OnJson(const Json::Document& patchJson);
 
-	void StartBake(const std::string& usdExportPath, const bool exportToUSD);
+	void StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
 	void AbortBake();
 	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
 	float GetBakeProgress() const { return (m_bakeStatus == BakeStatus::kRunning) ? m_bakeProgress : 0.0f; }
@@ -103,7 +103,7 @@ private:
 
 	std::atomic<BakeStatus>		m_bakeStatus;
 	float						m_bakeProgress;
-	std::string					m_usdExportPath;
+	std::vector<std::string>	m_usdExportPaths;
 	bool						m_exportToUSD;
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;

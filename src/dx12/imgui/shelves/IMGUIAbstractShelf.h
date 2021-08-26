@@ -43,6 +43,8 @@ template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {
 public:
+    using tObjectType = ObjectType;
+
     IMGUIShelf() : m_p(m_paramsBuffer[0]), m_isDirty(false) {}
 
     IMGUIShelf(const Json::Node& json) : IMGUIShelf()

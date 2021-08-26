@@ -26,7 +26,7 @@ namespace Cuda
         displayGamma = 1.0f;
         viewportDims = ivec2(512, 512);
         isRealtime = false;
-        mimicLightProbe = false;
+        lightProbeEmulation = kLightProbeEmulationNone;
     }
 
     __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
@@ -46,7 +46,7 @@ namespace Cuda
         node.AddValue("fStop", fStop);
         node.AddValue("displayGamma", displayGamma);
         node.AddValue("isRealtime", isRealtime);
-        node.AddValue("mimicLightProbe", mimicLightProbe);
+        node.AddEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation);
     }
 
     __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -60,7 +60,7 @@ namespace Cuda
         node.GetValue("fStop", fStop, flags);
         node.GetValue("displayGamma", displayGamma, flags);
         node.GetValue("isRealtime", isRealtime, flags);
-        node.GetValue("mimicLightProbe", mimicLightProbe, flags);
+        node.GetEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation, flags);
     }
 
     // Returns the polar distance r to the perimeter of an n-sided polygon
@@ -106,8 +106,8 @@ namespace Cuda
             compressedRay.sampleIdx = m_seedOffset;
         }
 
-        if (!compressedRay.IsAlive() &&
-            (m_params.camera.maxSamples < 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.camera.maxSamples))
+        if (!compressedRay.IsAlive()/* &&
+            (m_params.camera.maxSamples < 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.camera.maxSamples)*/)
         {
             if (m_params.isRealtime)
             {
@@ -239,16 +239,20 @@ namespace Cuda
         ray.depth = 1;
         ray.flags = kRaySpecular;
 
-        if (m_params.mimicLightProbe)
+        if (m_params.lightProbeEmulation != kLightProbeEmulationNone)
         {
-            ray.flags = kRayLightProbe | kRayIndirectSample;
+            ray.flags |= kRayLightProbe;
         }
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
-    __device__ void Device::PerspectiveCamera::Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value)
+    __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value)
     {
-        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), value, ctx.emplacedRay.IsAlive());
+        const bool doAccum = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
+                            (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) ||
+                            (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
+        
+        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), doAccum ? value : kZero, ctx.emplacedRay.IsAlive());
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :

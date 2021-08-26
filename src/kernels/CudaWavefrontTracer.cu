@@ -321,9 +321,6 @@ namespace Cuda
 		RenderCtx renderCtx(compressedRay);
 		vec3 L(0.0f);
 
-		//m_objects.cu_deviceAccumBuffer->At(renderCtx.viewportPos) = vec4(renderCtx.viewportPos.x / 512.0f, renderCtx.viewportPos.y / 512.0f, 0.0f, -1.0f);
-		//return;
-
 		compressedRay.Kill();
 
 		// INTERSECTION
@@ -331,7 +328,8 @@ namespace Cuda
 		hitCtx.debug = 0.0f;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
-		const int numTracables = tracables.Size();
+		const int numTracables = tracables.Size();	
+
 		for (int i = 0; i < numTracables; i++)
 		{
 			if (tracables[i]->Intersect(incidentRay, hitCtx))
@@ -340,13 +338,18 @@ namespace Cuda
 			}
 		}
 
+		/*if (incidentRay.flags & kRaySpecular) L += kRed;
+		if (hitObject && hitObject->GetLightID() != kNotALight) L += kGreen;
+		m_objects.cu_camera->Accumulate(renderCtx, hitCtx, lightID, L);
+		return false;*/
+
 		if (m_activeParams.shadingMode == kShadeNormals)
 		{
 			if (hitObject)
 			{
 				L = hitCtx.hit.n * 0.5f + vec3(0.5f);
 			}
-			m_objects.cu_camera->Accumulate(renderCtx, hitCtx, L);
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L);
 			return false;
 		}
 
@@ -367,11 +370,11 @@ namespace Cuda
 				{
 					vec3 albedo;
 					boundMaterial->Evaluate(hitCtx, albedo, L);
-					m_objects.cu_camera->Accumulate(renderCtx, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n));
+					m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n));
 				}
 				return false;
 			}
-			
+
 			// Ray is a direct sample 
 			if (incidentRay.IsDirectSample())
 			{
@@ -404,7 +407,7 @@ namespace Cuda
 					}
 				}
 			}
-			else if (hitObject->GetLightID() == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags == kRaySpecular)
+			else if (hitCtx.lightID == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags & kRaySpecular)
 			{
 				const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
 				if (boundMaterial)
@@ -422,7 +425,7 @@ namespace Cuda
 			compressedRay.Kill();
 		}
 
-		m_objects.cu_camera->Accumulate(renderCtx, hitCtx, L);
+		m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L);
 
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 

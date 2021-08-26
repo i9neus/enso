@@ -55,7 +55,7 @@ namespace Cuda
         hit.n = NormalToWorldSpace(hit.n, m_params.tracable.transform);
         if (dot(hit.n, ray.od.o - hit.p) < 0.0f) { hit.n = -hit.n; }
 
-        hitCtx.Set(hit, false, uv, 1e-5f);
+        hitCtx.Set(hit, false, uv, 1e-5f, kNotALight);
 
         return true;
     }

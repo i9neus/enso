@@ -37,7 +37,7 @@ namespace Cuda
 			};
 
 			__device__ FisheyeCamera();
-			__device__ virtual void Accumulate(RenderCtx& ctx, const HitCtx& hitCtx, const vec3& value) override final;
+			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value) override final;
 			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& viewportPos, Device::ImageRGBA* deviceOutputImage) const;
