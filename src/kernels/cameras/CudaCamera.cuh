@@ -82,17 +82,20 @@ namespace Cuda
 			__host__ Camera(const ::Json::Node& parentNode, const std::string& id);
 			__host__ virtual ~Camera() {  }
 
-			__host__ virtual void OnDestroyAsset() override;
-			__host__ virtual Device::Camera* GetDeviceInstance() const = 0;
-			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() = 0;
-			__host__ virtual void ClearRenderState() = 0;
-			__host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const {};
+			__host__ virtual void							OnDestroyAsset() override;
+			__host__ virtual Device::Camera*				GetDeviceInstance() const = 0;
+			__host__ virtual AssetHandle<Host::ImageRGBW>	GetAccumulationBuffer() = 0;
+			__host__ virtual void							ClearRenderState() = 0;
+			__host__ virtual void							Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const {};
 
-			__host__ static std::string GetAssetTypeString() { return "camera"; }
-			__host__ virtual const CameraParams& GetParams() const = 0;
+			__host__ static std::string						GetAssetTypeString() { return "camera"; }
+			__host__ virtual const CameraParams&			GetParams() const = 0;
+			__host__ static AssetType						GetAssetStaticType() { return AssetType::kCamera; }
+			__host__ virtual AssetType						GetAssetType() const { return AssetType::kCamera; }
+
 			__host__ AssetHandle<Host::ManagedObject<Device::RenderState::Stats>> GetRenderStats() { return m_hostRenderStats; }
 			__host__ AssetHandle<Host::CompressedRayBuffer> GetCompressedRayBuffer() { return m_hostCompressedRayBuffer; }
-			__host__ virtual bool IsBakingCamera() const = 0;
+			__host__ virtual bool							IsBakingCamera() const = 0;
 
 		protected:
 			AssetHandle<Host::ManagedObject<Device::RenderState::Stats>>	m_hostRenderStats;

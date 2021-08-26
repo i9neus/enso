@@ -518,9 +518,27 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     ImGui::Checkbox("Permutable", &m_isPermutableUI);
 
     // Jitter the current state to generate a new scene
-    if (ImGui::Button("Randomise"))
+    if (ImGui::Button("Randomise Geometry"))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f)); }
+        for (auto& shelf : m_imguiShelves)
+        {
+            auto type = shelf.second->GetRenderObjectAssetType();
+            if (type == Cuda::AssetType::kTracable || type == Cuda::AssetType::kMaterial || type == Cuda::AssetType::kBxDF)
+            {
+                shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
+            }
+        }
+    }
+
+    if (ImGui::Button("Randomise Lights"))
+    {
+        for (auto& shelf : m_imguiShelves)
+        {
+            if (shelf.second->GetRenderObjectAssetType() == Cuda::AssetType::kLight)
+            {
+                shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
+            }
+        }
     }
     SL;
     // Reset all the jittered values to their midpoints

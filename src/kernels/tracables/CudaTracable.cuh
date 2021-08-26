@@ -72,12 +72,14 @@ namespace Cuda
 
         public:
             __host__ virtual Device::Tracable*      GetDeviceInstance() const = 0;
-            __host__ virtual AssetType              GetAssetType() const override final { return AssetType::kTracable; }
             __host__ virtual void                   Bind(RenderObjectContainer& objectContainer) override final;
             __host__ virtual void                   Synchronise() override final;
             __host__ virtual void                   FromJson(const ::Json::Node& node, const uint flags) override;
             __host__ virtual int                    GetIntersectionCostHeuristic() const = 0;
+
             __host__ static std::string             GetAssetTypeString() { return "tracable"; }
+            __host__ virtual AssetType              GetAssetType() const override final { return AssetType::kTracable; }
+            __host__ static AssetType               GetAssetStaticType() { return AssetType::kTracable; }
             
             __host__ void                           SetLightID(const uchar lightId) { m_lightId = lightId; }
             __host__ void                           SetBoundMaterialID(const std::string& id) { m_materialId = id; }

@@ -16,6 +16,7 @@ public:
     virtual bool IsDirty() const = 0;
     virtual void MakeClean() = 0;
     virtual void MakeDirty() = 0;
+    virtual Cuda::AssetType GetRenderObjectAssetType() const = 0;
 
     virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) = 0;
     virtual void Update() {}
@@ -43,8 +44,6 @@ template<typename ObjectType, typename ParamsType>
 class IMGUIShelf : public IMGUIAbstractShelf
 {
 public:
-    using tObjectType = ObjectType;
-
     IMGUIShelf() : m_p(m_paramsBuffer[0]), m_isDirty(false) {}
 
     IMGUIShelf(const Json::Node& json) : IMGUIShelf()
@@ -94,6 +93,8 @@ public:
     }
 
     virtual void Reset() { Update(); }
+
+    virtual Cuda::AssetType GetRenderObjectAssetType() const override { return ObjectType::GetAssetStaticType(); }
 
     ParamsType& GetParamsObject() { return m_paramsBuffer[0]; }
 

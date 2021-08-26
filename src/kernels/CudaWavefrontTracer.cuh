@@ -159,22 +159,24 @@ namespace Cuda
 			__host__ WavefrontTracer(const ::Json::Node& node, const std::string& id);
 			__host__ virtual ~WavefrontTracer();
 
-			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
-			__host__ static std::string GetAssetTypeString() { return "wavefront"; }
-			__host__ static std::string GetAssetDescriptionString() { return "Wavefront Tracer"; }
-			__host__ virtual void OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+			__host__ static AssetHandle<Host::RenderObject>		Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
+			__host__ static std::string							GetAssetTypeString() { return "wavefront"; }
+			__host__ static std::string							GetAssetDescriptionString() { return "Wavefront Tracer"; }
+			__host__ virtual AssetType							GetAssetType() const override final { return AssetType::kIntegrator; }
+			__host__ static AssetType							GetAssetStaticType() { return AssetType::kIntegrator; }
+			
+			__host__ virtual void								FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
+			__host__ virtual void								Bind(RenderObjectContainer& sceneObjects) override final;
+			__host__ void										SetDirty() { m_isDirty = true; }
 
-			__host__ virtual void OnDestroyAsset() override final;
-			__host__ virtual void FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
-			__host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
-			__host__ void SetDirty() { m_isDirty = true; }
+			__host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+			__host__ virtual void								OnDestroyAsset() override final;
+			__host__ virtual void								OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
 
-			__host__ virtual void OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
-
-			__host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
-			__host__ void Trace(); 
-			__host__ AssetHandle<Host::Camera> GetAttachedCamera() { return m_hostCameraAsset; }
-			__host__ void AttachCamera(AssetHandle<Host::Camera>& camera);
+			__host__ void										Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
+			__host__ void										Trace(); 
+			__host__ AssetHandle<Host::Camera>					GetAttachedCamera() { return m_hostCameraAsset; }
+			__host__ void										AttachCamera(AssetHandle<Host::Camera>& camera);
 		};
 	}
 }

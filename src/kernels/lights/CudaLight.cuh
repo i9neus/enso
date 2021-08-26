@@ -60,15 +60,17 @@ namespace Cuda
             {
                 Host::RenderObject::UpdateDAGPath(node);
             }
-            __host__ virtual Device::Light* GetDeviceInstance() const = 0;
-            __host__ virtual AssetType GetAssetType() const override final { return AssetType::kLight; }
-            __host__ static std::string GetAssetTypeString() { return "light"; }
-            __host__ static uint GetInstanceFlags() { return kInstanceFlagsAllowMultipleInstances; }
-            __host__ virtual AssetHandle<Host::Tracable> GetTracableHandle();
-            __host__ virtual void Synchronise() override final;
+            __host__ virtual Device::Light*                 GetDeviceInstance() const = 0;
+            __host__ virtual AssetHandle<Host::Tracable>    GetTracableHandle();
+            __host__ virtual void                           Synchronise() override final;
 
-            __host__ uchar GetLightID() const { return m_lightId; }
-            __host__ void SetLightID(const uchar id) { m_lightId = id; }
+            __host__ virtual AssetType                      GetAssetType() const override final { return AssetType::kLight; }
+            __host__ static AssetType                       GetAssetStaticType() { return AssetType::kLight; }
+            __host__ static std::string                     GetAssetTypeString() { return "light"; }
+            __host__ static uint                            GetInstanceFlags() { return kInstanceFlagsAllowMultipleInstances; }
+
+            __host__ uchar                                  GetLightID() const { return m_lightId; }
+            __host__ void                                   SetLightID(const uchar id) { m_lightId = id; }
         };
     }
 }
