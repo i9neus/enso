@@ -36,7 +36,7 @@ namespace Cuda
 #ifdef CudaImageBoundCheck
 				if (x < 0 || x >= m_width || y < 0 || y >= m_height) { return nullptr; }
 #endif
-				return cu_data[y * m_height + x];
+				return cu_data[y * m_width + x];
 			}
 
 			__device__ T& At(const ivec2& xy)
@@ -44,13 +44,13 @@ namespace Cuda
 #ifdef CudaImageBoundCheck
 				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
 #endif
-				return cu_data[xy.y * m_height + xy.x];
+				return cu_data[xy.y * m_width + xy.x];
 			}
 
 			template<typename = typename std::enable_if<std::is_same<T, vec4>::value>>
 			__device__ __forceinline__ void Accumulate(const ivec2& xy, const vec3& value, const bool isAlive)
 			{
-				auto& texel = cu_data[xy.y * m_height + xy.x]; 				
+				auto& texel = cu_data[xy.y * m_width + xy.x];
 				texel.xyz += value;
 				if (!isAlive) 
 				{
