@@ -19,7 +19,6 @@
 
 #include "kernels/cameras/CudaPerspectiveCamera.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
-#include "kernels/cameras/CudaFisheyeCamera.cuh"
 
 #include "kernels/CudaWavefrontTracer.cuh"
 

@@ -295,6 +295,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     ConstructComboBox("Lighting mode", { "Combined", "Separated"}, m_p.lightingMode);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
 
     ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
     ImGui::InputInt("Seed", &m_p.camera.seed);

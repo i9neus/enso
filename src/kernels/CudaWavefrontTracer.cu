@@ -206,41 +206,27 @@ namespace Cuda
 		vec2 xi = renderCtx.rng.Rand<2, 3>();
 
 		// Weight to compensate for stochastic branching and Russian roulette
-		float stochasticWeight = 2.0f;
+		float stochasticWeight = 1.0f;
 
 		// Calculate the Russian roulette weight and bail out if the ray is terminated
-		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay.weight * albedo), xi.y, stochasticWeight)) { return L; }
+		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), xi.y, stochasticWeight)) { return L; }
 
-		// If we're at max depth, only do NEE 
-		if (renderCtx.depth == m_activeParams.maxDepth)
-		{
-			if (m_numLights == 0) { return L; }
-			xi = xi * 0.5f + 0.5f;
-			stochasticWeight *= 0.5f;
-		}
-
-		// If there are no lights in this scene, always sample the BxDF
-		else if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_numLights == 0)
-		{
-			xi.x *= 0.5f;
-			stochasticWeight *= 0.5f;
-		}	
-
-		// Indirect light sampling
-		if (xi.x < 0.5f)
+		// Indirect light sampling	
+		if(renderCtx.depth < m_activeParams.maxDepth)
 		{
 			vec3 extantDir;
 			float pdfBxDF;
 			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
-				vec3 LIndirect = renderCtx.emplacedRay.weight* albedo;
+				vec3 LIndirect = renderCtx.emplacedRay[0].weight * albedo;
 				LIndirect *= stochasticWeight;
 
 				renderCtx.EmplaceIndirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LIndirect, kRayScattered);
 			}
 		}
+
 		// Direct light sampling
-		else
+		if(m_numLights > 0)
 		{
 			// Rescale the random number
 			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
@@ -276,9 +262,9 @@ namespace Cuda
 				if (light.Sample(incidentRay, hitCtx, renderCtx, extantDir, L, pdfLight))
 				{
 					float weightBxDF;
-					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);					
+					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
 
-					L *= renderCtx.emplacedRay.weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+					L *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
 
 					// If MIS is enabled, weight the ray using the power heuristic
 					if (GetImportanceMode(renderCtx) == kImportanceMIS)
@@ -286,15 +272,15 @@ namespace Cuda
 						L *= PowerHeuristic(pdfLight, pdfBxDF);
 					}
 
-					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, pdfLight, lightIdx, kRayDirectLightSample);
+					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, pdfLight, lightIdx, kRayDirectLightSample, incidentRay);
 				}
 			}
 			// Sample the BxDF
 			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
 			{
 				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir),
-					renderCtx.emplacedRay.weight * albedo * stochasticWeight,
-					pdfBxDF, lightIdx, kRayDirectBxDFSample);
+					renderCtx.emplacedRay[0].weight * albedo * stochasticWeight,
+					pdfBxDF, lightIdx, kRayDirectBxDFSample, incidentRay);
 			}
 		}
 
@@ -318,13 +304,15 @@ namespace Cuda
 		if (kThreadIdx == 0) { PreBlock(); }
 		__syncthreads();
 
-		CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
+		/*CompressedRay& compressedRay = (*m_objects.cu_compressedRayBuffer)[rayIdx];
 		bool isNextRay;
 		do
 		{			
 			isNextRay = Trace(compressedRay);
 		} 
-		while (isNextRay);
+		while (isNextRay);*/
+
+		Trace((*m_objects.cu_compressedRayBuffer)[rayIdx]);
 	}
 
 	__device__ __forceinline__ void Device::WavefrontTracer::Trace(const uint rayIdx) const
@@ -340,13 +328,12 @@ namespace Cuda
 
 	__device__ bool Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
 	{
-		if (!compressedRay.IsAlive()) { return false; }
+		if (!compressedRay.IsAlive()) { return false; }		
 		
 		__shared__ uchar deadRays[16 * 16];
 
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay);
-		vec3 L(0.0f);
 
 		compressedRay.Kill();
 
@@ -357,6 +344,7 @@ namespace Cuda
 		Device::Tracable* hitObject = nullptr;
 		const int numTracables = tracables.Size();	
 
+		// Test with the tracables
 		for (int i = 0; i < numTracables; i++)
 		{
 			if (tracables[i]->Intersect(incidentRay, hitCtx))
@@ -365,94 +353,107 @@ namespace Cuda
 			}
 		}
 
-		/*if (incidentRay.flags & kRaySpecular) L += kRed;
-		if (hitObject && hitObject->GetLightID() != kNotALight) L += kGreen;
-		m_objects.cu_camera->Accumulate(renderCtx, hitCtx, lightID, L);
-		return false;*/
+		/*if (kKernelIdx % 2 == 1 && incidentRay.depth >= 2)
+		{
+			vec3 col;
+			col[clamp(int(incidentRay.depth) - 2, 0, 2)] = 1.0f;
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, col);
+			return false;
+		}*/
 
+		// Shading normals mode just requires we splat the normals into the framebuffer
 		if (m_activeParams.shadingMode == kShadeNormals)
 		{
-			if (hitObject)
-			{
-				L = hitCtx.hit.n * 0.5f + vec3(0.5f);
-			}
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L);
+			const vec3 L = hitObject ? (hitCtx.hit.n * 0.5f + vec3(0.5f)) : kZero;
+			
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, false);
 			return false;
 		}
 
-		if (!hitObject)
-		{
-			if (incidentRay.IsIndirectSample())
-			{
-				// Ray didn't hit anything so add the ambient term multiplied by the weight
-				L = m_activeParams.ambientRadiance * compressedRay.weight;
-			}
-		}
-		else
-		{	
-			if (m_activeParams.shadingMode == kShadeSimple)
-			{
-				const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
-				if (boundMaterial)
-				{
-					vec3 albedo;
-					boundMaterial->Evaluate(hitCtx, albedo, L);
-					m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n));
-				}
-				return false;
-			}
+		vec3 L(0.0f);
 
-			// Ray is a direct sample 
-			if (incidentRay.IsDirectSample())
+		// If this is a NEE ray, evaluate it first...
+		if ((kKernelIdx % 2 == 1) && hitObject && incidentRay.IsDirectSample())
+		{			
+			// Check that the intersected tracable is the same as the light ID associated with this ray
+			if (compressedRay.lightId == hitObject->GetLightID())
 			{
-				// Check that the intersected tracable is the same as the light ID associated with this ray
-				if (compressedRay.lightId == hitObject->GetLightID())
+				// Light should be evaluated (i.e. BxDF was sampled)
+				if (incidentRay.flags & kRayDirectBxDFSample)
 				{
-					// Light should be evaluated (i.e. BxDF was sampled)
-					if (incidentRay.flags & kRayDirectBxDFSample)
+					const Light* light = (*m_objects.cu_deviceLights)[compressedRay.lightId];
+					if (!light) { L = kPink; }
+					else
 					{
-						const Light* light = (*m_objects.cu_deviceLights)[compressedRay.lightId];
-						if (!light) { L = kPink; }
-						else
+						float pdfLight;
+						if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
 						{
-							float pdfLight;
-							if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
+							L *= compressedRay.weight;
+							L *= float(m_objects.cu_deviceLights->Size());
+							if (GetImportanceMode(renderCtx) == kImportanceMIS)
 							{
-								L *= compressedRay.weight;
-								L *= float(m_objects.cu_deviceLights->Size());
-								if (GetImportanceMode(renderCtx) == kImportanceMIS)
-								{
-									L *= PowerHeuristic(compressedRay.pdf, pdfLight);
-								}
+								L *= PowerHeuristic(compressedRay.pdf, pdfLight);
 							}
 						}
 					}
-					// If the light itself was sampled, everything's baked into the throughput
-					else
-					{
-						L = compressedRay.weight;
-					}
 				}
-			}
-			else if (hitCtx.lightID == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags & kRaySpecular)
-			{
-				const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
-				if (boundMaterial)
+				// If the light itself was sampled, everything's baked into the throughput
+				else
 				{
-					// Otherwise, it's a BxDF sample so do a regular shade op
-					L = Shade(incidentRay, *boundMaterial, hitCtx, renderCtx) * compressedRay.weight;
+					L = compressedRay.weight;
 				}
-				else { L += kPink;	}
 			}
+
+			// Accumulate extant radiance
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
 		}
 
-		if (m_activeParams.shadingMode == kShadeDebug)
-		{
-			L = hitCtx.debug;
-			compressedRay.Kill();
-		}
+		// Synchronise with the rest of the warp to guarantee that any NEE rays are dead
+		__syncwarp();
 
-		m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L);
+		if (kKernelIdx % 2 == 0)
+		{			
+			if (!hitObject)
+			{
+				// Ray didn't hit anything so add the ambient term multiplied by the weight
+				L += m_activeParams.ambientRadiance * compressedRay.weight;
+			}
+			else
+			{				
+				// For simple shading, just evaluate the material albedo and do a fake cosine lighting term
+				if (m_activeParams.shadingMode == kShadeSimple)
+				{
+					const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
+					if (boundMaterial)
+					{
+						vec3 albedo;
+						boundMaterial->Evaluate(hitCtx, albedo, L);
+						m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n), false);
+					}
+					return false;
+				}
+
+				if (hitCtx.lightID == kNotALight || GetImportanceMode(renderCtx) == kImportanceBxDF || incidentRay.flags & kRaySpecular)
+				{
+					const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
+					if (boundMaterial)
+					{
+						// Otherwise, it's a BxDF sample so do a regular shade op
+						L += Shade(incidentRay, *boundMaterial, hitCtx, renderCtx) * compressedRay.weight;
+					}
+					else { L += kPink; }
+				}
+			}
+			 
+			if (m_activeParams.shadingMode == kShadeDebug)
+			{
+				L = hitCtx.debug;
+				compressedRay.Kill();
+			}
+
+			// Accumulate extant radiance
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
+		}
 
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 

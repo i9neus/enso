@@ -15,16 +15,15 @@
 #define kAccumBufferHeight 1024u
 #define kAccumBufferSize (kAccumBufferWidth * kAccumBufferHeight)
 
-#define kRayBufferWidth 512u
-#define kRayBufferHeight 512u
-#define kRayBufferSize (kRayBufferWidth * kRayBufferHeight)
-
+#define kRayBufferSize          (512u * 512u * 2u)
+#define kRayBufferNumBuckets    (512u * 512u)
 
 namespace Cuda
 {
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
         lightingMode = kBakeLightingCombined;
+        gridUpdateInterval = 10;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -40,6 +39,7 @@ namespace Cuda
         camera.ToJson(node);
 
         node.AddEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode);
+        node.AddValue("gridUpdateInterval", gridUpdateInterval);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -49,6 +49,7 @@ namespace Cuda
         camera.FromJson(node, flags);
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
+        node.GetValue("gridUpdateInterval", gridUpdateInterval, flags);
     }      
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -67,28 +68,29 @@ namespace Cuda
 
     __device__ void Device::LightProbeCamera::SeedRayBuffer(const int frameIdx)
     {
-        assert(kKernelIdx < kRayBufferSize);
+        assert(kKernelIdx * 2 < kRayBufferSize);
         
-        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx];
+        CompressedRay* compressedRays = &(*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx * 2];
 
         if (kKernelIdx > m_params.totalBuckets) 
         {
-            compressedRay.Kill();
-            return; 
+            compressedRays[0].Kill();
+            compressedRays[1].Kill();
+            return;
         }
 
         // On the first frame, reset the ray and the sample index
         if (frameIdx == 0)
         {
-            compressedRay.Reset();
-            compressedRay.sampleIdx = m_seedOffset;
+            compressedRays[0].Reset();
+            compressedRays[1].Reset();
+            compressedRays[0].sampleIdx = m_seedOffset;
         }
 
-        if (!compressedRay.IsAlive() && 
-            (m_params.camera.maxSamples <= 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.maxSamplesPerBucket))
+        if (!compressedRays[0].IsAlive() && !compressedRays[1].IsAlive() &&
+            (m_params.camera.maxSamples <= 0 || int(compressedRays[0].sampleIdx - m_seedOffset) < m_params.maxSamplesPerBucket))
         {
-            //(*m_objects.cu_accumBuffer)[kKernelIdx] = 0.0f;
-            CreateRay(kKernelIdx, compressedRay, frameIdx);
+            CreateRays(kKernelIdx, compressedRays, frameIdx);
         }
     }
 
@@ -120,21 +122,23 @@ namespace Cuda
         m_seedOffset = HashOf(m_params.camera.seed & ((1 << 31) - 1));
     }
 
-    __device__ void Device::LightProbeCamera::CreateRay(const uint& subsampleIdx, CompressedRay& ray, const int frameIdx) const
+    __device__ void Device::LightProbeCamera::CreateRays(const uint& subsampleIdx, CompressedRay* rays, const int frameIdx) const
     {
         assert(subsampleIdx < kAccumBufferSize);
         
         const int probeIdx = subsampleIdx / m_params.subsamplesPerProbe;
         const ivec3 gridIdx = GridIdxFromProbeIdx(probeIdx, m_params.grid.gridDensity);
+
+        auto& primary = rays[0];
         
-        ray.accumIdx = subsampleIdx;
-        ray.sampleIdx++;
-        ray.depth = 0;
-        RNG rng(ray);
+        primary.accumIdx = subsampleIdx;
+        primary.sampleIdx++;
+        primary.depth = 0;
+        RNG rng(primary);
 
         const vec2 xi = rng.Rand<0, 1>();
-        ray.od.d = SampleUnitSphere(xi);
-        ray.probeDir = ray.od.d;
+        primary.od.d = SampleUnitSphere(xi);
+        primary.probeDir = primary.od.d;
 
         // Probes data is grouped as follows:
         // Subsample    = [SH data] [Auxilliary data]
@@ -142,25 +146,27 @@ namespace Cuda
         // Grid         = [Probe 1] ... [Probe M]        
 
         // Project this direction into SH and pre-normalise
-        ray.weight = kOne;
-        ray.depth = 1;
-        ray.flags = kRayLightProbe | kRaySpecular;
+        primary.weight = kOne;
+        primary.depth = 1;
+        primary.flags = kRayLightProbe | kRaySpecular;
 
-        ray.od.o = m_params.grid.aspectRatio * vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f);
-        ray.od.o = m_params.grid.transform.PointToWorldSpace(ray.od.o);
+        primary.od.o = m_params.grid.aspectRatio * vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f);
+        primary.od.o = m_params.grid.transform.PointToWorldSpace(primary.od.o);
+
+        rays[1].accumIdx = subsampleIdx;
     }
 
-    __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value)
+    __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
     {          
-        assert(ctx.emplacedRay.accumIdx < kAccumBufferSize);
+        assert(ctx.emplacedRay[0].accumIdx < kAccumBufferSize);
 
         // Decide which accumlation buffer to write into
         for (int gridIdx = 0; gridIdx < ((m_params.lightingMode == kBakeLightingCombined) ? 1 : 2); ++gridIdx)
         {
-            int accumIdx = ctx.emplacedRay.accumIdx * m_params.coefficientsPerProbe;
+            int accumIdx = ctx.emplacedRay[0].accumIdx * m_params.coefficientsPerProbe;
             
             auto& accumBuffer = *(m_objects.cu_accumBuffers[gridIdx]);
-            const float weight = float(!ctx.emplacedRay.IsAlive());
+            const float weight = !isAlive;
 
             if (m_params.lightingMode == kBakeLightingCombined ||
                 (gridIdx == 0 && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) || 
@@ -169,7 +175,7 @@ namespace Cuda
                 // Project and accumulate the SH coefficients
                 for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx)
                 {
-                    accumBuffer[accumIdx] += vec4(value * SH::Project(ctx.emplacedRay.probeDir, shIdx) * kFourPi, weight);
+                    accumBuffer[accumIdx] += vec4(value * SH::Project(ctx.emplacedRay[0].probeDir, shIdx) * kFourPi, weight);
                 }
             }
             else
@@ -318,7 +324,7 @@ namespace Cuda
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
-        Host::Camera(parentNode, id),
+        Host::Camera(parentNode, id, kRayBufferSize),
         m_block(16 * 16, 1, 1),
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
@@ -412,7 +418,7 @@ namespace Cuda
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder) + 1;
         
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
-        const int maxNumProbes = min(kAccumBufferSize / m_params.coefficientsPerProbe, kRayBufferSize);
+        const int maxNumProbes = min(kAccumBufferSize / m_params.coefficientsPerProbe, kRayBufferNumBuckets);
         if (Volume(m_params.grid.gridDensity) > maxNumProbes)
         {
             const auto oldDensity = m_params.grid.gridDensity;
@@ -431,7 +437,7 @@ namespace Cuda
         // Number of light probes in the grid
         m_params.numProbes = Volume(m_params.grid.gridDensity);
         // Number of SH parameter sets per probe, reduced later to get the final value 
-        m_params.subsamplesPerProbe = min(kRayBufferSize / m_params.numProbes, 
+        m_params.subsamplesPerProbe = min(kRayBufferNumBuckets / m_params.numProbes,
                                           kAccumBufferSize / (m_params.numProbes * m_params.coefficientsPerProbe));
         
         // The maximum number of samples per bucket based on the number of buckets per coefficient
@@ -551,7 +557,9 @@ namespace Cuda
 
     __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)
     {
-        if (m_exporterState != kArmed) { return false; }        
+        if (m_exporterState != kArmed) { return false; }
+
+        BuildLightProbeGrids();
 
         for (int gridIdx = 0; gridIdx < m_numActiveGrids; ++gridIdx)
         {
@@ -584,20 +592,20 @@ namespace Cuda
         Prepare();
     }
 
-    __host__ void Host::LightProbeCamera::OnPostRenderPass()
+    __host__ void Host::LightProbeCamera::BuildLightProbeGrids()
     {
         // Used when parallel reducing the accumluation buffer
         uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.subsamplesPerProbe);
-        
+
         for (int gridIdx = 0; gridIdx < m_numActiveGrids; ++gridIdx)
         {
             // Reduce until the batch range is equal to the size of the block
             uint batchSize = reduceBatchSizePow2;
             while (batchSize > 1)
             {
-                KernelReduceAccumulationBuffer << < m_reduceGrid, m_block, 0, m_hostStream >> > (cu_deviceData, m_deviceObjects.cu_accumBuffers[gridIdx], 
-                                                                                                 m_deviceObjects.cu_probeGrids[gridIdx],
-                                                                                                 reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
+                KernelReduceAccumulationBuffer << < m_reduceGrid, m_block, 0, m_hostStream >> > (cu_deviceData, m_deviceObjects.cu_accumBuffers[gridIdx],
+                    m_deviceObjects.cu_probeGrids[gridIdx],
+                    reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
                 batchSize >>= 1;
             }
             // Reduce the block in a single operation
@@ -607,6 +615,14 @@ namespace Cuda
             //Log::Debug("Samples: %i\n", minMax.x);
 
             IsOk(cudaStreamSynchronize(m_hostStream));
+        }
+    }
+
+    __host__ void Host::LightProbeCamera::OnPostRenderPass()
+    {
+        if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
+        {
+            BuildLightProbeGrids();
         }
     }
 }

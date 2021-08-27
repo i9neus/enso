@@ -8,6 +8,10 @@
 #include "../CudaManagedArray.cuh"
 #include "../CudaManagedObject.cuh"
 
+#define kRayBufferWidth         512u
+#define kRayBufferHeight        512u
+#define kRayBufferSize          (kRayBufferWidth * kRayBufferHeight * 2)
+
 #define kCameraAA                 1.5f             // The width/height of the anti-aliasing kernel in pixels
 #define kCameraSensorSize         0.035f           // The size of the camera sensor in meters
 #define kBlades                   5.0f
@@ -96,28 +100,6 @@ namespace Cuda
         deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
-    __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos, const uint frameIdx)
-    {
-        CompressedRay& compressedRay = (*m_objects.renderState.cu_compressedRayBuffer)[viewportPos.y * 512 + viewportPos.x];
-
-        if (frameIdx == 0)
-        {
-            compressedRay.Reset();
-            compressedRay.sampleIdx = m_seedOffset;
-        }
-
-        if (!compressedRay.IsAlive()/* &&
-            (m_params.camera.maxSamples < 0 || int(compressedRay.sampleIdx - m_seedOffset) < m_params.camera.maxSamples)*/)
-        {
-            if (m_params.isRealtime)
-            {
-                m_objects.cu_accumBuffer->At(compressedRay.GetViewportPos()) = vec4(0.0f);
-            }
-            
-            CreateRay(viewportPos, compressedRay);
-        }
-    }
-
     __device__ void Device::PerspectiveCamera::Prepare()
     { 
         // Only use the lower 31 bits for the seed because we need to deduce the actual sample count from it
@@ -148,6 +130,33 @@ namespace Cuda
         m_d1 = 0.5 * (m_focalDistance - sqrt(-4.0 * m_focalLength * m_focalDistance + sqr(m_focalDistance)));
         m_d2 = m_focalDistance - m_d1;
     }
+
+    __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos, const uint frameIdx)
+    {
+        assert(kKernelIdx * 2 < kRayBufferSize);
+
+        CompressedRay* compressedRays = &(*m_objects.renderState.cu_compressedRayBuffer)[(viewportPos.y * kRayBufferWidth + viewportPos.x) * 2];
+
+        if (frameIdx == 0)
+        {
+            compressedRays[0].Reset();
+            compressedRays[1].Reset();
+            compressedRays[0].sampleIdx = m_seedOffset;
+        }
+
+        if (!compressedRays[0].IsAlive()/* &&
+            (m_params.camera.maxSamples < 0 || int(compressedRays.sampleIdx - m_seedOffset) < m_params.camera.maxSamples)*/)
+        {
+            if (m_params.isRealtime)
+            {
+                m_objects.cu_accumBuffer->At(compressedRays[0].GetViewportPos()) = vec4(0.0f);
+            }
+
+            // Create the camera ray index 0
+            CreateRay(viewportPos, compressedRays[0]);
+        }
+    }
+
     
     __device__ void Device::PerspectiveCamera::CreateRay(const ivec2& viewportPos, CompressedRay& ray) const
     {         
@@ -231,7 +240,7 @@ namespace Cuda
         lensPos *= 0.5 * focalLength / fStop;
         //vec2 lensPos = sampleUnitDisc(xi.xy) * 0.5 * focalLength / fStop;
 
-        // Assemble the ray
+        // Assemble the primary
         ray.od.o = basis * vec3(lensPos, d1);
         ray.od.d = normalize((basis * vec3(focalPlanePos, focalDistance)) - ray.od.o);
         ray.od.o += cameraPos;
@@ -243,24 +252,25 @@ namespace Cuda
         {
             ray.flags |= kRayLightProbe;
         }
+
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
-    __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value)
+    __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
     {
         const bool doAccum = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
                             (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) ||
                             (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
         
-        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay.GetViewportPos(), doAccum ? value : kZero, ctx.emplacedRay.IsAlive());
+        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay[0].GetViewportPos(), doAccum ? value : kZero, isAlive);
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
-        Host::Camera(parentNode, id)
+        Host::Camera(parentNode, id, kRayBufferSize)
     {
         // Create the accumulation buffer
         m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), 512, 512, m_hostStream);
-        m_hostAccumBuffer->Clear(vec4(0.0f));        
+        m_hostAccumBuffer->Clear(vec4(0.0f));
         
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();

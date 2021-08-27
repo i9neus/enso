@@ -11,33 +11,36 @@ namespace Cuda
 	struct RenderCtx
 	{
 		__device__ __forceinline__ RenderCtx(CompressedRay& compressed) :
-			emplacedRay(compressed),
+			emplacedRay(&compressed),
 			depth(compressed.depth),
 			rng(compressed)
 		{}
 
 		uchar			depth;
 		RNG				rng;
-		CompressedRay&  emplacedRay;
+		CompressedRay*  emplacedRay;
 
-		__device__ __forceinline__ void ResetRay() { emplacedRay.flags = 0; }
+		__device__ __forceinline__ void ResetRay() { emplacedRay->flags = 0; }
 
 		__device__ __forceinline__ void EmplaceIndirectSample(const RayBasic& od, const vec3& weight, const uchar& flags)
 		{
-			emplacedRay.od = od;
-			emplacedRay.weight = weight;
-			emplacedRay.depth++;
-			emplacedRay.flags = kRayIndirectSample | (emplacedRay.flags & kRayPersistentFlags) | flags;
+			auto& ray = emplacedRay[0];
+			ray.od = od;
+			ray.weight = weight;
+			ray.depth++;
+			ray.flags = kRayIndirectSample | (ray.flags & kRayPersistentFlags) | flags;
 		}
 
-		__device__ __forceinline__ void EmplaceDirectSample(const RayBasic& od, const vec3& weight, const float& pdf, const ushort& lightId, const uchar& flags)
+		__device__ __forceinline__ void EmplaceDirectSample(const RayBasic& od, const vec3& weight, const float& pdf, const ushort& lightId, const uchar& flags, const Ray& parent)
 		{
-			emplacedRay.od = od;
-			emplacedRay.weight = weight;
-			emplacedRay.lightId = lightId;
-			emplacedRay.pdf = pdf;
-			emplacedRay.depth++;
-			emplacedRay.flags = flags | (emplacedRay.flags & kRayPersistentFlags);
+			auto& ray = emplacedRay[1];
+			ray.od = od;
+			ray.weight = weight;
+			ray.lightId = lightId;
+			ray.pdf = pdf;
+			ray.depth = parent.depth + 1;
+			ray.accumIdx = emplacedRay[0].accumIdx;
+			ray.flags = flags | (parent.flags & kRayPersistentFlags);
 		}
 	};
 

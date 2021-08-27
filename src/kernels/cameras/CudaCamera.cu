@@ -53,14 +53,14 @@ namespace Cuda
         }
     }
     
-    __host__ Host::Camera::Camera(const ::Json::Node& node, const std::string& id) 
+    __host__ Host::Camera::Camera(const ::Json::Node& node, const std::string& id, const int rayBufferSize) 
     {
         // Create the packed ray buffer
-        m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), 512 * 512, m_hostStream);
+        m_hostCompressedRayBuffer = AssetHandle<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), rayBufferSize, m_hostStream);
         m_hostCompressedRayBuffer->Clear(CompressedRay());
 
         // Create the occupancy buffer and render stats
-        m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), 512 * 512 / 32, m_hostStream);
+        m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), rayBufferSize / 32, m_hostStream);
         m_hostRenderStats = AssetHandle < Host::ManagedObject<Device::RenderState::Stats>>(tfm::format("%s_renderStats", id));
     }
 

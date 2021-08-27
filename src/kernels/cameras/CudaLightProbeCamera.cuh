@@ -43,6 +43,7 @@ namespace Cuda
 		vec3						aspectRatio;
 
 		int							lightingMode;
+		int							gridUpdateInterval;
 	};
 
 	namespace Device
@@ -59,7 +60,7 @@ namespace Cuda
 			};
 
 			__device__ LightProbeCamera();
-			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value) override final;
+			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive) override final;
 			__device__ void SeedRayBuffer(const int frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
@@ -72,7 +73,7 @@ namespace Cuda
 
 		private:
 			__device__ void Prepare();
-			__device__ void CreateRay(const uint& accumIdx, CompressedRay& ray, const int frameIdx) const;
+			__device__ void CreateRays(const uint& accumIdx, CompressedRay* rays, const int frameIdx) const;
 			__device__ __forceinline__ void ReduceAccumulatedSample(vec4& dest, const vec4& source);
 
 		private:
@@ -120,6 +121,7 @@ namespace Cuda
 
 		private:
 			__host__ vec2								GetProbeMinMaxSampleCount() const;
+			__host__ void								BuildLightProbeGrids();
 
 			Device::LightProbeCamera*					cu_deviceData;
 			Device::LightProbeCamera::Objects			m_deviceObjects;
