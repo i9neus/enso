@@ -35,11 +35,13 @@ UIStyle::~UIStyle()
     ImGui::PopStyleColor(9);
 }
 
-IMGUIListBox::IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel) :
+IMGUIListBox::IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, 
+                           const std::string& deleteLabel, const std::string& deleteAllLabel) :
     m_listBoxID(id),
     m_addLabel(addLabel),
     m_overwriteLabel(overwriteLabel),
     m_deleteLabel(deleteLabel),
+    m_deleteAllLabel(deleteAllLabel),
     m_currentIdx(-1),
     m_lastIdx(-1)
 {
@@ -113,15 +115,15 @@ void IMGUIListBox::Construct()
         }
         m_currentIdx = -1;
     }
-    /*SL;
-    // Erase a saved state from the container
-    if (ImGui::Button("Delete All"))
+    SL;
+    //Erase a saved state from the container
+    if (!m_deleteAllLabel.empty() && ImGui::Button(m_deleteAllLabel.c_str()))
     {
         if (!m_onDeleteAll || m_onDeleteAll())
         {
             Clear();
         }
-    }*/
+    }
 
     ImGui::PopID();
 }

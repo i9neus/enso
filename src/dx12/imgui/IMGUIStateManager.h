@@ -6,17 +6,18 @@
 class RenderManager;
 class LightProbeCameraShelf;
 class PerspectiveCameraShelf;
+class WavefrontTracerShelf;
 
 class RenderObjectStateMap
 {
 public:
     struct StateObject
     {
-        StateObject() : isPermutable(true) {}
-        StateObject(std::shared_ptr<Json::Document> json_, bool isPermutable_) : json(json_), isPermutable(isPermutable_) {}
+        StateObject() : flags(kStateEnabled | kStatePermuteLights | kStatePermuteGeometry) {}
+        StateObject(std::shared_ptr<Json::Document> json_, bool flags_) : json(json_), flags(flags_) {}
 
         std::shared_ptr<Json::Document>     json;
-        bool                                isPermutable;
+        uint                                flags;
     };
 
     using StateMap = std::map<const std::string, StateObject>;
@@ -27,7 +28,7 @@ public:
     void FromJson(const Json::Node& node, const int flags);
     void ToJson(Json::Node& node) const;
 
-    bool Insert(const std::string& id, const bool isPermutable, const bool overwriteIfExists);
+    bool Insert(const std::string& id, const int flags, const bool overwriteIfExists);
     bool Erase(const std::string& id);
     bool Restore(const std::string& id);
     bool Restore(const std::pair<std::string, StateObject>& it);
@@ -49,7 +50,7 @@ public:
 
     void Clear();
     std::set<int>& GetSampleCountSet() { return m_sampleCountSet; }
-    void Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView);
+    void Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
     bool Advance();
     float GetProgress() const;
     std::vector<std::string> GenerateExportPaths() const;
@@ -59,6 +60,8 @@ public:
     float EstimateRemainingTime(const float bakeProgress) const;
 
 private:
+    void RandomiseScene();
+
     std::set<int>               m_sampleCountSet;
     std::set<int>::const_iterator m_sampleCountIt;
     int                         m_sampleCountIdx;
@@ -78,6 +81,7 @@ private:
     IMGUIAbstractShelfMap&      m_imguiShelves;
     std::shared_ptr<LightProbeCameraShelf>  m_lightProbeCameraShelf;
     std::shared_ptr<PerspectiveCameraShelf> m_perspectiveCameraShelf;
+    std::shared_ptr<WavefrontTracerShelf> m_wavefrontTracerShelf;
     RenderObjectStateMap&       m_stateMap;
 
     int                         m_bakeLightingMode;
@@ -123,10 +127,11 @@ private:
     std::string             m_usdPathTemplate;
 
     std::vector<char>       m_usdPathUIData;
-    bool                    m_isPermutableUI;
+    uint                    m_stateFlags;
     std::string             m_stateJsonPath;
     bool                    m_exportToUSD;
     bool                    m_disableLiveView;
+    bool                    m_startWithThisView;
 
     IMGUIListBox            m_sampleCountListUI;
     IMGUIListBox            m_stateListUI;

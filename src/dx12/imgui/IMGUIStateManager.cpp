@@ -2,7 +2,9 @@
 #include "generic/FilesystemUtils.h"
 #include "manager/RenderManager.h"
 #include "shelves/IMGUIShelves.h"
+
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
+#include "kernels/CudaWavefrontTracer.cuh"
 
 #include <random>
 
@@ -28,14 +30,13 @@ void BakePermutor::Clear()
     m_disableLiveView = true;
 }
 
-void BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView)
+void BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView)
 {
     m_totalSamples = m_completedSamples = 0;
-    m_sampleCountIdx = 0; 
     m_sampleCountIt = m_sampleCountSet.cbegin();
     m_totalSamples = 0;
     m_numIterations = numIterations;
-    m_iterationIdx = -1;
+    m_iterationIdx = 0;
     m_numStates = m_stateMap.GetNumPermutableStates();
     m_stateIdx = 0;
     m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates;
@@ -75,76 +76,104 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
         {
             m_perspectiveCameraShelf = std::dynamic_pointer_cast<PerspectiveCameraShelf>(shelf.second);
         }
+        if (!m_wavefrontTracerShelf)
+        {
+            m_wavefrontTracerShelf = std::dynamic_pointer_cast<WavefrontTracerShelf>(shelf.second);
+        }
     }
 
     if (!m_lightProbeCameraShelf) { Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n"); }
+    if (!m_wavefrontTracerShelf) { Log::Debug("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n"); }
 
     m_startTime = std::chrono::high_resolution_clock::now();
+
+    if (!startWithThisView)
+    {
+        // Restore the state pointed
+        m_stateMap.Restore(*m_stateIt);
+
+        // Randomise all the shelves
+        RandomiseScene();
+    }
+}
+
+void BakePermutor::RandomiseScene()
+{
+    Assert(m_stateIt != m_stateMap.GetStateData().end());
+    
+    // Randomise the shelves depending on which types are selected
+    for (auto& shelf : m_imguiShelves)
+    {
+        shelf.second->Randomise(m_stateIt->second.flags, Cuda::vec2(0.0f, 1.0f));
+    }       
 }
 
 bool BakePermutor::Advance()
 {
+    // Can we advance? 
     if (m_isIdle ||
         m_stateIt == m_stateMap.GetStateData().end() ||
         m_sampleCountIt == m_sampleCountSet.cend() ||
         m_iterationIdx >= m_numIterations ||
-        !m_lightProbeCameraShelf) 
+        !m_lightProbeCameraShelf || !m_wavefrontTracerShelf) 
     { 
         if (m_disableLiveView && m_perspectiveCameraShelf)
         { 
             m_perspectiveCameraShelf->GetParamsObject().camera.isActive = true; 
         }
         return false; 
-    }
-    
+    } 
+
+
     // Increment to the next permutation
-    if (++m_iterationIdx == m_numIterations)
+    if (m_permutationIdx >= 0 && ++m_sampleCountIt == m_sampleCountSet.cend())
     {
-        m_iterationIdx = 0;
-        m_completedSamples += *m_sampleCountIt;
-        ++m_sampleCountIdx;
-        if (++m_sampleCountIt == m_sampleCountSet.cend())
+        m_sampleCountIt = m_sampleCountSet.cbegin();
+        if (++m_iterationIdx == m_numIterations)
         {
-            m_sampleCountIdx = 0;
-            m_sampleCountIt = m_sampleCountSet.cbegin();
+            m_iterationIdx = 0;
+            m_completedSamples += *m_sampleCountIt;
             do
             {
                 ++m_stateIdx;
-                if (++m_stateIt == m_stateMap.GetStateData().end()) 
-                { 
+                if (++m_stateIt == m_stateMap.GetStateData().end())
+                {
                     m_isIdle = true;
-                    return false; 
+                    return false;
                 }
             } 
-            while (!m_stateIt->second.isPermutable);
+            while (!(m_stateIt->second.flags & kStateEnabled));
+
+            // Restore the next state in the sequence
+            m_stateMap.Restore(*m_stateIt);
         }
-    }
-    ++m_permutationIdx;
 
-    // Restore the state pointed
-    m_stateMap.Restore(*m_stateIt);
-
-    //if (m_iterationIdx > 0)
-    {
         // Randomise all the shelves
-        for (auto& shelf : m_imguiShelves)
-        {
-            shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
-        }
+        RandomiseScene();
     }
+    ++m_permutationIdx; 
+
+    Log::Debug("Sample count: %i\n", *m_sampleCountIt);
+    Log::Debug("Iteration: %i\n", m_iterationIdx);
+    Log::Debug("State idx: %i\n", m_stateIdx);
 
     // Set the sample count on the light probe camera
     auto& probeParams = m_lightProbeCameraShelf->GetParamsObject();
     probeParams.camera.maxSamples = *m_sampleCountIt;
+    probeParams.camera.isActive = true;
+
+    // Set the shading mode to full illumination
+    m_wavefrontTracerShelf->GetParamsObject().shadingMode = Cuda::kShadeFull;
     
     // Get some parameters that we'll need to generate the file paths
     m_bakeLightingMode == probeParams.lightingMode;
     m_bakeSeed = probeParams.camera.seed;   
 
-    // Deactivate the perspective camera
-    if (m_disableLiveView && m_perspectiveCameraShelf)
+    // Override some parameters on the other shelves
+    if (m_perspectiveCameraShelf)
     { 
-        m_perspectiveCameraShelf->GetParamsObject().camera.isActive = false; 
+        // Deactivate the perspective camera
+        if (m_disableLiveView) { m_perspectiveCameraShelf->GetParamsObject().camera.isActive = false; }        
     }
 
     Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx, m_numPermutations);
@@ -207,14 +236,14 @@ float BakePermutor::GetElapsedTime() const
 
 float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
 {
-    const float elapsedTime = GetElapsedTime();
-    const float stateProgress = (m_completedSamples + *m_sampleCountIt * bakeProgress) / m_totalSamples;
-    const float batchProgress = (m_stateIdx + stateProgress) / float(m_numStates);
+    const float sampleBatchProgress = (m_completedSamples + *m_sampleCountIt * bakeProgress) / float(m_totalSamples);
+    const float stateProgress = (m_iterationIdx + sampleBatchProgress) / float(m_numIterations);
+    const float totalProgress = (m_stateIdx + stateProgress) / float(m_numStates);
 
-    return elapsedTime * (1.0f - stateProgress) / max(1e-6f, stateProgress);
+    return GetElapsedTime() * (1.0f - totalProgress) / max(1e-6f, totalProgress);
 }
 
-void RenderObjectStateMap::FromJson(const Json::Node& node, const int flags)
+void RenderObjectStateMap::FromJson(const Json::Node& node, const int jsonFlags)
 {
     for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
     {
@@ -224,13 +253,13 @@ void RenderObjectStateMap::FromJson(const Json::Node& node, const int flags)
         auto& newState = m_stateMap[newId];
         newState.json.reset(new Json::Document());
 
-        Json::Node patchNode = versionNode.GetChildObject("patch", flags);
+        Json::Node patchNode = versionNode.GetChildObject("patch", jsonFlags);
         if (patchNode)
         {
             newState.json->DeepCopy(patchNode);
         }
 
-        versionNode.GetValue("isPermutable", newState.isPermutable, flags);
+        versionNode.GetValue("flags", newState.flags, jsonFlags);
     }
 }
 
@@ -240,14 +269,14 @@ void RenderObjectStateMap::ToJson(Json::Node& node) const
     {
         Json::Node versionNode = node.AddChildObject(state.first);
 
-        versionNode.AddValue("isPermutable", state.second.isPermutable);
+        versionNode.AddValue("flags", state.second.flags);
 
         Json::Node patchNode = versionNode.AddChildObject("patch");
         patchNode.DeepCopy(*state.second.json);
     }
 }
 
-bool RenderObjectStateMap::Insert(const std::string& id, const bool isPermutable, bool overwriteIfExists)
+bool RenderObjectStateMap::Insert(const std::string& id, const int flags, bool overwriteIfExists)
 {
     if (id.empty()) { Log::Error("Error: state ID must not be blank.\n");  return false; }
 
@@ -272,7 +301,7 @@ bool RenderObjectStateMap::Insert(const std::string& id, const bool isPermutable
         Log::Debug("Added KIFS state '%s' to library.\n", id);
     }
 
-    stateObjectPtr->isPermutable = isPermutable;
+    stateObjectPtr->flags = flags;
 
     // Dump the data from each shelf into the new JSON node
     for (const auto& shelf : m_imguiShelves)
@@ -342,7 +371,7 @@ int RenderObjectStateMap::GetNumPermutableStates() const
     int numPermutableStates = 0;
     for (auto state : m_stateMap)
     {
-        if (state.second.isPermutable) { numPermutableStates++; }
+        if (state.second.flags & kStateEnabled) { numPermutableStates++; }
     }
     return numPermutableStates;
 }
@@ -350,7 +379,7 @@ int RenderObjectStateMap::GetNumPermutableStates() const
 RenderObjectStateMap::StateMap::const_iterator RenderObjectStateMap::GetFirstPermutableState() const
 {
     RenderObjectStateMap::StateMap::const_iterator it = m_stateMap.cbegin();
-    while (!it->second.isPermutable)
+    while (!(it->second.flags & kStateEnabled))
     {
         Assert(++it != m_stateMap.cend());
     } 
@@ -360,15 +389,16 @@ RenderObjectStateMap::StateMap::const_iterator RenderObjectStateMap::GetFirstPer
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
-    m_stateListUI("Parameter states", "Add state", "Overwrite state", "Delete state"),
-    m_sampleCountListUI("Sample counts", "+", "", "-"),
+    m_stateListUI("Parameter states", "Add", "Overwrite", "Delete", ""),
+    m_sampleCountListUI("Sample counts", " + ", "", " - ", "Clear"),
     m_numBakePermutations(1),
     m_isBaking(false),
     m_permutor(imguiShelves, m_stateMap),
-    m_isPermutableUI(true),
     m_stateMap(imguiShelves),
     m_exportToUSD(false),
-    m_disableLiveView(true)
+    m_disableLiveView(true),
+    m_startWithThisView(false),
+    m_stateFlags(kStatePermuteAll)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -390,7 +420,7 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
 
     std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool 
     { 
-        if (m_stateMap.Insert(id, m_isPermutableUI, false))
+        if (m_stateMap.Insert(id, m_stateFlags, false))
         {
             SerialiseJson();
             return true;
@@ -401,7 +431,7 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
 
     std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool 
     { 
-        if (m_stateMap.Insert(id, m_isPermutableUI, true))
+        if (m_stateMap.Insert(id, m_stateFlags, true))
         {
             SerialiseJson();
             return true;
@@ -424,12 +454,12 @@ void RenderObjectStateManager::Initialise(const Json::Node& node)
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
     m_stateListUI.SetOnDeleteAll(onDeleteAllState);
 
-    std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void  
+    /*std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void  
     { 
         auto it = m_stateMap.GetStateData().find(id);
-        if (it != m_stateMap.GetStateData().end()) { m_isPermutableUI = it->second.isPermutable; }
+        if (it != m_stateMap.GetStateData().end()) { m_stateFlags = it->second.flags; }
     };
-    m_stateListUI.SetOnSelect(onSelectItemState);
+    m_stateListUI.SetOnSelect(onSelectItemState);*/
 
     DeserialiseJson();
 }
@@ -511,40 +541,46 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     // Load a saved state to the UI
     SL;
     if (ImGui::Button("Load") && m_stateListUI.IsSelected())
-    {
-        m_stateMap.Restore(m_stateListUI.GetCurrentlySelectedText());
+    {        
+        const std::string id = m_stateListUI.GetCurrentlySelectedText();
+        
+        auto it = m_stateMap.GetStateData().find(id);
+        if (it != m_stateMap.GetStateData().end()) { m_stateFlags = it->second.flags; }
+
+        m_stateMap.Restore(id);
     }
 
-    ImGui::Checkbox("Permutable", &m_isPermutableUI);
+    auto FlaggedCheckbox = [this](const std::string& id, const uint flag)
+    {
+        bool checked = m_stateFlags & flag;
+        ImGui::Checkbox(id.c_str(), &checked);
+        m_stateFlags = (m_stateFlags & ~flag) | (checked ? flag : 0);
+    };
+
+    FlaggedCheckbox("Enabled", kStateEnabled);
+
+    FlaggedCheckbox("Lights", kStatePermuteLights); SL;
+    FlaggedCheckbox("Geometry", kStatePermuteGeometry); SL;
+    FlaggedCheckbox("Materials", kStatePermuteMaterials);
+    
+    FlaggedCheckbox("Transforms", kStatePermuteTransforms); SL;
+    FlaggedCheckbox("Colours", kStatePermuteColours); SL;
+    FlaggedCheckbox("Fractals", kStatePermuteFractals); SL;
+    FlaggedCheckbox("Object flags", kStatePermuteObjectFlags); 
 
     // Jitter the current state to generate a new scene
-    if (ImGui::Button("Randomise Geometry"))
+    if (ImGui::Button("Shuffle"))
     {
         for (auto& shelf : m_imguiShelves)
         {
-            auto type = shelf.second->GetRenderObjectAssetType();
-            if (type == Cuda::AssetType::kTracable || type == Cuda::AssetType::kMaterial || type == Cuda::AssetType::kBxDF)
-            {
-                shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
-            }
+            shelf.second->Randomise(m_stateFlags, Cuda::vec2(0.0f, 1.0f));
         }
-    }
-
-    if (ImGui::Button("Randomise Lights"))
-    {
-        for (auto& shelf : m_imguiShelves)
-        {
-            if (shelf.second->GetRenderObjectAssetType() == Cuda::AssetType::kLight)
-            {
-                shelf.second->Randomise(Cuda::vec2(0.0f, 1.0f));
-            }
-        }
-    }
-    SL;
+    } 
+    SL;    
     // Reset all the jittered values to their midpoints
-    if (ImGui::Button("Reset jitter"))
+    if (ImGui::Button("Reset"))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(Cuda::vec2(0.5f)); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(kStatePermuteAll, Cuda::vec2(0.5f)); }
     }
 }
 
@@ -554,7 +590,17 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
     
-    m_sampleCountListUI.Construct();
+    m_sampleCountListUI.Construct(); SL;
+    
+    if (ImGui::Button("Defaults"))
+    {
+        m_sampleCountListUI.Clear();
+        for (int i = 32; i <= 65536; i <<= 1)
+        {
+            m_sampleCountListUI.Insert(tfm::format("%i", i));
+        }
+        m_sampleCountListUI.Insert("100000");
+    }
     
     ImGui::DragInt("Permutations", &m_numBakePermutations, 1, 1, 100000);
 
@@ -573,6 +619,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
 
     ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
     ImGui::Checkbox("Disable live view", &m_disableLiveView);
+    ImGui::Checkbox("Start with this view", &m_startWithThisView);
 
     ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
@@ -606,7 +653,7 @@ void RenderObjectStateManager::ToggleBake()
             m_permutor.GetSampleCountSet().insert(count);
         }
     }
-    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView);
+    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView, m_startWithThisView);
 
     m_isBaking = true;
 }

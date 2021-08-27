@@ -23,7 +23,7 @@ public:
 class IMGUIListBox
 {
 public:
-    IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel);
+    IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel, const std::string& deleteAllLabel);
 
     void    Construct();
     void    Clear();
@@ -50,6 +50,7 @@ private:
     std::string                 m_addLabel;
     std::string                 m_overwriteLabel;
     std::string                 m_deleteLabel;
+    std::string                 m_deleteAllLabel;
 
     std::string                 m_listBoxID;
     std::list<std::string>      m_listItems;

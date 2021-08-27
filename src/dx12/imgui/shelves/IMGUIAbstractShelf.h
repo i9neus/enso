@@ -2,6 +2,20 @@
 
 #include "IMGUIElement.h"
 
+enum StateObjectFlags : uint
+{
+    kStateEnabled               = 1 << 0,
+    kStatePermuteLights         = 1 << 1,
+    kStatePermuteGeometry       = 1 << 2,
+    kStatePermuteMaterials      = 1 << 3,
+    kStatePermuteTransforms     = 1 << 4,
+    kStatePermuteColours        = 1 << 5,
+    kStatePermuteIntensities    = 1 << 6,
+    kStatePermuteFractals       = 1 << 7,
+    kStatePermuteObjectFlags    = 1 << 8,
+    kStatePermuteAll = 0xffffffff
+};
+
 class IMGUIAbstractShelf : public IMGUIElement
 {
 public:
@@ -18,7 +32,7 @@ public:
     virtual void MakeDirty() = 0;
     virtual Cuda::AssetType GetRenderObjectAssetType() const = 0;
 
-    virtual void Randomise(const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) = 0;
+    virtual void Randomise(const uint flags, const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) = 0;
     virtual void Update() {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }

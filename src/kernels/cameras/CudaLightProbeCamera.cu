@@ -329,7 +329,8 @@ namespace Cuda
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
         m_exporterState(kDisarmed),
-        m_numActiveGrids(0)
+        m_numActiveGrids(0),
+        m_bakeProgress(0.0f)
     {
         // Create the accumulation buffers and probe grids
         for (int idx = 0; idx < 2; ++idx)
@@ -485,6 +486,7 @@ namespace Cuda
         m_hostAccumBuffers[0]->Clear(vec4(0.0f));
         m_hostAccumBuffers[1]->Clear(vec4(0.0f));
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
+        m_bakeProgress = 0.0f;
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
@@ -543,16 +545,21 @@ namespace Cuda
         return minMax;
     }
 
-    __host__ float Host::LightProbeCamera::GetBakeProgress() const
+    __host__ float Host::LightProbeCamera::GetBakeProgress()
     {
         // FIXME: This is a horrible hack to prevent having to manually scan the accumulation buffer every frame.
         /*if (m_frameIdx < m_params.maxSamplesPerProbe)
         {
             return clamp(m_frameIdx / float(m_params.maxSamplesPerProbe), 0.0f, 1.0f);
         }*/
+
+        if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
+        {
+            vec2 minMax = GetProbeMinMaxSampleCount();
+            m_bakeProgress = clamp((minMax.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+        }
         
-        vec2 minMax = GetProbeMinMaxSampleCount();        
-        return clamp((minMax.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+        return m_bakeProgress;
     }
 
     __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)

@@ -18,8 +18,10 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &m_p.useGrid);
 }
 
-void SimpleMaterialShelf::Randomise(const Cuda::vec2 range)
+void SimpleMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
+    if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
+    
     m_p.albedoHSV.Randomise(range);
     m_p.incandescenceHSV.Randomise(range);
 }
@@ -41,8 +43,10 @@ void KIFSMaterialShelf::Construct()
     m_incandPicker.Construct();
 }
 
-void KIFSMaterialShelf::Randomise(const Cuda::vec2 range)
+void KIFSMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
+    if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
+    
     m_p.albedoHSV.Randomise(range);
     m_p.incandescenceHSV.Randomise(range);
 }
@@ -67,8 +71,10 @@ void CornellMaterialShelf::Construct()
     for (int i = 0; i < 6; ++i) { m_pickers[i].Construct(); }
 }
 
-void CornellMaterialShelf::Randomise(const Cuda::vec2 range)
+void CornellMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
+    if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
+    
     for (int i = 0; i < 6; ++i) { m_p.albedoHSV[i].Randomise(range); }
     Update();
 }
@@ -96,10 +102,12 @@ void PlaneShelf::Construct()
     ImGui::Checkbox("Bounded", &m_p.isBounded);
 }
 
-void PlaneShelf::Randomise(const Cuda::vec2 range)
+void PlaneShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
-    m_p.tracable.renderObject.flags.Randomise(range);
-    m_p.tracable.transform.Randomise(range);
+    if (!(flags & kStatePermuteGeometry)) { return; }
+    
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Randomise(range); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,10 +127,12 @@ void SphereShelf::Construct()
     ConstructJitteredTransform(m_p.transform, true);
 }
 
-void SphereShelf::Randomise(const Cuda::vec2 range)
+void SphereShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
-    m_p.renderObject.flags.Randomise(range);
-    m_p.transform.Randomise(range);
+    if (!(flags & kStatePermuteGeometry)) { return; }
+    
+    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Randomise(range); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,10 +152,12 @@ void CornellBoxShelf::Construct()
     ConstructJitteredTransform(m_p.tracable.transform, true);
 }
 
-void CornellBoxShelf::Randomise(const Cuda::vec2 range)
+void CornellBoxShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
-    m_p.tracable.renderObject.flags.Randomise(range);
-    m_p.tracable.transform.Randomise(range);
+    if (!(flags & kStatePermuteGeometry)) { return; }
+    
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Randomise(range); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,12 +181,17 @@ void QuadLightShelf::Construct()
     m_intensity.Construct();
 }
 
-void QuadLightShelf::Randomise(const Cuda::vec2 range)
+void QuadLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
-    m_p.light.transform.Randomise(range);
-    m_p.light.colourHSV.Randomise(range);
-    m_p.light.intensity.Randomise(range);
-    m_p.light.renderObject.flags.Randomise(range);
+    if (!(flags & kStatePermuteLights)) { return; }
+    
+    if (flags & kStatePermuteColours)
+    {
+        m_p.light.colourHSV.Randomise(range);
+        m_p.light.intensity.Randomise(range);
+    }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,12 +215,17 @@ void SphereLightShelf::Construct()
     m_intensity.Construct();
 }
 
-void SphereLightShelf::Randomise(const Cuda::vec2 range)
+void SphereLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
-    m_p.light.transform.Randomise(range);
-    m_p.light.colourHSV.Randomise(range);
-    m_p.light.intensity.Randomise(range);
-    m_p.light.renderObject.flags.Randomise(range);
+    if (!(flags & kStatePermuteLights)) { return; }
+
+    if (flags & kStatePermuteColours)
+    {
+        m_p.light.colourHSV.Randomise(range);
+        m_p.light.intensity.Randomise(range);
+    }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,7 +237,7 @@ void EnvironmentLightShelf::Construct()
     ImGui::Text("[No attributes]");
 }
 
-void EnvironmentLightShelf::Randomise(const Cuda::vec2 range)
+void EnvironmentLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
 
 }
@@ -261,7 +283,7 @@ void PerspectiveCameraShelf::Construct()
     m_p.camera.seed = max(0, m_p.camera.seed);
 }
 
-void PerspectiveCameraShelf::Randomise(const Cuda::vec2 range)
+void PerspectiveCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
     /*if (m_p.camera.randomiseSeed)
     {
@@ -293,7 +315,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Validity compensation", &m_p.grid.useValidity);
     ConstructComboBox("Output mode", { "Irradiance", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-    ConstructComboBox("Lighting mode", { "Combined", "Separated"}, m_p.lightingMode);
+    ConstructComboBox("Lighting mode", { "All", "Direct + indirect"}, m_p.lightingMode);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
 
@@ -310,7 +332,7 @@ void LightProbeCameraShelf::Construct()
     m_p.camera.seed = max(0, m_p.camera.seed);
 }
 
-void LightProbeCameraShelf::Randomise(const Cuda::vec2 range)
+void LightProbeCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
 {
     if (m_p.camera.randomiseSeed)
     {

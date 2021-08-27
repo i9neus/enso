@@ -114,7 +114,7 @@ namespace Cuda
 			__host__ const LightProbeCameraParams&		GetLightProbeCameraParams() const { return m_params; }
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid(const int idx) { return m_hostLightProbeGrids[idx]; }
 
-			__host__ float								GetBakeProgress() const;
+			__host__ float								GetBakeProgress();
 			__host__ bool								ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
 			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
 			__host__ int								GetExporterState() const { return m_exporterState; }
@@ -136,6 +136,7 @@ namespace Cuda
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 			int											m_numActiveGrids;
+			float										m_bakeProgress;
 
 			std::atomic<int>							m_exporterState;
 		};
