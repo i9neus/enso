@@ -343,6 +343,7 @@ void WavefrontTracerShelf::Construct()
 
     ImGui::SliderInt("Max path depth", &m_p.maxDepth, 0, 20);
     ImGui::ColorEdit3("Ambient radiance", &m_p.ambientRadiance[0]);
+    ImGui::DragFloat("Russian roulette", &m_p.russianRouletteThreshold, 0.001f, 0.0f, 1.0f, "%.4f");
     ConstructComboBox("Importance mode", { "MIS", "Lights", "BxDFs" }, m_p.importanceMode);
     ConstructComboBox("Trace mode", { "Wavefront", "Path" }, m_p.traceMode);
     ConstructComboBox("Light selection mode", { "Naive", "Weighted" }, m_p.lightSelectionMode);

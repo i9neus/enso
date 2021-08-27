@@ -32,14 +32,16 @@ namespace Cuda
 		shadingMode(kShadeFull),
 		importanceMode(kImportanceMIS),
 		lightSelectionMode(kLightSelectionNaive),
-		traceMode(kTracePath)
+		traceMode(kTracePath),
+		russianRouletteThreshold(0.0f)
 	{
 	}
 
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
-		node.AddValue("maxDepth", maxDepth); 
+		node.AddValue("maxDepth", maxDepth);
 		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
+		node.AddValue("russianRouletteThreshold", russianRouletteThreshold);
 		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
@@ -50,6 +52,7 @@ namespace Cuda
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
+		node.GetValue("russianRouletteThreshold", russianRouletteThreshold, flags);
 		node.GetEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
@@ -153,6 +156,26 @@ namespace Cuda
 		return true;
 	}
 
+	__device__ __forceinline__ bool Device::WavefrontTracer::ApplyRussianRoulette(float rayWeight, float& xi, float& outputWeight) const
+	{
+		constexpr float kRussianRouletteWeightClamp = 1e-4f;
+		
+		// If the ray is above the threshold, it's survived. Move on.
+		if (rayWeight >= m_activeParams.russianRouletteThreshold) { return true; }
+		
+		rayWeight = (m_activeParams.russianRouletteThreshold - rayWeight) / m_activeParams.russianRouletteThreshold;
+		
+		// Decide whether the ray survives...
+		if (rayWeight < xi) { return false; }
+
+		// ...and scale the survivors accordingly. We assume that outputWeight is already set and valid. 
+		outputWeight /= max(kRussianRouletteWeightClamp, rayWeight);
+		// FIXME: Rescaling the random number isn't a great solution, but it'll do for now.
+		xi /= rayWeight;
+
+		return true;
+	}
+
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
 		vec3 albedo;
@@ -181,23 +204,27 @@ namespace Cuda
 
 		// Generate some random numbers
 		vec2 xi = renderCtx.rng.Rand<2, 3>();
-		// Weight to compensate for stochastic branching
+
+		// Weight to compensate for stochastic branching and Russian roulette
 		float stochasticWeight = 2.0f;
+
+		// Calculate the Russian roulette weight and bail out if the ray is terminated
+		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay.weight * albedo), xi.y, stochasticWeight)) { return L; }
 
 		// If we're at max depth, only do NEE 
 		if (renderCtx.depth == m_activeParams.maxDepth)
 		{
 			if (m_numLights == 0) { return L; }
 			xi = xi * 0.5f + 0.5f;
-			stochasticWeight = 1.0f;
+			stochasticWeight *= 0.5f;
 		}
 
 		// If there are no lights in this scene, always sample the BxDF
 		else if (GetImportanceMode(renderCtx) == kImportanceBxDF || m_numLights == 0)
 		{
 			xi.x *= 0.5f;
-			stochasticWeight = 1.0f;
-		}
+			stochasticWeight *= 0.5f;
+		}	
 
 		// Indirect light sampling
 		if (xi.x < 0.5f)
