@@ -40,7 +40,6 @@ namespace Cuda
 		uint						totalSubsamples; //				<-- The total number of subsamples in the grid
 
 		int							maxSamplesPerBucket; // 		<-- The maximum number of samples that should be taken per bucket
-		int							maxSamplesPerProbe;
 		vec3						aspectRatio;
 
 		int							lightingMode;

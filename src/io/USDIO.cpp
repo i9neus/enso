@@ -81,8 +81,6 @@ namespace USDIO
 
         const std::string layerTemplateStr = ReadTextFile(usdTemplatePath);
         Assert(!layerTemplateStr.empty());
-
-        //const std::string& usdExportPath = grid->GetUSDExportPath();
         
         InitialiseUSD(usdJson);       
         
@@ -96,16 +94,15 @@ namespace USDIO
         const pxr::SdfPath path("/ProbeVolume");
         pxr::UsdPrim prim = stage->GetPrimAtPath(path);
         Assert(prim);
-
-        const int numSamples = int(gridData[gridParams.coefficientsPerProbe - 1].y + 0.5f);
         
         SetUSDAttribute(prim, "description", usdDescription);
-        SetUSDAttribute(prim, "sampleNum", numSamples);
+        SetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe);
         SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale().x, gridParams.transform.scale().y, gridParams.transform.scale().z));
         SetUSDAttribute(prim, "resolution", pxr::GfVec3f(gridParams.gridDensity.x, gridParams.gridDensity.y, gridParams.gridDensity.z));
 
         pxr::VtFloatArray coeffs(gridParams.numProbes * (gridParams.coefficientsPerProbe - 1) * 3);
         pxr::VtFloatArray dataValidity(gridParams.numProbes);
+        pxr::VtFloatArray dataMeanDistance(gridParams.numProbes);
 
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
         {            
@@ -119,12 +116,14 @@ namespace USDIO
                 coeffs[destIdx * 3 + 2] = gridData[sourceIdx].z;
             }
 
-            // Set the validity coefficients
+            // Set the validity and mean distance coefficients
             const int sourceIdx = probeIdx * gridParams.coefficientsPerProbe + (gridParams.coefficientsPerProbe - 1);
             dataValidity[probeIdx] = gridData[sourceIdx].x;
+            dataMeanDistance[probeIdx] = gridData[sourceIdx].y;
         }
 
         SetUSDAttribute(prim, "coefficients", coeffs);
+        SetUSDAttribute(prim, "dataMeanDistance", dataMeanDistance);
         SetUSDAttribute(prim, "dataValidity", dataValidity);
 
         stage->SetDefaultPrim(prim);

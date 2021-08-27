@@ -9,6 +9,14 @@ namespace Cuda
 
     enum AxisSwizzle : int { kXYZ, kXZY, kYXZ, kYZX, kZXY, kZYX };
 
+    enum ProbeGridOutputMode : int
+    {
+        kProbeGridIrradiance,
+        kProbeGridValidity,
+        kProbeGridHarmonicMean,
+        kProbeGridPref
+    };
+
     __host__ __device__ inline ivec3 GridIdxFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
     {
         return ivec3(probeIdx % gridDensity.x, 
@@ -36,14 +44,14 @@ namespace Cuda
         int                         axisSwizzle;
         vec3                        axisMultiplier;
 
-        bool                        debugOutputPRef;
-        bool                        debugOutputValidity;
-        bool                        debugBakePRef;
+        bool                        useValidity;
+        int                         outputMode;
         bool                        invertX, invertY, invertZ;
 
         int                         coefficientsPerProbe;
         int                         numProbes;
         vec3						aspectRatio;
+        int                         maxSamplesPerProbe;
     };
 
     namespace Device
@@ -53,19 +61,28 @@ namespace Cuda
         class LightProbeGrid : public Device::RenderObject, public AssetTags<Host::LightProbeGrid, Device::LightProbeGrid>
         {
         public:
+            struct Objects
+            {
+                Device::Array<vec3>* cu_shData = nullptr;
+                Device::Array<uchar>* cu_validityData = nullptr;
+            };
+
             __host__ __device__ LightProbeGrid();
             __device__ void Synchronise(const LightProbeGridParams& params);
-            __device__ void Synchronise(Device::Array<vec3>* data) { cu_data = data; }
+            __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
 
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
             __device__ vec3 GetSHCoefficient(const int probeIdx, const int coeffIdx) const;
-            __device__ vec3 Evaluate(const HitCtx& hitCtx) const;           
+            __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
+            __device__ void PrepareValidityGrid();
 
         private:
             __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
+            __device__ vec3 WeightedInterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const;
+            __device__ __forceinline__ uchar GetValidity(const ivec3& gridIdx) const;
 
             LightProbeGridParams    m_params;
-            Device::Array<vec3>*    cu_data = nullptr;
+            Objects                 m_objects;
         };
     }
 
@@ -91,8 +108,10 @@ namespace Cuda
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;
+            Device::LightProbeGrid::Objects m_deviceObjects;
 
-            AssetHandle<Host::Array<vec3>>  m_data;
+            AssetHandle<Host::Array<vec3>>  m_shData;
+            AssetHandle<Host::Array<uchar>>  m_validityData;
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
         };

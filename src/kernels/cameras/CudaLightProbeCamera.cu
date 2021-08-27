@@ -180,25 +180,29 @@ namespace Cuda
 
             if (incidentRay.depth == 1)
             {
+                // Accumulate validity and mean distance
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene
-                accumBuffer[accumIdx] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing), 0.0f, 0.0f, 1.0f);
+                accumBuffer[accumIdx] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing), 
+                                              //1.0f / max(1e-10f, incidentRay.tNear),
+                                              min(m_params.grid.transform.scale().x, incidentRay.tNear) / m_params.grid.transform.scale().x,
+                                              0.0f, 1.0f);
             }
         }
     }
     __device__ void Device::LightProbeCamera::ReduceAccumulatedSample(vec4& dest, const vec4& source)
     {              
-        if (int(dest.w) >= m_params.maxSamplesPerProbe - 1) 
+        if (int(dest.w) >= m_params.grid.maxSamplesPerProbe - 1) 
         {             
             return;
         }
         
-        if (int(dest.w + source.w) < m_params.maxSamplesPerProbe)
+        if (int(dest.w + source.w) < m_params.grid.maxSamplesPerProbe)
         {           
             dest += source;
             return;
         }
 
-        dest += source * (m_params.maxSamplesPerProbe - dest.w) / source.w;
+        dest += source * (m_params.grid.maxSamplesPerProbe - dest.w) / source.w;
     }
 
     __device__ void Device::LightProbeCamera::ReduceAccumulationBuffer(Device::Array<vec4>* cu_accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSize, const uvec2 batchRange)
@@ -264,9 +268,12 @@ namespace Cuda
             //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
             if (coeffIdx == m_params.coefficientsPerProbe - 1)
             {
-               // Store the validity value and the sample count in the final coefficient
-               texel.x /= max(1.0f, texel.w);
-               texel.y = texel.w;
+               const float norm = max(1.0f, texel.w);
+
+               texel.x /= norm;                         // Probe validity
+               //texel.y = norm / max(1e-10f, texel.y); // Harmonic mean distance
+               texel.y /= norm;                         // Geometric mean distance
+               texel.z = texel.w;                       // Store the total number of samples
             }
             else
             {
@@ -292,7 +299,7 @@ namespace Cuda
         const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
         for (int i = startIdx; i <= endIdx; i++)
         {
-            const float coeff = m_objects.cu_probeGrids[0]->GetSHCoefficient(startIdx, m_params.coefficientsPerProbe - 1).y;
+            const float coeff = m_objects.cu_probeGrids[0]->GetSHCoefficient(startIdx, m_params.coefficientsPerProbe - 1).z;
             localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeff), max(localMinMax[kKernelIdx].y, coeff));
         }        
 
@@ -428,10 +435,10 @@ namespace Cuda
                                           kAccumBufferSize / (m_params.numProbes * m_params.coefficientsPerProbe));
         
         // The maximum number of samples per bucket based on the number of buckets per coefficient
-        m_params.maxSamplesPerProbe = m_params.maxSamplesPerBucket = std::numeric_limits<int>::max();
+        m_params.grid.maxSamplesPerProbe = m_params.maxSamplesPerBucket = std::numeric_limits<int>::max();
         if (m_params.camera.maxSamples > 0)
         {
-            m_params.maxSamplesPerProbe = m_params.camera.maxSamples;
+            m_params.grid.maxSamplesPerProbe = m_params.camera.maxSamples;
             m_params.maxSamplesPerBucket = int(1.0f + float(m_params.camera.maxSamples) / float(m_params.subsamplesPerProbe));
         }
 
@@ -539,7 +546,7 @@ namespace Cuda
         }*/
         
         vec2 minMax = GetProbeMinMaxSampleCount();        
-        return clamp((minMax.x + 1.0f) / float(m_params.maxSamplesPerProbe), 0.0f, 1.0f);
+        return clamp((minMax.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
     }
 
     __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)

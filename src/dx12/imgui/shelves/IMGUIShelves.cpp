@@ -290,6 +290,8 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::InputInt3("Grid density", &m_p.grid.gridDensity[0]);
     ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
+    ImGui::Checkbox("Validity compensation", &m_p.grid.useValidity);
+    ConstructComboBox("Output mode", { "Irradiance", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     ConstructComboBox("Lighting mode", { "Combined", "Separated"}, m_p.lightingMode);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
@@ -297,10 +299,6 @@ void LightProbeCameraShelf::Construct()
     ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
     ImGui::InputInt("Seed", &m_p.camera.seed);
     ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
-
-    ImGui::Checkbox("Debug PRef", &m_p.grid.debugOutputPRef); SL;
-    ImGui::Checkbox("Debug validity", &m_p.grid.debugOutputValidity); SL;
-    ImGui::Checkbox("Debug bake", &m_p.grid.debugBakePRef);
 
     ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
     ImGui::Text("Invert axes"); SL;
