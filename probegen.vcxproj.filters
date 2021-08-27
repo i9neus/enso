@@ -73,6 +73,9 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIElement.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
+    <ClCompile Include="src\io\ImageIO.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -351,9 +354,6 @@
     <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\cameras\CudaFisheyeCamera.cuh">
-      <Filter>kernels\cameras</Filter>
-    </ClInclude>
     <ClInclude Include="src\io\USDIO.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -398,6 +398,9 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIElement.h">
       <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\io\ImageIO.h">
+      <Filter>io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -555,9 +558,6 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\CudaLightProbeGrid.cu">
       <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\cameras\CudaFisheyeCamera.cu">
-      <Filter>kernels\cameras</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaSphereLight.cu">
       <Filter>kernels\lights</Filter>

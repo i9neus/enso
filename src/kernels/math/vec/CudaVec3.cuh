@@ -236,7 +236,7 @@ namespace Cuda
     }
 
     __host__ __device__ __forceinline__ vec3 clamp(const vec3& v, const vec3& a, const vec3& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z) }; }
-    __host__ __device__ __forceinline__ vec3 saturate(const vec3& v, const vec3& a, const vec3& b) { return { clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f), clamp(v.z, 0.0f, 1.0f) }; }
+    __host__ __device__ __forceinline__ vec3 saturate(const vec3& v) { return { clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f), clamp(v.z, 0.0f, 1.0f) }; }
     __host__ __device__ __forceinline__ vec3 abs(const vec3& a) { return { fabs(a.x), fabs(a.y), fabs(a.z) }; }
     __host__ __device__ __forceinline__ float sum(const vec3& a) { return a.x + a.y + a.z; }
     __host__ __device__ __forceinline__ vec3 ceil(const vec3& v) { return { ceilf(v.x), ceilf(v.y), ceilf(v.z) }; }

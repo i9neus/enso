@@ -342,4 +342,10 @@ namespace Cuda
         KernelComposite << < m_gridSize, m_blockSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
         hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
+
+    __host__ void Host::PerspectiveCamera::GetRawAccumulationData(std::vector<vec4>& rawData, ivec2& dimensions) const
+    {
+        m_hostAccumBuffer->Download(rawData);
+        dimensions = m_hostAccumBuffer->GetMetadata().Dimensions();
+    }
 }

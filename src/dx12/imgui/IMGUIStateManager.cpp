@@ -124,7 +124,6 @@ bool BakePermutor::Advance()
         return false; 
     } 
 
-
     // Increment to the next permutation
     if (m_permutationIdx >= 0 && ++m_sampleCountIt == m_sampleCountSet.cend())
     {
@@ -620,6 +619,12 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
     ImGui::Checkbox("Disable live view", &m_disableLiveView);
     ImGui::Checkbox("Start with this view", &m_startWithThisView);
+
+    if (ImGui::Button("Save PNG"))
+    {
+        m_renderManager.ExportLiveViewport("C:/projects/probegen/data/test.png");
+    }
+
 
     ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");

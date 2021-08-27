@@ -30,6 +30,7 @@ public:
 
 	void OnJson(const Json::Document& patchJson);
 
+	void ExportLiveViewport(const std::string& pngExportPath);
 	void StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
 	void AbortBake();
 	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
@@ -105,6 +106,8 @@ private:
 	float						m_bakeProgress;
 	std::vector<std::string>	m_usdExportPaths;
 	bool						m_exportToUSD;
+	std::string                 m_pngExportPath;
+	std::atomic<bool>			m_exportToPNG;
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;

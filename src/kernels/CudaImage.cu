@@ -90,4 +90,15 @@ namespace Cuda
 
 		getLastCudaError("CopyImageToD3DTexture execution failed.\n");
 	}
+
+	template<typename T>
+	__host__ void Host::Image<T>::Download(std::vector<T>& rawData) const
+	{
+		Assert(m_hostData.cu_data);
+		if (m_hostData.GetArea() == 0) { return; }
+
+		rawData.resize(m_hostData.GetArea());
+
+		IsOk(cudaMemcpy(rawData.data(), m_hostData.cu_data, sizeof(T) * m_hostData.GetArea(), cudaMemcpyDeviceToHost));
+	}
 }

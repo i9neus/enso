@@ -97,6 +97,8 @@ namespace Cuda
 			__host__ AssetHandle<Host::CompressedRayBuffer> GetCompressedRayBuffer() { return m_hostCompressedRayBuffer; }
 			__host__ virtual bool							IsBakingCamera() const = 0;
 
+			__host__ virtual void							GetRawAccumulationData(std::vector<vec4>& rawData, ivec2& dimensions) const {}
+
 		protected:
 			AssetHandle<Host::ManagedObject<Device::RenderState::Stats>>	m_hostRenderStats;
 			AssetHandle<Host::CompressedRayBuffer>							m_hostCompressedRayBuffer;

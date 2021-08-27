@@ -13,6 +13,7 @@
 #include "kernels/cameras/CudaCamera.cuh"
 
 #include "io/USDIO.h"
+#include "io/ImageIO.h"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kHalt),
@@ -311,6 +312,18 @@ void RenderManager::StartBake(const std::vector<std::string>& usdExportPaths, co
 	m_bakeStatus = BakeStatus::kRunning;
 }
 
+void RenderManager::ExportLiveViewport(const std::string& pngExportPath)
+{
+	if (m_exportToPNG) 
+	{ 
+		m_exportToPNG = false;
+		return; 
+	}
+
+	m_pngExportPath = pngExportPath;
+	m_exportToPNG = true;
+}
+
 void RenderManager::AbortBake()
 {
 	m_bakeStatus = BakeStatus::kHalt;
@@ -487,6 +500,17 @@ void RenderManager::PatchSceneObjects()
 
 void RenderManager::OnBakePostFrame()
 {
+	if (m_exportToPNG)
+	{
+		std::vector<Cuda::vec4> rawData;
+		Cuda::ivec2 dataDimensions;
+		m_liveCamera->GetRawAccumulationData(rawData, dataDimensions);
+
+		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, m_pngExportPath, 2.2f);
+
+		m_exportToPNG = false;
+	}
+	
 	if (m_bakeStatus == BakeStatus::kHalt)
 	{
 		// Do shutdown stuff here

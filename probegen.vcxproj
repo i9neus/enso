@@ -26,6 +26,7 @@
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
+    <ClCompile Include="src\io\ImageIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\RenderManager.cpp" />
     <ClCompile Include="src\manager\SceneGenerator.cpp" />
@@ -61,11 +62,11 @@
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
+    <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
-    <ClInclude Include="src\kernels\cameras\CudaFisheyeCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaLightProbeCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh" />
     <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh" />
@@ -152,7 +153,6 @@
   <ItemGroup>
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu" />
-    <CudaCompile Include="src\kernels\cameras\CudaFisheyeCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />

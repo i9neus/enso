@@ -220,7 +220,7 @@ namespace Cuda
     }
 
     __host__ __device__ __forceinline__ vec2 clamp(const vec2& v, const vec2& a, const vec2& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y) }; }
-    __host__ __device__ __forceinline__ vec2 saturate(const vec2& v, const vec2& a, const vec2& b) { return { clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f) }; }
+    __host__ __device__ __forceinline__ vec2 saturate(const vec2& v) { return { clamp(v.x, 0.0f, 1.0f), clamp(v.y, 0.0f, 1.0f) }; }
     __host__ __device__ __forceinline__ vec2 abs(const vec2& a) { return { fabs(a.x), fabs(a.y) }; }
     __host__ __device__ __forceinline__ float sum(const vec2& a) { return a.x + a.y; }
     __host__ __device__ __forceinline__ vec2 ceil(const vec2& v) { return { ceilf(v.x), ceilf(v.y) }; }
