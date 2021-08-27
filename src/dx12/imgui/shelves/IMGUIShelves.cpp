@@ -323,20 +323,6 @@ void LightProbeCameraShelf::Randomise(const Cuda::vec2 range)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void FisheyeCameraShelf::Construct()
-{
-    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-    ImGui::Checkbox("Active", &m_p.camera.isActive); SL;
-    ImGui::Checkbox("Live", &m_p.camera.isLive);
-
-    ConstructJitteredTransform(m_p.transform, false);
-
-    ImGui::SliderInt("Override max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
 void WavefrontTracerShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }

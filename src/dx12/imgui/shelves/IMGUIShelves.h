@@ -214,15 +214,3 @@ public:
 private:
     std::vector<std::string>    m_swizzleLabels;
 };
-
-// Fisheye camera
-class FisheyeCameraShelf : public IMGUIShelf<Cuda::Host::FisheyeCamera, Cuda::FisheyeCameraParams>
-{
-public:
-    FisheyeCameraShelf(const Json::Node& json) : IMGUIShelf(json) {}
-    virtual ~FisheyeCameraShelf() = default;
-
-    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new FisheyeCameraShelf(json)); }
-    virtual void Construct() override final;
-    virtual void Randomise(const Cuda::vec2 range) override final {}
-};

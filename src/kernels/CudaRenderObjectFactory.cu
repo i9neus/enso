@@ -20,7 +20,6 @@
 
 #include "cameras/CudaPerspectiveCamera.cuh"
 #include "cameras/CudaLightProbeCamera.cuh"
-#include "cameras/CudaFisheyeCamera.cuh"
 
 #include "CudaWavefrontTracer.cuh"
 
@@ -48,7 +47,6 @@ namespace Cuda
 
         AddInstantiator<Host::PerspectiveCamera>();
         AddInstantiator<Host::LightProbeCamera>();
-        AddInstantiator<Host::FisheyeCamera>();
     }    
 
     struct RenderObjectParams2
