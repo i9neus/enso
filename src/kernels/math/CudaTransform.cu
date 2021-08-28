@@ -19,6 +19,8 @@ namespace Cuda
         trans.Randomise(range);
         rot.Randomise(range);
         scale.Randomise(range);
+
+        scale.eval.y = scale.eval.z = scale.eval.x;
     }
     
     __host__ void BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
@@ -29,6 +31,8 @@ namespace Cuda
         trans.FromJson("pos", transNode, flags);
         rot.FromJson("rot", transNode, ::Json::kSilent);
         scale.FromJson("sca", transNode, ::Json::kSilent);
+
+        scale.eval.y = scale.eval.z = scale.eval.x;
         
         // Build the transform
         Create(trans(), rot(), scale());
