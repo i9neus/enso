@@ -159,6 +159,16 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
     {          
         assert(ctx.emplacedRay[0].accumIdx < kAccumBufferSize);
+        
+        vec3 L = value;
+        if (m_params.camera.splatClamp > 0.0)
+        {
+            const float intensity = cwiseMax(L);
+            if (intensity > m_params.camera.splatClamp)
+            {
+                L *= m_params.camera.splatClamp / intensity;
+            }
+        }
 
         // Decide which accumlation buffer to write into
         for (int gridIdx = 0; gridIdx < ((m_params.lightingMode == kBakeLightingCombined) ? 1 : 2); ++gridIdx)
@@ -175,7 +185,7 @@ namespace Cuda
                 // Project and accumulate the SH coefficients
                 for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx)
                 {
-                    accumBuffer[accumIdx] += vec4(value * SH::Project(ctx.emplacedRay[0].probeDir, shIdx) * kFourPi, weight);
+                    accumBuffer[accumIdx] += vec4(L * SH::Project(ctx.emplacedRay[0].probeDir, shIdx) * kFourPi, weight);
                 }
             }
             else

@@ -261,8 +261,22 @@ namespace Cuda
         const bool doAccum = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
                             (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) ||
                             (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
+
+        vec3 L(0.0f);
+        if (doAccum)
+        {
+            L = value;
+            if (m_params.camera.splatClamp > 0.0)
+            {
+                const float intensity = cwiseMax(L);
+                if (intensity > m_params.camera.splatClamp)
+                {
+                    L *= m_params.camera.splatClamp / intensity;
+                }
+            }
+        }
         
-        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay[0].GetViewportPos(), doAccum ? value : kZero, isAlive);
+        m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay[0].GetViewportPos(), L, isAlive);
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
