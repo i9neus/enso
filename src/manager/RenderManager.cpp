@@ -412,6 +412,8 @@ void RenderManager::Run()
 			ClearRenderStates();
 		}
 
+		Assert(!(m_bakeStatus == BakeStatus::kRunning && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
+
 		// Render a pass through each camera to its render state
 		for (auto& camera : m_activeCameras)
 		{

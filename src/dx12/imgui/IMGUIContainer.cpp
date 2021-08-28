@@ -32,7 +32,7 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
     Log::Write("IMGUI successfully initialised!\n");
 }
 
-void IMGUIContainer::Build()
+void IMGUIContainer::Build(HWND hwnd)
 {
     Log::Indent indent("Building IMGUI components...\n", "Done!\n");
     m_shelves.clear();
@@ -43,7 +43,9 @@ void IMGUIContainer::Build()
     IMGUIShelfFactory shelfFactory;
     m_shelves = shelfFactory.Instantiate(json, *renderObjects);
 
-    m_stateManager.Initialise(json);
+    m_stateManager.Initialise(json, hwnd);
+
+    m_hWnd = hwnd;
 }
 
 void IMGUIContainer::Destroy()

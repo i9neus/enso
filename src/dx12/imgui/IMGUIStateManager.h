@@ -34,6 +34,7 @@ public:
     bool Restore(const std::pair<std::string, StateObject>& it);
     void Clear();
     int GetNumPermutableStates() const;
+    const std::string& GetCurrentStateID() const { return m_currentStateID; }
     RenderObjectStateMap::StateMap::const_iterator GetFirstPermutableState() const;
 
     inline const StateMap& GetStateData() const { return m_stateMap; }
@@ -41,6 +42,7 @@ public:
 private:
     StateMap                m_stateMap;  
     IMGUIAbstractShelfMap&  m_imguiShelves;
+    std::string             m_currentStateID;
 };
 
 class BakePermutor
@@ -71,6 +73,7 @@ private:
     int                         m_numPermutations;
     bool                        m_isIdle;
     bool                        m_disableLiveView;
+    bool                        m_startWithThisView;
     RenderObjectStateMap::StateMap::const_iterator m_stateIt;
     int                         m_stateIdx;
     int                         m_numStates;
@@ -99,7 +102,7 @@ public:
     RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager);
     ~RenderObjectStateManager();
 
-    void Initialise(const Json::Node& node);
+    void Initialise(const Json::Node& node, HWND hwnd);
     
     void ConstructUI();
 
@@ -132,7 +135,10 @@ private:
     bool                    m_exportToUSD;
     bool                    m_disableLiveView;
     bool                    m_startWithThisView;
+    bool                    m_shutdownOnComplete;
 
     IMGUIListBox            m_sampleCountListUI;
     IMGUIListBox            m_stateListUI;
+
+    HWND                    m_hWnd;
 };
