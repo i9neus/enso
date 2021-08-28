@@ -15,7 +15,7 @@ namespace Cuda
         public:
             BxDF() = default;
 
-            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const = 0;
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const = 0;
             __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const = 0;
             __device__ virtual vec3 EvaluateCachedRadiance(const HitCtx& hitCtx) const { return vec3(0.0f); }
             __device__ virtual bool IsTwoSided() const = 0;

@@ -31,7 +31,7 @@ namespace Cuda
             LambertBRDF() = default;
             ~LambertBRDF() = default;
 
-            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const override final;
+            __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const override final;
             __device__ virtual bool Evaluate(const vec3& incident, const vec3& extant, const HitCtx& hitCtx, float& weight, float& pdf) const override final;
             __device__ virtual vec3 EvaluateCachedRadiance(const HitCtx& hitCtx) const override final;
             __device__ virtual bool IsTwoSided() const override final { return false; }

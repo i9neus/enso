@@ -28,7 +28,8 @@ namespace Cuda
 {
 	__host__ WavefrontTracerParams::WavefrontTracerParams() :
 		maxDepth(1),
-		ambientRadiance(0.0f),
+		ambientRadianceRGB(0.0f),
+		ambientRadianceHSV(vec3(0.0f)),
 		shadingMode(kShadeFull),
 		importanceMode(kImportanceMIS),
 		lightSelectionMode(kLightSelectionNaive),
@@ -40,29 +41,27 @@ namespace Cuda
 	__host__ void WavefrontTracerParams::ToJson(::Json::Node& node) const
 	{
 		node.AddValue("maxDepth", maxDepth);
-		node.AddArray("ambientRadiance", std::vector<float>({ ambientRadiance.x, ambientRadiance.y, ambientRadiance.z }));
 		node.AddValue("russianRouletteThreshold", russianRouletteThreshold);
 		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
 		node.AddEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode);
+
+		ambientRadianceHSV.ToJson("ambientRadiance", node);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
-		node.GetVector("ambientRadiance", ambientRadiance, ::Json::kSilent);
 		node.GetValue("russianRouletteThreshold", russianRouletteThreshold, flags);
 		node.GetEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
 		node.GetEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode, flags);
-	}
 
-	__host__ bool WavefrontTracerParams::operator==(const WavefrontTracerParams& rhs) const
-	{
-		return maxDepth == rhs.maxDepth &&
-			ambientRadiance == rhs.ambientRadiance;
+		ambientRadianceHSV.FromJson("ambientRadiance", node, flags);
+
+		ambientRadianceRGB = HSVToRGB(ambientRadianceHSV());
 	}
 
 	__device__ Device::WavefrontTracer::WavefrontTracer() : m_checkDigit(0)
@@ -158,12 +157,12 @@ namespace Cuda
 
 	__device__ __forceinline__ bool Device::WavefrontTracer::ApplyRussianRoulette(float rayWeight, float& xi, float& outputWeight) const
 	{
-		constexpr float kRussianRouletteWeightClamp = 1e-4f;
+		constexpr float kRussianRouletteWeightClamp = 1e-10f;
 		
 		// If the ray is above the threshold, it's survived. Move on.
 		if (rayWeight >= m_activeParams.russianRouletteThreshold) { return true; }
 		
-		rayWeight = (m_activeParams.russianRouletteThreshold - rayWeight) / m_activeParams.russianRouletteThreshold;
+		rayWeight /= m_activeParams.russianRouletteThreshold;
 		
 		// Decide whether the ray survives...
 		if (rayWeight < xi) { return false; }
@@ -203,20 +202,22 @@ namespace Cuda
 		if (renderCtx.depth > m_activeParams.maxDepth) { return L; }
 
 		// Generate some random numbers
-		vec2 xi = renderCtx.rng.Rand<2, 3>();
+		// FIXME: This is a hack that may or may not be a good idea for quasi-random sequences
+		vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
+		vec2 split(fmodf(xi.x + xi.z, 1.0f), fmodf(xi.y + xi.w, 1.0f));
 
 		// Weight to compensate for stochastic branching and Russian roulette
 		float stochasticWeight = 1.0f;
 
 		// Calculate the Russian roulette weight and bail out if the ray is terminated
-		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), xi.y, stochasticWeight)) { return L; }
+		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), split.x, stochasticWeight)) { return L; }
 
 		// Indirect light sampling	
 		if(renderCtx.depth < m_activeParams.maxDepth)
 		{
 			vec3 extantDir;
 			float pdfBxDF;
-			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
+			if (bxdf->Sample(incidentRay, hitCtx, renderCtx, xi.xy, extantDir, pdfBxDF))
 			{
 				vec3 LIndirect = renderCtx.emplacedRay[0].weight * albedo;
 				LIndirect *= stochasticWeight;
@@ -229,7 +230,7 @@ namespace Cuda
 		if(m_numLights > 0)
 		{
 			// Rescale the random number
-			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (xi.x * 2.0f - 1.0f);
+			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (split.y * 2.0f - 1.0f);
 
 			// Select a light to sample or evaluate
 			int lightIdx = 0;
@@ -240,12 +241,12 @@ namespace Cuda
 				if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
 					//if (renderCtx.emplacedRay.GetViewportPos().x < 256)
 				{
-					lightIdx = min(m_numLights - 1, int(xi.y * m_numLights));
+					lightIdx = min(m_numLights - 1, int(split.y * m_numLights));
 					weightLight = m_numLights;
 				}
 				// Build a PMF based on a crude estiamte of the irradiance at the shading point. Expensive, but 
 				// significantly reduces noise. 
-				else if (!SelectLight(incidentRay, hitCtx, xi.y, lightIdx, weightLight))
+				else if (!SelectLight(incidentRay, hitCtx, split.y, lightIdx, weightLight))
 				{
 					return L;
 				}
@@ -259,7 +260,7 @@ namespace Cuda
 			// Sample the light
 			if (xi.x < 0.5f)
 			{
-				if (light.Sample(incidentRay, hitCtx, renderCtx, extantDir, L, pdfLight))
+				if (light.Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, L, pdfLight))
 				{
 					float weightBxDF;
 					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
@@ -276,7 +277,7 @@ namespace Cuda
 				}
 			}
 			// Sample the BxDF
-			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, extantDir, pdfBxDF))
+			else if (bxdf->Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, pdfBxDF))
 			{
 				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir),
 					renderCtx.emplacedRay[0].weight * albedo * stochasticWeight,
@@ -416,7 +417,7 @@ namespace Cuda
 			if (!hitObject)
 			{
 				// Ray didn't hit anything so add the ambient term multiplied by the weight
-				L += m_activeParams.ambientRadiance * compressedRay.weight;
+				L += m_activeParams.ambientRadianceRGB * compressedRay.weight;
 			}
 			else
 			{				
@@ -540,7 +541,7 @@ namespace Cuda
 			
 			// If the object is flagged as disabled, exclude it.
 			const RenderObjectParams* objectParams = object->GetRenderObjectParams();
-			if (objectParams && objectParams->flags() & kRenderObjectDisabled) { continue; }
+			if (objectParams && (objectParams->flags() & kRenderObjectDisabled)) { continue; }			
 			
 			const auto type = object->GetAssetType();
 			if (type == AssetType::kTracable)

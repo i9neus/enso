@@ -42,7 +42,7 @@ namespace Cuda
             __device__ virtual ~SphereLight() {}
 
             __device__ void Prepare();
-            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdf) const override final;
+            __device__ bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdf) const override final;
             __device__ bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const override final;
             __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const override final;
 

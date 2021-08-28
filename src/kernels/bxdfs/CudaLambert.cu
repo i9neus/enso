@@ -19,10 +19,8 @@ namespace Cuda
         lightProbeGridIdx = clamp(lightProbeGridIdx, 0, 1);
     }
     
-    __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, float& pdf) const
+    __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const
     {
-        const vec2 xi = renderCtx.rng.Rand<0, 1>();
-
         // Sample the Lambertian direction
         vec3 r = vec3(SampleUnitDisc(xi), 0.0f);
         r.z = sqrt(1.0 - sqr(r.x) - sqr(r.y));

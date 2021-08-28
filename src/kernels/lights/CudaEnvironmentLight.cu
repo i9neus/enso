@@ -37,7 +37,7 @@ namespace Cuda
         m_emitterRadiance = m_params.colour * math::pow(2.0f, m_params.intensity);
     }
 
-    __device__ bool Device::EnvironmentLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
+    __device__ bool Device::EnvironmentLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdfLight) const
     {
         pdfLight = 1 / kFourPi;
         extant = SampleUnitSphere(renderCtx.rng.Rand<0, 1>());

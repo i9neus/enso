@@ -78,7 +78,7 @@ namespace Cuda
         return (cosTheta > 0.0f || sqr(cosTheta) < sqr(m_discRadius)) ? peakIrradiance : 0.0f;
     }
 
-    __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
+    __device__ bool Device::SphereLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdfLight) const
     {        
         vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;
         float originDist = length(originDir);
@@ -96,7 +96,7 @@ namespace Cuda
         originDist -= m_discRadius * sinTheta;
         const float projectedDiscRadius = m_discRadius *sqrtf(1.0f - sqr(sinTheta));
 
-        const vec2 disc = SampleUnitDiscLowDistortion(renderCtx.rng.Rand<2, 3>());
+        const vec2 disc = SampleUnitDiscLowDistortion(xi);
         const mat3 basis = CreateBasisDebug2(originDir);
         vec3 sampleDir = basis.x * disc.x * projectedDiscRadius +
                          basis.y * disc.y * projectedDiscRadius +
@@ -157,11 +157,11 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kIsChildObject), id + "_material");
+        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kRenderObjectIsChild), id + "_material");
         Assert(m_lightMaterialAsset);
 
         // Instantiate the sphere tracable
-        m_lightSphereAsset = AssetHandle<Host::Sphere>(new Host::Sphere(kIsChildObject), id + "_planeTracable");
+        m_lightSphereAsset = AssetHandle<Host::Sphere>(new Host::Sphere(kRenderObjectIsChild), id + "_planeTracable");
         Assert(m_lightSphereAsset);
         m_lightSphereAsset->SetBoundMaterialID(id + "_material");
 

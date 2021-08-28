@@ -79,13 +79,13 @@ namespace Cuda
         return peakIrradiance * max(0.0f, -dot(originDir / sqrt(originDist2), m_lightNormal));
     }
     
-    __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& extant, vec3& L, float& pdfLight) const
+    __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdfLight) const
     {
         // Sample a point on the light 
         const vec3& hitPos = hitCtx.hit.p;
         const vec3& normal = hitCtx.hit.n;
 
-        const vec2 xi = renderCtx.rng.Rand<2, 3>() - vec2(0.5f);
+        xi -= vec2(0.5f);
         const vec3 lightPos = m_params.light.transform.PointToWorldSpace(vec3(xi, 0.0f));
 
         // Compute the normalised extant direction based on the light position local to the shading point
@@ -138,11 +138,11 @@ namespace Cuda
         : cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kIsChildObject), id + "_material");
+        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kRenderObjectIsChild), id + "_material");
         Assert(m_lightMaterialAsset);
 
         // Instantiate the plane tracable
-        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(kIsChildObject), id + "_planeTracable");
+        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(kRenderObjectIsChild), id + "_planeTracable");
         Assert(m_lightPlaneAsset);
         m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
 
