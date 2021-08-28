@@ -77,7 +77,7 @@ std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::In
             cast->GetAssetID();
         }
 
-        newShelf->SetRenderObjectAttributes(object->GetAssetID(), virtualDAGPath, object->IsJitterable());
+        newShelf->SetRenderObjectAttributes(object->GetAssetID(), virtualDAGPath);
         newShelf->MakeClean();       
 
         shelves[virtualDAGPath] = newShelf;

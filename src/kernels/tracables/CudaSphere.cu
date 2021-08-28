@@ -58,14 +58,12 @@ namespace Cuda
      __host__  Host::Sphere::Sphere(const uint flags)
      {
          cu_deviceData = InstantiateOnDevice<Device::Sphere>();
-         RenderObject::SetRenderObjectFlags(flags | kIsJitterable);
+         RenderObject::SetRenderObjectFlags(flags);
      }
 
      // Constructor for user instantiations
     __host__  Host::Sphere::Sphere(const ::Json::Node& node)
-    {
-        RenderObject::SetRenderObjectFlags(kIsJitterable);
-        
+    {       
         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
         FromJson(node, ::Json::kRequiredWarn);
     }
@@ -75,6 +73,8 @@ namespace Cuda
         Host::Tracable::FromJson(node, flags);
         
         m_params.FromJson(node, flags);
+        RenderObject::SetUserFacingRenderObjectFlags(m_params.renderObject.flags());
+
         SynchroniseObjects(cu_deviceData, m_params);
     }
 

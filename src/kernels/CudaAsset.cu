@@ -24,7 +24,12 @@ namespace Cuda
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         const std::string& assetId = object->GetAssetID();
-        AssertMsgFmt(m_assetMap.find(assetId) != m_assetMap.end(), "Object '%s' does not exist in asset registry!", object->GetAssetID().c_str());
+        if (m_assetMap.find(assetId) == m_assetMap.end())
+        {
+            Log::Error("Object '%s' does not exist in asset registry!\n", object->GetAssetID().c_str());
+            return;
+        }
+        //AssertMsgFmt(m_assetMap.find(assetId) != m_assetMap.end(), "Object '%s' does not exist in asset registry!", object->GetAssetID().c_str());
         m_assetMap.erase(assetId);
     }
 

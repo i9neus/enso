@@ -58,7 +58,7 @@ namespace Cuda
             __host__ static std::string GetAssetTypeString() { return "plane"; }
             __host__ static std::string GetAssetDescriptionString() { return "Plane"; }
             __host__ virtual int GetIntersectionCostHeuristic() const override final { return 1; };
-            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.tracable.renderObject; }
+            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final;
 
             __host__ virtual void OnDestroyAsset() override final;
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;

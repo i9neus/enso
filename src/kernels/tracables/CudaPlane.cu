@@ -40,6 +40,11 @@ namespace Cuda
         return true;
     }
 
+    const RenderObjectParams* Host::Plane::GetRenderObjectParams() const 
+    { 
+        return &m_params.tracable.renderObject; 
+    }
+
     __host__ AssetHandle<Host::RenderObject> Host::Plane::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
         if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
@@ -51,14 +56,12 @@ namespace Cuda
     __host__  Host::Plane::Plane(const uint flags)
     {        
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
-        RenderObject::SetRenderObjectFlags(flags | kIsJitterable);
+        RenderObject::SetRenderObjectFlags(flags);
     }
 
     // Constructor for user instantiations
     __host__  Host::Plane::Plane(const ::Json::Node& node)
     {
-        RenderObject::SetRenderObjectFlags(kIsJitterable);
-        
         cu_deviceData = InstantiateOnDevice<Device::Plane>();
         FromJson(node, ::Json::kRequiredWarn);
     }
@@ -70,7 +73,11 @@ namespace Cuda
 
     __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
     {
-        Host::Tracable::FromJson(node, flags);        
+        Host::Tracable::FromJson(node, flags);
+
+        m_params.FromJson(node, flags);
+        RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
+
         SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
     }
 

@@ -13,7 +13,9 @@ namespace Cuda
     enum RenderObjectFlags : uint 
     { 
         kRenderObjectDisabled = 1 << 0,
-        kRenderObjectExcludeFromBake = 1 << 1
+        kRenderObjectExcludeFromBake = 1 << 1,        
+        kRenderObjectIsChild = 1 << 2,
+        kRenderObjectUserFacingParameterMask = (kRenderObjectExcludeFromBake << 1) - 1
     };
 
     enum RenderObjectInstanceFlags : uint
@@ -57,8 +59,7 @@ namespace Cuda
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
             __host__ const bool             HasDAGPath() const { return !m_dagPath.empty(); }
 
-            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kIsChildObject; }
-            __host__ bool                   IsJitterable() const { return m_renderObjectFlags & kIsJitterable;  }
+            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kRenderObjectIsChild; }
             __host__ static uint            GetInstanceFlags() { return 0; }
 
             __host__ virtual void           OnPreRender() {}
@@ -74,15 +75,15 @@ namespace Cuda
                 else { m_renderObjectFlags &= ~flags; }
             }
 
+            __host__ void SetUserFacingRenderObjectFlags(const uint flags)
+            {
+                m_renderObjectFlags = (m_renderObjectFlags & ~kRenderObjectUserFacingParameterMask) | 
+                                        (flags & kRenderObjectUserFacingParameterMask);
+            }
+
         protected:
             __host__ RenderObject() : m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
-
-            enum RenderObjectFlags : uint 
-            { 
-                kIsChildObject = 1 << 0,
-                kIsJitterable = 1 << 1
-            };
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)

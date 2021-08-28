@@ -400,7 +400,7 @@ namespace Cuda
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
+            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold / localMag) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
 
             if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 
@@ -439,8 +439,6 @@ namespace Cuda
     __host__  Host::KIFS::KIFS(const ::Json::Node& node)
         : cu_deviceData(nullptr)
     {
-        RenderObject::SetRenderObjectFlags(kIsJitterable);
-
         cu_deviceData = InstantiateOnDevice<Device::KIFS>();
         FromJson(node, ::Json::kRequiredWarn);
 
@@ -483,6 +481,8 @@ namespace Cuda
         Host::Tracable::FromJson(node, flags);
         
         m_params.FromJson(node, flags);
+        RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
+
         SynchroniseObjects(cu_deviceData, m_params);
     }
 }

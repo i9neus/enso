@@ -77,7 +77,6 @@ namespace Cuda
     __host__  Host::CornellBox::CornellBox(const ::Json::Node& node)
     {
         cu_deviceData = InstantiateOnDevice<Device::CornellBox>();
-        RenderObject::SetRenderObjectFlags(kIsJitterable);
 
         FromJson(node, ::Json::kRequiredWarn);
     }
@@ -92,6 +91,8 @@ namespace Cuda
         Host::Tracable::FromJson(node, flags);
 
         m_params.FromJson(node, flags);
+        RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
+
         SynchroniseObjects(cu_deviceData, m_params);
     }
 

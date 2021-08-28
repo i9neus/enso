@@ -57,10 +57,9 @@ namespace Cuda
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-		bool operator==(const WavefrontTracerParams&) const;
-
 		int			maxDepth;
-		vec3		ambientRadiance;
+		JitterableVec3 ambientRadianceHSV;
+		vec3		ambientRadianceRGB;
 		float		russianRouletteThreshold;
 		int			importanceMode;
 		int			traceMode;
@@ -174,6 +173,7 @@ namespace Cuda
 			__host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
 			__host__ virtual void								OnDestroyAsset() override final;
 			__host__ virtual void								OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
+			__host__ const WavefrontTracerParams&				GetParams() const { return m_params; }
 
 			__host__ void										Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);
 			__host__ void										Trace(); 

@@ -346,15 +346,29 @@ void LightProbeCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+WavefrontTracerShelf::WavefrontTracerShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_ambientPicker(m_p.ambientRadianceHSV, "Ambient radiance")
+{}
+
 void WavefrontTracerShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     ImGui::SliderInt("Max path depth", &m_p.maxDepth, 0, 20);
-    ImGui::ColorEdit3("Ambient radiance", &m_p.ambientRadiance[0]);
     ImGui::DragFloat("Russian roulette", &m_p.russianRouletteThreshold, 0.001f, 0.0f, 1.0f, "%.4f");
+    m_ambientPicker.Construct();
     ConstructComboBox("Importance mode", { "MIS", "Lights", "BxDFs" }, m_p.importanceMode);
     ConstructComboBox("Trace mode", { "Wavefront", "Path" }, m_p.traceMode);
     ConstructComboBox("Light selection mode", { "Naive", "Weighted" }, m_p.lightSelectionMode);
     ConstructComboBox("Shading mode", { "Full", "Simple", "Normals", "Debug" }, m_p.shadingMode);
+}
+
+void WavefrontTracerShelf::Randomise(const uint flags, const Cuda::vec2 range)
+{
+    if (!(flags & kStatePermuteColours)) { return; }
+
+    m_p.ambientRadianceHSV.Randomise(range);
 }

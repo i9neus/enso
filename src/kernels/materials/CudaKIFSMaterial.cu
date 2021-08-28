@@ -56,9 +56,7 @@ namespace Cuda
 
     __host__ Host::KIFSMaterial::KIFSMaterial(const ::Json::Node& node) :
         cu_deviceData(nullptr)
-    {
-        RenderObject::SetRenderObjectFlags(kIsJitterable);
-        
+    {        
         cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>();
         FromJson(node, ::Json::kRequiredWarn);
     }

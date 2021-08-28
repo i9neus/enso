@@ -39,11 +39,10 @@ public:
     const std::string& GetID() const { return m_id; }
     bool IsJitterable() const { return m_isJitterable; }
 
-    void SetRenderObjectAttributes(const std::string& id, const std::string& dagPath, const bool isJitterable)
+    void SetRenderObjectAttributes(const std::string& id, const std::string& dagPath)
     {
         m_id = id;
         m_dagPath = dagPath;
-        m_isJitterable = isJitterable;
     }
 
 protected:

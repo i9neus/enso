@@ -179,12 +179,15 @@ public:
 class WavefrontTracerShelf : public IMGUIShelf<Cuda::Host::WavefrontTracer, Cuda::WavefrontTracerParams>
 {
 public:
-    WavefrontTracerShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    WavefrontTracerShelf(const Json::Node& json);
     virtual ~WavefrontTracerShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new WavefrontTracerShelf(json)); }
     virtual void Construct() override final;
-    virtual void Randomise(const uint flags, const Cuda::vec2 range) override final { }
+    virtual void Randomise(const uint flags, const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker                   m_ambientPicker;
 };
 
 // Perspective camera

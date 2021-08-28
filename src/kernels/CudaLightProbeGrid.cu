@@ -230,7 +230,7 @@ namespace Cuda
 
     __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id)
     {
-        RenderObject::SetRenderObjectFlags(kIsChildObject);
+        RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
         
         m_shData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
         m_validityData = AssetHandle<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);

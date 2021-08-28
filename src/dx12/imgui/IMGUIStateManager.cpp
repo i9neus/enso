@@ -157,6 +157,9 @@ bool BakePermutor::Advance()
     probeParams.camera.maxSamples = *m_sampleCountIt;
     probeParams.camera.isActive = true;
 
+    // Always randomise the probe shelf to generate a new seed
+    m_lightProbeCameraShelf->Randomise(m_stateIt->second.flags, Cuda::vec2(0.0f, 1.0f));
+
     // Set the shading mode to full illumination
     m_wavefrontTracerShelf->GetParamsObject().shadingMode = Cuda::kShadeFull;
     
