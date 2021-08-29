@@ -66,6 +66,7 @@ namespace Cuda
 
 	__device__ Device::WavefrontTracer::WavefrontTracer() : m_checkDigit(0)
 	{
+		m_lightProbeMaterial.SetBoundBxDF(&m_lightProbeBRDF);
 	}
 
 	__device__ void Device::WavefrontTracer::Synchronise(const Device::WavefrontTracer::Objects& objects)
@@ -178,16 +179,16 @@ namespace Cuda
 	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
 	{
 		vec3 albedo;
-		vec3 L(0.0f);
+		vec3 LExtant(0.0f);
 		if (!hitCtx.backfacing)
 		{
-			material.Evaluate(hitCtx, albedo, L);
+			material.Evaluate(hitCtx, albedo, LExtant);
 		}
 
 		if (m_activeParams.shadingMode == kShadeSimple) { return albedo; }
-	
+
 		const BxDF* bxdf = material.GetBoundBxDF();
-		if (!bxdf) { return L; }
+		if (!bxdf) { return LExtant; }
 		
 		// Only shade back-facing surfaces if this BxDF supports it
 		if (hitCtx.backfacing && !bxdf->IsTwoSided()) { return kZero; }
@@ -195,11 +196,11 @@ namespace Cuda
 		// If this isn't a probe ray, add in the cached radiance
 		if (!(incidentRay.flags & kRayLightProbe))
 		{
-			L += bxdf->EvaluateCachedRadiance(hitCtx) * albedo;
+			LExtant += bxdf->EvaluateCachedRadiance(hitCtx) * albedo;
 		}
 
 		// If we're beyond max depth, just return incandescence
-		if (renderCtx.depth > m_activeParams.maxDepth) { return L; }
+		if (renderCtx.depth > m_activeParams.maxDepth) { return LExtant; }
 
 		// Generate some random numbers
 		// FIXME: This is a hack that may or may not be a good idea for quasi-random sequences
@@ -210,7 +211,7 @@ namespace Cuda
 		float stochasticWeight = 1.0f;
 
 		// Calculate the Russian roulette weight and bail out if the ray is terminated
-		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), split.x, stochasticWeight)) { return L; }
+		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), split.x, stochasticWeight)) { return LExtant; }
 
 		// Indirect light sampling	
 		if(renderCtx.depth < m_activeParams.maxDepth)
@@ -248,32 +249,32 @@ namespace Cuda
 				// significantly reduces noise. 
 				else if (!SelectLight(incidentRay, hitCtx, split.y, lightIdx, weightLight))
 				{
-					return L;
+					return LExtant;
 				}
 			}
 
 			const Light& light = *(*m_objects.cu_deviceLights)[lightIdx];
 
 			float pdfBxDF, pdfLight;
-			vec3 extantDir, L;
+			vec3 extantDir, LLight;
 
 			// Sample the light
 			if (xi.x < 0.5f)
 			{
-				if (light.Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, L, pdfLight))
+				if (light.Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, LLight, pdfLight))
 				{
 					float weightBxDF;
 					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
 
-					L *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+					LLight *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
 
 					// If MIS is enabled, weight the ray using the power heuristic
 					if (GetImportanceMode(renderCtx) == kImportanceMIS)
 					{
-						L *= PowerHeuristic(pdfLight, pdfBxDF);
+						LLight *= PowerHeuristic(pdfLight, pdfBxDF);
 					}
 
-					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), L, pdfLight, lightIdx, kRayDirectLightSample, incidentRay);
+					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LLight, pdfLight, lightIdx, kRayDirectLightSample, incidentRay);
 				}
 			}
 			// Sample the BxDF
@@ -285,7 +286,7 @@ namespace Cuda
 			}
 		}
 
-		return L;
+		return LExtant;
 	}
 
 	__device__ void Device::WavefrontTracer::PreBlock() const
@@ -328,23 +329,43 @@ namespace Cuda
 	}
 
 	__device__ bool Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
-	{
-		if (!compressedRay.IsAlive()) { return false; }		
+	{	
+		// Horrible hack to simulate Unity's weird radiance/irradiance baking system
+		if (compressedRay.flags & kRayLightProbe && compressedRay.IsAlive() && compressedRay.depth == 1 && kKernelIdx % 2 == 0)
+		{
+			Ray tempRay(compressedRay);
+			RenderCtx tempCtx(compressedRay);
+			
+			// Pretend that we're casting a NEE ray from the last bounce
+			tempCtx.depth = m_activeParams.maxDepth;
+			compressedRay.weight = 1.0f;
+			//RenderCtx tempCtx(compressedRay);
+
+			HitCtx hitCtx;
+			hitCtx.Set(HitPoint(tempRay.od.o, tempRay.od.d), false, vec2(0.0f), 0.0f, kNotALight);
+
+			Shade(tempRay, m_lightProbeMaterial, hitCtx, tempCtx);
+
+			// Spoof the depth of this spawned ray
+			(&compressedRay)[1].depth = 1;
+		}
+
+		// Sync here so that the hack above has time to take effect
+		__syncwarp();
 		
-		__shared__ uchar deadRays[16 * 16];
+		if (!compressedRay.IsAlive()) { return false; }	
 
 		Ray incidentRay(compressedRay);
 		RenderCtx renderCtx(compressedRay);
+		HitCtx hitCtx;
 
 		compressedRay.Kill();
 
 		// INTERSECTION
-		HitCtx hitCtx;
-		hitCtx.debug = 0.0f;
 		auto& tracables = *m_objects.cu_deviceTracables;
 		Device::Tracable* hitObject = nullptr;
-		const int numTracables = tracables.Size();	
-
+		const int numTracables = tracables.Size();
+		
 		// Test with the tracables
 		for (int i = 0; i < numTracables; i++)
 		{
@@ -353,14 +374,6 @@ namespace Cuda
 				hitObject = tracables[i];
 			}
 		}
-
-		/*if (kKernelIdx % 2 == 1 && incidentRay.depth >= 2)
-		{
-			vec3 col;
-			col[clamp(int(incidentRay.depth) - 2, 0, 2)] = 1.0f;
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, col);
-			return false;
-		}*/
 
 		// Shading normals mode just requires we splat the normals into the framebuffer
 		if (m_activeParams.shadingMode == kShadeNormals)
@@ -378,7 +391,7 @@ namespace Cuda
 		{			
 			// Check that the intersected tracable is the same as the light ID associated with this ray
 			if (compressedRay.lightId == hitObject->GetLightID())
-			{
+			{				
 				// Light should be evaluated (i.e. BxDF was sampled)
 				if (incidentRay.flags & kRayDirectBxDFSample)
 				{
@@ -456,6 +469,7 @@ namespace Cuda
 			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
 		}
 
+		__shared__ uchar deadRays[16 * 16];
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 
 		// Reduce the contents of the block buffer to count the number of dead rays 

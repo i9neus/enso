@@ -148,7 +148,7 @@ namespace Cuda
         // Project this direction into SH and pre-normalise
         primary.weight = kOne;
         primary.depth = 1;
-        primary.flags = kRayLightProbe | kRaySpecular;
+        primary.flags = kRayIndirectSample | kRayLightProbe;
 
         primary.od.o = m_params.grid.aspectRatio * vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f);
         primary.od.o = m_params.grid.transform.PointToWorldSpace(primary.od.o);
@@ -178,8 +178,9 @@ namespace Cuda
             auto& accumBuffer = *(m_objects.cu_accumBuffers[gridIdx]);
             const float weight = !isAlive;
 
+            // Is there any energy to accumulate this sample?
             if (m_params.lightingMode == kBakeLightingCombined ||
-                (gridIdx == 0 && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) || 
+                (gridIdx == 0 && incidentRay.depth == 1) || 
                 (gridIdx == 1 && incidentRay.depth > 1))
             {
                 // Project and accumulate the SH coefficients

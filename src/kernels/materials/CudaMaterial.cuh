@@ -24,6 +24,7 @@ namespace Cuda
 
             __device__ virtual void Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const = 0;
             __device__ __forceinline__ const Device::BxDF* GetBoundBxDF() const { return cu_bxdf; }
+            __device__ __forceinline__ void SetBoundBxDF(const Device::BxDF* bxdf) { cu_bxdf = bxdf; }
             __device__ void Synchronise(const Device::BxDF* bxdf) { cu_bxdf = bxdf; }
         };
     }

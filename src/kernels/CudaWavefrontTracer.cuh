@@ -5,6 +5,8 @@
 #include "math/CudaMath.cuh"
 
 #include "cameras/CudaCamera.cuh"
+#include "bxdfs/CudaLambert.cuh"
+#include "materials/CudaSimpleMaterial.cuh"
 
 namespace Json { class Node; }
 
@@ -99,6 +101,9 @@ namespace Cuda
 			Objects							m_objects;
 			WavefrontTracerParams			m_defaultParams;
 			WavefrontTracerParams			m_activeParams;
+
+			LambertBRDF						m_lightProbeBRDF;
+			SimpleMaterial					m_lightProbeMaterial;
 
 			float							m_wallTime;
 			int								m_frameIdx;

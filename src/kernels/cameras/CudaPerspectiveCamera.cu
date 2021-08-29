@@ -144,8 +144,8 @@ namespace Cuda
             compressedRays[0].sampleIdx = m_seedOffset;
         }
 
-        if (!compressedRays[0].IsAlive()/* &&
-            (m_params.camera.maxSamples < 0 || int(compressedRays.sampleIdx - m_seedOffset) < m_params.camera.maxSamples)*/)
+        if (!compressedRays[0].IsAlive() && !compressedRays[1].IsAlive() &&
+            (m_params.camera.maxSamples <= 0 || int(compressedRays[0].sampleIdx - m_seedOffset) < m_params.camera.maxSamples))
         {
             if (m_params.isRealtime)
             {
@@ -250,7 +250,7 @@ namespace Cuda
 
         if (m_params.lightProbeEmulation != kLightProbeEmulationNone)
         {
-            ray.flags |= kRayLightProbe;
+            ray.flags = kRayIndirectSample | kRayLightProbe;
         }
 
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
@@ -259,7 +259,7 @@ namespace Cuda
     __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
     {
         const bool doAccum = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
-                            (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1 && hitCtx.lightID != kNotALight) ||
+                            (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1) ||
                             (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
 
         vec3 L(0.0f);
