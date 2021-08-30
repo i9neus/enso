@@ -52,7 +52,7 @@ public:
 
     void Clear();
     std::set<int>& GetSampleCountSet() { return m_sampleCountSet; }
-    void Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
+    bool Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
     bool Advance();
     float GetProgress() const;
     std::vector<std::string> GenerateExportPaths() const;

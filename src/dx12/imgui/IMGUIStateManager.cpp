@@ -31,14 +31,20 @@ void BakePermutor::Clear()
     m_startWithThisView = false;
 }
 
-void BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView)
+bool BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView)
 {
+    m_numStates = m_stateMap.GetNumPermutableStates();
+    if (m_numStates == 0)
+    {
+        Log::Error("Error: can't start bake because no states are enabled.\n");
+        return false;
+    }
+    
     m_totalSamples = m_completedSamples = 0;
     m_sampleCountIt = m_sampleCountSet.cbegin();
     m_totalSamples = 0;
     m_numIterations = numIterations;
-    m_iterationIdx = 0;
-    m_numStates = m_stateMap.GetNumPermutableStates();
+    m_iterationIdx = 0;   
     m_stateIdx = 0;
     m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates;
     m_permutationIdx = -1;
@@ -84,13 +90,23 @@ void BakePermutor::Prepare(const int numIterations, const std::string& templateP
         }
     }
 
-    if (!m_lightProbeCameraShelf) { Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n"); }
-    if (!m_wavefrontTracerShelf) { Log::Debug("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n"); }
+    if (!m_lightProbeCameraShelf) 
+    { 
+        Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n");  
+        return false;
+    }
+    if (!m_wavefrontTracerShelf) 
+    { 
+        Log::Debug("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n"); 
+        return false;
+    }
 
     m_startTime = std::chrono::high_resolution_clock::now();
 
     // Restore the state pointed
     m_stateMap.Restore(*m_stateIt);
+
+    return true;
 }
 
 void BakePermutor::RandomiseScene()
@@ -604,7 +620,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     if (ImGui::Button("Defaults"))
     {
         m_sampleCountListUI.Clear();
-        for (int i = 32; i <= 65536; i <<= 1)
+        for (int i = 32; i < 65536; i <<= 1)
         {
             m_sampleCountListUI.Insert(tfm::format("%i", i));
         }
@@ -669,7 +685,8 @@ void RenderObjectStateManager::ToggleBake()
             m_permutor.GetSampleCountSet().insert(count);
         }
     }
-    m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView, true);
+    
+    if (!m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView, true)) { return; }
 
     m_isBaking = true;
 }
