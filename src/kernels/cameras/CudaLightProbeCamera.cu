@@ -154,6 +154,7 @@ namespace Cuda
         primary.od.o = m_params.grid.transform.PointToWorldSpace(primary.od.o);
 
         rays[1].accumIdx = subsampleIdx;
+        rays[1].probeDir = primary.probeDir;
     }
 
     __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)

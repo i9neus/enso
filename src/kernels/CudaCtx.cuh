@@ -39,6 +39,7 @@ namespace Cuda
 			ray.lightId = lightId;
 			ray.pdf = pdf;
 			ray.depth = parent.depth + 1;
+			ray.probeDir = emplacedRay[0].probeDir;
 			ray.accumIdx = emplacedRay[0].accumIdx;
 			ray.flags = flags | (parent.flags & kRayPersistentFlags);
 		}
