@@ -171,12 +171,18 @@ namespace Cuda
 
         inline const T& operator*() const
         {
-            AssertMsg(m_ptr, "Invalid asset handle");
+            if (!m_ptr)
+            {
+                AssertMsg(m_ptr, "Invalid asset handle");
+            }
             return *m_ptr;
         }
         inline T& operator*()
         {
-            AssertMsg(m_ptr, "Invalid asset handle");
+            if (!m_ptr)
+            {
+                AssertMsg(m_ptr, "Invalid asset handle");
+            }
             return *m_ptr;
         }
     };
