@@ -230,9 +230,6 @@ namespace Cuda
 		// Direct light sampling
 		if(m_numLights > 0)
 		{
-			// Rescale the random number
-			xi.x = (GetImportanceMode(renderCtx) == kImportanceLight) ? 0.0f : (split.y * 2.0f - 1.0f);
-
 			// Select a light to sample or evaluate
 			int lightIdx = 0;
 			float weightLight = 1.0f;
@@ -259,14 +256,14 @@ namespace Cuda
 			vec3 extantDir, LLight;
 
 			// Sample the light
-			if (xi.x < 0.5f)
+			if (split.x < 0.5f || GetImportanceMode(renderCtx) == kImportanceLight)
 			{
 				if (light.Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, LLight, pdfLight))
 				{
 					float weightBxDF;
 					bxdf->Evaluate(incidentRay.od.d, extantDir, hitCtx, weightBxDF, pdfBxDF);
 
-					LLight *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; // Factor of two here accounts for stochastic dithering between direct and indirect sampling
+					LLight *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; 
 
 					// If MIS is enabled, weight the ray using the power heuristic
 					if (GetImportanceMode(renderCtx) == kImportanceMIS)
@@ -274,7 +271,7 @@ namespace Cuda
 						LLight *= PowerHeuristic(pdfLight, pdfBxDF);
 					}
 
-					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LLight, pdfLight, lightIdx, kRayDirectLightSample, incidentRay);
+					renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir), LLight, pdfLight, lightIdx, kRayDirectLightSample | light.GetLightRayFlags(), incidentRay);
 				}
 			}
 			// Sample the BxDF
@@ -282,7 +279,7 @@ namespace Cuda
 			{
 				renderCtx.EmplaceDirectSample(RayBasic(hitCtx.ExtantOrigin(), extantDir),
 					renderCtx.emplacedRay[0].weight * albedo * stochasticWeight,
-					pdfBxDF, lightIdx, kRayDirectBxDFSample, incidentRay);
+					pdfBxDF, lightIdx, kRayDirectBxDFSample | light.GetLightRayFlags(), incidentRay);
 			}
 		}
 
