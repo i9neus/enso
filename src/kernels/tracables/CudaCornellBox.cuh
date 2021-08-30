@@ -8,15 +8,15 @@ namespace Cuda
 
     struct CornellBoxParams
     {
-        __host__ __device__ CornellBoxParams() : isBounded(false) {}
-        __host__ __device__ CornellBoxParams(const BidirectionalTransform& transform_, const bool isBounded_) : tracable(transform_), isBounded(isBounded_) {}
+        __host__ __device__ CornellBoxParams() : faceMask(0xffffffu, 6), cameraRayMask(1 << 5, 6) {}
         __host__ CornellBoxParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         TracableParams tracable;
-        bool isBounded;
+        JitterableFlags faceMask;
+        JitterableFlags cameraRayMask;
     };
 
     namespace Device
@@ -63,7 +63,6 @@ namespace Cuda
 
             __host__ virtual Device::CornellBox* GetDeviceInstance() const override final { return cu_deviceData; }
 
-            __host__ void UpdateParams(const BidirectionalTransform& transform, const bool isBounded);
             __host__ void SetBoundMaterialID(const std::string& id) { m_materialId = id; }
         };
     }

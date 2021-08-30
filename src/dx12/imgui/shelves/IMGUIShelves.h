@@ -116,6 +116,8 @@ public:
 
 private:
     IMGUIJitteredFlagArray  m_flags;
+    IMGUIJitteredFlagArray  m_faceMask;
+    IMGUIJitteredFlagArray  m_cameraRayMask;
 };
 
 // Quad light

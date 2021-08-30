@@ -169,19 +169,11 @@ namespace Cuda
 
     __host__ void JitterableFlags::Randomise(vec2 range)
     {
-        // Clamp and constrain 
-        range[1] = clamp(range[1], 1.0f, 1.0f);
-        range[0] = clamp(range[0], 0.0f, range[1]);
-
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(range[0], range[1]);
-
-        t = 0;
-        for (int bit = 0; bit < validBits; ++bit)
-        {
-            t |= uint(rng(mt) > 0.5f) << bit;
-        }
+        std::uniform_int_distribution<> rng(0, std::numeric_limits<uint>::max());
+        
+        t = rng(mt);
 
         Evaluate();
     }

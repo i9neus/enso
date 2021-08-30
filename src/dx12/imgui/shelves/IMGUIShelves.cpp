@@ -139,17 +139,24 @@ void SphereShelf::Randomise(const uint flags, const Cuda::vec2 range)
 
 CornellBoxShelf::CornellBoxShelf(const Json::Node& json) :
     IMGUIShelf(json),
-    m_flags(m_p.tracable.renderObject.flags, "Object flags")
+    m_flags(m_p.tracable.renderObject.flags, "Object flags"),
+    m_faceMask(m_p.faceMask, "Face mask"),
+    m_cameraRayMask(m_p.cameraRayMask, "Camera ray mask")
 {
     m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+    m_faceMask.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
+    m_cameraRayMask.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
 }
 
 void CornellBoxShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    m_flags.Construct();
     ConstructJitteredTransform(m_p.tracable.transform, true);
+
+    m_flags.Construct();
+    m_faceMask.Construct();
+    m_cameraRayMask.Construct();
 }
 
 void CornellBoxShelf::Randomise(const uint flags, const Cuda::vec2 range)
@@ -158,6 +165,9 @@ void CornellBoxShelf::Randomise(const uint flags, const Cuda::vec2 range)
     
     if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Randomise(range); }
     if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Randomise(range); }
+
+    m_p.faceMask.Randomise(range);
+    m_p.cameraRayMask.Randomise(range);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

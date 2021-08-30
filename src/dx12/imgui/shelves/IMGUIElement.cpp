@@ -321,26 +321,11 @@ void IMGUIJitteredFlagArray::Construct()
                 break;
             }
         }
-        ImGui::SameLine();
+        if (bit < m_numBits - 1) { ImGui::SameLine(); }
     }
     ImGui::PopItemWidth();
     ImGui::PopID();
 
-    ImGui::PushID(m_tId.c_str());
-    ImGui::Text(" ~"); SL;
-    ImGui::PushItemWidth(60);
-    if (ImGui::SliderFloat("~", &m_t, 0.0f, 1.0f))
-    {
-        // For the t parameter, use a hash of the slider value rather than try and randomise each flag in turn
-        const uint hash = Cuda::HashOf(uint(m_t * float(std::numeric_limits<uint>::max())));
-        m_param.t = 0;
-        for (int bit = 0; bit < m_flags[0].size(); ++bit)
-        {
-            m_param.t |= hash & (1 << bit);
-        }
-    }    
-    ImGui::PopItemWidth();
-    ImGui::PopID();
     ImGui::TreePop();
 }
 

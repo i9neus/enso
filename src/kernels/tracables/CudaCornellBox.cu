@@ -5,14 +5,16 @@ namespace Cuda
 {
     __host__ void CornellBoxParams::ToJson(::Json::Node& node) const
     {
-        node.AddValue("bounded", isBounded);
         tracable.ToJson(node);
+        faceMask.ToJson("faceMask", node);
+        cameraRayMask.ToJson("cameraRayMask", node);
     }
 
     __host__ void CornellBoxParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("bounded", isBounded, flags);
-        tracable.FromJson(node, ::Json::kRequiredWarn);
+        tracable.FromJson(node, flags);
+        faceMask.FromJson("faceMask", node, flags);
+        cameraRayMask.FromJson("cameraRayMask", node, flags);
     }
 
     __device__  bool Device::CornellBox::Intersect(Ray& ray, HitCtx& hitCtx) const
@@ -26,6 +28,8 @@ namespace Cuda
         HitPoint hit;
         for (int face = 0; face < 6; face++)
         {
+            if (!(m_params.faceMask() & (1 << face))) { continue; }
+            
             int dim = face / 2;
             float side = 2.0f * float(face % 2) - 1.0f;
 
@@ -93,12 +97,6 @@ namespace Cuda
         m_params.FromJson(node, flags);
         RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
-        SynchroniseObjects(cu_deviceData, m_params);
-    }
-
-    __host__ void Host::CornellBox::UpdateParams(const BidirectionalTransform& transform, const bool isBounded)
-    {
-        m_params = CornellBoxParams(transform, isBounded);
         SynchroniseObjects(cu_deviceData, m_params);
     }
 }
