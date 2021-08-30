@@ -30,16 +30,4 @@ namespace Cuda
 		t1 = (-b - sqrtb2ac4) / (2 * a);
 		return true;
 	}
-
-	template<int NumVertices, int NumFaces, int PolyOrder, typename IdxType = uchar>
-	struct SimplePolyhedron
-	{
-		enum _attrs : int { kNumVertices = NumVertices, kNumFaces = NumFaces, kPolyOrder = PolyOrder };
-		
-		SimplePolyhedron() = default;
-		
-		vec3		V[NumVertices];
-		IdxType		F[NumFaces * PolyOrder];
-		float		sqrBoundRadius;
-	};
 }

@@ -8,13 +8,69 @@ namespace Json { class Node; }
 
 namespace Cuda
 {
+    template<int NumVertices, int NumFaces, int NumEdges, int PolyOrder>
+    struct SimplePolyhedron
+    {
+        enum _attrs : int { kNumVertices = NumVertices, 
+                            kNumFaces = NumFaces, 
+                            kNumEdges = NumEdges,
+                            kPolyOrder = PolyOrder };
+
+        __device__ SimplePolyhedron() {}
+
+        __device__ void Prepare(const float scale)
+        {
+            // Scale the vertices
+            for (int vertIdx = 0; vertIdx < NumVertices; ++vertIdx) { V[vertIdx] *= scale; }
+            
+            // Pre-compute deltas and face and edge normals
+            for (int faceIdx = 0, offset = 0; faceIdx < NumFaces; ++faceIdx, offset += PolyOrder)
+            {
+                N[faceIdx] = normalize(cross(V[F[offset + 1]] - V[F[offset + 0]], V[F[offset + 2]] - V[F[offset + 0]]));
+
+                for (int edge = 0; edge < PolyOrder; ++edge)
+                {
+                    dV[offset + edge] = (V[F[offset + (edge + 1) % PolyOrder]] - V[F[offset + edge]]);
+                    edgeNorm[offset + edge] = normalize(cross(dV[offset + edge], N[faceIdx]));
+                }
+            }
+        }
+
+        vec3		V[NumVertices];
+        uchar		F[NumFaces * PolyOrder];
+        uchar       E[NumEdges * 2];
+
+        vec3        N[NumFaces];
+        vec3        dV[NumFaces * PolyOrder];
+        vec3        edgeNorm[NumFaces * PolyOrder];
+
+        float		sqrBoundRadius;
+    };
+    
     // Foreward declarations
     namespace Host { class KIFS; }    
     namespace SDF { struct PolyhedronData; }
     struct BlockConstantData;
 
-    enum KIFSPrimitive : int { kKIFSPrimitiveTetrahedron, KIFSPrimitiveCube, KIFSPrimitiveSphere, KIFSPrimitiveTorus, KIFSPrimitiveBox };
-    enum KIFSClipShape : int { kKIFSClipBox, kKIFSClipSphere, kKIFSClipTorus };
+    enum KIFSPrimitive : int 
+    { 
+        kKIFSPrimitiveTetrahedronSolid,
+        KIFSPrimitiveCubeSolid,
+        KIFSPrimitiveSphere, 
+        KIFSPrimitiveTorus, 
+        KIFSPrimitiveBox,
+        kKIFSPrimitiveTetrahedronCage,
+        KIFSPrimitiveCubeCage
+    };
+    enum KIFSClipShape : int 
+    { 
+        kKIFSClipBox, kKIFSClipSphere, kKIFSClipTorus 
+    };
+    enum KIFSFold : int
+    {
+        kKIFSFoldTetrahedron,
+        kKIFSFoldCube
+    };
 
     struct KIFSParams
     {
@@ -79,6 +135,11 @@ namespace Cuda
                     float                   scale;
                 }
                 iteration[kSDFMaxIterations];
+
+                SimplePolyhedron<4, 4, 6, 3>   tetrahedronData;
+                SimplePolyhedron<8, 6, 12, 4>   cubeData;
+
+                vec3 xi[kSDFMaxIterations];
             };
 
             __device__ static uint SizeOfSharedMemory();
