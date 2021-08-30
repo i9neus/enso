@@ -13,8 +13,8 @@ namespace Cuda
     namespace SDF { struct PolyhedronData; }
     struct BlockConstantData;
 
-    enum KIFSPrimitive : int { kKIFSTetrahedtron, kKIFSCube };
-    enum KIFSClipShape : int { kKIFSBox, kKIFSSphere, kKIFSTorus };
+    enum KIFSPrimitive : int { kKIFSPrimitiveTetrahedron, KIFSPrimitiveCube, KIFSPrimitiveSphere, KIFSPrimitiveTorus, KIFSPrimitiveBox };
+    enum KIFSClipShape : int { kKIFSClipBox, kKIFSClipSphere, kKIFSClipTorus };
 
     struct KIFSParams
     {

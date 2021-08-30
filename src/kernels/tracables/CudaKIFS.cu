@@ -47,8 +47,8 @@ namespace Cuda
         crustThickness(0.5f),        
         numIterations(1),
         faceMask(0xffffffff, 6),
-        foldType(kKIFSTetrahedtron),
-        primitiveType(kKIFSTetrahedtron),
+        foldType(kKIFSPrimitiveTetrahedron),
+        primitiveType(kKIFSPrimitiveTetrahedron),
         doTakeSnapshot(false)
     {        
         sdf.maxSpecularIterations = 50;
@@ -59,7 +59,7 @@ namespace Cuda
         sdf.rayKickoff = 1e-4f;
         sdf.failThreshold = 1e-2f;
         sdf.clipCameraRays = true;
-        sdf.clipShape = kKIFSBox;
+        sdf.clipShape = kKIFSClipBox;
     }
 
     __host__ KIFSParams::KIFSParams(const ::Json::Node& node, const uint flags) :
@@ -93,7 +93,7 @@ namespace Cuda
 
         node.AddValue("numIterations", numIterations);
         node.AddEnumeratedParameter("foldType", std::vector<std::string>({ "tetrahedron", "cube" }), foldType);
-        node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType); 
+        node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube", "sphere", "torus", "box" }), primitiveType); 
 
         ::Json::Node sdfNode = node.AddChildObject("sdf");
         sdfNode.AddValue("maxSpecularIterations", sdf.maxSpecularIterations);
@@ -122,7 +122,7 @@ namespace Cuda
 
         node.GetValue("numIterations", numIterations, flags);
         node.GetEnumeratedParameter("foldType", std::vector<std::string>({"tetrahedron", "cube" }), foldType, flags);
-        node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube" }), primitiveType, flags);
+        node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube", "sphere", "torus", "box" }), primitiveType, flags);
 
         const ::Json::Node sdfNode = node.GetChildObject("sdf", flags);
         if (sdfNode)
@@ -312,7 +312,7 @@ namespace Cuda
 
             if (i == kcd.numIterations - 1) { break; }
 
-            if (kcd.foldType == kKIFSTetrahedtron)
+            if (kcd.foldType == kKIFSPrimitiveTetrahedron)
             {
                 FoldTetrahedron(i, p, bi, code);
             }
@@ -328,13 +328,26 @@ namespace Cuda
 
         // Test this position against each polyhedron face
         F.x = kFltMax;
-        if (kcd.primitiveType == kKIFSTetrahedtron)
+        switch(kcd.primitiveType)
         {
+        case kKIFSPrimitiveTetrahedron:
             SDFPolyhedron(F, kcd, iterationScale, p, kTetrahedronData);
-        }  
-        else
-        {
+            break;
+        case KIFSPrimitiveCube:
             SDFPolyhedron(F, kcd, iterationScale, p, kCubeData);
+            break;
+        case KIFSPrimitiveSphere:
+            F = SDF::Sphere(p, 0.5f * kcd.vertScale);
+            F.x = (F.x * iterationScale) - kcd.crustThickness;
+            break;
+        case KIFSPrimitiveTorus:
+            F = SDF::Torus(p, 0.35f * kcd.vertScale, 0.15f * kcd.vertScale);
+            F.x = (F.x * iterationScale) - kcd.crustThickness;
+            break;
+        default:
+            F = SDF::Box(p, 0.5f  * kcd.vertScale);
+            F.x = (F.x * iterationScale) - kcd.crustThickness;
+            break;
         }
 
         // Transform the normal from folded space into object space
@@ -351,7 +364,7 @@ namespace Cuda
 
         RayBasic localRay = RayToObjectSpace(globalRay.od, m_params.transform);
 
-        float t = Intersector::RayBox(localRay, 1.0f);
+        float t = Intersector::RayBox(localRay, m_params.sdf.escapeThreshold);
         if (t == kNoIntersect) { return false; }
 
         //float t = 0.0f; 
@@ -376,15 +389,16 @@ namespace Cuda
             F = Field(p, basis, code, surfaceDepth);
             hitBoundSDF = false;
 
-            if(m_params.sdf.clipCameraRays && (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))
+            if(!(globalRay.flags & kRayLightProbe) && m_params.sdf.clipCameraRays && 
+                (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))
             {
                 vec3 pWorld = globalRay.PointAt(t / localMag);
                 vec4 FClip;
                 switch (m_params.sdf.clipShape)
                 {
-                case kKIFSSphere:
+                case kKIFSClipSphere:
                     FClip = SDF::Sphere(pWorld, 0.5f); break;
-                case kKIFSTorus:
+                case kKIFSClipTorus:
                     FClip = SDF::Torus(pWorld, 0.4f, 0.1f); break;
                 default:
                     FClip = SDF::Box(pWorld, 0.5f);
@@ -400,7 +414,7 @@ namespace Cuda
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold / localMag) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
+            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold * localMag) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
 
             if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 

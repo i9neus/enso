@@ -27,7 +27,7 @@ void KIFSShelf::Construct()
 
     ImGui::SliderInt("Iterations ", &m_p.numIterations, 0, kSDFMaxIterations);
     ConstructComboBox("Fold type", std::vector<std::string>({ "Tetrahedron", "Cube" }), m_p.foldType);
-    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube" }), m_p.primitiveType);
+    ConstructComboBox("Primitive type", std::vector<std::string>({ "Tetrahedron", "Cube", "Sphere", "Torus", "Box" }), m_p.primitiveType);
 
     auto ConstructMaskCheckboxes = [](const std::string& label, uint& value, const int row) -> void
     {
