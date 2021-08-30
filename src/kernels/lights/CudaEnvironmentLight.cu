@@ -1,6 +1,8 @@
 ﻿#include "CudaEnvironmentLight.cuh"
 #include "generic/JsonUtils.h"
 
+#include "../math/CudaColourUtils.cuh"
+
 namespace Cuda
 {
     __host__ EnvironmentLightParams::EnvironmentLightParams(const ::Json::Node& node) :
@@ -11,44 +13,43 @@ namespace Cuda
 
     __host__ void EnvironmentLightParams::ToJson(::Json::Node& node) const
     {
-        node.AddValue("intensity", intensity);
-        node.AddArray("colour", std::vector<float>({ colour.x, colour.y, colour.z }));
+        light.ToJson(node);
     }
 
     __host__ void EnvironmentLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("intensity", intensity, flags);
-        node.GetVector("colour", colour, flags);
-    }
-
-    __host__ bool EnvironmentLightParams::operator==(const EnvironmentLightParams& rhs) const
-    {
-        return intensity == rhs.intensity &&
-            colour == rhs.colour;
+        light.FromJson(node, flags);
     }
 
     __device__ Device::EnvironmentLight::EnvironmentLight()
     {
-        m_emitterRadiance = vec3(1.0f);
+        m_radiance = vec3(1.0f);
     }
 
     __device__ void Device::EnvironmentLight::Prepare()
     {
-        m_emitterRadiance = m_params.colour * math::pow(2.0f, m_params.intensity);
+        m_radiance = HSVToRGB(m_params.light.colourHSV()) * std::pow(2.0f, m_params.light.intensity());
+        m_peakIrradiance = kTwoPi * cwiseMax(m_radiance);
+    }
+
+    __device__ float Device::EnvironmentLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
+    {
+        return m_peakIrradiance;
     }
 
     __device__ bool Device::EnvironmentLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdfLight) const
     {
-        pdfLight = 1 / kFourPi;
-        extant = SampleUnitSphere(renderCtx.rng.Rand<0, 1>());
+        pdfLight = 1 / kTwoPi;
+        extant = CreateBasis(hitCtx.hit.n) * SampleUnitHemisphere(renderCtx.rng.Rand<0, 1>());
+        L = m_radiance* kTwoPi;
+
+        return true;
     }
 
     __device__ bool Device::EnvironmentLight::Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const
-    {
-        const float solidAngle = dot(hitCtx.hit.n, incident.od.d) * m_emitterArea / sqr(incident.tNear);
-
-        pdfLight = 1 / solidAngle;
-        L = m_emitterRadiance;
+    {        
+        pdfLight = 1 / kTwoPi;
+        L = m_radiance;
         return true;
     }
 

@@ -154,7 +154,7 @@ private:
     IMGUIJitteredFlagArray      m_flags;
 };
 
-// Sphere light
+// Distant light
 class DistantLightShelf : public IMGUIShelf<Cuda::Host::DistantLight, Cuda::DistantLightParams >
 {
 public:
@@ -172,15 +172,20 @@ private:
 };
 
 // Environment light
-class EnvironmentLightShelf : public IMGUIShelf<Cuda::Host::EnvironmentLight, Cuda::EnvironmentLightParams>
+class EnvironmentLightShelf : public IMGUIShelf<Cuda::Host::EnvironmentLight, Cuda::EnvironmentLightParams >
 {
 public:
-    EnvironmentLightShelf(const Json::Node& json) : IMGUIShelf(json) {}
+    EnvironmentLightShelf(const Json::Node& json);
     virtual ~EnvironmentLightShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new EnvironmentLightShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const uint flags, const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker   m_colourPicker;
+    IMGUIJitteredParameter      m_intensity;
+    IMGUIJitteredFlagArray      m_flags;
 };
 
 // Lambertian BRDF
@@ -207,7 +212,6 @@ public:
     virtual void Randomise(const uint flags, const Cuda::vec2 range) override final;
 
 private:
-    IMGUIJitteredColourPicker                   m_ambientPicker;
 };
 
 // Perspective camera

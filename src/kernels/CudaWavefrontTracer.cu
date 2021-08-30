@@ -28,8 +28,6 @@ namespace Cuda
 {
 	__host__ WavefrontTracerParams::WavefrontTracerParams() :
 		maxDepth(1),
-		ambientRadianceRGB(0.0f),
-		ambientRadianceHSV(vec3(0.0f)),
 		shadingMode(kShadeFull),
 		importanceMode(kImportanceMIS),
 		lightSelectionMode(kLightSelectionNaive),
@@ -46,8 +44,6 @@ namespace Cuda
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
 		node.AddEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode);
-
-		ambientRadianceHSV.ToJson("ambientRadiance", node);
 	}
 
 	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -58,10 +54,6 @@ namespace Cuda
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
 		node.GetEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode, flags);
-
-		ambientRadianceHSV.FromJson("ambientRadiance", node, flags);
-
-		ambientRadianceRGB = HSVToRGB(ambientRadianceHSV());
 	}
 
 	__device__ Device::WavefrontTracer::WavefrontTracer() : m_checkDigit(0)
@@ -424,12 +416,7 @@ namespace Cuda
 
 		if (kKernelIdx % 2 == 0)
 		{			
-			if (!hitObject)
-			{
-				// Ray didn't hit anything so add the ambient term multiplied by the weight
-				L += m_activeParams.ambientRadianceRGB * compressedRay.weight;
-			}
-			else
+			if(hitObject)
 			{				
 				// For simple shading, just evaluate the material albedo and do a fake cosine lighting term
 				if (m_activeParams.shadingMode == kShadeSimple)

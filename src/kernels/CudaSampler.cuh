@@ -330,4 +330,12 @@ namespace Cuda
         float sinTheta = sqrt(1.0 - xi.x * xi.x);
         return vec3(cos(xi.y) * sinTheta, xi.x, sin(xi.y) * sinTheta);
     }
+
+    __device__ __forceinline__ vec3 SampleUnitHemisphere(vec2 xi)
+    {
+        xi.y *= kTwoPi;
+
+        float sinTheta = sqrt(1.0 - xi.x * xi.x);
+        return vec3(cos(xi.y) * sinTheta, sin(xi.y) * sinTheta, xi.x);
+    }
 }

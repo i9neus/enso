@@ -60,8 +60,6 @@ namespace Cuda
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
 
 		int			maxDepth;
-		JitterableVec3 ambientRadianceHSV;
-		vec3		ambientRadianceRGB;
 		float		russianRouletteThreshold;
 		int			importanceMode;
 		int			traceMode;

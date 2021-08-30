@@ -10,15 +10,13 @@ namespace Cuda
 
     struct EnvironmentLightParams
     {
-        __host__ __device__ EnvironmentLightParams() : intensity(1.0f), colour(1.0f) {}
+        __host__ __device__ EnvironmentLightParams() : light() {}
         __host__ EnvironmentLightParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
-        __host__ bool operator==(const EnvironmentLightParams&) const;
 
-        float intensity;
-        vec3 colour;
+        LightParams light;
     };
 
     namespace Device
@@ -27,8 +25,8 @@ namespace Cuda
         {
             friend Host::EnvironmentLight;
         protected:
-            float m_emitterArea;
-            vec3  m_emitterRadiance;
+            vec3  m_radiance;
+            float m_peakIrradiance;
             EnvironmentLightParams m_params;
 
         public:
@@ -38,7 +36,8 @@ namespace Cuda
             __device__ void Prepare();
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdf) const override final;
             __device__ virtual bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const override final;
-            __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const override final { return 0.0; }
+            __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const override final;
+            __device__ virtual uchar GetLightRayFlags() const override final { return kRayDistantLightSample; }
             __device__ void Synchronise(const EnvironmentLightParams& params)
             {
                 m_params = params;
@@ -63,7 +62,7 @@ namespace Cuda
 
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void OnDestroyAsset() override final;
-            __host__ static std::string GetAssetTypeString() { return "environment"; }
+            __host__ static std::string GetAssetTypeString() { return "environmentlight"; }
             __host__ static std::string GetAssetDescriptionString() { return "Environment Light"; }
             __host__ virtual Device::EnvironmentLight* GetDeviceInstance() const override final { return cu_deviceData; }
         };

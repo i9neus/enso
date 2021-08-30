@@ -37,11 +37,11 @@ namespace Cuda
     __device__ void Device::DistantLight::Prepare()
     {
         m_radiance = HSVToRGB(m_params.light.colourHSV()) * std::pow(2.0f, m_params.light.intensity());
-        m_peakIrradiance = kTwoPi * cwiseMax(m_radiance);
+        m_peakIrradiance = cwiseMax(m_radiance);
 
         m_discRadius = tan(m_params.angle);
         m_discArea = kPi * sqr(m_discRadius);        
-        m_basis = transpose(m_params.light.transform.fwd);
+        m_basis = transpose(m_params.light.transform.inv);
         m_cosAngle = cos(m_params.angle);
         // TODO: Analytically sample the solid angle
         m_solidAngle = kTwoPi * (1 - cos(m_params.angle));
