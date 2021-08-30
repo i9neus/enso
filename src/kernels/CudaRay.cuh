@@ -15,6 +15,7 @@ namespace Cuda
 		kRaySpecular =				1 << 3,
 		kRayLightProbe =			1 << 4,
 		kRayScattered =				1 << 5,
+		kRayDistantLightSample =    1 << 6,
 		
 		// Flags that persist throughout the path
 		kRayPersistentFlags =		kRayLightProbe | kRayScattered,
@@ -99,5 +100,6 @@ namespace Cuda
 		__device__ __forceinline__ vec3 PointAt(const float& t) const { return od.o + od.d * t; }
 		__device__ __forceinline__ bool IsDirectSample() const { return flags & kRayDirectSample; }
 		__device__ __forceinline__ bool IsIndirectSample() const { return flags & kRayIndirectSample; }
+		__device__ __forceinline__ bool IsDistantLightSample() const { return flags & kRayDistantLightSample; }
 	};
 }

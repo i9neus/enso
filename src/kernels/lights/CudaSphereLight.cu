@@ -45,15 +45,6 @@ namespace Cuda
         m_discRadius = m_params.light.transform.scale().x;
     }
 
-    __device__ inline mat3 CreateBasisDebug2(vec3 n)
-    {
-        n = normalize(n);
-        vec3 tangent = normalize(cross(n, (fabs(dot(n, vec3(1.0f, 0.0f, 0.0f))) < 0.5f) ? vec3(1.0f, 0.0f, 0.0f) : vec3(0.0f, 1.0f, 0.0f)));
-        vec3 cotangent = cross(tangent, n);
-
-        return mat3(tangent, cotangent, n);
-    }
-
     __device__ float Device::SphereLight::Estimate(const Ray& incident, const HitCtx& hitCtx) const
     {
         const vec3 originDir = m_params.light.transform.trans() - hitCtx.hit.p;
@@ -97,7 +88,7 @@ namespace Cuda
         const float projectedDiscRadius = m_discRadius *sqrtf(1.0f - sqr(sinTheta));
 
         const vec2 disc = SampleUnitDiscLowDistortion(xi);
-        const mat3 basis = CreateBasisDebug2(originDir);
+        const mat3 basis = CreateBasis(originDir);
         vec3 sampleDir = basis.x * disc.x * projectedDiscRadius +
                          basis.y * disc.y * projectedDiscRadius +
                          originDir * originDist;

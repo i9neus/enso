@@ -44,6 +44,8 @@ namespace Cuda
             __device__ virtual bool Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdf) const = 0;
             __device__ virtual bool Evaluate(const Ray& incident, const HitCtx& hitCtx, vec3& L, float& pdfLight) const = 0;
             __device__ virtual float Estimate(const Ray& incident, const HitCtx& hitCtx) const = 0;
+            __device__ virtual uchar GetLightRayFlags() const { return 0; }
+
             __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
         };
     }

@@ -11,6 +11,7 @@
 #include "lights/CudaQuadLight.cuh"
 #include "lights/CudaSphereLight.cuh"
 #include "lights/CudaEnvironmentLight.cuh"
+#include "lights/CudaDistantLight.cuh"
 
 #include "bxdfs/CudaLambert.cuh"
 
@@ -36,6 +37,7 @@ namespace Cuda
         AddInstantiator<Host::QuadLight>();
         AddInstantiator<Host::SphereLight>();
         AddInstantiator<Host::EnvironmentLight>();
+        AddInstantiator<Host::DistantLight>();
 
         AddInstantiator<Host::SimpleMaterial>();
         AddInstantiator<Host::CornellMaterial>();

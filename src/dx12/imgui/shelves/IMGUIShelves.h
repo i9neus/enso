@@ -10,6 +10,7 @@
 #include "kernels/lights/CudaQuadLight.cuh"
 #include "kernels/lights/CudaSphereLight.cuh"
 #include "kernels/lights/CudaEnvironmentLight.cuh"
+#include "kernels/lights/CudaDistantLight.cuh"
 
 #include "kernels/bxdfs/CudaLambert.cuh"
 
@@ -142,6 +143,23 @@ public:
     virtual ~SphereLightShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereLightShelf(json)); }
+    virtual void Construct() override final;
+    virtual void Randomise(const uint flags, const Cuda::vec2 range) override final;
+
+private:
+    IMGUIJitteredColourPicker   m_colourPicker;
+    IMGUIJitteredParameter      m_intensity;
+    IMGUIJitteredFlagArray      m_flags;
+};
+
+// Sphere light
+class DistantLightShelf : public IMGUIShelf<Cuda::Host::DistantLight, Cuda::DistantLightParams >
+{
+public:
+    DistantLightShelf(const Json::Node& json);
+    virtual ~DistantLightShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new DistantLightShelf(json)); }
     virtual void Construct() override final;
     virtual void Randomise(const uint flags, const Cuda::vec2 range) override final;
 

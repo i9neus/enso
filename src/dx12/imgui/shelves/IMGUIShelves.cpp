@@ -230,6 +230,43 @@ void SphereLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+DistantLightShelf::DistantLightShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_colourPicker(m_p.light.colourHSV, "Colour"),
+    m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f)),
+    m_flags(m_p.light.renderObject.flags, { "Light flags" })
+{
+    m_flags.Initialise({ "Visible", "Exclude from bake" });
+}
+
+void DistantLightShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    m_flags.Construct();
+    ConstructJitteredTransform(m_p.light.transform, true);
+    
+    m_colourPicker.Construct();
+    m_intensity.Construct();
+
+    ImGui::DragFloat("Angle", &m_p.angle, math::max(0.01f, m_p.angle * 0.01f), 0.0f, std::numeric_limits<float>::max());
+}
+
+void DistantLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
+{
+    if (!(flags & kStatePermuteLights)) { return; }
+
+    if (flags & kStatePermuteColours)
+    {
+        m_p.light.colourHSV.Randomise(range);
+        m_p.light.intensity.Randomise(range);
+    }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void EnvironmentLightShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }

@@ -402,6 +402,9 @@
     <ClInclude Include="src\io\ImageIO.h">
       <Filter>io</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh">
+      <Filter>kernels\lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -570,6 +573,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu">
       <Filter>kernels\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lights\CudaDistantLight.cu">
+      <Filter>kernels\lights</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

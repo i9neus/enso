@@ -83,6 +83,7 @@
     <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaQuadLight.cuh" />
@@ -161,6 +162,7 @@
     <CudaCompile Include="src\kernels\CudaRenderObject.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\lights\CudaDistantLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaQuadLight.cu" />

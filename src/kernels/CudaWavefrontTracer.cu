@@ -387,10 +387,10 @@ namespace Cuda
 		vec3 L(0.0f);
 
 		// If this is a NEE ray, evaluate it first...
-		if ((kKernelIdx % 2 == 1) && hitObject && incidentRay.IsDirectSample())
-		{			
+		if ((kKernelIdx % 2 == 1) && incidentRay.IsDirectSample())
+		{
 			// Check that the intersected tracable is the same as the light ID associated with this ray
-			if (compressedRay.lightId == hitObject->GetLightID())
+			if ((!hitObject && incidentRay.IsDistantLightSample()) || (hitObject && compressedRay.lightId == hitObject->GetLightID()))
 			{				
 				// Light should be evaluated (i.e. BxDF was sampled)
 				if (incidentRay.flags & kRayDirectBxDFSample)
@@ -573,15 +573,20 @@ namespace Cuda
 				Cuda::AssetHandle<Host::Light> light = object.DynamicCast<Light>();
 				Assert(light);
 
-				// Set the light ID for this tracable with the index of the light in the array. Crude, but it'll do for now. 
-				Cuda::AssetHandle<Host::Tracable> tracable = light->GetTracableHandle();
+				// Set the light ID for this tracable with the index of the light in the array. Crude, but it'll do for now.
 				const uchar lightId = m_hostLights->Size();
-				light->SetLightID(lightId);
-				tracable->SetLightID(lightId);
 
-				// Push both the light and tracable into the list
+				light->SetLightID(lightId);
+				light->Synchronise();
 				m_hostLights->Push(light);
-				m_hostTracables->Push(tracable);
+
+				Cuda::AssetHandle<Host::Tracable> tracable = light->GetTracableHandle();
+				if (tracable)
+				{
+					tracable->SetLightID(lightId);
+					tracable->Synchronise();
+					m_hostTracables->Push(tracable);
+				}
 			}
 		}
 		
