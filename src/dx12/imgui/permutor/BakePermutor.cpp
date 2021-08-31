@@ -118,7 +118,7 @@ void BakePermutor::RandomiseScene()
     // Randomise the shelves depending on which types are selected
     for (auto& shelf : m_imguiShelves)
     {
-        shelf.second->Randomise(m_stateIt->second.flags, Cuda::vec2(0.0f, 1.0f));
+        shelf.second->Jitter(m_stateIt->second.flags, Cuda::kJitterRandomise);
     }
 }
 
@@ -174,7 +174,7 @@ bool BakePermutor::Advance()
     probeParams.camera.isActive = true;
 
     // Always randomise the probe shelf to generate a new seed
-    m_lightProbeCameraShelf->Randomise(m_stateIt->second.flags, Cuda::vec2(0.0f, 1.0f));
+    m_lightProbeCameraShelf->Randomise();
 
     // Set the shading mode to full illumination
     m_wavefrontTracerShelf->GetParamsObject().shadingMode = Cuda::kShadeFull;

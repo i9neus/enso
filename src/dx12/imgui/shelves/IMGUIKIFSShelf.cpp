@@ -60,22 +60,22 @@ void KIFSShelf::Update()
     m_faceFlags.Update();
 }
 
-void KIFSShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void KIFSShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteGeometry)) { return; }
     
     if (flags & kStatePermuteFractals)
     {
-        m_p.rotateA.Randomise(range);
-        m_p.rotateB.Randomise(range);
-        m_p.scaleA.Randomise(range);
-        m_p.scaleB.Randomise(range);
-        m_p.vertScale.Randomise(range);
-        m_p.crustThickness.Randomise(range);
-        m_p.faceMask.Randomise(range);
+        m_p.rotateA.Update(operation);
+        m_p.rotateB.Update(operation);
+        m_p.scaleA.Update(operation);
+        m_p.scaleB.Update(operation);
+        m_p.vertScale.Update(operation);
+        m_p.crustThickness.Update(operation);
+        m_p.faceMask.Update(operation);
     }
 
-    if (flags & kStatePermuteTransforms) { m_p.transform.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
 }
 
 void KIFSShelf::JitterKIFSParameters()

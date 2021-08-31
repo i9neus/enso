@@ -51,7 +51,7 @@ namespace Cuda
 
 		__host__ void FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
-		__host__ void Randomise(const vec2& range);
+		__host__ void Update(const uint operation);
 
 		__host__ __device__ BidirectionalTransform();
 		__host__ BidirectionalTransform(const ::Json::Node& json, const uint flags);

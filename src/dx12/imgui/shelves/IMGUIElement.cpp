@@ -153,11 +153,11 @@ void IMGUIJitteredColourPicker::Construct()
 {
     ImGui::PushID(m_id.c_str());
 
-    m_hsv[0] = m_param.p - m_param.dpdt;
-    m_hsv[1] = m_param.p + m_param.dpdt;
-
     if (ImGui::BeginTable("", 2))
     {
+        m_hsv[0] = m_param.p - m_param.dpdt;
+        m_hsv[1] = m_param.p + m_param.dpdt;
+        
         // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500.0f);
@@ -169,15 +169,19 @@ void IMGUIJitteredColourPicker::Construct()
         ImGui::TableSetColumnIndex(1);
         ImGui::ColorEdit3("->", &m_hsv[0][0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV); SL;
         ImGui::ColorEdit3("~", &m_hsv[1][0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_DisplayHSV); SL;
-        ImGui::PushItemWidth(200);
-        ImGui::SliderFloat3("", &m_param.t[0], 0.0f, 1.0f);
+        ImGui::PushItemWidth(150);
+        ImGui::SliderFloat3("", &m_param.t[0], 0.0f, 1.0f);  SL;
         ImGui::PopItemWidth();
 
-        ImGui::EndTable();
-    }
+        m_param.p = mix(m_hsv[0], m_hsv[1], 0.5f);
+        m_param.dpdt = (m_hsv[1] - m_hsv[0]) * 0.5f;
 
-    m_param.p = mix(m_hsv[0], m_hsv[1], 0.5f);
-    m_param.dpdt = abs(m_hsv[0] - m_hsv[1]) * 0.5f;
+        if (ImGui::Button("s")) { m_param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+        if (ImGui::Button("r")) { m_param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+        if (ImGui::Button("f")) { m_param.Update(Cuda::kJitterFlatten); }
+
+        ImGui::EndTable();
+    }    
 
     ImGui::PopID();
 }
@@ -244,13 +248,17 @@ void IMGUIJitteredParameterTable::Construct()
                 }
                 else
                 {
-                    ImGui::PushItemWidth(100);
+                    ImGui::PushItemWidth(75);
                     ImGui::DragFloat("+/-", &param.p, range.z * 0.01f, range.x, range.y, "%.6f"); SL;
                     ImGui::PopItemWidth();
                     ImGui::PushItemWidth(50);
                     ImGui::DragFloat("~", &param.dpdt, math::max(0.01f * range.z, param.dpdt * range.z), range.x, range.y, "%.6f"); SL;
-                    ImGui::SliderFloat("", &param.t, 0.0f, 1.0f);
+                    ImGui::SliderFloat("", &param.t, 0.0f, 1.0f); SL;
                     ImGui::PopItemWidth();
+
+                    if (ImGui::Button("s")) { param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+                    if (ImGui::Button("r")) { param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+                    if (ImGui::Button("f")) { param.Update(Cuda::kJitterFlatten); }                    
                 }
             }
             ImGui::PopID();
@@ -334,7 +342,7 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
  
     ImGui::PushID("pos");
-    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
+    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f)); 
     if (isJitterable)
     {
         ImGui::DragFloat3("+/-", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
@@ -347,7 +355,7 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     ImGui::PushID("rot");
     ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
     if (isJitterable)
-    {
+    {       
         ImGui::DragFloat3("+/-", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
         ImGui::SliderFloat3("~", &transform.rot.t[0], 0.0f, 1.0f);
     }
@@ -363,6 +371,23 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
         ImGui::SliderFloat("~", &transform.scale.t[0], 0.0f, 1.0f);
     }
     ImGui::PopID();
+
+    if (isJitterable)
+    {
+        ImVec2 size = ImGui::GetItemRectSize();
+        size.x = 75;
+        int operation = -1;
+        if (ImGui::Button("Shuffle", size)) { operation = Cuda::kJitterRandomise; } SL;
+        if (ImGui::Button("Reset", size)) { operation = Cuda::kJitterReset; } SL;
+        if (ImGui::Button("Flatten", size)) { operation = Cuda::kJitterFlatten; }
+
+        if (operation != -1)
+        {
+            transform.trans.Update(operation);
+            transform.rot.Update(operation);
+            transform.scale.Update(operation);
+        }
+    }
 
     transform.scale.p = transform.scale.p[0];
     transform.scale.dpdt = transform.scale.dpdt[0];

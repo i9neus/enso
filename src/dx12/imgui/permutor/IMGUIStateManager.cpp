@@ -199,18 +199,26 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     FlaggedCheckbox("Object flags", kStatePermuteObjectFlags); 
 
     // Jitter the current state to generate a new scene
-    if (ImGui::Button("Shuffle"))
+    ImVec2 buttonSize = ImGui::GetItemRectSize();
+    buttonSize.y *= 2;
+    if (ImGui::Button("Shuffle", buttonSize))
     {
         for (auto& shelf : m_imguiShelves)
         {
-            shelf.second->Randomise(m_stateFlags, Cuda::vec2(0.0f, 1.0f));
+            shelf.second->Jitter(m_stateFlags, Cuda::kJitterRandomise);
         }
     } 
     SL;    
     // Reset all the jittered values to their midpoints
-    if (ImGui::Button("Reset"))
+    if (ImGui::Button("Reset", buttonSize))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Randomise(kStatePermuteAll, Cuda::vec2(0.5f)); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_stateFlags, Cuda::kJitterReset); }
+    }
+    SL;
+    // Bake the evaluated jittered values as the base parameters
+    if (ImGui::Button("Flatten", buttonSize))
+    {
+        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_stateFlags, Cuda::kJitterFlatten); }
     }
 }
 

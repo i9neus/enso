@@ -14,11 +14,11 @@ namespace Cuda
         MakeIdentity();
     }
 
-    __host__ void BidirectionalTransform::Randomise(const vec2& range)
+    __host__ void BidirectionalTransform::Update(const uint operation)
     {
-        trans.Randomise(range);
-        rot.Randomise(range);
-        scale.Randomise(range);
+        trans.Update(operation);
+        rot.Update(operation);
+        scale.Update(operation);
 
         scale.eval.y = scale.eval.z = scale.eval.x;
     }

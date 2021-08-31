@@ -32,7 +32,7 @@ public:
     virtual void MakeDirty() = 0;
     virtual Cuda::AssetType GetRenderObjectAssetType() const = 0;
 
-    virtual void Randomise(const uint flags, const Cuda::vec2 range = Cuda::vec2(0.0f, 1.0f)) = 0;
+    virtual void Jitter(const uint flags, const uint operation) = 0;
     virtual void Update() {}
 
     const std::string& GetDAGPath() const { return m_dagPath; }

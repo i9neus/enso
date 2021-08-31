@@ -64,17 +64,17 @@ namespace Cuda
         FromJson(node, flags); 
     }
 
-    __host__ void KIFSParams::Randomise(const vec2& range)
+    __host__ void KIFSParams::Update(const uint operation)
     {
-        rotateA.Randomise(range);
-        rotateB.Randomise(range);
-        scaleA.Randomise(range);
-        scaleB.Randomise(range);
-        vertScale.Randomise(range);
-        crustThickness.Randomise(range);
-        faceMask.Randomise(range);
+        rotateA.Update(operation);
+        rotateB.Update(operation);
+        scaleA.Update(operation);
+        scaleB.Update(operation);
+        vertScale.Update(operation);
+        crustThickness.Update(operation);
+        faceMask.Update(operation);
 
-        transform.Randomise(range);
+        transform.Update(operation);
     }
 
     __host__ void KIFSParams::ToJson(::Json::Node& node) const

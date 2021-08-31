@@ -18,12 +18,12 @@ void SimpleMaterialShelf::Construct()
     ImGui::Checkbox("Use grid", &m_p.useGrid);
 }
 
-void SimpleMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void SimpleMaterialShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
-    
-    m_p.albedoHSV.Randomise(range);
-    m_p.incandescenceHSV.Randomise(range);
+
+    m_p.albedoHSV.Update(operation);
+    m_p.incandescenceHSV.Update(operation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,12 +43,12 @@ void KIFSMaterialShelf::Construct()
     m_incandPicker.Construct();
 }
 
-void KIFSMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void KIFSMaterialShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
-    
-    m_p.albedoHSV.Randomise(range);
-    m_p.incandescenceHSV.Randomise(range);
+
+    m_p.albedoHSV.Update(operation);
+    m_p.incandescenceHSV.Update(operation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,11 +71,11 @@ void CornellMaterialShelf::Construct()
     for (int i = 0; i < 6; ++i) { m_pickers[i].Construct(); }
 }
 
-void CornellMaterialShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void CornellMaterialShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteMaterials) || !(flags & kStatePermuteColours)) { return; }
-    
-    for (int i = 0; i < 6; ++i) { m_p.albedoHSV[i].Randomise(range); }
+
+    for (int i = 0; i < 6; ++i) { m_p.albedoHSV[i].Update(operation); }
     Update();
 }
 
@@ -102,12 +102,12 @@ void PlaneShelf::Construct()
     ImGui::Checkbox("Bounded", &m_p.isBounded);
 }
 
-void PlaneShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void PlaneShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteGeometry)) { return; }
-    
-    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Randomise(range); }
-    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Randomise(range); }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Update(operation); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,23 +116,23 @@ SphereShelf::SphereShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_flags(m_p.renderObject.flags, "Object flags")
 {
-    m_flags.Initialise(std::vector<std::string>({"Visible", "Exclude from bake"}));
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
 }
 
 void SphereShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    m_flags.Construct();    
+    m_flags.Construct();
     ConstructJitteredTransform(m_p.transform, true);
 }
 
-void SphereShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void SphereShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteGeometry)) { return; }
-    
-    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Randomise(range); }
-    if (flags & kStatePermuteTransforms) { m_p.transform.Randomise(range); }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,20 +159,20 @@ void CornellBoxShelf::Construct()
     m_cameraRayMask.Construct();
 }
 
-void CornellBoxShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void CornellBoxShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteGeometry)) { return; }
-    
-    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Randomise(range); }
-    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Randomise(range); }
 
-    m_p.faceMask.Randomise(range);
-    m_p.cameraRayMask.Randomise(range);
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Update(operation); }
+
+    m_p.faceMask.Update(operation);
+    m_p.cameraRayMask.Update(operation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-QuadLightShelf::QuadLightShelf(const Json::Node& json) : 
+QuadLightShelf::QuadLightShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_colourPicker(m_p.light.colourHSV, "Colour"),
     m_intensity(m_p.light.intensity, "Intensity", Cuda::vec3(-10.0f, 10.0f, 1.0f)),
@@ -182,26 +182,26 @@ QuadLightShelf::QuadLightShelf(const Json::Node& json) :
 }
 
 void QuadLightShelf::Construct()
-{   
+{
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    m_flags.Construct();    
+    m_flags.Construct();
     ConstructJitteredTransform(m_p.light.transform, true);
     m_colourPicker.Construct();
     m_intensity.Construct();
 }
 
-void QuadLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void QuadLightShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteLights)) { return; }
-    
+
     if (flags & kStatePermuteColours)
     {
-        m_p.light.colourHSV.Randomise(range);
-        m_p.light.intensity.Randomise(range);
+        m_p.light.colourHSV.Update(operation);
+        m_p.light.intensity.Update(operation);
     }
-    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
-    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Update(operation); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Update(operation); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,17 +225,17 @@ void SphereLightShelf::Construct()
     m_intensity.Construct();
 }
 
-void SphereLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void SphereLightShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteLights)) { return; }
 
     if (flags & kStatePermuteColours)
     {
-        m_p.light.colourHSV.Randomise(range);
-        m_p.light.intensity.Randomise(range);
+        m_p.light.colourHSV.Update(operation);
+        m_p.light.intensity.Update(operation);
     }
-    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
-    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Update(operation); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Update(operation); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,24 +255,24 @@ void DistantLightShelf::Construct()
 
     m_flags.Construct();
     ConstructJitteredTransform(m_p.light.transform, true);
-    
+
     m_colourPicker.Construct();
     m_intensity.Construct();
 
     ImGui::DragFloat("Angle", &m_p.angle, math::max(0.01f, m_p.angle * 0.01f), 0.0f, std::numeric_limits<float>::max());
 }
 
-void DistantLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void DistantLightShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteLights)) { return; }
 
     if (flags & kStatePermuteColours)
     {
-        m_p.light.colourHSV.Randomise(range);
-        m_p.light.intensity.Randomise(range);
+        m_p.light.colourHSV.Update(operation);
+        m_p.light.intensity.Update(operation);
     }
-    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
-    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Update(operation); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Update(operation); }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,24 +296,24 @@ void EnvironmentLightShelf::Construct()
     m_intensity.Construct();
 }
 
-void EnvironmentLightShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void EnvironmentLightShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteLights)) { return; }
 
     if (flags & kStatePermuteColours)
     {
-        m_p.light.colourHSV.Randomise(range);
-        m_p.light.intensity.Randomise(range);
+        m_p.light.colourHSV.Update(operation);
+        m_p.light.intensity.Update(operation);
     }
-    if (flags & kStatePermuteTransforms) { m_p.light.transform.Randomise(range); }
-    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Randomise(range); }
+    if (flags & kStatePermuteTransforms) { m_p.light.transform.Update(operation); }
+    if (flags & kStatePermuteObjectFlags) { m_p.light.renderObject.flags.Update(operation); }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void LambertBRDFShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str())) { return; }
-    
+
     ImGui::PushItemWidth(50);
     ImGui::SliderInt("Probe volume grid", &m_p.lightProbeGridIdx, 0, 1);
     ImGui::PopItemWidth();
@@ -327,7 +327,7 @@ void PerspectiveCameraShelf::Construct()
 
     ImGui::Checkbox("Active", &m_p.camera.isActive); SL;
     ImGui::Checkbox("Live", &m_p.camera.isLive);  SL;
-    ImGui::Checkbox("Realtime", &m_p.isRealtime);    
+    ImGui::Checkbox("Realtime", &m_p.isRealtime);
 
     ImGui::DragFloat3("Position", &m_p.position[0], math::max(0.01f, cwiseMax(m_p.position) * 0.01f));
     ImGui::DragFloat3("Look at", &m_p.lookAt[0], math::max(0.01f, cwiseMax(m_p.lookAt) * 0.01f));
@@ -338,18 +338,18 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
 
     ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
-    ImGui::InputInt("Seed", &m_p.camera.seed);   
+    ImGui::InputInt("Seed", &m_p.camera.seed);
     ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
 
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max()); 
+    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
 
     ConstructComboBox("Emulate light probe", { "None", "All", "Direct only", "Indirect only" }, m_p.lightProbeEmulation);
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 }
 
-void PerspectiveCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void PerspectiveCameraShelf::Jitter(const uint flags, const uint operation)
 {
     /*if (m_p.camera.randomiseSeed)
     {
@@ -381,13 +381,13 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Validity compensation", &m_p.grid.useValidity);
     ConstructComboBox("Output mode", { "Irradiance", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-    ConstructComboBox("Lighting mode", { "All", "Direct + indirect"}, m_p.lightingMode);
+    ConstructComboBox("Lighting mode", { "All", "Direct + indirect" }, m_p.lightingMode);
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
 
     ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
     ImGui::InputInt("Seed", &m_p.camera.seed);
-    ImGui::Checkbox("Randomise seed", &m_p.camera.randomiseSeed);
+    ImGui::Checkbox("Jitter seed", &m_p.camera.randomiseSeed);
 
     ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
     ImGui::Text("Invert axes"); SL;
@@ -398,7 +398,7 @@ void LightProbeCameraShelf::Construct()
     m_p.camera.seed = max(0, m_p.camera.seed);
 }
 
-void LightProbeCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void LightProbeCameraShelf::Randomise()
 {
     if (m_p.camera.randomiseSeed)
     {
@@ -411,8 +411,6 @@ void LightProbeCameraShelf::Randomise(const uint flags, const Cuda::vec2 range)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 WavefrontTracerShelf::WavefrontTracerShelf(const Json::Node& json) :
     IMGUIShelf(json)
@@ -430,7 +428,7 @@ void WavefrontTracerShelf::Construct()
     ConstructComboBox("Shading mode", { "Full", "Simple", "Normals", "Debug" }, m_p.shadingMode);
 }
 
-void WavefrontTracerShelf::Randomise(const uint flags, const Cuda::vec2 range)
+void WavefrontTracerShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteColours)) { return; }
 }

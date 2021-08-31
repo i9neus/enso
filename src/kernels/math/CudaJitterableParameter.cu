@@ -40,19 +40,34 @@ namespace Cuda
     }
 
     template<typename PType>
-    __host__ void JitterableScalar<PType>::Randomise(vec2 range)
-    {        
-        // Clamp and constrain 
-        range[1] = clamp(range[1], 0.0f, 1.0f);
-        range[0] = clamp(range[0], 0.0f, range[1]);
+    __host__ void JitterableScalar<PType>::Update(const int operation)
+    {
+        switch (operation)
+        {
+        case kJitterRandomise:
+        {
+            std::random_device rd;
+            std::mt19937 mt(rd());
+            std::uniform_real_distribution<> rng(0.0f, 1.0f);
 
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(range[0], range[1]);
-
-        t = rng(mt);
-
-        Evaluate();
+            t = rng(mt);
+            Evaluate();
+        }
+        break;
+        case kJitterReset:
+        {
+            t = 0.5f;
+            Evaluate();
+        }
+        break;
+        case kJitterFlatten:
+        {
+            p = eval;
+            dpdt = 0.0f;
+            t = 0.5f;
+        }
+        break;
+        }
     }
 
     template<typename PType, typename TType>
@@ -103,19 +118,34 @@ namespace Cuda
     }
 
     template<typename PType, typename TType>
-    __host__ void JitterableVec<PType, TType>::Randomise(vec2 range)
+    __host__ void JitterableVec<PType, TType>::Update(const int operation)
     {
-        // Clamp and constrain 
-        range[1] = clamp(range[1], range[0], 1.0f);
-        range[0] = clamp(range[0], 0.0f, range[1]);
+        switch (operation)
+        {
+        case kJitterRandomise:
+        {
+            std::random_device rd;
+            std::mt19937 mt(rd());
+            std::uniform_real_distribution<> rng(0.0f, 1.0f);
 
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_real_distribution<> rng(range[0], range[1]);
-
-        for (int i = 0; i < TType::kDims; ++i) { t[i] = rng(mt); }
-        
-        Evaluate();
+            for (int i = 0; i < TType::kDims; ++i) { t[i] = rng(mt); }
+            Evaluate();
+        }
+        break;
+        case kJitterReset:
+        {
+            t = 0.5f;
+            Evaluate();
+        }
+        break;
+        case kJitterFlatten:
+        {
+            p = TType(eval);
+            dpdt = 0.0f;
+            t = 0.5f;
+        }
+        break;
+        }
     }
 
     template<typename PType, typename TType>
@@ -123,8 +153,8 @@ namespace Cuda
     {
         // For integral types, increase the sampleable value by one so we capture the full range
         eval = (std::is_integral<typename PType::kType>::value) ?
-                PType(p + (dpdt + 0.99999f) * (t * 2.0f - 1.0f)) :
-                PType(p + dpdt * (t * 2.0f - 1.0f));
+            PType(p + (dpdt + 0.99999f) * (t * 2.0f - 1.0f)) :
+            PType(p + dpdt * (t * 2.0f - 1.0f));
     }
 
     __host__ void JitterableFlags::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
@@ -137,7 +167,7 @@ namespace Cuda
             Json::ReportError(flags, "Warning: jitterable flags '%s' should have at least 1 element.\n", id);
             return;
         }
-        
+
         p = dpdt = t = 0;
         for (int bit = 0; bit < validBits; ++bit)
         {
@@ -167,14 +197,27 @@ namespace Cuda
         eval = (p & ~dpdt) | (dpdt & t);
     }
 
-    __host__ void JitterableFlags::Randomise(vec2 range)
+    __host__ void JitterableFlags::Update(const int operation)
     {
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_int_distribution<> rng(0, std::numeric_limits<uint>::max());
-        
-        t = rng(mt);
+        switch (operation)
+        {
+        case kJitterRandomise:
+        {
+            std::random_device rd;
+            std::mt19937 mt(rd());
+            std::uniform_int_distribution<> rng(0, std::numeric_limits<uint>::max());
 
-        Evaluate();
+            t = rng(mt);
+            Evaluate();
+        }
+        break;
+        case kJitterFlatten:
+        {
+            p = eval;
+            dpdt = 0;
+            t = 0;
+        }
+        break;
+        }
     }
 }

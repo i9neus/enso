@@ -19,7 +19,7 @@ namespace Cuda
 
     __host__ void RenderObjectParams::Randomise(const vec2& range)
     {
-        flags.Randomise(range);
+        flags.Update(kJitterRandomise);
     }
     
     __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node)
