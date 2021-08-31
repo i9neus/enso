@@ -10,7 +10,7 @@
 
 #include "shelves/IMGUIAbstractShelf.h"
 #include "shelves/IMGUIShelfFactory.h"
-#include "IMGUIStateManager.h"
+#include "permutor/IMGUIStateManager.h"
 
 using namespace Cuda;
 
