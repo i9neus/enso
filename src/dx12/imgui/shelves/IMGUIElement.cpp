@@ -177,8 +177,11 @@ void IMGUIJitteredColourPicker::Construct()
         m_param.dpdt = (m_hsv[1] - m_hsv[0]) * 0.5f;
 
         if (ImGui::Button("s")) { m_param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+        ToolTip("Shuffle");
         if (ImGui::Button("r")) { m_param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+        ToolTip("Reset");
         if (ImGui::Button("f")) { m_param.Update(Cuda::kJitterFlatten); }
+        ToolTip("Flatten");
 
         ImGui::EndTable();
     }    
@@ -217,11 +220,11 @@ void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<
     }
 }
 
-void IMGUIJitteredParameterTable::Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec3& range)
+void IMGUIJitteredParameterTable::Push(const std::string& label, const std::string& tooltip, Cuda::JitterableFloat& param, const Cuda::vec3& range)
 {
     Assert(!label.empty());
 
-    m_params.emplace_back(label, param, range);
+    m_params.emplace_back(label, tooltip, param, range);
 }
 
 void IMGUIJitteredParameterTable::Construct()
@@ -234,17 +237,18 @@ void IMGUIJitteredParameterTable::Construct()
 
         for (int idx = 0; idx < m_params.size(); ++idx)
         {
-            const auto& label = m_params[idx].label;
             auto& param = *(m_params[idx].param);
             const auto& range = m_params[idx].range;
+
             ImGui::TableNextRow();
-            ImGui::PushID(label.c_str());
+            ImGui::PushID(m_params[idx].label.c_str());
             for (int column = 0; column < 2; column++)
             {
                 ImGui::TableSetColumnIndex(column);
                 if (column == 0)
                 {
-                    ImGui::Text(label.c_str());
+                    ImGui::Text(m_params[idx].label.c_str());
+                    HelpMarker(m_params[idx].tooltip.c_str());
                 }
                 else
                 {
@@ -257,8 +261,11 @@ void IMGUIJitteredParameterTable::Construct()
                     ImGui::PopItemWidth();
 
                     if (ImGui::Button("s")) { param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+                    ToolTip("Shuffle");
                     if (ImGui::Button("r")) { param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+                    ToolTip("Reset");
                     if (ImGui::Button("f")) { param.Update(Cuda::kJitterFlatten); }                    
+                    ToolTip("Flatten");
                 }
             }
             ImGui::PopID();
@@ -342,11 +349,16 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
  
     ImGui::PushID("pos");
-    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f)); 
+    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
+    HelpMarker("The base position of the transform.");
+
     if (isJitterable)
     {
         ImGui::DragFloat3("+/-", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
+        HelpMarker("The relative range relative over which the transform position may be jittered.");
+
         ImGui::SliderFloat3("~", &transform.trans.t[0], 0.0f, 1.0f);
+        HelpMarker("The mixing value that determines the evaluated position between + and - its range.");
     }
     ImGui::PopID();
 
@@ -354,10 +366,15 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
 
     ImGui::PushID("rot");
     ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
+    HelpMarker("The base position of the rotation.");
+
     if (isJitterable)
     {       
         ImGui::DragFloat3("+/-", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
+        HelpMarker("The relative range relative over which the transform rotation may be jittered.");
+
         ImGui::SliderFloat3("~", &transform.rot.t[0], 0.0f, 1.0f);
+        HelpMarker("The mixing value that determines the evaluated rotation between + and - its range.");
     }
     ImGui::PopID();
 
@@ -365,10 +382,15 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
 
     ImGui::PushID("sca");
     ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+    HelpMarker("The base scale of the transform.");
+
     if (isJitterable)
     {
         ImGui::DragFloat(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+        HelpMarker("The relative range relative over which the transform scale may be jittered.");
+
         ImGui::SliderFloat("~", &transform.scale.t[0], 0.0f, 1.0f);
+        HelpMarker("The mixing value that determines the evaluated scale between + and - its range.");
     }
     ImGui::PopID();
 

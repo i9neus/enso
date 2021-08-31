@@ -19,6 +19,31 @@ public:
     ~UIStyle();
 };
 
+static void ToolTip(const char* desc)
+{
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+
+static void HelpMarker(const char* desc)
+{
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
 
 class IMGUIListBox
 {
@@ -105,16 +130,17 @@ public:
     struct Element
     {
         Element() = default;
-        Element(const std::string& l, Cuda::JitterableFloat& p, const Cuda::vec3& r) : label(l), param(&p), range(r) {}
+        Element(const std::string& l, const std::string& t, Cuda::JitterableFloat& p, const Cuda::vec3& r) : label(l), tooltip(t), param(&p), range(r) {}
 
         std::string             label;
+        std::string             tooltip;
         Cuda::JitterableFloat*  param;
         Cuda::vec3              range;
     };
 public:
     IMGUIJitteredParameterTable(const std::string& id) : m_id(id) {}
 
-    void Push(const std::string& label, Cuda::JitterableFloat& param, const Cuda::vec3& range);
+    void Push(const std::string& label, const std::string& tooltip, Cuda::JitterableFloat& param, const Cuda::vec3& range);
     void Construct();
 
 private:
@@ -126,9 +152,9 @@ class IMGUIJitteredParameter : public IMGUIJitteredParameterTable
 {
 public:
     IMGUIJitteredParameter(const std::string& id) : IMGUIJitteredParameterTable(id) {}
-    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const Cuda::vec3& range) : IMGUIJitteredParameterTable(label) 
+    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const std::string& tooltip, const Cuda::vec3& range) : IMGUIJitteredParameterTable(label)
     {
-        IMGUIJitteredParameterTable::Push(label, param, range);
+        IMGUIJitteredParameterTable::Push(label, tooltip, param, range);
     }
 };
 
