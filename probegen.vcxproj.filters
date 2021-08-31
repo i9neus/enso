@@ -64,9 +64,6 @@
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\IMGUIStateManager.cpp">
-      <Filter>dx12\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
@@ -75,6 +72,15 @@
     </ClCompile>
     <ClCompile Include="src\io\ImageIO.cpp">
       <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\permutor\BakePermutor.cpp">
+      <Filter>dx12\imgui\permutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\permutor\RenderObjectStateMap.cpp">
+      <Filter>dx12\imgui\permutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\permutor\IMGUIStateManager.cpp">
+      <Filter>dx12\imgui\permutor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -387,9 +393,6 @@
     <ClInclude Include="src\dx12\imgui\IMGUIContainer.h">
       <Filter>dx12\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\IMGUIStateManager.h">
-      <Filter>dx12\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h">
       <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
@@ -404,6 +407,15 @@
     </ClInclude>
     <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh">
       <Filter>kernels\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\permutor\BakePermutor.h">
+      <Filter>dx12\imgui\permutor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\permutor\RenderObjectStateMap.h">
+      <Filter>dx12\imgui\permutor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\permutor\IMGUIStateManager.h">
+      <Filter>dx12\imgui\permutor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -484,6 +496,9 @@
     </Filter>
     <Filter Include="dx12\imgui\shelves">
       <UniqueIdentifier>{6761ba89-09d2-4b5d-9c9a-7041f3ab478c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\imgui\permutor">
+      <UniqueIdentifier>{13417f0c-5c9a-4651-bbf2-9a809a08ebdf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

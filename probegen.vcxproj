@@ -16,7 +16,9 @@
   <ItemGroup>
     <ClCompile Include="src\dx12\D3DContainer.cpp" />
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
-    <ClCompile Include="src\dx12\imgui\IMGUIStateManager.cpp" />
+    <ClCompile Include="src\dx12\imgui\permutor\BakePermutor.cpp" />
+    <ClCompile Include="src\dx12\imgui\permutor\IMGUIStateManager.cpp" />
+    <ClCompile Include="src\dx12\imgui\permutor\RenderObjectStateMap.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIElement.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
@@ -46,7 +48,9 @@
     <ClInclude Include="src\dx12\D3DContainer.h" />
     <ClInclude Include="src\dx12\DXSampleHelper.h" />
     <ClInclude Include="src\dx12\imgui\IMGUIContainer.h" />
-    <ClInclude Include="src\dx12\imgui\IMGUIStateManager.h" />
+    <ClInclude Include="src\dx12\imgui\permutor\BakePermutor.h" />
+    <ClInclude Include="src\dx12\imgui\permutor\IMGUIStateManager.h" />
+    <ClInclude Include="src\dx12\imgui\permutor\RenderObjectStateMap.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIElement.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h" />
