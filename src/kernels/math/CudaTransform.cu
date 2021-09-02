@@ -32,7 +32,7 @@ namespace Cuda
         rot.FromJson("rot", transNode, ::Json::kSilent);
         scale.FromJson("sca", transNode, ::Json::kSilent);
 
-        scale.eval.y = scale.eval.z = scale.eval.x;
+        //scale.eval.y = scale.eval.z = scale.eval.x;
         
         // Build the transform
         Create(trans(), rot(), scale());

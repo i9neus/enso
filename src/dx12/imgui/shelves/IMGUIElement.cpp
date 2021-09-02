@@ -344,10 +344,10 @@ void IMGUIJitteredFlagArray::Construct()
     ImGui::TreePop();
 }
 
-void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable)
+void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale)
 {
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
- 
+
     ImGui::PushID("pos");
     ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
     HelpMarker("The base position of the transform.");
@@ -369,7 +369,7 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     HelpMarker("The base position of the rotation.");
 
     if (isJitterable)
-    {       
+    {
         ImGui::DragFloat3("+/-", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
         HelpMarker("The relative range relative over which the transform rotation may be jittered.");
 
@@ -381,15 +381,37 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     ImGui::Separator();
 
     ImGui::PushID("sca");
-    ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+    if (isNonlinearScale)
+    {
+        ImGui::DragFloat3("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+    }
+    else
+    {
+        ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+    }
     HelpMarker("The base scale of the transform.");
 
     if (isJitterable)
     {
-        ImGui::DragFloat(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+        if (isNonlinearScale)
+        {
+            ImGui::DragFloat3(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+        }
+        else
+        {
+            ImGui::DragFloat(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+
+        }
         HelpMarker("The relative range relative over which the transform scale may be jittered.");
 
-        ImGui::SliderFloat("~", &transform.scale.t[0], 0.0f, 1.0f);
+        if (isNonlinearScale)
+        {
+            ImGui::SliderFloat3("~", &transform.scale.t[0], 0.0f, 1.0f);
+        }
+        else
+        {
+            ImGui::SliderFloat("~", &transform.scale.t[0], 0.0f, 1.0f);
+        }
         HelpMarker("The mixing value that determines the evaluated scale between + and - its range.");
     }
     ImGui::PopID();
@@ -411,9 +433,12 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
         }
     }
 
-    transform.scale.p = transform.scale.p[0];
-    transform.scale.dpdt = transform.scale.dpdt[0];
-    transform.scale.t = transform.scale.t[0];
+    if (!isNonlinearScale)
+    {
+        transform.scale.p = transform.scale.p[0];
+        transform.scale.dpdt = transform.scale.dpdt[0];
+        transform.scale.t = transform.scale.t[0];
+    }
 
     ImGui::TreePop(); 
 } 

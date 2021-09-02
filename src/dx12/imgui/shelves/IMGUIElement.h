@@ -164,7 +164,7 @@ public:
     IMGUIElement() = default;
 
 protected:
-    void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable);
+    void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale = false);
     void ConstructJitteredFloat(Cuda::JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
     

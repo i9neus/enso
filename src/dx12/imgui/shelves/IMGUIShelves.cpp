@@ -139,6 +139,31 @@ void SphereShelf::Jitter(const uint flags, const uint operation)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+BoxShelf::BoxShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.renderObject.flags, "Object flags")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
+void BoxShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    m_flags.Construct();
+    ConstructJitteredTransform(m_p.transform, true, true);
+}
+
+void BoxShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 CornellBoxShelf::CornellBoxShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_flags(m_p.tracable.renderObject.flags, "Object flags"),

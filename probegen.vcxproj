@@ -112,6 +112,7 @@
     <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh" />
+    <ClInclude Include="src\kernels\tracables\CudaBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaCornellBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaKIFS.cuh" />
@@ -181,6 +182,7 @@
     <CudaCompile Include="src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="src\kernels\tracables\CudaBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />

@@ -40,6 +40,15 @@ namespace Cuda
 	__host__ __device__ __forceinline__ int		Area(const ivec2& v)						{ return v.x * v.y; }
 	__host__ __device__ __forceinline__ uint	Area(const uvec2& v)						{ return v.x * v.y; }
 
+	__host__ __device__ __forceinline__ bool	IsPointInUnitBox(const vec3& v) 
+	{ 
+		return v.x > -0.5f && v.x <= 0.5f && v.y > -0.5 && v.y <= 0.5f && v.z > -0.5f && v.z <= 0.5f;
+	}
+	__host__ __device__ __forceinline__ bool	IsPointInBox(const vec3& v, const vec3& lower, const vec3& upper)
+	{
+		return v.x > lower.x && v.x <= upper.x && v.y > lower.y && v.y <= upper.y && v.z > lower.z && v.z <= upper.z;
+	}
+
 	__host__ __device__ __forceinline__ vec3	PolarToCartesian(const vec2& polar)
 	{
 		const float sinTheta = sin(polar.x);

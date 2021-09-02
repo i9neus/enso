@@ -6,6 +6,7 @@
 #include "kernels/tracables/CudaSphere.cuh"
 #include "kernels/tracables/CudaPlane.cuh"
 #include "kernels/tracables/CudaCornellBox.cuh"
+#include "kernels/tracables/CudaBox.cuh"
 
 #include "kernels/lights/CudaQuadLight.cuh"
 #include "kernels/lights/CudaSphereLight.cuh"
@@ -96,6 +97,21 @@ public:
     virtual ~SphereShelf() = default;
 
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SphereShelf(json)); }
+    virtual void Construct() override final;
+    virtual void Jitter(const uint flags, const uint operation) override final;
+
+private:
+    IMGUIJitteredFlagArray  m_flags;
+};
+
+// Box tracable
+class BoxShelf : public IMGUIShelf<Cuda::Host::Box, Cuda::TracableParams>
+{
+public:
+    BoxShelf(const Json::Node& json);
+    virtual ~BoxShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new BoxShelf(json)); }
     virtual void Construct() override final;
     virtual void Jitter(const uint flags, const uint operation) override final;
 

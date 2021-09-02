@@ -7,6 +7,7 @@
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
 #include "tracables/CudaCornellBox.cuh"
+#include "tracables/CudaBox.cuh"
 
 #include "lights/CudaQuadLight.cuh"
 #include "lights/CudaSphereLight.cuh"
@@ -33,6 +34,7 @@ namespace Cuda
         AddInstantiator<Host::KIFS>();
         AddInstantiator<Host::Plane>();
         AddInstantiator<Host::CornellBox>();
+        AddInstantiator<Host::Box>();
 
         AddInstantiator<Host::QuadLight>();
         AddInstantiator<Host::SphereLight>();

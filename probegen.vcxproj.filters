@@ -417,6 +417,9 @@
     <ClInclude Include="src\dx12\imgui\permutor\IMGUIStateManager.h">
       <Filter>dx12\imgui\permutor</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\tracables\CudaBox.cuh">
+      <Filter>kernels\tracables</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -591,6 +594,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaDistantLight.cu">
       <Filter>kernels\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\tracables\CudaBox.cu">
+      <Filter>kernels\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
