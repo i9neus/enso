@@ -7,7 +7,7 @@
 #include "generic/FilesystemUtils.h"
 #include "generic/Log.h"
 
-#include "kernels/CudaLightProbeGrid.cuh"
+#include "kernels/lightprobes/CudaLightProbeGrid.cuh"
 
 #ifndef _DEBUG 
 

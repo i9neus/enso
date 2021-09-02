@@ -2,10 +2,10 @@
 
 #include "CudaLightProbeGrid.cuh"
 #include "generic/JsonUtils.h"
-#include "CudaCtx.cuh"
-#include "CudaManagedArray.cuh"
+#include "../CudaCtx.cuh"
+#include "../CudaManagedArray.cuh"
 
-#include "math/CudaSphericalHarmonics.cuh"
+#include "../math/CudaSphericalHarmonics.cuh"
 
 namespace Cuda
 {

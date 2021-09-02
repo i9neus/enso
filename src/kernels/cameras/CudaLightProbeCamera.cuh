@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CudaCamera.cuh"
-#include "../CudaLightProbeGrid.cuh"
+#include "../lightprobes/CudaLightProbeGrid.cuh"
 
 namespace Json { class Node; }
 

@@ -357,9 +357,6 @@
     <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="src\io\USDIO.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -419,6 +416,9 @@
     </ClInclude>
     <ClInclude Include="src\kernels\tracables\CudaBox.cuh">
       <Filter>kernels\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh">
+      <Filter>kernels\lightprobes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -503,6 +503,9 @@
     <Filter Include="dx12\imgui\permutor">
       <UniqueIdentifier>{13417f0c-5c9a-4651-bbf2-9a809a08ebdf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\lightprobes">
+      <UniqueIdentifier>{c945e127-d6a1-463c-81bb-c8b8ce3907bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -577,9 +580,6 @@
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu">
       <Filter>kernels\cameras</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\CudaLightProbeGrid.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\lights\CudaSphereLight.cu">
       <Filter>kernels\lights</Filter>
     </CudaCompile>
@@ -597,6 +597,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaBox.cu">
       <Filter>kernels\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeGrid.cu">
+      <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

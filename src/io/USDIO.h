@@ -1,7 +1,7 @@
 #pragma once
 
 #include "generic/StdIncludes.h"
-#include "kernels/CudaLightProbeGrid.cuh"
+#include "kernels/lightprobes/CudaLightProbeGrid.cuh"
 
 namespace USDIO
 {

@@ -73,7 +73,6 @@
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaLightProbeCamera.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaPerspectiveCamera.cuh" />
-    <ClInclude Include="src\kernels\CudaLightProbeGrid.cuh" />
     <ClInclude Include="src\kernels\CudaManagedArray.cuh" />
     <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
@@ -87,6 +86,7 @@
     <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaLight.cuh" />
@@ -163,10 +163,10 @@
     <CudaCompile Include="src\kernels\cameras\CudaPerspectiveCamera.cu" />
     <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
-    <CudaCompile Include="src\kernels\CudaLightProbeGrid.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObject.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeGrid.cu" />
     <CudaCompile Include="src\kernels\lights\CudaDistantLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaLight.cu" />

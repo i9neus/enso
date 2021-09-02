@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "CudaRenderObject.cuh"
+#include "../CudaRenderObject.cuh"
 
 namespace Cuda
 {

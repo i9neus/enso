@@ -1,5 +1,5 @@
 ﻿#include "CudaLambert.cuh"
-#include "../CudaLightProbeGrid.cuh"
+#include "../lightprobes/CudaLightProbeGrid.cuh"
 #include "../cameras/CudaLightProbeCamera.cuh"
 
 #include "generic/JsonUtils.h"
