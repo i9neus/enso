@@ -23,6 +23,8 @@
 #include "cameras/CudaPerspectiveCamera.cuh"
 #include "cameras/CudaLightProbeCamera.cuh"
 
+#include "lightprobes/CudaLightProbeKernelFilter.cuh"
+
 #include "CudaWavefrontTracer.cuh"
 
 namespace Cuda
@@ -51,16 +53,9 @@ namespace Cuda
 
         AddInstantiator<Host::PerspectiveCamera>();
         AddInstantiator<Host::LightProbeCamera>();
+
+        AddInstantiator<Host::LightProbeKernelFilter>();
     }    
-
-    struct RenderObjectParams2
-    {
-        __device__ RenderObjectParams2() {}
-        __host__ RenderObjectParams2(const ::Json::Node& node, const uint flags) : RenderObjectParams2() {  }
-
-        JitterableFlags     flags;
-    };
-
 
     struct TestStruct
     {
@@ -91,7 +86,7 @@ namespace Cuda
         }
         sdf;
 
-        RenderObjectParams2 tracable;
+        RenderObjectParams tracable;
         //BidirectionalTransform transform;
 
         bool doTakeSnapshot;
@@ -265,6 +260,10 @@ namespace Cuda
         {
             const ::Json::Node childNode = rootNode.GetChildObject("integrators", ::Json::kRequiredAssert);
             InstantiateList(childNode, AssetType::kIntegrator, "integrator", renderObjects);
+        }
+        {
+            const ::Json::Node childNode = rootNode.GetChildObject("filters", ::Json::kRequiredAssert);
+            InstantiateList(childNode, AssetType::kLightProbeFilter, "filter", renderObjects);
         }
     }
 }

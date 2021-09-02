@@ -420,6 +420,9 @@
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh">
       <Filter>kernels\lightprobes</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh">
+      <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -599,6 +602,9 @@
       <Filter>kernels\tracables</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeGrid.cu">
+      <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
   </ItemGroup>

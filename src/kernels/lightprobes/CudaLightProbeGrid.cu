@@ -9,7 +9,7 @@
 
 namespace Cuda
 {
-    __host__ __device__ LightProbeGridParams::LightProbeGridParams() 
+    __host__ __device__ LightProbeGridParams::LightProbeGridParams()
     {
         gridDensity = ivec3(5, 5, 5);
         shOrder = 1;
@@ -60,15 +60,15 @@ namespace Cuda
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
         shOrder = clamp(shOrder, 0, 2);
         axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
-    }        
+    }
 
     __host__ __device__ Device::LightProbeGrid::LightProbeGrid()
     {
-        
+
     }
 
-    __device__ void Device::LightProbeGrid::Synchronise(const LightProbeGridParams& params) 
-    { 
+    __device__ void Device::LightProbeGrid::Synchronise(const LightProbeGridParams& params)
+    {
         m_params = params;
     }
 
@@ -76,9 +76,9 @@ namespace Cuda
     {
         if (kKernelIdx >= m_params.numProbes) { return; }
 
-        const ivec3 gridIdx(kKernelIdx % m_params.gridDensity.x, 
-                            (kKernelIdx / m_params.gridDensity.x) % m_params.gridDensity.y, 
-                            kKernelIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
+        const ivec3 gridIdx(kKernelIdx % m_params.gridDensity.x,
+            (kKernelIdx / m_params.gridDensity.x) % m_params.gridDensity.y,
+            kKernelIdx / (m_params.gridDensity.x * m_params.gridDensity.y));
 
         uchar validity = 0;
         for (int z = 0, idx = 0; z < 2; z++)
@@ -131,7 +131,7 @@ namespace Cuda
     __device__ vec3 Device::LightProbeGrid::WeightedInterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const
     {
         float w[6] = { 1 - delta.x, delta.x, 1 - delta.y, delta.y, 1 - delta.z, delta.z };
-        
+
         vec3 L(0.0f);
         float sumWeights = 0.0f;
         for (int z = 0, idx = 0; z < 2; z++)
@@ -146,7 +146,7 @@ namespace Cuda
 
                     assert(sampleIdx < m_objects.cu_shData->Size());
 
-                    if(validity & (1 << idx))
+                    if (validity & (1 << idx))
                     {
                         const float weight = w[x] * w[2 + y] * w[4 + z];
                         L += (*m_objects.cu_shData)[sampleIdx + coeffIdx] * weight;
@@ -162,14 +162,14 @@ namespace Cuda
     __device__ __forceinline__ uchar Device::LightProbeGrid::GetValidity(const ivec3& gridIdx) const
     {
         return m_params.useValidity ?
-              ((*m_objects.cu_validityData)[gridIdx.z * (m_params.gridDensity.x * m_params.gridDensity.y) + gridIdx.y * m_params.gridDensity.x + gridIdx.x]) :
-              0xff;
+            ((*m_objects.cu_validityData)[gridIdx.z * (m_params.gridDensity.x * m_params.gridDensity.y) + gridIdx.y * m_params.gridDensity.x + gridIdx.x]) :
+            0xff;
     }
 
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
-    {  
+    {
         assert(m_objects.cu_shData);
-        
+
         vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform) / m_params.aspectRatio;
 
         // Debug the grid 
@@ -213,7 +213,7 @@ namespace Cuda
         {
             return vec3(WeightedInterpolateCoefficient(gridIdx, m_params.coefficientsPerProbe - 1, delta, GetValidity(gridIdx)).y);
         }
-        break; 
+        break;
         default:
         {
             // Sum the SH coefficients
@@ -231,7 +231,7 @@ namespace Cuda
     __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id)
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
-        
+
         m_shData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
         m_validityData = AssetHandle<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
 
@@ -260,7 +260,7 @@ namespace Cuda
     {
         cu_grid->PrepareValidityGrid();
     }
-    
+
     __host__ void Host::LightProbeGrid::Prepare(const LightProbeGridParams& params)
     {
         m_params = params;
@@ -279,7 +279,7 @@ namespace Cuda
             Log::Debug("Resized to %i\n", arraySize);
             m_shData->Resize(arraySize);
             m_validityData->Resize(arraySize);
-        }        
+        }
 
         Cuda::SynchroniseObjects(cu_deviceData, m_params);
 

@@ -438,10 +438,11 @@ void RenderManager::Run()
 				camera->Composite(m_compositeImage);
 			}
 
-			camera->OnPostRenderPass();
-
 			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 		}
+		
+		// Signal to the render objects that the pass is complete
+		for (auto& object : *m_renderObjects) { object->OnPostRenderPass(); }
 
 		// Handle any post-frame baking operations
 		OnBakePostFrame();

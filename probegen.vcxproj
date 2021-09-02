@@ -86,6 +86,7 @@
     <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh" />
     <ClInclude Include="src\kernels\lights\CudaEnvironmentLight.cuh" />
@@ -166,6 +167,7 @@
     <CudaCompile Include="src\kernels\CudaRenderObject.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeGrid.cu" />
     <CudaCompile Include="src\kernels\lights\CudaDistantLight.cu" />
     <CudaCompile Include="src\kernels\lights\CudaEnvironmentLight.cu" />

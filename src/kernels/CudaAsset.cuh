@@ -17,7 +17,17 @@ namespace Cuda
         using HostVariant = HostType;
     };
 
-    enum class AssetType : int { kUnknown = -1, kTracable, kBxDF, kMaterial, kLight, kCamera, kIntegrator };
+    enum class AssetType : int 
+    { 
+        kUnknown = -1, 
+        kTracable, 
+        kBxDF, 
+        kMaterial, 
+        kLight, 
+        kCamera, 
+        kIntegrator, 
+        kLightProbeFilter
+    };
 
     struct NullParams
     {

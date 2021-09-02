@@ -24,6 +24,8 @@
 
 #include "kernels/CudaWavefrontTracer.cuh"
 
+#include "kernels/lightprobes/CudaLightProbeKernelFilter.cuh"
+
 #include "IMGUIAbstractShelf.h"
 
 // Simple material
@@ -257,4 +259,16 @@ public:
 
 private:
     std::vector<std::string>    m_swizzleLabels;
+};
+
+// Light probe kernel filter
+class LightProbeKernelFilterShelf : public IMGUIShelf<Cuda::Host::LightProbeKernelFilter, Cuda::LightProbeKernelFilterParams>
+{
+public:
+    LightProbeKernelFilterShelf(const Json::Node& json);
+    virtual ~LightProbeKernelFilterShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeKernelFilterShelf(json)); }
+    virtual void Construct() override final;
+    virtual void Jitter(const uint flags, const uint operation) override final {}
 };

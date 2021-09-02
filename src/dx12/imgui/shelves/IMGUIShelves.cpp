@@ -521,3 +521,17 @@ void WavefrontTracerShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteColours)) { return; }
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+LightProbeKernelFilterShelf::LightProbeKernelFilterShelf(const Json::Node& json) :
+    IMGUIShelf(json)
+{}
+
+void LightProbeKernelFilterShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ConstructComboBox("Kernel type", { "Gaussian" }, m_p.filterType);
+    ImGui::SliderFloat("Kernel radius", &m_p.radius, 0.0f, 20.0f);
+}

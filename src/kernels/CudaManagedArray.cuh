@@ -99,6 +99,7 @@ namespace Cuda
 			__host__ inline uint Size() const { return m_hostData.m_size; }
 			__host__ inline void Resize(const uint size);
 			__host__ void Download(std::vector<T>& rawData) const;
+			__host__ void Swap(ManagedArray& other);
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }
@@ -159,6 +160,16 @@ namespace Cuda
 		m_hostData.m_size = newSize;
 
 		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize); 
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Swap(ManagedArray& other)
+	{
+		AssertMsgFmt(other.Size() == Size(), "Array size mismatch. This array has %i elements, other is %i.", Size(), other.Size());
+		
+		std::swap(m_hostData.cu_data, other.m_hostData.cu_data);
+
+		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize);
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
