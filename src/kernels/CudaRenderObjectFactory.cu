@@ -215,7 +215,7 @@ namespace Cuda
                         Log::Indent indent2;
                         for (auto& child : childObjects)
                         {
-                            Assert(child);
+                            AssertMsg(child, "A captured child object handle is invalid.");
                             child->SetHostStream(m_hostStream);
                             renderObjects->Emplace(child);
 

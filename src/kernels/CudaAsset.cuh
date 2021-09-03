@@ -84,6 +84,7 @@ namespace Cuda
         void Deregister(std::shared_ptr<Host::Asset> object);
         void VerifyEmpty();
         void Report();
+        bool Exists(const std::string& id) const;
         size_t Size() const { return m_assetMap.size(); }
 
     private:

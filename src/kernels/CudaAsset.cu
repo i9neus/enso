@@ -63,5 +63,10 @@ namespace Cuda
 
         throw std::runtime_error("FAILED.");
     }
+
+    bool GlobalAssetRegistry::Exists(const std::string& assetId) const
+    {
+        return m_assetMap.find(assetId) != m_assetMap.end();
+    }
 }
 

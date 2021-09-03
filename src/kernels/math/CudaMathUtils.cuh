@@ -15,6 +15,7 @@ namespace Cuda
 	template<typename T> __host__ __device__ __forceinline__ T toRad(const T& deg)			{ return kTwoPi * deg / 360.0f; }
 	template<typename T> __host__ __device__ __forceinline__ T toDeg(const T& rad)			{ return 360.0f * rad / kTwoPi; }
 	template<typename T> __host__ __device__ __forceinline__ T sqr(const T& a)           	{ return a * a; }
+	template<typename T> __host__ __device__ __forceinline__ T cub(const T& a)           	{ return a * a * a; }
 	__host__ __device__ __forceinline__ int		mod2(int a, int b)							{ return ((a % b) + b) % b; }
 	__host__ __device__ __forceinline__ float	mod2(float a, float b)						{ return fmodf(fmodf(a, b) + b, b); }
 	__host__ __device__ __forceinline__ vec3	mod2(vec3 a, vec3 b)						{ return fmod(fmod(a, b) + b, b); }	
@@ -53,6 +54,22 @@ namespace Cuda
 	{
 		const float sinTheta = sin(polar.x);
 		return vec3(sin(polar.y) * sinTheta, cos(polar.x), cos(polar.y) * sinTheta);
+	}
+
+	template<typename T>
+	__host__ __device__ __forceinline__ T NearestPow2Ceil(const T& j)
+	{
+		T i = 1;
+		for (; i < j; i <<= 1) {};
+		return i;
+	}
+
+	template<typename T>
+	__host__ __device__ __forceinline__ T NearestPow2Floor(const T& j)
+	{
+		T i = 1;
+		for (; i <= j; i <<= 1) {};
+		return i >> 1;
 	}
 
 	#define kOne vec3(1.0f)

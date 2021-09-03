@@ -69,29 +69,29 @@ namespace Cuda
         Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
         m_params.FromJson(parentNode, ::Json::kRequiredWarn);
 
-        parentNode.GetValue("lightProbeGrid", m_lightProbeGridID, ::Json::kRequiredWarn);
+        parentNode.GetValue("gridDirectID", m_gridIDs[0], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridIndirectID", m_gridIDs[1], ::Json::kRequiredWarn);
     }
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
     {
-        if (m_lightProbeGridID.empty()) { return; }
-        
-        AssetHandle<Host::LightProbeCamera> probeCamera = sceneObjects.FindByID<Host::LightProbeCamera>(m_lightProbeGridID);
-        if (!probeCamera)
-        {
-            Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': camera not found.\n", m_lightProbeGridID, GetAssetID());
-            return;
-        }
-
         Device::LightProbeGrid* cu_grid = nullptr;
-        if (probeCamera->GetLightProbeCameraParams().camera.isActive)
+        
+        Assert(m_params.lightProbeGridIdx >= 0 && m_params.lightProbeGridIdx < 2);
+        if (!m_gridIDs[m_params.lightProbeGridIdx].empty())
         {
-            m_hostLightProbeGrid = probeCamera->GetLightProbeGrid(m_params.lightProbeGridIdx);
-            cu_grid = m_hostLightProbeGrid->GetDeviceInstance();
-            Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", m_params.lightProbeGridIdx, m_lightProbeGridID, GetAssetID());
+            m_hostLightProbeGrid = sceneObjects.FindByID<Host::LightProbeGrid>(m_gridIDs[m_params.lightProbeGridIdx]);
+            if (m_hostLightProbeGrid)
+            {
+                Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", m_params.lightProbeGridIdx, m_gridIDs[m_params.lightProbeGridIdx], GetAssetID());
+            }
+            else
+            {
+                Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': grid not found.\n", m_gridIDs[m_params.lightProbeGridIdx], GetAssetID());
+            }
         }
 
-        Cuda::SynchroniseObjects(cu_deviceData, cu_grid);
+        Cuda::SynchroniseObjects(cu_deviceData, m_hostLightProbeGrid->GetDeviceInstance());
     }
 
     __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)

@@ -54,8 +54,8 @@ namespace Cuda
             Device::LambertBRDF                     m_hostData; 
             AssetHandle<Host::LightProbeGrid>	    m_hostLightProbeGrid;
 
-            std::string         m_lightProbeGridID;
-            LambertBRDFParams   m_params;
+            std::string                             m_gridIDs[2];
+            LambertBRDFParams                       m_params;
 
         public:
             __host__ LambertBRDF(const ::Json::Node&);

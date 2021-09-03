@@ -86,6 +86,7 @@
     <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\lightprobes\CudaFilters.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh" />

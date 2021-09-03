@@ -113,9 +113,21 @@ namespace Cuda
         (*m_objects.cu_shData)[idx] = L;
     }
 
-    __device__ vec3 Device::LightProbeGrid::GetSHCoefficient(const int probeIdx, const int coeffIdx) const
+    __device__ vec3* Device::LightProbeGrid::At(const int probeIdx) 
     {
-        return (*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe + coeffIdx];
+        assert(m_objects.cu_shData);
+        assert(probeIdx < m_params.numProbes);
+        
+        return &(*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe];
+    }
+
+    __device__ int Device::LightProbeGrid::IdxAt(const ivec3& gridIdx) const
+    {
+        if(gridIdx.x < 0 || gridIdx.x >= m_params.gridDensity.x ||
+           gridIdx.y < 0 || gridIdx.y >= m_params.gridDensity.y ||
+           gridIdx.z < 0 || gridIdx.z >= m_params.gridDensity.z) { return -1; }
+
+        return gridIdx.z * m_params.gridDensity.x * m_params.gridDensity.y + gridIdx.y * m_params.gridDensity.x + gridIdx.x;
     }
 
     __device__ inline HitPoint HitToObjectSpace(const HitPoint& world, const BidirectionalTransform& bdt)
@@ -263,10 +275,14 @@ namespace Cuda
 
     __host__ void Host::LightProbeGrid::Prepare(const LightProbeGridParams& params)
     {
+        Assert(Volume(m_params.gridDensity) > 0);
+        Assert(m_params.shOrder >= 0 && m_params.shOrder < 2);
+        
         m_params = params;
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder) + 1;
         m_params.numProbes = Volume(m_params.gridDensity);
         m_params.aspectRatio = vec3(m_params.gridDensity) / cwiseMax(m_params.gridDensity);
+        m_params.useValidity = false;
 
         const int newSize = m_params.numProbes * m_params.coefficientsPerProbe;
         int arraySize = m_shData->Size();
@@ -286,6 +302,11 @@ namespace Cuda
         KernelPrepareValidityGrid << < (m_params.numProbes + 255) / 256, 256, 0, m_hostStream >> > (cu_deviceData);
     }
 
+    __host__ void Host::LightProbeGrid::Mirror(const LightProbeGrid& other)
+    {
+
+    }
+
     __host__ void Host::LightProbeGrid::FromJson(const ::Json::Node& node, const uint flags)
     {
         std::string usdExportPath;
@@ -299,6 +320,11 @@ namespace Cuda
     __host__ void Host::LightProbeGrid::GetRawData(std::vector<vec3>& rawData) const
     {
         m_shData->Download(rawData);
+    }
+
+    __host__ void Host::LightProbeGrid::SetRawData(const std::vector<vec3>& rawData)
+    {
+        m_shData->Upload(rawData);
     }
 
     __host__ bool Host::LightProbeGrid::IsValid() const

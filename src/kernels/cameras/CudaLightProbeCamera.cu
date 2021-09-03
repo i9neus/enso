@@ -317,7 +317,7 @@ namespace Cuda
         const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
         for (int i = startIdx; i <= endIdx; i++)
         {
-            const float coeff = m_objects.cu_probeGrids[0]->GetSHCoefficient(startIdx, m_params.coefficientsPerProbe - 1).z;
+            const float coeff = m_objects.cu_probeGrids[0]->At(startIdx)[m_params.coefficientsPerProbe - 1].z;
             localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeff), max(localMinMax[kKernelIdx].y, coeff));
         }        
 
@@ -335,8 +335,8 @@ namespace Cuda
         return globalMinMax;
     }
 
-    __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& parentNode, const std::string& id) :
-        Host::Camera(parentNode, id, kRayBufferSize),
+    __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& node, const std::string& id) :
+        Host::Camera(node, id, kRayBufferSize),
         m_block(16 * 16, 1, 1),
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
@@ -344,15 +344,18 @@ namespace Cuda
         m_numActiveGrids(0),
         m_bakeProgress(0.0f)
     {
+        std::string gridIDs[2];
+        node.GetValue("gridDirectID", gridIDs[0], Json::kRequiredAssert);
+        node.GetValue("gridIndirectID", gridIDs[1], Json::kRequiredAssert);
+        
         // Create the accumulation buffers and probe grids
         for (int idx = 0; idx < 2; ++idx)
         {
             m_hostAccumBuffers[idx] = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer%i", id, idx), kAccumBufferSize, m_hostStream);
             m_hostAccumBuffers[idx]->Clear(vec4(0.0f));
             m_deviceObjects.cu_accumBuffers[idx] = m_hostAccumBuffers[idx]->GetDeviceInstance();
-
-            const std::string gridId = tfm::format("%s_probeGrid%i", id, idx);
-            m_hostLightProbeGrids[idx] = AssetHandle<Host::LightProbeGrid>(gridId, gridId);
+            
+            m_hostLightProbeGrids[idx] = AssetHandle<Host::LightProbeGrid>(gridIDs[idx], gridIDs[idx]);
 
             m_deviceObjects.cu_probeGrids[idx] = m_hostLightProbeGrids[idx]->GetDeviceInstance();
         }
@@ -370,7 +373,7 @@ namespace Cuda
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
 
         // Objects are re-synchronised at every JSON update
-        FromJson(parentNode, ::Json::kRequiredWarn);        
+        FromJson(node, ::Json::kRequiredWarn);        
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -399,23 +402,7 @@ namespace Cuda
         if (m_hostLightProbeGrids[0]) { children.push_back(AssetHandle<Host::RenderObject>(m_hostLightProbeGrids[0])); }
         if (m_hostLightProbeGrids[1]) { children.push_back(AssetHandle<Host::RenderObject>(m_hostLightProbeGrids[1])); }
         return children;
-    }
-
-    template<typename T>
-    __host__ T NearestPow2Ceil(const T& j)
-    {
-        T i = 1;
-        for (; i < j; i <<= 1) {};
-        return i;
-    }
-
-    template<typename T>
-    __host__ T NearestPow2Floor(const T& j)
-    {
-        T i = 1;
-        for (; i <= j; i <<= 1) {};
-        return i >> 1;
-    }
+    }    
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {

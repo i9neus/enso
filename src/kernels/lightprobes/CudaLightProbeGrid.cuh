@@ -37,6 +37,11 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        __host__ __device__ __forceinline__ bool operator!=(const LightProbeGridParams& rhs) const
+        {
+            return numProbes != rhs.numProbes;
+        }
+
         BidirectionalTransform		transform;
         ivec3						gridDensity;
         int							shOrder;
@@ -72,9 +77,12 @@ namespace Cuda
             __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
 
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
-            __device__ vec3 GetSHCoefficient(const int probeIdx, const int coeffIdx) const;
+            __device__ vec3* At(const int probeIdx);
+            __device__ const vec3* At(const int probeIdx) const { return const_cast<LightProbeGrid*>(this)->At(probeIdx); }
+            __device__ int IdxAt(const ivec3& gridIdx) const;
             __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
             __device__ void PrepareValidityGrid();
+            __device__ const LightProbeGridParams& GetParams() const { return m_params; }
 
         private:
             __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
@@ -97,6 +105,7 @@ namespace Cuda
             __host__ virtual ~LightProbeGrid();
 
             __host__ void                               Prepare(const LightProbeGridParams& params);
+            __host__ void                               Mirror(const LightProbeGrid& other);
 
             __host__  virtual void                      OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
@@ -104,6 +113,7 @@ namespace Cuda
             __host__ void                               IsConverged() const;
             __host__ bool                               IsValid() const;
             __host__ void                               GetRawData(std::vector<vec3>& data) const;
+            __host__ void                               SetRawData(const std::vector<vec3>& data);
             __host__ const LightProbeGridParams&        GetParams() const { return m_params; }
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }

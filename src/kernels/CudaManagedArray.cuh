@@ -99,6 +99,7 @@ namespace Cuda
 			__host__ inline uint Size() const { return m_hostData.m_size; }
 			__host__ inline void Resize(const uint size);
 			__host__ void Download(std::vector<T>& rawData) const;
+			__host__ void Upload(const std::vector<T>& rawData);
 			__host__ void Swap(ManagedArray& other);
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
@@ -154,9 +155,10 @@ namespace Cuda
 	template<typename T, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Resize(const uint newSize)
 	{		
+		if (m_hostData.m_size == newSize) { return; }
+		
 		SafeFreeDeviceMemory(&m_hostData.cu_data);
 		SafeAllocDeviceMemory(&m_hostData.cu_data, newSize);
-
 		m_hostData.m_size = newSize;
 
 		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize); 
@@ -169,7 +171,7 @@ namespace Cuda
 		
 		std::swap(m_hostData.cu_data, other.m_hostData.cu_data);
 
-		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize);
+		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, m_hostData.m_size);
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
@@ -209,5 +211,15 @@ namespace Cuda
 		rawData.resize(m_hostData.m_size);
 
 		IsOk(cudaMemcpy(rawData.data(), m_hostData.cu_data, sizeof(T) * m_hostData.m_size, cudaMemcpyDeviceToHost));
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Upload(const std::vector<T>& rawData)
+	{
+		if (rawData.empty()) { return; }
+
+		Resize(rawData.size());
+
+		IsOk(cudaMemcpy(m_hostData.cu_data, rawData.data(), sizeof(T) * rawData.size(), cudaMemcpyHostToDevice));
 	}
 }

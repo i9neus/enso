@@ -423,6 +423,9 @@
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh">
       <Filter>kernels\lightprobes</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaFilters.cuh">
+      <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
