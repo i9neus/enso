@@ -101,6 +101,7 @@ namespace Cuda
 			__host__ void Download(std::vector<T>& rawData) const;
 			__host__ void Upload(const std::vector<T>& rawData);
 			__host__ void Swap(ManagedArray& other);
+			__host__ void Replace(const ManagedArray& other);
 
 			__host__ void SignalChange(cudaStream_t hostStream, const unsigned int currentState, const unsigned int newState);
 			__host__ inline void SignalSetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kReadLocked); }
@@ -172,6 +173,19 @@ namespace Cuda
 		std::swap(m_hostData.cu_data, other.m_hostData.cu_data);
 
 		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, m_hostData.m_size);
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Replace(const ManagedArray& other)
+	{				
+		// Resize the data if necessary
+		if (Size() != other.Size()) { Resize(other.Size()); }
+
+		// Copy over the data
+		if (Size() > 0)
+		{
+			IsOk(cudaMemcpy(m_hostData.cu_data, other.m_hostData.cu_data, sizeof(T) * Size(), cudaMemcpyDeviceToDevice));
+		}
 	}
 
 	template<typename T, typename HostType, typename DeviceType>

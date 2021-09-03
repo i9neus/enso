@@ -11,14 +11,14 @@ namespace Cuda
 {
     __host__ void LightProbeKernelFilterParams::ToJson(::Json::Node& node) const
     {
-        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "gaussian" }), filterType);
+        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "gaussian" }), filterType);
         node.AddValue("radius", radius);
         node.AddValue("trigger", trigger);
     }
 
     __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "gaussian" }), filterType, flags);
+        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "gaussian" }), filterType, flags);
         node.GetValue("radius", radius, flags);
         node.GetValue("trigger", trigger, Json::kSilent);
     }
@@ -258,6 +258,13 @@ namespace Cuda
     {              
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
+        
+        // Pass-through filter just copies the data
+        if (m_objects.params.filterType == kKernelFilterNull)
+        {
+            m_hostOutputGrid->Replace(*m_hostInputGrid);
+            return;
+        }
         
         for (int probeIdx = 0; probeIdx < m_objects.numProbes; probeIdx += m_probeRange)
         {

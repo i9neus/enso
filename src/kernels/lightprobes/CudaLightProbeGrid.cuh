@@ -37,10 +37,7 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        __host__ __device__ __forceinline__ bool operator!=(const LightProbeGridParams& rhs) const
-        {
-            return numProbes != rhs.numProbes;
-        }
+        __host__ __device__ bool operator!=(const LightProbeGridParams& rhs) const;
 
         BidirectionalTransform		transform;
         ivec3						gridDensity;
@@ -105,7 +102,8 @@ namespace Cuda
             __host__ virtual ~LightProbeGrid();
 
             __host__ void                               Prepare(const LightProbeGridParams& params);
-            __host__ void                               Mirror(const LightProbeGrid& other);
+            __host__ void                               Replace(const LightProbeGrid& other);
+            __host__ void                               Swap(LightProbeGrid& other);
 
             __host__  virtual void                      OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;

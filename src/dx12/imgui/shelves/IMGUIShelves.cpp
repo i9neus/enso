@@ -532,7 +532,7 @@ void LightProbeKernelFilterShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructComboBox("Kernel type", { "Gaussian" }, m_p.filterType);
+    ConstructComboBox("Kernel type", { "Null", "Gaussian" }, m_p.filterType);
     ImGui::SliderFloat("Kernel radius", &m_p.radius, 0.0f, 20.0f);
     if (ImGui::Button("Update")) { m_p.trigger = true; }
 }

@@ -10,6 +10,7 @@ namespace Cuda
 
     enum LightProbeKernelFilterType : int
     {
+        kKernelFilterNull,
         kKernelFilterGaussian
     };
 

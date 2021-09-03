@@ -62,10 +62,13 @@ namespace Cuda
         axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
     }
 
-    __host__ __device__ Device::LightProbeGrid::LightProbeGrid()
+    __host__ __device__  bool LightProbeGridParams::operator!=(const LightProbeGridParams& rhs) const
     {
-
+        return gridDensity != rhs.gridDensity ||
+               shOrder != rhs.shOrder;
     }
+
+    __host__ __device__ Device::LightProbeGrid::LightProbeGrid() { }
 
     __device__ void Device::LightProbeGrid::Synchronise(const LightProbeGridParams& params)
     {
@@ -302,9 +305,21 @@ namespace Cuda
         KernelPrepareValidityGrid << < (m_params.numProbes + 255) / 256, 256, 0, m_hostStream >> > (cu_deviceData);
     }
 
-    __host__ void Host::LightProbeGrid::Mirror(const LightProbeGrid& other)
+    __host__ void Host::LightProbeGrid::Replace(const LightProbeGrid& other)
     {
+        Prepare(other.GetParams());
+        
+        m_shData->Replace(*(other.m_shData));
+        m_validityData->Replace(*(other.m_validityData));
+    }
 
+    __host__ void Host::LightProbeGrid::Swap(LightProbeGrid& other)
+    {
+        Assert(m_params.gridDensity == other.GetParams().gridDensity &&
+            m_params.shOrder == other.GetParams().shOrder);
+
+        m_shData->Swap(*(other.m_shData));
+        m_validityData->Swap(*(other.m_validityData));
     }
 
     __host__ void Host::LightProbeGrid::FromJson(const ::Json::Node& node, const uint flags)
