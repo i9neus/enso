@@ -51,8 +51,7 @@ namespace Cuda
             Objects                                 m_objects;
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
-            AssetHandle<Host::Array<vec3>>          m_gridSHData;
-            AssetHandle<Host::Array<float>>         m_hostReduceBuffer;
+            AssetHandle<Host::Array<vec3>>          m_hostReduceBuffer;
 
             std::string                             m_inputGridID;
             std::string                             m_outputGridID;
