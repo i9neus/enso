@@ -10,35 +10,41 @@
 
 namespace Json
 {        
-    enum RequiredFlags : uint { kSilent, kRequiredWarn, kRequiredAssert };
-    
+    enum RequiredFlags : uint 
+    { 
+        kSilent =           1 << 0,
+        kRequiredWarn =     1 << 1,
+        kRequiredAssert =   1 << 2,
+        kNotBlank =         1 << 3
+    };
+
     template<typename... Pack>
     inline void ReportError(const uint flags, const std::string message, Pack... pack)
     {
-        if (flags == kRequiredWarn) { Log::Warning(message, pack...);       }
-        else if (flags == kRequiredAssert) { AssertMsgFmt(false, message.c_str(), pack...); }
+        if (flags & kRequiredWarn) { Log::Warning(message, pack...); }
+        else if (flags & kRequiredAssert) { AssertMsgFmt(false, message.c_str(), pack...); }
     }
 
     inline void ReportError(const uint flags, const std::string message)
     {
-        if (flags == kRequiredWarn) { Log::Warning(message); }
-        else if (flags == kRequiredAssert) { AssertMsg(false, message); }
+        if (flags & kRequiredWarn) { Log::Warning(message); }
+        else if (flags & kRequiredAssert) { AssertMsg(false, message); }
     }
 
     class Document;
-    
+
     class Node
     {
     protected:
-        rapidjson::Value*                       m_node;
-        const Document*                         m_rootDocument;
-        rapidjson::Document::AllocatorType*     m_allocator;
+        rapidjson::Value* m_node;
+        const Document* m_rootDocument;
+        rapidjson::Document::AllocatorType* m_allocator;
         std::string                             m_dagPath;
 
         Node() : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
         Node(const std::nullptr_t&) : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
         Node(rapidjson::Value* node, const Node& parent) : m_node(node), m_rootDocument(parent.m_rootDocument), m_allocator(parent.m_allocator) {}
-        Node(rapidjson::Value* node, const Node& parent, const ::std::string& id) : 
+        Node(rapidjson::Value* node, const Node& parent, const ::std::string& id) :
             m_node(node), m_rootDocument(parent.m_rootDocument), m_allocator(parent.m_allocator)
         {
             m_dagPath = (parent.m_dagPath.empty()) ? id : (parent.m_dagPath + kDAGDelimiter + id);
@@ -46,7 +52,7 @@ namespace Json
 
         rapidjson::Value* GetChildImpl(const std::string& path, uint flags) const;
 
-    public:    
+    public:
         static const char                       kDAGDelimiter = '/';
 
         template<bool IsConst>
@@ -68,20 +74,25 @@ namespace Json
 
         private:
             rapidjson::Value::MemberIterator     m_it;
-            const Node&                          m_parentNode;
+            const Node& m_parentNode;
         };
-        
+
         using Iterator = __Iterator<false>;
         using ConstIterator = __Iterator<true>;
 
     private:
         template<bool/* = is_arithmetic<T>*/, bool/* = is_integral<T>*/> struct GetValueImpl
         {
-            template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value)
+            template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value, const uint flags)
             {
                 // NOTE: An error here means that a value is being requested that hasn't explicitly been specialised e.g. GetValue("", var) where var is a vector. 
-                AssertMsgFmt(node.IsString(), "Node '%s' is not of type string.", name.c_str());
+                AssertMsgFmt(node.IsString(), "Attribute '%s' is not of type string.", name.c_str());
                 value = node.GetString();
+
+                if (value.empty() && flags & kNotBlank)
+                {
+                    ReportError(flags, "Attribute '%s' must not be blank.", name);
+                }
             }
         };    
 
@@ -171,7 +182,7 @@ namespace Json
 
             AssertMsgFmt(!child->IsObject() && !child->IsArray(), "Value at '%s' is not a scalar.", name.c_str());
 
-            GetValueImpl<std::is_arithmetic<T>::value, std::is_integral<T>::value>::f(*child, name, value);
+            GetValueImpl<std::is_arithmetic<T>::value, std::is_integral<T>::value>::f(*child, name, value, flags);
             return true;
         }
 
@@ -192,7 +203,7 @@ namespace Json
                 GetValueImpl< std::is_arithmetic<Type>::value,
                     std::is_integral<Type>::value >::f(array[idx],
                         "[unknown; getVector()]",
-                        value);
+                        value, flags);
                 values.emplace_back(value);
             }
             return true;
@@ -230,7 +241,7 @@ namespace Json
                     GetValueImpl< std::is_arithmetic<Type>::value,
                         std::is_integral<Type>::value >::f(colArray[col],
                             "[unknown; getVector()]",
-                            value);
+                            value, flags);
                     values[row].emplace_back(value);
                 }                
             }
@@ -245,11 +256,7 @@ namespace Json
 
             if (VecType::kDims != values.size())
             {
-                AssertMsgFmt(flags != kRequiredAssert, "Error: JSON array '%s' expects %i elements.", name.c_str(), VecType::kDims);
-                if (flags == kRequiredWarn)
-                {
-                    Log::Warning("Warning: JSON array '%s' expects % i elements.", name.c_str(), VecType::kDims);
-                }
+                ReportError(flags, "JSON array '%s' expects % i elements.", name, VecType::kDims);               
                 return false;
             }
 
@@ -298,13 +305,13 @@ namespace Json
 
     template<> struct Node::GetValueImpl<true, true>
     {
-        template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value)
+        template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value, const uint flags)
         {
             AssertMsgFmt(node.IsInt() || node.IsInt64(), "Node '%s' is not an integer type.", name.c_str());
             value = T(node.GetInt64());
         }
 
-        static void f(const rapidjson::Value& node, const std::string& name, bool& value)
+        static void f(const rapidjson::Value& node, const std::string& name, bool& value, const uint flags)
         {
             value = node.GetBool();
         }
@@ -312,7 +319,7 @@ namespace Json
 
     template<> struct Node::GetValueImpl<true, false>
     {
-        template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value)
+        template<typename T> static void f(const rapidjson::Value& node, const std::string& name, T& value, const uint flags)
         {
             //PT_ASSERT_DETAILED(node.IsDouble()/* || node.IsFloat()*/,
             //                     "Node '%s' is not a floating point type.", name.c_str());

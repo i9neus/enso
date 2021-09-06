@@ -27,28 +27,14 @@ namespace Json
 
             if (!node->IsObject())
             {                
-                AssertMsgFmt(flags != kRequiredAssert, "A required JSON node '%s' is invalid ('%s' is not an object.)",
-                    path.c_str(), parentID.c_str());
-                
-                if (flags == kRequiredWarn)
-                {
-                    Log::Warning("JSON node/attribute '%s' was expected but not found ('%s' is not an object.)\n", path, parentID);
-                }
-
+                ReportError(flags, "JSON node '%s' is invalid ('%s' is not an object.)",  path.c_str(), parentID.c_str());
                 return nullptr;
             }
 
             rapidjson::Value::MemberIterator jsonIt = node->FindMember(childID.c_str());
             if (jsonIt == node->MemberEnd())
             {
-                AssertMsgFmt(flags != kRequiredAssert, "A required JSON node '%s' is invalid ('%s' not found)",
-                    path.c_str(), childID.c_str());
-
-                if (flags == kRequiredWarn)
-                {
-                    Log::Warning("JSON node/attribute '%s' was expected but not found.\n", path);
-                }
-
+                ReportError(flags, "JSON node '%s' is invalid ('%s' not found)",  path.c_str(), childID.c_str());
                 return nullptr;
             }
 
@@ -57,7 +43,7 @@ namespace Json
             if (!lex || !lex.PeekNext(kDAGDelimiter)) { return node; }
 
             parentID = childID;
-        } 
+        }
 
         AssertMsgFmt(false, "Encountered improperly formatted JSON path '%s'", path.c_str());
         return nullptr;
@@ -116,7 +102,7 @@ namespace Json
 
         if (!child->IsArray())
         {
-            AssertMsgFmt(flags != kRequiredAssert, "Node '%s' is not an array.", name.c_str());
+            ReportError(flags, "Node '%s' is not an array.", name.c_str());
             return Node();
         }
 
@@ -142,11 +128,7 @@ namespace Json
 
         if (parameterStr.empty())
         {
-            AssertMsgFmt(flags != kRequiredAssert, "Required parameter '%s' not specified.", parameterName.c_str());
-            if (flags == kRequiredWarn)
-            {
-                Log::Warning("JSON node/attribute '%s' was expected but not found\n", parameterName);
-            }
+            ReportError(flags, "JSON node/attribute '%s' was expected but not found\n", parameterName);
             return false;
         }
 
