@@ -55,12 +55,6 @@
     <ClCompile Include="src\manager\SceneGenerator.cpp">
       <Filter>manager</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
@@ -81,6 +75,27 @@
     </ClCompile>
     <ClCompile Include="src\dx12\imgui\permutor\IMGUIStateManager.cpp">
       <Filter>dx12\imgui\permutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUICameraShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIFilterShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUILightShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUITracableShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -381,12 +396,6 @@
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h">
       <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIKIFSShelf.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
     <ClInclude Include="src\dx12\imgui\IMGUIContainer.h">
       <Filter>dx12\imgui</Filter>
     </ClInclude>
@@ -425,6 +434,27 @@
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaFilters.cuh">
       <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUICameraShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIFilterShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUILightShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUITracableShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

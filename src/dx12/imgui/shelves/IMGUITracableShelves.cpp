@@ -1,9 +1,9 @@
-#include "IMGUIKIFSShelf.h"
+#include "IMGUITracableShelves.h"
 #include "generic/FilesystemUtils.h"
 
 #include <random>
 
-KIFSShelf::KIFSShelf(const Json::Node& json) : 
+KIFSShelf::KIFSShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_faceFlags(m_p.faceMask, "Faces"),
     m_jitteredParamTable("KIFS Params")
@@ -86,7 +86,7 @@ void KIFSShelf::Update()
 void KIFSShelf::Jitter(const uint flags, const uint operation)
 {
     if (!(flags & kStatePermuteGeometry)) { return; }
-    
+
     if (flags & kStatePermuteFractals)
     {
         m_p.rotateA.Update(operation);
@@ -101,7 +101,115 @@ void KIFSShelf::Jitter(const uint flags, const uint operation)
     if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
 }
 
-void KIFSShelf::JitterKIFSParameters()
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+PlaneShelf::PlaneShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.tracable.renderObject.flags, "Object flags")
 {
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
+void PlaneShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    m_flags.Construct();
+    ConstructJitteredTransform(m_p.tracable.transform, true);
     
+    ImGui::Checkbox("Bounded", &m_p.isBounded);
+    HelpMarker("Check to bound the plane in the range [-0.5, 0.5] in object space. Uncheck to trace to infinity in all directions.");
+}
+
+void PlaneShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Update(operation); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+SphereShelf::SphereShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.renderObject.flags, "Object flags")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
+void SphereShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    m_flags.Construct();
+    ConstructJitteredTransform(m_p.transform, true);
+}
+
+void SphereShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+BoxShelf::BoxShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.renderObject.flags, "Object flags")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+}
+
+void BoxShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    m_flags.Construct();
+    ConstructJitteredTransform(m_p.transform, true, true);
+}
+
+void BoxShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+CornellBoxShelf::CornellBoxShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_flags(m_p.tracable.renderObject.flags, "Object flags"),
+    m_faceMask(m_p.faceMask, "Face mask"),
+    m_cameraRayMask(m_p.cameraRayMask, "Camera ray mask")
+{
+    m_flags.Initialise(std::vector<std::string>({ "Visible", "Exclude from bake" }));
+    m_faceMask.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
+    m_cameraRayMask.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
+}
+
+void CornellBoxShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ConstructJitteredTransform(m_p.tracable.transform, true);
+
+    m_flags.Construct();
+    m_faceMask.Construct();
+    m_cameraRayMask.Construct();
+}
+
+void CornellBoxShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteObjectFlags) { m_p.tracable.renderObject.flags.Update(operation); }
+    if (flags & kStatePermuteTransforms) { m_p.tracable.transform.Update(operation); }
+
+    m_p.faceMask.Update(operation);
+    m_p.cameraRayMask.Update(operation);
 }

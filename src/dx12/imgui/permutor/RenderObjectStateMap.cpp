@@ -1,7 +1,14 @@
 #include "RenderObjectStateMap.h"
 #include "generic/FilesystemUtils.h"
 #include "manager/RenderManager.h"
-#include "../shelves/IMGUIShelves.h"
+
+#include "../shelves/IMGUIBxDFShelves.h"
+#include "../shelves/IMGUICameraShelves.h"
+#include "../shelves/IMGUIFilterShelves.h"
+#include "../shelves/IMGUIIntegratorShelves.h"
+#include "../shelves/IMGUILightShelves.h"
+#include "../shelves/IMGUIMaterialShelves.h"
+#include "../shelves/IMGUITracableShelves.h"
 
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"

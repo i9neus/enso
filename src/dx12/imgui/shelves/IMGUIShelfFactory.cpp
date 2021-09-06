@@ -1,7 +1,12 @@
 #include "IMGUIShelfFactory.h"
 
-#include "IMGUIShelves.h"
-#include "IMGUIKIFSShelf.h"
+#include "IMGUIBxDFShelves.h"
+#include "IMGUICameraShelves.h"
+#include "IMGUIFilterShelves.h"
+#include "IMGUIIntegratorShelves.h"
+#include "IMGUILightShelves.h"
+#include "IMGUIMaterialShelves.h"
+#include "IMGUITracableShelves.h"
 
 IMGUIShelfFactory::IMGUIShelfFactory()
 {

@@ -2,8 +2,13 @@
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
-#include "shelves/IMGUIShelves.h"
-#include "shelves/IMGUIKIFSShelf.h"
+#include "shelves/IMGUIBxDFShelves.h"
+#include "shelves/IMGUICameraShelves.h"
+#include "shelves/IMGUIFilterShelves.h"
+#include "shelves/IMGUIIntegratorShelves.h"
+#include "shelves/IMGUILightShelves.h"
+#include "shelves/IMGUIMaterialShelves.h"
+#include "shelves/IMGUITracableShelves.h"
 
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
     m_cudaRenderer(cudaRenderer),
