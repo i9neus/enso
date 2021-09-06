@@ -20,6 +20,14 @@ namespace Cuda
 		kBakeLightingSeparated
 	};
 
+	enum LightProbeBufferIndices : int
+	{
+		kLightProbeBufferDirect = 0,
+		kLightProbeBufferIndirect,
+		kLightProbeBufferHalf,
+		kLightProbeNumBuffers
+	};
+
 	struct LightProbeCameraParams
 	{
 		__host__ __device__ LightProbeCameraParams();
@@ -53,10 +61,19 @@ namespace Cuda
 		public:
 			struct Objects
 			{
+				__host__ __device__ Objects()
+				{
+					for (int i = 0; i < kLightProbeNumBuffers; ++i)
+					{
+						cu_accumBuffers[i] = nullptr;
+						cu_probeGrids[i] = nullptr;
+					}
+				}
+
 				Device::RenderState renderState;
-				Device::Array<vec4>* cu_accumBuffers[2] = { nullptr, nullptr };
+				Device::Array<vec4>* cu_accumBuffers[kLightProbeNumBuffers];
 				Device::Array<vec4>* cu_reduceBuffer = nullptr;
-				Device::LightProbeGrid* cu_probeGrids[2] = { nullptr, nullptr };
+				Device::LightProbeGrid* cu_probeGrids[kLightProbeNumBuffers];
 			};
 
 			__device__ LightProbeCamera();
@@ -127,15 +144,14 @@ namespace Cuda
 			Device::LightProbeCamera::Objects			m_deviceObjects;
 			LightProbeCameraParams						m_params;
 
-			AssetHandle<Host::Array<vec4>>				m_hostAccumBuffers[2];
-			AssetHandle<Host::LightProbeGrid>			m_hostLightProbeGrids[2];
-			AssetHandle<Host::Array<vec4>>				m_hostReduceBuffer;
+			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
+			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
+			AssetHandle<Host::Array<vec4>>						m_hostReduceBuffer;
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
-			int											m_numActiveGrids;
 			float										m_bakeProgress;
 
 			std::atomic<int>							m_exporterState;
