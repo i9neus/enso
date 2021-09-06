@@ -76,6 +76,8 @@ namespace Cuda
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
             __device__ vec3* At(const int probeIdx);
             __device__ const vec3* At(const int probeIdx) const { return const_cast<LightProbeGrid*>(this)->At(probeIdx); }
+            __device__ vec3* At(const ivec3& gridIdx);
+            __device__ const vec3* At(const ivec3& gridIdx) const { return const_cast<LightProbeGrid*>(this)->At(gridIdx); }
             __device__ int IdxAt(const ivec3& gridIdx) const;
             __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
             __device__ void PrepareValidityGrid();

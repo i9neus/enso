@@ -18,7 +18,7 @@ namespace Cuda
 
     struct LightProbeKernelFilterParams
     {
-        __host__ __device__ LightProbeKernelFilterParams() : filterType(kKernelFilterGaussian), radius(1.0f), trigger(false) {}
+        __host__ __device__ LightProbeKernelFilterParams();
         __host__ LightProbeKernelFilterParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
@@ -26,7 +26,14 @@ namespace Cuda
 
         int filterType;
         float radius;
-        bool trigger;       
+        bool trigger;
+
+        struct
+        {
+            float alpha;
+            float K;
+        } 
+        nlm;
     };    
 
     namespace Host
@@ -46,6 +53,7 @@ namespace Cuda
                 int                             coefficientsPerProbe;
 
                 const Device::LightProbeGrid*   cu_inputGrid = nullptr;
+                const Device::LightProbeGrid*   cu_inputHalfGrid = nullptr;
                 Device::LightProbeGrid*         cu_outputGrid = nullptr;
                 Device::Array<vec3>*            cu_reduceBuffer = nullptr;
             };
@@ -53,10 +61,12 @@ namespace Cuda
         private:
             Objects                                 m_objects;
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
+            AssetHandle<Host::LightProbeGrid>       m_hostInputHalfGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
             AssetHandle<Host::Array<vec3>>          m_hostReduceBuffer;
 
             std::string                             m_inputGridID;
+            std::string                             m_inputGridHalfID;
             std::string                             m_outputGridID;
 
             int                                     m_gridSize;

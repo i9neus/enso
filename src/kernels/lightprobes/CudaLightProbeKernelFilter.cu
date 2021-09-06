@@ -9,11 +9,24 @@
 
 namespace Cuda
 {
+    __host__ __device__ LightProbeKernelFilterParams::LightProbeKernelFilterParams() : 
+        filterType(kKernelFilterGaussian),
+        radius(1.0f),
+        trigger(false) 
+    {
+        nlm.alpha = 1.0f;
+        nlm.K = 1.0f;
+    }
+    
     __host__ void LightProbeKernelFilterParams::ToJson(::Json::Node& node) const
     {
         node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
         node.AddValue("radius", radius);
         node.AddValue("trigger", trigger);
+
+        Json::Node nlmNode = node.AddChildObject("nlm");
+        nlmNode.AddValue("alpha", nlm.alpha);
+        nlmNode.AddValue("k", nlm.K);
     }
 
     __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -21,8 +34,17 @@ namespace Cuda
         node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
         node.GetValue("radius", radius, flags);
         node.GetValue("trigger", trigger, Json::kSilent);
+
+        Json::Node nlmNode = node.GetChildObject("nlm", flags);
+        if (nlmNode)
+        {
+            nlmNode.GetValue("alpha", nlm.alpha, flags);
+            nlmNode.GetValue("k", nlm.K, flags);
+        }
          
         radius = clamp(radius, 1e-3f, 20.0f);
+        nlm.alpha = clamp(nlm.alpha, 0.0f, std::numeric_limits<float>::max());
+        nlm.K = clamp(nlm.K, 0.0f, std::numeric_limits<float>::max());
     }
     
     __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const ::Json::Node& node, const std::string& id) : 
@@ -31,6 +53,7 @@ namespace Cuda
         FromJson(node, Json::kRequiredWarn);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
+        node.GetValue("inputGridHalfID", m_inputGridHalfID, Json::kNotBlank);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
          
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
@@ -38,7 +61,7 @@ namespace Cuda
         // Create some objects
         m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
         m_hostReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_reduceBuffer", id));
-        m_hostReduceBuffer->Resize(512 * 512);
+        m_hostReduceBuffer->Resize(1024 * 1024);
     }
     
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeKernelFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -68,6 +91,17 @@ namespace Cuda
         {
             Log::Error("Error: LightProbeKernelFilter::Bind(): the specified input light probe grid '%s' is invalid.\n", m_inputGridID);
             return;
+        }
+
+        m_hostInputHalfGrid = nullptr;
+        if (!m_inputGridHalfID.empty())
+        {
+            m_hostInputHalfGrid = sceneObjects.FindByID(m_inputGridHalfID).DynamicCast<Host::LightProbeGrid>();
+            if (!m_hostInputHalfGrid)
+            {
+                Log::Error("Error: LightProbeKernelFilter::Bind(): the specified half input light probe grid '%s' is invalid.\n", m_inputGridHalfID);
+                return;
+            }
         }
 
         Prepare();   
@@ -115,8 +149,63 @@ namespace Cuda
         m_hostOutputGrid->Prepare(m_hostInputGrid->GetParams());
 
         m_objects.cu_inputGrid = m_hostInputGrid->GetDeviceInstance();
+        m_objects.cu_inputHalfGrid = m_hostInputHalfGrid ? m_hostInputHalfGrid->GetDeviceInstance() : nullptr;
         m_objects.cu_outputGrid = m_hostOutputGrid->GetDeviceInstance();
         m_objects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
+    }
+
+    __device__ float ComputeNLMWeight(Host::LightProbeKernelFilter::Objects& objects, const ivec3& pos0, const ivec3& posK)
+    {        
+        int numValidWeights = 0;
+        float weights[kMaxCoefficients];
+        memset(weights, 0, sizeof(vec3) * kMaxCoefficients);
+
+        if (!objects.cu_inputHalfGrid) { return 0.0f; }
+        
+        // Iterate over the local block surrounding each element and compute the relative distance
+        for (int w = -1; w <= 1; ++w)
+        {
+            for (int v = -1; v <= 1; ++v)
+            {
+                for (int u = -1; u <= 1; ++u)
+                {
+                    const int probeIdxM = objects.cu_inputGrid->IdxAt(pos0 + ivec3(u, v, w));
+                    const int probeIdxN = objects.cu_inputGrid->IdxAt(pos0 + posK + ivec3(u, v, w));
+                    if (probeIdxM < 0 || probeIdxN < 0) { continue; }
+
+                    const vec3* probeM = objects.cu_inputGrid->At(probeIdxM);
+                    const vec3* probeN = objects.cu_inputGrid->At(probeIdxN);
+
+                    if (probeM[objects.coefficientsPerProbe - 1].x < 0.5f || probeN[objects.coefficientsPerProbe - 1].x < 0.5f) { continue; }
+
+                    const vec3* probeHalfM = objects.cu_inputHalfGrid->At(probeIdxM);
+                    const vec3* probeHalfN = objects.cu_inputHalfGrid->At(probeIdxN);
+                    
+                    for (int coeffIdx = 0; coeffIdx < objects.coefficientsPerProbe - 1; ++coeffIdx)
+                    {                          
+                        const vec3& M = probeM[coeffIdx];
+                        const vec3& N = probeN[coeffIdx];
+                        const vec3& halfM = probeHalfM[coeffIdx];
+                        const vec3& halfN = probeHalfN[coeffIdx];
+                        const vec3 varN = sqr((N - halfN) - halfN) * 2.0f;
+                        const vec3 varM = sqr((M - halfM) - halfM) * 2.0f;
+                        
+                        const vec3 d2 = (sqr(M - N) - objects.params.nlm.alpha * (varN + varM)) /
+                                        (vec3(1e-10f) + sqr(objects.params.nlm.K) * (varN + varM));
+                        weights[coeffIdx] += expf(-max(0.0f, cwiseMax(d2)));
+                    }
+                    numValidWeights++;
+                }
+            }
+        }
+
+        // Find the coefficient with the maximum weight and return
+        float maxWeight = kFltMax;
+        for (int coeffIdx = 0; coeffIdx < objects.coefficientsPerProbe - 1; ++coeffIdx)
+        {
+            maxWeight = min(maxWeight, weights[coeffIdx]);
+        }
+        return maxWeight / float(max(1, numValidWeights));
     }
 
     __global__ void KernelFilterGaussian(Host::LightProbeKernelFilter::Objects objects, const int probeStartIdx)
@@ -183,23 +272,28 @@ namespace Cuda
             }
             else
             {
-                // Calculate the weight for the sample
                 float weight = 1.0f;
-                switch (objects.params.filterType)
+                if (posK != ivec3(0))
                 {
-                case kKernelFilterGaussian:
-                {
-                    const float len = length(vec3(posK));
-                    if (len <= objects.params.radius)
+                    // Calculate the weight for the sample
+                    switch (objects.params.filterType)
                     {
-                        weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, objects.params.radius);
+                    case kKernelFilterGaussian:
+                    {
+                        const float len = length(vec3(posK));
+                        if (len <= objects.params.radius)
+                        {
+                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, objects.params.radius);
+                        }
+                        break;
                     }
-                    break;
+                    case kKernelFilterNLM:
+                        weight = ComputeNLMWeight(objects, pos0, posK);
+                        break;
+                    };
                 }
-                };
 
                 weights[threadIdx.x] = weight;
-
                 if (weight > 0.0f)
                 {
                     // Accumulate the weighted coefficients

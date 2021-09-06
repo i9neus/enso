@@ -124,6 +124,14 @@ namespace Cuda
         return &(*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe];
     }
 
+    __device__ vec3* Device::LightProbeGrid::At(const ivec3& gridIdx)
+    {
+        const int probeIdx = gridIdx.z * m_params.gridDensity.x * m_params.gridDensity.y + gridIdx.y * m_params.gridDensity.x + gridIdx.x;
+        assert(probeIdx < m_params.numProbes);
+
+        return &(*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe];
+    }
+
     __device__ int Device::LightProbeGrid::IdxAt(const ivec3& gridIdx) const
     {
         if(gridIdx.x < 0 || gridIdx.x >= m_params.gridDensity.x ||

@@ -18,4 +18,7 @@ public:
     virtual void Construct() override final;
     virtual void Jitter(const uint flags, const uint operation) override final {}
     virtual void Reset() override final;
+
+private:
+    bool m_linkAlphaK;
 };
