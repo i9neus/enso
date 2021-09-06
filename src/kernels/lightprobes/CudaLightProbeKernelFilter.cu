@@ -11,16 +11,18 @@ namespace Cuda
 {
     __host__ void LightProbeKernelFilterParams::ToJson(::Json::Node& node) const
     {
-        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "gaussian" }), filterType);
+        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
         node.AddValue("radius", radius);
         node.AddValue("trigger", trigger);
     }
 
     __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "gaussian" }), filterType, flags);
+        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
         node.GetValue("radius", radius, flags);
         node.GetValue("trigger", trigger, Json::kSilent);
+         
+        radius = clamp(radius, 1e-3f, 20.0f);
     }
     
     __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const ::Json::Node& node, const std::string& id) : 
@@ -75,30 +77,34 @@ namespace Cuda
     {
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
-        
+
+        Assert(m_hostReduceBuffer);
+
         // Establish the dimensions of the kernel
         const auto& gridParams = m_hostInputGrid->GetParams();
         m_objects.gridDensity = gridParams.gridDensity;
         m_objects.numProbes = gridParams.numProbes;
         m_objects.coefficientsPerProbe = gridParams.coefficientsPerProbe;
-        Assert(m_objects.coefficientsPerProbe <= kMaxCoefficients);
+        Assert(m_objects.coefficientsPerProbe <= kMaxCoefficients);      
+      
         m_objects.kernelRadius = max(1, int(std::ceil(m_objects.params.radius)));
+
+        const int maxVolume = m_hostReduceBuffer->Size() * kBlockSize / ((gridParams.coefficientsPerProbe + 1) * gridParams.numProbes);
+        const int maxRadius = int((std::pow(float(maxVolume), 1.0f / 3.0f) - 1.0f) * 0.5f) - 1;
+        if (m_objects.kernelRadius > maxRadius)
+        {
+            Log::Warning("Warning: filter kernel radius exceeds the capacity of the preset accumulation buffer. Constraining to %i.\n", maxRadius);
+            m_objects.kernelRadius = maxRadius;
+            m_objects.params.radius = maxRadius;
+        }
+
         m_objects.kernelSpan = 2 * m_objects.kernelRadius + 1;
         m_objects.kernelVolume = cub(m_objects.kernelSpan);
-        m_objects.blocksPerProbe = (m_objects.kernelVolume + (kBlockSize - 1)) / kBlockSize;        
+        m_objects.blocksPerProbe = (m_objects.kernelVolume + (kBlockSize - 1)) / kBlockSize;
 
-        // If the volume of the kernel is smaller than the block size, there's no need to do an intermediate accumulation step
-        /*if (m_objects.blocksPerProbe == 1)
-        {
-            m_probeRange = m_objects.numProbes;
-            m_gridSize = m_objects.numProbes;
-        }
-        else*/
-        {
-            m_probeRange = m_hostReduceBuffer->Size() / ((m_objects.coefficientsPerProbe + 1) * m_objects.blocksPerProbe);
-            m_gridSize = min(m_objects.numProbes * m_objects.blocksPerProbe,
-                             m_probeRange * (m_objects.coefficientsPerProbe + 1) * m_objects.blocksPerProbe);
-        } 
+        m_probeRange = m_hostReduceBuffer->Size() / ((m_objects.coefficientsPerProbe + 1) * m_objects.blocksPerProbe);
+        m_gridSize = min(m_objects.numProbes * m_objects.blocksPerProbe,
+                         m_probeRange * (m_objects.coefficientsPerProbe + 1) * m_objects.blocksPerProbe);      
 
         Log::Debug("kernelVolume: %i\n", m_objects.kernelVolume);
         Log::Debug("blocksPerProbe: %i\n", m_objects.blocksPerProbe);
@@ -124,6 +130,9 @@ namespace Cuda
         __shared__ int blocksPerProbe;
         __shared__ int kernelSpan;
         __shared__ ivec3 gridDensity;
+        //__shared__ float kernelWeights[21];
+
+        assert(objects.params.radius <= 20);
 
         // Copy some common data into shared memory
         coefficientsPerProbe = objects.coefficientsPerProbe;
@@ -131,6 +140,15 @@ namespace Cuda
         kernelSpan = objects.kernelSpan;
         gridDensity = objects.gridDensity;
         memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
+
+        // Precompute the Gaussian kernel
+        /*if (kKernelIdx == 0 && objects.params.filterType == kKernelFilterGaussian)
+        {
+            for (int i = 0; i < 21; ++i)
+            {
+                kernelWeights[i] = Integrate1DGaussian(i - 0.5f, i + 0.5f, objects.params.radius);
+            }
+        }*/
 
         __syncthreads();
 
@@ -166,7 +184,20 @@ namespace Cuda
             else
             {
                 // Calculate the weight for the sample
-                const float weight = 1.0f;
+                float weight = 1.0f;
+                switch (objects.params.filterType)
+                {
+                case kKernelFilterGaussian:
+                {
+                    const float len = length(vec3(posK));
+                    if (len <= objects.params.radius)
+                    {
+                        weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, objects.params.radius);
+                    }
+                    break;
+                }
+                };
+
                 weights[threadIdx.x] = weight;
 
                 if (weight > 0.0f)
@@ -214,7 +245,9 @@ namespace Cuda
                 // Copy the data into the intermediate buffer. 
                 // We store the weighted SH coefficients as vec3s followed by a final vec3 whose first element contains the weight.
                 assert(objects.cu_reduceBuffer);
-                vec3* outputBuffer = &(*objects.cu_reduceBuffer)[blockIdx.x * (objects.coefficientsPerProbe + 1)];
+                const int bufferIdx = (probeIdx0 * objects.blocksPerProbe + (probeIdxK / kBlockSize)) * (objects.coefficientsPerProbe + 1);
+                assert(bufferIdx < objects.cu_reduceBuffer->Size());
+                vec3* outputBuffer = &(*objects.cu_reduceBuffer)[bufferIdx];
                 for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx];

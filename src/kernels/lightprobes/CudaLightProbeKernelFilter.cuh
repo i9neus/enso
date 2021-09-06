@@ -11,7 +11,9 @@ namespace Cuda
     enum LightProbeKernelFilterType : int
     {
         kKernelFilterNull,
-        kKernelFilterGaussian
+        kKernelFilterBox,
+        kKernelFilterGaussian,
+        kKernelFilterNLM
     };
 
     struct LightProbeKernelFilterParams

@@ -2,23 +2,24 @@
 
 namespace Cuda
 {
-    __host__ __forceinline__ float ErfApprox(const float x)
+    __host__ __device__ __forceinline__ float ErfApprox(const float x)
     {
         // Closed-form approxiation of the error function.
         // See 'Uniform Approximations for Transcendental Functions', Winitzki 2003, https://doi.org/10.1007/3-540-44839-X_82
 
         constexpr float a = 8 * (kPi - 3) / (3 * kPi * (4 - kPi));
-        return std::copysign(1.0f, x) * std::sqrt(1 - std::exp(-(x * x) * (4 / kPi + a * x * x) / (1 + a * x * x)));
+        return copysign(1.0f, x) * sqrt(1 - expf(-(x * x) * (4 / kPi + a * x * x) / (1 + a * x * x)));
     }
 
-    __host__ __forceinline__ float AntiderivGauss(const float x, const float sigma)
+    __host__ __device__ __forceinline__ float AntiderivGauss(const float x, const float sigma)
     {
         // The antiderivative of the normalised Gaussian
         return 0.5f * (1.0f + ErfApprox(x / (sigma * kRoot2)));
     }
 
-    __host__ float Integrate1DGaussian(const float t0, const float t1, const float radius)
+    __host__ __device__ float Integrate1DGaussian(const float t0, const float t1, const float radius)
     {
+        // Integrates a Gaussian function whose standard deviation is preset such that its integral between [-radius, radius] is almost 1
         constexpr float sigma = 0.35f;
         return (AntiderivGauss(t1 / radius, sigma) - AntiderivGauss(t0 / radius, sigma));
     }
