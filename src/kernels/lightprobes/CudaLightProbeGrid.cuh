@@ -17,14 +17,21 @@ namespace Cuda
         kProbeGridPref
     };
 
-    __host__ __device__ inline ivec3 GridIdxFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
+    __host__ __device__ __forceinline__ ivec3 GridIdxFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
     {
         return ivec3(probeIdx % gridDensity.x, 
                      (probeIdx / gridDensity.x) % gridDensity.y,
                      probeIdx / (gridDensity.x * gridDensity.y));
     }
 
-    __host__ __device__ inline int ProbeIdxFromGridIdx(const ivec3& gridIdx, const ivec3& gridDensity)
+    __host__ __device__ __forceinline__ ivec3 GridIdxFromProbeIdx(const int& probeIdx, const int& gridDensity)
+    {
+        return ivec3(probeIdx % gridDensity,
+            (probeIdx / gridDensity) % gridDensity,
+            probeIdx / (gridDensity * gridDensity));
+    }
+
+    __host__ __device__ __forceinline__ int ProbeIdxFromGridIdx(const ivec3& gridIdx, const ivec3& gridDensity)
     {
         return gridIdx.z * gridDensity.x * gridDensity.y + gridIdx.y * gridDensity.x + gridIdx.x;
     }

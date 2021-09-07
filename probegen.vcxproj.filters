@@ -432,9 +432,6 @@
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh">
       <Filter>kernels\lightprobes</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\lightprobes\CudaFilters.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\IMGUICameraShelves.h">
       <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
@@ -455,6 +452,15 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.h">
       <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh">
+      <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaDeviceObjectRAII.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh">
+      <Filter>kernels\lightprobes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -638,6 +644,12 @@
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cu">
+      <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeRegressionFilter.cu">
+      <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
   </ItemGroup>

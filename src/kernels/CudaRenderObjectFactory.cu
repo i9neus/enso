@@ -24,6 +24,7 @@
 #include "cameras/CudaLightProbeCamera.cuh"
 
 #include "lightprobes/CudaLightProbeKernelFilter.cuh"
+#include "lightprobes/CudaLightProbeRegressionFilter.cuh"
 
 #include "CudaWavefrontTracer.cuh"
 
@@ -193,6 +194,8 @@ namespace Cuda
                     }
 
                     newObject = (instantiator->second)(instanceId, expectedType, childNode);
+                    IsOk(cudaDeviceSynchronize());
+
                     if (!newObject)
                     {
                         Log::Error("Failed to instantiate object '%s' of class '%s'.\n", instanceId, newClass);

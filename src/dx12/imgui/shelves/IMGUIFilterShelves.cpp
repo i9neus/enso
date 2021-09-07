@@ -21,10 +21,27 @@ void LightProbeKernelFilterShelf::Construct()
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
-    if (ImGui::Button("Update")) { m_p.trigger = true; }
 }
 
 void LightProbeKernelFilterShelf::Reset()
 {
-    m_p.trigger = false;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+LightProbeRegressionFilterShelf::LightProbeRegressionFilterShelf(const Json::Node& json) :
+    IMGUIShelf(json)
+{}
+
+void LightProbeRegressionFilterShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ImGui::SliderInt("Polynomial order", &m_p.polynomialOrder, 0, 3);   
+}
+
+void LightProbeRegressionFilterShelf::Reset()
+{
+
 }
