@@ -299,14 +299,11 @@ namespace Cuda
         int arraySize = m_shData->Size();
 
         // Resize the array as a power of two 
-        if (arraySize < newSize)
+        m_validityData->ExpandToNearestPow2(newSize);
+        if(m_shData->ExpandToNearestPow2(newSize))
         {
-            for (arraySize = 1; arraySize < newSize; arraySize <<= 1) {}
-
-            Log::Debug("Resized to %i\n", arraySize);
-            m_shData->Resize(arraySize);
-            m_validityData->Resize(arraySize);
-        }
+            Log::Debug("Resized to %i\n", m_shData->Size());
+        }        
 
         Cuda::SynchroniseObjects(cu_deviceData, m_params);
 

@@ -97,7 +97,9 @@ namespace Cuda
 			__host__ inline int GetGridSize() const { return m_gridSize; }
 
 			__host__ inline uint Size() const { return m_hostData.m_size; }
-			__host__ inline void Resize(const uint size);
+			__host__ void Resize(const uint size);
+			__host__ inline bool Expand(const uint size);
+			__host__ inline bool ExpandToNearestPow2(const uint size);
 			__host__ void Download(std::vector<T>& rawData) const;
 			__host__ void Upload(const std::vector<T>& rawData);
 			__host__ void Swap(ManagedArray& other);
@@ -163,6 +165,28 @@ namespace Cuda
 		m_hostData.m_size = newSize;
 
 		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize); 
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ bool Host::ManagedArray<T, HostType, DeviceType>::Expand(const uint newSize)
+	{
+		if (m_hostData.m_size < newSize)
+		{
+			Resize(newSize);
+			return true;
+		}
+		return false;
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ bool Host::ManagedArray<T, HostType, DeviceType>::ExpandToNearestPow2(const uint newSize)
+	{
+		if (m_hostData.m_size < newSize)
+		{
+			Resize(NearestPow2Ceil(newSize));
+			return true;
+		}
+		return false;
 	}
 
 	template<typename T, typename HostType, typename DeviceType>

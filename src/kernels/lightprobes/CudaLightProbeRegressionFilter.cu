@@ -10,7 +10,8 @@ namespace Cuda
 {
     __host__ __device__ LightProbeRegressionFilterParams::LightProbeRegressionFilterParams() :
         polynomialOrder(0),
-        radius(1)
+        radius(1),
+        isNullFilter(true)
     {
 
     }
@@ -19,13 +20,14 @@ namespace Cuda
     {
         node.AddValue("polynomialOrder", polynomialOrder);
         node.AddValue("radius", radius);
-    
+        node.AddValue("isNullFilter", isNullFilter);
     }
 
     __host__ void LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("polynomialOrder", polynomialOrder, flags);
         node.GetValue("radius", radius, flags);
+        node.GetValue("isNullFilter", isNullFilter, flags);
 
         radius = clamp(radius, 1, 10);
     }
@@ -43,8 +45,11 @@ namespace Cuda
 
         // Create some objects
         m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
+
         m_hostPolyCoeffs = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_polyCoeffs", id));
+
         m_hostRegressionWeights = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_regressionWeights", id));
+        m_hostRegressionWeights->Resize(1024 * 1024);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeRegressionFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -91,6 +96,11 @@ namespace Cuda
         Prepare();
     }
 
+    __global__ void KernelRandomisePolynomialCoefficients(Host::LightProbeRegressionFilter::Objects* objects)
+    {
+
+    }
+
     __host__ void Host::LightProbeRegressionFilter::Prepare()
     {
         // Filter isn't yet bound, so do nothing
@@ -99,38 +109,26 @@ namespace Cuda
         Assert(m_hostPolyCoeffs);
 
         // Establish the dimensions of the kernel
-        const auto& gridParams = m_hostInputGrid->GetParams();
-        m_objects->gridData.density = gridParams.gridDensity;
-        m_objects->gridData.numProbes = gridParams.numProbes;
-        m_objects->gridData.coefficientsPerProbe = gridParams.coefficientsPerProbe;
+        auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
 
-        /*const int newSize = m_params.numProbes * m_params.coefficientsPerProbe;
-        int arraySize = m_shData->Size();
+        m_objects->polyCoeffsPerCoefficient = cub(m_objects->params.polynomialOrder + 1);
+        m_objects->polyCoeffsPerProbe = m_objects->polyCoeffsPerCoefficient * gridData.coefficientsPerProbe;
+        m_objects->numPolyCoeffs = m_objects->polyCoeffsPerProbe * gridData.numProbes;
 
-        // Resize the array as a power of two 
-        if (arraySize < newSize)
+        // Resize the polynomial coefficient array as a power of two 
+        if(m_hostPolyCoeffs->ExpandToNearestPow2(m_objects->numPolyCoeffs))
         {
-            for (arraySize = 1; arraySize < newSize; arraySize <<= 1) {}
-
-            Log::Debug("Resized to %i\n", arraySize);
-            m_shData->Resize(arraySize);
-            m_validityData->Resize(arraySize);
-        }*/
+            Log::Debug("Resized m_hostPolyCoeffs to %i\n", m_hostPolyCoeffs->Size());
+        }
 
         // Initialise the output grid so it has the same dimensions as the input
         m_hostOutputGrid->Prepare(m_hostInputGrid->GetParams());
-
-        m_objects->gridData.cu_inputGrid = m_hostInputGrid->GetDeviceInstance();
-        m_objects->gridData.cu_inputHalfGrid = m_hostInputHalfGrid ? m_hostInputHalfGrid->GetDeviceInstance() : nullptr;
-        m_objects->gridData.cu_outputGrid = m_hostOutputGrid->GetDeviceInstance();
+                
         m_objects->cu_polyCoeffs = m_hostPolyCoeffs->GetDeviceInstance();
         m_objects->cu_regressionWeights = m_hostRegressionWeights->GetDeviceInstance();
-        m_objects.Upload();
-    }
 
-    __global__ void KernelRandomisePolynomialCoefficients(Host::LightProbeRegressionFilter::Objects* objects)
-    {
+        m_objects.Upload();
     }
 
     __global__ void KernelComputeRegressionWeights(Host::LightProbeRegressionFilter::Objects* objects, const int probeStartIdx)
@@ -140,14 +138,23 @@ namespace Cuda
 
     __global__ void KernelApplyRegressionIteration(Host::LightProbeRegressionFilter::Objects* objects)
     {
+        assert(objects->gridData.cu_inputGrid);
+        assert(objects->gridData.cu_outputGrid);
+
+
     }
 
     __host__ void Host::LightProbeRegressionFilter::OnPostRenderPass()
     {
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
-        
-        //KernelApplyRegressionStep << <1, 1, 1 >> > (m_objects.GetDeviceObject());
+
+        // Pass-through filter just copies the data
+        if (m_objects->params.isNullFilter)
+        {
+            m_hostOutputGrid->Replace(*m_hostInputGrid);
+            return;
+        }
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeRegressionFilter::GetChildObjectHandles()

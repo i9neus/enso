@@ -48,7 +48,7 @@ namespace Cuda
             };
 
         private:
-            Objects                                 m_objects;
+            DeviceObjectRAII<Objects>               m_objects;
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostInputHalfGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;

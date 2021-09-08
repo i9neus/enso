@@ -408,7 +408,10 @@ namespace Cuda
 			}
 
 			// Accumulate extant radiance
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
+			if (cwiseMax(L) > 1e-15f)
+			{
+				m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
+			}
 		}
 
 		// Synchronise with the rest of the warp to guarantee that any NEE rays are dead
@@ -450,7 +453,10 @@ namespace Cuda
 			}
 
 			// Accumulate extant radiance
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
+			if (cwiseMax(L) > 1e-15f || !compressedRay.IsAlive())
+			{			
+				m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
+			}
 		}
 
 		__shared__ uchar deadRays[16 * 16];

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "CudaLightProbeFilter.cuh"
-#include "../CudaDeviceObjectRAII.cuh"
 
 namespace Json { class Node; }
 
@@ -17,6 +16,7 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        bool    isNullFilter;
         int     polynomialOrder;
         int     radius;
     };
@@ -30,6 +30,10 @@ namespace Cuda
             {
                 LightProbeRegressionFilterParams    params;
                 LightProbeFilterGridData            gridData;
+
+                int                                 polyCoeffsPerCoefficient;
+                int                                 polyCoeffsPerProbe;
+                int                                 numPolyCoeffs;
 
                 Device::Array<vec3>*                cu_polyCoeffs = nullptr;
                 Device::Array<float>*               cu_regressionWeights = nullptr;

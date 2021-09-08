@@ -188,6 +188,9 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_CLOSE:
+		DestroyWindow(hWnd);
+		return 0;
 	}
 
 	// Handle any messages the switch statement didn't.

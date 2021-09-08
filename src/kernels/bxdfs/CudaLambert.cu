@@ -83,6 +83,7 @@ namespace Cuda
             m_hostLightProbeGrid = sceneObjects.FindByID<Host::LightProbeGrid>(m_gridIDs[m_params.lightProbeGridIdx]);
             if (m_hostLightProbeGrid)
             {
+                cu_grid = m_hostLightProbeGrid->GetDeviceInstance();
                 Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", m_params.lightProbeGridIdx, m_gridIDs[m_params.lightProbeGridIdx], GetAssetID());
             }
             else
@@ -91,7 +92,7 @@ namespace Cuda
             }
         }
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_hostLightProbeGrid->GetDeviceInstance());
+        Cuda::SynchroniseObjects(cu_deviceData, cu_grid);
     }
 
     __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)

@@ -30,6 +30,25 @@ namespace Cuda
         node.GetValue("patchRadius", patchRadius, flags);
     }
 
+    __host__ LightProbeFilterGridData& LightProbeFilterGridData::Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
+                                                                         AssetHandle<Host::LightProbeGrid>& hostInputHalfGrid,
+                                                                         AssetHandle<Host::LightProbeGrid>& hostOutputGrid)
+    {
+        Assert(hostInputGrid);
+        
+        cu_inputGrid = hostInputGrid->GetDeviceInstance();
+        cu_inputHalfGrid = (hostInputHalfGrid) ? hostInputHalfGrid->GetDeviceInstance() : nullptr;
+        cu_outputGrid = (hostOutputGrid) ? hostOutputGrid->GetDeviceInstance() : nullptr;
+
+        // Copy some variables out of the input grid to save time
+        const auto& gridParams = hostInputGrid->GetParams();
+        density = gridParams.gridDensity;
+        numProbes = gridParams.numProbes;
+        coefficientsPerProbe = gridParams.coefficientsPerProbe;
+
+        return *this;
+    }
+
     __device__ float ComputeNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK)
     {
         int numValidWeights = 0;

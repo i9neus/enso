@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CudaLightProbeGrid.cuh"
+#include "../CudaDeviceObjectRAII.cuh"
 
 namespace Json { class Node; }
 
@@ -10,6 +11,10 @@ namespace Cuda
 
     struct LightProbeFilterGridData
     {
+        __host__ LightProbeFilterGridData& Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
+                                                   AssetHandle<Host::LightProbeGrid>& hostInputHalfGrid,
+                                                   AssetHandle<Host::LightProbeGrid>& hostOutputGrid);
+        
         const Device::LightProbeGrid*   cu_inputGrid = nullptr;
         const Device::LightProbeGrid*   cu_inputHalfGrid = nullptr;
         Device::LightProbeGrid*         cu_outputGrid = nullptr;
