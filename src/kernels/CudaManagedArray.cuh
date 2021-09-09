@@ -22,7 +22,7 @@ namespace Cuda
 			friend HostType;
 			template<typename A, typename B, typename C> friend class Host::ManagedArray;
 		public:
-			__host__ ManagedArray() : cu_data(nullptr) {}
+			__host__ ManagedArray() : cu_data(nullptr), m_size(0) {}
 			__device__ ManagedArray(const ManagedArrayLayout& layout) :
 				m_size(0), m_layout(layout), cu_data(nullptr), m_signal(AccessSignal::kUnlocked) { }
 			__device__ ~ManagedArray() {}

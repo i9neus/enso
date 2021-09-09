@@ -151,25 +151,22 @@ namespace Cuda
         __shared__ int blocksPerProbe;
         __shared__ int kernelSpan;
         __shared__ ivec3 gridDensity;
-        //__shared__ float kernelWeights[21];
+        __shared__ const Device::LightProbeGrid* inputGrid;
+        __shared__ Device::LightProbeGrid* outputGrid;
 
         assert(objects->params.radius <= 20);
 
-        // Copy some common data into shared memory
-        coefficientsPerProbe = objects->gridData.coefficientsPerProbe;
-        gridDensity = objects->gridData.density;
-        blocksPerProbe = objects->blocksPerProbe;
-        kernelSpan = objects->kernelSpan;
-        memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
-
-        // Precompute the Gaussian kernel
-        /*if (kKernelIdx == 0 && objects->params.filterType == kKernelFilterGaussian)
+        if (kThreadIdx == 0)
         {
-            for (int i = 0; i < 21; ++i)
-            {
-                kernelWeights[i] = Integrate1DGaussian(i - 0.5f, i + 0.5f, objects->params.radius);
-            }
-        }*/
+            // Copy some common data into shared memory
+            coefficientsPerProbe = objects->gridData.coefficientsPerProbe;
+            gridDensity = objects->gridData.density;
+            blocksPerProbe = objects->blocksPerProbe;
+            kernelSpan = objects->kernelSpan;
+            inputGrid = objects->gridData.cu_inputGrid;
+            outputGrid = objects->gridData.cu_outputGrid;
+            memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
+        }
 
         __syncthreads();
 
@@ -187,13 +184,13 @@ namespace Cuda
         else
         {
             // Compute the sample position relative to the centre of the kernel
-            const ivec3 posK = GridIdxFromProbeIdx(probeIdxK, objects->kernelSpan) - ivec3(objects->kernelRadius);
+            const ivec3 posK = GridPosFromProbeIdx(probeIdxK, objects->kernelSpan) - ivec3(objects->kernelRadius);
 
             // Compute the absolute position at the origin of the kernel
-            const ivec3 pos0 = GridIdxFromProbeIdx(probeIdx0, objects->gridData.density);
+            const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, objects->gridData.density);
 
             // If the neighbourhood probe lies outside the bounds of the grid, set the weight to zero
-            const int probeIdxN = objects->gridData.cu_inputGrid->IdxAt(pos0 + posK);
+            const int probeIdxN = inputGrid->IdxAt(pos0 + posK);
             if (probeIdxN < 0)
             {
                 weights[threadIdx.x] = 0.0f;
@@ -225,7 +222,7 @@ namespace Cuda
                 if (weight > 0.0f)
                 {
                     // Accumulate the weighted coefficients
-                    const vec3* inputCoeff = objects->gridData.cu_inputGrid->At(probeIdxN);
+                    const vec3* inputCoeff = inputGrid->At(probeIdxN);
                     for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe - 1; ++coeffIdx)
                     {
                         weightedCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] = inputCoeff[coeffIdx] * weight;
@@ -251,12 +248,12 @@ namespace Cuda
             __syncthreads();
         }
         
-        if (threadIdx.x == 0)
+        if (kThreadIdx == 0)
         {
             // If the entire convolution operation fits into a single block, copy straight into the output buffer
             if (objects->blocksPerProbe == 1)
             {
-                vec3* outputBuffer = objects->gridData.cu_outputGrid->At(probeIdx0);
+                vec3* outputBuffer = outputGrid->At(probeIdx0);
                 for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx] / weights[0];

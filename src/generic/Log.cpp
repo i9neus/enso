@@ -73,29 +73,29 @@ Log& Log::Singleton()
 
 void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const LogLevel level)
 {
-    if (!(m_logFlags | (1 << level))) { return; }
+    if (messageStr.empty() || !(m_logFlags | (1 << level))) { return; }
     
-    std::string sanitisedStr, formattedStr;
-    bool carriageReturn = false, newLine = false;
-
-    // Scrub new-lines and carriage returns from the string
-    for (auto& c : messageStr)
+    // Apply indentation
+    std::string formattedStr;
+    formattedStr.reserve(m_logIndentation * kIndentChars + messageStr.length());
+    for (int32_t i = 0; i < m_logIndentation * kIndentChars; ++i)
     {
-        if (c == '\r') { carriageReturn = true; }
-        else if (c == '\n') { newLine = true; }
-        else { sanitisedStr += c; }
+        formattedStr += ' ';
     }
+    formattedStr += messageStr; 
+    
+    bool addNewline = true;
+    switch (formattedStr.back())
+    {        
+    case '\b':
+        formattedStr.pop_back();
+    case '\n':
+        addNewline = false;
+        break;
+    };     
 
-    auto repeat = [&](char c, int32_t t) { for (int32_t i = 0; i < t; ++i) { formattedStr += c; } };
-    auto indent = [&]() { for (int32_t i = 0; i < m_logIndentation * kIndentChars; ++i) { formattedStr += ' '; } };
-
-    if (carriageReturn) { formattedStr += '\r'; } // CR
-
-    indent(); // Indent
-
-    formattedStr += sanitisedStr; // Add the sanitised message string
-
-    if (newLine) { formattedStr += '\n'; } // NL
+    // Always add a newline unless there's an excape character
+    if (addNewline) { formattedStr += '\n'; }
 
     // Lock
     //std::lock_guard<std::mutex> lock(m_logFileMutex);

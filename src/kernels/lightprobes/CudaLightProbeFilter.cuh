@@ -21,7 +21,10 @@ namespace Cuda
 
         ivec3                           density;
         int                             numProbes;
+        int                             totalCoefficients;
         int                             coefficientsPerProbe;
+        int                             shCoeffsPerProbe;
+        int                             totalSHCoefficients;
     };
 
     struct LightProbeFilterNLMParams

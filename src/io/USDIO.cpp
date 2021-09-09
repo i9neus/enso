@@ -173,18 +173,18 @@ namespace USDIO
         // Step through each probe in XYZ space and remap it to the swizzled space specified by the grid parameters
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
         {
-            Cuda::ivec3 gridIdx = Cuda::GridIdxFromProbeIdx(probeIdx, gridParams.gridDensity);            
+            Cuda::ivec3 gridPos = Cuda::GridPosFromProbeIdx(probeIdx, gridParams.gridDensity);            
 
             // Invert the axes where appropriate
-            if (gridParams.invertX) { gridIdx.x = gridParams.gridDensity.x - gridIdx.x - 1; }
-            if (gridParams.invertY) { gridIdx.y = gridParams.gridDensity.y - gridIdx.y - 1; }
-            if (gridParams.invertZ) { gridIdx.z = gridParams.gridDensity.z - gridIdx.z - 1; }
+            if (gridParams.invertX) { gridPos.x = gridParams.gridDensity.x - gridPos.x - 1; }
+            if (gridParams.invertY) { gridPos.y = gridParams.gridDensity.y - gridPos.y - 1; }
+            if (gridParams.invertZ) { gridPos.z = gridParams.gridDensity.z - gridPos.z - 1; }
             
             // Swizzle the grid index
-            Cuda::ivec3 swizzledGridIdx = SwizzleIndex(gridIdx);
+            Cuda::ivec3 swizzledGridPos = SwizzleIndex(gridPos);
 
             // Map back onto the data array
-            const uint swizzledProbeIdx = ProbeIdxFromGridIdx(swizzledGridIdx, swizzledGridDensity);
+            const uint swizzledProbeIdx = ProbeIdxFromGridPos(swizzledGridPos, swizzledGridDensity);
             Assert(swizzledProbeIdx < gridParams.numProbes);
 
             // Copy the coefficient data 

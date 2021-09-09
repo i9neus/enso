@@ -39,7 +39,8 @@ void LightProbeRegressionFilterShelf::Construct()
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     ImGui::SliderInt("Polynomial order", &m_p.polynomialOrder, 0, 3);
-    ImGui::SliderInt("Radius", &m_p.radius, 0, 10);
+    ImGui::SliderInt("Regression radius", &m_p.regressionRadius, 0, 10);
+    ImGui::SliderInt("Reconstruction radius", &m_p.reconstructionRadius, 0, 10);
     ImGui::Checkbox("Null filter", &m_p.isNullFilter);
 }
 

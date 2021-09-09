@@ -127,7 +127,7 @@ namespace Cuda
         assert(subsampleIdx < kAccumBufferSize);
         
         const int probeIdx = subsampleIdx / m_params.subsamplesPerProbe;
-        const ivec3 gridIdx = GridIdxFromProbeIdx(probeIdx, m_params.grid.gridDensity);
+        const ivec3 gridIdx = GridPosFromProbeIdx(probeIdx, m_params.grid.gridDensity);
 
         auto& primary = rays[0]; 
         auto& secondary = rays[1];
@@ -314,7 +314,7 @@ namespace Cuda
     {
         __shared__ vec2 localMinMax[256];
 
-        if (kKernelIdx == 0)
+        if (kThreadIdx == 0)
         {
             for (int i = 0; i < 256; i++) { localMinMax[i] = vec2(kFltMax, 0.0f); }
         }
@@ -332,7 +332,7 @@ namespace Cuda
         __syncthreads();
 
         vec2 globalMinMax = localMinMax[0];
-        if (kKernelIdx == 0)
+        if (kThreadIdx == 0)
         {
             for (int i = 1; i < 256; i++) 
             { 

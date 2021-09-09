@@ -45,6 +45,9 @@ namespace Cuda
         density = gridParams.gridDensity;
         numProbes = gridParams.numProbes;
         coefficientsPerProbe = gridParams.coefficientsPerProbe;
+        shCoeffsPerProbe = coefficientsPerProbe - 1;
+        totalCoefficients = numProbes * coefficientsPerProbe;
+        totalSHCoefficients = numProbes * shCoeffsPerProbe;
 
         return *this;
     }

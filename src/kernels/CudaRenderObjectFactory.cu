@@ -56,6 +56,7 @@ namespace Cuda
         AddInstantiator<Host::LightProbeCamera>();
 
         AddInstantiator<Host::LightProbeKernelFilter>();
+        AddInstantiator<Host::LightProbeRegressionFilter>();
     }    
 
     struct TestStruct

@@ -1,5 +1,6 @@
 ﻿#include "CudaLightProbeRegressionFilter.cuh"
 #include "../CudaManagedArray.cuh"
+#include "../CudaSampler.cuh"
 
 #include "generic/JsonUtils.h"
 
@@ -10,7 +11,8 @@ namespace Cuda
 {
     __host__ __device__ LightProbeRegressionFilterParams::LightProbeRegressionFilterParams() :
         polynomialOrder(0),
-        radius(1),
+        regressionRadius(1),
+        reconstructionRadius(1),
         isNullFilter(true)
     {
 
@@ -19,17 +21,20 @@ namespace Cuda
     __host__ void LightProbeRegressionFilterParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("polynomialOrder", polynomialOrder);
-        node.AddValue("radius", radius);
+        node.AddValue("regressionRadius", regressionRadius);
+        node.AddValue("reconstructionRadius", reconstructionRadius);
         node.AddValue("isNullFilter", isNullFilter);
     }
 
     __host__ void LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("polynomialOrder", polynomialOrder, flags);
-        node.GetValue("radius", radius, flags);
+        node.GetValue("regressionRadius", regressionRadius, flags);
+        node.GetValue("reconstructionRadius", reconstructionRadius, flags);
         node.GetValue("isNullFilter", isNullFilter, flags);
 
-        radius = clamp(radius, 1, 10);
+        regressionRadius = clamp(regressionRadius, 0, 10);
+        reconstructionRadius = clamp(reconstructionRadius, 0, 10);
     }
 
     __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const ::Json::Node& node, const std::string& id) :
@@ -96,9 +101,13 @@ namespace Cuda
         Prepare();
     }
 
-    __global__ void KernelRandomisePolynomialCoefficients(Host::LightProbeRegressionFilter::Objects* objects)
+    __global__ void KernelRandomisePolynomialCoefficients(Device::Array<vec3>* coeffBuffer)
     {
+        assert(coeffBuffer);
+        assert(kKernelIdx < coeffBuffer->Size());
 
+        PseudoRNG rng(HashOf(uint(kKernelIdx)));
+        (*coeffBuffer)[kKernelIdx] = rng.Rand<0, 1, 2>();
     }
 
     __host__ void Host::LightProbeRegressionFilter::Prepare()
@@ -112,9 +121,11 @@ namespace Cuda
         auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
 
-        m_objects->polyCoeffsPerCoefficient = cub(m_objects->params.polynomialOrder + 1);
+        // Each coefficient stores the coefficients of the fitted polynomial plus 2 additional coefficients which represent the max and min values of the kernel
+        m_objects->polyCoeffsPerCoefficient = cub(m_objects->params.polynomialOrder + 1) + 2;
         m_objects->polyCoeffsPerProbe = m_objects->polyCoeffsPerCoefficient * gridData.coefficientsPerProbe;
         m_objects->numPolyCoeffs = m_objects->polyCoeffsPerProbe * gridData.numProbes;
+        m_objects->reconstructionKernelVolume = cub(m_objects->params.reconstructionRadius * 2 + 1);
 
         // Resize the polynomial coefficient array as a power of two 
         if(m_hostPolyCoeffs->ExpandToNearestPow2(m_objects->numPolyCoeffs))
@@ -127,8 +138,10 @@ namespace Cuda
                 
         m_objects->cu_polyCoeffs = m_hostPolyCoeffs->GetDeviceInstance();
         m_objects->cu_regressionWeights = m_hostRegressionWeights->GetDeviceInstance();
-
         m_objects.Upload();
+
+        // Generate some random numbers to seed the polynomial coefficients
+        KernelRandomisePolynomialCoefficients << < (m_objects->numPolyCoeffs + 255) / 256, 256, 0, m_hostStream >> > (m_objects->cu_polyCoeffs);
     }
 
     __global__ void KernelComputeRegressionWeights(Host::LightProbeRegressionFilter::Objects* objects, const int probeStartIdx)
@@ -136,12 +149,106 @@ namespace Cuda
 
     }
 
-    __global__ void KernelApplyRegressionIteration(Host::LightProbeRegressionFilter::Objects* objects)
+    __global__ void KernelComputeRegressionIteration(Host::LightProbeRegressionFilter::Objects* objects)
     {
         assert(objects->gridData.cu_inputGrid);
         assert(objects->gridData.cu_outputGrid);
 
+    }
 
+    __device__ __forceinline__ void Modulus(const int composite, int& modulus)
+    {
+        modulus = composite;
+    }
+
+    template<typename... Pack>
+    __device__ __forceinline__ void Modulus(const int composite, int& modulus, const int& size, Pack... pack)
+    {
+        modulus = composite % size;
+        Modulus(composite / size, pack...);
+    }
+
+    __global__ void KernelReconstructPolynomial(Host::LightProbeRegressionFilter::Objects* objects)
+    {
+        assert(objects->gridData.cu_inputGrid);
+        assert(objects->gridData.cu_outputGrid);
+
+        __shared__ ivec3 gridDensity;
+        __shared__ int polyOrder;
+        __shared__ int reconstructionRadius;
+        __shared__ int polyCoeffsPerProbe;
+        __shared__ int polyCoeffsPerCoefficient;
+        __shared__ const Device::LightProbeGrid* inputGrid;
+        __shared__ Device::LightProbeGrid* outputGrid;
+        __shared__ Device::Array<vec3>* polyCoeffData;
+
+        if (kThreadIdx == 0)
+        {
+            gridDensity = objects->gridData.density;
+            inputGrid = objects->gridData.cu_inputGrid;
+            outputGrid = objects->gridData.cu_outputGrid;
+            polyCoeffData = objects->cu_polyCoeffs;
+            polyOrder = objects->params.polynomialOrder;
+            reconstructionRadius = objects->params.reconstructionRadius;
+            polyCoeffsPerProbe = objects->polyCoeffsPerProbe;
+            polyCoeffsPerCoefficient = objects->polyCoeffsPerCoefficient;
+        }
+
+        __syncthreads();
+
+        // Probes -> SH coefficients -> Polynomial coefficients + max/min
+
+        const int probeIdx0 = kKernelIdx / objects->gridData.shCoeffsPerProbe;
+        const int coeffIdx = kKernelIdx % objects->gridData.shCoeffsPerProbe;
+
+        if (coeffIdx > 0)
+        {
+            outputGrid->SetSHCoefficient(probeIdx0, coeffIdx, kZero);
+            return;
+        }
+
+        const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, gridDensity);
+
+        vec3 LSum(0.0f);
+        int sumWeights = 0;
+        for (int z = -reconstructionRadius; z <= reconstructionRadius; ++z)
+        {
+            for (int y = -reconstructionRadius; y <= reconstructionRadius; ++y)
+            {
+                for (int x = -reconstructionRadius; x <= reconstructionRadius; ++x)
+                {
+                    ivec3 posK = pos0 + ivec3(x, y, z);
+                    if (inputGrid->IdxAt(posK) < 0) { continue; }                    
+
+                    const int probeIdxK = ProbeIdxFromGridPos(posK, gridDensity);
+                    const int dataIdxK = probeIdxK * objects->polyCoeffsPerProbe + coeffIdx * objects->polyCoeffsPerCoefficient;
+                    assert(dataIdxK < polyCoeffData->Size());
+                    const vec3* polyCoeffs = &(*polyCoeffData)[dataIdxK];
+                    
+                    vec3 L(0.0f);
+                    float zExp = 1.0f;
+                    for (int zt = 0, t = 0; zt <= polyOrder; zt++)
+                    {
+                        float yExp = 1.0;
+                        for (int yt = 0; yt <= polyOrder; yt++)
+                        {
+                            float xExp = 1.0;
+                            for (int xt = 0; xt <= polyOrder; xt++, t++)
+                            {
+                                L = polyCoeffs[t] * xExp * yExp * zExp;
+                                xExp *= x;
+                            }
+                            yExp *= y;
+                        }
+                        zExp *= z;
+                    }
+                    LSum += L;
+                    sumWeights += 1;
+                }
+            }
+        }
+        
+        outputGrid->SetSHCoefficient(probeIdx0, coeffIdx, LSum / float(sumWeights));
     }
 
     __host__ void Host::LightProbeRegressionFilter::OnPostRenderPass()
@@ -155,6 +262,8 @@ namespace Cuda
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             return;
         }
+
+        KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeRegressionFilter::GetChildObjectHandles()

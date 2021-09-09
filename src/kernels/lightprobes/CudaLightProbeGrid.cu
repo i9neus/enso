@@ -77,6 +77,7 @@ namespace Cuda
 
     __device__ void Device::LightProbeGrid::PrepareValidityGrid()
     {
+        assert(m_objects.cu_shData);
         if (kKernelIdx >= m_params.numProbes) { return; }
 
         const ivec3 gridIdx(kKernelIdx % m_params.gridDensity.x,
@@ -94,8 +95,7 @@ namespace Cuda
                     const int sampleIdx = (m_params.coefficientsPerProbe - 1) + m_params.coefficientsPerProbe *
                         (vertCoord.z * (m_params.gridDensity.x * m_params.gridDensity.y) + vertCoord.y * m_params.gridDensity.x + vertCoord.x);
 
-                    assert(sampleIdx < m_objects.cu_shData->Size());
-
+                    assert(sampleIdx < m_objects.cu_shData->Size());     
                     validity |= (uchar((*m_objects.cu_shData)[sampleIdx].x > 0.5f) << idx);
                 }
             }

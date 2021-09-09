@@ -18,7 +18,8 @@ namespace Cuda
 
         bool    isNullFilter;
         int     polynomialOrder;
-        int     radius;
+        int     regressionRadius;
+        int     reconstructionRadius;
     };
 
     namespace Host
@@ -34,6 +35,8 @@ namespace Cuda
                 int                                 polyCoeffsPerCoefficient;
                 int                                 polyCoeffsPerProbe;
                 int                                 numPolyCoeffs;
+                int                                 regressionKernelVolume;
+                int                                 reconstructionKernelVolume;
 
                 Device::Array<vec3>*                cu_polyCoeffs = nullptr;
                 Device::Array<float>*               cu_regressionWeights = nullptr;
