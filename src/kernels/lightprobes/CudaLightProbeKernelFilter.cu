@@ -140,57 +140,48 @@ namespace Cuda
         m_objects.Upload();
     }
 
-    __global__ void KernelFilterGaussian(Host::LightProbeKernelFilter::Objects* const objects, const int probeStartIdx)
+    __global__ void KernelFilterGaussian(Host::LightProbeKernelFilter::Objects* const objectsPtr, const int probeStartIdx)
     {
-        assert(objects->gridData.cu_inputGrid);
-        assert(objects->gridData.cu_outputGrid);
-        
+        __shared__ Host::LightProbeKernelFilter::Objects objects;
         __shared__ vec3 weightedCoeffs[kBlockSize * kMaxCoefficients];
         __shared__ float weights[kBlockSize];
-        __shared__ int coefficientsPerProbe;
-        __shared__ int blocksPerProbe;
-        __shared__ int kernelSpan;
-        __shared__ ivec3 gridDensity;
-        __shared__ const Device::LightProbeGrid* inputGrid;
-        __shared__ Device::LightProbeGrid* outputGrid;
-
-        assert(objects->params.radius <= 20);
 
         if (kThreadIdx == 0)
         {
-            // Copy some common data into shared memory
-            coefficientsPerProbe = objects->gridData.coefficientsPerProbe;
-            gridDensity = objects->gridData.density;
-            blocksPerProbe = objects->blocksPerProbe;
-            kernelSpan = objects->kernelSpan;
-            inputGrid = objects->gridData.cu_inputGrid;
-            outputGrid = objects->gridData.cu_outputGrid;
+            assert(objectsPtr);
+            objects = *objectsPtr;
+            assert(objects.gridData.cu_inputGrid);
+            assert(objects.gridData.cu_outputGrid);
+            assert(objects.params.radius <= 20);
+
             memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
-        }
+        }    
 
         __syncthreads();
 
         // Get the index of the probe in the grid and the sample in the kernel
-        const int probeIdx0 = probeStartIdx + blockIdx.x / objects->blocksPerProbe;
-        const int probeIdxK = kBlockSize * (blockIdx.x % objects->blocksPerProbe) + threadIdx.x;
+        auto& gridData = objects.gridData;
+        const auto& params = objects.params;
+        const int probeIdx0 = probeStartIdx + blockIdx.x / objects.blocksPerProbe;
+        const int probeIdxK = kBlockSize * (blockIdx.x % objects.blocksPerProbe) + threadIdx.x;
 
-        assert(probeIdx0 < objects->gridData.numProbes);
+        assert(probeIdx0 < gridData.numProbes);
 
         // If the index of the element lies outside the kernel, zero its weight
-        if (probeIdxK >= objects->kernelVolume)
+        if (probeIdxK >= objects.kernelVolume)
         {
             weights[threadIdx.x] = 0.0f;
         }
         else
         {
             // Compute the sample position relative to the centre of the kernel
-            const ivec3 posK = GridPosFromProbeIdx(probeIdxK, objects->kernelSpan) - ivec3(objects->kernelRadius);
+            const ivec3 posK = GridPosFromProbeIdx(probeIdxK, objects.kernelSpan) - ivec3(objects.kernelRadius);
 
             // Compute the absolute position at the origin of the kernel
-            const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, objects->gridData.density);
+            const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, objects.gridData.density);
 
             // If the neighbourhood probe lies outside the bounds of the grid, set the weight to zero
-            const int probeIdxN = inputGrid->IdxAt(pos0 + posK);
+            const int probeIdxN = gridData.cu_inputGrid->IdxAt(pos0 + posK);
             if (probeIdxN < 0)
             {
                 weights[threadIdx.x] = 0.0f;
@@ -201,19 +192,19 @@ namespace Cuda
                 if (posK != ivec3(0))
                 {
                     // Calculate the weight for the sample
-                    switch (objects->params.filterType)
+                    switch (params.filterType)
                     {
                     case kKernelFilterGaussian:
                     {
                         const float len = length(vec3(posK));
-                        if (len <= objects->params.radius)
+                        if (len <= params.radius)
                         {
-                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, objects->params.radius);
+                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.radius);
                         }
                         break;
                     }
                     case kKernelFilterNLM:
-                        weight = ComputeNLMWeight(objects->gridData, objects->params.nlm, pos0, posK);
+                        weight = ComputeNLMWeight(gridData, params.nlm, pos0, posK);
                         break;
                     };
                 }
@@ -222,8 +213,8 @@ namespace Cuda
                 if (weight > 0.0f)
                 {
                     // Accumulate the weighted coefficients
-                    const vec3* inputCoeff = inputGrid->At(probeIdxN);
-                    for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe - 1; ++coeffIdx)
+                    const vec3* inputCoeff = gridData.cu_inputGrid->At(probeIdxN);
+                    for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
                     {
                         weightedCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] = inputCoeff[coeffIdx] * weight;
                     }
@@ -238,7 +229,7 @@ namespace Cuda
         {
             if (threadIdx.x < interval && weights[threadIdx.x + interval] > 0.0f)
             {
-                for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe - 1; ++coeffIdx)
+                for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
                 {
                     weightedCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] += weightedCoeffs[(threadIdx.x + interval) * kMaxCoefficients + coeffIdx];
                 }
@@ -251,27 +242,29 @@ namespace Cuda
         if (kThreadIdx == 0)
         {
             // If the entire convolution operation fits into a single block, copy straight into the output buffer
-            if (objects->blocksPerProbe == 1)
+            if (objects.blocksPerProbe == 1)
             {
-                vec3* outputBuffer = outputGrid->At(probeIdx0);
-                for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe; ++coeffIdx)
+                vec3* outputBuffer = gridData.cu_outputGrid->At(probeIdx0);
+                for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx] / weights[0];
                 }
+                // Don't filter the metadata. Just copy.
+                outputBuffer[gridData.shCoeffsPerProbe] = gridData.cu_inputGrid->At(probeIdx0)[gridData.shCoeffsPerProbe];
             }
             else
             {
                 // Copy the data into the intermediate buffer. 
                 // We store the weighted SH coefficients as vec3s followed by a final vec3 whose first element contains the weight.
-                assert(objects->cu_reduceBuffer);
-                const int bufferIdx = (probeIdx0 * objects->blocksPerProbe + (probeIdxK / kBlockSize)) * (objects->gridData.coefficientsPerProbe + 1);
-                assert(bufferIdx < objects->cu_reduceBuffer->Size());
-                vec3* outputBuffer = &(*objects->cu_reduceBuffer)[bufferIdx];
-                for (int coeffIdx = 0; coeffIdx < coefficientsPerProbe; ++coeffIdx)
+                assert(objects.cu_reduceBuffer);
+                const int bufferIdx = (probeIdx0 * objects.blocksPerProbe + (probeIdxK / kBlockSize)) * (gridData.coefficientsPerProbe + 1);
+                assert(bufferIdx < objects.cu_reduceBuffer->Size());
+                vec3* outputBuffer = &(*objects.cu_reduceBuffer)[bufferIdx];
+                for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx];
                 }
-                outputBuffer[coefficientsPerProbe].x = weights[0];
+                outputBuffer[gridData.coefficientsPerProbe].x = weights[0];
             }
         }
     } 
