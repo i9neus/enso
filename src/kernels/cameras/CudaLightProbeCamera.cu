@@ -352,8 +352,13 @@ namespace Cuda
         m_bakeProgress(0.0f)
     {
         std::string gridIDs[3];
-        node.GetValue("gridDirectID", gridIDs[0], Json::kRequiredAssert | Json::kNotBlank);
-        node.GetValue("gridIndirectID", gridIDs[1], Json::kRequiredAssert | Json::kNotBlank);
+
+        // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
+        gridIDs[0] = "grid_noisy_direct";
+        gridIDs[1] = "grid_noisy_indirect";
+
+        node.GetValue("gridDirectID", gridIDs[0], Json::kRequiredWarn | Json::kNotBlank);
+        node.GetValue("gridIndirectID", gridIDs[1], Json::kRequiredWarn | Json::kNotBlank);
         node.GetValue("gridHalfID", gridIDs[2], Json::kSilent);
         
         // Create the accumulation buffers and probe grids

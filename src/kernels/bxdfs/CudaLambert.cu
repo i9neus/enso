@@ -69,6 +69,10 @@ namespace Cuda
         Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
         m_params.FromJson(parentNode, ::Json::kRequiredWarn);
 
+        // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
+        m_gridIDs[0] = "grid_noisy_direct";
+        m_gridIDs[1] = "grid_noisy_indirect";
+
         parentNode.GetValue("gridDirectID", m_gridIDs[0], ::Json::kRequiredWarn);
         parentNode.GetValue("gridIndirectID", m_gridIDs[1], ::Json::kRequiredWarn);
     }
