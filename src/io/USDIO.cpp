@@ -17,7 +17,6 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/base/plug/registry.h>
 
@@ -49,12 +48,101 @@ namespace USDIO
     }
 
     template<typename Type>
-    void SetUSDAttribute(pxr::UsdPrim& prim, const std::string& id, const Type& data)
+    bool SetUSDAttribute(pxr::UsdPrim& prim, const std::string& id, const Type& data)
     {
         pxr::UsdAttribute attr = prim.GetAttribute(pxr::TfToken(id));
-        if (!attr) { Log::Error("Internal error: USD attribute '%s' not found.\n'", id); }
+        if (!attr) 
+        { 
+            Log::Error("Internal error: USD attribute '%s' not found.\n'", id); 
+            return false;
+        }
 
         attr.Set(data);
+        return true;
+    }
+
+    template<typename Type>
+    bool GetUSDAttribute(const pxr::UsdPrim& prim, const std::string& id, Type& data)
+    {
+        pxr::UsdAttribute attr = prim.GetAttribute(pxr::TfToken(id));
+        if (!attr) 
+        { 
+            Log::Error("Internal error: USD attribute '%s' not found.\n'", id); 
+            return false;
+        }
+
+        attr.Get(&data);
+        return true;
+    }
+
+    void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath)
+    {
+        // Load the root config
+        Json::Document configJson;
+        configJson.Deserialise("config.json");
+
+        Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredWarn);
+        if (!usdJson) { Log::Error("Error\n");  return; }
+        
+        InitialiseUSD(usdJson);
+
+        pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(usdImportPath);
+        Assert(stage);
+
+        pxr::UsdPrim prim = stage->GetDefaultPrim();
+        Assert(prim);
+
+        pxr::GfVec3f gridSize;
+        pxr::GfVec3f gridResolution;
+        std::string usdDescription;
+        pxr::VtFloatArray coeffs;
+        pxr::VtFloatArray dataValidity;
+        pxr::VtFloatArray dataMeanDistance;
+
+        GetUSDAttribute(prim, "description", usdDescription);
+        GetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe);
+        GetUSDAttribute(prim, "size", gridSize);
+        GetUSDAttribute(prim, "resolution", gridResolution);
+        GetUSDAttribute(prim, "coefficients", coeffs);
+        GetUSDAttribute(prim, "dataMeanDistance", dataMeanDistance);
+        GetUSDAttribute(prim, "dataValidity", dataValidity);
+
+        gridParams.transform.scale = Cuda::vec3(gridSize[0], gridSize[1], gridSize[2]);
+        gridParams.gridDensity = Cuda::ivec3(gridResolution[0], gridResolution[1], gridResolution[2]);
+        gridParams.numProbes = Cuda::Volume(gridParams.gridDensity);
+        gridParams.coefficientsPerProbe = (coeffs.size() / (gridParams.numProbes * 3)) + 1;
+        
+        Assert(coeffs.size() % (gridParams.coefficientsPerProbe - 1) == 0);
+        Assert(dataValidity.size() == gridParams.numProbes);
+        Assert(dataMeanDistance.size() == gridParams.numProbes);
+
+        Log::Debug("Loading light probe grid from USD...");
+        Log::Debug("  - Description: %s", usdDescription);
+        Log::Debug("  - Resolution: %s", gridParams.gridDensity.format());
+        Log::Debug("  - Size: %s", gridParams.transform.scale().format());
+        Log::Debug("  - Coefficients per probe: %i", gridParams.coefficientsPerProbe);
+
+        gridData.resize(gridParams.numProbes * gridParams.coefficientsPerProbe);
+
+        for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
+        {
+            // Set the SH coefficients
+            int destIdx = probeIdx * gridParams.coefficientsPerProbe;
+            int sourceIdx = 3 * probeIdx * (gridParams.coefficientsPerProbe - 1);
+            for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx, ++destIdx, sourceIdx += 3)
+            {
+                gridData[destIdx] = Cuda::vec3(coeffs[sourceIdx], coeffs[sourceIdx + 1], coeffs[sourceIdx + 2]);
+                //Log::Debug("[%i, %i]: %s", probeIdx, coeffIdx, gridData[destIdx].format());
+            }
+
+            // Set the validity and mean distance coefficients
+            gridData[destIdx].x = dataValidity[probeIdx];
+            gridData[destIdx].y = dataMeanDistance[probeIdx];
+            gridData[destIdx].z = 1.0f;
+            //Log::Debug("[%i, %i]: %s", probeIdx, gridParams.coefficientsPerProbe - 1, gridData[destIdx].format());
+        }
+
+        Log::Write("Imported USD file from '%s'\n", usdImportPath);
     }
 
     void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, std::string usdExportPath)
@@ -105,7 +193,7 @@ namespace USDIO
         pxr::VtFloatArray dataMeanDistance(gridParams.numProbes);
 
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
-        {            
+        {
             // Set the SH coefficients
             for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx)
             {
@@ -127,7 +215,7 @@ namespace USDIO
         SetUSDAttribute(prim, "dataValidity", dataValidity);
 
         stage->SetDefaultPrim(prim);
-        stage->Export(usdExportPath);
+        stage->Export(usdExportPath);        
 
         Log::Write("Exported USD file to '%s'\n", usdExportPath);
     }
@@ -139,7 +227,7 @@ namespace USDIO
     USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&, std::string usdExportPath))
     USD_DISABLED_FUNCTION(void TestUSD())   
 
-#endif
+#endif     
 
     void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset, const std::string& usdExportPath)
     {
