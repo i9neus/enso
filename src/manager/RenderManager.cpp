@@ -447,29 +447,47 @@ void RenderManager::Run()
 		// Handle any post-frame baking operations
 		OnBakePostFrame();
 
+		// Compute some stats on the framerate
 		m_frameIdx++;
 		m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
-		float meanFrameTime = 0.0f;
+		m_meanFrameTime = 0.0f;
 		for (const auto& ft : m_frameTimes)
 		{
-			meanFrameTime += ft;
+			m_meanFrameTime += ft;
 		}
-		meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
+		m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
 
-		if (m_liveCamera)
-		{
-			std::lock_guard<std::mutex> lock(m_jsonMutex);
-			Cuda::Device::RenderState::Stats stats;
-			m_liveCamera->GetRenderStats()->SynchroniseHost(stats);
-
-			m_renderStatsJson.Clear();
-			m_renderStatsJson.AddValue("frameTime", timer.Get());
-			m_renderStatsJson.AddValue("meanFrameTime", meanFrameTime);
-			m_renderStatsJson.AddValue("deadRays", stats.deadRays);
-		}
-
-		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		// Gather statistics for the render objects
+		GatherRenderObjectStatistics();
 	}
+}
+
+void RenderManager::GatherRenderObjectStatistics()
+{
+	// Limit this operation to 10 times per second
+	if (m_renderStatsTimer.Get() < 0.1f) { return; }
+	
+	Json::Document renderObjectJson;
+	Json::Document aggregatedStatsJson;
+	for (auto& object : *m_renderObjects) 
+	{  		
+		// Poll each render object for the latest stats
+		if (object->HasDAGPath() && object->EmitStatistics(renderObjectJson))
+		{
+			Json::Node childNode = aggregatedStatsJson.AddChildObject(object->GetDAGPath());
+			childNode.DeepCopy(renderObjectJson);
+			renderObjectJson.Clear();
+		}
+	}
+
+	aggregatedStatsJson.AddValue("frameIdx", m_frameIdx);
+	aggregatedStatsJson.AddValue("meanFrameTime", m_meanFrameTime);
+
+	//Log::Debug(aggregatedStatsJson.Stringify(true));
+
+	std::lock_guard<std::mutex> lock(m_jsonMutex);
+	m_renderStatsJson.DeepCopy(aggregatedStatsJson);
+	m_renderStatsTimer.Reset();
 }
 
 void RenderManager::PatchSceneObjects()

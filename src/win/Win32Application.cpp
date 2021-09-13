@@ -148,10 +148,12 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 {
 	if (ImGui::ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) { return 1; }
 
-	T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-	switch (message)
+	try
 	{
-	case WM_CREATE:
+		T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		switch (message)
+		{
+		case WM_CREATE:
 		{
 			// Save the DXSample* passed in to CreateWindow.
 			LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
@@ -159,38 +161,42 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 		}
 		return 0;
 
-	case WM_KEYDOWN:
-		if (pSample)
-		{
-			pSample->OnKeyDown(static_cast<UINT8>(wParam));
+		case WM_KEYDOWN:
+			if (pSample)
+			{
+				pSample->OnKeyDown(static_cast<UINT8>(wParam));
+			}
+			return 0;
+
+		case WM_KEYUP:
+			if (pSample)
+			{
+				pSample->OnKeyUp(static_cast<UINT8>(wParam));
+			}
+			return 0;
+
+		case WM_PAINT:
+			if (pSample)
+			{
+				//Timer frameTimer;
+				pSample->OnUpdate();
+				pSample->OnRender();
+
+				//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
+			}
+			return 0;
+
+		case WM_DESTROY:
+			PostQuitMessage(0);
+			return 0;
+		case WM_CLOSE:
+			DestroyWindow(hWnd);
+			return 0;
 		}
-		return 0;
-
-	case WM_KEYUP:
-		if (pSample)
-		{
-			pSample->OnKeyUp(static_cast<UINT8>(wParam));
-		}
-		return 0;
-
-	case WM_PAINT:
-		if (pSample)
-		{
-			//Timer frameTimer;
-			
-			pSample->OnUpdate();
-			pSample->OnRender();
-
-			//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
-		}
-		return 0;
-
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	case WM_CLOSE:
-		DestroyWindow(hWnd);
-		return 0;
+	}
+	catch (const std::runtime_error& err)
+	{
+		Log::Error("Runtime error: %s\n", err.what());
 	}
 
 	// Handle any messages the switch statement didn't.

@@ -15,7 +15,8 @@ namespace Json
         kSilent =           1 << 0,
         kRequiredWarn =     1 << 1,
         kRequiredAssert =   1 << 2,
-        kNotBlank =         1 << 3
+        kNotBlank =         1 << 3,
+        kLiteralID =        1 << 4
     };
 
     template<typename... Pack>

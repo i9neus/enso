@@ -2,6 +2,7 @@
 
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
+#include "generic/HighResolutionTimer.h"
 #include "generic/Math.h"
 #include <cuda_runtime.h>
 #include "generic/JsonUtils.h"
@@ -39,11 +40,10 @@ public:
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
 	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
 	
-	template<typename Lambda>
-	void GetRenderStats(Lambda statsLambda) 
+	void GetRenderStats(Json::Document& outputJson) 
 	{ 
 		std::lock_guard<std::mutex> lock(m_jsonMutex);
-		statsLambda(m_renderStatsJson);
+		outputJson.DeepCopy(m_renderStatsJson);
 	}
 
 private:
@@ -53,6 +53,7 @@ private:
 	void OnBakePreFrame();
 	void OnBakePostFrame();
 	void PatchSceneObjects();
+	void GatherRenderObjectStatistics();
 
 	enum ThreadSignal : int { kRun, kRestart, kHalt };
 	enum DirtyState : int { kClean, kSoftReset, kHardReset };
@@ -76,6 +77,7 @@ private:
 
 	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
+	HighResolutionTimer		m_renderStatsTimer;
 	Json::Document			m_renderStatsJson;
 	std::array<float, 20>	m_frameTimes;
 
@@ -104,6 +106,7 @@ private:
 
 	std::atomic<BakeStatus>		m_bakeStatus;
 	float						m_bakeProgress;
+	float						m_meanFrameTime;
 	std::vector<std::string>	m_usdExportPaths;
 	bool						m_exportToUSD;
 	std::string                 m_pngExportPath;

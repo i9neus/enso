@@ -31,6 +31,7 @@ public:
     virtual void MakeClean() = 0;
     virtual void MakeDirty() = 0;
     virtual Cuda::AssetType GetRenderObjectAssetType() const = 0;
+    virtual void OnUpdateRenderObjectStatistics(const Json::Node& node) {}
 
     virtual void Jitter(const uint flags, const uint operation) = 0;
     virtual void Update() {}

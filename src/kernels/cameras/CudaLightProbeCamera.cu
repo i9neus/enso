@@ -310,37 +310,48 @@ namespace Cuda
         }
     }
 
-    __device__ vec2 Device::LightProbeCamera::GetProbeMinMaxSampleCount() const
+    __device__ void Device::LightProbeCamera::GetProbeGridAggregateData(vec3& result) const
     {
         __shared__ vec2 localMinMax[256];
+        __shared__ float localValidity[256];
+        __shared__ int localProbeCount[256];
 
         if (kThreadIdx == 0)
         {
-            for (int i = 0; i < 256; i++) { localMinMax[i] = vec2(kFltMax, 0.0f); }
+            for (int i = 0; i < 256; i++) 
+            { 
+                localMinMax[i] = vec2(kFltMax, 0.0f); 
+                localValidity[i] = 0.0f;
+                localProbeCount[i] = 0;
+            }
         }
 
         __syncthreads();
 
         const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
         const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
+        localProbeCount[kKernelIdx] = 1 + endIdx - startIdx;
+
         for (int i = startIdx; i <= endIdx; i++)
         {
-            const float coeff = m_objects.cu_probeGrids[0]->At(startIdx)[m_params.coefficientsPerProbe - 1].z;
-            localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeff), max(localMinMax[kKernelIdx].y, coeff));
-        }        
+            const auto& coeffs = m_objects.cu_probeGrids[0]->At(startIdx)[m_params.coefficientsPerProbe - 1];
+
+            localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeffs.z), max(localMinMax[kKernelIdx].y, coeffs.z));
+            localValidity[kKernelIdx] += coeffs.x;
+        }
 
         __syncthreads();
 
-        vec2 globalMinMax = localMinMax[0];
         if (kThreadIdx == 0)
         {
-            for (int i = 1; i < 256; i++) 
+            result = vec3(localMinMax[0], localValidity[0] / float(max(1, localProbeCount[0])));
+            for (int i = 1; i < 256; i++)
             { 
-                globalMinMax = vec2(min(localMinMax[kKernelIdx].x, globalMinMax.x), max(localMinMax[kKernelIdx].y, globalMinMax.y));
+                result.xy = vec2(min(localMinMax[i].x, result.x), max(localMinMax[i].y, result.y));
+                result.z += localValidity[i] / float(max(1, localProbeCount[i]));
             }
+            result.z /= 256.0f;
         }
-
-        return globalMinMax;
     }
 
     __host__ Host::LightProbeCamera::LightProbeCamera(const ::Json::Node& node, const std::string& id) :
@@ -349,7 +360,8 @@ namespace Cuda
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
         m_exporterState(kDisarmed),
-        m_bakeProgress(0.0f)
+        m_bakeProgress(0.0f),
+        m_probeAggregateData(0.0f)
     {
         std::string gridIDs[3];
 
@@ -548,24 +560,27 @@ namespace Cuda
         camera->ReduceAccumulationBuffer(cu_accumBuffer, cu_probeGrid, reduceBatchSize, batchRange);
     }
 
-    __global__ void KernelGetProbeMinMaxSampleCount(Device::LightProbeCamera* camera, vec2* minSampleCount)
+    __global__ void KernelGetProbeGridAggregateData(Device::LightProbeCamera* camera, vec3* minSampleCount)
     {
-        *minSampleCount = camera->GetProbeMinMaxSampleCount();
+        camera->GetProbeGridAggregateData(*minSampleCount);
     }
 
-    __host__ vec2 Host::LightProbeCamera::GetProbeMinMaxSampleCount() const
+    __host__ void Host::LightProbeCamera::GetProbeGridAggregateData()
     {
-        vec2* cu_minMax;
-        vec2 minMax;
-        IsOk(cudaMalloc(&cu_minMax, sizeof(vec2)));
+        vec3* cu_agData;
+        IsOk(cudaMalloc(&cu_agData, sizeof(vec3)));
 
-        KernelGetProbeMinMaxSampleCount << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_minMax);
+        KernelGetProbeGridAggregateData << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_agData);
         IsOk(cudaStreamSynchronize(m_hostStream));
 
-        IsOk(cudaMemcpy(&minMax, cu_minMax, sizeof(vec2), cudaMemcpyDeviceToHost));
-        IsOk(cudaFree(cu_minMax));
+        IsOk(cudaMemcpy(&m_probeAggregateData, cu_agData, sizeof(vec3), cudaMemcpyDeviceToHost));
+        IsOk(cudaFree(cu_agData));
 
-        return minMax;
+        m_bakeProgress = -1.0f;
+        if (m_params.camera.maxSamples > 0)
+        {
+            m_bakeProgress = clamp((m_probeAggregateData.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+        }
     }
 
     __host__ float Host::LightProbeCamera::GetBakeProgress()
@@ -578,8 +593,7 @@ namespace Cuda
 
         if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
-            vec2 minMax = GetProbeMinMaxSampleCount();
-            m_bakeProgress = clamp((minMax.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+            GetProbeGridAggregateData();
         }
         
         return m_bakeProgress;
@@ -649,7 +663,7 @@ namespace Cuda
             // Reduce the block in a single operation
             //KernelReduceAccumulationBuffer << < m_reduceGrid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
 
-            //const vec2 minMax = GetProbeMinMaxSampleCount();
+            //const vec2 minMax = GetProbeGridAggregateData();
             //Log::Debug("Samples: %i\n", minMax.x);
 
             IsOk(cudaStreamSynchronize(m_hostStream));
@@ -661,6 +675,19 @@ namespace Cuda
         if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
             BuildLightProbeGrids();
+
+            GetProbeGridAggregateData();
         }
+    }
+
+    __host__ bool Host::LightProbeCamera::EmitStatistics(Json::Node& node) const
+    {
+        node.AddValue("isActive", m_params.camera.isActive);
+        node.AddValue("minSamples", int(m_probeAggregateData.x));
+        node.AddValue("maxSamples", int(m_probeAggregateData.y));
+        node.AddValue("meanProbeValidity", m_probeAggregateData.z);
+        node.AddValue("bakeProgress", m_bakeProgress);
+
+        return true;
     }
 }

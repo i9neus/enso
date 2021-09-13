@@ -67,6 +67,7 @@ namespace Cuda
             __host__ virtual void           OnPreRenderPass(const float wallTime, const uint frameIdx) {}
             __host__ virtual void           OnPostRenderPass() {}
             __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) {}
+            __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
             __host__ void SetRenderObjectFlags(const uint flags, const bool set = true)

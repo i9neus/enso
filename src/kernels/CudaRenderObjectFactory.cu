@@ -266,8 +266,11 @@ namespace Cuda
             InstantiateList(childNode, AssetType::kIntegrator, "integrator", renderObjects);
         }
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("filters", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kLightProbeFilter, "filter", renderObjects);
+            const ::Json::Node childNode = rootNode.GetChildObject("filters", ::Json::kRequiredWarn);
+            if (childNode)
+            {
+                InstantiateList(childNode, AssetType::kLightProbeFilter, "filter", renderObjects);
+            }
         }
     }
 }

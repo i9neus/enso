@@ -14,7 +14,7 @@
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\StringUtils.cpp">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClCompile>
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp">
       <Filter>thirdparty\lodepng</Filter>
@@ -38,16 +38,16 @@
       <Filter>thirdparty\imgui\backends</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\JsonUtils.cpp">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\Log.cpp">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClCompile>
     <ClCompile Include="src\io\USDIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\FilesystemUtils.cpp">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClCompile>
     <ClCompile Include="src\manager\RenderManager.cpp">
       <Filter>manager</Filter>
@@ -121,10 +121,10 @@
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\StdIncludes.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
       <Filter>kernels</Filter>
@@ -139,13 +139,13 @@
       <Filter>kernels</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Math.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Constants.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\StringUtils.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\math\CudaMath.cuh">
       <Filter>kernels\math</Filter>
@@ -271,7 +271,7 @@
       <Filter>kernels\tracables</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Assert.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\math\vec\CudaIVec2.cuh">
       <Filter>kernels\math\vec</Filter>
@@ -322,10 +322,10 @@
       <Filter>thirdparty\imgui\backends</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\JsonUtils.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Log.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh">
       <Filter>kernels\materials</Filter>
@@ -379,7 +379,7 @@
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\FilesystemUtils.h">
-      <Filter>generic</Filter>
+      <Filter>dx12\generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\lights\CudaSphereLight.cuh">
       <Filter>kernels\lights</Filter>
@@ -468,13 +468,13 @@
     <ClInclude Include="src\utils\BulkUSDProcessor.h">
       <Filter>utils</Filter>
     </ClInclude>
+    <ClInclude Include="src\generic\HighResolutionTimer.h">
+      <Filter>dx12\generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
       <UniqueIdentifier>{8863e2e8-e3e5-49f3-8cd9-fc79fcfef590}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="generic">
-      <UniqueIdentifier>{439db4d4-72ca-47c6-8a82-a225dfa92cca}</UniqueIdentifier>
     </Filter>
     <Filter Include="win">
       <UniqueIdentifier>{d46ee08f-5440-4118-b4f2-a715b7332aa1}</UniqueIdentifier>
@@ -556,6 +556,9 @@
     </Filter>
     <Filter Include="utils">
       <UniqueIdentifier>{8adb29c0-46a9-4638-a4fb-35e52aa26276}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\generic">
+      <UniqueIdentifier>{439db4d4-72ca-47c6-8a82-a225dfa92cca}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

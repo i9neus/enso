@@ -226,6 +226,7 @@ namespace USDIO
 
     USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&, std::string usdExportPath))
     USD_DISABLED_FUNCTION(void TestUSD())   
+    USD_DISABLED_FUNCTION(void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath))
 
 #endif     
 

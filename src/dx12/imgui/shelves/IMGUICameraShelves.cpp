@@ -65,7 +65,10 @@ void PerspectiveCameraShelf::Jitter(const uint flags, const uint operation)
 }
 
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
-    : IMGUIShelf(json)
+    : IMGUIShelf(json),
+    m_meanProbeValidity(0.0f),
+    m_maxSamplesTaken(0),
+    m_minSamplesTaken(0)
 {
     m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
 }
@@ -126,6 +129,8 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Z", &m_p.grid.invertZ);
 
     m_p.camera.seed = max(0, m_p.camera.seed);
+
+    ImGui::Text(tfm::format("Mean probe validity: %i", m_meanProbeValidity).c_str());
 }
 
 void LightProbeCameraShelf::Randomise()
@@ -138,4 +143,11 @@ void LightProbeCameraShelf::Randomise()
 
         m_p.camera.seed = rng(mt);
     }
+}
+
+void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& node)
+{    
+    node.GetValue("minSamples", m_minSamplesTaken, Json::kSilent);
+    node.GetValue("maxSamples", m_minSamplesTaken, Json::kSilent);
+    node.GetValue("meanProbeValidity", m_meanProbeValidity, Json::kSilent);
 }

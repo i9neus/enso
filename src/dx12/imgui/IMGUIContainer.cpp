@@ -10,9 +10,11 @@
 #include "shelves/IMGUIMaterialShelves.h"
 #include "shelves/IMGUITracableShelves.h"
 
-IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) : 
+IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) :
     m_cudaRenderer(cudaRenderer),
-    m_stateManager(m_shelves, cudaRenderer)
+    m_stateManager(m_shelves, cudaRenderer),
+    m_frameIdx(0),
+    m_meanFrameTime(-1.0f)
 {
 
 }
@@ -90,20 +92,52 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 {
     ImGui::Begin("Render Objects");
 
+    // Only poll the render object manager occasionally
+    if (m_statsTimer.Get() > 0.5f)
+    {
+        Json::Document statsDocument;
+        m_cudaRenderer.GetRenderStats(statsDocument);
+
+        statsDocument.GetValue("frameIdx", m_frameIdx, Json::kSilent);
+        statsDocument.GetValue("meanFrameTime", m_meanFrameTime, Json::kSilent);
+
+        for (const auto& shelf : m_shelves)
+        {
+            // Look to see if there are statistics associated with this shelf
+            const Json::Node statsNode = statsDocument.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);          
+            if (statsNode)
+            {
+                Assert(shelf.second);
+                shelf.second->OnUpdateRenderObjectStatistics(statsNode);
+            }
+        }
+
+        m_statsTimer.Reset();
+    }
+
+    // Emit some statistics about the render
+    ImGui::Text(tfm::format("Frame index: %i", m_frameIdx).c_str());
+    if (m_meanFrameTime > 0.0f)
+    {
+        ImGui::Text(tfm::format("%.2f FPS (%.fms per frame)", 1.0f / m_meanFrameTime, m_meanFrameTime * 1e3f).c_str());
+    }
+    ImGui::Separator();
+
+    // Construct the shelves
     int shelfIdx = 0;
     for (const auto& shelf : m_shelves)
     {
         UIStyle style(shelfIdx++);
         
-        ImGui::PushID(shelf.second->GetID().c_str());        
+        ImGui::PushID(shelf.second->GetID().c_str());
 
         shelf.second->Construct();
-        ImGui::Separator();        
+        ImGui::Separator();     
 
         ImGui::PopID();
-    }
+    }    
 
-    float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
+    /*float renderFrameTime = -1.0f, renderMeanFrameTime = -1.0f;
     int deadRays = -1;
     m_cudaRenderer.GetRenderStats([&](const Json::Document& node)
         {
@@ -114,7 +148,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Render %.3f ms/frame (%.1f FPS)", 1000.0f * renderMeanFrameTime, 1.0f / renderMeanFrameTime);
-    ImGui::Text("Dead rays: %i", deadRays);
+    ImGui::Text("Dead rays: %i", deadRays);*/
 
     ImGui::End();
 }

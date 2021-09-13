@@ -71,6 +71,7 @@
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\FilesystemUtils.h" />
+    <ClInclude Include="src\generic\HighResolutionTimer.h" />
     <ClInclude Include="src\generic\JsonUtils.h" />
     <ClInclude Include="src\generic\Log.h" />
     <ClInclude Include="src\generic\Math.h" />

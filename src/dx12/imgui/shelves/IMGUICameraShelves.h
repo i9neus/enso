@@ -30,9 +30,13 @@ public:
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
     virtual void Jitter(const uint flags, const uint operation) override final {}
+    virtual void OnUpdateRenderObjectStatistics(const Json::Node& node) override final;
 
     void Randomise();
 
 private:
     std::vector<std::string>    m_swizzleLabels;
+
+    float   m_meanProbeValidity;
+    int     m_maxSamplesTaken, m_minSamplesTaken;
 };

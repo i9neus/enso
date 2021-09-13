@@ -15,6 +15,25 @@ namespace Json
         AssertMsg(!path.empty(), "Must specify a path to a node.");
         AssertMsg(m_node->IsObject(), "Parent node is not an object.");
 
+        // If this ID is marked as literal, search for it directly without trying to parse it as a path
+        if (flags & kLiteralID)
+        {
+            if (!m_node->IsObject())
+            {
+                ReportError(flags, "JSON node '%s' is invalid ('%s' is not an object.)", path.c_str(), path.c_str());
+                return nullptr;
+            }
+            
+            rapidjson::Value::MemberIterator jsonIt = m_node->FindMember(path.c_str());
+            if(jsonIt == m_node->MemberEnd())
+            {
+                ReportError(flags, "JSON node literal '%s' is invalid ('%s' not found)", path.c_str(), path.c_str());
+                return nullptr;
+            }
+            return &jsonIt->value; 
+        }
+
+        // Otherwise, break it up using the lexer and extract each component in turn
         Lexer lex(path);
         std::string parentID = "[root node]";
         rapidjson::Value* node = m_node; 

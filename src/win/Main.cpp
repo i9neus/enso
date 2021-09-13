@@ -17,6 +17,8 @@
 #include "generic/StringUtils.h"
 #include "generic/JsonUtils.h"
 
+//#include "utils/BulkUSDProcessor.h"
+
 // Call various method to guarante we have object files generated for the test suit. 
 void DummyMethodCalls()
 {
@@ -33,6 +35,9 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+		/*BulkConvertUSDProbeGrds();
+		return 0;*/
+		
 		D3DContainer sample(1280, 720, "D3D12 Hello Texture");
 		auto rValue = Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);
 
@@ -43,6 +48,10 @@ int main(int argc, char* argv[])
 	catch (const std::runtime_error& err)
 	{
 		Log::Error("Runtime error: %s\n", err.what());
+	}
+	catch (...)
+	{
+		Log::Error("Unhandled error");
 	}
 }
 

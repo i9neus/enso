@@ -12,6 +12,8 @@
 #include "shelves/IMGUIShelfFactory.h"
 #include "permutor/IMGUIStateManager.h"
 
+#include "generic/HighResolutionTimer.h"
+
 using namespace Cuda;
 
 template<typename T>
@@ -41,6 +43,10 @@ private:
     RenderManager&                  m_cudaRenderer;
     IMGUIAbstractShelfMap           m_shelves;
     RenderObjectStateManager        m_stateManager;
+
+    HighResolutionTimer             m_statsTimer;
+    int                             m_frameIdx;
+    float                           m_meanFrameTime;
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);
