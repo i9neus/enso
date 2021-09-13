@@ -38,5 +38,10 @@ private:
     std::vector<std::string>    m_swizzleLabels;
 
     float   m_meanProbeValidity;
+    float   m_meanProbeDistance;
     int     m_maxSamplesTaken, m_minSamplesTaken;
+    std::vector<uint> m_distanceHistogram;
+    std::vector<float> m_distanceHistogramWidgetData;
+    bool    m_hasDistanceHistogram;
+    uint    m_histogramMaxBucket;
 };

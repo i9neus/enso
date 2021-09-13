@@ -2,6 +2,7 @@
 
 #include "CudaCamera.cuh"
 #include "../lightprobes/CudaLightProbeGrid.cuh"
+#include "../CudaDeviceObjectRAII.cuh"
 
 namespace Json { class Node; }
 
@@ -39,6 +40,8 @@ namespace Cuda
 		LightProbeGridParams		grid;
 		CameraParams				camera;
 
+		float						minViableValidity;
+
 		uint						numProbes; //					<-- The number of light probes in the grid (W x H x D)
 		uint						subsamplesPerProbe;	//			<-- A sub-sample is a set of SH coefficients plus data.
 		uint						coefficientsPerProbe; //		<-- The number of Ln SH coefficients, plus additional data.
@@ -59,6 +62,16 @@ namespace Cuda
 		class LightProbeCamera : public Device::Camera
 		{
 		public:
+			struct AggregateStatistics
+			{
+				__host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f), probeCount(0) {}		
+
+				vec2	minMaxSamples;
+				float	meanValidity;
+				float	meanDistance;
+				int		probeCount;
+			};
+
 			struct Objects
 			{
 				__host__ __device__ Objects()
@@ -83,7 +96,7 @@ namespace Cuda
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__device__ void ReduceAccumulationBuffer(Device::Array<vec4>* accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSizeBegin, const uvec2 batchRange);
-			__device__ void GetProbeGridAggregateData(vec3& result) const;
+			__device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result, uint* distanceHistogram) const;
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
 			__device__ void Synchronise(const Objects& objects);
@@ -95,17 +108,17 @@ namespace Cuda
 
 		private:
 			LightProbeCameraParams 		m_params;
-			Objects						m_objects;				
+			Objects						m_objects;
 		};
 	}
 
 	namespace Host
-	{	
+	{
 		class LightProbeCamera : public Host::Camera
 		{
 		public:
 			enum ExporterState : int { kDisarmed, kArmed, kFired };
-			
+
 			__host__ LightProbeCamera(const ::Json::Node& parentNode, const std::string& id);
 			__host__ virtual ~LightProbeCamera() { OnDestroyAsset(); }
 
@@ -127,9 +140,9 @@ namespace Cuda
 
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Light Probe Camera"; }
-			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
+			__host__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__host__ void								SetLightProbeCameraParams(const LightProbeCameraParams& params);
-			__host__ const LightProbeCameraParams&		GetLightProbeCameraParams() const { return m_params; }
+			__host__ const LightProbeCameraParams& GetLightProbeCameraParams() const { return m_params; }
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid(const int idx) { return m_hostLightProbeGrids[idx]; }
 
 			__host__ float								GetBakeProgress();
@@ -138,7 +151,7 @@ namespace Cuda
 			__host__ int								GetExporterState() const { return m_exporterState; }
 
 		private:
-			__host__ void								GetProbeGridAggregateData();
+			__host__ void								GetProbeGridAggregateStatistics();
 			__host__ void								BuildLightProbeGrids();
 
 			Device::LightProbeCamera*					cu_deviceData;
@@ -154,7 +167,8 @@ namespace Cuda
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 
-			vec3										m_probeAggregateData;
+			DeviceObjectRAII<Device::LightProbeCamera::AggregateStatistics> m_probeAggregateData;
+			DeviceObjectRAII<uint, 50>					m_distanceHistogram;
 			float										m_bakeProgress;
 
 			std::atomic<int>							m_exporterState;

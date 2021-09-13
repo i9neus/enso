@@ -24,6 +24,7 @@ namespace Cuda
     {
         lightingMode = kBakeLightingCombined;
         gridUpdateInterval = 10;
+        minViableValidity = 0.0f;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
@@ -40,6 +41,7 @@ namespace Cuda
 
         node.AddEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode);
         node.AddValue("gridUpdateInterval", gridUpdateInterval);
+        node.AddValue("minViableValidity", minViableValidity);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -50,6 +52,7 @@ namespace Cuda
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
         node.GetValue("gridUpdateInterval", gridUpdateInterval, flags);
+        node.GetValue("minViableValidity", minViableValidity, flags);
     }      
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -310,47 +313,57 @@ namespace Cuda
         }
     }
 
-    __device__ void Device::LightProbeCamera::GetProbeGridAggregateData(vec3& result) const
+    __device__ void Device::LightProbeCamera::GetProbeGridAggregateStatistics(Device::LightProbeCamera::AggregateStatistics& result, uint* distanceHistogram) const
     {
-        __shared__ vec2 localMinMax[256];
-        __shared__ float localValidity[256];
-        __shared__ int localProbeCount[256];
+        __shared__ AggregateStatistics localStats[256];
+        __shared__ uint sharedHistogram[50];
 
         if (kThreadIdx == 0)
         {
-            for (int i = 0; i < 256; i++) 
-            { 
-                localMinMax[i] = vec2(kFltMax, 0.0f); 
-                localValidity[i] = 0.0f;
-                localProbeCount[i] = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                localStats[i].minMaxSamples = vec2(kFltMax, 0.0f);
+                localStats[i].meanValidity = 0.0f;
+                localStats[i].meanDistance = 0.0f;
+                localStats[i].probeCount = 0;
             }
+            for (int i = 0; i < 50; ++i) { sharedHistogram[i] = 0; }
         }
 
         __syncthreads();
 
         const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
         const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
-        localProbeCount[kKernelIdx] = 1 + endIdx - startIdx;
+        localStats[kKernelIdx].probeCount = 1 + endIdx - startIdx;
 
         for (int i = startIdx; i <= endIdx; i++)
         {
             const auto& coeffs = m_objects.cu_probeGrids[0]->At(startIdx)[m_params.coefficientsPerProbe - 1];
 
-            localMinMax[kKernelIdx] = vec2(min(localMinMax[kKernelIdx].x, coeffs.z), max(localMinMax[kKernelIdx].y, coeffs.z));
-            localValidity[kKernelIdx] += coeffs.x;
+            localStats[kKernelIdx].minMaxSamples = vec2(min(localStats[kKernelIdx].minMaxSamples.x, coeffs.z), max(localStats[kKernelIdx].minMaxSamples.y, coeffs.z));
+            localStats[kKernelIdx].meanValidity += coeffs.x;
+            localStats[kKernelIdx].meanDistance += coeffs.y;
+
+            atomicInc(&sharedHistogram[uint(clamp(coeffs.y, 0.0f, 1.0f) * 49)], 0xffffffff);
         }
 
         __syncthreads();
 
         if (kThreadIdx == 0)
         {
-            result = vec3(localMinMax[0], localValidity[0] / float(max(1, localProbeCount[0])));
+            result = localStats[0];
+            result.meanValidity /= float(max(1, localStats[0].probeCount));
+            result.meanDistance /= float(max(1, localStats[0].probeCount));
             for (int i = 1; i < 256; i++)
-            { 
-                result.xy = vec2(min(localMinMax[i].x, result.x), max(localMinMax[i].y, result.y));
-                result.z += localValidity[i] / float(max(1, localProbeCount[i]));
+            {
+                result.minMaxSamples = vec2(min(localStats[i].minMaxSamples.x, result.minMaxSamples.x), max(localStats[i].minMaxSamples.y, result.minMaxSamples.y));
+                result.meanValidity += localStats[i].meanValidity / float(max(1, localStats[i].probeCount));
+                result.meanDistance += localStats[i].meanDistance / float(max(1, localStats[i].probeCount));
             }
-            result.z /= 256.0f;
+            result.meanValidity /= 256.0f;
+            result.meanDistance /= 256.0f;
+
+            memcpy(distanceHistogram, sharedHistogram, sizeof(int) * 50);
         }
     }
 
@@ -360,9 +373,8 @@ namespace Cuda
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
         m_exporterState(kDisarmed),
-        m_bakeProgress(0.0f),
-        m_probeAggregateData(0.0f)
-    {
+        m_bakeProgress(0.0f)        
+    {        
         std::string gridIDs[3];
 
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
@@ -372,22 +384,22 @@ namespace Cuda
         node.GetValue("gridDirectID", gridIDs[0], Json::kRequiredWarn | Json::kNotBlank);
         node.GetValue("gridIndirectID", gridIDs[1], Json::kRequiredWarn | Json::kNotBlank);
         node.GetValue("gridHalfID", gridIDs[2], Json::kSilent);
-        
+
         // Create the accumulation buffers and probe grids
         for (int idx = 0; idx < m_hostAccumBuffers.size(); ++idx)
-        {            
+        {
             // Don't create grids that don't have IDs
             if (gridIDs[idx].empty()) { continue; }
-            
+
             m_hostAccumBuffers[idx] = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer%i", id, idx), kAccumBufferSize, m_hostStream);
             m_hostAccumBuffers[idx]->Clear(vec4(0.0f));
             m_deviceObjects.cu_accumBuffers[idx] = m_hostAccumBuffers[idx]->GetDeviceInstance();
-            
+
             m_hostLightProbeGrids[idx] = AssetHandle<Host::LightProbeGrid>(gridIDs[idx], gridIDs[idx]);
 
             m_deviceObjects.cu_probeGrids[idx] = m_hostLightProbeGrids[idx]->GetDeviceInstance();
         }
-        
+
         // Create the reduction buffer
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
 
@@ -395,13 +407,13 @@ namespace Cuda
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>();
 
         // Sychronise the device objects
-        m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();        
+        m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
 
         // Objects are re-synchronised at every JSON update
-        FromJson(node, ::Json::kRequiredWarn);        
+        FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -418,36 +430,36 @@ namespace Cuda
         // Destroy the light probe grids and accumulation buffers
         for (auto& accumBuffer : m_hostAccumBuffers) { accumBuffer.DestroyAsset(); }
         for (auto& grid : m_hostLightProbeGrids) { grid.DestroyAsset(); }
-       
+
         // Destroy the rest of the objects
         m_hostReduceBuffer.DestroyAsset();
         DestroyOnDevice(cu_deviceData);
     }
 
-    __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeCamera::GetChildObjectHandles() 
-    { 
+    __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeCamera::GetChildObjectHandles()
+    {
         std::vector<AssetHandle<Host::RenderObject>> children;
         for (auto& grid : m_hostLightProbeGrids)
         {
             if (grid) { children.push_back(AssetHandle<Host::RenderObject>(grid)); }
         }
         return children;
-    }    
+    }
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         // FIXME: Should this just be called once on construction instead of every time the object updates?        
         Host::RenderObject::UpdateDAGPath(parentNode);
-        
+
         m_params.FromJson(parentNode, flags);
 
-        Prepare();        
+        Prepare();
     }
 
     __host__ void Host::LightProbeCamera::Prepare()
     {
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder) + 1;
-        
+
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
         const int maxNumProbes = min(kAccumBufferSize / m_params.coefficientsPerProbe, kRayBufferNumBuckets);
         if (Volume(m_params.grid.gridDensity) > maxNumProbes)
@@ -465,13 +477,13 @@ namespace Cuda
         {
             if (grid) { grid->Prepare(m_params.grid); }
         }
-        
+
         // Number of light probes in the grid
         m_params.numProbes = Volume(m_params.grid.gridDensity);
         // Number of SH parameter sets per probe, reduced later to get the final value 
         m_params.subsamplesPerProbe = min(kRayBufferNumBuckets / m_params.numProbes,
-                                          kAccumBufferSize / (m_params.numProbes * m_params.coefficientsPerProbe));
-        
+            kAccumBufferSize / (m_params.numProbes * m_params.coefficientsPerProbe));
+
         // The maximum number of samples per bucket based on the number of buckets per coefficient
         m_params.grid.maxSamplesPerProbe = m_params.maxSamplesPerBucket = std::numeric_limits<int>::max();
         if (m_params.camera.maxSamples > 0)
@@ -533,7 +545,7 @@ namespace Cuda
     __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
     {
         m_frameIdx = frameIdx;
-        
+
         KernelSeedRayBuffer << < m_seedGrid, m_block, 0, m_hostStream >> > (cu_deviceData, frameIdx);
     }
 
@@ -548,38 +560,36 @@ namespace Cuda
     {
         dim3 blockSize = dim3(16, 16, 1);
         dim3 gridSize(kAccumBufferWidth / 16, kAccumBufferHeight / 16, 1);
-        
+
         hostOutputImage->SignalSetWrite(m_hostStream);
         KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (hostOutputImage->GetDeviceInstance(), cu_deviceData);
         hostOutputImage->SignalUnsetWrite(m_hostStream);
     }
 
     __global__ void KernelReduceAccumulationBuffer(Device::LightProbeCamera* camera, Device::Array<vec4>* cu_accumBuffer, Device::LightProbeGrid* cu_probeGrid,
-                                                   const uint reduceBatchSize, const uvec2 batchRange)
+        const uint reduceBatchSize, const uvec2 batchRange)
     {
         camera->ReduceAccumulationBuffer(cu_accumBuffer, cu_probeGrid, reduceBatchSize, batchRange);
     }
 
-    __global__ void KernelGetProbeGridAggregateData(Device::LightProbeCamera* camera, vec3* minSampleCount)
+    __global__ void KernelGetProbeGridAggregateStatistics(Device::LightProbeCamera* camera, Device::LightProbeCamera::AggregateStatistics* stats, uint* histogram)
     {
-        camera->GetProbeGridAggregateData(*minSampleCount);
+        assert(stats);
+        camera->GetProbeGridAggregateStatistics(*stats, histogram);
     }
 
-    __host__ void Host::LightProbeCamera::GetProbeGridAggregateData()
+    __host__ void Host::LightProbeCamera::GetProbeGridAggregateStatistics()
     {
-        vec3* cu_agData;
-        IsOk(cudaMalloc(&cu_agData, sizeof(vec3)));
-
-        KernelGetProbeGridAggregateData << <1, 256, 0, m_hostStream >> > (cu_deviceData, cu_agData);
+        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_distanceHistogram.GetDeviceObject());
         IsOk(cudaStreamSynchronize(m_hostStream));
 
-        IsOk(cudaMemcpy(&m_probeAggregateData, cu_agData, sizeof(vec3), cudaMemcpyDeviceToHost));
-        IsOk(cudaFree(cu_agData));
+        m_probeAggregateData.Download();
+        m_distanceHistogram.Download();
 
         m_bakeProgress = -1.0f;
         if (m_params.camera.maxSamples > 0)
         {
-            m_bakeProgress = clamp((m_probeAggregateData.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+            m_bakeProgress = clamp((m_probeAggregateData->minMaxSamples.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
         }
     }
 
@@ -593,9 +603,9 @@ namespace Cuda
 
         if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
-            GetProbeGridAggregateData();
+            GetProbeGridAggregateStatistics();
         }
-        
+
         return m_bakeProgress;
     }
 
@@ -606,10 +616,10 @@ namespace Cuda
         BuildLightProbeGrids();
 
         for (int gridIdx = kLightProbeBufferDirect; gridIdx != kLightProbeBufferIndirect + 1; ++gridIdx)
-        {            
+        {
             // Don't write out indirect when running in combined mode
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
-            
+
             if (exportToUSD)
             {
                 Log::Debug("Exporting to '%s'...\n", usdExportPaths[gridIdx]);
@@ -650,7 +660,7 @@ namespace Cuda
 
             // Indirect buffer isn't used when running in combined mode
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
-            
+
             // Reduce until the batch range is equal to the size of the block
             uint batchSize = reduceBatchSizePow2;
             while (batchSize > 1)
@@ -663,7 +673,7 @@ namespace Cuda
             // Reduce the block in a single operation
             //KernelReduceAccumulationBuffer << < m_reduceGrid, m_block, 0, m_hostStream >> > (cu_deviceData, reduceBatchSizePow2, uvec2(batchSize, 2));
 
-            //const vec2 minMax = GetProbeGridAggregateData();
+            //const vec2 minMax = GetProbeGridAggregateStatistics();
             //Log::Debug("Samples: %i\n", minMax.x);
 
             IsOk(cudaStreamSynchronize(m_hostStream));
@@ -676,17 +686,22 @@ namespace Cuda
         {
             BuildLightProbeGrids();
 
-            GetProbeGridAggregateData();
+            GetProbeGridAggregateStatistics();
         }
     }
 
     __host__ bool Host::LightProbeCamera::EmitStatistics(Json::Node& node) const
     {
         node.AddValue("isActive", m_params.camera.isActive);
-        node.AddValue("minSamples", int(m_probeAggregateData.x));
-        node.AddValue("maxSamples", int(m_probeAggregateData.y));
-        node.AddValue("meanProbeValidity", m_probeAggregateData.z);
+        node.AddValue("minSamples", int(m_probeAggregateData->minMaxSamples.x));
+        node.AddValue("maxSamples", int(m_probeAggregateData->minMaxSamples.y));
+        node.AddValue("meanProbeValidity", m_probeAggregateData->meanValidity);
+        node.AddValue("meanProbeDistance", m_probeAggregateData->meanDistance);
         node.AddValue("bakeProgress", m_bakeProgress);
+        
+        std::vector<uint> histogramData(50, 0);
+        std::memcpy(histogramData.data(), &m_distanceHistogram[0], sizeof(uint) * 50);
+        node.AddArray("distanceHistogram", histogramData);
 
         return true;
     }

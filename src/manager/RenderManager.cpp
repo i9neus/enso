@@ -483,7 +483,7 @@ void RenderManager::GatherRenderObjectStatistics()
 	aggregatedStatsJson.AddValue("frameIdx", m_frameIdx);
 	aggregatedStatsJson.AddValue("meanFrameTime", m_meanFrameTime);
 
-	//Log::Debug(aggregatedStatsJson.Stringify(true));
+	Log::Debug(aggregatedStatsJson.Stringify(true));
 
 	std::lock_guard<std::mutex> lock(m_jsonMutex);
 	m_renderStatsJson.DeepCopy(aggregatedStatsJson);

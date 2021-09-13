@@ -20,6 +20,7 @@ namespace Cuda
         int     polynomialOrder;
         int     regressionRadius;
         int     reconstructionRadius;
+        int     regressionIterations;
     };
 
     namespace Host
@@ -35,8 +36,23 @@ namespace Cuda
                 int                                 polyCoeffsPerCoefficient;
                 int                                 polyCoeffsPerProbe;
                 int                                 numPolyCoeffs;
-                int                                 regressionKernelVolume;
-                int                                 reconstructionKernelVolume;
+                int                                 probesPerBatch;     
+                
+                struct
+                {
+                    int volume;
+                    int span;
+                    int radius;
+                }
+                regression;
+
+                struct
+                {
+                    int volume;
+                    int span;
+                    int radius;
+                } 
+                reconstruction;
 
                 Device::Array<vec3>*                cu_polyCoeffs = nullptr;
                 Device::Array<float>*               cu_regressionWeights = nullptr;

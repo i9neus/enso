@@ -198,6 +198,7 @@ namespace Json
             if (!child) { return false; }
             rapidjson::Value& array = *child.m_node;
 
+            values.resize(array.Size());
             for (size_t idx = 0; idx < array.Size(); idx++)
             {
                 Type value;
@@ -205,7 +206,7 @@ namespace Json
                     std::is_integral<Type>::value >::f(array[idx],
                         "[unknown; getVector()]",
                         value, flags);
-                values.emplace_back(value);
+                values[idx] = value;
             }
             return true;
         }

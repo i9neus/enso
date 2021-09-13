@@ -67,6 +67,7 @@ void PerspectiveCameraShelf::Jitter(const uint flags, const uint operation)
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
     : IMGUIShelf(json),
     m_meanProbeValidity(0.0f),
+    m_meanProbeDistance(0.0f),
     m_maxSamplesTaken(0),
     m_minSamplesTaken(0)
 {
@@ -130,7 +131,9 @@ void LightProbeCameraShelf::Construct()
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
-    ImGui::Text(tfm::format("Mean probe validity: %i", m_meanProbeValidity).c_str());
+    ImGui::Text(tfm::format("Mean probe validity: %.2f%%", m_meanProbeValidity * 100.0f).c_str());
+    ImGui::Text(tfm::format("Mean probe distance: %.5f", m_meanProbeDistance).c_str());
+    ImGui::PlotHistogram("Distance histogram", m_distanceHistogramWidgetData.data(), m_distanceHistogramWidgetData.size(), 0, NULL, 0.0f, float(m_histogramMaxBucket), ImVec2(0, 80.0f));
 }
 
 void LightProbeCameraShelf::Randomise()
@@ -150,4 +153,21 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& nod
     node.GetValue("minSamples", m_minSamplesTaken, Json::kSilent);
     node.GetValue("maxSamples", m_minSamplesTaken, Json::kSilent);
     node.GetValue("meanProbeValidity", m_meanProbeValidity, Json::kSilent);
+    node.GetValue("meanProbeDistance", m_meanProbeDistance, Json::kSilent);
+    
+    m_hasDistanceHistogram = false;    
+    if (node.GetArrayValues("distanceHistogram", m_distanceHistogram, Json::kSilent))
+    {
+        m_distanceHistogramWidgetData.resize(m_distanceHistogram.size());
+        m_histogramMaxBucket = 0;
+        for (int idx = 0; idx < m_distanceHistogram.size(); ++idx) 
+        { 
+            m_histogramMaxBucket = max(m_histogramMaxBucket, m_distanceHistogram[idx]); 
+            m_distanceHistogramWidgetData[idx] = m_distanceHistogram[idx];
+        }
+
+        m_hasDistanceHistogram = true;
+    }
+
+
 }
