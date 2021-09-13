@@ -97,6 +97,9 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\BulkUSDProcessor.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -462,6 +465,9 @@
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh">
       <Filter>kernels\lightprobes</Filter>
     </ClInclude>
+    <ClInclude Include="src\utils\BulkUSDProcessor.h">
+      <Filter>utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -547,6 +553,9 @@
     </Filter>
     <Filter Include="kernels\lightprobes">
       <UniqueIdentifier>{c945e127-d6a1-463c-81bb-c8b8ce3907bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{8adb29c0-46a9-4638-a4fb-35e52aa26276}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

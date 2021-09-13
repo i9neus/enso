@@ -77,6 +77,32 @@ namespace Cuda
 			assert(false);
 		}
 
+		__host__ __device__ __forceinline__ float GetLegendreCoefficient(const uint idx)
+		{
+			switch (idx)
+			{
+			case 0:		return 0.2820947917738781f;
+			case 1:		return 0.4886025119029199f;
+			case 2:		return 0.4886025119029199f;
+			case 3:		return 0.4886025119029199f;
+			case 4:		return 1.0925484305920792f;
+			case 5:		return 1.0925484305920792f;
+			case 6:		return 0.3153915652525200f;
+			case 7:		return 1.0925484305920792f;
+			case 8:		return 0.5462742152960396f;
+			case 9:		return 0.5900435899266435f;
+			case 10:	return 2.890611442640554f;
+			case 11:	return 0.4570457994644658f;
+			case 12:	return 0.3731763325901154f;
+			case 13:	return 0.4570457994644658f;
+			case 14:	return 1.445305721320277f;
+			case 15:	return 0.5900435899266435f;
+			}
+
+			printf("Invalid SH index %u\n", idx);
+			assert(false);
+		}
+
 		__host__ __device__ __forceinline__ float GetLegendreCoefficient(const int L, const int M)
 		{
 			switch (L)

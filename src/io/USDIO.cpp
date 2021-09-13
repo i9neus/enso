@@ -40,11 +40,11 @@ namespace USDIO
         auto extensions = pxr::SdfFileFormat::FindAllFileFormatExtensions();
         AssertMsg(!extensions.empty(), "Unable to initialise USD: could not find any plugins");
 
-        Log::Debug("Found %i USD extensions:\n", extensions.size());
+        /*Log::Debug("Found %i USD extensions:\n", extensions.size());
         for (auto& ex : extensions)
         {
             Log::Debug(" - .%s\n", ex);
-        }
+        }*/
     }
 
     template<typename Type>
@@ -116,11 +116,11 @@ namespace USDIO
         Assert(dataValidity.size() == gridParams.numProbes);
         Assert(dataMeanDistance.size() == gridParams.numProbes);
 
-        Log::Debug("Loading light probe grid from USD...");
+        /*Log::Debug("Loading light probe grid from USD...");
         Log::Debug("  - Description: %s", usdDescription);
         Log::Debug("  - Resolution: %s", gridParams.gridDensity.format());
         Log::Debug("  - Size: %s", gridParams.transform.scale().format());
-        Log::Debug("  - Coefficients per probe: %i", gridParams.coefficientsPerProbe);
+        Log::Debug("  - Coefficients per probe: %i", gridParams.coefficientsPerProbe);*/
 
         gridData.resize(gridParams.numProbes * gridParams.coefficientsPerProbe);
 

@@ -21,14 +21,14 @@ namespace Json
     template<typename... Pack>
     inline void ReportError(const uint flags, const std::string message, Pack... pack)
     {
-        if (flags & kRequiredWarn) { Log::Warning(message, pack...); }
-        else if (flags & kRequiredAssert) { AssertMsgFmt(false, message.c_str(), pack...); }
+        if (flags & kRequiredWarn) { Log::Warning("Warning: " + message, pack...); }
+        else if (flags & kRequiredAssert) { AssertMsgFmt(false, ("Error: " + message).c_str(), pack...); }
     }
 
     inline void ReportError(const uint flags, const std::string message)
     {
-        if (flags & kRequiredWarn) { Log::Warning(message); }
-        else if (flags & kRequiredAssert) { AssertMsg(false, message); }
+        if (flags & kRequiredWarn) { Log::Warning("Warning: " + message); }
+        else if (flags & kRequiredAssert) { AssertMsg(false, ("Error: " + message).c_str()); }
     }
 
     class Document;

@@ -44,6 +44,7 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp" />
+    <ClCompile Include="src\utils\BulkUSDProcessor.cpp" />
     <ClCompile Include="src\win\Main.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
@@ -168,6 +169,7 @@
     <ClInclude Include="src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\thirdparty\tinyformat\tinyformat.h" />
+    <ClInclude Include="src\utils\BulkUSDProcessor.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
