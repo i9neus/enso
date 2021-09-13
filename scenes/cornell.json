@@ -27,6 +27,9 @@
             "enabled": true,
             "live": false,
             "class": "lightprobe",
+            "gridDirectID": "grid_noisy_direct",
+            "gridIndirectID": "grid_noisy_indirect",
+            "gridHalfID": "grid_noisy_half",
             "grid": {
                 "transform": {
                     "pos": [ [ 0.0, 0.0, 0.0 ] ],
@@ -48,11 +51,23 @@
         }
     },
     "tracables": {
+        "tracable_groundPlane": {
+            "enabled": false,
+            "class": "plane",
+            "material": "material_objects",
+            "bounded": false,
+            "transform": {
+                "pos": [ [ 0.0, -0.5, 0.0 ] ],
+                "rot": [ [ 90.0, 0.0, 0.0 ] ],
+                "sca": [ [ 1.0, 1.0, 1.0 ] ]
+            }
+        },
         "cornellBox": {
             "enabled": true,
             "class": "cornellbox",
             "material": "material_cornell",
-            "bounded": false,
+            "faceMask": [ [ 1, 1, 1, 1, 1, 1 ] ],
+            "cameraRayMask": [ [ 0, 0, 0, 0, 0, 1 ] ],
             "transform": {
                 "pos": [ [ 0.0, 0.0, 0.0 ] ],
                 "rot": [ [ 0.0, 0.0, 0.0 ] ],
@@ -72,8 +87,18 @@
         },
         "tracable_sphere2": {
             "enabled": true,
-            "excludeFromBake": true,
+            "excludeFromBake": false,
             "class": "sphere",
+            "material": "material_objects",
+            "transform": {
+                "pos": [ [ 0.0, 0.0, 0.0 ] ],
+                "rot": [ [ 0.0, 0.0, 0.0 ] ],
+                "sca": [ [ 0.2, 0.2, 0.2 ] ]
+            }
+        },
+        "tracable_box": {
+            "enabled": true,
+            "class": "box",
             "material": "material_objects",
             "transform": {
                 "pos": [ [ 0.3, 0.0, 0.0 ] ],
@@ -105,12 +130,43 @@
         "bxdf_diffuse": {
             "enabled": true,
             "class": "lambert",
-            "lightProbeGrid": "camera_probeCam"
+            "gridDirectID": "grid_filtered_direct",
+            "gridIndirectID": "grid_noisy_half"
+        }
+    },
+    "filters": {
+        "filter_gaussian": {
+            "enabled": false,
+            "class": "probekernelfilter",
+            "inputGridID": "grid_noisy_direct",
+            "inputGridHalfID": "grid_noisy_half",
+            "outputGridID": "grid_filtered_direct",
+            "filtertype": "gaussian",
+            "radius": 3,
+            "nlm": {
+                "alpha": 1.0,
+                "k": 1.0
+            }
+        },
+        "filter_regression": {
+            "enabled": true,
+            "class": "proberegressionfilter",
+            "inputGridID": "grid_noisy_direct",
+            "inputGridHalfID": "grid_noisy_half",
+            "outputGridID": "grid_filtered_direct",
+            "isNullFilter": true,
+            "polynomialOrder": 0,
+            "regressionRadius": 1,
+            "reconstructionRadius": 1,
+            "nlm": {
+                "alpha": 1.0,
+                "k": 1.0
+            }
         }
     },
     "lights": {
         "light_mainQuad": {
-            "enabled": false,
+            "enabled": true,
             "class": "quadlight",
             "intensity": [ 1.5 ],
             "colour": [ [ 0.0, 0.0, 1.0 ] ],
@@ -121,8 +177,8 @@
             }
         },
         "light_sphere": {
-            "enabled": true,
-            "instances":  5,
+            "enabled": false,
+            "instances": 1,
             "class": "spherelight",
             "intensity": [ -3.0 ],
             "colour": [ [ 0.0, 0.0, 1.0 ] ],
@@ -133,6 +189,30 @@
                 ],
                 "rot": [ [ -90.0, 0.0, 0.0 ] ],
                 "sca": [ [ 0.1, 0.1, 0.1 ] ]
+            }
+        },
+        "light_sun": {
+            "enabled": false,
+            "class": "distantlight",
+            "intensity": [ 0.0 ],
+            "colour": [ [ 1.0, 1.0, 1.0 ] ],
+            "angle": 2.0,
+            "transform": {
+                "pos": [ [ 0.0, 0.0, 0.0 ] ],
+                "rot": [ [ 45.0, 0.0, 0.0 ] ],
+                "sca": [ [ 1.0, 1.0, 1.0 ] ]
+            }
+        },
+        "light_sky": {
+            "enabled": false,
+            "class": "environmentlight",
+            "intensity": [ 0.0 ],
+            "colour": [ [ 1.0, 1.0, 1.0 ] ],
+            "angle": 2.0,
+            "transform": {
+                "pos": [ [ 0.0, 0.0, 0.0 ] ],
+                "rot": [ [ 45.0, 0.0, 0.0 ] ],
+                "sca": [ [ 1.0, 1.0, 1.0 ] ]
             }
         }
     }
