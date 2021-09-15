@@ -196,7 +196,11 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 	}
 	catch (const std::runtime_error& err)
 	{
-		Log::Error("Runtime error: %s\n", err.what());
+		Log::Error("Runtime error: %s", err.what());
+	}
+	catch (...)
+	{
+		Log::Error("Unhandled exception.");
 	}
 
 	// Handle any messages the switch statement didn't.

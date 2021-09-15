@@ -464,8 +464,8 @@ void RenderManager::Run()
 
 void RenderManager::GatherRenderObjectStatistics()
 {
-	// Limit this operation to 10 times per second
-	if (m_renderStatsTimer.Get() < 0.1f) { return; }
+	// Limit this operation to 2 times per second
+	if (m_renderStatsTimer.Get() < 0.5f) { return; }
 	
 	Json::Document renderObjectJson;
 	Json::Document aggregatedStatsJson;
@@ -482,8 +482,6 @@ void RenderManager::GatherRenderObjectStatistics()
 
 	aggregatedStatsJson.AddValue("frameIdx", m_frameIdx);
 	aggregatedStatsJson.AddValue("meanFrameTime", m_meanFrameTime);
-
-	Log::Debug(aggregatedStatsJson.Stringify(true));
 
 	std::lock_guard<std::mutex> lock(m_jsonMutex);
 	m_renderStatsJson.DeepCopy(aggregatedStatsJson);

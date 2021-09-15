@@ -132,6 +132,15 @@ namespace Json
 
         void AddValue(const std::string& name, const std::string& value);
 
+        template<typename VecType>
+        void AddVector(const std::string& name, const VecType& vec)
+        {
+            std::vector<typename VecType::kType> values(typename VecType::kDims);
+            for (int i = 0; i < VecType::kDims; i++) { values[i] = vec[i]; }            
+            
+            AddArray(name, values);
+        }
+
         template<typename T>
         void AddArray(const std::string& name, const std::vector<T>& values)
         {

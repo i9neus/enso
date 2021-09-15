@@ -25,6 +25,7 @@ BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStat
 void BakePermutor::Clear()
 {
     m_sampleCountSet.clear();
+    m_sampleCountIt = m_sampleCountSet.end();
     m_stateIt = m_stateMap.GetStateData().end();
     m_numIterations = 0;
     m_iterationIdx = -1;
@@ -38,6 +39,54 @@ void BakePermutor::Clear()
     m_startWithThisView = false;
 }
 
+void BakePermutor::SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata)
+{
+    m_noisyRange = noisyRange;
+    m_referenceCount = referenceCount;
+    m_numStrata = numStrata;
+}
+
+// Populate the sample count set with randomly stratified values
+int BakePermutor::GenerateStratifiedSampleCountSet()
+{
+    m_sampleCountSet.clear();
+    int totalSamples = 0;
+
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
+
+    for (int idx = 0; idx < m_numStrata; ++idx)
+    {
+        const int stratumLower = m_noisyRange.x + (m_noisyRange.y - m_noisyRange.x) * idx / m_numStrata;
+        const int stratumUpper = m_noisyRange.x + (m_noisyRange.y - m_noisyRange.x) * (idx + 1) / m_numStrata;
+        const int stratumRange = stratumUpper - stratumLower;
+
+        Assert(stratumRange >= 0);
+        if (stratumRange == 0) { continue; }
+        else if (stratumRange == 1) { m_sampleCountSet.insert(stratumLower); continue;  }
+        
+        // Generate some candidate samples and reject if they're already in the list.
+        for (int tries = 0; tries < 10; ++tries)
+        {
+            const int candidate = stratumLower + rng(mt) % stratumRange;
+            if (m_sampleCountSet.find(candidate) == m_sampleCountSet.end())
+            {
+                m_sampleCountSet.insert(candidate);
+                totalSamples += candidate;
+                break;
+            }
+        }
+    }
+    // Tack on the reference sample count
+    m_sampleCountSet.insert(m_referenceCount);
+
+    m_sampleCountIt = m_sampleCountSet.cbegin();
+    //for (const auto& el : m_sampleCountSet) { Log::Debug("  - %i", el); }
+
+    return totalSamples;
+}
+
 bool BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView)
 {
     m_numStates = m_stateMap.GetNumPermutableStates();
@@ -47,13 +96,14 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
         return false;
     }
 
-    m_totalSamples = m_completedSamples = 0;
-    m_sampleCountIt = m_sampleCountSet.cbegin();
-    m_totalSamples = 0;
-    m_numIterations = numIterations;
+    // Populate the sample count set with a random collection of values
+    m_totalSamples = GenerateStratifiedSampleCountSet();
+    m_completedSamples = 0;
     m_iterationIdx = 0;
     m_stateIdx = 0;
+    m_numIterations = numIterations;
     m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates;
+    m_totalSamples *= m_numIterations * m_numStates;
     m_permutationIdx = -1;
     m_templatePath = templatePath;
     m_stateIt = m_stateMap.GetFirstPermutableState();
@@ -61,8 +111,7 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_disableLiveView = disableLiveView;
     m_startWithThisView = startWithThisView;
 
-    for (auto element : m_sampleCountSet) { m_totalSamples += element; }
-
+    // Parse the template path
     m_templateTokens.clear();
     Lexer lex(templatePath);
     while (lex)
@@ -81,6 +130,7 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
         }
     }
 
+    // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
     {
         if (!m_lightProbeCameraShelf)
@@ -110,7 +160,7 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
 
     m_startTime = std::chrono::high_resolution_clock::now();
 
-    // Restore the state pointed
+    // Restore the state pointed to by the state iterator
     m_stateMap.Restore(*m_stateIt);
 
     return true;
@@ -151,6 +201,8 @@ bool BakePermutor::Advance()
         m_completedSamples += *m_sampleCountIt;
         if (++m_sampleCountIt == m_sampleCountSet.cend())
         {
+            GenerateStratifiedSampleCountSet();
+
             m_sampleCountIt = m_sampleCountSet.cbegin();
             if (++m_iterationIdx == m_numIterations)
             {
@@ -201,11 +253,6 @@ bool BakePermutor::Advance()
     return true;
 }
 
-float BakePermutor::GetProgress() const
-{
-    return m_isIdle ? 0.0f : (float(min(m_permutationIdx, m_numPermutations)) / float(max(1, m_numPermutations)));
-}
-
 std::vector<std::string> BakePermutor::GenerateExportPaths() const
 {
     // Naming convention:
@@ -250,6 +297,11 @@ std::vector<std::string> BakePermutor::GenerateExportPaths() const
     return exportPaths;
 }
 
+float BakePermutor::GetProgress() const
+{    
+    return m_isIdle ? 0.0f : float(m_completedSamples) / float(m_totalSamples);
+}
+
 float BakePermutor::GetElapsedTime() const
 {
     return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
@@ -257,9 +309,8 @@ float BakePermutor::GetElapsedTime() const
 
 float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
 {
-    const float sampleBatchProgress = (m_completedSamples + *m_sampleCountIt * bakeProgress) / float(m_totalSamples);
-    const float stateProgress = (m_iterationIdx + sampleBatchProgress) / float(m_numIterations);
-    const float totalProgress = (m_stateIdx + stateProgress) / float(m_numStates);
+    const int currentSampleCount = (m_sampleCountIt == m_sampleCountSet.end()) ? 0 : *m_sampleCountIt;    
+    const float progress = (m_completedSamples + bakeProgress * currentSampleCount) / float(m_totalSamples);
 
-    return GetElapsedTime() * (1.0f - totalProgress) / max(1e-6f, totalProgress);
+    return GetElapsedTime() * (1.0f - progress) / max(1e-6f, progress);
 }

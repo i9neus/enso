@@ -32,7 +32,7 @@ private:
 
     std::vector<int>        m_sampleCounts;
     int                     m_sampleCountIdx;
-    int                     m_numBakePermutations; 
+    int                     m_numBakeIterations;
     int                     m_bakePermutationIdx;
     bool                    m_isBaking;
     std::string             m_usdPathTemplate;
@@ -44,8 +44,11 @@ private:
     bool                    m_disableLiveView;
     bool                    m_startWithThisView;
     bool                    m_shutdownOnComplete;
+    Cuda::ivec2             m_noisySampleRange;
+    int                     m_referenceSamples;
+    int                     m_numStrata;
+    float                   m_minViableValidity;
 
-    IMGUIListBox            m_sampleCountListUI;
     IMGUIListBox            m_stateListUI;
 
     HWND                    m_hWnd;

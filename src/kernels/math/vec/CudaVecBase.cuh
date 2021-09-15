@@ -10,6 +10,7 @@ namespace Cuda
 	{
 		template<typename OtherType, int OtherActualSize, int OtherSpoofedSize, int... OtherIndices> friend struct __vec_swizzle;
 
+		enum _attrs : size_t { kDims = SpoofedSize };
 		Type data[ActualSize];
 
 	private:

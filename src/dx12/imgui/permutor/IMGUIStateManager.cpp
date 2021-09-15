@@ -19,8 +19,9 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
     m_stateListUI("Parameter states", "Add", "Overwrite", "Delete", ""),
-    m_sampleCountListUI("Sample counts", " + ", "", " - ", "Clear"),
-    m_numBakePermutations(1),
+    m_noisySampleRange(64, 2048),
+    m_referenceSamples(100000),
+    m_numBakeIterations(1),
     m_isBaking(false),
     m_permutor(imguiShelves, m_stateMap),
     m_stateMap(imguiShelves),
@@ -28,7 +29,9 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_disableLiveView(true),
     m_startWithThisView(false),
     m_shutdownOnComplete(false),
-    m_stateFlags(kStatePermuteAll)
+    m_stateFlags(kStatePermuteAll),
+    m_minViableValidity(0.7f),
+    m_numStrata(20)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -130,10 +133,11 @@ void RenderObjectStateManager::DeserialiseJson()
     Json::Node permNode = rootDocument.GetChildObject("permutations", jsonWarningLevel);
     if (permNode)
     {
-        std::vector<int> sampleCounts;
-        permNode.GetArrayValues("sampleCounts", sampleCounts, jsonWarningLevel);
-        for (auto item : sampleCounts) { m_sampleCountListUI.Insert(tfm::format("%i", item)); }
-        permNode.GetValue("iterations", m_numBakePermutations, jsonWarningLevel);
+        permNode.GetVector("noisySampleRange", m_noisySampleRange, jsonWarningLevel);
+        permNode.GetValue("referenceSamples", m_referenceSamples, jsonWarningLevel);
+        permNode.GetValue("strata", m_numStrata, jsonWarningLevel);
+        permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
+        permNode.GetValue("minViableValidity", m_minViableValidity, jsonWarningLevel);
         if (permNode.GetValue("usdPathTemplate", m_usdPathTemplate, jsonWarningLevel))
         {
             std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
@@ -152,11 +156,12 @@ void RenderObjectStateManager::SerialiseJson() const
     m_stateMap.ToJson(stateNode);    
 
     Json::Node permJson = rootDocument.AddChildObject("permutations");
-    {
-        std::vector<int> sampleCounts;
-        for (const auto& item : m_sampleCountListUI.GetListItems()) { sampleCounts.push_back(std::atoi(item.c_str())); }
-        permJson.AddArray("sampleCounts", sampleCounts);
-        permJson.AddValue("iterations", m_numBakePermutations);
+    {        
+        permJson.AddVector("noisySampleRange", m_noisySampleRange);
+        permJson.AddValue("referenceSamples", m_referenceSamples);
+        permJson.AddValue("strata", m_numStrata);
+        permJson.AddValue("minViableValidity", m_minViableValidity);
+        permJson.AddValue("iterations", m_numBakeIterations);
         permJson.AddValue("usdPathTemplate", std::string(m_usdPathUIData.data()));
     }
 
@@ -235,19 +240,22 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
     
-    m_sampleCountListUI.Construct(); SL;
+    ImGui::DragInt2("Noisy sample range", &m_noisySampleRange[0], 1.0f, 1, 1e7);
+    m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
+
+    ImGui::DragInt("Reference samples", &m_referenceSamples, 1.0f, 1, 1e7);
+    ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
+    ImGui::DragFloat("Min viable validity", &m_minViableValidity, 1.0f, 0.0f, 1.0f);
     
     if (ImGui::Button("Defaults"))
     {
-        m_sampleCountListUI.Clear();
-        for (int i = 32; i < 65536; i <<= 1)
-        {
-            m_sampleCountListUI.Insert(tfm::format("%i", i));
-        }
-        m_sampleCountListUI.Insert("100000");
+        m_noisySampleRange = Cuda::ivec2(64, 2048);
+        m_referenceSamples = 100000;
+        m_numStrata = 20;
+        m_minViableValidity = 0.7f;
     }
     
-    ImGui::DragInt("Permutations", &m_numBakePermutations, 1, 1, 100000);
+    ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, 100000);
 
     // New element input control
     ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
@@ -287,26 +295,12 @@ void RenderObjectStateManager::ToggleBake()
         m_renderManager.AbortBake();
         m_isBaking = false;
         return;
-    }
-    
-    const auto& sampleList = m_sampleCountListUI.GetListItems();
-    if (sampleList.empty())
-    {
-        Log::Error("ERROR: Can't start bake; no sample counts were specified.\n");
-        return;
-    }
+    }   
 
-    m_permutor.Clear();
-    for (const auto& item : sampleList)
-    {
-        const int count = std::atoi(item.c_str());
-        if (count >= 1)
-        {
-            m_permutor.GetSampleCountSet().insert(count);
-        }
-    }
+    m_permutor.Clear();    
     
-    if (!m_permutor.Prepare(m_numBakePermutations, std::string(m_usdPathUIData.data()), m_disableLiveView, true)) { return; }
+    m_permutor.SetSampleRange(m_noisySampleRange, m_referenceSamples, m_numStrata);
+    if (!m_permutor.Prepare(m_numBakeIterations, std::string(m_usdPathUIData.data()), m_disableLiveView, true)) { return; }
 
     m_isBaking = true;
 }
