@@ -1,7 +1,7 @@
 ﻿#include "generic/JsonUtils.h"
 
 #include "CudaRenderObjectFactory.cuh"
-#include "CudaRenderObject.cuh"
+#include "CudaRenderObjectContainer.cuh"
 
 #include "tracables/CudaKIFS.cuh"
 #include "tracables/CudaSphere.cuh"

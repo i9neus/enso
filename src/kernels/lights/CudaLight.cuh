@@ -2,7 +2,7 @@
 
 #include "../CudaRay.cuh"
 #include "../CudaCtx.cuh"
-#include "../CudaRenderObject.cuh"
+#include "../CudaRenderObjectContainer.cuh"
 
 namespace Cuda
 {

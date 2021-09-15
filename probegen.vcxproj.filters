@@ -14,7 +14,7 @@
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\StringUtils.cpp">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClCompile>
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp">
       <Filter>thirdparty\lodepng</Filter>
@@ -38,21 +38,18 @@
       <Filter>thirdparty\imgui\backends</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\JsonUtils.cpp">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\Log.cpp">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClCompile>
     <ClCompile Include="src\io\USDIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\FilesystemUtils.cpp">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClCompile>
     <ClCompile Include="src\manager\RenderManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\SceneGenerator.cpp">
       <Filter>manager</Filter>
     </ClCompile>
     <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
@@ -100,6 +97,9 @@
     <ClCompile Include="src\utils\BulkUSDProcessor.cpp">
       <Filter>utils</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\GlobalStateAuthority.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -121,10 +121,10 @@
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\StdIncludes.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
       <Filter>kernels</Filter>
@@ -139,13 +139,13 @@
       <Filter>kernels</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Math.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Constants.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\StringUtils.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\math\CudaMath.cuh">
       <Filter>kernels\math</Filter>
@@ -271,7 +271,7 @@
       <Filter>kernels\tracables</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Assert.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\math\vec\CudaIVec2.cuh">
       <Filter>kernels\math\vec</Filter>
@@ -322,10 +322,10 @@
       <Filter>thirdparty\imgui\backends</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\JsonUtils.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Log.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh">
       <Filter>kernels\materials</Filter>
@@ -379,15 +379,12 @@
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\FilesystemUtils.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\lights\CudaSphereLight.cuh">
       <Filter>kernels\lights</Filter>
     </ClInclude>
     <ClInclude Include="src\manager\RenderManager.h">
-      <Filter>manager</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\SceneGenerator.h">
       <Filter>manager</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\materials\CudaKIFSMaterial.cuh">
@@ -469,7 +466,13 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\HighResolutionTimer.h">
-      <Filter>dx12\generic</Filter>
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\GlobalStateAuthority.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaRenderObjectContainer.cuh">
+      <Filter>kernels</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -554,7 +557,7 @@
     <Filter Include="utils">
       <UniqueIdentifier>{8adb29c0-46a9-4638-a4fb-35e52aa26276}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dx12\generic">
+    <Filter Include="generic">
       <UniqueIdentifier>{439db4d4-72ca-47c6-8a82-a225dfa92cca}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -660,6 +663,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu">
       <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\CudaRenderObjectContainer.cu">
+      <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

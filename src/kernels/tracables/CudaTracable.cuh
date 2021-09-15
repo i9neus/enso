@@ -3,7 +3,7 @@
 #include "../CudaRay.cuh"
 #include "../CudaCtx.cuh"
 #include "CudaGenericIntersectors.cuh"
-#include "../CudaRenderObject.cuh"
+#include "../CudaRenderObjectContainer.cuh"
 
 namespace Json { class Node; }
 

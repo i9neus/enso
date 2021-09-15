@@ -33,10 +33,10 @@
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
+    <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
     <ClCompile Include="src\io\ImageIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\RenderManager.cpp" />
-    <ClCompile Include="src\manager\SceneGenerator.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui.cpp" />
@@ -78,6 +78,7 @@
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
+    <ClInclude Include="src\generic\GlobalStateAuthority.h" />
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
@@ -94,6 +95,7 @@
     <ClInclude Include="src\kernels\CudaImage.cuh" />
     <ClInclude Include="src\kernels\CudaManagedObject.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObject.cuh" />
+    <ClInclude Include="src\kernels\CudaRenderObjectContainer.cuh" />
     <ClInclude Include="src\kernels\CudaSampler.cuh" />
     <ClInclude Include="src\kernels\CudaAssetContainer.cuh" />
     <ClInclude Include="src\kernels\CudaTests.cuh" />
@@ -137,7 +139,6 @@
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
     <ClInclude Include="src\manager\RenderManager.h" />
-    <ClInclude Include="src\manager\SceneGenerator.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="src\thirdparty\imgui\imconfig.h" />
@@ -181,6 +182,7 @@
     <CudaCompile Include="src\kernels\CudaAsset.cu" />
     <CudaCompile Include="src\kernels\CudaImage.cu" />
     <CudaCompile Include="src\kernels\CudaRenderObject.cu" />
+    <CudaCompile Include="src\kernels\CudaRenderObjectContainer.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />

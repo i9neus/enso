@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "CudaRenderObject.cuh"
+#include "CudaRenderObjectContainer.cuh"
 #include "CudaAssetContainer.cuh"
 #include "math/CudaMath.cuh"
 
