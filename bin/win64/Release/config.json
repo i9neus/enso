@@ -1,6 +1,6 @@
 {
-    "scene": "c:/projects/probegen/data/set7/random.json",
-    //"scene": "c:/projects/probegen/scenes/cornell.json",
+    "scene": "c:/projects/probegen-scenes/lightprobedenoiser/random/random9.json",
+    //"scene": "c:/projects/probegen-sceneds/lightprobedenoiser/misc/cornell.json",
     "usd": {
         "templatePath": "c:/projects/probegen/scenes/template.usda",
         "pluginDirectory": "",

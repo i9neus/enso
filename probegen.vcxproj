@@ -214,12 +214,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="bin\win64\Release\config.json" />
-    <None Include="scenes\cornell.json" />
-    <None Include="scenes\default.json" />
-    <None Include="scenes\kifs.json" />
-    <None Include="scenes\lighttest.json" />
     <None Include="scenes\template.usda" />
-    <None Include="scenes\templates\random.json" />
     <None Include="src\dx12\hlsl\helloshaders.hlsl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>

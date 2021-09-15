@@ -542,9 +542,6 @@
     <Filter Include="manager">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scenes\templates">
-      <UniqueIdentifier>{0afe1a2b-f5f3-4e00-ab6a-2cc694a8dd07}</UniqueIdentifier>
-    </Filter>
     <Filter Include="dx12\imgui\shelves">
       <UniqueIdentifier>{6761ba89-09d2-4b5d-9c9a-7041f3ab478c}</UniqueIdentifier>
     </Filter>
@@ -673,22 +670,7 @@
     <None Include="bin\win64\Release\config.json">
       <Filter>scenes</Filter>
     </None>
-    <None Include="scenes\default.json">
-      <Filter>scenes</Filter>
-    </None>
-    <None Include="scenes\kifs.json">
-      <Filter>scenes</Filter>
-    </None>
     <None Include="scenes\template.usda">
-      <Filter>scenes</Filter>
-    </None>
-    <None Include="scenes\templates\random.json">
-      <Filter>scenes\templates</Filter>
-    </None>
-    <None Include="scenes\cornell.json">
-      <Filter>scenes</Filter>
-    </None>
-    <None Include="scenes\lighttest.json">
       <Filter>scenes</Filter>
     </None>
   </ItemGroup>

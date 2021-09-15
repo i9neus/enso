@@ -7,5 +7,6 @@ def Scope "ProbeVolume"
     float3 resolution
     float[] coefficients
     float[] dataValidity
+    float[] dataMeanDistance
     float[] dataOctahedralDepth
 }
