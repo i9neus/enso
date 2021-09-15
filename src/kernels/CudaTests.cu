@@ -76,19 +76,4 @@ namespace Cuda
 
 		*results = __activemask();
 	}
-
-	__host__ void TestScheduling()
-	{
-		/*uint* cu_resultsBuffer;
-		IsOk(cudaMalloc((void***)&cu_resultsBuffer, sizeof(uint)));
-
-		KernelTestScheduling << < 32, 1 >> > (cu_resultsBuffer);
-		IsOk(cudaDeviceSynchronize());
-
-		uint results;
-		IsOk(cudaMemcpy(&results, cu_resultsBuffer, sizeof(uint), cudaMemcpyDeviceToHost));
-		IsOk(cudaFree(cu_resultsBuffer));
-
-		Log::System("__activemask(): %i\n", results);*/
-	}
 }

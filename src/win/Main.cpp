@@ -16,6 +16,7 @@
 
 #include "generic/StringUtils.h"
 #include "generic/JsonUtils.h"
+#include "generic/GlobalStateAuthority.h"
 
 //#include "utils/BulkUSDProcessor.h"
 
@@ -37,6 +38,9 @@ int main(int argc, char* argv[])
 	{
 		/*BulkConvertUSDProbeGrds();
 		return 0;*/
+
+		// Initialise the global state authority singleton
+		GSA();
 		
 		D3DContainer sample(1280, 720, "D3D12 Hello Texture");
 		auto rValue = Win32Application<D3DWindowInterface>::Run(&sample, GetModuleHandle(NULL), SW_SHOW);

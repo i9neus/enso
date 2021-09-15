@@ -10,7 +10,7 @@
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
 #include "kernels/CudaAsset.cuh"
-#include "kernels/CudaRenderObject.cuh"
+#include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
 enum class BakeStatus : int { kReady, kRunning, kHalt };
@@ -24,10 +24,13 @@ public:
 	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
 	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
-	void Prepare();
-	void Build();
-	void Start();
+	void StartRenderer();
+	void StopRenderer();
 	void Destroy();
+
+	void LoadDefaultScene();
+	void LoadScene(const std::string filePath);
+	void UnloadScene(bool report = false);
 
 	void OnJson(const Json::Document& patchJson);
 
@@ -47,6 +50,7 @@ public:
 	}
 
 private:
+	void Build(const Json::Document& sceneJson);
 	void Run();
 	void ClearRenderStates();
 	void HandleBakeOperations();
@@ -54,8 +58,9 @@ private:
 	void OnBakePostFrame();
 	void PatchSceneObjects();
 	void GatherRenderObjectStatistics();
+	void Prepare();
 
-	enum ThreadSignal : int { kRun, kRestart, kHalt };
+	enum ThreadSignal : int { kIdle, kRun, kHalt };
 	enum DirtyState : int { kClean, kSoftReset, kHardReset };
 
 	std::mutex		    m_renderResourceMutex;
@@ -64,7 +69,6 @@ private:
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_paramsPatchJson;
 	Json::Document		m_sceneJson;
-	Json::Document		m_configJson;
 	std::atomic<int>	m_dirtiness; 
 	int					m_frameIdx;
 	

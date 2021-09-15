@@ -1,5 +1,6 @@
 #include "IMGUIStateManager.h"
 #include "generic/FilesystemUtils.h"
+#include "generic/GlobalStateAuthority.h"
 #include "manager/RenderManager.h"
 
 #include "../shelves/IMGUIBxDFShelves.h"
@@ -14,6 +15,7 @@
 #include "kernels/CudaWavefrontTracer.cuh"
 
 #include <random>
+#include <filesystem>
 
 RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
     m_imguiShelves(imguiShelves),
@@ -96,7 +98,36 @@ void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
 
     DeserialiseJson();
 
+    ScanForSceneFiles();
+
     m_hWnd = hWnd;
+}
+
+void RenderObjectStateManager::ScanForSceneFiles()
+{
+    const std::string& sceneDirectory = GSA().GetDefaultSceneDirectory();
+
+    m_sceneFilePathList.clear();
+    m_sceneFileNameList.clear();
+    m_sceneListIdx = -1;
+
+    namespace fs = std::filesystem;
+    for (auto const& entry : fs::directory_iterator(sceneDirectory))
+    {
+        if (!entry.is_regular_file()) { continue; }
+
+        // Only consider JSON files
+        auto fullPath = entry.path();
+        if(fullPath.extension().string() != ".json") { continue; }
+
+        // Ignore state files with formats similar to 'xxxx.states.json'
+        auto stemPath = fullPath.stem();
+        if (!stemPath.extension().empty()) { continue; }
+
+        // Store the scene path
+        m_sceneFilePathList.push_back(fullPath.string());
+        m_sceneFileNameList.push_back(fullPath.filename().string());
+    }    
 }
 
 void RenderObjectStateManager::DeserialiseJson()
@@ -166,6 +197,24 @@ void RenderObjectStateManager::SerialiseJson() const
     }
 
     rootDocument.Serialise(m_stateJsonPath);
+}
+
+void RenderObjectStateManager::ConstructSceneManagerUI()
+{
+    UIStyle style(0);
+
+    if (!ImGui::CollapsingHeader("Scene Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ConstructListBox("Local scenes", m_sceneFileNameList, m_sceneListIdx);
+
+    if (ImGui::Button("Load"))
+    {
+    }
+    SL;
+    if (ImGui::Button("Rescan"))
+    {
+        ScanForSceneFiles();
+    }
 }
 
 void RenderObjectStateManager::ConstructStateManagerUI()
@@ -329,8 +378,8 @@ void RenderObjectStateManager::ConstructUI()
 {
     ImGui::Begin("Combinatorics");
     
+    ConstructSceneManagerUI();    
     ConstructStateManagerUI();
-
     ConstructBatchProcessorUI();
 
     HandleBakeIteration();

@@ -48,12 +48,13 @@ static void HelpMarker(const char* desc)
 class IMGUIListBox
 {
 public:
-    IMGUIListBox(const std::string& id, const std::string& addLabel, const std::string& overwriteLabel, const std::string& deleteLabel, const std::string& deleteAllLabel);
+    IMGUIListBox(const std::string& id, const std::string& addLabel = "", const std::string& overwriteLabel = "", const std::string& deleteLabel = "", const std::string& deleteAllLabel = "");
 
     void    Construct();
     void    Clear();
     void    Insert(const std::string& str);
     const std::list<std::string>& GetListItems() const { return m_listItems; }
+    void SetListItems(const std::vector<std::string>& items);
 
     bool    IsSelected() const { return m_currentIdx >= 0 && m_currentIdx < m_listItems.size(); }
     std::string GetCurrentlySelectedText() const;
@@ -167,6 +168,7 @@ protected:
     void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale = false);
     void ConstructJitteredFloat(Cuda::JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
+    void ConstructListBox(const std::string& name, const std::vector<std::string>& listItems, int& selected);
     
     template<typename T>
     void ConstructMappedListBox(const std::string& id, const std::map<const std::string, T>& container, std::string& selectedStr, int& selectedIdx)

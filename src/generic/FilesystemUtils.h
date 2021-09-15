@@ -29,6 +29,9 @@ std::string GetFilename(const std::string& path);
 // Get the file stem for the path
 std::string GetFileStem(const std::string& path);
 
+// Gets the parent directory for the path
+std::string GetParentDirectory(const std::string& path);
+
 // Replace with a filename with a new one
 bool ReplaceFilename(std::string& absolutePath, const std::string& newFilename);
 

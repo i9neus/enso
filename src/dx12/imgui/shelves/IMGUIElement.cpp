@@ -140,6 +140,12 @@ void IMGUIListBox::Insert(const std::string& str)
     m_currentIdx = m_listItems.size() - 1;
 }
 
+void IMGUIListBox::SetListItems(const std::vector<std::string>& newItems)
+{
+    m_listItems.clear();
+    m_listItems.insert(m_listItems.begin(), newItems.begin(), newItems.end());
+}
+
 std::string IMGUIListBox::GetCurrentlySelectedText() const
 {
     if (m_currentIdx < 0) { return ""; }
@@ -193,6 +199,27 @@ void IMGUIJitteredColourPicker::Update()
 {
     m_hsv[0] = m_param.p - m_param.dpdt;
     m_hsv[1] = m_param.p + m_param.dpdt;
+}
+
+void IMGUIElement::ConstructListBox(const std::string& id, const std::vector<std::string>& listItems, int& currentIdx)
+{
+    ImGui::PushID(id.c_str());
+
+    if (ImGui::BeginListBox(id.c_str()))
+    {
+        for (int n = 0; n < listItems.size(); n++)
+        {
+            const bool isSelected = (currentIdx == n);
+            if (ImGui::Selectable(listItems[n].c_str(), isSelected))
+            {
+                currentIdx = n;
+            }
+            if (isSelected) { ImGui::SetItemDefaultFocus(); }
+        }
+        ImGui::EndListBox();
+    }
+
+    ImGui::PopID();
 }
 
 void IMGUIElement::ConstructComboBox(const std::string& name, const std::vector<std::string>& labels, int& selected)

@@ -6,6 +6,7 @@
 #include "generic/JsonUtils.h"
 #include "generic/FilesystemUtils.h"
 #include "generic/Log.h"
+#include "generic/GlobalStateAuthority.h"
 
 #include "kernels/lightprobes/CudaLightProbeGrid.cuh"
 
@@ -78,10 +79,9 @@ namespace USDIO
     void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath)
     {
         // Load the root config
-        Json::Document configJson;
-        configJson.Deserialise("config.json");
+        const Json::Document& configJson = GSA().GetConfigJson();
 
-        Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredWarn);
+        const Json::Node usdJson = configJson.GetChildObject("usd", Json::kRequiredWarn);
         if (!usdJson) { Log::Error("Error\n");  return; }
         
         InitialiseUSD(usdJson);

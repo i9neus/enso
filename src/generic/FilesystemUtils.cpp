@@ -53,14 +53,20 @@ bool ReplaceExtension(std::string& absolutePath, const std::string& newExtension
 
 std::string GetExtension(const std::string& absolutePath)
 {
-    fs::path fsPath(absolutePath.c_str());
+    fs::path fsPath(absolutePath);
     return Lowercase(fsPath.extension().string());
 }
 
 std::string GetFilename(const std::string& absolutePath)
 {
-    fs::path fsPath(absolutePath.c_str());
+    fs::path fsPath(absolutePath);
     return fsPath.filename().string();
+}
+
+std::string GetParentDirectory(const std::string& absolutePath)
+{
+    fs::path fsPath(absolutePath);
+    return fsPath.has_parent_path() ? fsPath.parent_path().string() : "";
 }
 
 bool ReplaceFilename(std::string& absolutePath, const std::string& newFilename)

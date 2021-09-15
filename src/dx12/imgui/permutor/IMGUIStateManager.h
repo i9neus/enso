@@ -18,10 +18,12 @@ public:
     void SerialiseJson() const;
 
 private:
+    void ConstructSceneManagerUI();
     void ConstructStateManagerUI();
     void ConstructBatchProcessorUI();
     void HandleBakeIteration();
     void ToggleBake();
+    void ScanForSceneFiles();
 
     RenderObjectStateMap    m_stateMap;
 
@@ -29,6 +31,10 @@ private:
 
     IMGUIAbstractShelfMap&  m_imguiShelves;
     BakePermutor            m_permutor;
+    
+    std::vector<std::string> m_sceneFilePathList;
+    std::vector<std::string> m_sceneFileNameList;
+    int                     m_sceneListIdx;
 
     std::vector<int>        m_sampleCounts;
     int                     m_sampleCountIdx;

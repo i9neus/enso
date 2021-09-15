@@ -25,10 +25,10 @@ void D3DContainer::OnInit(HWND hWnd)
 
 	LoadAssets();
 
-	m_cudaRenderer.Build();
+	m_cudaRenderer.LoadDefaultScene();
 	m_imgui.Build(m_hWnd);
 
-	m_cudaRenderer.Start();
+	m_cudaRenderer.StartRenderer();
 }
 
 void D3DContainer::OnUpdate() {}

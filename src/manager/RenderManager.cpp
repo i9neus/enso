@@ -14,9 +14,10 @@
 
 #include "io/USDIO.h"
 #include "io/ImageIO.h"
+#include "generic/GlobalStateAuthority.h"
 
 RenderManager::RenderManager() : 
-	m_threadSignal(kHalt),
+	m_threadSignal(kIdle),
 	m_dirtiness(kClean),
 	m_frameIdx(0),
 	m_bakeStatus(BakeStatus::kReady),
@@ -83,29 +84,63 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 
 	Cuda::VerifyTypeSizes();
 
-	Cuda::TestScheduling();
-
 	IsOk(cudaDeviceSynchronize());
 }
 
-void RenderManager::Build()
+void RenderManager::LoadDefaultScene()
 {
-	AssertMsg(!m_renderObjects, "Render objects have already been instantiated.");
+	LoadScene(GSA().GetDefaultScenePath());
+}
+
+void RenderManager::LoadScene(const std::string filePath)
+{
+	Log::Write("Loading scene file '%s'...\n", filePath);
+	try
+	{
+		m_sceneJson.Deserialise(filePath);
+	}
+	catch (const std::runtime_error& err)
+	{
+		Log::Error("Unable to load scene JSON: %s", err.what());
+		return;
+	}
+	
+	// Unload the old scene
+	UnloadScene();	
+
+	// Load and build the new scene
+	Build(m_sceneJson);
+}
+
+void RenderManager::UnloadScene(bool report)
+{
+	if (!m_renderObjects) { return; }
+	
+	Log::Indent indent("Unloading scene...");
+	{
+		// Stop the renderer
+		StopRenderer();
+		
+		if (report)
+		{
+			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
+			Cuda::AR().Report();
+		}
+
+		// Destroy the render objects
+		m_renderObjects.DestroyAsset();
+	}
+}
+
+void RenderManager::Build(const Json::Document& sceneJson)
+{
+	Assert(m_threadSignal == kIdle);
+	Assert(!m_renderObjects);
 
 	Log::NL();
 	const Log::Snapshot beginState = Log::GetMessageState();
 	{
-		Log::Indent indent("Building render manager...\n");
-
-		// Load the root config
-		Log::Write("Loading 'config.json'...\n");
-		m_configJson.Deserialise("config.json");
-
-		std::string sceneJsonPath;
-		m_configJson.GetValue("scene", sceneJsonPath, Json::kRequiredAssert);
-
-		Log::Write("Loading scene file '%s'...\n", sceneJsonPath);
-		m_sceneJson.Deserialise(sceneJsonPath);
+		Log::Indent indent("Building render manager...\n");		
 
 		// Create a container for the render objects
 		m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
@@ -150,28 +185,28 @@ void RenderManager::Build()
 	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 }
 
-void RenderManager::Destroy()
+void RenderManager::StopRenderer()
 {
-	if (!m_managerThread.joinable()) { return; }
-
-	Log::Indent("Shutting down...\n");
-
-	Log::Write("Halting renderer...\n");
-	m_threadSignal.store(kHalt);
-	m_managerThread.join();
-	Log::Write("Done!\n");
-
+	if (!m_managerThread.joinable() || m_threadSignal != kRun)
 	{
-		Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
-		Cuda::AR().Report();
-
-		// Destroy the render objects
-		m_renderObjects.DestroyAsset();
-
-		// Destroy assets
-		m_compositeImage.DestroyAsset();
+		Log::Warning("Renderer is not running.");
+		return; 
 	}
 
+	Log::Write("Halting renderer...\r");
+	m_threadSignal.store(kHalt);
+	m_managerThread.join();
+
+	Log::Write("Done!\n");
+}
+
+void RenderManager::Destroy()
+{	
+	UnloadScene(true);
+
+	// Destroy assets
+	m_compositeImage.DestroyAsset();
+	
 	// Destroy events
 	checkCudaErrors(cudaEventDestroy(m_renderEvent));
 
@@ -362,7 +397,7 @@ void RenderManager::Prepare()
 	//if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
 
-void RenderManager::Start()
+void RenderManager::StartRenderer()
 {
 	m_threadSignal = kRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
@@ -460,6 +495,9 @@ void RenderManager::Run()
 		// Gather statistics for the render objects
 		GatherRenderObjectStatistics();
 	}
+
+	// Signal that the renderer has finished
+	m_threadSignal.store(kIdle);
 }
 
 void RenderManager::GatherRenderObjectStatistics()
