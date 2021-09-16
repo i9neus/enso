@@ -192,6 +192,9 @@ void RenderManager::Build(const Json::Document& sceneJson)
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
 	Log::Write("*** BUILD COMPLETE***\n");
 	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
+
+	// Finally, start the renderer
+	StartRenderer();
 }
 
 void RenderManager::StopRenderer()
@@ -408,12 +411,16 @@ void RenderManager::Prepare()
 
 void RenderManager::StartRenderer()
 {
+	Log::Write("Starting rendering...\b");
+
 	m_threadSignal = kRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
 
 	m_renderStartTime = std::chrono::high_resolution_clock::now();
 
 	Assert(m_managerThread.joinable());
+
+	Log::Write("Okay!");
 }
 
 void RenderManager::ClearRenderStates()

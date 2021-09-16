@@ -9,21 +9,21 @@ class BakePermutor
 public:
     BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap);
 
-    void Clear();
-    std::set<int>& GetSampleCountSet() { return m_sampleCountSet; }
-    void SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata);
-    bool Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
-    bool Advance();
-    float GetProgress() const;
-    std::vector<std::string> GenerateExportPaths() const;
-    bool IsIdle() const { return m_isIdle; }
+    void                        Clear();
+    std::set<int>&              GetSampleCountSet() { return m_sampleCountSet; }
+    void                        SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata);
+    bool                        Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
+    bool                        Advance();
+    float                       GetProgress() const;
+    std::vector<std::string>    GenerateExportPaths() const;
+    bool                        IsIdle() const { return m_isIdle; }
 
-    float GetElapsedTime() const;
-    float EstimateRemainingTime(const float bakeProgress) const;
+    float                       GetElapsedTime() const;
+    float                       EstimateRemainingTime(const float bakeProgress) const;
 
 private:
-    void RandomiseScene();
-    int GenerateStratifiedSampleCountSet();
+    void                        RandomiseScene();
+    int                         GenerateStratifiedSampleCountSet();
 
     std::set<int>               m_sampleCountSet;
     std::set<int>::const_iterator m_sampleCountIt;

@@ -39,20 +39,26 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
     Log::Write("IMGUI successfully initialised!\n");
 }
 
-void IMGUIContainer::Build(HWND hwnd)
+void IMGUIContainer::Rebuild()
 {
     Log::Indent indent("Building IMGUI components...\n", "Done!\n");
     m_shelves.clear();
 
-    const Json::Document& json = m_cudaRenderer.GetSceneJSON();
+    const Json::Document& sceneJson = m_cudaRenderer.GetSceneJSON();
     const Cuda::AssetHandle<Cuda::RenderObjectContainer> renderObjects = m_cudaRenderer.GetRenderObjectContainer();
-    
+
     IMGUIShelfFactory shelfFactory;
-    m_shelves = shelfFactory.Instantiate(json, *renderObjects);
+    m_shelves = shelfFactory.Instantiate(sceneJson, *renderObjects);
 
-    m_stateManager.Initialise(json, hwnd);
+    m_stateManager.Rebuild(sceneJson);
+}
 
+void IMGUIContainer::Build(HWND hwnd)
+{    
     m_hWnd = hwnd;
+    m_stateManager.Initialise(m_hWnd);
+
+    Rebuild();
 }
 
 void IMGUIContainer::Destroy()
@@ -142,6 +148,12 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 
 void IMGUIContainer::Render()
 {
+    if (m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
+    {
+        Rebuild();
+    }
+    m_stateManager.MakeClean();
+    
     // Start the Dear ImGui frame
     ImGui::ImplDX12_NewFrame();
     ImGui::ImplWin32_NewFrame();
@@ -153,6 +165,8 @@ void IMGUIContainer::Render()
     m_stateManager.ConstructUI();
 
     ConstructRenderObjectShelves();
+
+    m_stateManager.HandleBakeIteration();
 
     ImGui::PopStyleColor(1);
 

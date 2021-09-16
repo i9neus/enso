@@ -33,7 +33,8 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_shutdownOnComplete(false),
     m_stateFlags(kStatePermuteAll),
     m_minViableValidity(0.7f),
-    m_numStrata(20)
+    m_numStrata(20),
+    m_dirtiness(IMGUIDirtiness::kClean)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -47,14 +48,14 @@ RenderObjectStateManager::~RenderObjectStateManager()
     SerialiseJson();
 }
 
-void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
+void RenderObjectStateManager::Rebuild(const Json::Node& node)
 {
     m_stateJsonPath = node.GetRootDocument().GetOriginFilePath();
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
 
-    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool 
-    { 
+    std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool
+    {
         if (m_stateMap.Insert(id, m_stateFlags, false))
         {
             SerialiseJson();
@@ -64,8 +65,8 @@ void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
     };
     m_stateListUI.SetOnAdd(onAddState);
 
-    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool 
-    { 
+    std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool
+    {
         if (m_stateMap.Insert(id, m_stateFlags, true))
         {
             SerialiseJson();
@@ -75,8 +76,8 @@ void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
     };
     m_stateListUI.SetOnOverwrite(onOverwriteState);
 
-    std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool 
-    { 
+    std::function<bool(const std::string&)> onDeleteState = [this](const std::string& id) -> bool
+    {
         if (m_stateMap.Erase(id))
         {
             SerialiseJson();
@@ -89,8 +90,8 @@ void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
     std::function<bool()> onDeleteAllState = [this]() -> bool { return false;  };
     m_stateListUI.SetOnDeleteAll(onDeleteAllState);
 
-    /*std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void  
-    { 
+    /*std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void
+    {
         auto it = m_stateMap.GetStateData().find(id);
         if (it != m_stateMap.GetStateData().end()) { m_stateFlags = it->second.flags; }
     };
@@ -99,7 +100,10 @@ void RenderObjectStateManager::Initialise(const Json::Node& node, HWND hWnd)
     DeserialiseJson();
 
     ScanForSceneFiles();
+}
 
+void RenderObjectStateManager::Initialise(HWND hWnd)
+{   
     m_hWnd = hWnd;
 }
 
@@ -211,6 +215,11 @@ void RenderObjectStateManager::ConstructSceneManagerUI()
 
     if (ImGui::Button("Load"))
     {
+        if(m_sceneListIdx >= 0 && m_sceneListIdx < m_sceneFilePathList.size())
+        {
+            m_renderManager.LoadScene(m_sceneFilePathList[m_sceneListIdx]);
+            m_dirtiness = IMGUIDirtiness::kSceneReload;
+        }
     }
     SL;
     if (ImGui::Button("Rescan"))
@@ -358,7 +367,7 @@ void RenderObjectStateManager::ToggleBake()
         return;
     }   
 
-    m_permutor.Clear();    
+    m_permutor.Clear();
     
     m_permutor.SetSampleRange(m_noisySampleRange, m_referenceSamples, m_numStrata);
     if (!m_permutor.Prepare(m_numBakeIterations, std::string(m_usdPathUIData.data()), m_disableLiveView, true)) { return; }
@@ -393,8 +402,6 @@ void RenderObjectStateManager::ConstructUI()
     ConstructSceneManagerUI();    
     ConstructStateManagerUI();
     ConstructBatchProcessorUI();
-
-    HandleBakeIteration();
 
     ImGui::End();
 }

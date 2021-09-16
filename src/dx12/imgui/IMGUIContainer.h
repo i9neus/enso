@@ -53,6 +53,7 @@ public:
 
     void Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames);
     void Build(HWND hWnd);
+    void Rebuild();
     void Render();
     void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
     void Destroy();

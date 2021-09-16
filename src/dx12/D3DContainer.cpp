@@ -27,8 +27,6 @@ void D3DContainer::OnInit(HWND hWnd)
 
 	m_cudaRenderer.LoadDefaultScene();
 	m_imgui.Build(m_hWnd);
-
-	m_cudaRenderer.StartRenderer();
 }
 
 void D3DContainer::OnUpdate() {}

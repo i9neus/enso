@@ -16,6 +16,12 @@ enum StateObjectFlags : uint
     kStatePermuteAll = 0xffffffff
 };
 
+enum class IMGUIDirtiness : int
+{
+    kClean,
+    kSceneReload
+};
+
 class IMGUIAbstractShelf : public IMGUIElement
 {
 public:

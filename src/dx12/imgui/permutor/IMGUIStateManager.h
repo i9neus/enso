@@ -10,18 +10,22 @@ public:
     RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager);
     ~RenderObjectStateManager();
 
-    void Initialise(const Json::Node& node, HWND hwnd);
+    void Rebuild(const Json::Node& node);
+    void Initialise(HWND hwnd);
     
     void ConstructUI();
+    void HandleBakeIteration();
 
     void DeserialiseJson();
     void SerialiseJson() const;
+
+    IMGUIDirtiness GetDirtiness() const { return m_dirtiness; }
+    void MakeClean() { m_dirtiness = IMGUIDirtiness::kClean; }
 
 private:
     void ConstructSceneManagerUI();
     void ConstructStateManagerUI();
     void ConstructBatchProcessorUI();
-    void HandleBakeIteration();
     void ToggleBake();
     void ScanForSceneFiles();
 
@@ -58,4 +62,5 @@ private:
     IMGUIListBox            m_stateListUI;
 
     HWND                    m_hWnd;
+    IMGUIDirtiness          m_dirtiness;
 };
