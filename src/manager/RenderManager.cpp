@@ -120,6 +120,12 @@ void RenderManager::UnloadScene(bool report)
 	{
 		// Stop the renderer
 		StopRenderer();
+
+		// Destroy the references to the linked render objects
+		m_wavefrontTracer = nullptr;
+		m_liveCamera = nullptr;
+		m_lightProbeCamera = nullptr;
+		m_activeCameras.clear();
 		
 		if (report)
 		{
@@ -154,6 +160,9 @@ void RenderManager::Build(const Json::Document& sceneJson)
 			objectFactory.InstantiatePeripherals(m_sceneJson, m_renderObjects);
 		}
 		Log::Write("Successfully created %i objects\n", m_renderObjects->Size());
+
+
+		Cuda::AR().Report();
 
 		// Bind together to create the scene DAG
 		{

@@ -205,6 +205,8 @@ void RenderObjectStateManager::ConstructSceneManagerUI()
 
     if (!ImGui::CollapsingHeader("Scene Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
+    ImGui::PushID("SceneManager");
+
     ConstructListBox("Local scenes", m_sceneFileNameList, m_sceneListIdx);
 
     if (ImGui::Button("Load"))
@@ -215,6 +217,8 @@ void RenderObjectStateManager::ConstructSceneManagerUI()
     {
         ScanForSceneFiles();
     }
+
+    ImGui::PopID();
 }
 
 void RenderObjectStateManager::ConstructStateManagerUI()
@@ -222,6 +226,8 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     UIStyle style(0);
     
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ImGui::PushID("StateManager");
 
     m_stateListUI.Construct();
     // Load a saved state to the UI
@@ -281,6 +287,8 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     {
         for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_stateFlags, Cuda::kJitterFlatten); }
     }
+
+    ImGui::PopID();
 }
 
 void RenderObjectStateManager::ConstructBatchProcessorUI()
@@ -288,6 +296,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     UIStyle style(1);
     
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ImGui::PushID("BatchProcessor");
     
     ImGui::DragInt2("Noisy sample range", &m_noisySampleRange[0], 1.0f, 1, 1e7);
     m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
@@ -334,6 +344,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
     ImGui::Text("%s elapsed", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
     ImGui::Text("%s remaining", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_renderManager.GetBakeProgress())).c_str() : "00:00");
+
+    ImGui::PopID();
 }
 
 void RenderObjectStateManager::ToggleBake()

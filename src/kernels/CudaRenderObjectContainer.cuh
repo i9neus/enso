@@ -11,11 +11,13 @@ namespace Cuda
     
     class RenderObjectContainer : public Host::Asset
     {
+        // FIXME: Weak pointers need to replaced with an integrated strong/weak asset handle
         using RenderObjectMap = std::map<std::string, AssetHandle<Host::RenderObject>>;
+        using WeakRenderObjectMap = std::map<std::string, WeakAssetHandle<Host::RenderObject>>;
 
     private:
         RenderObjectMap       m_objectMap;
-        RenderObjectMap       m_dagMap;
+        WeakRenderObjectMap   m_dagMap;
 
     public:
         template<typename ItType, bool IsConst>
@@ -56,7 +58,7 @@ namespace Cuda
         __host__ AssetHandle<Host::RenderObject> FindByDAG(const std::string& id) const
         {
             auto it = m_dagMap.find(id);
-            return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : it->second;
+            return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : AssetHandle<Host::RenderObject>(it->second);
         }
 
         template<typename T>

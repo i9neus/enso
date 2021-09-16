@@ -1,4 +1,5 @@
 #include "CudaAsset.cuh"
+#include <map>
 
 namespace Cuda
 {
@@ -35,15 +36,28 @@ namespace Cuda
 
     void GlobalAssetRegistry::Report()
     {
+        std::multimap<int, std::string> sortedAssets;
         for (auto& asset : m_assetMap)
         {
             if (asset.second.expired())
             {
-                Log::Warning("- WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
+                Log::Error("- WARNING: Registered asset '%s' expired without being removed from the registry. Was it explicitly destroyed?\n", asset.first.c_str());
                 continue;
             }
 
-            Log::Write("- '%s' with %i ref counts\n", asset.first.c_str(), asset.second.use_count());
+            sortedAssets.emplace(asset.second.use_count(), asset.first);
+        }
+
+        for (auto& asset : sortedAssets)
+        {
+            if (asset.first == 1)
+            {
+                Log::Debug("- '%s' with %i references\n", asset.second, asset.first);
+            }
+            else
+            {
+                Log::Warning("- '%s' with %i references\n", asset.second, asset.first);
+            }
         }
     }
 

@@ -96,6 +96,9 @@ namespace Cuda
 
     enum AssetHandleFlags : uint { kAssetForceDestroy = 1, kAssetAssertOnError = 2 };
 
+    // FIXME: Integrate weak asset handles into their own class
+    template<typename T> using WeakAssetHandle = std::weak_ptr<T>;
+
     template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
     class AssetHandle
     {
@@ -103,17 +106,25 @@ namespace Cuda
     private:
         std::shared_ptr<T>          m_ptr;  
 
+        explicit AssetHandle(std::shared_ptr<T>& ptr) : m_ptr(ptr) {}
+
     public:
         AssetHandle() = default;
         AssetHandle(const std::nullptr_t&) {}
         ~AssetHandle() = default;
 
-        explicit AssetHandle(std::shared_ptr<T>& ptr) : m_ptr(ptr) {}
-
         template<typename OtherType>
         explicit AssetHandle(AssetHandle<OtherType>& other)
         {
             m_ptr = other.m_ptr;
+        }
+
+        template<typename OtherType>
+        explicit AssetHandle(const WeakAssetHandle<OtherType>& weakHandle)
+        {
+            // FIXME: Const casting here to get around the fact that AssetHandle sheilds us from const traits whereas std::weak_ptr does not
+            AssertMsg(!weakHandle.expired(), "Trying to a convert an expired weak asset handle to a strong one.");
+            m_ptr = weakHandle.lock();
         }
 
         template<typename... Pack>
@@ -144,6 +155,11 @@ namespace Cuda
         AssetHandle<NewType> StaticCast() const
         {
             return AssetHandle<NewType>(std::static_pointer_cast<NewType>(m_ptr));
+        }
+
+        inline int GetReferenceCount() const
+        {
+            return m_ptr.use_count();
         }
 
         bool DestroyAsset(const uint flags = 0)
@@ -179,6 +195,8 @@ namespace Cuda
 
         inline T* get() { return m_ptr.get(); }
         inline const T* get() const { return m_ptr; }
+
+        WeakAssetHandle<T> GetWeakHandle() const { return WeakAssetHandle<T>(m_ptr); }
 
         inline const T& operator*() const
         {

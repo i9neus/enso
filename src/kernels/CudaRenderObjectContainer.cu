@@ -27,7 +27,7 @@ namespace Cuda
         {
             if (m_dagMap.find(newObject->GetDAGPath()) == m_dagMap.end())
             {
-                m_dagMap[newObject->GetDAGPath()] = newObject;
+                m_dagMap[newObject->GetDAGPath()] = newObject.GetWeakHandle();
             }
             else
             {
@@ -59,9 +59,13 @@ namespace Cuda
 
     __host__ void RenderObjectContainer::OnDestroyAsset()
     {
+        Log::Debug("Unloading scene graph...");
+        
         constexpr int kMaxAttempts = 10;
         for (int i = 0; !m_objectMap.empty() && i < kMaxAttempts; i++)
         {
+            //Log::Indent indent(tfm::format("Pass %i...", i + 1));
+
             for (RenderObjectMap::iterator it = m_objectMap.begin(); it != m_objectMap.end();)
             {
                 uint flags = 0;
@@ -69,6 +73,13 @@ namespace Cuda
                 {
                     flags |= kAssetForceDestroy | kAssetAssertOnError;
                 }
+
+                /*if (it->second.GetReferenceCount() > 1)
+                {
+                    Log::Debug("Object '%s' has %i references. Skipping...", it->second->GetAssetID(), it->second.GetReferenceCount());
+                    ++it;
+                    continue;
+                }*/
 
                 // Try to delete the asset
                 if (!it->second.DestroyAsset(flags))
