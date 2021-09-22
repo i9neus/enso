@@ -252,6 +252,13 @@ namespace Cuda
     {
         return (v.x < v.y) ? v.x : v.y;
     }
+    template<typename Type>
+    __host__ __device__ __forceinline__ Type cwiseExtremum(const __ivec2<Type>& v)
+    {
+        const Type high = cwiseMax(v);
+        const Type low = cwiseMin(v);
+        return (abs(high) > abs(low)) ? high : low;
+    }
 
     template<typename Type>
     __host__ __device__ __forceinline__ __ivec2<Type> max(const __ivec2<Type>& a, const __ivec2<Type>& b) { return __ivec2<Type>(max(a.x, b.x), max(a.y, b.y)); }

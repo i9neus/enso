@@ -345,6 +345,13 @@ namespace Cuda
         for (int i = 1; i < 4; i++) { m = min(m, v[i]); }
         return m;
     }
+    template<typename Type>
+    __host__ __device__ __forceinline__ Type cwiseExtremum(const __ivec4<Type>& v)
+    {
+        const Type high = cwiseMax(v);
+        const Type low = cwiseMin(v);
+        return (abs(high) > abs(low)) ? high : low;
+    }
 
     template<typename Type>
     __host__ __device__ __forceinline__ __ivec4<Type> max(const __ivec4<Type>& a, const __ivec4<Type>& b) { return __ivec4<Type>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)); }

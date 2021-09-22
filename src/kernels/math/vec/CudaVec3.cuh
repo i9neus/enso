@@ -248,6 +248,12 @@ namespace Cuda
 
     __host__ __device__ __forceinline__ float cwiseMax(const vec3& v) { return (v.x > v.y) ? ((v.x > v.z) ? v.x : v.z) : ((v.y > v.z) ? v.y : v.z); }
     __host__ __device__ __forceinline__ float cwiseMin(const vec3& v) { return (v.x < v.y) ? ((v.x < v.z) ? v.x : v.z) : ((v.y < v.z) ? v.y : v.z); }
+    __host__ __device__ __forceinline__ float cwiseExtremum(const vec3& v)
+    {
+        const float high = cwiseMax(v);
+        const float low = cwiseMin(v);
+        return (fabs(high) > fabs(low)) ? high : low;
+    }
 
     __host__ __device__ __forceinline__ vec3 max(const vec3& a, const vec3& b) { return vec3(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z)); }
     __host__ __device__ __forceinline__ vec3 min(const vec3& a, const vec3& b) { return vec3(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z)); }

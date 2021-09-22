@@ -34,6 +34,10 @@ namespace Cuda
 	template<typename T> __host__ __device__ __forceinline__ T cwiseMix(const T& a, const T& b, const T& v) { return a * (T(1) - v) + b * v; }
 	template<typename T> __host__ __forceinline__ void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 
+	__host__ __device__ __forceinline__ float SignedLog(const float& t)						{ return math::log(1.0f + fabs(t)) * copysignf(1.0f, t); }
+	__host__ __device__ __forceinline__ float SignedLog10(const float& t)					{ return math::log10(1.0f + fabs(t)) * copysignf(1.0f, t); }
+	__host__ __device__ __forceinline__ float SignedLog2(const float& t)					{ return math::log2(1.0f + fabs(t)) * copysignf(1.0f, t); }
+
 	__host__ __device__ __forceinline__ float	Volume(const vec3& v)						{ return v.x * v.y * v.z; }
 	__host__ __device__ __forceinline__ int		Volume(const ivec3& v)						{ return v.x * v.y * v.z; }
 	__host__ __device__ __forceinline__ uint	Volume(const uvec3& v)						{ return v.x * v.y * v.z; }

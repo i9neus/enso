@@ -229,6 +229,12 @@ namespace Cuda
 
     __host__ __device__ __forceinline__ float cwiseMax(const vec2& v) { return (v.x > v.y) ? v.x : v.y; }
     __host__ __device__ __forceinline__ float cwiseMin(const vec2& v) { return (v.x < v.y) ? v.x : v.y; }
+    __host__ __device__ __forceinline__ float cwiseExtremum(const vec2& v)
+    {
+        const float high = cwiseMax(v);
+        const float low = cwiseMin(v);
+        return (fabs(high) > fabs(low)) ? high : low;
+    }
 
     __host__ __device__ __forceinline__ bool operator==(const vec2& lhs, const vec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
     __host__ __device__ __forceinline__ bool operator!=(const vec2& lhs, const vec2& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y; }

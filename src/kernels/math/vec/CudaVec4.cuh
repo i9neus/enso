@@ -328,6 +328,12 @@ namespace Cuda
         for (int i = 1; i < 4; i++) { m = fmin(m, v[i]); }
         return m;
     }
+    __host__ __device__ __forceinline__ float cwiseExtremum(const vec4& v)
+    {
+        const float high = cwiseMax(v);
+        const float low = cwiseMin(v);
+        return (fabs(high) > fabs(low)) ? high : low;
+    }
 
     __host__ __device__ __forceinline__ vec4 max(const vec4& a, const vec4& b) { return vec4(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)); }
     __host__ __device__ __forceinline__ vec4 min(const vec4& a, const vec4& b) { return vec4(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w)); }
