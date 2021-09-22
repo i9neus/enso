@@ -136,6 +136,8 @@ void RenderManager::UnloadScene(bool report)
 		// Destroy the render objects
 		m_renderObjects.DestroyAsset();
 	}
+
+
 }
 
 void RenderManager::Build(const Json::Document& sceneJson)
@@ -533,6 +535,8 @@ void RenderManager::GatherRenderObjectStatistics()
 			renderObjectJson.Clear();
 		}
 	}
+
+	//Log::Debug(aggregatedStatsJson.Stringify(true));
 
 	aggregatedStatsJson.AddValue("frameIdx", m_frameIdx);
 	aggregatedStatsJson.AddValue("meanFrameTime", m_meanFrameTime);

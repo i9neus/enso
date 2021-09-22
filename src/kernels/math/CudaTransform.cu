@@ -21,6 +21,7 @@ namespace Cuda
         scale.Update(operation);
 
         scale.eval.y = scale.eval.z = scale.eval.x;
+        scale.t.y = scale.t.z = scale.t.x;
     }
     
     __host__ void BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
@@ -31,11 +32,25 @@ namespace Cuda
         trans.FromJson("pos", transNode, flags);
         rot.FromJson("rot", transNode, ::Json::kSilent);
         scale.FromJson("sca", transNode, ::Json::kSilent);
-
-        //scale.eval.y = scale.eval.z = scale.eval.x;
         
-        // Build the transform
-        Create(trans(), rot(), scale());
+        Rebuild();
+    }
+
+    __host__ __device__ void BidirectionalTransform::Set(const vec3& t, const vec3& r, const vec3& s)
+    {
+        trans = t;
+        rot = r;
+        scale = s;
+
+        Rebuild();
+    }
+
+    __host__ __device__ void BidirectionalTransform::MakeScaleUniform()
+    {
+        scale.eval.y = scale.eval.z = scale.eval.x;
+        scale.t.y = scale.t.z = scale.t.x;
+
+        Rebuild();
     }
 
     __host__ void BidirectionalTransform::ToJson(Json::Node& parentNode) const
@@ -50,5 +65,20 @@ namespace Cuda
     __host__ BidirectionalTransform::BidirectionalTransform(const ::Json::Node& node, const uint flags)
     {
         FromJson(node, flags);
+    }
+
+    __host__ __device__ void BidirectionalTransform::Rebuild()
+    {
+        fwd = mat3::Indentity();
+
+        if (rot().x != 0.0) { fwd *= RotXMat3(toRad(rot().x)); }
+        if (rot().y != 0.0) { fwd *= RotYMat3(toRad(rot().y)); }
+        if (rot().z != 0.0) { fwd *= RotZMat3(toRad(rot().z)); }
+
+        nInv = transpose(fwd);
+
+        if (scale() != vec3(1.0f)) { fwd *= ScaleMat3(scale()); }
+
+        inv = inverse(fwd);
     }
 }

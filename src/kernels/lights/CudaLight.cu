@@ -29,6 +29,9 @@ namespace Cuda
         renderObject.FromJson(node, flags);
         transform.FromJson(node, flags);
 
+        // TODO: Lights should be able to scale non-uniformally. Evaluation is more complicated, though.
+        transform.MakeScaleUniform();
+
         colourHSV.FromJson("colour", node, flags);
         intensity.FromJson("intensity", node, flags);
     }

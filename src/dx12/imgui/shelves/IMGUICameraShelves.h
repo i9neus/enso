@@ -23,6 +23,12 @@ public:
 // Light probe camera
 class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
 {
+    struct HistogramWidgetData
+    {
+        std::vector<float>  data;
+        float               maxValue;
+    };
+
 public:
     LightProbeCameraShelf(const Json::Node& json);
     virtual ~LightProbeCameraShelf() = default;
@@ -40,8 +46,6 @@ private:
     float   m_meanProbeValidity;
     float   m_meanProbeDistance;
     int     m_maxSamplesTaken, m_minSamplesTaken;
-    std::vector<uint> m_distanceHistogram;
-    std::vector<float> m_distanceHistogramWidgetData;
-    bool    m_hasDistanceHistogram;
-    uint    m_histogramMaxBucket;
+    std::vector<HistogramWidgetData> m_histogramWidgetData;
+    bool    m_hasHistogram;
 };

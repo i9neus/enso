@@ -64,9 +64,10 @@ namespace Cuda
 		public:
 			struct AggregateStatistics
 			{
-				__host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f), probeCount(0) {}		
+				__host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f), probeCount(0) {}
 
 				vec2	minMaxSamples;
+				vec2	minMaxCoeffs[4];
 				float	meanValidity;
 				float	meanDistance;
 				int		probeCount;
@@ -96,7 +97,8 @@ namespace Cuda
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__device__ void ReduceAccumulationBuffer(Device::Array<vec4>* accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSizeBegin, const uvec2 batchRange);
-			__device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result, uint* distanceHistogram) const;
+			__device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result) const;
+			__device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
 			__device__ void Synchronise(const Objects& objects);
@@ -168,7 +170,7 @@ namespace Cuda
 			std::string									m_probeGridID;
 
 			DeviceObjectRAII<Device::LightProbeCamera::AggregateStatistics> m_probeAggregateData;
-			DeviceObjectRAII<uint, 50>					m_distanceHistogram;
+			DeviceObjectRAII<uint, 200>					m_coeffHistogram;
 			float										m_bakeProgress;
 
 			std::atomic<int>							m_exporterState;

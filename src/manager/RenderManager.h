@@ -37,13 +37,14 @@ public:
 	void ExportLiveViewport(const std::string& pngExportPath);
 	void StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
 	void AbortBake();
+	bool IsStable() const { return m_threadSignal == kRun; }
 	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
 	float GetBakeProgress() const { return (m_bakeStatus == BakeStatus::kRunning) ? m_bakeProgress : 0.0f; }
 
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
 	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
 	
-	void GetRenderStats(Json::Document& outputJson) 
+	void GetRenderStats(Json::Document& outputJson)
 	{ 
 		std::lock_guard<std::mutex> lock(m_jsonMutex);
 		outputJson.DeepCopy(m_renderStatsJson);

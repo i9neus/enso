@@ -133,7 +133,11 @@ void LightProbeCameraShelf::Construct()
 
     ImGui::Text(tfm::format("Mean probe validity: %.2f%%", m_meanProbeValidity * 100.0f).c_str());
     ImGui::Text(tfm::format("Mean probe distance: %.5f", m_meanProbeDistance).c_str());
-    ImGui::PlotHistogram("Distance histogram", m_distanceHistogramWidgetData.data(), m_distanceHistogramWidgetData.size(), 0, NULL, 0.0f, float(m_histogramMaxBucket), ImVec2(0, 80.0f));
+
+    for (const auto& histogramWidget : m_histogramWidgetData)
+    {
+        ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
+    }
 }
 
 void LightProbeCameraShelf::Randomise()
@@ -155,18 +159,26 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& nod
     node.GetValue("meanProbeValidity", m_meanProbeValidity, Json::kSilent);
     node.GetValue("meanProbeDistance", m_meanProbeDistance, Json::kSilent);
     
-    m_hasDistanceHistogram = false;    
-    if (node.GetArrayValues("distanceHistogram", m_distanceHistogram, Json::kSilent))
+    m_hasHistogram = false;
+    std::vector<std::vector<uint>> histogramMatrix;
+    if (node.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
     {
-        m_distanceHistogramWidgetData.resize(m_distanceHistogram.size());
-        m_histogramMaxBucket = 0;
-        for (int idx = 0; idx < m_distanceHistogram.size(); ++idx) 
-        { 
-            m_histogramMaxBucket = max(m_histogramMaxBucket, m_distanceHistogram[idx]); 
-            m_distanceHistogramWidgetData[idx] = m_distanceHistogram[idx];
+        // Map the input data into something the widget can use
+        m_histogramWidgetData.resize(histogramMatrix.size());
+        for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
+        {
+            const auto& inputData = histogramMatrix[histogramIdx];
+            auto& outputData = m_histogramWidgetData[histogramIdx];
+            outputData.data.resize(inputData.size());
+            outputData.maxValue = 0;
+            for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+            {
+                outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
+                //outputData.data[binIdx] = inputData[binIdx];
+                outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+            }
         }
-
-        m_hasDistanceHistogram = true;
+        m_hasHistogram = true;
     }
 
 

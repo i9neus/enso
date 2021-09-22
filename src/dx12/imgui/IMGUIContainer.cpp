@@ -148,7 +148,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
 
 void IMGUIContainer::Render()
 {
-    if (m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
+    if (m_cudaRenderer.IsStable() && m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
     {
         Rebuild();
     }
@@ -157,16 +157,17 @@ void IMGUIContainer::Render()
     // Start the Dear ImGui frame
     ImGui::ImplDX12_NewFrame();
     ImGui::ImplWin32_NewFrame();
-
     ImGui::NewFrame();
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
-    m_stateManager.ConstructUI();
+    if (m_cudaRenderer.IsStable())
+    {
+        m_stateManager.ConstructUI();
+        ConstructRenderObjectShelves();
 
-    ConstructRenderObjectShelves();
-
-    m_stateManager.HandleBakeIteration();
+        m_stateManager.HandleBakeIteration();
+    }
 
     ImGui::PopStyleColor(1);
 

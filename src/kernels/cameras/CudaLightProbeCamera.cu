@@ -313,21 +313,63 @@ namespace Cuda
         }
     }
 
-    __device__ void Device::LightProbeCamera::GetProbeGridAggregateStatistics(Device::LightProbeCamera::AggregateStatistics& result, uint* distanceHistogram) const
+    __device__ void Device::LightProbeCamera::ComputeProbeGridHistograms(Device::LightProbeCamera::AggregateStatistics& aggregate, uint* coeffHistogram) const
     {
-        __shared__ AggregateStatistics localStats[256];
-        __shared__ uint sharedHistogram[50];
+        __shared__ uint sharedHistogram[200];
+        __shared__ vec2 coeffRange[4];
+
+        if (kThreadIdx == 0)
+        {        
+            for (int i = 0; i < 200; ++i) { sharedHistogram[i] = 0; }
+            for (int i = 0; i < 4; ++i) 
+            { 
+                coeffRange[i].x = aggregate.minMaxCoeffs[i].x;
+                coeffRange[i].y = 1.0f / max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+            }
+        }
+
+        __syncthreads();
+
+        const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
+        const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
+        for (int i = startIdx; i <= endIdx; i++)
+        {
+            // Bin the coefficients
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
+            {
+                const float extremum = /*SignedLog*/(cwiseExtremum(m_objects.cu_probeGrids[0]->At(i)[coeffIdx]));
+                const int binIdx = int(50.0f * clamp((extremum - coeffRange[coeffIdx].x) * coeffRange[coeffIdx].y, 0.0f, nextafterf(1.0f, 0.0f)));
+
+                atomicInc(&sharedHistogram[50 * coeffIdx + binIdx], 0xffffffff);
+            }
+        }
+
+        __syncthreads();
 
         if (kThreadIdx == 0)
         {
+            memcpy(coeffHistogram, sharedHistogram, sizeof(int) * 200);
+        }
+    }
+
+    __device__ void Device::LightProbeCamera::GetProbeGridAggregateStatistics(Device::LightProbeCamera::AggregateStatistics& result) const
+    {
+        __shared__ AggregateStatistics localStats[256];
+
+        if (kThreadIdx == 0)
+        {
+            // Initialise the data in the local stats array
             for (int i = 0; i < 256; i++)
             {
                 localStats[i].minMaxSamples = vec2(kFltMax, 0.0f);
+                for (int j = 0; j < 4; ++j)
+                {
+                    localStats[i].minMaxCoeffs[j] = vec2(kFltMax, -kFltMax);
+                }
                 localStats[i].meanValidity = 0.0f;
                 localStats[i].meanDistance = 0.0f;
                 localStats[i].probeCount = 0;
             }
-            for (int i = 0; i < 50; ++i) { sharedHistogram[i] = 0; }
         }
 
         __syncthreads();
@@ -337,33 +379,43 @@ namespace Cuda
         localStats[kKernelIdx].probeCount = 1 + endIdx - startIdx;
 
         for (int i = startIdx; i <= endIdx; i++)
-        {
-            const auto& coeffs = m_objects.cu_probeGrids[0]->At(startIdx)[m_params.coefficientsPerProbe - 1];
-
-            localStats[kKernelIdx].minMaxSamples = vec2(min(localStats[kKernelIdx].minMaxSamples.x, coeffs.z), max(localStats[kKernelIdx].minMaxSamples.y, coeffs.z));
-            localStats[kKernelIdx].meanValidity += coeffs.x;
-            localStats[kKernelIdx].meanDistance += coeffs.y;
-
-            atomicInc(&sharedHistogram[uint(clamp(coeffs.y, 0.0f, 1.0f) * 49)], 0xffffffff);
+        {        
+            // Accumulate coefficient ranges for the histograms
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
+            {
+                const auto& coeff = m_objects.cu_probeGrids[0]->At(i)[coeffIdx];
+                auto& minMax = localStats[kKernelIdx].minMaxCoeffs[coeffIdx];
+                minMax.x = min(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
+                minMax.y = max(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
+            }
+            
+            // Accumulate probe states
+            const auto& coeff = m_objects.cu_probeGrids[0]->At(i)[m_params.coefficientsPerProbe - 1];
+            localStats[kKernelIdx].minMaxSamples = vec2(min(localStats[kKernelIdx].minMaxSamples.x, coeff.z), max(localStats[kKernelIdx].minMaxSamples.y, coeff.z));
+            localStats[kKernelIdx].meanValidity += coeff.x;
+            localStats[kKernelIdx].meanDistance += coeff.y;
         }
 
         __syncthreads();
 
         if (kThreadIdx == 0)
         {
+            // Accumulate global stats from shared memory
             result = localStats[0];
             result.meanValidity /= float(max(1, localStats[0].probeCount));
             result.meanDistance /= float(max(1, localStats[0].probeCount));
             for (int i = 1; i < 256; i++)
             {
                 result.minMaxSamples = vec2(min(localStats[i].minMaxSamples.x, result.minMaxSamples.x), max(localStats[i].minMaxSamples.y, result.minMaxSamples.y));
+                for (int j = 0; j < 4; ++j)
+                {
+                    result.minMaxCoeffs[j] = vec2(min(localStats[i].minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(localStats[i].minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
+                }
                 result.meanValidity += localStats[i].meanValidity / float(max(1, localStats[i].probeCount));
                 result.meanDistance += localStats[i].meanDistance / float(max(1, localStats[i].probeCount));
             }
             result.meanValidity /= 256.0f;
             result.meanDistance /= 256.0f;
-
-            memcpy(distanceHistogram, sharedHistogram, sizeof(int) * 50);
         }
     }
 
@@ -572,19 +624,30 @@ namespace Cuda
         camera->ReduceAccumulationBuffer(cu_accumBuffer, cu_probeGrid, reduceBatchSize, batchRange);
     }
 
-    __global__ void KernelGetProbeGridAggregateStatistics(Device::LightProbeCamera* camera, Device::LightProbeCamera::AggregateStatistics* stats, uint* histogram)
+    __global__ void KernelGetProbeGridAggregateStatistics(Device::LightProbeCamera* camera, Device::LightProbeCamera::AggregateStatistics* stats)
     {
         assert(stats);
-        camera->GetProbeGridAggregateStatistics(*stats, histogram);
+        camera->GetProbeGridAggregateStatistics(*stats);
+    }
+
+    __global__ void KernelComputeProbeGridHistograms(Device::LightProbeCamera* camera, Device::LightProbeCamera::AggregateStatistics* stats, uint* histogram)
+    {
+        assert(stats);
+        assert(histogram);
+        camera->ComputeProbeGridHistograms(*stats, histogram);
     }
 
     __host__ void Host::LightProbeCamera::GetProbeGridAggregateStatistics()
     {
-        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_distanceHistogram.GetDeviceObject());
+        // Compute aggregate statistics (min/max ranges, counts, etc) for the probe grid
+        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject());
+
+        // Compute coefficient histograms
+        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_coeffHistogram.GetDeviceObject());
         IsOk(cudaStreamSynchronize(m_hostStream));
 
         m_probeAggregateData.Download();
-        m_distanceHistogram.Download();
+        m_coeffHistogram.Download();
 
         m_bakeProgress = -1.0f;
         if (m_params.camera.maxSamples > 0)
@@ -699,9 +762,13 @@ namespace Cuda
         node.AddValue("meanProbeDistance", m_probeAggregateData->meanDistance);
         node.AddValue("bakeProgress", m_bakeProgress);
         
-        std::vector<uint> histogramData(50, 0);
-        std::memcpy(histogramData.data(), &m_distanceHistogram[0], sizeof(uint) * 50);
-        node.AddArray("distanceHistogram", histogramData);
+        std::vector<std::vector<uint>> histogramData(4);
+        for (int idx = 0; idx < 4; ++idx)
+        {
+            histogramData[idx].resize(50);
+            std::memcpy(histogramData[idx].data(), &m_coeffHistogram[50 * idx], sizeof(uint) * 50);
+        }        
+        node.AddArray2D("coeffHistograms", histogramData);
 
         return true;
     }
