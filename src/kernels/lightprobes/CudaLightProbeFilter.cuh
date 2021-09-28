@@ -7,7 +7,15 @@ namespace Json { class Node; }
 
 namespace Cuda
 {
-#define kMaxCoefficients 5
+#define kMaxCoefficients 5  
+
+    enum LightProbeKernelFilterType : int
+    {
+        kKernelFilterNull,
+        kKernelFilterBox,
+        kKernelFilterGaussian,
+        kKernelFilterNLM
+    };
 
     struct LightProbeFilterGridData
     {

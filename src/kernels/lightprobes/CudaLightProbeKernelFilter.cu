@@ -31,9 +31,7 @@ namespace Cuda
         Json::Node nlmNode = node.GetChildObject("nlm", flags);
         if (nlmNode) { nlm.FromJson(nlmNode, flags); }
          
-        radius = clamp(radius, 1e-3f, 10.0f);
-        nlm.alpha = clamp(nlm.alpha, 0.0f, std::numeric_limits<float>::max());
-        nlm.K = clamp(nlm.K, 0.0f, std::numeric_limits<float>::max());
+        radius = clamp(radius, 1e-3f, 10.0f);        
     }
     
     __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const ::Json::Node& node, const std::string& id) : 

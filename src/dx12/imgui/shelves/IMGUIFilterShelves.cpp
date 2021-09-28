@@ -42,7 +42,17 @@ void LightProbeRegressionFilterShelf::Construct()
     ImGui::SliderInt("Regression radius", &m_p.regressionRadius, 0, 10);
     ImGui::SliderInt("Regression iterations", &m_p.regressionIterations, 1, 100);
     ImGui::SliderInt("Reconstruction radius", &m_p.reconstructionRadius, 0, 10);
-    ImGui::Checkbox("Null filter", &m_p.isNullFilter);
+
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "Non-local Means" }, m_p.filterType);
+    if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 2.0f))
+    {
+        if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; }
+    }
+    if (ImGui::SliderFloat("NLM k", &m_p.nlm.K, 0.0f, 2.0f))
+    {
+        if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
+    }
+    ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 }
 
 void LightProbeRegressionFilterShelf::Reset()

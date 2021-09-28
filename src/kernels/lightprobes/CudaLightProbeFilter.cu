@@ -28,6 +28,9 @@ namespace Cuda
         node.GetValue("alpha", alpha, flags);
         node.GetValue("k", K, flags);
         node.GetValue("patchRadius", patchRadius, flags);
+
+        alpha = clamp(alpha, 0.0f, std::numeric_limits<float>::max());
+        K = clamp(K, 0.0f, std::numeric_limits<float>::max());
     }
 
     __host__ LightProbeFilterGridData& LightProbeFilterGridData::Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,

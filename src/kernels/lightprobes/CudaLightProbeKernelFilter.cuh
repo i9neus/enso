@@ -8,14 +8,6 @@ namespace Cuda
 {
     namespace Host { class LightProbeKernelFilter; }
 
-    enum LightProbeKernelFilterType : int
-    {
-        kKernelFilterNull,
-        kKernelFilterBox,
-        kKernelFilterGaussian,
-        kKernelFilterNLM
-    };
-
     struct LightProbeKernelFilterParams
     {
         __host__ __device__ LightProbeKernelFilterParams();
@@ -26,7 +18,6 @@ namespace Cuda
 
         int filterType;
         float radius;
-
         LightProbeFilterNLMParams nlm;       
     };    
 

@@ -14,7 +14,6 @@ namespace Cuda
         regressionRadius(1),
         reconstructionRadius(1),
         regressionIterations(1),
-        isNullFilter(true),
         learningRate(0.005f)
     {
 
@@ -26,8 +25,11 @@ namespace Cuda
         node.AddValue("regressionRadius", regressionRadius);
         node.AddValue("regressionIterations", regressionIterations);
         node.AddValue("reconstructionRadius", reconstructionRadius);
-        node.AddValue("isNullFilter", isNullFilter);
         node.AddValue("learningRate", learningRate);
+        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
+
+        Json::Node nlmNode = node.AddChildObject("nlm");
+        nlm.ToJson(nlmNode);
     }
 
     __host__ void LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -36,8 +38,11 @@ namespace Cuda
         node.GetValue("regressionRadius", regressionRadius, flags);
         node.GetValue("regressionIterations", regressionIterations, flags);
         node.GetValue("reconstructionRadius", reconstructionRadius, flags);
-        node.GetValue("isNullFilter", isNullFilter, flags);
         node.GetValue("learningRate", learningRate, flags);
+        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
+
+        Json::Node nlmNode = node.GetChildObject("nlm", flags);
+        if (nlmNode) { nlm.FromJson(nlmNode, flags); }
 
         regressionRadius = clamp(regressionRadius, 0, 10);
         regressionIterations = clamp(regressionIterations, 1, 100);
@@ -265,7 +270,7 @@ namespace Cuda
         const auto& params = objects.params;
 
         // Compute the index and position of the probe and bail out if we're out of bounds
-        const int probeIdx0 = probeStartIdx + kKernelIdx / (gridData.shCoeffsPerProbe * objects.regression.volume);
+        const int probeIdx0 = probeStartIdx + kKernelIdx / objects.regression.volume;
         if (probeIdx0 >= gridData.numProbes) { return; }
         const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, objects.gridData.density);
 
@@ -281,26 +286,27 @@ namespace Cuda
         }
         else
         {
-            float weight = 1.0f;
-            /*if (posK != ivec3(0))
+            // Calculate the weight for the sample
+            float weight;
+            switch (params.filterType)
             {
-                // Calculate the weight for the sample
-                switch (params.filterType)
+            case kKernelFilterGaussian:
+            {
+                const float len = length(vec3(posK));
+                if (len <= objects.regression.radius)
                 {
-                case kKernelFilterGaussian:
-                {
-                    const float len = length(vec3(posK));
-                    if (len <= params.radius)
-                    {
-                        weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.radius);
-                    }
-                    break;
+                    weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, objects.regression.radius);
                 }
-                case kKernelFilterNLM:
-                    weight = ComputeNLMWeight(gridData, params.nlm, pos0, posK);
-                    break;
-                };
-            }*/
+                break;
+            }
+            case kKernelFilterNLM:
+            {
+                weight = ComputeNLMWeight(gridData, params.nlm, pos0, posK);
+                break;
+            }
+            default:
+                weight = 1.0f;
+            };
 
             (*objects.cu_W)[kKernelIdx] = weight;
         }
@@ -352,7 +358,8 @@ namespace Cuda
         assert(dataIdx0 < objects.cu_C->Size());
         vec3* C = &(*objects.cu_C)[dataIdx0];
         vec3* dLdC = &(*objects.cu_dLdC)[dataIdx0];
-        float* W = &(*objects.cu_W)[probeIdx0 * objects.regression.volume];
+        // Get a pointer to the weights
+        float* W = &(*objects.cu_W)[(kKernelIdx / (gridData.shCoeffsPerProbe * 3)) * objects.regression.volume];
 
         // Fill the cache with the local pixel values
         float sumW = 0.0f;
@@ -404,7 +411,7 @@ namespace Cuda
                 for (int cIdx = 0, dIdx = pIdx * objects.regression.numMonomials; cIdx < objects.regression.numMonomials; ++cIdx, ++dIdx)
                 {
                     assert(dIdx < objects.cu_D->Size());
-                    sigma += C[cIdx][channelIdx] * D[dIdx];                   
+                    sigma += C[cIdx][channelIdx] * D[dIdx];
                 }
 
                 // Accumulate the partial derivatives for each constant
@@ -414,7 +421,7 @@ namespace Cuda
                 }
 
                 // Accumulate the weighted sum of the derivatives as the L2 loss
-                L2Loss += sqr(sigma) *W[pIdx];
+                L2Loss += sqr(sigma) * W[pIdx];
             }
             L2Loss /= sumW;
 
@@ -423,21 +430,8 @@ namespace Cuda
             {
                 dLdC[cIdx][channelIdx] /= sumW;
                 C[cIdx][channelIdx] -= params.learningRate * dLdC[cIdx][channelIdx] / max(L2Loss, 1e-2f);
-
-                /*if (probeIdx0 == 100 && channelIdx == 0 && coeffIdx == 1)
-                {
-                    printf("[%i, %i]: %f (%f) -> %f, %f (%f, %f)\n", coeffIdx, cIdx, C[cIdx][channelIdx], dLdC[cIdx][channelIdx], p[objects.regression.volume / 2], L2Loss, minP, maxP);
-                }*/
-
-                //C[cIdx][channelIdx] = clamp(C[cIdx][channelIdx], 0.0f, 1.0f);
-                //C[cIdx][channelIdx] = (cIdx == 0) ? p[objects.regression.volume / 2] : 0.0f;
             }
-        }      
-
-        /*if (probeIdx0 == 100 && coeffIdx == 0 && channelIdx == 0)
-        {
-            printf("\n");
-        }*/
+        }
 
         // Update the min/max components 
         C[objects.regression.numMonomials][channelIdx] = minP;
@@ -537,7 +531,7 @@ namespace Cuda
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
         // Pass-through filter just copies the data
-        if (m_objects->params.isNullFilter)
+        if (m_objects->params.filterType == kKernelFilterNull)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             return;

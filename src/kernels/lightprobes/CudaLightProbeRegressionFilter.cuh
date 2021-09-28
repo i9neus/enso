@@ -16,12 +16,13 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        bool    isNullFilter;
+        int     filterType;
         int     polynomialOrder;
         int     regressionRadius;
         int     reconstructionRadius;
         int     regressionIterations;
         float   learningRate;
+        LightProbeFilterNLMParams nlm;
     };
 
     namespace Host
