@@ -65,11 +65,7 @@ void PerspectiveCameraShelf::Jitter(const uint flags, const uint operation)
 }
 
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
-    : IMGUIShelf(json),
-    m_meanProbeValidity(0.0f),
-    m_meanProbeDistance(0.0f),
-    m_maxSamplesTaken(0),
-    m_minSamplesTaken(0)
+    : IMGUIShelf(json)
 {
     m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
 }
@@ -131,12 +127,23 @@ void LightProbeCameraShelf::Construct()
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
-    ImGui::Text(tfm::format("Mean probe validity: %.2f%%", m_meanProbeValidity * 100.0f).c_str());
-    ImGui::Text(tfm::format("Mean probe distance: %.5f", m_meanProbeDistance).c_str());
-
-    for (const auto& histogramWidget : m_histogramWidgetData)
+    for (auto& gridStats : m_probeGridStatistics)
     {
-        ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
+        ImGui::PushID(gridStats.gridID.c_str());
+        ImGui::Text(gridStats.gridID.c_str());
+        ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
+        ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
+
+        if (gridStats.hasHistogram)
+        {
+            for (const auto& histogramWidget : gridStats.histogramWidgetData)
+            {
+                ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::PopID();
     }
 }
 
@@ -152,34 +159,47 @@ void LightProbeCameraShelf::Randomise()
     }
 }
 
-void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& node)
+void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& baseNode)
 {    
-    node.GetValue("minSamples", m_minSamplesTaken, Json::kSilent);
-    node.GetValue("maxSamples", m_minSamplesTaken, Json::kSilent);
-    node.GetValue("meanProbeValidity", m_meanProbeValidity, Json::kSilent);
-    node.GetValue("meanProbeDistance", m_meanProbeDistance, Json::kSilent);
-    
-    m_hasHistogram = false;
+    const Json::Node gridSetNode = baseNode.GetChildObject("grids", Json::kSilent);
+    if (!gridSetNode) { return; }
+
+    Assert(gridSetNode.IsObject());
+    m_probeGridStatistics.resize(gridSetNode.NumMembers());
+
+    int gridIdx = 0;
     std::vector<std::vector<uint>> histogramMatrix;
-    if (node.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
-    {
-        // Map the input data into something the widget can use
-        m_histogramWidgetData.resize(histogramMatrix.size());
-        for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
+    for (::Json::Node::ConstIterator it = gridSetNode.begin(); it != gridSetNode.end(); ++it, ++gridIdx)
+    {    
+        const auto& gridNode = *it;
+        auto& stats = m_probeGridStatistics[gridIdx];
+
+        stats.gridID = it.Name();
+        gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
+        gridNode.GetValue("maxSamples", stats.minSamplesTaken, Json::kSilent);
+        gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
+        gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent);
+
+        stats.hasHistogram = false;
+        histogramMatrix.clear();
+        if (gridNode.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
         {
-            const auto& inputData = histogramMatrix[histogramIdx];
-            auto& outputData = m_histogramWidgetData[histogramIdx];
-            outputData.data.resize(inputData.size());
-            outputData.maxValue = 0;
-            for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+            // Map the input data into something the widget can use
+            stats.histogramWidgetData.resize(histogramMatrix.size());
+            for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
             {
-                outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
-                //outputData.data[binIdx] = inputData[binIdx];
-                outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+                const auto& inputData = histogramMatrix[histogramIdx];
+                auto& outputData = stats.histogramWidgetData[histogramIdx];
+                outputData.data.resize(inputData.size());
+                outputData.maxValue = 0;
+                for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+                {
+                    outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
+                    //outputData.data[binIdx] = inputData[binIdx];
+                    outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+                }
             }
+            stats.hasHistogram = true;
         }
-        m_hasHistogram = true;
     }
-
-
 }

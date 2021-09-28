@@ -187,6 +187,7 @@ namespace Cuda
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
 		IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
+		IsOk(cudaDeviceSynchronize());
 		KernelSynchroniseObjects << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
 		IsOk(cudaDeviceSynchronize());
 

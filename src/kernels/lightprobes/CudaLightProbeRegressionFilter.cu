@@ -14,7 +14,8 @@ namespace Cuda
         regressionRadius(1),
         reconstructionRadius(1),
         regressionIterations(1),
-        isNullFilter(true)
+        isNullFilter(true),
+        learningRate(0.005f)
     {
 
     }
@@ -26,6 +27,7 @@ namespace Cuda
         node.AddValue("regressionIterations", regressionIterations);
         node.AddValue("reconstructionRadius", reconstructionRadius);
         node.AddValue("isNullFilter", isNullFilter);
+        node.AddValue("learningRate", learningRate);
     }
 
     __host__ void LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -35,14 +37,15 @@ namespace Cuda
         node.GetValue("regressionIterations", regressionIterations, flags);
         node.GetValue("reconstructionRadius", reconstructionRadius, flags);
         node.GetValue("isNullFilter", isNullFilter, flags);
+        node.GetValue("learningRate", learningRate, flags);
 
         regressionRadius = clamp(regressionRadius, 0, 10);
         regressionIterations = clamp(regressionIterations, 1, 100);
         reconstructionRadius = clamp(reconstructionRadius, 0, 10);
+        polynomialOrder = clamp(polynomialOrder, 0, 3);
     }
 
-    __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const ::Json::Node& node, const std::string& id) :
-        m_gridSize(1), m_blockSize(1)
+    __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const ::Json::Node& node, const std::string& id)
     {
         FromJson(node, Json::kRequiredWarn);
 
@@ -52,13 +55,17 @@ namespace Cuda
 
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
 
-        // Create some objects
+        // Create the output grid
         m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
 
-        m_hostPolyCoeffs = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_polyCoeffs", id));
+        // Create the buffers used by the regressor
+        m_hostC = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_C", id));
+        m_hostD = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_D", id));
+        m_hostdLdC = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_dLdC", id));
+        m_hostW = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_regressionWeights", id));
 
-        m_hostRegressionWeights = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_regressionWeights", id));
-        m_hostRegressionWeights->Resize(1024 * 1024);
+        // TODO: Make weight map dynamic
+        m_hostW->Resize(1024 * 1024);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeRegressionFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -78,8 +85,10 @@ namespace Cuda
     __host__ void Host::LightProbeRegressionFilter::OnDestroyAsset()
     {
         m_hostOutputGrid.DestroyAsset();
-        m_hostPolyCoeffs.DestroyAsset();
-        m_hostRegressionWeights.DestroyAsset();
+        m_hostC.DestroyAsset();
+        m_hostD.DestroyAsset();
+        m_hostdLdC.DestroyAsset();
+        m_hostW.DestroyAsset();
     }
 
     __host__ void Host::LightProbeRegressionFilter::Bind(RenderObjectContainer& sceneObjects)
@@ -111,7 +120,7 @@ namespace Cuda
         assert(kKernelIdx < coeffBuffer->Size());
 
         PseudoRNG rng(HashOf(uint(kKernelIdx)));
-        (*coeffBuffer)[kKernelIdx] = rng.Rand<0, 1, 2>();
+        (*coeffBuffer)[kKernelIdx] = rng.Rand<0, 1, 2>() * 0.5f;
     }
 
     __host__ void Host::LightProbeRegressionFilter::Prepare()
@@ -119,44 +128,123 @@ namespace Cuda
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
-        Assert(m_hostPolyCoeffs);
+        Assert(m_hostC); // Sanity check
 
         // Establish the dimensions of the kernel
         auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
-
-        // Each coefficient stores the coefficients of the fitted polynomial plus 2 additional coefficients which represent the max and min values of the kernel
-        m_objects->polyCoeffsPerCoefficient = cub(m_objects->params.polynomialOrder + 1) + 2;
-        m_objects->polyCoeffsPerProbe = m_objects->polyCoeffsPerCoefficient * gridData.coefficientsPerProbe;
-        m_objects->numPolyCoeffs = m_objects->polyCoeffsPerProbe * gridData.numProbes;
-        
+     
+        // Precompute some values for the regression step
         m_objects->regression.radius = m_objects->params.regressionRadius;
         m_objects->regression.span = 2 * m_objects->regression.radius + 1;
         m_objects->regression.volume = cub(m_objects->regression.span);
+        m_objects->regression.numMonomials = cub(m_objects->params.polynomialOrder + 1);
 
+        if (m_objects->regression.volume < m_objects->regression.numMonomials)
+        {
+            Log::Error("Warning: the regression system with %i coeffients is under-determined given the window size of %i probes", m_objects->regression.numMonomials, m_objects->regression.volume);
+        }
+
+        // Precompute some values for the reconstruction step
         m_objects->reconstruction.radius = m_objects->params.reconstructionRadius;
         m_objects->reconstruction.span = 2 * m_objects->reconstruction.radius + 1;
         m_objects->reconstruction.volume = cub(m_objects->reconstruction.span);
+        
+        // Each coefficient stores the monomial coefficients of the fitted polynomial plus 2 additional coefficients which represent the max and min values of the kernel   
+        m_objects->regrCoeffsPerSHCoeff = m_objects->regression.numMonomials + 2;
+        m_objects->regrCoeffsPerProbe = m_objects->regrCoeffsPerSHCoeff * gridData.coefficientsPerProbe;
+        m_objects->totalRegrCoeffs = m_objects->regrCoeffsPerProbe * gridData.numProbes;
 
         // Rather than store every weight for every probe, we do the regression step in batches to cap the memory needed
-        m_objects->probesPerBatch = min(gridData.numProbes, int(m_hostRegressionWeights->Size() / m_objects->regression.volume));
+        m_objects->probesPerBatch = min(gridData.numProbes, int(m_hostW->Size() / m_objects->regression.volume));
         Log::Debug("Probes per batch: %i", m_objects->probesPerBatch);
 
         // Resize the polynomial coefficient array as a power of two 
-        if(m_hostPolyCoeffs->ExpandToNearestPow2(m_objects->numPolyCoeffs))
+        m_hostdLdC->ExpandToNearestPow2(m_objects->totalRegrCoeffs);
+        if (m_hostC->ExpandToNearestPow2(m_objects->totalRegrCoeffs))
         {
-            Log::Debug("Resized m_hostPolyCoeffs to %i", m_hostPolyCoeffs->Size());
+            Log::Debug("Resized C/dLdC to %i", m_hostC->Size());
         }
+
+        // Generate a precomputed set of matrices containing the monomial constants for the kernel
+        PrecomputeMonomialMatrices();
 
         // Initialise the output grid so it has the same dimensions as the input
         m_hostOutputGrid->Prepare(m_hostInputGrid->GetParams());
-                
-        m_objects->cu_polyCoeffs = m_hostPolyCoeffs->GetDeviceInstance();
-        m_objects->cu_regressionWeights = m_hostRegressionWeights->GetDeviceInstance();
+
+        // Set the device objects and sync
+        m_objects->cu_C = m_hostC->GetDeviceInstance();
+        m_objects->cu_dLdC = m_hostdLdC->GetDeviceInstance();
+        m_objects->cu_D = m_hostD->GetDeviceInstance();
+        m_objects->cu_W = m_hostW->GetDeviceInstance();
         m_objects.Upload();
 
         // Generate some random numbers to seed the polynomial coefficients
-        KernelRandomisePolynomialCoefficients << < (m_objects->numPolyCoeffs + 255) / 256, 256, 0, m_hostStream >> > (m_objects->cu_polyCoeffs);
+        KernelRandomisePolynomialCoefficients << < (m_objects->totalRegrCoeffs + 255) / 256, 256, 0, m_hostStream >> > (m_objects->cu_C);
+
+        // Compute initialisation data for the regression kernel
+        auto& rk = m_regressionKernel; 
+        constexpr int kMaxSharedMemory = 40 * 1024;
+        constexpr int kMinBlockSize = 8;
+        rk.blockSize = 256;
+        do
+        {
+            rk.sharedMemoryBytes = m_objects->regression.volume * sizeof(float) * rk.blockSize;
+            rk.blockSize >>= 1;
+        }
+        while(rk.sharedMemoryBytes >= kMaxSharedMemory && rk.blockSize >= kMinBlockSize);
+        Assert(rk.blockSize >= kMinBlockSize);
+
+        rk.gridSize = ((m_objects->probesPerBatch * m_objects->gridData.shCoeffsPerProbe * 3) + (rk.blockSize - 1)) / rk.blockSize;
+
+        Log::Debug("Regression kernel:");
+        Log::Debug("  - Grid size: %i", rk.gridSize);
+        Log::Debug("  - Block size: %i", rk.blockSize);
+        Log::Debug("  - Shared memory: %i", rk.sharedMemoryBytes);
+    }
+
+    __host__ void Host::LightProbeRegressionFilter::PrecomputeMonomialMatrices()
+    {
+        // Allocate some temporary memory
+        const int numElements = m_objects->regression.volume * m_objects->regression.numMonomials;
+        std::vector<float> D(numElements);
+        const int radius = m_objects->regression.radius;
+        const int polynomialOrder = m_objects->params.polynomialOrder;
+
+        // Generate a monomial matrix for every point in the regression kernel. 
+        // TODO: There's some redundancy here, but we can see to that later.
+        for (int z = -radius, dIdx = 0; z <= radius; ++z)
+        {
+            const float nz = z / float(max(1, radius));
+            for (int y = -radius; y <= radius; ++y)
+            {
+                const float ny = y / float(max(1, radius));
+                for (int x = -radius; x <= radius; ++x)
+                {
+                    // Construct the monomial matrix
+                    const float nx = x / float(max(1, radius));
+                    float zExp = 1.0f;
+                    for (int zt = 0, cIdx = 0; zt <= polynomialOrder; zt++)
+                    {
+                        float yExp = 1.0f;
+                        for (int yt = 0; yt <= polynomialOrder; yt++)
+                        {
+                            float xExp = 1.0f;
+                            for (int xt = 0; xt <= polynomialOrder; ++xt)
+                            {
+                                D[dIdx++] = xExp * yExp * zExp;
+                                xExp *= nx;
+                            }
+                            yExp *= ny;
+                        }
+                        zExp *= nz;
+                    }
+                }
+            }
+        }
+
+        // Upload the matrices to the Cuda array
+        m_hostD->Upload(D);
     }
 
     __global__ void KernelComputeRegressionWeights(Host::LightProbeRegressionFilter::Objects* objectsPtr, const int probeStartIdx)
@@ -175,7 +263,7 @@ namespace Cuda
         // Get the index of the probe in the grid and the sample in the kernel
         auto& gridData = objects.gridData;
         const auto& params = objects.params;
-        
+
         // Compute the index and position of the probe and bail out if we're out of bounds
         const int probeIdx0 = probeStartIdx + kKernelIdx / (gridData.shCoeffsPerProbe * objects.regression.volume);
         if (probeIdx0 >= gridData.numProbes) { return; }
@@ -189,7 +277,7 @@ namespace Cuda
         const int probeIdxN = gridData.cu_inputGrid->IdxAt(pos0 + posK);
         if (probeIdxN < 0)
         {
-            (*objects.cu_regressionWeights)[kKernelIdx] = 0.0f;
+            (*objects.cu_W)[kKernelIdx] = 0.0f;
         }
         else
         {
@@ -213,53 +301,163 @@ namespace Cuda
                     break;
                 };
             }*/
-           
-            (*objects.cu_regressionWeights)[kKernelIdx] = weight;
+
+            (*objects.cu_W)[kKernelIdx] = weight;
         }
     }
 
-    __global__ void KernelComputeRegressionIteration(Host::LightProbeRegressionFilter::Objects* objects, const int probeStartIdx)
+    __global__ void KernelComputeRegressionIteration(Host::LightProbeRegressionFilter::Objects* objectsPtr, const int probeStartIdx)
     {
-       /* __shared__ Host::LightProbeRegressionFilter::Objects objects;
+        /*
+            p -> pixel values i.e. what we're regressing onto
+            C -> polynomial coefficients
+            D -> monomial constants over the spread of the kernel
+            W -> kernel weights
+        */
+
+        extern __shared__ int __block[];
+        float* pBlock = reinterpret_cast<float*>(__block);
+        __shared__ Host::LightProbeRegressionFilter::Objects objects;
+        __shared__  const float* D;
+
         if (kThreadIdx == 0)
         {
             assert(objectsPtr);
             objects = *objectsPtr;
             assert(objects.gridData.cu_inputGrid);
             assert(objects.gridData.cu_outputGrid);
+            assert(objects.cu_D);
+            assert(objects.cu_C);
+            assert(objects.cu_W);
+
+            D = objects.cu_D->GetData();
         }
 
         __syncthreads();
 
+        // Get a pointer to the shared memory used to cache the kernel values for this channel
+        float* p = &pBlock[kThreadIdx * objects.regression.volume];
+
         const auto& gridData = objects.gridData;
         const auto& params = objects.params;
-        const int probeIdx0 = kKernelIdx / gridData.shCoeffsPerProbe;
-        const int coeffIdx = kKernelIdx % gridData.shCoeffsPerProbe;*/
 
+        const int probeIdx0 = probeStartIdx + kKernelIdx / (gridData.shCoeffsPerProbe * 3);
+        if (probeIdx0 >= gridData.numProbes) { return; }
+
+        const int coeffIdx = (kKernelIdx / 3) % gridData.shCoeffsPerProbe;
+        const int channelIdx = kKernelIdx % 3;        
+
+        // Get pointers to the polynomial coefficients and associated partial derivatives
+        int dataIdx0 = probeIdx0 * objects.regrCoeffsPerProbe + coeffIdx * objects.regrCoeffsPerSHCoeff;
+        assert(dataIdx0 < objects.cu_C->Size());
+        vec3* C = &(*objects.cu_C)[dataIdx0];
+        vec3* dLdC = &(*objects.cu_dLdC)[dataIdx0];
+        float* W = &(*objects.cu_W)[probeIdx0 * objects.regression.volume];
+
+        // Fill the cache with the local pixel values
+        float sumW = 0.0f;
+        float maxP = -kFltMax, minP = kFltMax;
+        const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, gridData.density);
+        for (int z = -objects.regression.radius, pIdx = 0; z <= objects.regression.radius; ++z)
+        {
+            for (int y = -objects.regression.radius; y <= objects.regression.radius; ++y)
+            {
+                for (int x = -objects.regression.radius; x <= objects.regression.radius; ++x, pIdx++)
+                {
+                    ivec3 posK = pos0 + ivec3(x, y, z);
+                    if (gridData.cu_inputGrid->IdxAt(posK) < 0)
+                    {
+                        p[pIdx] = -kFltMax;
+                        continue;
+                    }
+                    p[pIdx] = gridData.cu_inputGrid->At(posK)[coeffIdx][channelIdx];
+                    maxP = max(maxP, p[pIdx]);
+                    minP = min(minP, p[pIdx]);
+                    sumW += W[pIdx];
+                }
+            }
+        }
+
+        // Normalise the p-values
+        for (int pIdx = 0; pIdx < objects.regression.volume; ++pIdx)
+        {
+            if (p[pIdx] != -kFltMax)
+            {
+                p[pIdx] = (p[pIdx] - minP) / max(1e-5f, maxP - minP);
+            }
+        }
+
+        // Do the polynomial regression
+        for (int itIdx = 0; itIdx < params.regressionIterations; ++itIdx)
+        {
+            // Clear the loss and derivatives
+            float L2Loss = 0.0f;
+            for (int t = 0; t < objects.regression.numMonomials; t++) { dLdC[t][channelIdx] = 0.0f; }
+
+            // Loop over every element in the kernel and compute partial derivatives ready for the gradient descent
+            for (int pIdx = 0; pIdx < objects.regression.volume; ++pIdx)
+            {
+                if (p[pIdx] == -kFltMax) { continue; }
+
+                // Accumulate the sum of polynomial coefficients multiplied by the monomial constants associated with them
+                float sigma = -p[pIdx];
+                for (int cIdx = 0, dIdx = pIdx * objects.regression.numMonomials; cIdx < objects.regression.numMonomials; ++cIdx, ++dIdx)
+                {
+                    assert(dIdx < objects.cu_D->Size());
+                    sigma += C[cIdx][channelIdx] * D[dIdx];                   
+                }
+
+                // Accumulate the partial derivatives for each constant
+                for (int cIdx = 0, dIdx = pIdx * objects.regression.numMonomials; cIdx < objects.regression.numMonomials; ++cIdx, ++dIdx)
+                {
+                    dLdC[cIdx][channelIdx] += 2.0 * D[dIdx] * sigma * W[pIdx];
+                }
+
+                // Accumulate the weighted sum of the derivatives as the L2 loss
+                L2Loss += sqr(sigma) *W[pIdx];
+            }
+            L2Loss /= sumW;
+
+            // Perform the gradient descent step
+            for (int cIdx = 0; cIdx < objects.regression.numMonomials; ++cIdx)
+            {
+                dLdC[cIdx][channelIdx] /= sumW;
+                C[cIdx][channelIdx] -= params.learningRate * dLdC[cIdx][channelIdx] / max(L2Loss, 1e-2f);
+
+                /*if (probeIdx0 == 100 && channelIdx == 0 && coeffIdx == 1)
+                {
+                    printf("[%i, %i]: %f (%f) -> %f, %f (%f, %f)\n", coeffIdx, cIdx, C[cIdx][channelIdx], dLdC[cIdx][channelIdx], p[objects.regression.volume / 2], L2Loss, minP, maxP);
+                }*/
+
+                //C[cIdx][channelIdx] = clamp(C[cIdx][channelIdx], 0.0f, 1.0f);
+                //C[cIdx][channelIdx] = (cIdx == 0) ? p[objects.regression.volume / 2] : 0.0f;
+            }
+        }      
+
+        /*if (probeIdx0 == 100 && coeffIdx == 0 && channelIdx == 0)
+        {
+            printf("\n");
+        }*/
+
+        // Update the min/max components 
+        C[objects.regression.numMonomials][channelIdx] = minP;
+        C[objects.regression.numMonomials + 1][channelIdx] = maxP;
     }
-
-    /*__device__ __forceinline__ void Modulus(const int composite, int& modulus)
-    {
-        modulus = composite;
-    }
-
-    template<typename... Pack>
-    __device__ __forceinline__ void Modulus(const int composite, int& modulus, const int& size, Pack... pack)
-    {
-        modulus = composite % size;
-        Modulus(composite / size, pack...);
-    }*/
 
     __global__ void KernelReconstructPolynomial(Host::LightProbeRegressionFilter::Objects* objectsPtr)
     {
         __shared__ Host::LightProbeRegressionFilter::Objects objects;
+        __shared__  const float* D;
         if (kThreadIdx == 0)
         {
             assert(objectsPtr);
             objects = *objectsPtr;
             assert(objects.gridData.cu_inputGrid);
             assert(objects.gridData.cu_outputGrid);
-        }    
+            
+            // Get the monomial matrix at the centre of the 
+            D = &(objects.cu_D->GetData()[(objects.regression.volume / 2) * objects.regression.numMonomials]);
+        }
 
         __syncthreads();
 
@@ -268,6 +466,7 @@ namespace Cuda
         const auto& gridData = objects.gridData;
         const auto& params = objects.params;
         const int probeIdx0 = kKernelIdx / gridData.shCoeffsPerProbe;
+        if (probeIdx0 >= objects.gridData.numProbes) { return; }
         const int coeffIdx = kKernelIdx % gridData.shCoeffsPerProbe;
 
         if (coeffIdx > 0)
@@ -280,23 +479,28 @@ namespace Cuda
 
         vec3 LSum(0.0f);
         int sumWeights = 0;
-        for (int z = -params.reconstructionRadius; z <= params.reconstructionRadius; ++z)
+        float radiusNorm = max(1, objects.regression.radius);
+        for (int z = -objects.reconstruction.radius; z <= objects.reconstruction.radius; ++z)
         {
-            for (int y = -params.reconstructionRadius; y <= params.reconstructionRadius; ++y)
+            const float nz = -z / radiusNorm;
+            for (int y = -objects.reconstruction.radius; y <= objects.reconstruction.radius; ++y)
             {
-                for (int x = -params.reconstructionRadius; x <= params.reconstructionRadius; ++x)
+                const float ny = -y / radiusNorm;
+                for (int x = -objects.reconstruction.radius; x <= objects.reconstruction.radius; ++x)
                 {
+                    const float nx = -x / radiusNorm;
                     ivec3 posK = pos0 + ivec3(x, y, z);
-                    if (gridData.cu_inputGrid->IdxAt(posK) < 0) { continue; }                    
+                    if (gridData.cu_inputGrid->IdxAt(posK) < 0) { continue; }
 
                     const int probeIdxK = ProbeIdxFromGridPos(posK, gridData.density);
-                    const int dataIdxK = probeIdxK * objects.polyCoeffsPerProbe + coeffIdx * objects.polyCoeffsPerCoefficient;
-                    assert(dataIdxK < objects.cu_polyCoeffs->Size());
-                    const vec3* polyCoeffs = &(*objects.cu_polyCoeffs)[dataIdxK];
+                    const int dataIdxK = probeIdxK * objects.regrCoeffsPerProbe + coeffIdx * objects.regrCoeffsPerSHCoeff;
+                    assert(dataIdxK < objects.cu_C->Size());
+                    const vec3* C = &(*objects.cu_C)[dataIdxK];
                     
-                    vec3 L(0.0f);
+                    vec3 L(0.0f);                    
+                    int t = 0;
                     float zExp = 1.0f;
-                    for (int zt = 0, t = 0; zt <= params.polynomialOrder; zt++)
+                    for (int zt = 0; zt <= params.polynomialOrder; zt++)
                     {
                         float yExp = 1.0;
                         for (int yt = 0; yt <= params.polynomialOrder; yt++)
@@ -304,13 +508,20 @@ namespace Cuda
                             float xExp = 1.0;
                             for (int xt = 0; xt <= params.polynomialOrder; xt++, t++)
                             {
-                                L = polyCoeffs[t] * xExp * yExp * zExp;
-                                xExp *= x;
+                                L += C[t] * xExp * yExp * zExp;
+                                xExp *= nx;
                             }
-                            yExp *= y;
+                            yExp *= ny;
                         }
-                        zExp *= z;
+                        zExp *= nz;
                     }
+
+                    // Denormalise
+                    const vec3& kernelMin = C[t];
+                    const vec3& kernelMax = C[t + 1];
+                    L = kernelMin + L * (kernelMax - kernelMin);
+
+                    // Accumulate
                     LSum += L;
                     sumWeights += 1;
                 }
@@ -339,8 +550,7 @@ namespace Cuda
             KernelComputeRegressionWeights << < (numElements + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeStartIdx);
 
             // Run the regression step
-            numElements = m_objects->probesPerBatch * m_objects->gridData.shCoeffsPerProbe * 3;
-            //KernelComputeRegressionIteration <<< (numElements + 255) / 256, 256, 0, m_hostStream >>> (m_objects.GetDeviceObject());
+            KernelComputeRegressionIteration <<< m_regressionKernel.gridSize, m_regressionKernel.blockSize, m_regressionKernel.sharedMemoryBytes, m_hostStream >>> (m_objects.GetDeviceObject(), probeStartIdx);
         }       
 
         KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());

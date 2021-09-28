@@ -97,8 +97,8 @@ namespace Cuda
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
 			__device__ virtual const CameraParams& GetParams() const override final { return m_params.camera; }
 			__device__ void ReduceAccumulationBuffer(Device::Array<vec4>* accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSizeBegin, const uvec2 batchRange);
-			__device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result) const;
-			__device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
+			__device__ void GetProbeGridAggregateStatistics(const uint gridIdx, AggregateStatistics& result) const;
+			__device__ void ComputeProbeGridHistograms(const uint gridIdx, AggregateStatistics& result, uint* distanceHistogram) const;
 
 			__device__ void Synchronise(const LightProbeCameraParams& params);
 			__device__ void Synchronise(const Objects& objects);
@@ -162,16 +162,17 @@ namespace Cuda
 
 			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
-			AssetHandle<Host::Array<vec4>>						m_hostReduceBuffer;
+			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
+			std::array<std::string, 3>												m_gridIDs;
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
 
-			DeviceObjectRAII<Device::LightProbeCamera::AggregateStatistics> m_probeAggregateData;
-			DeviceObjectRAII<uint, 200>					m_coeffHistogram;
-			float										m_bakeProgress;
+			std::array<DeviceObjectRAII<Device::LightProbeCamera::AggregateStatistics>, kLightProbeNumBuffers>	m_probeAggregateData;
+			std::array<DeviceObjectRAII<uint, 200>, kLightProbeNumBuffers>										m_coeffHistogram;
+			float																								m_bakeProgress;
 
 			std::atomic<int>							m_exporterState;
 		};

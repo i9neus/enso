@@ -21,6 +21,7 @@ namespace Cuda
         int     regressionRadius;
         int     reconstructionRadius;
         int     regressionIterations;
+        float   learningRate;
     };
 
     namespace Host
@@ -32,10 +33,10 @@ namespace Cuda
             {
                 LightProbeRegressionFilterParams    params;
                 LightProbeFilterGridData            gridData;
-
-                int                                 polyCoeffsPerCoefficient;
-                int                                 polyCoeffsPerProbe;
-                int                                 numPolyCoeffs;
+                
+                int                                 regrCoeffsPerSHCoeff;
+                int                                 regrCoeffsPerProbe;
+                int                                 totalRegrCoeffs;
                 int                                 probesPerBatch;     
                 
                 struct
@@ -43,6 +44,7 @@ namespace Cuda
                     int volume;
                     int span;
                     int radius;
+                    int numMonomials;
                 }
                 regression;
 
@@ -54,8 +56,10 @@ namespace Cuda
                 } 
                 reconstruction;
 
-                Device::Array<vec3>*                cu_polyCoeffs = nullptr;
-                Device::Array<float>*               cu_regressionWeights = nullptr;
+                Device::Array<vec3>*                cu_C = nullptr;
+                Device::Array<float>*               cu_D = nullptr;
+                Device::Array<vec3>*                cu_dLdC = nullptr;
+                Device::Array<float>*               cu_W = nullptr;
             };
 
         private:
@@ -63,16 +67,22 @@ namespace Cuda
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostInputHalfGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
-            AssetHandle<Host::Array<vec3>>          m_hostPolyCoeffs;
-            AssetHandle<Host::Array<float>>         m_hostRegressionWeights;
+            AssetHandle<Host::Array<vec3>>          m_hostC;
+            AssetHandle<Host::Array<float>>         m_hostD;
+            AssetHandle<Host::Array<vec3>>          m_hostdLdC;
+            AssetHandle<Host::Array<float>>         m_hostW;
 
             std::string                             m_inputGridID;
             std::string                             m_inputGridHalfID;
             std::string                             m_outputGridID;
 
-            int                                     m_gridSize;
-            int                                     m_blockSize;
-            int                                     m_probeRange;
+            struct
+            {
+                int                                     gridSize;
+                int                                     blockSize;
+                int                                     sharedMemoryBytes;
+            }
+            m_regressionKernel;
 
         public:
             __host__ LightProbeRegressionFilter(const ::Json::Node& jsonNode, const std::string& id);
@@ -91,6 +101,9 @@ namespace Cuda
             __host__ static std::string                         GetAssetDescriptionString() { return "Light Probe Regression Filter"; }
             __host__ static AssetType                           GetAssetStaticType() { return AssetType::kLightProbeFilter; }
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
+
+        private:
+            __host__ void                                       PrecomputeMonomialMatrices();
         };
     }
 }

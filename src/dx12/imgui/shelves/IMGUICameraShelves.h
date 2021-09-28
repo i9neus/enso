@@ -22,13 +22,7 @@ public:
 
 // Light probe camera
 class LightProbeCameraShelf : public IMGUIShelf<Cuda::Host::LightProbeCamera, Cuda::LightProbeCameraParams>
-{
-    struct HistogramWidgetData
-    {
-        std::vector<float>  data;
-        float               maxValue;
-    };
-
+{  
 public:
     LightProbeCameraShelf(const Json::Node& json);
     virtual ~LightProbeCameraShelf() = default;
@@ -43,9 +37,23 @@ public:
 private:
     std::vector<std::string>    m_swizzleLabels;
 
-    float   m_meanProbeValidity;
-    float   m_meanProbeDistance;
-    int     m_maxSamplesTaken, m_minSamplesTaken;
-    std::vector<HistogramWidgetData> m_histogramWidgetData;
-    bool    m_hasHistogram;
+    struct HistogramWidgetData
+    {
+        std::vector<float>  data;
+        float               maxValue;
+    };
+
+    struct ProbeGridStatistics
+    {
+        std::string                 gridID;
+        float                       meanProbeValidity;
+        float                       meanProbeDistance;
+        int                         maxSamplesTaken;
+        int                         minSamplesTaken;
+        std::vector<HistogramWidgetData> histogramWidgetData;
+        bool                        hasHistogram;
+    };
+    
+    std::vector<ProbeGridStatistics> m_probeGridStatistics;
+    
 };
