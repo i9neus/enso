@@ -22,6 +22,9 @@ namespace Cuda
         int     reconstructionRadius;
         int     regressionIterations;
         float   learningRate;
+        int     minSamples;
+        float   tikhonovCoeff;
+
         LightProbeFilterNLMParams nlm;
     };
 
@@ -61,6 +64,7 @@ namespace Cuda
                 Device::Array<float>*               cu_D = nullptr;
                 Device::Array<vec3>*                cu_dLdC = nullptr;
                 Device::Array<float>*               cu_W = nullptr;
+                float*                              cu_T = nullptr;
             };
 
         private:
@@ -72,6 +76,7 @@ namespace Cuda
             AssetHandle<Host::Array<float>>         m_hostD;
             AssetHandle<Host::Array<vec3>>          m_hostdLdC;
             AssetHandle<Host::Array<float>>         m_hostW;
+            DeviceObjectRAII<float, 4*4*4>          m_hostT;
 
             std::string                             m_inputGridID;
             std::string                             m_inputGridHalfID;

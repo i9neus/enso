@@ -14,7 +14,9 @@ namespace Cuda
         regressionRadius(1),
         reconstructionRadius(1),
         regressionIterations(1),
-        learningRate(0.005f)
+        learningRate(0.005f), 
+        minSamples(64),
+        tikhonovCoeff(0.0f)
     {
 
     }
@@ -26,6 +28,8 @@ namespace Cuda
         node.AddValue("regressionIterations", regressionIterations);
         node.AddValue("reconstructionRadius", reconstructionRadius);
         node.AddValue("learningRate", learningRate);
+        node.AddValue("minSamples", minSamples);
+        node.AddValue("tikhonovCoeff", tikhonovCoeff);
         node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
 
         Json::Node nlmNode = node.AddChildObject("nlm");
@@ -39,6 +43,8 @@ namespace Cuda
         node.GetValue("regressionIterations", regressionIterations, flags);
         node.GetValue("reconstructionRadius", reconstructionRadius, flags);
         node.GetValue("learningRate", learningRate, flags);
+        node.GetValue("minSamples", minSamples, flags);
+        node.GetValue("tikhonovCoeff", tikhonovCoeff, flags);
         node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
 
         Json::Node nlmNode = node.GetChildObject("nlm", flags);
@@ -125,7 +131,7 @@ namespace Cuda
         assert(kKernelIdx < coeffBuffer->Size());
 
         PseudoRNG rng(HashOf(uint(kKernelIdx)));
-        (*coeffBuffer)[kKernelIdx] = rng.Rand<0, 1, 2>() * 0.5f;
+        (*coeffBuffer)[kKernelIdx] = rng.Rand<0>() * 0.5f - 0.25f;
     }
 
     __host__ void Host::LightProbeRegressionFilter::Prepare()
@@ -182,6 +188,7 @@ namespace Cuda
         m_objects->cu_dLdC = m_hostdLdC->GetDeviceInstance();
         m_objects->cu_D = m_hostD->GetDeviceInstance();
         m_objects->cu_W = m_hostW->GetDeviceInstance();
+        m_objects->cu_T = m_hostT.GetDeviceObject();
         m_objects.Upload();
 
         // Generate some random numbers to seed the polynomial coefficients
@@ -247,9 +254,24 @@ namespace Cuda
                 }
             }
         }
-
         // Upload the matrices to the Cuda array
         m_hostD->Upload(D);
+
+        // Compute the constants for the Tikhonov regularisation matrix
+        for (int zt = 0, tIdx = 0; zt <= polynomialOrder; zt++)
+        {
+            float yExp = 1.0f;
+            for (int yt = 0; yt <= polynomialOrder; yt++)
+            {
+                float xExp = 1.0f;
+                for (int xt = 0; xt <= polynomialOrder; ++xt, ++tIdx)
+                {
+                    //m_hostT[tIdx] = (xt + yt + zt) * m_objects->params.tikhonovCoeff;
+                    m_hostT[tIdx] = (tIdx == 0) ? 0.0f : m_objects->params.tikhonovCoeff;
+                }
+            }
+        }
+        m_hostT.Upload();
     }
 
     __global__ void KernelComputeRegressionWeights(Host::LightProbeRegressionFilter::Objects* objectsPtr, const int probeStartIdx)
@@ -325,6 +347,8 @@ namespace Cuda
         float* pBlock = reinterpret_cast<float*>(__block);
         __shared__ Host::LightProbeRegressionFilter::Objects objects;
         __shared__  const float* D;
+        __shared__ float gamma;
+        __shared__ float T[4*4*4];
 
         if (kThreadIdx == 0)
         {
@@ -337,6 +361,8 @@ namespace Cuda
             assert(objects.cu_W);
 
             D = objects.cu_D->GetData();
+            gamma = objects.params.tikhonovCoeff;
+            memcpy(T, objects.cu_T, sizeof(float) * 4*4*4);
         }
 
         __syncthreads();
@@ -406,22 +432,27 @@ namespace Cuda
             {
                 if (p[pIdx] == -kFltMax) { continue; }
 
-                // Accumulate the sum of polynomial coefficients multiplied by the monomial constants associated with them
+                // Accumulate the sum of polynomial coefficients multiplied by the associated monomial constants
                 float sigma = -p[pIdx];
+                float tikhonov = 0.0f;
+                const float& w = W[pIdx];
                 for (int cIdx = 0, dIdx = pIdx * objects.regression.numMonomials; cIdx < objects.regression.numMonomials; ++cIdx, ++dIdx)
                 {
                     assert(dIdx < objects.cu_D->Size());
-                    sigma += C[cIdx][channelIdx] * D[dIdx];
+                    const float cd = C[cIdx][channelIdx] * D[dIdx];
+                    tikhonov += sqr(cd * T[cIdx]);
+                    sigma += cd;
                 }
 
                 // Accumulate the partial derivatives for each constant
                 for (int cIdx = 0, dIdx = pIdx * objects.regression.numMonomials; cIdx < objects.regression.numMonomials; ++cIdx, ++dIdx)
                 {
-                    dLdC[cIdx][channelIdx] += 2.0 * D[dIdx] * sigma * W[pIdx];
+                    dLdC[cIdx][channelIdx] += (2.0 * D[dIdx] * sigma + 
+                                               2.0f * C[cIdx][channelIdx] * sqr(D[dIdx] * T[cIdx])) * w;
                 }
 
                 // Accumulate the weighted sum of the derivatives as the L2 loss
-                L2Loss += sqr(sigma) * W[pIdx];
+                L2Loss += (sqr(sigma) + tikhonov) * w;
             }
             L2Loss /= sumW;
 
@@ -531,7 +562,8 @@ namespace Cuda
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
         // Pass-through filter just copies the data
-        if (m_objects->params.filterType == kKernelFilterNull)
+        const auto& gridStats = m_hostInputGrid->GetAggregateStatistics();
+        if (m_objects->params.filterType == kKernelFilterNull || gridStats.minMaxSamples.y < m_objects->params.minSamples)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             return;
