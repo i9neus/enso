@@ -251,6 +251,114 @@ namespace Cuda
         return L;
     }
 
+    __device__ void Device::LightProbeGrid::ComputeProbeGridHistograms(Device::LightProbeGrid::AggregateStatistics& aggregate, uint* coeffHistogram) const
+    {
+        __shared__ uint sharedHistogram[200];
+        __shared__ vec2 coeffRange[4];
+
+        if (kThreadIdx == 0)
+        {
+            // Initialise the data in the local stats array
+            for (int i = 0; i < 200; ++i) { sharedHistogram[i] = 0; }
+            for (int i = 0; i < 4; ++i)
+            {
+                coeffRange[i].x = aggregate.minMaxCoeffs[i].x;
+                coeffRange[i].y = 1.0f / max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+            }
+        }
+
+        __syncthreads();
+
+        const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
+        const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
+        for (int i = startIdx; i <= endIdx; i++)
+        {
+            // Bin the coefficients
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
+            {
+                const float extremum = /*SignedLog*/(cwiseExtremum(At(i)[coeffIdx]));
+                const int binIdx = int(50.0f * clamp((extremum - coeffRange[coeffIdx].x) * coeffRange[coeffIdx].y, 0.0f, nextafterf(1.0f, 0.0f)));
+
+                atomicInc(&sharedHistogram[50 * coeffIdx + binIdx], 0xffffffff);
+            }
+        }
+
+        __syncthreads();
+
+        if (kThreadIdx == 0)
+        {
+            memcpy(coeffHistogram, sharedHistogram, sizeof(int) * 200);
+        }
+    }
+
+    __device__ void Device::LightProbeGrid::GetProbeGridAggregateStatistics(Device::LightProbeGrid::AggregateStatistics& result) const
+    {
+        __shared__ AggregateStatistics localStats[256];
+        __shared__ Device::LightProbeGrid* grid;
+
+        if (kThreadIdx == 0)
+        {
+            // Initialise the data in the local stats array
+            for (int i = 0; i < 256; i++)
+            {
+                localStats[i].minMaxSamples = vec2(kFltMax, 0.0f);
+                for (int j = 0; j < 4; ++j)
+                {
+                    localStats[i].minMaxCoeffs[j] = vec2(kFltMax, -kFltMax);
+                }
+                localStats[i].meanValidity = 0.0f;
+                localStats[i].meanDistance = 0.0f;
+                localStats[i].probeCount = 0;
+            }
+        }
+
+        __syncthreads();
+
+        const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
+        const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
+        localStats[kKernelIdx].probeCount = 1 + endIdx - startIdx;
+
+        for (int i = startIdx; i <= endIdx; i++)
+        {
+            // Accumulate coefficient ranges for the histograms
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
+            {
+                const auto& coeff = At(i)[coeffIdx];
+                auto& minMax = localStats[kKernelIdx].minMaxCoeffs[coeffIdx];
+                minMax.x = min(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
+                minMax.y = max(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
+            }
+
+            // Accumulate probe states
+            const auto& coeff = At(i)[m_params.coefficientsPerProbe - 1];
+            localStats[kKernelIdx].minMaxSamples = vec2(min(localStats[kKernelIdx].minMaxSamples.x, coeff.z), max(localStats[kKernelIdx].minMaxSamples.y, coeff.z));
+            localStats[kKernelIdx].meanValidity += coeff.x;
+            localStats[kKernelIdx].meanDistance += coeff.y;
+        }
+
+        __syncthreads();
+
+        if (kThreadIdx == 0)
+        {
+            // Accumulate global stats from shared memory
+            result = localStats[0];
+            result.meanValidity /= float(max(1, localStats[0].probeCount));
+            result.meanDistance /= float(max(1, localStats[0].probeCount));
+            for (int i = 1; i < 256; i++)
+            {
+                result.minMaxSamples = vec2(min(localStats[i].minMaxSamples.x, result.minMaxSamples.x), max(localStats[i].minMaxSamples.y, result.minMaxSamples.y));
+                for (int j = 0; j < 4; ++j)
+                {
+                    result.minMaxCoeffs[j] = vec2(min(localStats[i].minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(localStats[i].minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
+                }
+                result.meanValidity += localStats[i].meanValidity / float(max(1, localStats[i].probeCount));
+                result.meanDistance += localStats[i].meanDistance / float(max(1, localStats[i].probeCount));
+            }
+            result.meanValidity /= 256.0f;
+            result.meanDistance /= 256.0f;
+        }
+    }
+
     __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id)
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
@@ -350,5 +458,42 @@ namespace Cuda
     __host__ bool Host::LightProbeGrid::IsValid() const
     {
         return m_shData->Size() > 0;
+    }
+
+    __global__ void KernelGetProbeGridAggregateStatistics(Device::LightProbeGrid* camera, Device::LightProbeGrid::AggregateStatistics* stats)
+    {
+        assert(stats);
+        camera->GetProbeGridAggregateStatistics(*stats);
+    }
+
+    __global__ void KernelComputeProbeGridHistograms(Device::LightProbeGrid* camera, Device::LightProbeGrid::AggregateStatistics* stats, uint* histogram)
+    {
+        assert(stats);
+        assert(histogram);
+        camera->ComputeProbeGridHistograms(*stats, histogram);
+    }
+
+    __host__ const Device::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::UpdateAggregateStatistics()
+    {
+        // Compute aggregate statistics (min/max ranges, counts, etc) for the probe grid
+        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject());
+
+        // Compute coefficient histograms
+        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_coeffHistogram.GetDeviceObject());
+        IsOk(cudaStreamSynchronize(m_hostStream));
+
+        m_probeAggregateData.Download();
+        m_coeffHistogram.Download();
+
+        return *m_probeAggregateData;
+    }
+
+    __host__ const Device::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::GetAggregateStatistics(const uint** histogram) const
+    {
+        if (histogram)
+        {
+            *histogram = &(*m_coeffHistogram);
+        }
+        return *m_probeAggregateData;
     }
 }

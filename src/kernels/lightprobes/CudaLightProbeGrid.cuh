@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "../CudaRenderObjectContainer.cuh"
+#include "../CudaDeviceObjectRAII.cuh"
 
 namespace Cuda
 {
@@ -70,6 +71,17 @@ namespace Cuda
         class LightProbeGrid : public Device::RenderObject, public AssetTags<Host::LightProbeGrid, Device::LightProbeGrid>
         {
         public:
+            struct AggregateStatistics
+            {
+                __host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f), probeCount(0) {}
+
+                vec2	minMaxSamples;
+                vec2	minMaxCoeffs[4];
+                float	meanValidity;
+                float	meanDistance;
+                int		probeCount;
+            };
+
             struct Objects
             {
                 Device::Array<vec3>* cu_shData = nullptr;
@@ -89,6 +101,8 @@ namespace Cuda
             __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
             __device__ void PrepareValidityGrid();
             __device__ const LightProbeGridParams& GetParams() const { return m_params; }
+            __device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result) const;
+            __device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
 
         private:
             __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
@@ -125,6 +139,8 @@ namespace Cuda
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }
             __host__ AssetHandle<Host::Array<uchar>>&   GetValidityDataAsset() { return m_validityData; }
+            __host__ const Device::LightProbeGrid::AggregateStatistics& UpdateAggregateStatistics();
+            __host__ const Device::LightProbeGrid::AggregateStatistics& GetAggregateStatistics(const uint** histogram = nullptr) const;
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;
@@ -134,6 +150,9 @@ namespace Cuda
             AssetHandle<Host::Array<uchar>>  m_validityData;
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
+
+            DeviceObjectRAII<Device::LightProbeGrid::AggregateStatistics>	m_probeAggregateData;
+            DeviceObjectRAII<uint, 200>										m_coeffHistogram;
         };
     }
 }

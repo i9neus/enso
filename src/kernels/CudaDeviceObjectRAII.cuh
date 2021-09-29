@@ -64,6 +64,8 @@ namespace Cuda
             return cu_deviceObject;
         }
 
+        __host__ Type& operator*(void) { return m_hostObject[0]; }
+        __host__ const Type& operator*(void) const { return m_hostObject[0]; }
         __host__ Type* operator->(void) { return &m_hostObject[0]; }
         __host__ const Type* operator->(void) const { return &m_hostObject[0]; }
         __host__ Type& operator[](const int idx) { Assert(idx >= 0 && idx < NumElements); return m_hostObject[idx]; }
