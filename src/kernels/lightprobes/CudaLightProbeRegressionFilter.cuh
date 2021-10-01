@@ -70,7 +70,8 @@ namespace Cuda
         private:
             DeviceObjectRAII<Objects>               m_objects;
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
-            AssetHandle<Host::LightProbeGrid>       m_hostInputHalfGrid;
+            AssetHandle<Host::LightProbeGrid>       m_hostCrossGrid;
+            AssetHandle<Host::LightProbeGrid>       m_hostCrossHalfGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
             AssetHandle<Host::Array<vec3>>          m_hostC;
             AssetHandle<Host::Array<float>>         m_hostD;
@@ -79,7 +80,8 @@ namespace Cuda
             DeviceObjectRAII<float, 4*4*4>          m_hostT;
 
             std::string                             m_inputGridID;
-            std::string                             m_inputGridHalfID;
+            std::string                             m_crossGridID;
+            std::string                             m_crossGridHalfID;
             std::string                             m_outputGridID;
 
             struct

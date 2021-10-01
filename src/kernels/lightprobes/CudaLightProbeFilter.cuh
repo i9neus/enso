@@ -20,11 +20,13 @@ namespace Cuda
     struct LightProbeFilterGridData
     {
         __host__ LightProbeFilterGridData& Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
-                                                   AssetHandle<Host::LightProbeGrid>& hostInputHalfGrid,
+                                                   AssetHandle<Host::LightProbeGrid>& hostCrossGrid,
+                                                   AssetHandle<Host::LightProbeGrid>& hostCrossHalfGrid,
                                                    AssetHandle<Host::LightProbeGrid>& hostOutputGrid);
         
         const Device::LightProbeGrid*   cu_inputGrid = nullptr;
-        const Device::LightProbeGrid*   cu_inputHalfGrid = nullptr;
+        const Device::LightProbeGrid*   cu_crossGrid = nullptr;
+        const Device::LightProbeGrid*   cu_crossHalfGrid = nullptr;
         Device::LightProbeGrid*         cu_outputGrid = nullptr;
 
         ivec3                           density;

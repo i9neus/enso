@@ -131,6 +131,7 @@ void LightProbeCameraShelf::Construct()
     {
         ImGui::PushID(gridStats.gridID.c_str());
         ImGui::Text(gridStats.gridID.c_str());
+        ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
         ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
         ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
 

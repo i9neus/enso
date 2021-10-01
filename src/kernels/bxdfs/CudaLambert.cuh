@@ -10,12 +10,13 @@ namespace Cuda
 
     struct LambertBRDFParams
     {
-        __host__ __device__ LambertBRDFParams() : lightProbeGridIdx(0) {}
+        __host__ __device__ LambertBRDFParams() : lightProbeGridIdx(0), useLightProbeGrid(false) {}
         __host__ LambertBRDFParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        bool    useLightProbeGrid;
         int     lightProbeGridIdx;
     };
 
@@ -28,6 +29,11 @@ namespace Cuda
             friend Host::LambertBRDF;
 
         public:
+            struct Objects
+            {
+                Device::LightProbeGrid* lightProbeGrids[2] = { nullptr, nullptr };
+            };
+
             LambertBRDF() = default;
             ~LambertBRDF() = default;
 
@@ -36,10 +42,13 @@ namespace Cuda
             __device__ virtual vec3 EvaluateCachedRadiance(const HitCtx& hitCtx) const override final;
             __device__ virtual bool IsTwoSided() const override final { return false; }
 
-            __device__ void Synchronise(Device::LightProbeGrid* lightProbeGrid) { cu_lightProbeGrid = lightProbeGrid; }
+            __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
+            __device__ void Synchronise(const LambertBRDFParams& params) { m_params = params; }
 
         private:
             Device::LightProbeGrid* cu_lightProbeGrid = nullptr;
+            LambertBRDFParams       m_params;
+            Objects                 m_objects;
         };
     }
 
@@ -52,7 +61,7 @@ namespace Cuda
         private:
             Device::LambertBRDF*                    cu_deviceData;
             Device::LambertBRDF                     m_hostData; 
-            AssetHandle<Host::LightProbeGrid>	    m_hostLightProbeGrid;
+            std::array<AssetHandle<Host::LightProbeGrid>, 2>	    m_hostLightProbeGrids;
 
             std::string                             m_gridIDs[2];
             LambertBRDFParams                       m_params;

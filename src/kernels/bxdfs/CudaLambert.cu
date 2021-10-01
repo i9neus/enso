@@ -11,12 +11,15 @@ namespace Cuda
     __host__ void LambertBRDFParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("lightProbeGridIndex", lightProbeGridIdx);
+        node.AddValue("useLightProbeGrid", useLightProbeGrid);
     }
 
     __host__ void LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("lightProbeGridIndex", lightProbeGridIdx, ::Json::kRequiredWarn);
-        lightProbeGridIdx = clamp(lightProbeGridIdx, 0, 1);
+        node.GetValue("useLightProbeGrid", useLightProbeGrid, ::Json::kRequiredWarn);
+        lightProbeGridIdx = clamp(lightProbeGridIdx, 1, 3);
+
     }
     
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const
@@ -40,7 +43,12 @@ namespace Cuda
 
     __device__ vec3 Device::LambertBRDF::EvaluateCachedRadiance(const HitCtx& hitCtx) const
     {
-        return (cu_lightProbeGrid) ? cu_lightProbeGrid->Evaluate(hitCtx) : vec3(0.0f);
+        if (!m_params.useLightProbeGrid) { return kZero; }
+
+        vec3 L(0.0f);
+        if (m_params.lightProbeGridIdx & 1 && m_objects.lightProbeGrids[0]) { L += m_objects.lightProbeGrids[0]->Evaluate(hitCtx); }
+        if (m_params.lightProbeGridIdx & 2 && m_objects.lightProbeGrids[1]) { L += m_objects.lightProbeGrids[1]->Evaluate(hitCtx); }
+        return L;
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LambertBRDF::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -60,7 +68,8 @@ namespace Cuda
 
     __host__ void Host::LambertBRDF::OnDestroyAsset()
     {
-        m_hostLightProbeGrid = nullptr;
+        m_hostLightProbeGrids[0] = nullptr;
+        m_hostLightProbeGrids[1] = nullptr;
         DestroyOnDevice(cu_deviceData);
     }
 
@@ -70,8 +79,8 @@ namespace Cuda
         m_params.FromJson(parentNode, ::Json::kRequiredWarn);
 
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
-        m_gridIDs[0] = "grid_noisy_direct";
-        m_gridIDs[1] = "grid_noisy_indirect";
+        //m_gridIDs[0] = "grid_noisy_direct";
+        //m_gridIDs[1] = "grid_noisy_indirect";
 
         parentNode.GetValue("gridDirectID", m_gridIDs[0], ::Json::kRequiredWarn);
         parentNode.GetValue("gridIndirectID", m_gridIDs[1], ::Json::kRequiredWarn);
@@ -79,24 +88,29 @@ namespace Cuda
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
     {
-        Device::LightProbeGrid* cu_grid = nullptr;
+        m_hostData.m_objects = Device::LambertBRDF::Objects();
         
-        Assert(m_params.lightProbeGridIdx >= 0 && m_params.lightProbeGridIdx < 2);
-        if (!m_gridIDs[m_params.lightProbeGridIdx].empty())
+        Assert(m_params.lightProbeGridIdx >= 1 && m_params.lightProbeGridIdx <= 3);
+        for (int gridIdx = 0; gridIdx < 2; ++gridIdx)
         {
-            m_hostLightProbeGrid = sceneObjects.FindByID<Host::LightProbeGrid>(m_gridIDs[m_params.lightProbeGridIdx]);
-            if (m_hostLightProbeGrid)
+            if (!m_gridIDs[gridIdx].empty())
             {
-                cu_grid = m_hostLightProbeGrid->GetDeviceInstance();
-                Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", m_params.lightProbeGridIdx, m_gridIDs[m_params.lightProbeGridIdx], GetAssetID());
-            }
-            else
-            {
-                Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': grid not found.\n", m_gridIDs[m_params.lightProbeGridIdx], GetAssetID());
+                auto& grid = m_hostLightProbeGrids[gridIdx];
+                grid = sceneObjects.FindByID<Host::LightProbeGrid>(m_gridIDs[gridIdx]);
+                if (grid)
+                {
+                    m_hostData.m_objects.lightProbeGrids[gridIdx] = grid->GetDeviceInstance();
+                    Log::Write("Bound probe grid %i from camera '%s' to Lambert BRDF '%s'.\n", gridIdx, m_gridIDs[gridIdx], GetAssetID());
+                }
+                else
+                {
+                    Log::Error("Error: could not bind probe grid '%s' to Lambert BRDF '%s': grid not found.\n", m_gridIDs[gridIdx], GetAssetID());
+                }
             }
         }
-
-        Cuda::SynchroniseObjects(cu_deviceData, cu_grid);
+        
+        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+        Cuda::SynchroniseObjects(cu_deviceData, m_hostData.m_objects);
     }
 
     __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)

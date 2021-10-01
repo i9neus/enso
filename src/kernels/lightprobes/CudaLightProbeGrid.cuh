@@ -105,7 +105,7 @@ namespace Cuda
             __device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
 
         private:
-            __device__ vec3 InterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
+            __device__ vec3 NearestNeighbourCoefficient(const ivec3 gridIdx, const uint coeffIdx) const;
             __device__ vec3 WeightedInterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const;
             __device__ __forceinline__ uchar GetValidity(const ivec3& gridIdx) const;
 

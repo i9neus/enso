@@ -188,12 +188,13 @@ namespace Cuda
             int accumIdx = emplacedRay.accumIdx * m_params.coefficientsPerProbe;
             auto& accumBuffer = *(m_objects.cu_accumBuffers[gridIdx]);
             const float weight = !isAlive;
-
+            
             // Should we accumulate this sample?
-            if ((gridIdx != kLightProbeBufferHalf && (m_params.lightingMode == kBakeLightingCombined || 
-                                                      (gridIdx == 0 && incidentRay.depth == 1) || (gridIdx == 1 && incidentRay.depth > 1))) 
-                || (gridIdx == kLightProbeBufferHalf && emplacedRay.sampleIdx % 2u == 1u))
-                
+            bool accumulate = (gridIdx == 1 && incidentRay.depth > 1) ||
+                (gridIdx != 1 && (incidentRay.depth <= 1 || m_params.lightingMode == kBakeLightingCombined));
+            if (gridIdx == kLightProbeBufferHalf && (emplacedRay.sampleIdx % 2u != 1u || (m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1))) { accumulate = false; }
+
+            if(accumulate)  
             {              
                 // Project and accumulate the SH coefficients
                 for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx)
@@ -207,7 +208,7 @@ namespace Cuda
                 for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx) { accumBuffer[accumIdx][3] += weight; }
             }
 
-            if (gridIdx != kLightProbeBufferHalf && incidentRay.depth == 1)
+            if (gridIdx != kLightProbeBufferHalf && incidentRay.IsIndirectSample())//&& incidentRay.depth == 1)
             {
                 // Accumulate validity and mean distance
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene

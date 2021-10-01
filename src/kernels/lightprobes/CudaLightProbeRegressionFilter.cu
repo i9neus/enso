@@ -61,7 +61,8 @@ namespace Cuda
         FromJson(node, Json::kRequiredWarn);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
-        node.GetValue("inputGridHalfID", m_inputGridHalfID, Json::kNotBlank);
+        node.GetValue("crossGridID", m_crossGridID, Json::kNotBlank);
+        node.GetValue("crossGridHalfID", m_crossGridHalfID, Json::kNotBlank);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
 
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
@@ -110,15 +111,38 @@ namespace Cuda
             Log::Error("Error: LightProbeRegressionFilter::Bind(): the specified input light probe grid '%s' is invalid.\n", m_inputGridID);
             return;
         }
-
-        m_hostInputHalfGrid = nullptr;
-        if (!m_inputGridHalfID.empty())
+        else
         {
-            m_hostInputHalfGrid = sceneObjects.FindByID(m_inputGridHalfID).DynamicCast<Host::LightProbeGrid>();
-            if (!m_hostInputHalfGrid)
+            Log::Write("Bound input light probe grid '%s' to regression filter.", m_inputGridID);
+        }
+
+        m_hostCrossGrid = nullptr;
+        if (!m_crossGridID.empty())
+        {
+            m_hostCrossGrid = sceneObjects.FindByID(m_crossGridID).DynamicCast<Host::LightProbeGrid>();
+            if (!m_hostCrossGrid)
             {
-                Log::Error("Error: LightProbeRegressionFilter::Bind(): the specified half input light probe grid '%s' is invalid.\n", m_inputGridHalfID);
+                Log::Error("Error: LightProbeRegressionFilter::Bind(): the specified cross light probe grid '%s' is invalid.\n", m_crossGridID);
                 return;
+            }
+            else
+            {
+                Log::Write("Bound cross light probe grid '%s' to regression filter.", m_crossGridID);
+            }
+        }
+
+        m_hostCrossHalfGrid = nullptr;
+        if (!m_crossGridHalfID.empty())
+        {
+            m_hostCrossHalfGrid = sceneObjects.FindByID(m_crossGridHalfID).DynamicCast<Host::LightProbeGrid>();
+            if (!m_hostCrossHalfGrid)
+            {
+                Log::Error("Error: LightProbeRegressionFilter::Bind(): the specified half cross light probe grid '%s' is invalid.\n", m_crossGridHalfID);
+                return;
+            }
+            else
+            {
+                Log::Write("Bound half cross light probe grid '%s' to regression filter.", m_crossGridHalfID);
             }
         }
 
@@ -142,7 +166,7 @@ namespace Cuda
         Assert(m_hostC); // Sanity check
 
         // Establish the dimensions of the kernel
-        auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
+        auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostCrossGrid, m_hostCrossHalfGrid, m_hostOutputGrid);
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
      
         // Precompute some values for the regression step

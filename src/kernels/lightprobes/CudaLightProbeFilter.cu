@@ -34,13 +34,15 @@ namespace Cuda
     }
 
     __host__ LightProbeFilterGridData& LightProbeFilterGridData::Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
-                                                                         AssetHandle<Host::LightProbeGrid>& hostInputHalfGrid,
+                                                                         AssetHandle<Host::LightProbeGrid>& hostCrossGrid,
+                                                                         AssetHandle<Host::LightProbeGrid>& hostCrossHalfGrid,
                                                                          AssetHandle<Host::LightProbeGrid>& hostOutputGrid)
     {
         Assert(hostInputGrid);
         
         cu_inputGrid = hostInputGrid->GetDeviceInstance();
-        cu_inputHalfGrid = (hostInputHalfGrid) ? hostInputHalfGrid->GetDeviceInstance() : nullptr;
+        cu_crossGrid = (hostCrossGrid) ? hostCrossGrid->GetDeviceInstance() : nullptr;
+        cu_crossHalfGrid = (hostCrossHalfGrid) ? hostCrossHalfGrid->GetDeviceInstance() : nullptr;
         cu_outputGrid = (hostOutputGrid) ? hostOutputGrid->GetDeviceInstance() : nullptr;
 
         // Copy some variables out of the input grid to save time
@@ -61,7 +63,7 @@ namespace Cuda
         float weights[kMaxCoefficients];
         memset(weights, 0, sizeof(float) * kMaxCoefficients);
 
-        if (!gridData.cu_inputHalfGrid) { return 0.0f; }
+        if (!gridData.cu_crossGrid || !gridData.cu_crossHalfGrid) { return 0.0f; }
 
         // Iterate over the local block surrounding each element and compute the relative distance
         for (int w = -nlmParams.patchRadius; w <= nlmParams.patchRadius; ++w)
@@ -70,17 +72,17 @@ namespace Cuda
             {
                 for (int u = -nlmParams.patchRadius; u <= nlmParams.patchRadius; ++u)
                 {
-                    const int probeIdxM = gridData.cu_inputGrid->IdxAt(pos0 + ivec3(u, v, w));
-                    const int probeIdxN = gridData.cu_inputGrid->IdxAt(pos0 + posK + ivec3(u, v, w));
+                    const int probeIdxM = gridData.cu_crossGrid->IdxAt(pos0 + ivec3(u, v, w));
+                    const int probeIdxN = gridData.cu_crossGrid->IdxAt(pos0 + posK + ivec3(u, v, w));
                     if (probeIdxM < 0 || probeIdxN < 0) { continue; }
 
-                    const vec3* probeM = gridData.cu_inputGrid->At(probeIdxM);
-                    const vec3* probeN = gridData.cu_inputGrid->At(probeIdxN);
+                    const vec3* probeM = gridData.cu_crossGrid->At(probeIdxM);
+                    const vec3* probeN = gridData.cu_crossGrid->At(probeIdxN);
 
                     if (probeM[gridData.coefficientsPerProbe - 1].x < 0.5f || probeN[gridData.coefficientsPerProbe - 1].x < 0.5f) { continue; }
 
-                    const vec3* probeHalfM = gridData.cu_inputHalfGrid->At(probeIdxM);
-                    const vec3* probeHalfN = gridData.cu_inputHalfGrid->At(probeIdxN);
+                    const vec3* probeHalfM = gridData.cu_crossHalfGrid->At(probeIdxM);
+                    const vec3* probeHalfN = gridData.cu_crossHalfGrid->At(probeIdxN);
 
                     for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe - 1; ++coeffIdx)
                     {
