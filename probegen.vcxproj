@@ -208,6 +208,7 @@
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaPlane.cu" />
+    <CudaCompile Include="src\kernels\tracables\CudaSDF.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaTracable.cu" />
   </ItemGroup>

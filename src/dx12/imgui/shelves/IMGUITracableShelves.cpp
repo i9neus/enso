@@ -103,6 +103,74 @@ void KIFSShelf::Jitter(const uint flags, const uint operation)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+SDFShelf::SDFShelf(const Json::Node& json) :
+    IMGUIShelf(json),
+    m_jitteredParamTable("KIFS Params")
+{
+   
+}
+
+void SDFShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    ConstructJitteredTransform(m_p.transform, true);
+
+    m_jitteredParamTable.Construct();
+
+    ConstructComboBox("SDF Primitive", std::vector<std::string>({ "Sphere", "Torus", "Box" }), m_p.primitiveType);
+    HelpMarker("The shape of the SDF clip object.");
+
+    if (m_p.primitiveType == Cuda::kSDFPrimitiveSphere)
+    {
+        ImGui::DragFloat("Radius", &m_p.sphere.r, math::max(0.001f, m_p.sphere.r * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+    }
+    else if (m_p.primitiveType == Cuda::kSDFPrimitiveTorus)
+    {
+        ImGui::DragFloat("Radius 1", &m_p.torus.r1, math::max(0.001f, m_p.torus.r1 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+        ImGui::DragFloat("Radius 2", &m_p.torus.r2, math::max(0.001f, m_p.torus.r2 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+    }
+    else if (m_p.primitiveType == Cuda::kSDFPrimitiveBox)
+    {
+        ImGui::DragFloat("Size", &m_p.box.size, math::max(0.001f, m_p.box.size * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+    }
+
+    ImGui::DragInt("Max Specular Interations", &m_p.maxSpecularIterations, 1, 1, 500);
+    HelpMarker("The maximum number of iterations applied to specular rays");
+
+    ImGui::DragInt("Max Diffuse Iterations", &m_p.maxDiffuseIterations, 1, 1, 500);
+    HelpMarker("The maximum number of iterations applied to diffuse rays.");
+
+    ImGui::DragFloat("Cutoff Threshold", &m_p.cutoffThreshold, math::max(0.00001f, m_p.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    HelpMarker("The threshold below which the ray is deemed to have interected the isosurface.");
+
+    ImGui::DragFloat("Escape Threshold", &m_p.escapeThreshold, math::max(0.01f, m_p.escapeThreshold * 0.01f), 0.0f, 5.0f);
+    HelpMarker("The threshold at which a sample is deemed to have left the SDF's field of influence.");
+
+    ImGui::DragFloat("Ray Increment", &m_p.rayIncrement, math::max(0.01f, m_p.rayIncrement * 0.01f), 0.0f, 2.0f);
+    HelpMarker("The increment multiplier applied at the marching step. Ideally, this value should be set to 1.");
+
+    ImGui::DragFloat("Ray Kickoff", &m_p.rayKickoff, math::max(0.01f, m_p.rayKickoff * 0.01f), 0.0f, 1.0f);
+    HelpMarker("The kickoff applied to child rays that are spawned from the surface of the SDF.");
+
+    ImGui::DragFloat("Fail Threshold", &m_p.failThreshold, math::max(0.00001f, m_p.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    HelpMarker("The threshold at which the value of the SDF invalidates the intersection. Raise this value to remove visible holes in the field.");
+}
+
+void SDFShelf::Update()
+{
+
+}
+
+void SDFShelf::Jitter(const uint flags, const uint operation)
+{
+    if (!(flags & kStatePermuteGeometry)) { return; }
+
+    if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 PlaneShelf::PlaneShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_flags(m_p.tracable.renderObject.flags, "Object flags")

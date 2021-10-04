@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "../math/CudaMath.cuh"
+#include "CudaTracable.cuh"
 
 namespace Cuda
 {    
-    namespace SDF
+    namespace SDFPrimitive
     {
         __device__ __forceinline__ vec4 Capsule(const vec3& p, const vec3& v0, const vec3& v1, const float r)
         {
@@ -39,33 +39,96 @@ namespace Cuda
             const float pLen = length(p);
             return vec4(pLen - r, vec3(p / pLen));
         }
+    }
+    
+    // Foreward declarations
+    namespace Host { class SDF; }
 
-        /*template<typename PolyType>
-        __device__ __forceinline__ vec4 PolyhedronFace(const vec3& p, const PolyType& poly, const uint& faceIdx, const float& scale)
+    enum __SDFPrimitive : int
+    {    
+        kSDFPrimitiveSphere,
+        kSDFPrimitiveTorus,
+        kSDFPrimitiveBox,
+        kSDFPrimitiveCapsule,
+        kNumSDFPrimitives
+    };
+
+    struct SDFParams
+    {
+        __host__ __device__ SDFParams();
+        __host__ SDFParams(const ::Json::Node& node, const uint flags);
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ void Update(const uint operation);
+
+        int primitiveType;
+        int maxSpecularIterations;
+        int maxDiffuseIterations;
+        float cutoffThreshold;
+        float escapeThreshold;
+        float rayIncrement;
+        float failThreshold;
+        float rayKickoff;
+
+        struct { float r; } sphere;
+        struct { float r1, r2; } torus;
+        struct { float size; } box;
+
+        TracableParams tracable;
+        BidirectionalTransform transform;
+    };
+
+    namespace Device
+    {       
+        class SDF : public Device::Tracable
         {
-            const vec3* V = poly.V;
-            const vec3& N = poly.N[faceIdx];
-            const uchar* F = &poly.F[faceIdx * PolyType::kPolyOrder];
-            vec3 grad;
+            friend Host::SDF;
 
-            // Test against each of the polygon's edges
-            for (int i = 0; i < PolyType::kPolyOrder; i++)
+        protected:
+            __device__ vec4 Field(vec3 p, const mat3& b, uint& code, uint& surfaceDepth) const;
+
+            vec3        m_origin;
+
+            SDFParams      m_params;
+
+            uint        m_numVertices;
+            uint        m_numFaces;
+            uint        m_polyOrder;
+
+        public:
+            __device__ SDF();
+            __device__ ~SDF() {}
+
+            __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
+            __device__ void Synchronise(const SDFParams& params)
             {
-                const vec3 dv = (V[F[(i + 1) % poly.kPolyOrder]] - V[F[i]]) * scale;
-                const vec3 vi = V[F[i]] * scale;
-                const vec3 edgeNorm = normalize(cross(dv, N));
-                if (dot(edgeNorm, p - vi) > 0.0f)
-                {
-                    const float t = clamp((dot(p, dv) - dot(vi, dv)) / dot(dv, dv), 0.0f, 1.0f);
-                    grad = p - (vi + t * dv);
-                    const float gradMag = length(grad);
-                    return vec4(gradMag, grad / gradMag);
-                }
+                m_params = params;
             }
+        };
+    }
 
-            // Test against the face itself
-            const vec3 v0 = V[F[0]] * scale;
-            return (dot(N, p - v0) < 0.0f) ? vec4((dot(p, -N) - dot(v0, -N)), -N) : vec4((dot(p, N) - dot(v0, N)), N);
-        }*/
+    namespace Host
+    {
+        class SDF : public Host::Tracable
+        {
+        private:
+            Device::SDF* cu_deviceData;
+            SDFParams m_params;
+
+        public:
+            __host__ SDF(const ::Json::Node& node);
+            __host__ virtual ~SDF() = default;
+
+            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
+
+            __host__ virtual void OnDestroyAsset() override final;
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ static std::string GetAssetTypeString() { return "sdf"; }
+            __host__ static std::string GetAssetDescriptionString() { return "SDF"; }
+            __host__ virtual Device::SDF* GetDeviceInstance() const override final { return cu_deviceData; }
+            __host__ virtual int GetIntersectionCostHeuristic() const override final { return 100; };
+            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.tracable.renderObject; }
+        };
     }
 }

@@ -398,11 +398,11 @@ namespace Cuda
             SDFPolyhedronFace(F, kcd, iterationScale, p, kcd.cubeData);
             break;
         case KIFSPrimitiveSphere:
-            F = SDF::Sphere(p, 0.5f * kcd.vertScale);
+            F = SDFPrimitive::Sphere(p, 0.5f * kcd.vertScale);
             F.x = (F.x * iterationScale) - kcd.crustThickness;
             break;
         case KIFSPrimitiveTorus:
-            F = SDF::Torus(p, 0.35f * kcd.vertScale, 0.15f * kcd.vertScale);
+            F = SDFPrimitive::Torus(p, 0.35f * kcd.vertScale, 0.15f * kcd.vertScale);
             F.x = (F.x * iterationScale) - kcd.crustThickness;
             break;
         case kKIFSPrimitiveTetrahedronCage:
@@ -412,7 +412,7 @@ namespace Cuda
             SDFPolyhedronCage(F, kcd, iterationScale, p, kcd.cubeData);
             break;
         default:
-            F = SDF::Box(p, 0.5f  * kcd.vertScale);
+            F = SDFPrimitive::Box(p, 0.5f  * kcd.vertScale);
             F.x = (F.x * iterationScale) - kcd.crustThickness;
             break;
         }
@@ -464,11 +464,11 @@ namespace Cuda
                 switch (m_params.sdf.clipShape)
                 {
                 case kKIFSClipSphere:
-                    FClip = SDF::Sphere(pWorld, 0.5f); break;
+                    FClip = SDFPrimitive::Sphere(pWorld, 0.5f); break;
                 case kKIFSClipTorus:
-                    FClip = SDF::Torus(pWorld, 0.4f, 0.1f); break;
+                    FClip = SDFPrimitive::Torus(pWorld, 0.4f, 0.1f); break;
                 default:
-                    FClip = SDF::Box(pWorld, 0.5f);
+                    FClip = SDFPrimitive::Box(pWorld, 0.5f);
                 }
                 FClip.x *= localMag;
                 if (FClip.x > F.x) 

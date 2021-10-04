@@ -8,6 +8,7 @@
 #include "kernels/tracables/CudaCornellBox.cuh"
 #include "kernels/tracables/CudaBox.cuh"
 #include "kernels/tracables/CudaKIFS.cuh"
+#include "kernels/tracables/CudaSDF.cuh"
 
 #include "IMGUIAbstractShelf.h"
 
@@ -25,14 +26,29 @@ public:
     virtual void            Jitter(const uint flags, const uint operation) override final;
 
 private:
-    void                    JitterKIFSParameters();
-
     int                     m_stateListCurrentIdx;
     std::string             m_stateListCurrentId;
     std::vector<char>       m_stateIDData;
     std::string             m_stateJsonPath;
 
     IMGUIJitteredFlagArray      m_faceFlags;
+    IMGUIJitteredParameterTable m_jitteredParamTable;
+};
+
+// SDF tracable
+class SDFShelf : public IMGUIShelf<Cuda::Host::SDF, Cuda::SDFParams>
+{
+public:
+    SDFShelf(const Json::Node& json);
+    virtual ~SDFShelf() = default;
+
+    static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new SDFShelf(json)); }
+    virtual void            Construct() override final;
+    virtual void            Update() override final;
+
+    virtual void            Jitter(const uint flags, const uint operation) override final;
+
+private:
     IMGUIJitteredParameterTable m_jitteredParamTable;
 };
 

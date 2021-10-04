@@ -3,11 +3,12 @@
 #include "CudaRenderObjectFactory.cuh"
 #include "CudaRenderObjectContainer.cuh"
 
-#include "tracables/CudaKIFS.cuh"
 #include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
 #include "tracables/CudaCornellBox.cuh"
 #include "tracables/CudaBox.cuh"
+#include "tracables/CudaSDF.cuh"
+#include "tracables/CudaKIFS.cuh"
 
 #include "lights/CudaQuadLight.cuh"
 #include "lights/CudaSphereLight.cuh"
@@ -35,6 +36,7 @@ namespace Cuda
     {
         AddInstantiator<Host::Sphere>();
         AddInstantiator<Host::KIFS>();
+        AddInstantiator<Host::SDF>();
         AddInstantiator<Host::Plane>();
         AddInstantiator<Host::CornellBox>();
         AddInstantiator<Host::Box>();
@@ -58,41 +60,6 @@ namespace Cuda
         AddInstantiator<Host::LightProbeKernelFilter>();
         AddInstantiator<Host::LightProbeRegressionFilter>();
     }    
-
-    struct TestStruct
-    {
-        JitterableFloat     rotateA;
-        JitterableFloat     rotateB;
-        JitterableFloat     scaleA;
-        JitterableFloat     scaleB;
-        JitterableFloat     vertScale;
-        JitterableFloat     crustThickness;
-        JitterableFlags     faceMask;
-
-        int                 numIterations;
-        int                 foldType;
-        int                 primitiveType;
-
-        struct
-        {
-            int maxSpecularIterations;
-            int maxDiffuseIterations;
-            float cutoffThreshold;
-            float escapeThreshold;
-            float rayIncrement;
-            float failThreshold;
-            float rayKickoff;
-
-            bool clipCameraRays;
-            int clipShape;
-        }
-        sdf;
-
-        RenderObjectParams tracable;
-        //BidirectionalTransform transform;
-
-        bool doTakeSnapshot;
-    };
 
     template<typename T, typename... Pack>
     __global__ inline void KernelCreateDeviceInstance2(T** newInstance, Pack... args)
@@ -119,20 +86,10 @@ namespace Cuda
 
         Log::System("Instantiated device object at 0x%x\n", cu_data);
         return cu_data;
-    }
-
-    void Test()
-    {
-        auto cu_deviceData = InstantiateOnDevice2<TestStruct>();
-
-        if(cu_deviceData) DestroyOnDevice(cu_deviceData);
-    }         
+    }       
    
     __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
-    {
-        //Test();
-        //return;
-        
+    {        
         for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
             AssetHandle<Host::RenderObject> newObject;
