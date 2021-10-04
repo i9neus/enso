@@ -17,6 +17,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
     m_instantiators[Cuda::Host::Plane::GetAssetTypeString()] = PlaneShelf::Instantiate;
     m_instantiators[Cuda::Host::Sphere::GetAssetTypeString()] = SphereShelf::Instantiate;
     m_instantiators[Cuda::Host::KIFS::GetAssetTypeString()] = KIFSShelf::Instantiate;
+    m_instantiators[Cuda::Host::SDF::GetAssetTypeString()] = SDFShelf::Instantiate;
     m_instantiators[Cuda::Host::CornellBox::GetAssetTypeString()] = CornellBoxShelf::Instantiate;
     m_instantiators[Cuda::Host::Box::GetAssetTypeString()] = BoxShelf::Instantiate;
 

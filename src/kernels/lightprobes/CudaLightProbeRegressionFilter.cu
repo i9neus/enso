@@ -16,6 +16,7 @@ namespace Cuda
         regressionIterations(1),
         learningRate(0.005f), 
         minSamples(64),
+        regressionMaxIterations(-1),
         tikhonovCoeff(0.0f)
     {
 
@@ -30,6 +31,7 @@ namespace Cuda
         node.AddValue("learningRate", learningRate);
         node.AddValue("minSamples", minSamples);
         node.AddValue("tikhonovCoeff", tikhonovCoeff);
+        node.AddValue("regressionMaxIterations", regressionMaxIterations);
         node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
 
         Json::Node nlmNode = node.AddChildObject("nlm");
@@ -45,6 +47,7 @@ namespace Cuda
         node.GetValue("learningRate", learningRate, flags);
         node.GetValue("minSamples", minSamples, flags);
         node.GetValue("tikhonovCoeff", tikhonovCoeff, flags);
+        node.GetValue("regressionMaxIterations", regressionMaxIterations, flags);
         node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
 
         Json::Node nlmNode = node.GetChildObject("nlm", flags);
@@ -160,6 +163,8 @@ namespace Cuda
 
     __host__ void Host::LightProbeRegressionFilter::Prepare()
     {
+        m_iterationCount = 0;
+        
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
@@ -586,12 +591,15 @@ namespace Cuda
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
         // Pass-through filter just copies the data
-        const auto& gridStats = m_hostInputGrid->GetAggregateStatistics();
-        if (m_objects->params.filterType == kKernelFilterNull || gridStats.minMaxSamples.y < m_objects->params.minSamples)
+        if (m_objects->params.filterType == kKernelFilterNull || !m_hostInputGrid->IsConverged()) 
         {
+            m_iterationCount = 0;
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             return;
         }
+
+        // If the filter has exceeded the maximum number of iterations, we're done
+        if (m_objects->params.regressionMaxIterations > 0 && m_iterationCount >= m_objects->params.regressionMaxIterations) { return; }        
 
         for (int probeStartIdx = 0; probeStartIdx < m_objects->gridData.numProbes; probeStartIdx += m_objects->probesPerBatch)
         {
@@ -604,6 +612,8 @@ namespace Cuda
         }       
 
         KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());
+
+        m_iterationCount += m_objects->params.regressionIterations;
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeRegressionFilter::GetChildObjectHandles()

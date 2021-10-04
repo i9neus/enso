@@ -40,7 +40,8 @@ void LightProbeRegressionFilterShelf::Construct()
 
     ImGui::SliderInt("Polynomial order", &m_p.polynomialOrder, 0, 3);
     ImGui::SliderInt("Regression radius", &m_p.regressionRadius, 0, 4);
-    ImGui::SliderInt("Regression iterations", &m_p.regressionIterations, 1, 100);
+    ImGui::DragInt("Regression iterations", &m_p.regressionIterations, 1.0f, 1, 100);
+    ImGui::DragInt("Regression max iterations", &m_p.regressionMaxIterations, 1.0f, 1, std::numeric_limits<int>::max());
     ImGui::DragFloat("Tikhonov regularisation", &m_p.tikhonovCoeff, max(m_p.tikhonovCoeff * 0.01f, 0.001f), 0.0f, 20.0f);
     ImGui::DragFloat("Learning rate", &m_p.learningRate, m_p.learningRate * 0.01f, 1e-8f, 1.0f, "%.8f");
     ImGui::SliderInt("Regression min samples", &m_p.minSamples, 0, 1024);

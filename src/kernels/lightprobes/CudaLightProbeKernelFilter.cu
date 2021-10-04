@@ -96,6 +96,8 @@ namespace Cuda
 
     __host__ void Host::LightProbeKernelFilter::Prepare()
     {
+        m_isActive = true;
+        
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
@@ -303,11 +305,14 @@ namespace Cuda
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
         
         // Pass-through filter just copies the data
-        if (m_objects->params.filterType == kKernelFilterNull)
+        if (m_objects->params.filterType == kKernelFilterNull || !m_hostInputGrid->IsConverged())
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
+            m_isActive = true;
             return;
         }
+
+        if (!m_isActive) { return; }
         
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
@@ -320,6 +325,8 @@ namespace Cuda
 
             IsOk(cudaStreamSynchronize(m_hostStream));
         }
+
+        m_isActive = false;
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeKernelFilter::GetChildObjectHandles()

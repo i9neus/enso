@@ -167,7 +167,8 @@ namespace Cuda
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
-			float																								m_bakeProgress;
+			float										m_bakeProgress;
+			bool										m_isConverged;
 
 			std::atomic<int>							m_exporterState;
 		};

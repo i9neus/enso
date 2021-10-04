@@ -479,6 +479,7 @@ namespace Cuda
         }
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
         m_bakeProgress = 0.0f;
+        m_isConverged = false;
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
@@ -519,17 +520,21 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::GetProbeGridAggregateStatistics()
     {
+        m_isConverged = true;
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
-            if (!m_hostLightProbeGrids[gridIdx]) { continue; }
+            auto& grid = m_hostLightProbeGrids[gridIdx];
+            if (!grid) { continue; }
 
-            const auto& stats = m_hostLightProbeGrids[gridIdx]->UpdateAggregateStatistics();
+            const auto& stats = grid->UpdateAggregateStatistics(m_params.grid.maxSamplesPerProbe);
 
             m_bakeProgress = -1.0f;
             if (m_params.camera.maxSamples > 0)
             {
                 m_bakeProgress = clamp((stats.minMaxSamples.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
             }
+
+            if (!stats.isConverged) { m_isConverged = false; }
         }
     }
 
@@ -640,8 +645,7 @@ namespace Cuda
         {
             if (!m_hostLightProbeGrids[gridIdx]) { continue; }
 
-            const uint* histogram;
-            const auto& stats = m_hostLightProbeGrids[gridIdx]->GetAggregateStatistics(&histogram);
+            const auto& stats = m_hostLightProbeGrids[gridIdx]->GetAggregateStatistics();
             
             Json::Node gridNode = gridSetNode.AddChildObject(m_gridIDs[gridIdx]);         
             gridNode.AddValue("minSamples", int(stats.minMaxSamples.x));
@@ -653,7 +657,7 @@ namespace Cuda
             for (int idx = 0; idx < 4; ++idx)
             {
                 histogramData[idx].resize(50);
-                std::memcpy(histogramData[idx].data(), &histogram[50 * idx], sizeof(uint) * 50);
+                std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
             }
             gridNode.AddArray2D("coeffHistograms", histogramData);
         }

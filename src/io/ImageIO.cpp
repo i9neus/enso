@@ -26,6 +26,7 @@ namespace ImageIO
 
                 // Normalise and saturate the pixel value
                 pixel.xyz /= Cuda::max(pixel.w, 1.0f);
+                pixel.xyz = Cuda::clamp(pixel.xyz, Cuda::kZero, Cuda::kOne);
                 pixel.xyz = Cuda::saturate(Cuda::pow(pixel.xyz, Cuda::vec3(invGamma)));
 
                 for (int32_t c = 0; c < 3; c++)

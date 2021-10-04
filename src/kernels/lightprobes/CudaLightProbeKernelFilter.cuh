@@ -52,6 +52,7 @@ namespace Cuda
             int                                     m_gridSize;
             int                                     m_blockSize;
             int                                     m_probeRange;
+            bool                                    m_isActive;
                  
         public:
             __host__ LightProbeKernelFilter(const ::Json::Node& jsonNode, const std::string& id);

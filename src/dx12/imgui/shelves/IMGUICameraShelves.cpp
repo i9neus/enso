@@ -82,7 +82,7 @@ void LightProbeCameraShelf::Construct()
 
     ConstructJitteredTransform(m_p.grid.transform, false);
 
-    ImGui::InputInt3("Grid density", &m_p.grid.gridDensity[0]);
+    ImGui::DragInt3("Grid density", &m_p.grid.gridDensity[0], 1.0f, 2, 50);
     HelpMarker("The density of the light probe grid as width x height x depth");
 
     ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);

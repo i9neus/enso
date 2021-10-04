@@ -80,7 +80,7 @@ namespace Cuda
                 float	meanValidity;
                 float	meanDistance;
                 int		probeCount;
-            };
+            };           
 
             struct Objects
             {
@@ -121,6 +121,14 @@ namespace Cuda
         class LightProbeGrid : public Host::RenderObject, public AssetTags<Host::LightProbeGrid, Device::LightProbeGrid>
         {
         public:
+            struct AggregateStatistics : Device::LightProbeGrid::AggregateStatistics
+            {
+                AggregateStatistics() : isConverged(false) {}
+
+                bool                                        isConverged;
+                DeviceObjectRAII<uint, 200>			        coeffHistogram;
+            };
+
             __host__ LightProbeGrid(const std::string& id);
             __host__ virtual ~LightProbeGrid();
 
@@ -131,7 +139,7 @@ namespace Cuda
             __host__  virtual void                      OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
             __host__ Device::LightProbeGrid*            GetDeviceInstance() { return cu_deviceData; }
-            __host__ void                               IsConverged() const;
+            __host__ bool                               IsConverged() const { return m_statistics.isConverged; }
             __host__ bool                               IsValid() const;
             __host__ void                               GetRawData(std::vector<vec3>& data) const;
             __host__ void                               SetRawData(const std::vector<vec3>& data);
@@ -139,8 +147,8 @@ namespace Cuda
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }
             __host__ AssetHandle<Host::Array<uchar>>&   GetValidityDataAsset() { return m_validityData; }
-            __host__ const Device::LightProbeGrid::AggregateStatistics& UpdateAggregateStatistics();
-            __host__ const Device::LightProbeGrid::AggregateStatistics& GetAggregateStatistics(const uint** histogram = nullptr) const;
+            __host__ const AggregateStatistics&         UpdateAggregateStatistics(const int maxSamples);
+            __host__ const AggregateStatistics&         GetAggregateStatistics() const { return m_statistics; }
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;
@@ -151,8 +159,8 @@ namespace Cuda
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
 
-            DeviceObjectRAII<Device::LightProbeGrid::AggregateStatistics>	m_probeAggregateData;
-            DeviceObjectRAII<uint, 200>										m_coeffHistogram;
+            AggregateStatistics             m_statistics;
+            DeviceObjectRAII<Device::LightProbeGrid::AggregateStatistics>	m_probeAggregateData;            
         };
     }
 }

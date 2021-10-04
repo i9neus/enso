@@ -487,30 +487,25 @@ namespace Cuda
         camera->ComputeProbeGridHistograms(*stats, histogram);
     }
 
-    __host__ const Device::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::UpdateAggregateStatistics()
+    __host__ const Host::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::UpdateAggregateStatistics(const int maxSamples)
     {
         // Compute aggregate statistics (min/max ranges, counts, etc) for the probe grid
         KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject());
 
         // Compute coefficient histograms
-        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_coeffHistogram.GetDeviceObject());
+        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_statistics.coeffHistogram.GetDeviceObject());
         IsOk(cudaStreamSynchronize(m_hostStream));
 
         m_probeAggregateData.Download();
-        m_coeffHistogram.Download();
+        m_statistics.coeffHistogram.Download();
 
         KernelPrepareValidityGrid << < (m_params.numProbes + 255) / 256, 256, 0, m_hostStream >> > (cu_deviceData);
         IsOk(cudaStreamSynchronize(m_hostStream));
 
-        return *m_probeAggregateData;
-    }
+        // Copy the data into the aggregate object
+        *static_cast<Device::LightProbeGrid::AggregateStatistics*>(&m_statistics) = *m_probeAggregateData;        
+        m_statistics.isConverged = maxSamples > 0 && m_statistics.minMaxSamples.x >= maxSamples;
 
-    __host__ const Device::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::GetAggregateStatistics(const uint** histogram) const
-    {
-        if (histogram)
-        {
-            *histogram = &(*m_coeffHistogram);
-        }
-        return *m_probeAggregateData;
+        return m_statistics;
     }
 }

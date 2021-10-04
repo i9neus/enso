@@ -21,6 +21,7 @@ namespace Cuda
         int     regressionRadius;
         int     reconstructionRadius;
         int     regressionIterations;
+        int     regressionMaxIterations;
         float   learningRate;
         int     minSamples;
         float   tikhonovCoeff;
@@ -83,6 +84,8 @@ namespace Cuda
             std::string                             m_crossGridID;
             std::string                             m_crossGridHalfID;
             std::string                             m_outputGridID;
+
+            int                                     m_iterationCount;
 
             struct
             {
