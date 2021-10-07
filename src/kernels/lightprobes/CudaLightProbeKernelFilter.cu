@@ -10,14 +10,14 @@ namespace Cuda
 {
     __host__ __device__ LightProbeKernelFilterParams::LightProbeKernelFilterParams() : 
         filterType(kKernelFilterGaussian),
-        radius(1.0f)
+        kernelRadius(1)
     {
     }
     
     __host__ void LightProbeKernelFilterParams::ToJson(::Json::Node& node) const
     {
-        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
-        node.AddValue("radius", radius);
+        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm", "nlmconst" }), filterType);
+        node.AddValue("radius", kernelRadius);
 
         Json::Node nlmNode = node.AddChildObject("nlm");
         nlm.ToJson(nlmNode);
@@ -25,13 +25,13 @@ namespace Cuda
 
     __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
-        node.GetValue("radius", radius, flags);
+        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm", "nlmconst" }), filterType, flags);
+        node.GetValue("radius", kernelRadius, flags);
 
         Json::Node nlmNode = node.GetChildObject("nlm", flags);
         if (nlmNode) { nlm.FromJson(nlmNode, flags); }
          
-        radius = clamp(radius, 1e-3f, 10.0f);        
+        kernelRadius = clamp(kernelRadius, 0, 10);
     }
     
     __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const ::Json::Node& node, const std::string& id) : 
@@ -48,7 +48,9 @@ namespace Cuda
         // Create some objects
         m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
         m_hostReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_reduceBuffer", id));
-        m_hostReduceBuffer->Resize(1024 * 1024);
+        
+        // FIXME: Static size; needs to be dynamic. 
+        m_hostReduceBuffer->Resize(2048 * 2048);
     }
     
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeKernelFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -108,7 +110,7 @@ namespace Cuda
 
         Assert(gridData.coefficientsPerProbe <= kMaxCoefficients);
 
-        m_objects->kernelRadius = max(1, int(std::ceil(m_objects->params.radius)));
+        m_objects->kernelRadius = m_objects->params.kernelRadius;
 
         const auto& gridParams = m_hostInputGrid->GetParams();
         const int maxVolume = m_hostReduceBuffer->Size() * kBlockSize / ((gridParams.coefficientsPerProbe + 1) * gridParams.numProbes);
@@ -117,7 +119,7 @@ namespace Cuda
         {
             Log::Warning("Warning: filter kernel radius exceeds the capacity of the preset accumulation buffer. Constraining to %i.\n", maxRadius);
             m_objects->kernelRadius = maxRadius;
-            m_objects->params.radius = maxRadius;
+            m_objects->params.kernelRadius = maxRadius;
         }
 
         m_objects->kernelSpan = 2 * m_objects->kernelRadius + 1;
@@ -126,7 +128,7 @@ namespace Cuda
 
         m_probeRange = m_hostReduceBuffer->Size() / ((gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe);
         m_gridSize = min(gridData.numProbes * m_objects->blocksPerProbe,
-            m_probeRange * (gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe);
+                         m_probeRange * (gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe);
 
         Log::Debug("kernelVolume: %i\n", m_objects->kernelVolume);
         Log::Debug("blocksPerProbe: %i\n", m_objects->blocksPerProbe);
@@ -140,7 +142,7 @@ namespace Cuda
         m_objects.Upload();
     }
 
-    __global__ void KernelFilterGaussian(Host::LightProbeKernelFilter::Objects* const objectsPtr, const int probeStartIdx)
+    __global__ void KernelFilter(Host::LightProbeKernelFilter::Objects* const objectsPtr, const int probeStartIdx)
     {
         __shared__ Host::LightProbeKernelFilter::Objects objects;
         __shared__ vec3 weightedCoeffs[kBlockSize * kMaxCoefficients];
@@ -152,7 +154,7 @@ namespace Cuda
             objects = *objectsPtr;
             assert(objects.gridData.cu_inputGrid);
             assert(objects.gridData.cu_outputGrid);
-            assert(objects.params.radius <= 20);
+            assert(objects.params.kernelRadius <= 20);
 
             memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
         }    
@@ -197,14 +199,17 @@ namespace Cuda
                     case kKernelFilterGaussian:
                     {
                         const float len = length(vec3(posK));
-                        if (len <= params.radius)
+                        if (len <= params.kernelRadius)
                         {
-                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.radius);
+                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.kernelRadius);
                         }
                         break;
                     }
                     case kKernelFilterNLM:
                         weight = ComputeNLMWeight(gridData, params.nlm, pos0, posK);
+                        break;
+                    case kKernelFilterNLMConst:
+                        weight = ComputeConstVarianceNLMWeight(gridData, params.nlm, pos0, posK);
                         break;
                     };
                 }
@@ -316,7 +321,7 @@ namespace Cuda
         
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
-            KernelFilterGaussian << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
+            KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
             
             if (m_objects->blocksPerProbe > 1)
             {

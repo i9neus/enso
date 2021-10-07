@@ -10,8 +10,8 @@ void LightProbeKernelFilterShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "Non-local Means" }, m_p.filterType);
-    ImGui::SliderFloat("Kernel radius", &m_p.radius, 0.0f, 10.0f);
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)" }, m_p.filterType);
+    ImGui::SliderInt("Kernel radius", &m_p.kernelRadius, 0, 10);
     if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 2.0f)) 
     { 
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; } 
@@ -20,6 +20,7 @@ void LightProbeKernelFilterShelf::Construct()
     { 
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
+    ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 }
 
@@ -47,7 +48,7 @@ void LightProbeRegressionFilterShelf::Construct()
     ImGui::SliderInt("Regression min samples", &m_p.minSamples, 0, 1024);
     ImGui::SliderInt("Reconstruction radius", &m_p.reconstructionRadius, 0, 4);
 
-    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "Non-local Means" }, m_p.filterType);
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)"}, m_p.filterType);
     if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 2.0f))
     {
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; }
@@ -56,6 +57,7 @@ void LightProbeRegressionFilterShelf::Construct()
     {
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
+    ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 
     for (auto& gridStats : m_probeGridStatistics)

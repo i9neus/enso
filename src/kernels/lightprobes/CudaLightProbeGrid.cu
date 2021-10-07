@@ -236,13 +236,17 @@ namespace Cuda
 
         vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform) / m_params.aspectRatio;
 
-        // Debug the grid 
-        if (m_params.outputMode == kProbeGridPref)
-        {
-            return clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f));
-        }
+        // Return black for out-of-bounds look-ups
+        if (cwiseMin(pGrid) < -0.5f || cwiseMax(pGrid) >= 0.5f) { return kZero; }
 
-        pGrid = clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f)) * vec3(m_params.gridDensity - ivec3(1.0));
+        // FIXME: Why do we get a crash if this line is removed?
+        pGrid = clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f));
+
+        // Debug the grid 
+        if (m_params.outputMode == kProbeGridPref) { return pGrid; }
+
+        // Grow normalised coordinate to grid space coordinate
+        pGrid = pGrid * vec3(m_params.gridDensity - ivec3(1.0));
 
         // TODO: Use Cuda's built-in 3D surfaces for more efficient texture indexing
 
@@ -525,7 +529,7 @@ namespace Cuda
     __host__ void Host::LightProbeGrid::SetRawData(const std::vector<vec3>& rawData)
     {
         AssertMsgFmt(rawData.size() == m_params.numProbes * m_params.coefficientsPerProbe, 
-            "Raw data has size %; expected %i", rawData.size(), m_params.numProbes * m_params.coefficientsPerProbe);
+            "Raw data has size %i; expected %i", rawData.size(), m_params.numProbes * m_params.coefficientsPerProbe);
 
         m_shData->Upload(rawData);
     }

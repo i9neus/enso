@@ -87,6 +87,7 @@ namespace Cuda
 
         m_hostInputGrid->Prepare(gridParams);
         m_hostInputGrid->SetRawData(rawData);
+        m_hostInputGrid->UpdateAggregateStatistics(1);
 
         // Output summary data about imported probe grid
         {

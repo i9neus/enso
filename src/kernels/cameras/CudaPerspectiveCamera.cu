@@ -27,6 +27,7 @@ namespace Cuda
         focalPlane = 1.0f;
         fLength = 0.45f;
         fStop = 0.45f;
+        displayExposure = 0.0f;
         displayGamma = 1.0f;
         viewportDims = ivec2(512, 512);
         isRealtime = false;
@@ -48,6 +49,7 @@ namespace Cuda
         node.AddValue("focalPlane", focalPlane);
         node.AddValue("fLength", fLength);
         node.AddValue("fStop", fStop);
+        node.AddValue("displayExposure", displayExposure);
         node.AddValue("displayGamma", displayGamma);
         node.AddValue("isRealtime", isRealtime);
         node.AddEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation);
@@ -62,6 +64,7 @@ namespace Cuda
         node.GetValue("focalPlane", focalPlane, flags);
         node.GetValue("fLength", fLength, flags);
         node.GetValue("fStop", fStop, flags);
+        node.GetValue("displayExposure", displayExposure, flags);
         node.GetValue("displayGamma", displayGamma, flags);
         node.GetValue("isRealtime", isRealtime, flags);
         node.GetEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation, flags);
@@ -94,9 +97,11 @@ namespace Cuda
 
         // Flip the weight back to positve
         texel.w = -texel.w;
+        // Normalise
+        vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
+        // Apply exposure/gamma correction
+        rgb = pow(rgb * m_displayExposure, vec3(1.0f / m_params.displayGamma));
 
-        // Normalise and gamma correct
-        const vec3 rgb = pow(texel.xyz / fmax(1.0f, texel.w), vec3(1.0f / m_params.displayGamma));
         deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
@@ -129,6 +134,8 @@ namespace Cuda
         // Solve the thin-lens equation. http://hyperphysics.phy-astr.gsu.edu/hbase/geoopt/lenseq.html
         m_d1 = 0.5 * (m_focalDistance - sqrt(-4.0 * m_focalLength * m_focalDistance + sqr(m_focalDistance)));
         m_d2 = m_focalDistance - m_d1;
+
+        m_displayExposure = powf(2.0f, m_params.displayExposure);
     }
 
     __device__ void Device::PerspectiveCamera::SeedRayBuffer(const ivec2& viewportPos, const uint frameIdx)

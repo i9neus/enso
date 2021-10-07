@@ -34,6 +34,7 @@ namespace Cuda
 		float			focalPlane;
 		float			fLength;
 		float			fStop;
+		float			displayExposure;
 		float			displayGamma;
 		CameraParams	camera;
 		bool			isRealtime;
@@ -84,6 +85,7 @@ namespace Cuda
 			float		m_focalLength;
 			float		m_focalDistance;
 			float		m_fStop;
+			float		m_displayExposure;
 		};
 	}
 

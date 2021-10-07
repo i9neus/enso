@@ -29,6 +29,9 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Focal plane", &m_p.focalPlane, 0.0f, 2.0f);
     HelpMarker("The position of the focal plane as a functino of the distance between the camera position and its look-at vector.");
 
+    ImGui::SliderFloat("Display exposure", &m_p.displayExposure, -15.0f, 15.0f);
+    HelpMarker("The exposure value in stops applied to the viewport window.");
+    
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
     HelpMarker("The gamma value applied to the viewport window.");
 

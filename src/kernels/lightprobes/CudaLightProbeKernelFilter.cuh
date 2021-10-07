@@ -17,7 +17,7 @@ namespace Cuda
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         int filterType;
-        float radius;
+        int kernelRadius;
         LightProbeFilterNLMParams nlm;       
     };    
 

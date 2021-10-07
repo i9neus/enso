@@ -14,7 +14,8 @@ namespace Cuda
         kKernelFilterNull,
         kKernelFilterBox,
         kKernelFilterGaussian,
-        kKernelFilterNLM
+        kKernelFilterNLM,
+        kKernelFilterNLMConst
     };
 
     struct LightProbeFilterGridData
@@ -47,6 +48,7 @@ namespace Cuda
 
         float                           alpha;
         float                           K;
+        float                           sigma;
         int                             patchRadius;
     };
 
@@ -77,4 +79,6 @@ namespace Cuda
     __host__ std::vector<float> GenerateBoxKernel1D(const int kernelSpan);
 
     __device__ float ComputeNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK);
+
+    __device__ float ComputeConstVarianceNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK);
 }
