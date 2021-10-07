@@ -474,6 +474,9 @@
     <ClInclude Include="src\kernels\CudaRenderObjectContainer.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh">
+      <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -669,6 +672,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\tracables\CudaSDF.cu">
       <Filter>kernels\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeIO.cu">
+      <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

@@ -57,9 +57,94 @@ void LightProbeRegressionFilterShelf::Construct()
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
+
+    for (auto& gridStats : m_probeGridStatistics)
+    {
+        ImGui::PushID(gridStats.gridID.c_str());
+        ImGui::Text(gridStats.gridID.c_str());
+        ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
+        ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
+        ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
+
+        if (gridStats.hasHistogram)
+        {
+            for (const auto& histogramWidget : gridStats.histogramWidgetData)
+            {
+                ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::PopID();
+    }
 }
 
 void LightProbeRegressionFilterShelf::Reset()
 {
 
 }
+
+void LightProbeRegressionFilterShelf::OnUpdateRenderObjectStatistics(const Json::Node& baseNode)
+{
+    const Json::Node gridSetNode = baseNode.GetChildObject("grids", Json::kSilent);
+    if (!gridSetNode) { return; }
+
+    Assert(gridSetNode.IsObject());
+    m_probeGridStatistics.resize(gridSetNode.NumMembers());
+
+    int gridIdx = 0;
+    std::vector<std::vector<uint>> histogramMatrix;
+    for (::Json::Node::ConstIterator it = gridSetNode.begin(); it != gridSetNode.end(); ++it, ++gridIdx)
+    {
+        const auto& gridNode = *it;
+        auto& stats = m_probeGridStatistics[gridIdx];
+
+        stats.gridID = it.Name();
+        gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
+        gridNode.GetValue("maxSamples", stats.minSamplesTaken, Json::kSilent);
+        gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
+        gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent);
+
+        stats.hasHistogram = false;
+        histogramMatrix.clear();
+        if (gridNode.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
+        {
+            // Map the input data into something the widget can use
+            stats.histogramWidgetData.resize(histogramMatrix.size());
+            for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
+            {
+                const auto& inputData = histogramMatrix[histogramIdx];
+                auto& outputData = stats.histogramWidgetData[histogramIdx];
+                outputData.data.resize(inputData.size());
+                outputData.maxValue = 0;
+                for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+                {
+                    //outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
+                    outputData.data[binIdx] = inputData[binIdx];
+                    outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+                }
+            }
+            stats.hasHistogram = true;
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+LightProbeIOShelf::LightProbeIOShelf(const Json::Node& json) :
+    IMGUIShelf(json)
+{}
+
+void LightProbeIOShelf::Construct()
+{
+    if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+    
+}
+
+void LightProbeIOShelf::Reset()
+{
+
+}
+
+

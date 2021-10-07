@@ -66,17 +66,15 @@ namespace USDIO
     bool GetUSDAttribute(const pxr::UsdPrim& prim, const std::string& id, Type& data)
     {
         pxr::UsdAttribute attr = prim.GetAttribute(pxr::TfToken(id));
-        if (!attr) 
-        { 
-            Log::Error("Internal error: USD attribute '%s' not found.\n'", id); 
-            return false;
+        if (attr)
+        {
+            attr.Get(&data);
+            return true;
         }
-
-        attr.Get(&data);
-        return true;
+        return false;
     }
 
-    void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath)
+    void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath, const SHPackingFormat shFormat)
     {
         // Load the root config
         const Json::Document& configJson = GSA().GetConfigJson();
@@ -99,22 +97,24 @@ namespace USDIO
         pxr::VtFloatArray dataValidity;
         pxr::VtFloatArray dataMeanDistance;
 
-        GetUSDAttribute(prim, "description", usdDescription);
-        GetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe);
-        GetUSDAttribute(prim, "size", gridSize);
-        GetUSDAttribute(prim, "resolution", gridResolution);
-        GetUSDAttribute(prim, "coefficients", coeffs);
-        GetUSDAttribute(prim, "dataMeanDistance", dataMeanDistance);
-        GetUSDAttribute(prim, "dataValidity", dataValidity);
+        Assert(GetUSDAttribute(prim, "description", usdDescription));
+        Assert(GetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe));
+        Assert(GetUSDAttribute(prim, "size", gridSize));
+        Assert(GetUSDAttribute(prim, "resolution", gridResolution));
+        Assert(GetUSDAttribute(prim, "coefficients", coeffs));
+        const bool hasMeanDistance = GetUSDAttribute(prim, "dataMeanDistance", dataMeanDistance);
+        const bool hasValidity = GetUSDAttribute(prim, "dataValidity", dataValidity);
 
         gridParams.transform.scale = Cuda::vec3(gridSize[0], gridSize[1], gridSize[2]);
         gridParams.gridDensity = Cuda::ivec3(gridResolution[0], gridResolution[1], gridResolution[2]);
         gridParams.numProbes = Cuda::Volume(gridParams.gridDensity);
         gridParams.coefficientsPerProbe = (coeffs.size() / (gridParams.numProbes * 3)) + 1;
+
+        AssertMsg(shFormat != SHPackingFormat::kUnity || gridParams.coefficientsPerProbe == 5, "Unity SH packing format expects L1 probes.");
         
         Assert(coeffs.size() % (gridParams.coefficientsPerProbe - 1) == 0);
-        Assert(dataValidity.size() == gridParams.numProbes);
-        Assert(dataMeanDistance.size() == gridParams.numProbes);
+        Assert(!hasValidity || dataValidity.size() == gridParams.numProbes);
+        Assert(!hasMeanDistance || dataMeanDistance.size() == gridParams.numProbes);
 
         /*Log::Debug("Loading light probe grid from USD...");
         Log::Debug("  - Description: %s", usdDescription);
@@ -124,20 +124,57 @@ namespace USDIO
 
         gridData.resize(gridParams.numProbes * gridParams.coefficientsPerProbe);
 
+        // Precompute some coefficients
+        const float kRootPi = std::sqrt(kPi);
+        const float fC0 = 1.0f / (2.0f * kRootPi);
+        const float fC1 = std::sqrt(3.0f) / (3.0f * kRootPi);
+        Cuda::vec3 C[5], D[5];
+
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
         {
             // Set the SH coefficients
             int destIdx = probeIdx * gridParams.coefficientsPerProbe;
             int sourceIdx = 3 * probeIdx * (gridParams.coefficientsPerProbe - 1);
-            for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx, ++destIdx, sourceIdx += 3)
+
+            if (shFormat == SHPackingFormat::kUnity)
             {
-                gridData[destIdx] = Cuda::vec3(coeffs[sourceIdx], coeffs[sourceIdx + 1], coeffs[sourceIdx + 2]);
-                //Log::Debug("[%i, %i]: %s", probeIdx, coeffIdx, gridData[destIdx].format());
+                for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx, sourceIdx += 3)
+                {
+                    D[coeffIdx] = Cuda::vec3(coeffs[sourceIdx], coeffs[sourceIdx + 1], coeffs[sourceIdx + 2]);
+                }
+
+                // Unpack the coefficients
+                C[0] = D[0];
+                C[1] = Cuda::vec3(D[1].x, D[2].x, D[3].x);
+                C[2] = Cuda::vec3(D[1].y, D[2].y, D[3].y);
+                C[3] = Cuda::vec3(D[1].z, D[2].z, D[3].z);
+                C[4] = D[4];
+
+                // Remove the premultiplication
+                C[0] /= fC0;
+                C[1] /= -fC1;
+                C[2] /= fC1;
+                C[3] /= -fC1;
+
+                for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx, ++destIdx)
+                {
+                    gridData[destIdx] = C[coeffIdx];
+                }
+
+                gridData[destIdx].x = hasValidity ? (1.0f - dataValidity[probeIdx]) : 1.0f;
+            }
+            else
+            {
+                for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx, ++destIdx, sourceIdx += 3)
+                {
+                    gridData[destIdx] = Cuda::vec3(coeffs[sourceIdx], coeffs[sourceIdx + 1], coeffs[sourceIdx + 2]);
+                }
+
+                gridData[destIdx].x = hasValidity ? dataValidity[probeIdx] : 1.0f;
             }
 
             // Set the validity and mean distance coefficients
-            gridData[destIdx].x = dataValidity[probeIdx];
-            gridData[destIdx].y = dataMeanDistance[probeIdx];
+            gridData[destIdx].y = hasMeanDistance ? dataMeanDistance[probeIdx] : 0.0f;
             gridData[destIdx].z = 1.0f;
             //Log::Debug("[%i, %i]: %s", probeIdx, gridParams.coefficientsPerProbe - 1, gridData[destIdx].format());
         }
@@ -145,9 +182,10 @@ namespace USDIO
         Log::Write("Imported USD file from '%s'\n", usdImportPath);
     }
 
-    void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, std::string usdExportPath)
+    void WriteGridDataUSD(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, std::string usdExportPath, const SHPackingFormat shFormat)
     {
-        Assert(!usdExportPath.empty());
+        Assert(!usdExportPath.empty());  
+        AssertMsg(shFormat != SHPackingFormat::kUnity || gridParams.coefficientsPerProbe == 5, "Unity packed SH format must be L1 probes.");
         
         // Load the root config
         Json::Document configJson;
@@ -191,23 +229,61 @@ namespace USDIO
         pxr::VtFloatArray coeffs(gridParams.numProbes * (gridParams.coefficientsPerProbe - 1) * 3);
         pxr::VtFloatArray dataValidity(gridParams.numProbes);
         pxr::VtFloatArray dataMeanDistance(gridParams.numProbes);
+        
+        // Precompute some coefficients
+        const float kRootPi = std::sqrt(kPi);
+        const float fC0 = 1.0f / (2.0f * kRootPi);
+        const float fC1 = std::sqrt(3.0f) / (3.0f * kRootPi);
+        Cuda::vec3 C[5], D[5];
 
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
         {
-            // Set the SH coefficients
-            for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx)
+            int destIdx = probeIdx * (gridParams.coefficientsPerProbe - 1);
+            int sourceIdx = probeIdx * gridParams.coefficientsPerProbe;
+            
+            if (shFormat == SHPackingFormat::kUnity)
             {
-                const int destIdx = probeIdx * (gridParams.coefficientsPerProbe - 1) + coeffIdx;
-                const int sourceIdx = probeIdx * gridParams.coefficientsPerProbe + coeffIdx;
-                coeffs[destIdx * 3] = gridData[sourceIdx].x;
-                coeffs[destIdx * 3 + 1] = gridData[sourceIdx].y;
-                coeffs[destIdx * 3 + 2] = gridData[sourceIdx].z;
-            }
+                for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe; ++coeffIdx) { C[coeffIdx] = gridData[sourceIdx + coeffIdx]; }
 
-            // Set the validity and mean distance coefficients
-            const int sourceIdx = probeIdx * gridParams.coefficientsPerProbe + (gridParams.coefficientsPerProbe - 1);
-            dataValidity[probeIdx] = gridData[sourceIdx].x;
-            dataMeanDistance[probeIdx] = gridData[sourceIdx].y;
+                // Pre-multiply the coefficients
+                C[0] *= fC0;
+                C[1] *= -fC1;
+                C[2] *= fC1;
+                C[3] *= -fC1;
+
+                // Pack the coefficients using Unity's perferred format
+                D[0] = C[0];
+                D[1] = Cuda::vec3(C[1].x, C[2].x, C[3].x);
+                D[2] = Cuda::vec3(C[1].y, C[2].y, C[3].y);
+                D[3] = Cuda::vec3(C[1].z, C[2].z, C[3].z);
+                D[4] = C[4];
+
+                // Set the SH coefficients
+                for (int coeffIdx = 0; coeffIdx < 4; ++coeffIdx)
+                {
+                    coeffs[(destIdx + coeffIdx) * 3] = D[coeffIdx].x;
+                    coeffs[(destIdx + coeffIdx) * 3 + 1] = D[coeffIdx].y;
+                    coeffs[(destIdx + coeffIdx) * 3 + 2] = D[coeffIdx].z;
+                }
+
+                // Data validity is inverted in Unity's format
+                dataValidity[probeIdx] = 1.0f - gridData[sourceIdx + gridParams.coefficientsPerProbe - 1].x;
+            }
+            else
+            {
+                // Set the SH coefficients
+                for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe - 1; ++coeffIdx)
+                {
+                    coeffs[(destIdx + coeffIdx) * 3] = gridData[sourceIdx + coeffIdx].x;
+                    coeffs[(destIdx + coeffIdx) * 3 + 1] = gridData[sourceIdx + coeffIdx].y;
+                    coeffs[(destIdx + coeffIdx) * 3 + 2] = gridData[sourceIdx + coeffIdx].z;
+                }
+
+                dataValidity[probeIdx] = gridData[sourceIdx + gridParams.coefficientsPerProbe - 1].x;
+            }
+         
+            // Set the mean distance coefficient         
+            dataMeanDistance[probeIdx] = gridData[sourceIdx + gridParams.coefficientsPerProbe - 1].y;
         }
 
         SetUSDAttribute(prim, "coefficients", coeffs);
@@ -222,15 +298,15 @@ namespace USDIO
 
 #else 
 
-    #define USD_DISABLED_FUNCTION(func) func { Log::Debug("***** Warning: USD exporting is disabled in debug mode. ****\n"); } 
+    #define USD_DISABLED_FUNCTION(func) func { Log::Error("***** Warning: USD input/output is disabled in debug mode. ****\n"); } 
 
-    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&, std::string usdExportPath))
+    USD_DISABLED_FUNCTION(void WriteGridDataUSD(const std::vector<Cuda::vec3>&, const Cuda::LightProbeGridParams&, std::string usdExportPath, const SHPackingFormat shFormat))
     USD_DISABLED_FUNCTION(void TestUSD())   
-    USD_DISABLED_FUNCTION(void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath))
+    USD_DISABLED_FUNCTION(void ReadGridDataUSD(std::vector<Cuda::vec3>& gridData, Cuda::LightProbeGridParams& gridParams, const std::string usdImportPath, const SHPackingFormat shFormat))
 
 #endif     
 
-    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset, const std::string& usdExportPath)
+    void ExportLightProbeGrid(const Cuda::AssetHandle<Cuda::Host::LightProbeGrid>& gridAsset, const std::string& usdExportPath, const SHPackingFormat shFormat)
     {
         Assert(gridAsset);         
         
@@ -283,7 +359,7 @@ namespace USDIO
             }
         }
 
-        WriteGridDataUSD(swizzledData, gridParams, usdExportPath);
+        WriteGridDataUSD(swizzledData, gridParams, usdExportPath, shFormat);
 
         /*Log::Debug("%i elements\n", rawData.size());
         for (int i = 0; i < gridParams.numProbes; i++)

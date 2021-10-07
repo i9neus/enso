@@ -33,10 +33,10 @@ namespace Cuda
         K = clamp(K, 0.0f, std::numeric_limits<float>::max());
     }
 
-    __host__ LightProbeFilterGridData& LightProbeFilterGridData::Prepare(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
-                                                                         AssetHandle<Host::LightProbeGrid>& hostCrossGrid,
-                                                                         AssetHandle<Host::LightProbeGrid>& hostCrossHalfGrid,
-                                                                         AssetHandle<Host::LightProbeGrid>& hostOutputGrid)
+    __host__ LightProbeFilterGridData& LightProbeFilterGridData::Initialise(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
+                                                                            AssetHandle<Host::LightProbeGrid>& hostCrossGrid,
+                                                                            AssetHandle<Host::LightProbeGrid>& hostCrossHalfGrid,
+                                                                            AssetHandle<Host::LightProbeGrid>& hostOutputGrid)
     {
         Assert(hostInputGrid);
         

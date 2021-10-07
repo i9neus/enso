@@ -13,6 +13,7 @@ namespace Cuda
     {
         gridDensity = ivec3(5, 5, 5);
         shOrder = 1;
+        axisMultiplier = vec3(1.0f);
         useValidity = false;
         outputMode = kProbeGridIrradiance;
         axisSwizzle = kXYZ;
@@ -20,6 +21,8 @@ namespace Cuda
         invertX = invertY = invertZ = false;
         aspectRatio = vec3(1.0f);
         maxSamplesPerProbe = 0;
+
+        Prepare();
     }
 
     __host__ LightProbeGridParams::LightProbeGridParams(const ::Json::Node& node) :
@@ -35,7 +38,7 @@ namespace Cuda
         node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
         node.AddValue("shOrder", shOrder);
         node.AddValue("useValidity", useValidity);
-        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref" }), outputMode);
+        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode);
 
         node.AddValue("invertX", invertX);
         node.AddValue("invertY", invertY);
@@ -50,7 +53,7 @@ namespace Cuda
         node.GetVector("gridDensity", gridDensity, flags);
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("useValidity", useValidity, flags);
-        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref" }), outputMode, flags);
+        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode, flags);
 
         node.GetValue("invertX", invertX, flags);
         node.GetValue("invertY", invertY, flags);
@@ -60,6 +63,15 @@ namespace Cuda
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
         shOrder = clamp(shOrder, 0, 2);
         axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
+
+        Prepare();
+    }
+
+    __host__ __device__ void LightProbeGridParams::Prepare()
+    {
+        shCoefficientsPerProbe = SH::GetNumCoefficients(shOrder);
+        coefficientsPerProbe = shCoefficientsPerProbe + 1;
+        numProbes = Volume(gridDensity);
     }
 
     __host__ __device__  bool LightProbeGridParams::operator!=(const LightProbeGridParams& rhs) const
@@ -121,12 +133,32 @@ namespace Cuda
         (*m_objects.cu_shData)[idx] = L;
     }
 
+    __device__ void Device::LightProbeGrid::SetSHLaplacianCoefficient(const int probeIdx, const int coeffIdx, const vec3& L)
+    {
+        assert(m_objects.cu_shLaplacianData);
+        assert(probeIdx < m_params.numProbes);
+        assert(coeffIdx < m_params.coefficientsPerProbe);
+
+        const int idx = probeIdx * m_params.coefficientsPerProbe + coeffIdx;
+        assert(idx < m_objects.cu_shLaplacianData->Size());
+
+        (*m_objects.cu_shLaplacianData)[idx] = L;
+    }
+
     __device__ vec3* Device::LightProbeGrid::At(const int probeIdx) 
     {
         assert(m_objects.cu_shData);
         assert(probeIdx < m_params.numProbes);
         
         return &(*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe];
+    }
+
+    __device__ vec3* Device::LightProbeGrid::LaplacianAt(const int probeIdx)
+    {
+        assert(m_objects.cu_shData);
+        assert(probeIdx < m_params.numProbes);
+
+        return &(*m_objects.cu_shLaplacianData)[probeIdx * m_params.coefficientsPerProbe];
     }
 
     __device__ vec3* Device::LightProbeGrid::At(const ivec3& gridIdx)
@@ -156,7 +188,7 @@ namespace Cuda
         return object;
     }
 
-    __device__ vec3 Device::LightProbeGrid::WeightedInterpolateCoefficient(const ivec3 gridPos, const uint coeffIdx, const vec3& delta, const uchar validity) const
+    __device__ vec3 Device::LightProbeGrid::WeightedInterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx, const vec3& delta, const uchar validity) const
     {
         float w[6] = { 1 - delta.x, delta.x, 1 - delta.y, delta.y, 1 - delta.z, delta.z };
 
@@ -171,12 +203,12 @@ namespace Cuda
                     const ivec3 vertCoord = gridPos + ivec3(x, y, z);
                     const int sampleIdx = m_params.coefficientsPerProbe * ProbeIdxFromGridPos(vertCoord, m_params.gridDensity);
 
-                    assert(sampleIdx < m_objects.cu_shData->Size());
+                    assert(sampleIdx < shData.Size());
 
                     if (validity & (1 << idx))
                     {
                         const float weight = w[x] * w[2 + y] * w[4 + z];
-                        L += (*m_objects.cu_shData)[sampleIdx + coeffIdx] * weight;
+                        L += shData[sampleIdx + coeffIdx] * weight;
                         sumWeights += weight;
                     }
                 }
@@ -186,9 +218,9 @@ namespace Cuda
         return L / (sumWeights + 1e-10f);
     }
 
-    __device__ vec3 Device::LightProbeGrid::NearestNeighbourCoefficient(const ivec3 gridPos, const uint coeffIdx) const
+    __device__ vec3 Device::LightProbeGrid::NearestNeighbourCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx) const
     {
-        return (*m_objects.cu_shData)[m_params.coefficientsPerProbe * ProbeIdxFromGridPos(gridPos, m_params.gridDensity) + coeffIdx];
+        return shData[m_params.coefficientsPerProbe * ProbeIdxFromGridPos(gridPos, m_params.gridDensity) + coeffIdx];
     }
 
     __device__ __forceinline__ uchar Device::LightProbeGrid::GetValidity(const ivec3& gridIdx) const
@@ -238,17 +270,26 @@ namespace Cuda
         {
         case kProbeGridValidity:
         {
-            //return mix(kRed, kGreen, WeightedInterpolateCoefficient(gridPos, m_params.coefficientsPerProbe - 1, delta, 0xff).x); 
-            //return mix(kRed, kGreen, NearestNeighbourCoefficient(gridPos, m_params.coefficientsPerProbe - 1).x);
-            int set = 0;
+            return mix(kRed, kGreen, WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta, 0xff).x); 
+            /*int set = 0;
             const uchar validity = GetValidity(gridPos);
             for (int bit = 0; bit < 8; ++bit) { set += (validity >> bit) & 1; }
-            return mix(kRed, kGreen, float(set) / 8.0f);
+            return mix(kRed, kGreen, float(set) / 8.0f);*/
         }
         break;
         case kProbeGridHarmonicMean:
         {
-            return vec3(WeightedInterpolateCoefficient(gridPos, m_params.coefficientsPerProbe - 1, delta, GetValidity(gridPos)).y);
+            return vec3(WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta, GetValidity(gridPos)).y);
+        }
+        break;
+        case kProbeGridLaplacian:
+        {
+            L = WeightedInterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, delta, GetValidity(gridPos)) * SH::Project(n, 0);
+            //return L;
+            const float LEx = cwiseExtremum(L);
+            return (LEx > 0.0f) ?
+                mix(vec3(0.0f), kGreen, min(1.0f, logf(1.0f + LEx) / logf(2.0f))) :
+                mix(vec3(0.0f), kRed, min(1.0f, logf(1.0f + fabs(LEx) / logf(2.0f))));
         }
         break;
         default:
@@ -257,7 +298,7 @@ namespace Cuda
             const uchar validity = GetValidity(gridPos);
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1; coeffIdx++)
             {
-                L += WeightedInterpolateCoefficient(gridPos, coeffIdx, delta, validity) * SH::Project(n, coeffIdx);
+                L += WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, delta, validity) * SH::Project(n, coeffIdx);
             }
         }
         }
@@ -276,8 +317,10 @@ namespace Cuda
             for (int i = 0; i < 200; ++i) { sharedHistogram[i] = 0; }
             for (int i = 0; i < 4; ++i)
             {
-                coeffRange[i].x = aggregate.minMaxCoeffs[i].x;
-                coeffRange[i].y = 1.0f / max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+                //coeffRange[i].x = -fabs(cwiseExtremum(aggregate.minMaxCoeffs[i]));
+                //coeffRange[i].y = 1.0f / (2.0 * -coeffRange[i].x);// max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+                coeffRange[i].x = -10.0f;
+                coeffRange[i].y = 1.0f / 20.0f;// max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
             }
         }
 
@@ -290,7 +333,7 @@ namespace Cuda
             // Bin the coefficients
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
             {
-                const float extremum = /*SignedLog*/(cwiseExtremum(At(i)[coeffIdx]));
+                const float extremum = /*SignedLog*/(cwiseExtremum(LaplacianAt(i)[coeffIdx]));
                 const int binIdx = int(50.0f * clamp((extremum - coeffRange[coeffIdx].x) * coeffRange[coeffIdx].y, 0.0f, nextafterf(1.0f, 0.0f)));
 
                 atomicInc(&sharedHistogram[50 * coeffIdx + binIdx], 0xffffffff);
@@ -337,7 +380,7 @@ namespace Cuda
             // Accumulate coefficient ranges for the histograms
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
             {
-                const auto& coeff = At(i)[coeffIdx];
+                const auto& coeff = LaplacianAt(i)[coeffIdx];
                 auto& minMax = localStats[kKernelIdx].minMaxCoeffs[coeffIdx];
                 minMax.x = min(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
                 minMax.y = max(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
@@ -378,14 +421,17 @@ namespace Cuda
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
 
         m_shData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
+        m_shLaplacianData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), m_hostStream);
         m_validityData = AssetHandle<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
 
         cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>();
 
         m_deviceObjects.cu_shData = m_shData->GetDeviceInstance();
+        m_deviceObjects.cu_shLaplacianData = m_shLaplacianData->GetDeviceInstance();
         m_deviceObjects.cu_validityData = m_validityData->GetDeviceInstance();
-
         Cuda::SynchroniseObjects(cu_deviceData, m_deviceObjects);
+
+        Prepare();
     }
 
     __host__ Host::LightProbeGrid::~LightProbeGrid()
@@ -396,6 +442,7 @@ namespace Cuda
     __host__ void Host::LightProbeGrid::OnDestroyAsset()
     {
         m_shData.DestroyAsset();
+        m_shLaplacianData.DestroyAsset();
         m_validityData.DestroyAsset();
 
         DestroyOnDevice(cu_deviceData);
@@ -412,6 +459,12 @@ namespace Cuda
         Assert(m_params.shOrder >= 0 && m_params.shOrder < 2);
         
         m_params = params;
+        
+        Prepare();
+    }
+
+    __host__ void Host::LightProbeGrid::Prepare()
+    {
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder) + 1;
         m_params.numProbes = Volume(m_params.gridDensity);
         m_params.aspectRatio = vec3(m_params.gridDensity) / cwiseMax(m_params.gridDensity);
@@ -422,10 +475,11 @@ namespace Cuda
 
         // Resize the array as a power of two 
         m_validityData->ExpandToNearestPow2(newSize);
-        if(m_shData->ExpandToNearestPow2(newSize))
+        m_shLaplacianData->ExpandToNearestPow2(newSize);
+        if (m_shData->ExpandToNearestPow2(newSize))
         {
             Log::Debug("Resized to %i\n", m_shData->Size());
-        }        
+        }
 
         Cuda::SynchroniseObjects(cu_deviceData, m_params);
 
@@ -434,18 +488,22 @@ namespace Cuda
 
     __host__ void Host::LightProbeGrid::Replace(const LightProbeGrid& other)
     {
-        Prepare(other.GetParams());
+        // We assume that the other object's parameter structure is fully initialised
+        m_params = other.GetParams();
+        Cuda::SynchroniseObjects(cu_deviceData, m_params);
         
         m_shData->Replace(*(other.m_shData));
+        m_shLaplacianData->Replace(*(other.m_shLaplacianData));
         m_validityData->Replace(*(other.m_validityData));
     }
 
     __host__ void Host::LightProbeGrid::Swap(LightProbeGrid& other)
     {
         Assert(m_params.gridDensity == other.GetParams().gridDensity &&
-            m_params.shOrder == other.GetParams().shOrder);
+               m_params.shOrder == other.GetParams().shOrder);
 
         m_shData->Swap(*(other.m_shData));
+        m_shLaplacianData->Swap(*(other.m_shLaplacianData));
         m_validityData->Swap(*(other.m_validityData));
     }
 
@@ -466,6 +524,9 @@ namespace Cuda
 
     __host__ void Host::LightProbeGrid::SetRawData(const std::vector<vec3>& rawData)
     {
+        AssertMsgFmt(rawData.size() == m_params.numProbes * m_params.coefficientsPerProbe, 
+            "Raw data has size %; expected %i", rawData.size(), m_params.numProbes * m_params.coefficientsPerProbe);
+
         m_shData->Upload(rawData);
     }
 

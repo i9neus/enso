@@ -185,19 +185,19 @@ namespace Cuda
             // Don't write into the indirect grid when in combined lighting mode
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
             
-            int accumIdx = emplacedRay.accumIdx * m_params.coefficientsPerProbe;
+            int accumIdx = emplacedRay.accumIdx * m_params.grid.coefficientsPerProbe;
             auto& accumBuffer = *(m_objects.cu_accumBuffers[gridIdx]);
             const float weight = !isAlive;
             
             // Should we accumulate this sample?
-            bool accumulate = (gridIdx == 1 && incidentRay.depth > 1) ||
+            bool accumulate = (gridIdx == 1 && incidentRay.depth > 2) ||
                 (gridIdx != 1 && (incidentRay.depth <= 1 || m_params.lightingMode == kBakeLightingCombined));
             if (gridIdx == kLightProbeBufferHalf && (emplacedRay.sampleIdx % 2u != 1u || (m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1))) { accumulate = false; }
 
             if(accumulate)  
             {              
                 // Project and accumulate the SH coefficients
-                for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx)
+                for (int shIdx = 0; shIdx < m_params.grid.coefficientsPerProbe - 1; ++shIdx, ++accumIdx)
                 {
                     accumBuffer[accumIdx] += vec4(L * SH::Project(ctx.emplacedRay[0].probeDir, shIdx) * kFourPi, weight);
                 }
@@ -205,7 +205,7 @@ namespace Cuda
             else
             {
                 // Just increment the weights
-                for (int shIdx = 0; shIdx < m_params.coefficientsPerProbe - 1; ++shIdx, ++accumIdx) { accumBuffer[accumIdx][3] += weight; }
+                for (int shIdx = 0; shIdx < m_params.grid.coefficientsPerProbe - 1; ++shIdx, ++accumIdx) { accumBuffer[accumIdx][3] += weight; }
             }
 
             if (gridIdx != kLightProbeBufferHalf && incidentRay.IsIndirectSample())//&& incidentRay.depth == 1)
@@ -249,8 +249,8 @@ namespace Cuda
         auto& reduceBuffer = *m_objects.cu_reduceBuffer;
         
         const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
-        const int probeSubsampleIdx = (kKernelIdx / m_params.coefficientsPerProbe) % m_params.subsamplesPerProbe;
-        const int coeffIdx = kKernelIdx % m_params.coefficientsPerProbe;
+        const int probeSubsampleIdx = (kKernelIdx / m_params.grid.coefficientsPerProbe) % m_params.subsamplesPerProbe;
+        const int coeffIdx = kKernelIdx % m_params.grid.coefficientsPerProbe;
 
         for (uint iterationSize = batchRange[0] / 2; iterationSize > batchRange[1] / 2; iterationSize >>= 1)
         {
@@ -265,9 +265,9 @@ namespace Cuda
 
                     if (probeSubsampleIdx + iterationSize < m_params.subsamplesPerProbe)
                     {
-                        assert(kKernelIdx + iterationSize * m_params.coefficientsPerProbe < kAccumBufferSize);
+                        assert(kKernelIdx + iterationSize * m_params.grid.coefficientsPerProbe < kAccumBufferSize);
                         //if (probeIdx == 0 && coeffIdx == 0) { printf("%i: %f + %f = %f\n", iterationSize, texel.w, accumBuffer[kKernelIdx + iterationSize].w, texel.w + accumBuffer[kKernelIdx + iterationSize].w); }
-                        ReduceAccumulatedSample(texel, accumBuffer[kKernelIdx + iterationSize * m_params.coefficientsPerProbe]);
+                        ReduceAccumulatedSample(texel, accumBuffer[kKernelIdx + iterationSize * m_params.grid.coefficientsPerProbe]);
 
                     }
                     //else
@@ -275,10 +275,10 @@ namespace Cuda
                 }
                 else
                 {
-                    assert(kKernelIdx + iterationSize * m_params.coefficientsPerProbe < kAccumBufferSize);
+                    assert(kKernelIdx + iterationSize * m_params.grid.coefficientsPerProbe < kAccumBufferSize);
                     assert(probeSubsampleIdx + iterationSize < m_params.subsamplesPerProbe);
                     //if (probeIdx == 0 && coeffIdx == 0) { printf("%i: %f + %f = %f\n", iterationSize, reduceBuffer[kKernelIdx].w, reduceBuffer[kKernelIdx + iterationSize].w, reduceBuffer[kKernelIdx].w + reduceBuffer[kKernelIdx + iterationSize].w); }
-                    ReduceAccumulatedSample(reduceBuffer[kKernelIdx], reduceBuffer[kKernelIdx + iterationSize * m_params.coefficientsPerProbe]);
+                    ReduceAccumulatedSample(reduceBuffer[kKernelIdx], reduceBuffer[kKernelIdx + iterationSize * m_params.grid.coefficientsPerProbe]);
                 }
             }
             else
@@ -295,8 +295,8 @@ namespace Cuda
             auto& texel = reduceBuffer[kKernelIdx];         
 
             //const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
-            //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.coefficientsPerProbe;
-            if (coeffIdx == m_params.coefficientsPerProbe - 1)
+            //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.grid.coefficientsPerProbe;
+            if (coeffIdx == m_params.grid.coefficientsPerProbe - 1)
             {
                const float norm = max(1.0f, texel.w);
 
@@ -403,10 +403,10 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::Prepare()
     {
-        m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.grid.shOrder) + 1;
+        m_params.grid.Prepare();
 
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
-        const int maxNumProbes = min(kAccumBufferSize / m_params.coefficientsPerProbe, kRayBufferNumBuckets);
+        const int maxNumProbes = min(kAccumBufferSize / m_params.grid.coefficientsPerProbe, kRayBufferNumBuckets);
         if (Volume(m_params.grid.gridDensity) > maxNumProbes)
         {
             const auto oldDensity = m_params.grid.gridDensity;
@@ -424,10 +424,10 @@ namespace Cuda
         }
 
         // Number of light probes in the grid
-        m_params.numProbes = Volume(m_params.grid.gridDensity);
+        m_params.grid.numProbes = Volume(m_params.grid.gridDensity);
         // Number of SH parameter sets per probe, reduced later to get the final value 
-        m_params.subsamplesPerProbe = min(kRayBufferNumBuckets / m_params.numProbes,
-            kAccumBufferSize / (m_params.numProbes * m_params.coefficientsPerProbe));
+        m_params.subsamplesPerProbe = min(kRayBufferNumBuckets / m_params.grid.numProbes,
+            kAccumBufferSize / (m_params.grid.numProbes * m_params.grid.coefficientsPerProbe));
 
         // The maximum number of samples per bucket based on the number of buckets per coefficient
         m_params.grid.maxSamplesPerProbe = m_params.maxSamplesPerBucket = std::numeric_limits<int>::max();
@@ -438,15 +438,15 @@ namespace Cuda
         }
 
         // Derive some more values
-        m_params.bucketsPerProbe = m_params.subsamplesPerProbe * m_params.coefficientsPerProbe;
-        m_params.totalBuckets = m_params.bucketsPerProbe * m_params.numProbes;
-        m_params.totalSubsamples = m_params.subsamplesPerProbe * m_params.numProbes;
+        m_params.bucketsPerProbe = m_params.subsamplesPerProbe * m_params.grid.coefficientsPerProbe;
+        m_params.totalBuckets = m_params.bucketsPerProbe * m_params.grid.numProbes;
+        m_params.totalSubsamples = m_params.subsamplesPerProbe * m_params.grid.numProbes;
 
         // Used when parallel reducing the accumluation buffer
         uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.subsamplesPerProbe);
 
-        Log::Debug("coefficientsPerProbe: %i\n", m_params.coefficientsPerProbe);
-        Log::Debug("numProbes: %i\n", m_params.numProbes);
+        Log::Debug("coefficientsPerProbe: %i\n", m_params.grid.coefficientsPerProbe);
+        Log::Debug("numProbes: %i\n", m_params.grid.numProbes);
         Log::Debug("subsamplesPerProbe: %i\n", m_params.subsamplesPerProbe);
         Log::Debug("bucketsPerProbe: %i\n", m_params.bucketsPerProbe);
         Log::Debug("totalBuckets: %i\n", m_params.totalBuckets);
@@ -570,7 +570,7 @@ namespace Cuda
                 Log::Debug("Exporting to '%s'...\n", usdExportPaths[gridIdx]);
                 try
                 {
-                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], usdExportPaths[gridIdx]);
+                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity);
                 }
                 catch (const std::runtime_error& err)
                 {
@@ -640,7 +640,7 @@ namespace Cuda
         rootNode.AddValue("isActive", m_params.camera.isActive);
         rootNode.AddValue("bakeProgress", m_bakeProgress);
 
-        Json::Node gridSetNode = rootNode.AddChildObject("grids");
+        /*Json::Node gridSetNode = rootNode.AddChildObject("grids");
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             if (!m_hostLightProbeGrids[gridIdx]) { continue; }
@@ -660,7 +660,7 @@ namespace Cuda
                 std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
             }
             gridNode.AddArray2D("coeffHistograms", histogramData);
-        }
+        }*/
 
         return true;
     }

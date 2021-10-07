@@ -91,7 +91,7 @@ void LightProbeCameraShelf::Construct()
     ImGui::Checkbox("Use validity", &m_p.grid.useValidity);
     HelpMarker("Detects invalid probes and exludes from the irradiance reconstruction.");
 
-    ConstructComboBox("Output mode", { "Irradiance", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
+    ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
     HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
 
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
@@ -135,13 +135,13 @@ void LightProbeCameraShelf::Construct()
         ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
         ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
 
-        if (gridStats.hasHistogram)
+        /*if (gridStats.hasHistogram)
         {
             for (const auto& histogramWidget : gridStats.histogramWidgetData)
             {
                 ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
             }
-        }
+        }*/
 
         ImGui::Separator();
         ImGui::PopID();

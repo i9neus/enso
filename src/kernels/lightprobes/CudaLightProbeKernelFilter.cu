@@ -104,7 +104,7 @@ namespace Cuda
         Assert(m_hostReduceBuffer);
 
         // Establish the dimensions of the kernel   
-        auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
+        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
 
         Assert(gridData.coefficientsPerProbe <= kMaxCoefficients);
 

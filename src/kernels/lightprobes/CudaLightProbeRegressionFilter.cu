@@ -171,7 +171,7 @@ namespace Cuda
         Assert(m_hostC); // Sanity check
 
         // Establish the dimensions of the kernel
-        auto& gridData = m_objects->gridData.Prepare(m_hostInputGrid, m_hostCrossGrid, m_hostCrossHalfGrid, m_hostOutputGrid);
+        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostCrossGrid, m_hostCrossHalfGrid, m_hostOutputGrid);
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
      
         // Precompute some values for the regression step
@@ -331,14 +331,15 @@ namespace Cuda
 
         // If the neighbourhood probe lies outside the bounds of the grid, set the weight to zero
         const int probeIdxN = gridData.cu_inputGrid->IdxAt(pos0 + posK);
-        if (probeIdxN < 0)
+        if (probeIdxN < 0 || 
+            gridData.cu_inputGrid->At(probeIdxN)[objects.gridData.coefficientsPerProbe - 1].x < 0.5f)
         {
             (*objects.cu_W)[kKernelIdx] = 0.0f;
         }
         else
-        {
+        {   
             // Calculate the weight for the sample
-            float weight;
+            float weight = 0.0f;
             switch (params.filterType)
             {
             case kKernelFilterGaussian:
@@ -532,6 +533,7 @@ namespace Cuda
         const ivec3 pos0 = GridPosFromProbeIdx(probeIdx0, gridData.density);
 
         vec3 LSum(0.0f);
+        vec3 lapSum(0.0f);
         int sumWeights = 0;
         float radiusNorm = max(1, objects.regression.radius);
         for (int z = -objects.reconstruction.radius; z <= objects.reconstruction.radius; ++z)
@@ -551,7 +553,8 @@ namespace Cuda
                     assert(dataIdxK < objects.cu_C->Size());
                     const vec3* C = &(*objects.cu_C)[dataIdxK];
                     
-                    vec3 L(0.0f);                    
+                    vec3 L(0.0f);
+                    vec3 lap(0.0f);
                     int t = 0;
                     float zExp = 1.0f;
                     for (int zt = 0; zt <= params.polynomialOrder; zt++)
@@ -563,6 +566,9 @@ namespace Cuda
                             for (int xt = 0; xt <= params.polynomialOrder; xt++, t++)
                             {
                                 L += C[t] * xExp * yExp * zExp;
+                                if (xt == 2) { lap += 2.0f * C[t] * yExp * zExp; }
+                                if (yt == 2) { lap += 2.0f * C[t] * xExp * zExp; }
+                                if (zt == 2) { lap += 2.0f * C[t] * xExp * yExp; }
                                 xExp *= nx;
                             }
                             yExp *= ny;
@@ -574,21 +580,30 @@ namespace Cuda
                     const vec3& kernelMin = C[t];
                     const vec3& kernelMax = C[t + 1];
                     L = kernelMin + L * (kernelMax - kernelMin);
-
+                    lap = (lap * (kernelMax - kernelMin)) / max(vec3(1e-2f), L);
+                    
                     // Accumulate
                     LSum += L;
+                    lapSum += lap;
                     sumWeights += 1;
                 }
             }
         }
         
         gridData.cu_outputGrid->SetSHCoefficient(probeIdx0, coeffIdx, LSum / float(sumWeights));
+        gridData.cu_outputGrid->SetSHLaplacianCoefficient(probeIdx0, coeffIdx, lapSum / float(sumWeights));
     }
 
     __host__ void Host::LightProbeRegressionFilter::OnPostRenderPass()
     {
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
+
+        // If the input has changed, update the output to match
+        if (m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())
+        {
+            Prepare();
+        }
 
         // Pass-through filter just copies the data
         if (m_objects->params.filterType == kKernelFilterNull || !m_hostInputGrid->IsConverged()) 
@@ -613,6 +628,8 @@ namespace Cuda
 
         KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());
 
+        m_hostOutputGrid->UpdateAggregateStatistics(0);
+
         m_iterationCount += m_objects->params.regressionIterations;
     }
 
@@ -630,5 +647,28 @@ namespace Cuda
         {
             Prepare();
         }
+    }
+
+    __host__ bool Host::LightProbeRegressionFilter::EmitStatistics(Json::Node& rootNode) const
+    {
+        Json::Node gridSetNode = rootNode.AddChildObject("grids");
+
+       const auto& stats = m_hostOutputGrid->GetAggregateStatistics();
+       
+       Json::Node gridNode = gridSetNode.AddChildObject(m_outputGridID);
+       gridNode.AddValue("minSamples", int(stats.minMaxSamples.x));
+       gridNode.AddValue("maxSamples", int(stats.minMaxSamples.y));
+       gridNode.AddValue("meanProbeValidity", stats.meanValidity);
+       gridNode.AddValue("meanProbeDistance", stats.meanDistance);
+
+       std::vector<std::vector<uint>> histogramData(4);
+       for (int idx = 0; idx < 4; ++idx)
+       {
+           histogramData[idx].resize(50);
+           std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
+       }
+       gridNode.AddArray2D("coeffHistograms", histogramData);
+
+       return true;
     }
 }

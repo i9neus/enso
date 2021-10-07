@@ -112,6 +112,7 @@ namespace Cuda
             __host__ static std::string                         GetAssetDescriptionString() { return "Light Probe Regression Filter"; }
             __host__ static AssetType                           GetAssetStaticType() { return AssetType::kLightProbeFilter; }
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
+            __host__ virtual bool						        EmitStatistics(Json::Node& node) const override final;
 
         private:
             __host__ void                                       PrecomputeMonomialMatrices();

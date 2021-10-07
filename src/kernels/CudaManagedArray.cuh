@@ -41,9 +41,6 @@ namespace Cuda
 			
 			__device__ void Synchronise(T* data, const uint size)
 			{
-				assert(data);
-				assert(size > 0);
-
 				cu_data = data;
 				m_size = size;
 			}

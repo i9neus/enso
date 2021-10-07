@@ -13,6 +13,7 @@ namespace Cuda
     enum ProbeGridOutputMode : int
     {
         kProbeGridIrradiance,
+        kProbeGridLaplacian,
         kProbeGridValidity,
         kProbeGridHarmonicMean,
         kProbeGridPref
@@ -45,6 +46,8 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
+        __host__ void Prepare();
+
         __host__ __device__ bool operator!=(const LightProbeGridParams& rhs) const;
 
         BidirectionalTransform		transform;
@@ -58,6 +61,7 @@ namespace Cuda
         int                         outputMode;
         bool                        invertX, invertY, invertZ;
 
+        int                         shCoefficientsPerProbe;
         int                         coefficientsPerProbe;
         int                         numProbes;
         vec3						aspectRatio;
@@ -85,6 +89,7 @@ namespace Cuda
             struct Objects
             {
                 Device::Array<vec3>* cu_shData = nullptr;
+                Device::Array<vec3>* cu_shLaplacianData = nullptr;
                 Device::Array<uchar>* cu_validityData = nullptr;
             };
 
@@ -93,8 +98,11 @@ namespace Cuda
             __device__ void Synchronise(const Objects& objects) { m_objects = objects; }
 
             __device__ void SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
+            __device__ void SetSHLaplacianCoefficient(const int probeIdx, const int coeffIdx, const vec3& L);
             __device__ vec3* At(const int probeIdx);
             __device__ const vec3* At(const int probeIdx) const { return const_cast<LightProbeGrid*>(this)->At(probeIdx); }
+            __device__ vec3* LaplacianAt(const int probeIdx);
+            __device__ const vec3* LaplacianAt(const int probeIdx) const { return const_cast<LightProbeGrid*>(this)->LaplacianAt(probeIdx); }
             __device__ vec3* At(const ivec3& gridIdx);
             __device__ const vec3* At(const ivec3& gridIdx) const { return const_cast<LightProbeGrid*>(this)->At(gridIdx); }
             __device__ int IdxAt(const ivec3& gridIdx) const;
@@ -105,8 +113,8 @@ namespace Cuda
             __device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
 
         private:
-            __device__ vec3 NearestNeighbourCoefficient(const ivec3 gridIdx, const uint coeffIdx) const;
-            __device__ vec3 WeightedInterpolateCoefficient(const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const;
+            __device__ vec3 NearestNeighbourCoefficient(const Device::Array<vec3>& shData, const ivec3 gridIdx, const uint coeffIdx) const;
+            __device__ vec3 WeightedInterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const;
             __device__ __forceinline__ uchar GetValidity(const ivec3& gridIdx) const;
 
             LightProbeGridParams    m_params;
@@ -132,6 +140,7 @@ namespace Cuda
             __host__ LightProbeGrid(const std::string& id);
             __host__ virtual ~LightProbeGrid();
 
+            __host__ void                               Prepare();
             __host__ void                               Prepare(const LightProbeGridParams& params);
             __host__ void                               Replace(const LightProbeGrid& other);
             __host__ void                               Swap(LightProbeGrid& other);
@@ -155,7 +164,8 @@ namespace Cuda
             Device::LightProbeGrid::Objects m_deviceObjects;
 
             AssetHandle<Host::Array<vec3>>  m_shData;
-            AssetHandle<Host::Array<uchar>>  m_validityData;
+            AssetHandle<Host::Array<vec3>>  m_shLaplacianData;
+            AssetHandle<Host::Array<uchar>> m_validityData;
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
 

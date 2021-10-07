@@ -42,9 +42,7 @@ namespace Cuda
 
 		float						minViableValidity;
 
-		uint						numProbes; //					<-- The number of light probes in the grid (W x H x D)
 		uint						subsamplesPerProbe;	//			<-- A sub-sample is a set of SH coefficients plus data.
-		uint						coefficientsPerProbe; //		<-- The number of Ln SH coefficients, plus additional data.
 		uint						bucketsPerProbe; //				<-- The total number of accumulation units per probe
 
 		uint						totalBuckets; //				<-- The total number of accumulation units in the grid

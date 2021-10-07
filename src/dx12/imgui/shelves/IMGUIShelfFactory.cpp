@@ -35,6 +35,7 @@ IMGUIShelfFactory::IMGUIShelfFactory()
 
     m_instantiators[Cuda::Host::LightProbeKernelFilter::GetAssetTypeString()] = LightProbeKernelFilterShelf::Instantiate;
     m_instantiators[Cuda::Host::LightProbeRegressionFilter::GetAssetTypeString()] = LightProbeRegressionFilterShelf::Instantiate;
+    m_instantiators[Cuda::Host::LightProbeIO::GetAssetTypeString()] = LightProbeIOShelf::Instantiate;
 }
 
 std::map<std::string, std::shared_ptr<IMGUIAbstractShelf>> IMGUIShelfFactory::Instantiate(const Json::Document& rootNode, const Cuda::RenderObjectContainer& renderObjects)

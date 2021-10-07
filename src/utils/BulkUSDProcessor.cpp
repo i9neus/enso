@@ -133,7 +133,7 @@ void BulkConvertUSDProbeGrds()
 			// Read in the probe volume
 			try
 			{
-				USDIO::ReadGridDataUSD(probeData, gridParams, inputPath);
+				USDIO::ReadGridDataUSD(probeData, gridParams, inputPath, USDIO::SHPackingFormat::kNone);
 			}
 			catch (std::runtime_error& err)
 			{
@@ -183,7 +183,7 @@ void BulkConvertUSDProbeGrds()
 			// Write out the probe volume
 			try
 			{
-				USDIO::WriteGridDataUSD(probeData, gridParams, outputPath);
+				USDIO::WriteGridDataUSD(probeData, gridParams, outputPath, USDIO::SHPackingFormat::kUnity);
 			}
 			catch (std::runtime_error& err)
 			{
