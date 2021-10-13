@@ -447,71 +447,84 @@ void RenderManager::Run()
 	int numSubframes = kMaxSubframes;
 	m_frameIdx = 0;
 
-	while (m_threadSignal.load() == kRun)
+	try
 	{
-		/*Timer timer([&](float elapsed) -> std::string
-			{
-				const float fps = 1.0f / elapsed;
-				return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
-			});*/
-		Timer timer;
-
-		// Has the scene graph been dirtied?
-		if (!m_activeCameras.empty() && (m_dirtiness == kHardReset || (m_dirtiness == kSoftReset && m_frameIdx >= 2)))
+		while (m_threadSignal.load() == kRun)
 		{
-			PatchSceneObjects();
+			/*Timer timer([&](float elapsed) -> std::string
+				{
+					const float fps = 1.0f / elapsed;
+					return tfm::format("Iteration %i: Frame %i, Subframes: %i, FPS: %f ", iterationIdx, frameIdx, numSubframes, fps);
+				});*/
+			Timer timer;
 
-			// Reset the render state
-			ClearRenderStates();
-		}
-
-		Assert(!(m_bakeStatus == BakeStatus::kRunning && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
-
-		// Render a pass through each camera to its render state
-		for (auto& camera : m_activeCameras)
-		{
-			m_wavefrontTracer->AttachCamera(camera);
-
-			// Render up to N subframes
-			for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
+			// Has the scene graph been dirtied?
+			if (!m_activeCameras.empty() && (m_dirtiness == kHardReset || (m_dirtiness == kSoftReset && m_frameIdx >= 2)))
 			{
-				std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+				PatchSceneObjects();
 
-				// Notify objects that we're about to start the pass
-				m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), m_frameIdx);
-				camera->OnPreRenderPass(timeDiff.count(), m_frameIdx);
-
-				// Trace those rays through the wavefront tracer 
-				m_wavefrontTracer->Trace();
+				// Reset the render state
+				ClearRenderStates();
 			}
 
-			// If this wavefront tracer is live, update the composite image
-			if (camera == m_liveCamera)
+			Assert(!(m_bakeStatus == BakeStatus::kRunning && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
+
+			// Render a pass through each camera to its render state
+			for (auto& camera : m_activeCameras)
 			{
-				camera->Composite(m_compositeImage);
+				m_wavefrontTracer->AttachCamera(camera);
+
+				// Render up to N subframes
+				for (int subFrameIdx = 0; subFrameIdx < numSubframes; subFrameIdx++)
+				{
+					std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
+
+					// Notify objects that we're about to start the pass
+					m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), m_frameIdx);
+					camera->OnPreRenderPass(timeDiff.count(), m_frameIdx);
+
+					// Trace those rays through the wavefront tracer 
+					m_wavefrontTracer->Trace();
+				}
+
+				// If this wavefront tracer is live, update the composite image
+				if (camera == m_liveCamera)
+				{
+					camera->Composite(m_compositeImage);
+				}
+
+				checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 			}
 
-			checkCudaErrors(cudaStreamSynchronize(m_renderStream));
+			// Signal to the render objects that the pass is complete
+			for (auto& object : *m_renderObjects) { object->OnPostRenderPass(); }
+
+			// Handle any post-frame baking operations
+			OnBakePostFrame();
+
+			// Compute some stats on the framerate
+			m_frameIdx++;
+			m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
+			m_meanFrameTime = 0.0f;
+			for (const auto& ft : m_frameTimes)
+			{
+				m_meanFrameTime += ft;
+			}
+			m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
+
+			// Gather statistics for the render objects
+			GatherRenderObjectStatistics();
 		}
-		
-		// Signal to the render objects that the pass is complete
-		for (auto& object : *m_renderObjects) { object->OnPostRenderPass(); }
-
-		// Handle any post-frame baking operations
-		OnBakePostFrame();
-
-		// Compute some stats on the framerate
-		m_frameIdx++;
-		m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
-		m_meanFrameTime = 0.0f;
-		for (const auto& ft : m_frameTimes)
-		{
-			m_meanFrameTime += ft;
-		}
-		m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
-
-		// Gather statistics for the render objects
-		GatherRenderObjectStatistics();
+	}
+	catch (const std::runtime_error& err)
+	{
+		Log::Error("Runtime error: %s\n", err.what());
+		m_threadSignal.store(kAssert);
+	}
+	catch (...)
+	{
+		Log::Error("Unhandled error");
+		m_threadSignal.store(kAssert);
 	}
 
 	// Signal that the renderer has finished

@@ -173,3 +173,27 @@ bool IsAbsolutePath(const std::string& path)
 {
     return path.find('\\') != std::string::npos || path.find('\\') != std::string::npos;
 }
+
+int EnumerateDirectoryFiles(const std::string& sourceDirectory, const std::string& extensionFilter, std::vector<std::string>& outputPaths)
+{
+    namespace fs = std::filesystem;
+
+    if (!fs::is_directory(sourceDirectory)) { return 0; }
+
+    for (auto const& entry : fs::recursive_directory_iterator(sourceDirectory))
+    {
+        if (!entry.is_regular_file()) { continue; }
+
+        const auto sourcePath = entry.path();
+
+        if (!extensionFilter.empty())
+        {
+            auto fileExt = sourcePath.extension().string();
+            if (fileExt != extensionFilter) { continue; }
+        }
+
+        outputPaths.push_back(sourcePath.string());
+    }
+
+    return outputPaths.size();
+}

@@ -2,7 +2,10 @@
 #include "../CudaManagedArray.cuh"
 
 #include "generic/JsonUtils.h"
+#include "generic/FilesystemUtils.h"
 #include "io/USDIO.h"
+
+#include <filesystem>
 
 #define kBlockSize 256
 #define kMaxCoefficients 5
@@ -10,30 +13,35 @@
 namespace Cuda
 {
     __host__ __device__ LightProbeIOParams::LightProbeIOParams() : 
-        doExportUSD(false)
+        doBatch(false),
+        exportUSD(true)
     {
     }
 
     __host__ void LightProbeIOParams::ToJson(::Json::Node& node) const
     {
-        node.AddValue("doExportUSD", doExportUSD);
+        node.AddValue("doBatch", doBatch);
+        node.AddValue("exportUSD", exportUSD);
     }
 
     __host__ void LightProbeIOParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("doExportUSD", doExportUSD, Json::kSilent);
+        node.GetValue("doBatch", doBatch, Json::kSilent);
+        node.GetValue("exportUSD", exportUSD, Json::kSilent);
     }
 
-    __host__ Host::LightProbeIO::LightProbeIO(const ::Json::Node& node, const std::string& id)
+    __host__ Host::LightProbeIO::LightProbeIO(const ::Json::Node& node, const std::string& id) :
+        m_isActive(false),
+        m_currentIOPaths(m_usdIOList.end())
     {
-        FromJson(node, Json::kRequiredWarn);        
+        FromJson(node, Json::kRequiredWarn);     
 
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_inputGridID), "Error: an asset with ID '%s' already exists'.", m_inputGridID.c_str());
 
         // Create some objects
         m_hostInputGrid = AssetHandle<Host::LightProbeGrid>(m_inputGridID, m_inputGridID);
 
-        ImportProbeGrid();
+        ImportProbeGrid(m_usdImportPath);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeIO::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -47,10 +55,20 @@ namespace Cuda
     {
         m_params.FromJson(node, flags);
 
-        node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
-        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
+        node.GetValue("inputGridID", m_inputGridID, flags);
+        node.GetValue("outputGridID", m_outputGridID, flags);
         node.GetValue("usdImportPath", m_usdImportPath, flags);
         node.GetValue("usdExportPath", m_usdExportPath, flags);
+        node.GetValue("usdImportDirectory", m_usdImportDirectory, flags);
+        node.GetValue("usdExportDirectory", m_usdExportDirectory, flags);
+
+        AssertMsg(!m_inputGridID.empty() && !m_outputGridID.empty(), "Must specify an input and output light probe grid ID.");
+
+        if (m_params.doBatch)
+        {
+            PrepareBatchFilter();
+            m_params.doBatch = false;
+        }
     }
 
     __host__ void Host::LightProbeIO::OnDestroyAsset()
@@ -68,40 +86,130 @@ namespace Cuda
         }        
     }
 
-    __host__ void Host::LightProbeIO::ImportProbeGrid()
+    __host__ bool Host::LightProbeIO::AdvanceNextUSD(bool advance)
     {
-        if (m_usdImportPath.empty()) { return; }
+        if (m_currentIOPaths == m_usdIOList.end()) { return false; }
+
+        while (true)
+        {
+            if (advance) { ++m_currentIOPaths; }
+
+            if (m_currentIOPaths == m_usdIOList.end()) { return false; }
+            
+            if (ImportProbeGrid(m_currentIOPaths->first)) { return true; }
+
+            advance = true;
+        }
+    }
+    
+    __host__ void Host::LightProbeIO::PrepareBatchFilter()
+    {         
+        Log::Debug("Looking in %s...", m_usdImportDirectory);
+
+        std::vector<std::string> inputFiles;
+        EnumerateDirectoryFiles(m_usdImportDirectory, ".usd", inputFiles);
+
+        m_usdExportDirectory = DeslashifyPath(m_usdExportDirectory);
+
+        Log::Debug("Found %i USD files", inputFiles.size());
+        for (const auto& inputPath : inputFiles)
+        {
+            const auto slashIdx = inputPath.rfind('/');
+            if (slashIdx == std::string::npos) { continue; }
+
+            std::string outputPath = m_usdExportDirectory + inputPath.substr(slashIdx, inputPath.size() - slashIdx);
+
+            m_usdIOList.emplace_back(inputPath, outputPath);
+            //Log::Debug("%s -> %s", inputPath, outputPath);
+        }
+
+        m_currentIOPaths = m_usdIOList.begin();
+
+        if (m_usdIOList.empty())
+        {
+            Log::Error("Error: no USD files were found in '%s'", m_usdImportDirectory);
+            return;
+        }
+
+        if (!AdvanceNextUSD(false)) 
+        {
+            Log::Error("Error: could not load a valid USD file");
+            return;
+        }
+
+        m_hostInputGrid->SetSemaphore("tag_do_filter", true);       
+        m_isActive = true;
+    }
+
+    __host__ void Host::LightProbeIO::ExportProbeGrid(const std::string& filePath) const
+    {
+        Assert(!m_usdImportPath.empty());
+
+        // Pull the raw data from the light probe grid object
+        std::vector<vec3> rawData;
+        const LightProbeGridParams gridParams = m_hostOutputGrid->GetParams();
+        m_hostOutputGrid->GetRawData(rawData);
+
+        try
+        {
+            USDIO::WriteGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity);
+        }
+        catch (const std::runtime_error& err)
+        {
+            Log::Error("Failed to export probe grid from '%s'. Assertion failed: %s", filePath, err.what());
+        }
+    }
+
+    __host__ bool Host::LightProbeIO::ImportProbeGrid(const std::string& filePath)
+    {
+        Assert(!m_usdImportPath.empty());
         
         std::vector<vec3> rawData;
         LightProbeGridParams gridParams;
         
         try
         {
-            USDIO::ReadGridDataUSD(rawData, gridParams, m_usdImportPath, USDIO::SHPackingFormat::kUnity);
+            USDIO::ReadGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity);
         }
         catch (const std::runtime_error& err)
         {
-            Log::Error("Failed to import probe grid from '%s'. Assertion failed: %s", m_usdImportPath, err.what());
-            return;
+            Log::Error("Failed to import probe grid from '%s'. Assertion failed: %s", filePath, err.what());
+            return false;
         }
 
         m_hostInputGrid->Prepare(gridParams);
         m_hostInputGrid->SetRawData(rawData);
         m_hostInputGrid->UpdateAggregateStatistics(1);
+        m_hostInputGrid->SetSemaphore("tag_do_filter", true);
 
         // Output summary data about imported probe grid
         {
             const auto& params = m_hostInputGrid->GetParams();
-            Log::Indent indent(tfm::format("Successfully imported probe grid from '%s'.", m_usdImportPath));
+            Log::Indent indent(tfm::format("Successfully imported probe grid from '%s'.", filePath));
             Log::Write("Grid dimensions: %s", params.gridDensity.format());
             Log::Write("Aspect ratio: %s", params.aspectRatio.format());
             Log::Write("SH order: %i", params.shOrder);
         }
+
+        return true;
     }
 
     __host__ void Host::LightProbeIO::OnPostRenderPass()
-    {
-       
+    {  
+        if (!m_isActive || m_hostOutputGrid->GetSemaphore("tag_is_filtered") != true) { return; }
+
+        // Export the output grid to USD
+        if (m_params.exportUSD)
+        {
+            Assert(m_currentIOPaths != m_usdIOList.end());
+            ExportProbeGrid(m_currentIOPaths->second);
+        }
+
+        // Advance to the next USD file in the list
+        if (!AdvanceNextUSD(true))
+        {
+            m_isActive = false;
+        }
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeIO::GetChildObjectHandles()

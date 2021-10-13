@@ -12,11 +12,11 @@ void LightProbeKernelFilterShelf::Construct()
 
     ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)" }, m_p.filterType);
     ImGui::SliderInt("Kernel radius", &m_p.kernelRadius, 0, 10);
-    if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 2.0f)) 
+    if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 1.0f)) 
     { 
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; } 
     }
-    if (ImGui::SliderFloat("NLM k", &m_p.nlm.K, 0.0f, 2.0f)) 
+    if (ImGui::SliderFloat("NLM k", &m_p.nlm.K, 0.0f, 1.0f)) 
     { 
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
@@ -49,11 +49,11 @@ void LightProbeRegressionFilterShelf::Construct()
     ImGui::SliderInt("Reconstruction radius", &m_p.reconstructionRadius, 0, 4);
 
     ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)"}, m_p.filterType);
-    if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 2.0f))
+    if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 1.0f))
     {
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; }
     }
-    if (ImGui::SliderFloat("NLM k", &m_p.nlm.K, 0.0f, 2.0f))
+    if (ImGui::SliderFloat("NLM k", &m_p.nlm.K, 0.0f, 1.0f))
     {
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
@@ -141,12 +141,17 @@ void LightProbeIOShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    
+    if (ImGui::Button("Batch"))
+    {
+        m_p.doBatch = true;
+    }
+
+    ImGui::Checkbox("Export USD", &m_p.exportUSD);
 }
 
 void LightProbeIOShelf::Reset()
 {
-
+    m_p.doBatch = false;
 }
 
 

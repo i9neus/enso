@@ -61,7 +61,7 @@ private:
 	void GatherRenderObjectStatistics();
 	void Prepare();
 
-	enum ThreadSignal : int { kIdle, kRun, kHalt };
+	enum ThreadSignal : int { kIdle, kRun, kHalt, kAssert };
 	enum DirtyState : int { kClean, kSoftReset, kHardReset };
 
 	std::mutex		    m_renderResourceMutex;

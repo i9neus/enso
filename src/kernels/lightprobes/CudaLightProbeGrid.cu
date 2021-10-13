@@ -573,4 +573,20 @@ namespace Cuda
 
         return m_statistics;
     }
+
+    __host__ bool Host::LightProbeGrid::HasSemaphore(const std::string& tag) const
+    {
+        return m_semaphoreRegistry.find(tag) != m_semaphoreRegistry.end();
+    }
+
+    __host__ int Host::LightProbeGrid::GetSemaphore(const std::string& tag) const
+    {
+        auto it = m_semaphoreRegistry.find(tag);
+        return (it != m_semaphoreRegistry.end()) ? it->second : std::numeric_limits<int>::min();
+    }
+
+    __host__ void Host::LightProbeGrid::SetSemaphore(const std::string& tag, const int data)
+    {
+        m_semaphoreRegistry[tag] = data;
+    }
 }

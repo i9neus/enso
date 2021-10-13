@@ -1,5 +1,7 @@
 #include "USDIO.h"
 
+#include <filesystem>
+
 #include "generic/D3DIncludes.h"
 #include "generic/Math.h"
 #include <cuda_runtime.h>
@@ -372,5 +374,5 @@ namespace USDIO
                 Log::Debug("    - %i: %s -> %i\n", j, raw.format(), swizzled.format());
             }
         }*/
-    }
+    }    
 }

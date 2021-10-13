@@ -149,6 +149,9 @@ namespace Cuda
             __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
             __host__ Device::LightProbeGrid*            GetDeviceInstance() { return cu_deviceData; }
             __host__ bool                               IsConverged() const { return m_statistics.isConverged; }
+            __host__ bool                               HasSemaphore(const std::string& tag) const;
+            __host__ int                                GetSemaphore(const std::string& tag) const;
+            __host__ void                               SetSemaphore(const std::string& tag, const int data);
             __host__ bool                               IsValid() const;
             __host__ void                               GetRawData(std::vector<vec3>& data) const;
             __host__ void                               SetRawData(const std::vector<vec3>& data);
@@ -168,6 +171,7 @@ namespace Cuda
             AssetHandle<Host::Array<uchar>> m_validityData;
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
+            std::unordered_map<std::string, int> m_semaphoreRegistry;
 
             AggregateStatistics             m_statistics;
             DeviceObjectRAII<Device::LightProbeGrid::AggregateStatistics>	m_probeAggregateData;            

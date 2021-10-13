@@ -52,3 +52,6 @@ bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file);
 
 // Returns true if the path is absolute i.e. it has at least one slash character
 inline bool IsAbsolutePath(const std::string& path);
+
+// Enumerates all files in the source directory with the extension (if any). Returns the number of paths
+int EnumerateDirectoryFiles(const std::string& sourceDirectory, const std::string& extensionFilter, std::vector<std::string>& outputPaths);

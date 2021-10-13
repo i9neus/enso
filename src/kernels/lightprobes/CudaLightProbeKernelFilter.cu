@@ -50,7 +50,7 @@ namespace Cuda
         m_hostReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_reduceBuffer", id));
         
         // FIXME: Static size; needs to be dynamic. 
-        m_hostReduceBuffer->Resize(2048 * 2048);
+        m_hostReduceBuffer->Resize(1024 * 1024);
     }
     
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeKernelFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -113,23 +113,24 @@ namespace Cuda
         m_objects->kernelRadius = m_objects->params.kernelRadius;
 
         const auto& gridParams = m_hostInputGrid->GetParams();
-        const int maxVolume = m_hostReduceBuffer->Size() * kBlockSize / ((gridParams.coefficientsPerProbe + 1) * gridParams.numProbes);
-        const int maxRadius = int((std::pow(float(maxVolume), 1.0f / 3.0f) - 1.0f) * 0.5f) - 1;
-        if (m_objects->kernelRadius > maxRadius)
-        {
-            Log::Warning("Warning: filter kernel radius exceeds the capacity of the preset accumulation buffer. Constraining to %i.\n", maxRadius);
-            m_objects->kernelRadius = maxRadius;
-            m_objects->params.kernelRadius = maxRadius;
-        }
 
         m_objects->kernelSpan = 2 * m_objects->kernelRadius + 1;
         m_objects->kernelVolume = cub(m_objects->kernelSpan);
         m_objects->blocksPerProbe = (m_objects->kernelVolume + (kBlockSize - 1)) / kBlockSize;
 
-        m_probeRange = m_hostReduceBuffer->Size() / ((gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe);
-        m_gridSize = min(gridData.numProbes * m_objects->blocksPerProbe,
-                         m_probeRange * (gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe);
-
+        /*if (m_objects->blocksPerProbe == 1)
+        {
+            m_probeRange = gridData.numProbes;
+            m_gridSize = gridData.numProbes;
+        }
+        else*/
+        {
+            m_probeRange = min(uint(gridData.numProbes),
+                               m_hostReduceBuffer->Size() / ((gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe));
+            m_gridSize = m_probeRange * m_objects->blocksPerProbe;
+        }
+      
+        Log::Debug("Grid dimensions: %s\n", gridParams.gridDensity.format());
         Log::Debug("kernelVolume: %i\n", m_objects->kernelVolume);
         Log::Debug("blocksPerProbe: %i\n", m_objects->blocksPerProbe);
         Log::Debug("probeRange: %i\n", m_probeRange);
@@ -162,12 +163,12 @@ namespace Cuda
         __syncthreads();
 
         // Get the index of the probe in the grid and the sample in the kernel
+        const int probeIdx0 = probeStartIdx + blockIdx.x / objects.blocksPerProbe;
+        if (probeIdx0 >= objects.gridData.numProbes) { return; }
+
         auto& gridData = objects.gridData;
         const auto& params = objects.params;
-        const int probeIdx0 = probeStartIdx + blockIdx.x / objects.blocksPerProbe;
         const int probeIdxK = kBlockSize * (blockIdx.x % objects.blocksPerProbe) + threadIdx.x;
-
-        assert(probeIdx0 < gridData.numProbes);
 
         // If the index of the element lies outside the kernel, zero its weight
         if (probeIdxK >= objects.kernelVolume)
@@ -199,10 +200,12 @@ namespace Cuda
                     case kKernelFilterGaussian:
                     {
                         const float len = length(vec3(posK));
-                        if (len <= params.kernelRadius)
+                        if (len >= params.kernelRadius + 1.0f) { weight = 0.0f; }
+                        else
                         {
-                            weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.kernelRadius);
-                        }
+                            //weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.kernelRadius);
+                            weight = 1.0f - sqr(len / float(params.kernelRadius + 1.0f));
+                        }       
                         break;
                     }
                     case kKernelFilterNLM:
@@ -245,9 +248,9 @@ namespace Cuda
         }
         
         if (kThreadIdx == 0)
-        {
+        {           
             // If the entire convolution operation fits into a single block, copy straight into the output buffer
-            if (objects.blocksPerProbe == 1)
+            /*if (objects.blocksPerProbe == 1)
             {
                 vec3* outputBuffer = gridData.cu_outputGrid->At(probeIdx0);
                 for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
@@ -257,14 +260,14 @@ namespace Cuda
                 // Don't filter the metadata. Just copy.
                 outputBuffer[gridData.shCoeffsPerProbe] = gridData.cu_inputGrid->At(probeIdx0)[gridData.shCoeffsPerProbe];
             }
-            else
+            else*/
             {
                 // Copy the data into the intermediate buffer. 
                 // We store the weighted SH coefficients as vec3s followed by a final vec3 whose first element contains the weight.
                 assert(objects.cu_reduceBuffer);
-                const int bufferIdx = (probeIdx0 * objects.blocksPerProbe + (probeIdxK / kBlockSize)) * (gridData.coefficientsPerProbe + 1);
-                assert(bufferIdx < objects.cu_reduceBuffer->Size());
-                vec3* outputBuffer = &(*objects.cu_reduceBuffer)[bufferIdx];
+                const int outputIdx = blockIdx.x * (gridData.coefficientsPerProbe + 1);
+                assert(outputIdx < objects.cu_reduceBuffer->Size());
+                vec3* outputBuffer = &(*objects.cu_reduceBuffer)[outputIdx];
                 for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx];
@@ -274,14 +277,14 @@ namespace Cuda
         }
     } 
 
-    __global__ void KernelCopyFromReduceBuffer(Host::LightProbeKernelFilter::Objects* objects)
+    __global__ void KernelCopyFromReduceBuffer(Host::LightProbeKernelFilter::Objects* objects, const int probeStartIdx)
     {       
         assert(objects->gridData.cu_inputGrid);
         assert(objects->gridData.cu_outputGrid);
         
-        if (kKernelX >= objects->gridData.numProbes) { return; }
+        if (probeStartIdx + kKernelX >= objects->gridData.numProbes) { return; }
         
-        vec3* outputBuffer = objects->gridData.cu_outputGrid->At(kKernelX);
+        vec3* outputBuffer = objects->gridData.cu_outputGrid->At(probeStartIdx + kKernelX);
         memset(outputBuffer, 0, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
      
         const vec3* reduceCoeff = &(*objects->cu_reduceBuffer)[kKernelX * objects->blocksPerProbe * (objects->gridData.coefficientsPerProbe + 1)];
@@ -290,15 +293,16 @@ namespace Cuda
         float sumWeights = 0.0;
         for (int blockIdx = 0, reduceIdx = 0; blockIdx < objects->blocksPerProbe; ++blockIdx)
         {
-            for (int coeffIdx = 0; coeffIdx < objects->gridData.coefficientsPerProbe; ++coeffIdx, ++reduceIdx)
-            {                
+            for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++reduceIdx)
+            {                                
                 outputBuffer[coeffIdx] += reduceCoeff[reduceIdx];
             }
+            reduceIdx++;
             sumWeights += reduceCoeff[reduceIdx++].x;
         }
 
         // Normalise the accumulated coefficients by the sum of the kernel weights
-        for (int coeffIdx = 0; coeffIdx < objects->gridData.coefficientsPerProbe; ++coeffIdx)
+        for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx)
         {
             outputBuffer[coeffIdx] /= sumWeights;
         }
@@ -307,7 +311,7 @@ namespace Cuda
     __host__ void Host::LightProbeKernelFilter::OnPostRenderPass()
     {              
         // Filter isn't yet bound, so do nothing
-        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
+        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }        
         
         // Pass-through filter just copies the data
         if (m_objects->params.filterType == kKernelFilterNull || !m_hostInputGrid->IsConverged())
@@ -317,20 +321,28 @@ namespace Cuda
             return;
         }
 
+        // If the input grid is requesting a filter op, enable the filter
+        if (m_hostInputGrid->GetSemaphore("tag_do_filter") == true)
+        {
+            m_hostInputGrid->SetSemaphore("tag_do_filter", false);
+            m_isActive = true;
+        }
+
         if (!m_isActive) { return; }
         
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
             KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
             
-            if (m_objects->blocksPerProbe > 1)
+            //if (m_objects->blocksPerProbe > 1)
             {
-                KernelCopyFromReduceBuffer << < (m_objects->gridData.numProbes + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());
+                KernelCopyFromReduceBuffer << < (m_probeRange + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
             }
 
             IsOk(cudaStreamSynchronize(m_hostStream));
         }
 
+        m_hostOutputGrid->SetSemaphore("tag_is_filtered", true);
         m_isActive = false;
     }
 
