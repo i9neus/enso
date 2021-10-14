@@ -18,6 +18,8 @@ namespace Cuda
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         bool        doBatch;
+        bool        doNext;
+        bool        doPrevious;
         bool        exportUSD;
     };
 
@@ -37,14 +39,15 @@ namespace Cuda
             std::string                             m_usdImportDirectory;
             std::string                             m_usdExportDirectory;
 
-            bool                                    m_isActive;
+            bool                                    m_isBatchActive;
 
             using IOList = std::list<std::pair<std::string, std::string>>;
             IOList                                  m_usdIOList;
             IOList::const_iterator                  m_currentIOPaths;
            
-            __host__ bool                           AdvanceNextUSD(bool advance);
-            __host__ void                           PrepareBatchFilter();
+            __host__ bool                           AdvanceNextUSD(bool advance, const int direction);
+            __host__ void                           EnumerateProbeGrids();
+            __host__ void                           BeginBatchFilter();
             __host__ bool                           ImportProbeGrid(const std::string& filePath);
             __host__ void                           ExportProbeGrid(const std::string& filePath) const;
 

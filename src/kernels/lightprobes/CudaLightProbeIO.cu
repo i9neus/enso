@@ -14,6 +14,8 @@ namespace Cuda
 {
     __host__ __device__ LightProbeIOParams::LightProbeIOParams() : 
         doBatch(false),
+        doNext(false),
+        doPrevious(false),
         exportUSD(true)
     {
     }
@@ -21,26 +23,40 @@ namespace Cuda
     __host__ void LightProbeIOParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("doBatch", doBatch);
+        node.AddValue("doNext", doNext);
+        node.AddValue("doPrevious", doPrevious);
         node.AddValue("exportUSD", exportUSD);
     }
 
     __host__ void LightProbeIOParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("doBatch", doBatch, Json::kSilent);
+        node.GetValue("doNext", doNext, Json::kSilent);
+        node.GetValue("doPrevious", doPrevious, Json::kSilent);
         node.GetValue("exportUSD", exportUSD, Json::kSilent);
     }
 
     __host__ Host::LightProbeIO::LightProbeIO(const ::Json::Node& node, const std::string& id) :
-        m_isActive(false),
+        m_isBatchActive(false),
         m_currentIOPaths(m_usdIOList.end())
     {
-        FromJson(node, Json::kRequiredWarn);     
+        FromJson(node, Json::kRequiredWarn);
+
+        node.GetValue("inputGridID", m_inputGridID, Json::kRequiredWarn);
+        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredWarn);
+        node.GetValue("usdImportPath", m_usdImportPath, Json::kRequiredWarn);
+        node.GetValue("usdExportPath", m_usdExportPath, Json::kRequiredWarn);
+        node.GetValue("usdImportDirectory", m_usdImportDirectory, Json::kRequiredWarn);
+        node.GetValue("usdExportDirectory", m_usdExportDirectory, Json::kRequiredWarn);
+
+        AssertMsg(!m_inputGridID.empty() && !m_outputGridID.empty(), "Must specify an input and output light probe grid ID.");
 
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_inputGridID), "Error: an asset with ID '%s' already exists'.", m_inputGridID.c_str());
 
         // Create some objects
         m_hostInputGrid = AssetHandle<Host::LightProbeGrid>(m_inputGridID, m_inputGridID);
 
+        EnumerateProbeGrids();
         ImportProbeGrid(m_usdImportPath);
     }
 
@@ -55,20 +71,14 @@ namespace Cuda
     {
         m_params.FromJson(node, flags);
 
-        node.GetValue("inputGridID", m_inputGridID, flags);
-        node.GetValue("outputGridID", m_outputGridID, flags);
-        node.GetValue("usdImportPath", m_usdImportPath, flags);
-        node.GetValue("usdExportPath", m_usdExportPath, flags);
-        node.GetValue("usdImportDirectory", m_usdImportDirectory, flags);
-        node.GetValue("usdExportDirectory", m_usdExportDirectory, flags);
+        if (m_params.doBatch) { BeginBatchFilter(); }
 
-        AssertMsg(!m_inputGridID.empty() && !m_outputGridID.empty(), "Must specify an input and output light probe grid ID.");
+        if (m_params.doNext && !m_isBatchActive) { AdvanceNextUSD(true, 1); }
+        if (m_params.doPrevious && !m_isBatchActive) { AdvanceNextUSD(true, -1); }
 
-        if (m_params.doBatch)
-        {
-            PrepareBatchFilter();
-            m_params.doBatch = false;
-        }
+        m_params.doBatch = false;
+        m_params.doNext = false;
+        m_params.doPrevious = false;
     }
 
     __host__ void Host::LightProbeIO::OnDestroyAsset()
@@ -83,27 +93,32 @@ namespace Cuda
         {
             Log::Error("Error: LightProbeIO::Bind(): the specified output light probe grid '%s' is invalid.\n", m_outputGridID);
             return;
-        }        
+        }
     }
 
-    __host__ bool Host::LightProbeIO::AdvanceNextUSD(bool advance)
+    __host__ bool Host::LightProbeIO::AdvanceNextUSD(bool advance, const int direction)
     {
-        if (m_currentIOPaths == m_usdIOList.end()) { return false; }
+        Assert(direction != 0);
+        if ((m_currentIOPaths == m_usdIOList.end() && direction > 0) || 
+            (m_currentIOPaths == m_usdIOList.begin() && direction < 0)) { return false; }
 
         while (true)
         {
-            if (advance) { ++m_currentIOPaths; }
+            if (advance) { std::advance(m_currentIOPaths, direction); }
 
             if (m_currentIOPaths == m_usdIOList.end()) { return false; }
-            
-            if (ImportProbeGrid(m_currentIOPaths->first)) { return true; }
+
+            if (ImportProbeGrid(m_currentIOPaths->first)) { break; }
 
             advance = true;
         }
+
+        m_hostInputGrid->SetSemaphore("tag_do_filter", true);
+        return true;
     }
-    
-    __host__ void Host::LightProbeIO::PrepareBatchFilter()
-    {         
+
+    __host__ void Host::LightProbeIO::EnumerateProbeGrids()
+    {
         Log::Debug("Looking in %s...", m_usdImportDirectory);
 
         std::vector<std::string> inputFiles;
@@ -124,21 +139,25 @@ namespace Cuda
         }
 
         m_currentIOPaths = m_usdIOList.begin();
+    }
 
+    __host__ void Host::LightProbeIO::BeginBatchFilter()
+    {
         if (m_usdIOList.empty())
         {
             Log::Error("Error: no USD files were found in '%s'", m_usdImportDirectory);
             return;
         }
 
-        if (!AdvanceNextUSD(false)) 
+        m_currentIOPaths = m_usdIOList.begin();
+
+        if (!AdvanceNextUSD(false, 1))
         {
             Log::Error("Error: could not load a valid USD file");
             return;
         }
-
-        m_hostInputGrid->SetSemaphore("tag_do_filter", true);       
-        m_isActive = true;
+        
+        m_isBatchActive = true;
     }
 
     __host__ void Host::LightProbeIO::ExportProbeGrid(const std::string& filePath) const
@@ -163,10 +182,10 @@ namespace Cuda
     __host__ bool Host::LightProbeIO::ImportProbeGrid(const std::string& filePath)
     {
         Assert(!m_usdImportPath.empty());
-        
+
         std::vector<vec3> rawData;
         LightProbeGridParams gridParams;
-        
+
         try
         {
             USDIO::ReadGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity);
@@ -195,8 +214,8 @@ namespace Cuda
     }
 
     __host__ void Host::LightProbeIO::OnPostRenderPass()
-    {  
-        if (!m_isActive || m_hostOutputGrid->GetSemaphore("tag_is_filtered") != true) { return; }
+    {
+        if (!m_isBatchActive || m_hostOutputGrid->GetSemaphore("tag_is_filtered") != true) { return; }
 
         // Export the output grid to USD
         if (m_params.exportUSD)
@@ -206,9 +225,9 @@ namespace Cuda
         }
 
         // Advance to the next USD file in the list
-        if (!AdvanceNextUSD(true))
+        if (!AdvanceNextUSD(true, 1))
         {
-            m_isActive = false;
+            m_isBatchActive = false;
         }
     }
 

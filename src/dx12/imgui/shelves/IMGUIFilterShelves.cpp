@@ -141,17 +141,16 @@ void LightProbeIOShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    if (ImGui::Button("Batch"))
-    {
-        m_p.doBatch = true;
-    }
+    if (ImGui::Button("Batch Denoise")) { m_p.doBatch = true; }
+    if (ImGui::Button("Next")) { m_p.doNext = true; } SL;
+    if (ImGui::Button("Previous")) { m_p.doPrevious = true; } 
 
     ImGui::Checkbox("Export USD", &m_p.exportUSD);
 }
 
 void LightProbeIOShelf::Reset()
 {
-    m_p.doBatch = false;
+    m_p = Cuda::LightProbeIOParams();
 }
 
 
