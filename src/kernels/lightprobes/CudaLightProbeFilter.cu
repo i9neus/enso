@@ -8,7 +8,8 @@ namespace Cuda
         alpha(1.0f),
         K(1.0f),
         patchRadius(1),
-        sigma(0.0f)
+        sigma(0.0f),
+        varianceFormat(kHalf)
     {
     }
 
@@ -22,7 +23,8 @@ namespace Cuda
         node.AddValue("alpha", alpha);
         node.AddValue("k", K);
         node.AddValue("sigma", sigma);
-        node.AddValue("patchRadius", patchRadius);
+        node.AddValue("patchRadius", patchRadius); 
+        node.AddEnumeratedParameter("varianceFormat", std::vector<std::string>({ "half", "2xunder", "2xover" }), varianceFormat);        
     }
 
     __host__ void LightProbeFilterNLMParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -31,6 +33,7 @@ namespace Cuda
         node.GetValue("k", K, flags);
         node.GetValue("sigma", sigma, flags);
         node.GetValue("patchRadius", patchRadius, flags);
+        node.GetEnumeratedParameter("varianceFormat", std::vector<std::string>({ "half", "2xunder", "2xover" }), varianceFormat, flags);
 
         alpha = clamp(alpha, 0.0f, std::numeric_limits<float>::max());
         K = clamp(K, 0.0f, std::numeric_limits<float>::max());
@@ -96,11 +99,40 @@ namespace Cuda
                         const vec3& N = probeN[coeffIdx];
                         const vec3& halfM = probeHalfM[coeffIdx];
                         const vec3& halfN = probeHalfN[coeffIdx];
-                        const vec3 varN = sqr((N - halfN) - halfN) * 2.0f;
-                        const vec3 varM = sqr((M - halfM) - halfM) * 2.0f;
 
-                        const vec3 d2 = (sqr(M - N) - nlmParams.alpha * (varN + varM)) /
+                        vec3 varN, varM;
+                        switch (nlmParams.varianceFormat)
+                        {
+                        case LightProbeFilterNLMParams::kHalf:
+                        {
+                            // Variance buffer receives N/2 samples and is divided by N
+                            varN = sqr((N - halfN) - halfN) * 2.0f;
+                            varM = sqr((M - halfM) - halfM) * 2.0f;
+                        }
+                        break;
+                        case LightProbeFilterNLMParams::k2xUnder:
+                        {
+                            // Variance buffer receives N/2 samples and is divided by N/2
+                            varN = sqr((N - (halfN * 0.5f)) - (halfN * 0.5f)) * 2.0f;
+                            varM = sqr((M - (halfM * 0.5f)) - (halfM * 0.5f)) * 2.0f;
+                        }
+                        break;
+                        case LightProbeFilterNLMParams::k2xOver:
+                        {
+                            // Variance buffer receives 2N samples and is divided by 2N
+                            varN = sqr((halfN - (N * 0.5f)) - (N * 0.5f)) * 4.0f;
+                            varM = sqr((halfM - (M * 0.5f)) - (M * 0.5f)) * 4.0f;
+                        }
+                        break;
+                        default:
+                            varN = varM = 0.0f;
+                        };
+
+                        // Compute the distance from N to M
+                        const vec3 d2 = (sqr(M - N) - nlmParams.alpha * (varM + min(varN, varM))) /
                             (vec3(1e-10f) + sqr(nlmParams.K) * (varN + varM));
+
+                        // Derive the weight from the distance
                         weights[coeffIdx] += expf(-max(0.0f, cwiseMax(d2)));
                     }
                     numValidWeights++;

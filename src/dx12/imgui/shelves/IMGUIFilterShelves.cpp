@@ -21,6 +21,8 @@ void LightProbeKernelFilterShelf::Construct()
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
     ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ConstructComboBox("NLM variance format", { "Half", "2x under", "2x over"}, m_p.nlm.varianceFormat);
+
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 }
 
@@ -58,6 +60,7 @@ void LightProbeRegressionFilterShelf::Construct()
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
     ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ConstructComboBox("NLM variance format", { "Half", "2x under", "2x over" }, m_p.nlm.varianceFormat);
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 
     for (auto& gridStats : m_probeGridStatistics)

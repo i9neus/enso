@@ -40,6 +40,8 @@ namespace Cuda
 
     struct LightProbeFilterNLMParams
     {
+        enum __tags : int { kHalf, k2xUnder, k2xOver};
+        
         __host__ __device__ LightProbeFilterNLMParams();
         __host__ LightProbeFilterNLMParams(const ::Json::Node& node);
 
@@ -50,6 +52,7 @@ namespace Cuda
         float                           K;
         float                           sigma;
         int                             patchRadius;
+        int                             varianceFormat;
     };
 
     __host__ __device__ __forceinline__ float ErfApprox(const float x)
