@@ -50,8 +50,11 @@ bool GetInputFileHandle(const std::string& filePath, std::ifstream& file);
 // Get a file handle to the specified path
 bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file);
 
-// Returns true if the path is absolute i.e. it has at least one slash character
-inline bool IsAbsolutePath(const std::string& path);
+// Returns true if the path is absolute i.e. it's unambiguous on the filesystem
+bool IsAbsolutePath(const std::string& path);
+
+// Concatenates the root path with the relative path to create an absolute path
+std::string MakeAbsolutePath(const std::string& parentPath, const std::string& relativePath);
 
 // Enumerates all files in the source directory with the extension (if any). Returns the number of paths
 int EnumerateDirectoryFiles(const std::string& sourceDirectory, const std::string& extensionFilter, std::vector<std::string>& outputPaths);

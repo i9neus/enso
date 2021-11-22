@@ -34,7 +34,8 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_stateFlags(kStatePermuteAll),
     m_minViableValidity(0.7f),
     m_numStrata(20),
-    m_dirtiness(IMGUIDirtiness::kClean)
+    m_dirtiness(IMGUIDirtiness::kClean),
+    m_gridFitness(0.0f)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -370,7 +371,7 @@ void RenderObjectStateManager::ToggleBake()
     m_permutor.Clear();
     
     m_permutor.SetSampleRange(m_noisySampleRange, m_referenceSamples, m_numStrata);
-    if (!m_permutor.Prepare(m_numBakeIterations, std::string(m_usdPathUIData.data()), m_disableLiveView, true)) { return; }
+    if (!m_permutor.Prepare(m_numBakeIterations, std::string(m_usdPathUIData.data()), m_stateJsonPath, m_disableLiveView, true)) { return; }
 
     m_isBaking = true;
 }
@@ -383,7 +384,12 @@ void RenderObjectStateManager::HandleBakeIteration()
     // Advance to the next permutation. If this fails, we're done. 
     if (m_permutor.Advance())
     {       
-        m_renderManager.StartBake(m_permutor.GenerateExportPaths(), m_exportToUSD);
+        Cuda::LightProbeGridExportParams params;
+        params.usdExportPaths = m_permutor.GenerateExportPaths();
+        params.exportToUSD = m_exportToUSD;
+        params.gridFitness = -1.0f;
+        
+        m_renderManager.StartBake(params);
     }
     else
     {

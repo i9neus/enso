@@ -58,6 +58,8 @@ private:
     int                     m_referenceSamples;
     int                     m_numStrata;
     float                   m_minViableValidity;
+    
+    float                   m_gridFitness;
 
     IMGUIListBox            m_stateListUI;
 

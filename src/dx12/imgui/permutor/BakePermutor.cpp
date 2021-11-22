@@ -87,7 +87,7 @@ int BakePermutor::GenerateStratifiedSampleCountSet()
     return totalSamples;
 }
 
-bool BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView)
+bool BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView)
 {
     m_numStates = m_stateMap.GetNumPermutableStates();
     if (m_numStates == 0)
@@ -109,26 +109,10 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_stateIt = m_stateMap.GetFirstPermutableState();
     m_isIdle = false;
     m_disableLiveView = disableLiveView;
-    m_startWithThisView = startWithThisView;
+    m_startWithThisView = startWithThisView;    
 
-    // Parse the template path
-    m_templateTokens.clear();
-    Lexer lex(templatePath);
-    while (lex)
-    {
-        std::string newToken;
-        if (lex.ParseToken(newToken, [](const char c) { return c != '{'; }))
-        {
-            m_templateTokens.push_back(newToken);
-        }
-        if (lex && *lex == '{')
-        {
-            if (lex.ParseToken(newToken, [](const char c) { return c != '}'; }, Lexer::IncludeDelimiter))
-            {
-                m_templateTokens.push_back(newToken);
-            }
-        }
-    }
+    // Decompose the template path into tokens
+    ParseTemplatePath(templatePath, jsonRootPath);
 
     // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
@@ -164,6 +148,30 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
     m_stateMap.Restore(*m_stateIt);
 
     return true;
+}
+
+void BakePermutor::ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath)
+{
+    m_jsonRootPath = jsonRootPath;
+    
+    // Parse the template path
+    m_templateTokens.clear();
+    Lexer lex(templatePath);
+    while (lex)
+    {
+        std::string newToken;
+        if (lex.ParseToken(newToken, [](const char c) { return c != '{'; }))
+        {
+            m_templateTokens.push_back(newToken);
+        }
+        if (lex && *lex == '{')
+        {
+            if (lex.ParseToken(newToken, [](const char c) { return c != '}'; }, Lexer::IncludeDelimiter))
+            {
+                m_templateTokens.push_back(newToken);
+            }
+        }
+    }
 }
 
 void BakePermutor::RandomiseScene()
@@ -256,9 +264,7 @@ bool BakePermutor::Advance()
 std::vector<std::string> BakePermutor::GenerateExportPaths() const
 {
     // Naming convention:
-    // SceneNameXXX.random10digits.6digitsSampleCount.usd
-
-    Assert(m_permutationIdx < m_numPermutations);
+    // SceneNameXXX.random10digits.6digitsSampleCount.usd    
 
     std::vector<std::string> exportPaths(2);
     for (int pathIdx = 0; pathIdx < 2; pathIdx++)
@@ -283,14 +289,22 @@ std::vector<std::string> BakePermutor::GenerateExportPaths() const
                 std::random_device rd;
                 std::mt19937 mt(rd());
                 std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
-                path += tfm::format("%10.i", rng(mt) % 10000000000);
+                path += tfm::format("%010.i", rng(mt) % 10000000000);
             }
             else if (token == "{$ITERATION}") { path += tfm::format("%i", m_iterationIdx); }
-            else if (token == "{$SAMPLE_COUNT}") { path += tfm::format("%i", *m_sampleCountIt); }
+            else if (token == "{$SAMPLE_COUNT}" && m_sampleCountIt != m_sampleCountSet.end()) { path += tfm::format("%i", *m_sampleCountIt); }
             else if (token == "{$PERMUTATION}") { path += tfm::format("%i", m_permutationIdx); }
             else if (token == "{$SEED}") { path += tfm::format("%.6i", m_bakeSeed % 1000000); }
-            else if (token == "{$STATE}") { path += m_stateIt->first; }
+            else if (token == "{$STATE}" && m_stateIt != m_stateMap.GetStateData().end()) 
+            { 
+                path += m_stateIt->first; 
+            }
             else { path += token; }
+        }
+
+        if (!IsAbsolutePath(path))
+        {
+            path = MakeAbsolutePath(GetParentDirectory(m_jsonRootPath), path);
         }
     }
 

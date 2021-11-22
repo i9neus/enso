@@ -35,7 +35,7 @@ public:
 	void OnJson(const Json::Document& patchJson);
 
 	void ExportLiveViewport(const std::string& pngExportPath);
-	void StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
+	void StartBake(const Cuda::LightProbeGridExportParams& params);
 	void AbortBake();
 	bool IsStable() const { return m_threadSignal == kRun; }
 	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
@@ -112,8 +112,7 @@ private:
 	std::atomic<BakeStatus>		m_bakeStatus;
 	float						m_bakeProgress;
 	float						m_meanFrameTime;
-	std::vector<std::string>	m_usdExportPaths;
-	bool						m_exportToUSD;
+	Cuda::LightProbeGridExportParams m_probeGridExportParams;
 	std::string                 m_pngExportPath;
 	std::atomic<bool>			m_exportToPNG;
 

@@ -521,21 +521,28 @@ namespace Cuda
     __host__ void Host::LightProbeCamera::GetProbeGridAggregateStatistics()
     {
         m_isConverged = true;
+        m_bakeProgress = 0.0f;
+
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             auto& grid = m_hostLightProbeGrids[gridIdx];
             if (!grid) { continue; }
 
             const auto& stats = grid->UpdateAggregateStatistics(m_params.grid.maxSamplesPerProbe);
-
-            m_bakeProgress = -1.0f;
+                
             if (m_params.camera.maxSamples > 0)
             {
-                m_bakeProgress = clamp((stats.minMaxSamples.x + 1.0f) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+                const float progress = clamp(std::ceil(stats.minMaxSamples.x) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+                if (progress > 0 && (progress < m_bakeProgress || m_bakeProgress == 0.0f))
+                {
+                    m_bakeProgress = progress;
+                }
             }
 
             if (!stats.isConverged) { m_isConverged = false; }
         }
+
+        //Log::Write("%f", m_bakeProgress);
     }
 
     __host__ float Host::LightProbeCamera::GetBakeProgress()
@@ -554,23 +561,26 @@ namespace Cuda
         return m_bakeProgress;
     }
 
-    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)
+    __host__ bool Host::LightProbeCamera::ExportProbeGrid(const LightProbeGridExportParams& params)
     {
         if (m_exporterState != kArmed) { return false; }
 
         BuildLightProbeGrids();
 
-        for (int gridIdx = kLightProbeBufferDirect; gridIdx != kLightProbeBufferIndirect + 1; ++gridIdx)
+        for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             // Don't write out indirect when running in combined mode
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
 
-            if (exportToUSD)
+            // Only write grids that have valid paths associated with them
+            if (gridIdx >= params.usdExportPaths.size()) { continue; }
+
+            if (params.exportToUSD)
             {
-                Log::Debug("Exporting to '%s'...\n", usdExportPaths[gridIdx]);
+                Log::Debug("Exporting to '%s'...\n", params.usdExportPaths[gridIdx]);
                 try
                 {
-                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity);
+                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], params.usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity, params.gridFitness);
                 }
                 catch (const std::runtime_error& err)
                 {
@@ -579,7 +589,7 @@ namespace Cuda
             }
             else
             {
-                Log::Warning("Warning: Skipped USD export to '%s' because setting was not enabled.\n", usdExportPaths[gridIdx]);
+                Log::Warning("Warning: Skipped USD export to '%s' because setting was not enabled.\n", params.usdExportPaths[gridIdx]);
                 break;
             }
         }
@@ -640,7 +650,7 @@ namespace Cuda
         rootNode.AddValue("isActive", m_params.camera.isActive);
         rootNode.AddValue("bakeProgress", m_bakeProgress);
 
-        /*Json::Node gridSetNode = rootNode.AddChildObject("grids");
+        Json::Node gridSetNode = rootNode.AddChildObject("grids");
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             if (!m_hostLightProbeGrids[gridIdx]) { continue; }
@@ -660,7 +670,7 @@ namespace Cuda
                 std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
             }
             gridNode.AddArray2D("coeffHistograms", histogramData);
-        }*/
+        }
 
         return true;
     }

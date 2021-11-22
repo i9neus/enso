@@ -171,7 +171,12 @@ void WriteTextFile(const std::string& filePath, const std::string& data)
 
 bool IsAbsolutePath(const std::string& path)
 {
-    return path.find('\\') != std::string::npos || path.find('\\') != std::string::npos;
+    return fs::path(path).is_absolute();
+}
+
+std::string MakeAbsolutePath(const std::string& parentPath, const std::string& relativePath)
+{
+    return (fs::path(parentPath) / fs::path(relativePath)).string();
 }
 
 int EnumerateDirectoryFiles(const std::string& sourceDirectory, const std::string& extensionFilter, std::vector<std::string>& outputPaths)

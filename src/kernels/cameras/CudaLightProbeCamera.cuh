@@ -55,6 +55,13 @@ namespace Cuda
 		int							gridUpdateInterval;
 	};
 
+	struct LightProbeGridExportParams
+	{
+		std::vector<std::string>	usdExportPaths;
+		bool						exportToUSD = false;
+		float						gridFitness = 0.0f;
+	};
+
 	namespace Device
 	{
 		class LightProbeCamera : public Device::Camera
@@ -144,7 +151,7 @@ namespace Cuda
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid(const int idx) { return m_hostLightProbeGrids[idx]; }
 
 			__host__ float								GetBakeProgress();
-			__host__ bool								ExportProbeGrid(const std::vector<std::string>& usdExportPaths, const bool exportToUSD);
+			__host__ bool								ExportProbeGrid(const LightProbeGridExportParams& params);
 			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
 			__host__ int								GetExporterState() const { return m_exporterState; }
 

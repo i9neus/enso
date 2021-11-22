@@ -12,7 +12,8 @@ public:
     void                        Clear();
     std::set<int>&              GetSampleCountSet() { return m_sampleCountSet; }
     void                        SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata);
-    bool                        Prepare(const int numIterations, const std::string& templatePath, const bool disableLiveView, const bool startWithThisView);
+    void                        ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath);
+    bool                        Prepare(const int numIterations, const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView);
     bool                        Advance();
     float                       GetProgress() const;
     std::vector<std::string>    GenerateExportPaths() const;
@@ -44,6 +45,7 @@ private:
     int                         m_numStates;
 
     std::string                 m_templatePath;
+    std::string                 m_jsonRootPath;
     std::vector<std::string>    m_templateTokens;
 
     IMGUIAbstractShelfMap& m_imguiShelves;

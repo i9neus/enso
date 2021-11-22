@@ -340,7 +340,7 @@ void RenderManager::OnJson(const Json::Document& patchJson)
 	m_dirtiness = kSoftReset;
 }
 
-void RenderManager::StartBake(const std::vector<std::string>& usdExportPaths, const bool exportToUSD)
+void RenderManager::StartBake(const Cuda::LightProbeGridExportParams& params)
 {
 	if (!m_lightProbeCamera)
 	{
@@ -348,13 +348,12 @@ void RenderManager::StartBake(const std::vector<std::string>& usdExportPaths, co
 		return;
 	}
 
-	Assert(!usdExportPaths.empty());
+	Assert(!params.usdExportPaths.empty());
 	AssertMsg(m_bakeStatus == BakeStatus::kReady, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
 
 	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
 	 
-	m_usdExportPaths = usdExportPaths;
-	m_exportToUSD = exportToUSD;
+	m_probeGridExportParams = params;
 	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
 	
 	m_dirtiness = kHardReset;
@@ -606,7 +605,6 @@ void RenderManager::OnBakePostFrame()
 		// Do shutdown stuff here
 		m_bakeStatus = BakeStatus::kReady;
 	}
-
 	else if (m_bakeStatus == BakeStatus::kRunning && m_dirtiness == kClean)
 	{
 		if (m_lightProbeCamera->GetExporterState() == Cuda::Host::LightProbeCamera::kArmed)
@@ -614,7 +612,7 @@ void RenderManager::OnBakePostFrame()
 			m_bakeProgress = m_lightProbeCamera->GetBakeProgress();
 			if (m_bakeProgress == 1.0f)
 			{
-				m_lightProbeCamera->ExportProbeGrid(m_usdExportPaths, m_exportToUSD);
+				m_lightProbeCamera->ExportProbeGrid(m_probeGridExportParams);
 				m_bakeStatus = BakeStatus::kReady;
 				Log::Debug("Export!");
 			}
