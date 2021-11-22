@@ -65,6 +65,7 @@ namespace Cuda
 		int			traceMode;
 		int			lightSelectionMode;
 		int			shadingMode;
+		float		fakeAmbientTerm;
 	};
 	
 	namespace Device

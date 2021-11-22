@@ -32,7 +32,8 @@ namespace Cuda
 		importanceMode(kImportanceMIS),
 		lightSelectionMode(kLightSelectionNaive),
 		traceMode(kTracePath),
-		russianRouletteThreshold(0.0f)
+		russianRouletteThreshold(0.0f),
+		fakeAmbientTerm(0.0f)
 	{
 	}
 
@@ -40,6 +41,7 @@ namespace Cuda
 	{
 		node.AddValue("maxDepth", maxDepth);
 		node.AddValue("russianRouletteThreshold", russianRouletteThreshold);
+		node.AddValue("fakeAmbientTerm", fakeAmbientTerm);
 		node.AddEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode);
 		node.AddEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode);
 		node.AddEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode);
@@ -50,6 +52,7 @@ namespace Cuda
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetValue("russianRouletteThreshold", russianRouletteThreshold, flags);
+		node.GetValue("fakeAmbientTerm", fakeAmbientTerm, flags);
 		node.GetEnumeratedParameter("importanceMode", std::vector<std::string>({ "mis", "light", "bxdf" }), importanceMode, flags);
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
@@ -185,10 +188,11 @@ namespace Cuda
 		// Only shade back-facing surfaces if this BxDF supports it
 		if (hitCtx.backfacing && !bxdf->IsTwoSided()) { return kZero; }
 
-		// If this isn't a probe ray, add in the cached radiance
+		// If this isn't a probe ray, add in the cached radiance and fake ambient term
 		if (!(incidentRay.flags & kRayLightProbe))
 		{
-			LExtant += bxdf->EvaluateCachedRadiance(hitCtx) * albedo;
+			LExtant += (bxdf->EvaluateCachedRadiance(hitCtx) - 
+						dot(incidentRay.od.d, hitCtx.hit.n) * m_activeParams.fakeAmbientTerm) * albedo;
 		}
 
 		// If we're beyond max depth, just return incandescence
@@ -273,7 +277,7 @@ namespace Cuda
 					renderCtx.emplacedRay[0].weight * albedo * stochasticWeight,
 					pdfBxDF, lightIdx, kRayDirectBxDFSample | light.GetLightRayFlags(), incidentRay);
 			}
-		}
+		}		
 
 		return LExtant;
 	}
@@ -450,7 +454,7 @@ namespace Cuda
 			{
 				L = hitCtx.debug;
 				compressedRay.Kill();
-			}
+			}			
 
 			// Accumulate extant radiance
 			if (cwiseMax(L) > 1e-15f || !compressedRay.IsAlive())

@@ -23,6 +23,9 @@ void WavefrontTracerShelf::Construct()
 
     ConstructComboBox("Shading mode", { "Default", "Simple", "Normals", "Debug" }, m_p.shadingMode);
     HelpMarker("Specifies how objects are shaded. Default performs full physically based shading. Simple reverts to a basic lighting model. Normals outputs the surface normals only. Debug outputs shader diagnostics.");
+
+    ImGui::DragFloat("Fake ambient term", &m_p.fakeAmbientTerm, math::max(0.001f, m_p.fakeAmbientTerm * 0.01f), 0.0f, 10.0f, "%.4f");
+    //HelpMarker("");
 }
 
 void WavefrontTracerShelf::Jitter(const uint flags, const uint operation)
