@@ -52,6 +52,7 @@ namespace Cuda
 
         BidirectionalTransform		transform;
         ivec3						gridDensity;
+        ivec3                       clipRegion[2];
         int							shOrder;
 
         int                         axisSwizzle;
@@ -161,6 +162,8 @@ namespace Cuda
             __host__ AssetHandle<Host::Array<uchar>>&   GetValidityDataAsset() { return m_validityData; }
             __host__ const AggregateStatistics&         UpdateAggregateStatistics(const int maxSamples);
             __host__ const AggregateStatistics&         GetAggregateStatistics() const { return m_statistics; }
+            __host__ void                               PushClipRegion(const ivec3* region);
+            __host__ void                               PopClipRegion();
 
         private:
             Device::LightProbeGrid*         cu_deviceData = nullptr;
@@ -172,6 +175,7 @@ namespace Cuda
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;
             std::unordered_map<std::string, int> m_semaphoreRegistry;
+            std::vector<std::pair<ivec3, ivec3>> m_clipRegionStack;
 
             AggregateStatistics             m_statistics;
             DeviceObjectRAII<Device::LightProbeGrid::AggregateStatistics>	m_probeAggregateData;            

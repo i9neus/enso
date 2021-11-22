@@ -13,27 +13,21 @@
 namespace Cuda
 {
     __host__ __device__ LightProbeIOParams::LightProbeIOParams() : 
-        doBatch(false),
-        doNext(false),
-        doPrevious(false),
+        doCommand(kNull),
         exportUSD(true)
     {
     }
 
     __host__ void LightProbeIOParams::ToJson(::Json::Node& node) const
     {
-        node.AddValue("doBatch", doBatch);
-        node.AddValue("doNext", doNext);
-        node.AddValue("doPrevious", doPrevious);
+        node.AddValue("doCommand", doCommand);
         node.AddValue("exportUSD", exportUSD);
     }
 
     __host__ void LightProbeIOParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("doBatch", doBatch, Json::kSilent);
-        node.GetValue("doNext", doNext, Json::kSilent);
-        node.GetValue("doPrevious", doPrevious, Json::kSilent);
-        node.GetValue("exportUSD", exportUSD, Json::kSilent);
+        node.GetValue("doCommand", doCommand, Json::kSilent);
+        node.GetValue("exportUSD", exportUSD, flags);
     }
 
     __host__ Host::LightProbeIO::LightProbeIO(const ::Json::Node& node, const std::string& id) :
@@ -71,14 +65,27 @@ namespace Cuda
     {
         m_params.FromJson(node, flags);
 
-        if (m_params.doBatch) { BeginBatchFilter(); }
-
-        if (m_params.doNext && !m_isBatchActive) { AdvanceNextUSD(true, 1); }
-        if (m_params.doPrevious && !m_isBatchActive) { AdvanceNextUSD(true, -1); }
-
-        m_params.doBatch = false;
-        m_params.doNext = false;
-        m_params.doPrevious = false;
+        switch (m_params.doCommand)
+        {
+        case LightProbeIOParams::kDoBatch:
+            BeginBatchFilter();
+            break;
+        case LightProbeIOParams::kDoSave:
+            ExportProbeGrid(m_usdExportPath);
+            break;
+        case LightProbeIOParams::kDoNext:
+            if (!m_isBatchActive)
+            {
+                AdvanceNextUSD(true, 1);
+            }
+            break;
+        case LightProbeIOParams::kDoPrevious:
+            if (!m_isBatchActive)
+            {
+                AdvanceNextUSD(true, -1);
+            }
+            break;
+        }
     }
 
     __host__ void Host::LightProbeIO::OnDestroyAsset()
@@ -171,7 +178,7 @@ namespace Cuda
 
         try
         {
-            USDIO::WriteGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity);
+            USDIO::WriteGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity, -1.0f);
         }
         catch (const std::runtime_error& err)
         {
@@ -196,6 +203,9 @@ namespace Cuda
             return false;
         }
 
+        gridParams.clipRegion[0] = ivec3(0);
+        gridParams.clipRegion[1] = gridParams.gridDensity;
+        
         m_hostInputGrid->Prepare(gridParams);
         m_hostInputGrid->SetRawData(rawData);
         m_hostInputGrid->UpdateAggregateStatistics(1);

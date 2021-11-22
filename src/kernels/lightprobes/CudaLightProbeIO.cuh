@@ -17,9 +17,9 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        bool        doBatch;
-        bool        doNext;
-        bool        doPrevious;
+        enum __commands : int { kNull, kDoBatch, kDoSave, kDoNext, kDoPrevious };
+
+        int         doCommand;
         bool        exportUSD;
     };
 

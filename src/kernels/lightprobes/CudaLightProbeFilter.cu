@@ -8,7 +8,6 @@ namespace Cuda
         alpha(1.0f),
         K(1.0f),
         patchRadius(1),
-        sigma(0.0f),
         varianceFormat(kHalf)
     {
     }
@@ -22,7 +21,6 @@ namespace Cuda
     {
         node.AddValue("alpha", alpha);
         node.AddValue("k", K);
-        node.AddValue("sigma", sigma);
         node.AddValue("patchRadius", patchRadius); 
         node.AddEnumeratedParameter("varianceFormat", std::vector<std::string>({ "half", "2xunder", "2xover" }), varianceFormat);        
     }
@@ -31,13 +29,11 @@ namespace Cuda
     {
         node.GetValue("alpha", alpha, flags);
         node.GetValue("k", K, flags);
-        node.GetValue("sigma", sigma, flags);
         node.GetValue("patchRadius", patchRadius, flags);
         node.GetEnumeratedParameter("varianceFormat", std::vector<std::string>({ "half", "2xunder", "2xover" }), varianceFormat, flags);
 
         alpha = clamp(alpha, 0.0f, std::numeric_limits<float>::max());
         K = clamp(K, 0.0f, std::numeric_limits<float>::max());
-        sigma = clamp(sigma, 0.0f, std::numeric_limits<float>::max());
     }
 
     __host__ LightProbeFilterGridData& LightProbeFilterGridData::Initialise(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
@@ -87,9 +83,11 @@ namespace Cuda
                     const vec3* probeM = gridData.cu_crossGrid->At(probeIdxM);
                     const vec3* probeN = gridData.cu_crossGrid->At(probeIdxN);
 
-                    // If this probe is invalid, exclude it
-                    if (probeM[gridData.coefficientsPerProbe - 1].x < 0.5f || probeN[gridData.coefficientsPerProbe - 1].x < 0.5f) { continue; }
-
+                    // If the probe in the origin patch is invalid, ignore it
+                    if (probeM[gridData.coefficientsPerProbe - 1].x < 0.5f) { continue; }
+                    // If the probe in the K patch is invalid, set the weight to zero
+                    if (probeN[gridData.coefficientsPerProbe - 1].x < 0.5f) { return 0.0f; }
+                    
                     const vec3* probeHalfM = gridData.cu_crossHalfGrid->At(probeIdxM);
                     const vec3* probeHalfN = gridData.cu_crossHalfGrid->At(probeIdxN);
 
@@ -140,56 +138,7 @@ namespace Cuda
             }
         }
 
-        // Find the coefficient with the maximum weight and return
-        float maxWeight = kFltMax;
-        for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe - 1; ++coeffIdx)
-        {
-            maxWeight = min(maxWeight, weights[coeffIdx]);
-        }
-        return maxWeight / float(max(1, numValidWeights));
-    }
-
-    __device__ float ComputeConstVarianceNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK)
-    {
-        int numValidWeights = 0;
-        float weights[kMaxCoefficients];
-        memset(weights, 0, sizeof(float) * kMaxCoefficients);
-
-        if (!gridData.cu_crossGrid || !gridData.cu_crossHalfGrid) { return 0.0f; }
-
-        // Iterate over the local block surrounding each element and compute the relative distance
-        for (int w = -nlmParams.patchRadius; w <= nlmParams.patchRadius; ++w)
-        {
-            for (int v = -nlmParams.patchRadius; v <= nlmParams.patchRadius; ++v)
-            {
-                for (int u = -nlmParams.patchRadius; u <= nlmParams.patchRadius; ++u)
-                {
-                    // If this probe is outside the grid, move on
-                    const int probeIdxM = gridData.cu_crossGrid->IdxAt(pos0 + ivec3(u, v, w));
-                    const int probeIdxN = gridData.cu_crossGrid->IdxAt(pos0 + posK + ivec3(u, v, w));
-                    if (probeIdxM < 0 || probeIdxN < 0) { continue; }
-
-                    const vec3* probeM = gridData.cu_crossGrid->At(probeIdxM);
-                    const vec3* probeN = gridData.cu_crossGrid->At(probeIdxN);
-
-                    // If this probe is invalid, exclude it
-                    if (probeM[gridData.coefficientsPerProbe - 1].x < 0.5f || probeN[gridData.coefficientsPerProbe - 1].x < 0.5f) { continue; }
-
-                    for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe - 1; ++coeffIdx)
-                    {
-                        const vec3& M = probeM[coeffIdx];
-                        const vec3& N = probeN[coeffIdx];       
-
-                        const vec3 d2 = (sqr(M - N) - nlmParams.alpha * nlmParams.sigma) /
-                            (vec3(1e-10f) + sqr(nlmParams.K) * nlmParams.sigma);
-                        weights[coeffIdx] += expf(-max(0.0f, cwiseMax(d2)));
-                    }
-                    numValidWeights++;
-                }
-            }
-        }
-
-        // Find the coefficient with the maximum weight and return
+        // Find the coefficient with the minimum weight and return
         float maxWeight = kFltMax;
         for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe - 1; ++coeffIdx)
         {

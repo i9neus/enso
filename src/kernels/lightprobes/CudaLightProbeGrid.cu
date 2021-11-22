@@ -12,6 +12,8 @@ namespace Cuda
     __host__ __device__ LightProbeGridParams::LightProbeGridParams()
     {
         gridDensity = ivec3(5, 5, 5);
+        clipRegion[0] = ivec3(0, 0, 0);
+        clipRegion[1] = gridDensity;
         shOrder = 1;
         axisMultiplier = vec3(1.0f);
         useValidity = false;
@@ -36,6 +38,8 @@ namespace Cuda
         transform.ToJson(node);
 
         node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
+        node.AddArray("clipRegionLower", std::vector<int>({ clipRegion[0].x, clipRegion[0].y, clipRegion[0].z }));
+        node.AddArray("clipRegionUpper", std::vector<int>({ clipRegion[1].x, clipRegion[1].y, clipRegion[1].z }));
         node.AddValue("shOrder", shOrder);
         node.AddValue("useValidity", useValidity);
         node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode);
@@ -51,6 +55,15 @@ namespace Cuda
         transform.FromJson(node, flags);
 
         node.GetVector("gridDensity", gridDensity, flags);
+        gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
+        
+        clipRegion[0] = ivec3(0, 0, 0);
+        clipRegion[1] = gridDensity;
+        node.GetVector("clipRegionLower", clipRegion[0], ::Json::kSilent);
+        node.GetVector("clipRegionUpper", clipRegion[1], ::Json::kSilent);
+        clipRegion[0] = clamp(clipRegion[0], ivec3(0), gridDensity);
+        clipRegion[1] = clamp(clipRegion[1], ivec3(0), gridDensity);
+
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("useValidity", useValidity, flags);
         node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode, flags);
@@ -60,7 +73,6 @@ namespace Cuda
         node.GetValue("invertZ", invertZ, flags);
         node.GetEnumeratedParameter("axisSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), axisSwizzle, flags);
 
-        gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
         shOrder = clamp(shOrder, 0, 2);
         axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
 
@@ -170,10 +182,10 @@ namespace Cuda
     }
 
     __device__ int Device::LightProbeGrid::IdxAt(const ivec3& gridIdx) const
-    {
-        if(gridIdx.x < 0 || gridIdx.x >= m_params.gridDensity.x ||
-           gridIdx.y < 0 || gridIdx.y >= m_params.gridDensity.y ||
-           gridIdx.z < 0 || gridIdx.z >= m_params.gridDensity.z) { return -1; }
+    {        
+        if(gridIdx.x < m_params.clipRegion[0].x || gridIdx.x >= m_params.clipRegion[1].x ||
+           gridIdx.y < m_params.clipRegion[0].y || gridIdx.y >= m_params.clipRegion[1].y ||
+           gridIdx.z < m_params.clipRegion[0].z || gridIdx.z >= m_params.clipRegion[1].z) { return -1; }
 
         return gridIdx.z * m_params.gridDensity.x * m_params.gridDensity.y + gridIdx.y * m_params.gridDensity.x + gridIdx.x;
     }
@@ -337,7 +349,8 @@ namespace Cuda
             // Bin the coefficients
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
             {
-                const float extremum = /*SignedLog*/(cwiseExtremum(LaplacianAt(i)[coeffIdx]));
+                const float extremum = /*SignedLog*/(cwiseExtremum(At(i)[coeffIdx]));
+                //const float extremum = /*SignedLog*/(cwiseExtremum(LaplacianAt(i)[coeffIdx]));
                 const int binIdx = int(50.0f * clamp((extremum - coeffRange[coeffIdx].x) * coeffRange[coeffIdx].y, 0.0f, nextafterf(1.0f, 0.0f)));
 
                 atomicInc(&sharedHistogram[50 * coeffIdx + binIdx], 0xffffffff);
@@ -588,5 +601,26 @@ namespace Cuda
     __host__ void Host::LightProbeGrid::SetSemaphore(const std::string& tag, const int data)
     {
         m_semaphoreRegistry[tag] = data;
+    }
+
+    __host__ void Host::LightProbeGrid::PushClipRegion(const ivec3* region)
+    {
+        m_clipRegionStack.emplace_back(m_params.clipRegion[0], m_params.clipRegion[1]);
+        
+        m_params.clipRegion[0] = clamp(region[0], ivec3(0), m_params.gridDensity);
+        m_params.clipRegion[1] = clamp(region[1], ivec3(0), m_params.gridDensity);
+
+        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+    }
+
+    __host__ void Host::LightProbeGrid::PopClipRegion()
+    {
+        AssertMsg(!m_clipRegionStack.empty(), "Clip region stack is empty.");
+
+        m_params.clipRegion[0] = m_clipRegionStack.back().first;
+        m_params.clipRegion[1] = m_clipRegionStack.back().second;
+        m_clipRegionStack.pop_back();
+
+        Cuda::SynchroniseObjects(cu_deviceData, m_params);
     }
 }

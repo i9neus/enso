@@ -50,7 +50,6 @@ namespace Cuda
 
         float                           alpha;
         float                           K;
-        float                           sigma;
         int                             patchRadius;
         int                             varianceFormat;
     };

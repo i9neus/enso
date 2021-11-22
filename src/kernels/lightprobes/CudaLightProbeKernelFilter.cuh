@@ -16,8 +16,9 @@ namespace Cuda
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        int filterType;
-        int kernelRadius;
+        int         filterType;
+        int         kernelRadius;
+        ivec3       clipRegion[2];
         LightProbeFilterNLMParams nlm;       
     };    
 

@@ -10,8 +10,10 @@ void LightProbeKernelFilterShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)" }, m_p.filterType);
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM" }, m_p.filterType);
     ImGui::SliderInt("Kernel radius", &m_p.kernelRadius, 0, 10);
+    ImGui::DragInt3("Clip lower", &m_p.clipRegion[0][0], 1.0f, 0, 100);
+    ImGui::DragInt3("Clip upper", &m_p.clipRegion[1][0], 1.0f, 0, 100);
     if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 1.0f)) 
     { 
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; } 
@@ -20,7 +22,6 @@ void LightProbeKernelFilterShelf::Construct()
     { 
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
-    ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ConstructComboBox("NLM variance format", { "Half", "2x under", "2x over"}, m_p.nlm.varianceFormat);
 
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
@@ -50,7 +51,7 @@ void LightProbeRegressionFilterShelf::Construct()
     ImGui::SliderInt("Regression min samples", &m_p.minSamples, 0, 1024);
     ImGui::SliderInt("Reconstruction radius", &m_p.reconstructionRadius, 0, 4);
 
-    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM (fixed variance)"}, m_p.filterType);
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM"}, m_p.filterType);
     if (ImGui::SliderFloat("NLM alpha", &m_p.nlm.alpha, 0.0f, 1.0f))
     {
         if (m_linkAlphaK) { m_p.nlm.K = m_p.nlm.alpha; }
@@ -59,7 +60,6 @@ void LightProbeRegressionFilterShelf::Construct()
     {
         if (m_linkAlphaK) { m_p.nlm.alpha = m_p.nlm.K; }
     }
-    ImGui::DragFloat("NLM sigma", &m_p.nlm.sigma, max(0.001f, m_p.nlm.sigma * 0.01f), 0.0f, std::numeric_limits<float>::max());
     ConstructComboBox("NLM variance format", { "Half", "2x under", "2x over" }, m_p.nlm.varianceFormat);
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
 
@@ -144,9 +144,10 @@ void LightProbeIOShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    if (ImGui::Button("Batch Denoise")) { m_p.doBatch = true; }
-    if (ImGui::Button("Next")) { m_p.doNext = true; } SL;
-    if (ImGui::Button("Previous")) { m_p.doPrevious = true; } 
+    if (ImGui::Button("Batch")) { m_p.doCommand = Cuda::LightProbeIOParams::kDoBatch; }
+    if (ImGui::Button("Save")) { m_p.doCommand = Cuda::LightProbeIOParams::kDoSave; }
+    if (ImGui::Button("Next")) { m_p.doCommand = Cuda::LightProbeIOParams::kDoNext; } SL;
+    if (ImGui::Button("Previous")) { m_p.doCommand = Cuda::LightProbeIOParams::kDoPrevious; }
 
     ImGui::Checkbox("Export USD", &m_p.exportUSD);
 }
