@@ -47,6 +47,10 @@ private:
     HighResolutionTimer             m_statsTimer;
     int                             m_frameIdx;
     float                           m_meanFrameTime;
+    
+    Json::Document                  m_renderStateJson;
+    Json::Document                  m_commandQueue;
+    int                             m_renderState;
 
 public:
     IMGUIContainer(RenderManager& cudaRenderer);
@@ -57,7 +61,8 @@ public:
     void Render();
     void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
     void Destroy();
-    void UpdateParameters();
+    void DispatchRenderCommands();
+    void PollCudaRenderState();
 
     void ConstructRenderObjectShelves();
 

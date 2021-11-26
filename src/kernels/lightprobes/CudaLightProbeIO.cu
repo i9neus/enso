@@ -178,7 +178,7 @@ namespace Cuda
 
         try
         {
-            USDIO::WriteGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity, -1.0f);
+            USDIO::WriteGridDataUSD(rawData, gridParams, filePath, USDIO::SHPackingFormat::kUnity);
         }
         catch (const std::runtime_error& err)
         {

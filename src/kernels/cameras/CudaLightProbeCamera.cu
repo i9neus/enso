@@ -567,6 +567,8 @@ namespace Cuda
 
         BuildLightProbeGrids();
 
+
+
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             // Don't write out indirect when running in combined mode
@@ -580,7 +582,7 @@ namespace Cuda
                 Log::Debug("Exporting to '%s'...\n", params.usdExportPaths[gridIdx]);
                 try
                 {
-                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], params.usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity, params.gridFitness);
+                    USDIO::ExportLightProbeGrid(m_hostLightProbeGrids[gridIdx], params.usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity);
                 }
                 catch (const std::runtime_error& err)
                 {

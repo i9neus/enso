@@ -13,7 +13,10 @@
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-enum class BakeStatus : int { kReady, kRunning, kHalt };
+enum RenderManagerBakeStatus : int { kRenderManagerBakeReady, kRenderManagerBakeRunning, kRenderManagerBakeHalt };
+enum RenderManagerPollLevel : int { kRenderManagerPollLightweight = 1, kRenderManagerPoleFull = 2 };
+enum RenderManagerRenderState : int { kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
+enum RenderManagerJobState : int { kRenderManagerJobIdle, kRenderManagerJobDispatched, kRenderManagerJobCompleted, kRenderManagerJobAbort };
 
 class RenderManager
 {
@@ -32,58 +35,31 @@ public:
 	void LoadScene(const std::string filePath);
 	void UnloadScene(bool report = false);
 
-	void OnJson(const Json::Document& patchJson);
+	void Dispatch(const Json::Document& commandJson);
+	bool PollRenderState(Json::Document& stateJson);
 
-	void ExportLiveViewport(const std::string& pngExportPath);
-	void StartBake(const Cuda::LightProbeGridExportParams& params);
-	void AbortBake();
-	bool IsStable() const { return m_threadSignal == kRun; }
-	BakeStatus GetBakeStatus() const { return m_bakeStatus; }
-	float GetBakeProgress() const { return (m_bakeStatus == BakeStatus::kRunning) ? m_bakeProgress : 0.0f; }
+	void ExportLiveViewport(const std::string& pngExportPath);	
+	//bool IsStable() const { return m_threadSignal == kRun; }
 
 	const Json::Document& GetSceneJSON() const { return m_sceneJson; }
-	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }	
-	
-	void GetRenderStats(Json::Document& outputJson)
-	{ 
-		std::lock_guard<std::mutex> lock(m_jsonMutex);
-		outputJson.DeepCopy(m_renderStatsJson);
-	}
+	const Cuda::AssetHandle<Cuda::RenderObjectContainer> GetRenderObjectContainer() const { return m_renderObjects; }		
 
 private:
-	void Build(const Json::Document& sceneJson);
-	void Run();
-	void ClearRenderStates();
-	void HandleBakeOperations();
-	void OnBakePreFrame();
-	void OnBakePostFrame();
-	void PatchSceneObjects();
-	void GatherRenderObjectStatistics();
-	void Prepare();
+	enum DirtyState : int { kDirtinessStateClean, kDirtinessStateSoftReset, kDirtinessStateHardReset };
 
-	enum ThreadSignal : int { kIdle, kRun, kHalt, kAssert };
-	enum DirtyState : int { kClean, kSoftReset, kHardReset };
-
-	std::mutex		    m_renderResourceMutex;
-	std::mutex			m_jsonMutex;
+	std::mutex		    m_jsonInputMutex;
+	std::mutex			m_jsonOutputMutex;
 	std::thread			m_managerThread;
 	std::atomic<int>	m_threadSignal;
-	Json::Document		m_paramsPatchJson;
+	Json::Document		m_patchJson;
 	Json::Document		m_sceneJson;
 	std::atomic<int>	m_dirtiness; 
 	int					m_frameIdx;
-	
-	struct
-	{
-		std::string dagPath;
-		Json::Document json;
-	} 
-	m_paramsPatch;
 
 	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
 	HighResolutionTimer		m_renderStatsTimer;
-	Json::Document			m_renderStatsJson;
+	Json::Document			m_renderObjectStatsJson;
 	std::array<float, 20>	m_frameTimes;
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
@@ -109,12 +85,24 @@ private:
 	uint32_t				    m_clientWidth;
 	uint32_t                    m_clientHeight;
 
-	std::atomic<BakeStatus>		m_bakeStatus;
-	float						m_bakeProgress;
-	float						m_meanFrameTime;
-	Cuda::LightProbeGridExportParams m_probeGridExportParams;
-	std::string                 m_pngExportPath;
-	std::atomic<bool>			m_exportToPNG;
+	struct Job
+	{
+		Job() noexcept : state(kRenderManagerJobIdle) {}
+
+		std::function<bool(Job&)>								onDispatch;
+		std::function<bool(Json::Node&, const Job&)>			onPoll;
+		std::atomic<int>										state;
+		Json::Document											json;
+	};
+	
+	std::unordered_map<std::string, Job&>						m_jobMap;
+	Job															m_statsJob;
+	Job															m_bakeJob;
+	Job															m_exportViewportJob;
+
+	float														m_bakeProgress;
+	Cuda::LightProbeGridExportParams							m_probeGridExportParams;
+	float														m_meanFrameTime;		
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;
@@ -122,5 +110,31 @@ private:
 	std::vector<Cuda::AssetHandle<Cuda::Host::Camera>>			m_activeCameras;
 	Cuda::AssetHandle<Cuda::Host::Camera>						m_liveCamera;
 	Cuda::AssetHandle<Cuda::Host::LightProbeCamera>				m_lightProbeCamera;
+
+private:
+	void Build(const Json::Document& sceneJson);
+	void Run();
+	void ClearRenderStates();
+	void HandleBakeOperations();
+	void OnBakePreFrame();
+	void OnBakePostFrame();
+	void PatchSceneObjects();
+	void GatherRenderObjectStatistics();
+	void Prepare();
+
+	bool OnGatherStatsDispatch(Job&);
+	bool OnGatherStatsPoll(Json::Node&, const Job&);
+	bool OnBakeDispatch(Job&);
+	bool OnBakePoll(Json::Node&, const Job&);
+	bool OnExportViewportDispatch(Job&);
+	bool OnNullPoll(Json::Node&, const Job&) { return true; }
+
+	template<typename DispatchLambda, typename PollLambda>
+	void RegisterJob(Job& job, const std::string& name, DispatchLambda onDispatch, PollLambda onPoll)
+	{
+		m_jobMap.emplace(name, job);
+		job.onDispatch = std::bind(onDispatch, this, std::placeholders::_1);
+		job.onPoll = std::bind(onPoll, this, std::placeholders::_1, std::placeholders::_2);
+	}
 
 };

@@ -3,6 +3,7 @@ def Scope "ProbeVolume"
 {
     string description
     int sampleNum
+    float fitness
     float3 size
     float3 resolution
     float[] coefficients

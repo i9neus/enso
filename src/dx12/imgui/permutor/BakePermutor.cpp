@@ -29,6 +29,7 @@ void BakePermutor::Clear()
     m_stateIt = m_stateMap.GetStateData().end();
     m_numIterations = 0;
     m_iterationIdx = -1;
+    m_kifsIterationIdx = 0;
     m_numPermutations = 0;
     m_permutationIdx = 0;
     m_totalSamples = 0;
@@ -37,13 +38,6 @@ void BakePermutor::Clear()
     m_isIdle = true;
     m_disableLiveView = true;
     m_startWithThisView = false;
-}
-
-void BakePermutor::SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata)
-{
-    m_noisyRange = noisyRange;
-    m_referenceCount = referenceCount;
-    m_numStrata = numStrata;
 }
 
 // Populate the sample count set with randomly stratified values
@@ -87,33 +81,15 @@ int BakePermutor::GenerateStratifiedSampleCountSet()
     return totalSamples;
 }
 
-bool BakePermutor::Prepare(const int numIterations, const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView)
+bool BakePermutor::Initialise(const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView)
 {
-    m_numStates = m_stateMap.GetNumPermutableStates();
-    if (m_numStates == 0)
-    {
-        Log::Error("Error: can't start bake because no states are enabled.\n");
-        return false;
-    }
-
-    // Populate the sample count set with a random collection of values
-    m_totalSamples = GenerateStratifiedSampleCountSet();
-    m_completedSamples = 0;
-    m_iterationIdx = 0;
-    m_stateIdx = 0;
-    m_numIterations = numIterations;
-    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates;
-    m_totalSamples *= m_numIterations * m_numStates;
-    m_permutationIdx = -1;
     m_templatePath = templatePath;
-    m_stateIt = m_stateMap.GetFirstPermutableState();
-    m_isIdle = false;
     m_disableLiveView = disableLiveView;
-    m_startWithThisView = startWithThisView;    
-
+    m_startWithThisView = startWithThisView;
+    
     // Decompose the template path into tokens
     ParseTemplatePath(templatePath, jsonRootPath);
-
+    
     // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
     {
@@ -141,6 +117,37 @@ bool BakePermutor::Prepare(const int numIterations, const std::string& templateP
         Log::Debug("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n");
         return false;
     }
+}
+
+bool BakePermutor::Prepare(const int numIterations, const Cuda::ivec2& noisyRange, const int referenceCount, const int numStrata, const Cuda::ivec2& kifsIterationRange)
+{
+    m_numStates = m_stateMap.GetNumPermutableStates();
+    if (m_numStates == 0)
+    {
+        Log::Error("Error: can't start bake because no states are enabled.\n");
+        return false;
+    }
+
+    Clear();
+
+    m_noisyRange = noisyRange;
+    m_referenceCount = referenceCount;
+    m_numStrata = numStrata;
+    m_kifsIterationRange = kifsIterationRange;
+    m_numIterations = numIterations;    
+
+    // Populate the sample count set with a random collection of values
+    m_totalSamples = GenerateStratifiedSampleCountSet();
+    m_completedSamples = 0;
+    m_iterationIdx = 0;
+    m_stateIdx = 0;    
+    m_kifsIterationIdx = m_kifsIterationRange[0];
+    m_permutationIdx = -1;
+    m_stateIt = m_stateMap.GetFirstPermutableState();
+    m_isIdle = false;
+
+    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates * (m_kifsIterationRange[1] - m_kifsIterationRange[0]);
+    m_totalSamples *= m_numIterations * m_numStates;
 
     m_startTime = std::chrono::high_resolution_clock::now();
 
@@ -203,7 +210,7 @@ bool BakePermutor::Advance()
         return false;
     }
 
-    // Increment to the next permutation
+    // Don't increment on the first iteration as this was done at start-up
     if (m_permutationIdx >= 0)
     {
         m_completedSamples += *m_sampleCountIt;
@@ -211,26 +218,30 @@ bool BakePermutor::Advance()
         {
             GenerateStratifiedSampleCountSet();
 
-            m_sampleCountIt = m_sampleCountSet.cbegin();
-            if (++m_iterationIdx == m_numIterations)
+            if (++m_kifsIterationIdx == m_kifsIterationRange[1])
             {
-                m_iterationIdx = 0;
-                do
+                m_kifsIterationIdx = m_kifsIterationRange[0];
+
+                if (++m_iterationIdx == m_numIterations)
                 {
-                    ++m_stateIdx;
-                    if (++m_stateIt == m_stateMap.GetStateData().end())
+                    m_iterationIdx = 0;
+                    do
                     {
-                        m_isIdle = true;
-                        return false;
-                    }
-                } while (!(m_stateIt->second.flags & kStateEnabled));
+                        ++m_stateIdx;
+                        if (++m_stateIt == m_stateMap.GetStateData().end())
+                        {
+                            m_isIdle = true;
+                            return false;
+                        }
+                    } while (!(m_stateIt->second.flags & kStateEnabled));
 
-                // Restore the next state in the sequence
-                m_stateMap.Restore(*m_stateIt);
+                    // Restore the next state in the sequence
+                    m_stateMap.Restore(*m_stateIt);
+                }
+
+                // Randomise all the shelves
+                RandomiseScene();
             }
-
-            // Randomise all the shelves
-            RandomiseScene();
         }
     }
     ++m_permutationIdx;

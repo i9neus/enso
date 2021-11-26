@@ -233,7 +233,7 @@ namespace Json
         WriteTextFile(filePath, Stringify(true));
     }
 
-    std::string Document::Stringify(const bool pretty)
+    std::string Document::Stringify(const bool pretty) const
     {
         rapidjson::StringBuffer buffer;
         if (pretty)

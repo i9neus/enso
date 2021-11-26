@@ -382,6 +382,7 @@ namespace Cuda
                 FoldCube(i, p, bi, code);
             }
 
+
             // Scale up around [1, 1, 1]
             p = (p - kOne) * 2.0f + kOne;
             iterationScale *= 0.5f;
@@ -412,7 +413,7 @@ namespace Cuda
             SDFPolyhedronCage(F, kcd, iterationScale, p, kcd.cubeData);
             break;
         default:
-            F = SDFPrimitive::Box(p, 0.5f  * kcd.vertScale);
+            F = SDFPrimitive::Box(p, 0.25f  * kcd.vertScale);
             F.x = (F.x * iterationScale) - kcd.crustThickness;
             break;
         }
@@ -456,8 +457,9 @@ namespace Cuda
             F = Field(p, basis, code, surfaceDepth);
             hitBoundSDF = false;
 
-            if(!(globalRay.flags & kRayLightProbe) && m_params.sdf.clipCameraRays && 
-                (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))
+            /*if(!(globalRay.flags & kRayLightProbe) && m_params.sdf.clipCameraRays && 
+                (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))*/
+            if(m_params.sdf.clipCameraRays)
             {
                 vec3 pWorld = globalRay.PointAt(t / localMag);
                 vec4 FClip;

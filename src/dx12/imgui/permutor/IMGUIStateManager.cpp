@@ -17,7 +17,7 @@
 #include <random>
 #include <filesystem>
 
-RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager) :
+RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager, const Json::Document& renderStateJson, Json::Document& commandJson) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
     m_stateListUI("Parameter states", "Add", "Overwrite", "Delete", ""),
@@ -25,6 +25,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_referenceSamples(100000),
     m_numBakeIterations(1),
     m_isBaking(false),
+    m_isBatchRunning(false),
     m_permutor(imguiShelves, m_stateMap),
     m_stateMap(imguiShelves),
     m_exportToUSD(false),
@@ -32,10 +33,13 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_startWithThisView(false),
     m_shutdownOnComplete(false),
     m_stateFlags(kStatePermuteAll),
-    m_minViableValidity(0.7f),
+    m_gridValidityRange(0.7f, 0.95f),
+    m_kifsIterationRange(7, 9),
     m_numStrata(20),
     m_dirtiness(IMGUIDirtiness::kClean),
-    m_gridFitness(0.0f)
+    m_gridFitness(0.0f),
+    m_renderStateJson(renderStateJson),
+    m_commandQueue(commandJson)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     
@@ -173,7 +177,8 @@ void RenderObjectStateManager::DeserialiseJson()
         permNode.GetValue("referenceSamples", m_referenceSamples, jsonWarningLevel);
         permNode.GetValue("strata", m_numStrata, jsonWarningLevel);
         permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
-        permNode.GetValue("minViableValidity", m_minViableValidity, jsonWarningLevel);
+        permNode.GetVector("gridValidityRange", m_gridValidityRange, jsonWarningLevel);
+        permNode.GetVector("kifsIterationRange", m_kifsIterationRange, jsonWarningLevel);
         if (permNode.GetValue("usdPathTemplate", m_usdPathTemplate, jsonWarningLevel))
         {
             std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
@@ -196,7 +201,8 @@ void RenderObjectStateManager::SerialiseJson() const
         permJson.AddVector("noisySampleRange", m_noisySampleRange);
         permJson.AddValue("referenceSamples", m_referenceSamples);
         permJson.AddValue("strata", m_numStrata);
-        permJson.AddValue("minViableValidity", m_minViableValidity);
+        permJson.AddVector("gridValidityRange", m_gridValidityRange);
+        permJson.AddVector("kifsIterationRange", m_kifsIterationRange);
         permJson.AddValue("iterations", m_numBakeIterations);
         permJson.AddValue("usdPathTemplate", std::string(m_usdPathUIData.data()));
     }
@@ -301,27 +307,63 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     ImGui::PopID();
 }
 
+void RenderObjectStateManager::ParseRenderStateJson()
+{
+    Log::Debug(m_renderStateJson.Stringify(true));
+    
+    m_renderStateJson.GetValue("renderManager/rendererStatus", m_renderState, Json::kRequiredAssert);
+    
+    const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);
+    m_isBaking = bool(bakeJson);
+    m_bakeProgress = 0.0f;
+
+    if(m_isBaking)
+    {
+        m_bakeProgress = 0.0f;
+        bakeJson.GetValue("progress", m_bakeProgress, Json::kSilent);
+    }
+}
+
 void RenderObjectStateManager::ConstructBatchProcessorUI()
 {
     UIStyle style(1);
     
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ImGui::PushID("BatchProcessor");
-    
-    ImGui::DragInt2("Noisy sample range", &m_noisySampleRange[0], 1.0f, 1, 1e7);
-    m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
+    ParseRenderStateJson(); // Get some render state data so we know what's going on
 
-    ImGui::DragInt("Reference samples", &m_referenceSamples, 1.0f, 1, 1e7);
-    ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
-    ImGui::DragFloat("Min viable validity", &m_minViableValidity, 1.0f, 0.0f, 1.0f);
+    ImGui::PushID("BatchProcessor");
+
+    if (ImGui::TreeNodeEx("Samples", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::DragInt2("Noisy sample range", &m_noisySampleRange[0], 1.0f, 1, 1e7);
+        m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
+
+        ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
+
+        ImGui::DragInt("Reference samples", &m_referenceSamples, 1.0f, 1, 1e7);
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Constraints", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::DragFloat2("Grid validity range", &m_gridValidityRange[0], 0.001f, 0.0f, 1.0f);
+
+        ImGui::SliderInt2("KIFS interation range", &m_kifsIterationRange[0], 1, 10);
+        m_kifsIterationRange[0] = math::min(m_kifsIterationRange[0], m_kifsIterationRange[1]);
+        m_kifsIterationRange[1] = math::max(m_kifsIterationRange[0], m_kifsIterationRange[1]);
+
+        ImGui::TreePop();
+    }    
     
-    if (ImGui::Button("Defaults"))
+    if (ImGui::Button("Reset Defaults"))
     {
         m_noisySampleRange = Cuda::ivec2(64, 2048);
         m_referenceSamples = 100000;
         m_numStrata = 20;
-        m_minViableValidity = 0.7f;
+        m_gridValidityRange = Cuda::vec2(0.7f, 0.95f);
+        m_kifsIterationRange = Cuda::ivec2(7, 9);
     }
     
     ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, 100000);
@@ -330,13 +372,12 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
 
      // Reset all the jittered values to their midpoints
-    const BakeStatus bakeStatus = m_renderManager.GetBakeStatus();
     ImVec2 size = ImGui::GetItemRectSize();
     size.y *= 2;
-    const std::string actionText = (bakeStatus != BakeStatus::kReady) ? "Abort" : "Bake";
+    const std::string actionText = m_isBatchRunning ? "Abort" : "Bake";
     if (ImGui::Button(actionText.c_str(), size))
     {
-        ToggleBake();
+        EnqueueBake();
     }
 
     ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
@@ -344,56 +385,64 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::Checkbox("Shutdown on complete", &m_shutdownOnComplete);
 
     if (ImGui::Button("Save PNG"))
-    {
-        std::string filePath(m_usdPathUIData.data());
-        ReplaceFilename(filePath, "blah.png");
-        m_renderManager.ExportLiveViewport(filePath);
+    {        
+        EnqueueExportViewport();
     }
 
-    ImGui::ProgressBar(m_renderManager.GetBakeProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
+    ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
     ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
-    ImGui::Text("%s elapsed", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
-    ImGui::Text("%s remaining", (bakeStatus != BakeStatus::kReady) ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_renderManager.GetBakeProgress())).c_str() : "00:00");
+    ImGui::Text("%s elapsed", m_isBatchRunning ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
+    ImGui::Text("%s remaining", m_isBatchRunning ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_bakeProgress)).c_str() : "00:00");
 
     ImGui::PopID();
 }
 
-void RenderObjectStateManager::ToggleBake()
+void RenderObjectStateManager::EnqueueExportViewport()
 {
-    // If a bake is in progress, abort it
-    if (m_isBaking)
+    Json::Node commandNode = m_commandQueue.AddChildObject("exportViewport");
+    std::string filePath(m_usdPathUIData.data());
+    ReplaceFilename(filePath, "blah.png");
+    commandNode.AddValue("path", filePath);
+}
+
+void RenderObjectStateManager::EnqueueBake()
+{
+    // If a batch bake is already in progress, dispatch a command to stop it
+    if (m_isBaking || m_isBatchRunning)
     {
-        m_renderManager.AbortBake();
-        m_isBaking = false;
+        Json::Node commandJson = m_commandQueue.AddChildObject("bake");
+        commandJson.AddValue("action", "abort");
+        m_isBatchRunning = false;
         return;
-    }   
+    }
 
-    m_permutor.Clear();
-    
-    m_permutor.SetSampleRange(m_noisySampleRange, m_referenceSamples, m_numStrata);
-    if (!m_permutor.Prepare(m_numBakeIterations, std::string(m_usdPathUIData.data()), m_stateJsonPath, m_disableLiveView, true)) { return; }
-
-    m_isBaking = true;
+    // Initialise the permutor and prepare it with the constraints
+    if (m_permutor.Initialise(std::string(m_usdPathUIData.data()), m_stateJsonPath, m_disableLiveView, true))
+    {
+        if (m_permutor.Prepare(m_numBakeIterations, m_noisySampleRange, m_referenceSamples, m_numStrata, m_kifsIterationRange))
+        {
+            m_isBatchRunning = true;
+        }
+    }
 }
 
 void RenderObjectStateManager::HandleBakeIteration()
 {
     // Start a new iteration only if a bake has been requested and the renderer is ready
-    if (!m_isBaking || m_renderManager.GetBakeStatus() != BakeStatus::kReady) { return; }
+    if (!m_isBatchRunning || m_isBaking) { return; }
     
     // Advance to the next permutation. If this fails, we're done. 
     if (m_permutor.Advance())
     {       
-        Cuda::LightProbeGridExportParams params;
-        params.usdExportPaths = m_permutor.GenerateExportPaths();
-        params.exportToUSD = m_exportToUSD;
-        params.gridFitness = -1.0f;
-        
-        m_renderManager.StartBake(params);
+        Json::Node bakeJson = m_commandQueue.AddChildObject("bake");
+        bakeJson.AddValue("action", "start");
+        bakeJson.AddValue("exportToUSD", m_exportToUSD);
+        bakeJson.AddValue("minGridValidity", m_gridValidityRange.x);
+        bakeJson.AddValue("maxGridValidity", m_gridValidityRange.y);
+        bakeJson.AddArray("usdExportPaths", m_permutor.GenerateExportPaths());
     }
     else
     {
-        m_isBaking = false;
         if (m_shutdownOnComplete)
         {
             SendMessage(m_hWnd, WM_CLOSE, 0, 0);

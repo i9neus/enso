@@ -138,13 +138,13 @@ void LightProbeCameraShelf::Construct()
         ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
         ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
 
-        /*if (gridStats.hasHistogram)
+        if (gridStats.hasHistogram)
         {
             for (const auto& histogramWidget : gridStats.histogramWidgetData)
             {
                 ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
             }
-        }*/
+        }
 
         ImGui::Separator();
         ImGui::PopID();
@@ -198,8 +198,8 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& bas
                 outputData.maxValue = 0;
                 for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
                 {
-                    outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
-                    //outputData.data[binIdx] = inputData[binIdx];
+                    //outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
+                    outputData.data[binIdx] = inputData[binIdx];
                     outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
                 }
             }

@@ -11,9 +11,9 @@ public:
 
     void                        Clear();
     std::set<int>&              GetSampleCountSet() { return m_sampleCountSet; }
-    void                        SetSampleRange(const Cuda::ivec2 noisyRange, const int referenceCount, const int numStrata);
+    bool                        Prepare(const int numIterations, const Cuda::ivec2& noisyRange, const int referenceCount, const int numStrata, const Cuda::ivec2& kifsIterationRange);
+    bool                        Initialise(const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView);
     void                        ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath);
-    bool                        Prepare(const int numIterations, const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView);
     bool                        Advance();
     float                       GetProgress() const;
     std::vector<std::string>    GenerateExportPaths() const;
@@ -31,9 +31,10 @@ private:
     int                         m_sampleCountIdx;
     int                         m_numIterations;
     Cuda::ivec2                 m_noisyRange;
+    Cuda::ivec2                 m_kifsIterationRange;
+    int                         m_kifsIterationIdx;
     int                         m_referenceCount;
     int                         m_numStrata;
-
     int                         m_iterationIdx;
     int                         m_permutationIdx;
     int                         m_numPermutations;

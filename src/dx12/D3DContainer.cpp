@@ -466,7 +466,8 @@ void D3DContainer::OnRender()
 	const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
 
-	m_imgui.UpdateParameters();
+	// After everything's rendered, dispatch any commands that IMGUI may have emitted
+	m_imgui.DispatchRenderCommands();
 
 	m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);

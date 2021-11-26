@@ -12,7 +12,7 @@
 
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) :
     m_cudaRenderer(cudaRenderer),
-    m_stateManager(m_shelves, cudaRenderer),
+    m_stateManager(m_shelves, cudaRenderer, m_renderStateJson, m_commandQueue),
     m_frameIdx(0),
     m_meanFrameTime(-1.0f)
 {
@@ -54,7 +54,7 @@ void IMGUIContainer::Rebuild()
 }
 
 void IMGUIContainer::Build(HWND hwnd)
-{    
+{
     m_hWnd = hwnd;
     m_stateManager.Initialise(m_hWnd);
 
@@ -64,17 +64,18 @@ void IMGUIContainer::Build(HWND hwnd)
 void IMGUIContainer::Destroy()
 {
     ImGui::ImplDX12_Shutdown();
-    
+
     SafeRelease(m_srvHeap);
 
     Log::Write("Destroyed IMGUI D3D objects.\n");
 }
 
-void IMGUIContainer::UpdateParameters()
+void IMGUIContainer::DispatchRenderCommands()
 {
     std::unique_ptr<Json::Document> patchJson;
+    Json::Document dispatchJson;
     for (const auto& shelf : m_shelves)
-    {        
+    {
         if (shelf.second->IsDirty())
         {
             if (!patchJson)
@@ -87,10 +88,25 @@ void IMGUIContainer::UpdateParameters()
             shelf.second->MakeClean();
         }
     }
-
     if (patchJson)
-    {        
-        m_cudaRenderer.OnJson(*patchJson);
+    {
+        // TODO: Don't use deep copy here.
+        auto patchNode = dispatchJson.AddChildObject("patches");
+        patchNode.DeepCopy(*patchJson);
+    }
+
+    // Copy any commands that may have been emitted by the GUI handlers
+    if (m_commandQueue.NumMembers() > 0)
+    {
+        auto commandNode = dispatchJson.AddChildObject("commands");
+        commandNode.DeepCopy(m_commandQueue);
+        m_commandQueue.Clear();
+    }
+
+    // If there are commands waiting to be dispatched, push them to the renderer now.
+    if (dispatchJson.NumMembers() > 0)
+    {
+        m_cudaRenderer.Dispatch(dispatchJson);
     }
 }
 
@@ -101,24 +117,37 @@ void IMGUIContainer::ConstructRenderObjectShelves()
     // Only poll the render object manager occasionally
     if (m_statsTimer.Get() > 0.5f)
     {
-        Json::Document statsDocument;
-        m_cudaRenderer.GetRenderStats(statsDocument);
-
-        statsDocument.GetValue("frameIdx", m_frameIdx, Json::kSilent);
-        statsDocument.GetValue("meanFrameTime", m_meanFrameTime, Json::kSilent);
-
-        for (const auto& shelf : m_shelves)
+        // If we're waiting on a previous stats job, don't dispatch a new one
+        if (!m_renderStateJson.GetChildObject("jobs/getStats", Json::kSilent))
         {
-            // Look to see if there are statistics associated with this shelf
-            const Json::Node statsNode = statsDocument.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);          
-            if (statsNode)
+            m_commandQueue.AddChildObject("getStats");
+            m_statsTimer.Reset();
+        }
+    }
+
+    const Json::Node statsJson = m_renderStateJson.GetChildObject("jobs/getStats", Json::kSilent);
+    if(statsJson)
+    {
+        int statsState;
+        statsJson.GetValue("state", statsState, Json::kRequiredAssert);
+
+        // If the stats gathering task has finished, it'll be accompanied by data for each render object that emits it
+        if (statsState == kRenderManagerJobCompleted)
+        {
+            const Json::Node objectsJson = statsJson.GetChildObject("renderObjects", Json::kRequiredAssert);
+            for (const auto& shelf : m_shelves)
             {
-                Assert(shelf.second);
-                shelf.second->OnUpdateRenderObjectStatistics(statsNode);
+                Log::Error(shelf.first);
+                
+                // Look to see if there are statistics associated with this shelf
+                const Json::Node objectNode = objectsJson.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);
+                if (objectNode)
+                {
+                    Assert(shelf.second);
+                    shelf.second->OnUpdateRenderObjectStatistics(objectNode);
+                }
             }
         }
-
-        m_statsTimer.Reset();
     }
 
     // Emit some statistics about the render
@@ -146,9 +175,22 @@ void IMGUIContainer::ConstructRenderObjectShelves()
     ImGui::End();
 }
 
+void IMGUIContainer::PollCudaRenderState()
+{
+    Assert(m_cudaRenderer.PollRenderState(m_renderStateJson));
+
+    const Json::Node managerJson = m_renderStateJson.GetChildObject("renderManager", Json::kRequiredAssert | Json::kLiteralID);
+    managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
+    managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
+    managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
+}
+
 void IMGUIContainer::Render()
 {
-    if (m_cudaRenderer.IsStable() && m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
+    // Poll the CUDA renderer to get the latest stats and data
+    PollCudaRenderState();
+    
+    if (m_renderState == kRenderManagerBakeRunning && m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
     {
         Rebuild();
     }
@@ -161,11 +203,15 @@ void IMGUIContainer::Render()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
-    if (m_cudaRenderer.IsStable())
+    if (m_renderState == kRenderManagerBakeRunning)
     {
+        // Construct the state manager UI
         m_stateManager.ConstructUI();
+
+        // Construct the render objects shelves
         ConstructRenderObjectShelves();
 
+        // Handle the bake iteration 
         m_stateManager.HandleBakeIteration();
     }
 
@@ -173,6 +219,9 @@ void IMGUIContainer::Render()
 
     // Rendering
     ImGui::Render();
+
+    // Dispatch any commands that may have been generated
+    DispatchRenderCommands();
 }
 
 void IMGUIContainer::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)

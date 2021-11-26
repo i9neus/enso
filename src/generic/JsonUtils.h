@@ -299,12 +299,12 @@ namespace Json
         {
             m_document.SetNull();
             m_document.SetObject();
-        }        
+        }
 
         void Parse(const std::string& data);
         void Deserialise(const std::string& filePath);
         void Serialise(const std::string& filePath);
-        std::string Stringify(const bool pretty);
+        std::string Stringify(const bool pretty) const;
 
         const std::string& GetOriginFilePath() const { return m_originFilePath; }
 

@@ -17,12 +17,15 @@
 #include "generic/GlobalStateAuthority.h"
 
 RenderManager::RenderManager() : 
-	m_threadSignal(kIdle),
-	m_dirtiness(kClean),
+	m_threadSignal(kRenderManagerIdle),
+	m_dirtiness(kDirtinessStateClean),
 	m_frameIdx(0),
-	m_bakeStatus(BakeStatus::kReady),
 	m_bakeProgress(0.0f)
 {
+	// Register the list of jobs
+	RegisterJob(m_bakeJob, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
+	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnExportViewportDispatch, &RenderManager::OnNullPoll);
+	RegisterJob(m_statsJob, "getStats", &RenderManager::OnGatherStatsDispatch, &RenderManager::OnGatherStatsPoll);
 }
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -142,7 +145,7 @@ void RenderManager::UnloadScene(bool report)
 
 void RenderManager::Build(const Json::Document& sceneJson)
 {
-	Assert(m_threadSignal == kIdle);
+	Assert(m_threadSignal == kRenderManagerIdle);
 	Assert(!m_renderObjects);
 
 	Log::NL();
@@ -201,14 +204,14 @@ void RenderManager::Build(const Json::Document& sceneJson)
 
 void RenderManager::StopRenderer()
 {
-	if (!m_managerThread.joinable() || m_threadSignal != kRun)
+	if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun)
 	{
 		Log::Warning("Renderer is not running.");
 		return; 
 	}
 
 	Log::Write("Halting renderer...\r");
-	m_threadSignal.store(kHalt);
+	m_threadSignal.store(kRenderManagerHalt);
 	m_managerThread.join();
 
 	Log::Write("Done!\n");
@@ -328,57 +331,212 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
 }
 
-void RenderManager::OnJson(const Json::Document& patchJson)
+bool RenderManager::OnBakeDispatch(Job& job)
 {
-	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+	std::string action;
+	job.json.GetValue("action", action, Json::kRequiredAssert);
 
-	m_paramsPatchJson.Clear();
-	m_paramsPatchJson.DeepCopy(patchJson);
+	// Aborting the action...
+	if (action == "abort")
+	{
+		job.state = kRenderManagerJobAbort;
 
-	Log::Debug("Updated! %s\n", m_paramsPatchJson.Stringify(true));
+		if (m_lightProbeCamera)
+		{
+			m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
+		}
 
-	m_dirtiness = kSoftReset;
-}
+		return true;
+	}
+	
+	// Sanity checks
+	AssertMsg(action == "start", "Valid bake actions are 'start' and 'abort'");
+	AssertMsg(job.state == kRenderManagerJobIdle, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
 
-void RenderManager::StartBake(const Cuda::LightProbeGridExportParams& params)
-{
 	if (!m_lightProbeCamera)
 	{
 		Log::Error("ERROR: Can't start a bake because there are no light probe cameras in this scene.\n");
-		return;
+		return false;
 	}
 
-	Assert(!params.usdExportPaths.empty());
-	AssertMsg(m_bakeStatus == BakeStatus::kReady, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
-
-	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
-	 
-	m_probeGridExportParams = params;
-	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
-	
-	m_dirtiness = kHardReset;
-	m_bakeStatus = BakeStatus::kRunning;
-}
-
-void RenderManager::ExportLiveViewport(const std::string& pngExportPath)
-{
-	if (m_exportToPNG) 
-	{ 
-		m_exportToPNG = false;
-		return; 
-	}
-
-	m_pngExportPath = pngExportPath;
-	m_exportToPNG = true;
-}
-
-void RenderManager::AbortBake()
-{
-	m_bakeStatus = BakeStatus::kHalt;
-
-	if (m_lightProbeCamera)
+	// Read in the parameters from the JSON dictionary
+	try
 	{
-		m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
+		std::lock_guard<std::mutex> lock(m_jsonInputMutex);
+
+		job.json.GetValue("exportToUSD", m_probeGridExportParams.exportToUSD, Json::kRequiredWarn);
+		job.json.GetValue("maxGridValidity", m_probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
+		job.json.GetValue("maxGridValidity", m_probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
+		job.json.GetArrayValues("usdExportPaths", m_probeGridExportParams.usdExportPaths, Json::kRequiredWarn);
+
+		Assert(!m_probeGridExportParams.usdExportPaths.empty());
+	}
+	catch (const std::runtime_error& err)
+	{
+		Log::Error("Error: invalid command parameters: %s", err.what());
+		return false;
+	}
+
+	// Arm the exporter, dirty the scene, and mark the command has having started
+	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
+	m_dirtiness = kDirtinessStateHardReset;
+	job.state = kRenderManagerJobDispatched;
+
+	return true;
+}
+
+bool RenderManager::OnBakePoll(Json::Node& outJson, const Job& job)
+{
+	outJson.AddValue("progress", m_bakeProgress);
+	return true;
+}
+
+bool RenderManager::OnGatherStatsDispatch(Job& job)
+{
+	job.state = kRenderManagerJobDispatched;
+	return true;
+}
+
+bool RenderManager::OnGatherStatsPoll(Json::Node& outJson, const Job& job)
+{
+	if (job.state != kRenderManagerJobCompleted) { return true; }
+	
+	// If render object stats have been been generated, copy them over
+	if (m_renderObjectStatsJson.NumMembers())
+	{
+		std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
+
+		Json::Node statsJson = outJson.AddChildObject("renderObjects");
+		statsJson.DeepCopy(m_renderObjectStatsJson);
+		m_renderObjectStatsJson.Clear();
+	}
+
+	return true;
+}
+
+bool RenderManager::OnExportViewportDispatch(Job& job)
+{
+	job.state = kRenderManagerJobDispatched;
+	return true;
+}
+
+bool RenderManager::PollRenderState(Json::Document& stateJson)
+{
+	/* 
+		IMPORTANT: This function may be polled rapidly by the UI, so it must remain as lightweight as possible and 
+		only return JSON data where absolutely necessary
+
+		{
+			"renderManager": { 
+				"frameIdx": 10,
+				...
+			},
+			"jobs": {
+				"bake": {
+					"state": 1,
+					...
+				}
+			}
+		}
+
+	*/
+	
+	stateJson.Clear();	
+
+	// Add some generic data about the renderer that's exported each time the state is polled
+	Json::Node managerJson = stateJson.AddChildObject("renderManager");
+	managerJson.AddValue("frameIdx", m_frameIdx);
+	managerJson.AddValue("meanFrameTime", m_meanFrameTime);
+	const int threadSignal = m_threadSignal;
+	managerJson.AddValue("rendererStatus", threadSignal);
+
+	// Report data on the status of the commands that may be running or have data waiting to be dispatched
+	Json::Node jobJson = stateJson.AddChildObject("jobs");
+	for (auto& jobObject : m_jobMap)
+	{
+		// Only emit JSON data if the command isn't idle i.e. it's dispatched or completed
+		auto& job = jobObject.second;
+		if (job.state != kRenderManagerJobIdle)
+		{
+			Json::Node statsJson = jobJson.AddChildObject(jobObject.first);
+			const int state = job.state;
+			statsJson.AddValue("state", state);
+
+			// If this command has a functor, call it now
+			if (job.onPoll) { job.onPoll(statsJson, job); }
+
+			// Flip the state from completed to idle once the data has been polled
+			if (job.state == kRenderManagerJobCompleted) { job.state = kRenderManagerJobIdle; }
+		}
+	}
+
+	return true;
+}
+
+void RenderManager::Dispatch(const Json::Document& rootJson)
+{
+	/*
+		Job dictionary contains patch data for the render objects and command data for the render manager.
+		Sample JSON file should be:
+
+		{
+			"patches": {
+				...
+			},
+			"commands":	{
+				"bake": {
+					"action": "start"
+				},
+				...
+			}
+		}
+	*/
+	
+	Assert(rootJson.NumMembers() != 0);
+
+	if (rootJson.GetChildObject("patches", Json::kSilent | Json::kLiteralID))
+	{
+		// Overwrite the command list with the new data
+		std::lock_guard<std::mutex> lock(m_jsonInputMutex);
+
+		m_patchJson.DeepCopy(rootJson);
+		
+		// Found a scene object parameter parameter patch, so signal that the scene graph is dirty
+		m_dirtiness = kDirtinessStateSoftReset;
+
+		Log::Debug("Updated! %s\n", m_patchJson.Stringify(true));
+	}
+
+	const Json::Node commandsJson = rootJson.GetChildObject("commands", Json::kSilent | Json::kLiteralID);
+	if (commandsJson)
+	{
+		// Examine the command list
+		for (auto nodeIt = commandsJson.begin(); nodeIt != commandsJson.end(); ++nodeIt)
+		{
+			auto commandIt = m_jobMap.find(nodeIt.Name());
+			if (commandIt != m_jobMap.end())
+			{
+				try
+				{
+					auto& job = commandIt->second;
+					
+					// Copy any JSON data that accompanies this command
+					job.json.DeepCopy(*nodeIt);
+
+					// Call the dispatch functor
+					Assert(job.onDispatch);
+					job.onDispatch(job);
+				}
+				catch (const std::runtime_error& err)
+				{
+					Log::Error("Error: render manager command '%s' failed: %s", nodeIt.Name(), err.what());
+				}
+			}
+			else
+			{
+				Log::Error("Error: '%s' is not a valid render manager command", nodeIt.Name());
+			}
+		}		
 	}
 }
 
@@ -414,7 +572,7 @@ void RenderManager::StartRenderer()
 {
 	Log::Write("Starting rendering...\b");
 
-	m_threadSignal = kRun;
+	m_threadSignal = kRenderManagerRun;
 	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
 
 	m_renderStartTime = std::chrono::high_resolution_clock::now();
@@ -434,7 +592,7 @@ void RenderManager::ClearRenderStates()
 
 	// Reset the render manager state
 	m_frameIdx = 0;
-	m_dirtiness = kClean;
+	m_dirtiness = kDirtinessStateClean;
 }
 
 void RenderManager::Run()
@@ -448,7 +606,7 @@ void RenderManager::Run()
 
 	try
 	{
-		while (m_threadSignal.load() == kRun)
+		while (m_threadSignal.load() == kRenderManagerRun)
 		{
 			/*Timer timer([&](float elapsed) -> std::string
 				{
@@ -458,7 +616,7 @@ void RenderManager::Run()
 			Timer timer;
 
 			// Has the scene graph been dirtied?
-			if (!m_activeCameras.empty() && (m_dirtiness == kHardReset || (m_dirtiness == kSoftReset && m_frameIdx >= 2)))
+			if (!m_activeCameras.empty() && (m_dirtiness == kDirtinessStateHardReset || (m_dirtiness == kDirtinessStateSoftReset && m_frameIdx >= 2)))
 			{
 				PatchSceneObjects();
 
@@ -466,7 +624,7 @@ void RenderManager::Run()
 				ClearRenderStates();
 			}
 
-			Assert(!(m_bakeStatus == BakeStatus::kRunning && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
+			Assert(!(m_bakeJob.state == kRenderManagerJobDispatched && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
 
 			// Render a pass through each camera to its render state
 			for (auto& camera : m_activeCameras)
@@ -511,34 +669,32 @@ void RenderManager::Run()
 			}
 			m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
 
-			// Gather statistics for the render objects
-			GatherRenderObjectStatistics();
+			GatherRenderObjectStatistics(); // Gather statistics from the render objects
 		}
 	}
 	catch (const std::runtime_error& err)
 	{
 		Log::Error("Runtime error: %s\n", err.what());
-		m_threadSignal.store(kAssert);
+		m_threadSignal.store(kRenderManagerError);
 	}
 	catch (...)
 	{
 		Log::Error("Unhandled error");
-		m_threadSignal.store(kAssert);
+		m_threadSignal.store(kRenderManagerError);
 	}
 
 	// Signal that the renderer has finished
-	m_threadSignal.store(kIdle);
+	m_threadSignal.store(kRenderManagerIdle);
 }
 
 void RenderManager::GatherRenderObjectStatistics()
 {
-	// Limit this operation to 2 times per second
-	if (m_renderStatsTimer.Get() < 0.5f) { return; }
-	
+	if (!m_statsJob.state == kRenderManagerJobDispatched) { return; }
+
 	Json::Document renderObjectJson;
 	Json::Document aggregatedStatsJson;
-	for (auto& object : *m_renderObjects) 
-	{  		
+	for (auto& object : *m_renderObjects)
+	{
 		// Poll each render object for the latest stats
 		if (object->HasDAGPath() && object->EmitStatistics(renderObjectJson))
 		{
@@ -548,24 +704,23 @@ void RenderManager::GatherRenderObjectStatistics()
 		}
 	}
 
-	//Log::Debug(aggregatedStatsJson.Stringify(true));
-
-	aggregatedStatsJson.AddValue("frameIdx", m_frameIdx);
-	aggregatedStatsJson.AddValue("meanFrameTime", m_meanFrameTime);
-
-	std::lock_guard<std::mutex> lock(m_jsonMutex);
-	m_renderStatsJson.DeepCopy(aggregatedStatsJson);
+	std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
+	m_renderObjectStatsJson.DeepCopy(aggregatedStatsJson);
 	m_renderStatsTimer.Reset();
+
+	m_statsJob.state = kRenderManagerJobCompleted;
 }
 
 void RenderManager::PatchSceneObjects()
 {
-	std::lock_guard<std::mutex> lock(m_renderResourceMutex);
+	std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
-	if (!m_paramsPatchJson.NumMembers()) { return; }
+	Json::Node patchJson = m_patchJson.GetChildObject("patches", Json::kRequiredAssert);
+
+	if (!patchJson.NumMembers()) { return; }
 
 	int validPatches = 0;
-	for (Json::Node::Iterator it = m_paramsPatchJson.begin(); it != m_paramsPatchJson.end(); ++it)
+	for (Json::Node::Iterator it = patchJson.begin(); it != patchJson.end(); ++it)
 	{
 		Cuda::AssetHandle<Cuda::Host::RenderObject> asset = m_renderObjects->FindByDAG(it.Name());
 		if (asset)
@@ -584,28 +739,34 @@ void RenderManager::PatchSceneObjects()
 	// Prepare the scene for rendering
 	if (validPatches > 0) { Prepare(); }
 
-	m_paramsPatchJson.Clear();
+	m_patchJson.Clear();
 }
 
 void RenderManager::OnBakePostFrame()
 {
-	if (m_exportToPNG)
+	// If a viewport export has been requested, do so now
+	if (m_exportViewportJob.state == kRenderManagerJobDispatched)
 	{
+		auto& job = m_exportViewportJob;
+		
 		std::vector<Cuda::vec4> rawData;
 		Cuda::ivec2 dataDimensions;
 		m_liveCamera->GetRawAccumulationData(rawData, dataDimensions);
 
-		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, m_pngExportPath, 2.2f);
+		std::string exportPath;
+		if (!job.json.GetValue("path", exportPath, Json::kRequiredWarn)) { return; }
 
-		m_exportToPNG = false;
+		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, exportPath, 2.2f);
+
+		job.state == kRenderManagerJobIdle;
 	}
-	
-	if (m_bakeStatus == BakeStatus::kHalt)
+
+	// Are we baking? 
+	if (m_bakeJob.state == kRenderManagerJobAbort)
 	{
-		// Do shutdown stuff here
-		m_bakeStatus = BakeStatus::kReady;
+		m_bakeJob.state = kRenderManagerJobIdle;
 	}
-	else if (m_bakeStatus == BakeStatus::kRunning && m_dirtiness == kClean)
+	else if (m_bakeJob.state == kRenderManagerJobDispatched && m_dirtiness == kDirtinessStateClean)
 	{
 		if (m_lightProbeCamera->GetExporterState() == Cuda::Host::LightProbeCamera::kArmed)
 		{
@@ -613,14 +774,14 @@ void RenderManager::OnBakePostFrame()
 			if (m_bakeProgress == 1.0f)
 			{
 				m_lightProbeCamera->ExportProbeGrid(m_probeGridExportParams);
-				m_bakeStatus = BakeStatus::kReady;
+				m_bakeJob.state = kRenderManagerJobCompleted;
 				Log::Debug("Export!");
 			}
 		}
 		else
 		{
 			Log::Warning("Internal warning: probe grid exporter is not armed.\n");
-			m_bakeStatus = BakeStatus::kReady;
+			m_bakeJob.state = kRenderManagerJobIdle;
 		}
 	}
 }

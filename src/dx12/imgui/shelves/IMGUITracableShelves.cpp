@@ -96,6 +96,11 @@ void KIFSShelf::Jitter(const uint flags, const uint operation)
         m_p.vertScale.Update(operation);
         m_p.crustThickness.Update(operation);
         m_p.faceMask.Update(operation);
+
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<> rng(0, 6);
+        m_p.primitiveType = rng(mt);
     }
 
     if (flags & kStatePermuteTransforms) { m_p.transform.Update(operation); }

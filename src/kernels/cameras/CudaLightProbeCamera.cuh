@@ -59,7 +59,8 @@ namespace Cuda
 	{
 		std::vector<std::string>	usdExportPaths;
 		bool						exportToUSD = false;
-		float						gridFitness = 0.0f;
+		float						minGridValidity = 0.0f;
+		float						maxGridValidity = 1.0f;
 	};
 
 	namespace Device
