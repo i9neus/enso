@@ -55,6 +55,7 @@ namespace Cuda
     }
 
     __host__ Host::KIFSMaterial::KIFSMaterial(const ::Json::Node& node) :
+        Material(node),
         cu_deviceData(nullptr)
     {        
         cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>();

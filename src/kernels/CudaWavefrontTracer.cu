@@ -525,6 +525,9 @@ namespace Cuda
 		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id));
 
 		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
+
+		Host::RenderObject::UpdateDAGPath(node);
+
 		FromJson(node, ::Json::kRequiredWarn);
 	}
 
@@ -615,8 +618,6 @@ namespace Cuda
 
 	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
 	{
-		Host::RenderObject::UpdateDAGPath(parentNode);
-
 		m_params.FromJson(parentNode, flags);
 		SynchroniseObjects(cu_deviceData, m_params);
 

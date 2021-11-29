@@ -35,6 +35,7 @@ namespace Cuda
         {
         protected:
             __host__ Material() = default;
+            __host__ Material(const ::Json::Node& node);
 
             std::string                             m_bxdfId;
 

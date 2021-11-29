@@ -60,8 +60,9 @@ namespace Cuda
         return AssetHandle<Host::RenderObject>(new Host::EnvironmentLight(json), id);
     }
 
-    __host__  Host::EnvironmentLight::EnvironmentLight(const ::Json::Node& jsonNode)
-        : cu_deviceData(nullptr)
+    __host__  Host::EnvironmentLight::EnvironmentLight(const ::Json::Node& jsonNode) :
+        Host::Light(jsonNode),
+        cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>();
         FromJson(jsonNode, ::Json::kRequiredWarn);

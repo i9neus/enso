@@ -59,6 +59,7 @@ namespace Cuda
     }
 
     __host__ Host::LambertBRDF::LambertBRDF(const ::Json::Node& parentNode) :
+        Host::BxDF(parentNode),
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();

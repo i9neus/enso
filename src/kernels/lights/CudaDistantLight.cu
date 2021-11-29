@@ -95,8 +95,9 @@ namespace Cuda
         return AssetHandle<Host::RenderObject>(new Host::DistantLight(json), id);
     }
 
-    __host__  Host::DistantLight::DistantLight(const ::Json::Node& jsonNode)
-        : cu_deviceData(nullptr)
+    __host__  Host::DistantLight::DistantLight(const ::Json::Node& jsonNode) :
+        Host::Light(jsonNode),
+        cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::DistantLight>();
         FromJson(jsonNode, ::Json::kRequiredWarn);

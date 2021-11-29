@@ -134,8 +134,9 @@ namespace Cuda
         return AssetHandle<Host::RenderObject>(new Host::QuadLight(json, id), id);
     }
     
-    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode, const std::string& id)
-        : cu_deviceData(nullptr)
+    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode, const std::string& id) :
+        Host::Light(jsonNode),
+        cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
         m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kRenderObjectIsChild), id + "_material");

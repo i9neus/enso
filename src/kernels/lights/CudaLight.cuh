@@ -58,9 +58,14 @@ namespace Cuda
             uchar                   m_lightId;
 
         public:
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
+            __host__ Light(const ::Json::Node& node)
             {
                 Host::RenderObject::UpdateDAGPath(node);
+            }
+
+            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
+            {
+                
             }
             __host__ virtual Device::Light*                 GetDeviceInstance() const = 0;
             __host__ virtual AssetHandle<Host::Tracable>    GetTracableHandle();

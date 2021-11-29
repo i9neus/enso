@@ -295,6 +295,7 @@ namespace Cuda
         
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
+
         FromJson(parentNode, ::Json::kRequiredWarn);
 
         // Sychronise the device objects
@@ -326,9 +327,7 @@ namespace Cuda
     }
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
-    {
-        Host::RenderObject::UpdateDAGPath(parentNode);
-        
+    {        
         m_params = PerspectiveCameraParams(parentNode);
         SynchroniseObjects(cu_deviceData, m_params);
     }

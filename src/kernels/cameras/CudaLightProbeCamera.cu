@@ -392,10 +392,7 @@ namespace Cuda
     }
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
-    {
-        // FIXME: Should this just be called once on construction instead of every time the object updates?        
-        Host::RenderObject::UpdateDAGPath(parentNode);
-
+    {       
         m_params.FromJson(parentNode, flags);
 
         Prepare();

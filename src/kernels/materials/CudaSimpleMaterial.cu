@@ -65,9 +65,11 @@ namespace Cuda
     }
 
     __host__ Host::SimpleMaterial::SimpleMaterial(const ::Json::Node& node) :
+        Material(node),
         cu_deviceData(nullptr)
     {       
         cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
+
         FromJson(node, ::Json::kRequiredWarn);
     }
 

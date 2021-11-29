@@ -62,6 +62,9 @@ namespace Cuda
         // Create the occupancy buffer and render stats
         m_hostBlockRayOccupancy = AssetHandle<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), rayBufferSize / 32, m_hostStream);
         m_hostRenderStats = AssetHandle < Host::ManagedObject<Device::RenderState::Stats>>(tfm::format("%s_renderStats", id));
+
+        // Set the DAG path       
+        Host::RenderObject::UpdateDAGPath(node);
     }
 
     __host__ void Host::Camera::OnDestroyAsset()

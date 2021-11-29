@@ -64,6 +64,11 @@ namespace Cuda
         {
         protected:
             __host__ Tracable() : m_lightId(kNotALight) {}
+            __host__ Tracable(const ::Json::Node& node) : 
+                Tracable()
+            {
+                Host::RenderObject::UpdateDAGPath(node);
+            }
             __host__ virtual ~Tracable() = default;
             
             AssetHandle<Host::Material> m_materialAsset;

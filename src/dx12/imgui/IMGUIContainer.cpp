@@ -136,9 +136,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
         {
             const Json::Node objectsJson = statsJson.GetChildObject("renderObjects", Json::kRequiredAssert);
             for (const auto& shelf : m_shelves)
-            {
-                Log::Error(shelf.first);
-                
+            {                
                 // Look to see if there are statistics associated with this shelf
                 const Json::Node objectNode = objectsJson.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);
                 if (objectNode)
