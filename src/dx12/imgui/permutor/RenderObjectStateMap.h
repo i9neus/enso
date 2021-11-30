@@ -7,6 +7,7 @@ class RenderManager;
 class LightProbeCameraShelf;
 class PerspectiveCameraShelf;
 class WavefrontTracerShelf;
+class KIFSShelf;
 
 class RenderObjectStateMap
 {

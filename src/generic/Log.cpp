@@ -73,7 +73,7 @@ Log& Log::Singleton()
 
 void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const LogLevel level)
 {
-    if (messageStr.empty() || !(m_logFlags | (1 << level))) { return; }
+    if (messageStr.empty() || !(m_logFlags & (1 << level))) { return; }
     
     // Apply indentation
     std::string formattedStr;

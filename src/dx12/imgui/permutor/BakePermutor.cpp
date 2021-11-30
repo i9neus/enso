@@ -15,81 +15,84 @@
 
 #include <random>
 
-BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap) :
+BakePermutor::BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap, Json::Document& commandQueue) :
     m_imguiShelves(imguiShelves),
-    m_stateMap(stateMap)
+    m_stateMap(stateMap),
+    m_commandQueue(commandQueue)
 {
+    m_isIdle = true;
+    
     Clear();
 }
 
 void BakePermutor::Clear()
 {
-    m_sampleCountSet.clear();
-    m_sampleCountIt = m_sampleCountSet.end();
+    m_sampleCountList.clear();
+    m_sampleCountIt = m_sampleCountList.end();
     m_stateIt = m_stateMap.GetStateData().end();
-    m_numIterations = 0;
     m_iterationIdx = -1;
     m_kifsIterationIdx = 0;
     m_numPermutations = 0;
     m_permutationIdx = 0;
     m_totalSamples = 0;
     m_completedSamples = 0;
-    m_templateTokens.clear();
-    m_isIdle = true;
-    m_disableLiveView = true;
-    m_startWithThisView = false;
 }
 
 // Populate the sample count set with randomly stratified values
 int BakePermutor::GenerateStratifiedSampleCountSet()
 {
-    m_sampleCountSet.clear();
+    m_sampleCountList.clear();
     int totalSamples = 0;
 
     std::random_device rd;
     std::mt19937 mt(rd());
     std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
 
-    for (int idx = 0; idx < m_numStrata; ++idx)
+    std::set<int> sampleCountSet;
+    for (int idx = 0; idx < m_params.numStrata; ++idx)
     {
-        const int stratumLower = m_noisyRange.x + (m_noisyRange.y - m_noisyRange.x) * idx / m_numStrata;
-        const int stratumUpper = m_noisyRange.x + (m_noisyRange.y - m_noisyRange.x) * (idx + 1) / m_numStrata;
+        const int stratumLower = m_params.noisyRange.x + (m_params.noisyRange.y - m_params.noisyRange.x) * idx / m_params.numStrata;
+        const int stratumUpper = m_params.noisyRange.x + (m_params.noisyRange.y - m_params.noisyRange.x) * (idx + 1) / m_params.numStrata;
         const int stratumRange = stratumUpper - stratumLower;
 
         Assert(stratumRange >= 0);
         if (stratumRange == 0) { continue; }
-        else if (stratumRange == 1) { m_sampleCountSet.insert(stratumLower); continue;  }
+        else if (stratumRange == 1) { m_sampleCountList.emplace_back(stratumLower, kBakeTypeProbeGrid); continue;  }
         
         // Generate some candidate samples and reject if they're already in the list.
         for (int tries = 0; tries < 10; ++tries)
         {
             const int candidate = stratumLower + rng(mt) % stratumRange;
-            if (m_sampleCountSet.find(candidate) == m_sampleCountSet.end())
+            if (sampleCountSet.find(candidate) == sampleCountSet.end())
             {
-                m_sampleCountSet.insert(candidate);
+                m_sampleCountList.emplace_back(candidate, kBakeTypeProbeGrid);
+                sampleCountSet.emplace(candidate);
                 totalSamples += candidate;
                 break;
             }
         }
     }
-    // Tack on the reference sample count
-    m_sampleCountSet.insert(m_referenceCount);
+    
+    // Add the reference sample count
+    m_sampleCountList.emplace_back(m_params.referenceCount, kBakeTypeProbeGrid);
 
-    m_sampleCountIt = m_sampleCountSet.cbegin();
+    // Add the thumbnail render
+    m_sampleCountList.emplace_back(m_params.thumbnailCount, kBakeTypeRender);
+
+    m_sampleCountIt = m_sampleCountList.cbegin();
     //for (const auto& el : m_sampleCountSet) { Log::Debug("  - %i", el); }
 
     return totalSamples;
 }
 
-bool BakePermutor::Initialise(const std::string& templatePath, const std::string& jsonRootPath, const bool disableLiveView, const bool startWithThisView)
+bool BakePermutor::Prepare(const BakePermutor::Params& params)
 {
-    m_templatePath = templatePath;
-    m_disableLiveView = disableLiveView;
-    m_startWithThisView = startWithThisView;
-    
-    // Decompose the template path into tokens
-    ParseTemplatePath(templatePath, jsonRootPath);
-    
+    m_params = params;
+
+    // Decompose the template paths into tokens
+    ParseTemplatePath(m_params.probeGridTemplatePath, m_params.jsonRootPath, m_probeGridTemplateTokens);
+    ParseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath, m_renderTemplateTokens);
+
     // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
     {
@@ -105,22 +108,28 @@ bool BakePermutor::Initialise(const std::string& templatePath, const std::string
         {
             m_wavefrontTracerShelf = std::dynamic_pointer_cast<WavefrontTracerShelf>(shelf.second);
         }
+        if (!m_kifsShelf)
+        {
+            m_kifsShelf = std::dynamic_pointer_cast<KIFSShelf>(shelf.second);
+        }
     }
 
     if (!m_lightProbeCameraShelf)
     {
-        Log::Debug("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n");
+        Log::Warning("Warning: bake permutor was unable to find an instance of LightProbeCameraShelf.\n");
         return false;
     }
     if (!m_wavefrontTracerShelf)
     {
-        Log::Debug("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n");
+        Log::Warning("Warning: bake permutor was unable to find an instance of WavefrontTracerShelf.\n");
         return false;
     }
-}
+    if (!m_kifsShelf)
+    {
+        Log::Warning("Warning: bake permutor was unable to find an instance of KIFSShelf.\n");
+        return false;
+    }
 
-bool BakePermutor::Prepare(const int numIterations, const Cuda::ivec2& noisyRange, const int referenceCount, const int numStrata, const Cuda::ivec2& kifsIterationRange)
-{
     m_numStates = m_stateMap.GetNumPermutableStates();
     if (m_numStates == 0)
     {
@@ -128,26 +137,18 @@ bool BakePermutor::Prepare(const int numIterations, const Cuda::ivec2& noisyRang
         return false;
     }
 
-    Clear();
-
-    m_noisyRange = noisyRange;
-    m_referenceCount = referenceCount;
-    m_numStrata = numStrata;
-    m_kifsIterationRange = kifsIterationRange;
-    m_numIterations = numIterations;    
-
     // Populate the sample count set with a random collection of values
     m_totalSamples = GenerateStratifiedSampleCountSet();
     m_completedSamples = 0;
     m_iterationIdx = 0;
-    m_stateIdx = 0;    
-    m_kifsIterationIdx = m_kifsIterationRange[0];
+    m_stateIdx = 0;
+    m_kifsIterationIdx = m_params.kifsIterationRange[0];
     m_permutationIdx = -1;
     m_stateIt = m_stateMap.GetFirstPermutableState();
     m_isIdle = false;
 
-    m_numPermutations = m_sampleCountSet.size() * m_numIterations * m_numStates * (m_kifsIterationRange[1] - m_kifsIterationRange[0]);
-    m_totalSamples *= m_numIterations * m_numStates;
+    m_numPermutations = m_sampleCountList.size() * m_params.numIterations * m_numStates * (1 + m_params.kifsIterationRange[1] - m_params.kifsIterationRange[0]);
+    m_totalSamples *= m_params.numIterations * m_numStates;
 
     m_startTime = std::chrono::high_resolution_clock::now();
 
@@ -157,25 +158,25 @@ bool BakePermutor::Prepare(const int numIterations, const Cuda::ivec2& noisyRang
     return true;
 }
 
-void BakePermutor::ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath)
+void BakePermutor::ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath, std::vector<std::string>& templateTokens)
 {
     m_jsonRootPath = jsonRootPath;
     
     // Parse the template path
-    m_templateTokens.clear();
+    templateTokens.clear();
     Lexer lex(templatePath);
     while (lex)
     {
         std::string newToken;
         if (lex.ParseToken(newToken, [](const char c) { return c != '{'; }))
         {
-            m_templateTokens.push_back(newToken);
+            templateTokens.push_back(newToken);
         }
         if (lex && *lex == '{')
         {
             if (lex.ParseToken(newToken, [](const char c) { return c != '}'; }, Lexer::IncludeDelimiter))
             {
-                m_templateTokens.push_back(newToken);
+                templateTokens.push_back(newToken);
             }
         }
     }
@@ -183,7 +184,7 @@ void BakePermutor::ParseTemplatePath(const std::string& templatePath, const std:
 
 void BakePermutor::RandomiseScene()
 {
-    if (m_startWithThisView && m_iterationIdx == 0) { return; }
+    if (m_params.startWithThisView && m_iterationIdx == 0) { return; }
 
     Assert(m_stateIt != m_stateMap.GetStateData().end());
 
@@ -194,16 +195,18 @@ void BakePermutor::RandomiseScene()
     }
 }
 
-bool BakePermutor::Advance()
+bool BakePermutor::Advance(const bool lastBakeSucceeded)
 {
     // Can we advance? 
     if (m_isIdle ||
         m_stateIt == m_stateMap.GetStateData().end() ||
-        m_sampleCountIt == m_sampleCountSet.cend() ||
-        m_iterationIdx >= m_numIterations ||
-        !m_lightProbeCameraShelf || !m_wavefrontTracerShelf)
+        m_sampleCountIt == m_sampleCountList.cend() ||
+        m_iterationIdx >= m_params.numIterations ||
+        !m_lightProbeCameraShelf || 
+        !m_wavefrontTracerShelf ||
+        !m_perspectiveCameraShelf)
     {
-        if (m_disableLiveView && m_perspectiveCameraShelf)
+        if (m_params.disableLiveView)
         {
             m_perspectiveCameraShelf->GetParamsObject().camera.isActive = true;
         }
@@ -213,16 +216,19 @@ bool BakePermutor::Advance()
     // Don't increment on the first iteration as this was done at start-up
     if (m_permutationIdx >= 0)
     {
-        m_completedSamples += *m_sampleCountIt;
-        if (++m_sampleCountIt == m_sampleCountSet.cend())
+        // Samples set. If the last bake failed then abort the sequence and generate a new scene.
+        m_completedSamples += m_sampleCountIt->first;
+        if (++m_sampleCountIt == m_sampleCountList.cend() || !lastBakeSucceeded)
         {
             GenerateStratifiedSampleCountSet();
 
-            if (++m_kifsIterationIdx == m_kifsIterationRange[1])
+            // KIFS iteration set...
+            if (++m_kifsIterationIdx == m_params.kifsIterationRange[1] + 1)
             {
-                m_kifsIterationIdx = m_kifsIterationRange[0];
+                m_kifsIterationIdx = m_params.kifsIterationRange[0];                
 
-                if (++m_iterationIdx == m_numIterations)
+                // Random iteration 
+                if (++m_iterationIdx == m_params.numIterations)
                 {
                     m_iterationIdx = 0;
                     do
@@ -245,43 +251,93 @@ bool BakePermutor::Advance()
         }
     }
     ++m_permutationIdx;
-
-    // Set the sample count on the light probe camera
+    
+    // Get the handles to the camera objects
     auto& probeParams = m_lightProbeCameraShelf->GetParamsObject();
-    probeParams.camera.maxSamples = *m_sampleCountIt;
-    probeParams.camera.isActive = true;
+    auto& perspParams = m_perspectiveCameraShelf->GetParamsObject();
 
-    // Always randomise the probe shelf to generate a new seed
-    m_lightProbeCameraShelf->Randomise();
+    // Set the sample counts depending on the type of bake we're doing
+    if (m_sampleCountIt->second == kBakeTypeProbeGrid)
+    {
+        // Set the sample count on the light probe camera          
+        probeParams.camera.maxSamples = m_sampleCountIt->first;
+        probeParams.camera.isActive = true;
+
+        // Always randomise the probe shelf to generate a new seed
+        m_lightProbeCameraShelf->Randomise();
+
+        // Deactivate the perspective camera if necessary
+        perspParams.camera.isActive = m_params.disableLiveView;
+    }
+    else if (m_sampleCountIt->second == kBakeTypeRender)
+    {
+        perspParams.camera.maxSamples = m_sampleCountIt->first;
+        perspParams.camera.overrides.maxDepth = 3;
+        perspParams.camera.isActive = true;
+        
+        // Always deactivate the probe grid when baking
+        probeParams.camera.isActive = false;
+    }
+    else { Assert(false); }
+
+    // Set the iteration count on the KIFS object
+    auto& kifsParams = m_kifsShelf->GetParamsObject(); 
+    kifsParams.numIterations = m_kifsIterationIdx;
 
     // Set the shading mode to full illumination
     m_wavefrontTracerShelf->GetParamsObject().shadingMode = Cuda::kShadeFull;
 
     // Get some parameters that we'll need to generate the file paths
     m_bakeLightingMode == probeParams.lightingMode;
-    m_bakeSeed = probeParams.camera.seed;
+    m_bakeSeed = probeParams.camera.seed;   
 
-    // Override some parameters on the other shelves
-    if (m_perspectiveCameraShelf)
+    // Enqueue the bake
+    Json::Node bakeJson = m_commandQueue.AddChildObject("bake");
+    bakeJson.AddValue("action", "start");
+    if (m_sampleCountIt->second == kBakeTypeProbeGrid)
     {
-        // Deactivate the perspective camera
-        if (m_disableLiveView) { m_perspectiveCameraShelf->GetParamsObject().camera.isActive = false; }
+        bakeJson.AddValue("type", "probeGrid");
+        bakeJson.AddValue("exportToUSD", m_params.exportToUsd);
+        bakeJson.AddValue("minGridValidity", m_params.gridValidityRange.x);
+        bakeJson.AddValue("maxGridValidity", m_params.gridValidityRange.y);
+        bakeJson.AddArray("usdExportPaths", GenerateExportPaths(m_probeGridTemplateTokens, 2));
     }
+    else
+    {
+        bakeJson.AddValue("type", "render");
+        bakeJson.AddValue("pngExportPath", GenerateExportPaths(m_renderTemplateTokens, 1)[0]);
+    }         
 
-    Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx, m_numPermutations);
+    // Print some stats
+    Log::Write("Starting bake permutation %i of %i...\n", m_permutationIdx + 1, m_numPermutations);
+    Log::Indent indent;
+    Log::Write("Sample count: %i", m_sampleCountIt->first);
+    Log::Write("KIFS iteration: %i", m_kifsIterationIdx);
+    Log::Write("Random iteration: %i", m_iterationIdx);
+    Log::Write("State: %i of %i", m_stateIdx, m_stateMap.GetStateData().size());
     return true;
 }
 
-std::vector<std::string> BakePermutor::GenerateExportPaths() const
+ std::string BakePermutor::GeneratePNGExportPath(const std::string& renderTemplatePath, const std::string& jsonRootPath)
+ { 
+     ParseTemplatePath(renderTemplatePath, jsonRootPath, m_renderTemplateTokens);
+
+     return GenerateExportPaths(m_renderTemplateTokens, 1)[0]; 
+ }
+
+std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std::string>& templateTokens, const int numPaths) const
 {
     // Naming convention:
-    // SceneNameXXX.random10digits.6digitsSampleCount.usd    
+    // SceneNameXXX.random10digits.6digitsSampleCount.usd
 
-    std::vector<std::string> exportPaths(2);
-    for (int pathIdx = 0; pathIdx < 2; pathIdx++)
+    AssertMsg(!templateTokens.empty(), "Can't generate paths. Token list is empty.");
+    Assert(numPaths >= 1);
+
+    std::vector<std::string> exportPaths(numPaths);
+    for (int pathIdx = 0; pathIdx < numPaths; pathIdx++)
     {
         auto& path = exportPaths[pathIdx];
-        for (const auto& token : m_templateTokens)
+        for (const auto& token : templateTokens)
         {
             Assert(!token.empty());
             if (token[0] != '{')
@@ -302,8 +358,9 @@ std::vector<std::string> BakePermutor::GenerateExportPaths() const
                 std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
                 path += tfm::format("%010.i", rng(mt) % 10000000000);
             }
-            else if (token == "{$ITERATION}") { path += tfm::format("%i", m_iterationIdx); }
-            else if (token == "{$SAMPLE_COUNT}" && m_sampleCountIt != m_sampleCountSet.end()) { path += tfm::format("%i", *m_sampleCountIt); }
+            else if (token == "{$ITERATION}") { path += tfm::format("%06.i", m_iterationIdx); }
+            else if (token == "{$KIFS}") { path += tfm::format("%i", m_kifsIterationIdx); }
+            else if (token == "{$SAMPLE_COUNT}" && m_sampleCountIt != m_sampleCountList.end()) { path += tfm::format("%06.i", m_sampleCountIt->first); }
             else if (token == "{$PERMUTATION}") { path += tfm::format("%i", m_permutationIdx); }
             else if (token == "{$SEED}") { path += tfm::format("%.6i", m_bakeSeed % 1000000); }
             else if (token == "{$STATE}" && m_stateIt != m_stateMap.GetStateData().end()) 
@@ -334,7 +391,7 @@ float BakePermutor::GetElapsedTime() const
 
 float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
 {
-    const int currentSampleCount = (m_sampleCountIt == m_sampleCountSet.end()) ? 0 : *m_sampleCountIt;    
+    const int currentSampleCount = (m_sampleCountIt == m_sampleCountList.end()) ? 0 : m_sampleCountIt->first;
     const float progress = (m_completedSamples + bakeProgress * currentSampleCount) / float(m_totalSamples);
 
     return GetElapsedTime() * (1.0f - progress) / max(1e-6f, progress);

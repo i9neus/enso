@@ -185,6 +185,25 @@ namespace Json
         m_node->CopyFrom(*other.m_node, *m_allocator);
     }
 
+    std::string Node::Stringify(const bool pretty) const
+    {
+        if (!m_node) { return ""; }
+
+        rapidjson::StringBuffer buffer;
+        if (pretty)
+        {
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+            m_node->Accept(writer);
+        }
+        else
+        {
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            m_node->Accept(writer);
+        }
+
+        return buffer.GetString();
+    }
+
     void Document::Parse(const std::string& data)
     {
         AssertMsg(!data.empty(), "Bad data.");
@@ -231,24 +250,7 @@ namespace Json
     void Document::Serialise(const std::string& filePath)
     {
         WriteTextFile(filePath, Stringify(true));
-    }
-
-    std::string Document::Stringify(const bool pretty) const
-    {
-        rapidjson::StringBuffer buffer;
-        if (pretty)
-        {
-            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-            m_document.Accept(writer);
-        }
-        else
-        {
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-            m_document.Accept(writer);
-        }
-
-        return buffer.GetString();
-    }
+    }   
 
     bool Node::IsObject() const { CheckOk(); return m_node->IsObject(); }
 

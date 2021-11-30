@@ -13,10 +13,19 @@
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-enum RenderManagerBakeStatus : int { kRenderManagerBakeReady, kRenderManagerBakeRunning, kRenderManagerBakeHalt };
-enum RenderManagerPollLevel : int { kRenderManagerPollLightweight = 1, kRenderManagerPoleFull = 2 };
 enum RenderManagerRenderState : int { kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
-enum RenderManagerJobState : int { kRenderManagerJobIdle, kRenderManagerJobDispatched, kRenderManagerJobCompleted, kRenderManagerJobAbort };
+enum RenderManagerBakeType : int { kBakeTypeProbeGrid, kBakeTypeRender };
+
+enum RenderManagerJobState : int 
+{ 
+	kRenderManagerJobInvalidState =		0,
+	kRenderManagerJobIdle =				1, 
+	kRenderManagerJobDispatched =		2, 
+	kRenderManagerJobRunning =			4, 
+	kRenderManagerJobCompleted =		8, 
+	kRenderManagerJobAborting =			16,
+    kRenderManagerJobActive =			kRenderManagerJobDispatched | kRenderManagerJobRunning	
+};
 
 class RenderManager
 {
@@ -96,12 +105,21 @@ private:
 	};
 	
 	std::unordered_map<std::string, Job&>						m_jobMap;
-	Job															m_statsJob;
-	Job															m_bakeJob;
+	Job															m_statsJob;	
 	Job															m_exportViewportJob;
 
-	float														m_bakeProgress;
-	Cuda::LightProbeGridExportParams							m_probeGridExportParams;
+	struct 
+	{
+		Job															job;
+		int															type;
+		bool														succeeded;
+		float														progress;
+
+		Cuda::LightProbeGridExportParams							probeGridExportParams;
+		std::string													pngExportPath;
+	}
+	m_bake;
+	
 	float														m_meanFrameTime;		
 
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;

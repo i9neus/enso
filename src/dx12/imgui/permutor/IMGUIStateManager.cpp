@@ -17,35 +17,43 @@
 #include <random>
 #include <filesystem>
 
-RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager, const Json::Document& renderStateJson, Json::Document& commandJson) :
+void CopyStringToVector(const std::string& str, std::vector<char>& vec)
+{
+    vec.resize(math::max(2048ull, str.length()));
+    std::memset(vec.data(), '\0', sizeof(char) * vec.size());
+    std::memcpy(vec.data(), str.data(), sizeof(char) * str.length());
+}
+
+RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager, const Json::Document& renderStateJson, Json::Document& commandQueue) :
     m_imguiShelves(imguiShelves),
     m_renderManager(renderManager),
     m_stateListUI("Parameter states", "Add", "Overwrite", "Delete", ""),
     m_noisySampleRange(64, 2048),
     m_referenceSamples(100000),
+    m_thumbnailSamples(128),
     m_numBakeIterations(1),
     m_isBaking(false),
     m_isBatchRunning(false),
-    m_permutor(imguiShelves, m_stateMap),
+    m_permutor(imguiShelves, m_stateMap, commandQueue),
     m_stateMap(imguiShelves),
     m_exportToUSD(false),
-    m_disableLiveView(true),
+    m_disableLiveView(false),
     m_startWithThisView(false),
     m_shutdownOnComplete(false),
-    m_stateFlags(kStatePermuteAll),
+    m_jitterFlags(kStatePermuteAll),
     m_gridValidityRange(0.7f, 0.95f),
     m_kifsIterationRange(7, 9),
     m_numStrata(20),
     m_dirtiness(IMGUIDirtiness::kClean),
     m_gridFitness(0.0f),
     m_renderStateJson(renderStateJson),
-    m_commandQueue(commandJson)
+    m_commandQueue(commandQueue)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
-    
-    m_usdPathUIData.resize(2048);
-    std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
-    std::memcpy(m_usdPathUIData.data(), m_usdPathTemplate.data(), sizeof(char) * m_usdPathTemplate.length());
+    m_pngPathTemplate = "probeVolume.{$ITERATION}.png";
+
+    CopyStringToVector(m_usdPathTemplate, m_usdPathUIData);
+    CopyStringToVector(m_pngPathTemplate, m_pngPathUIData);   
 }
 
 RenderObjectStateManager::~RenderObjectStateManager()
@@ -58,10 +66,11 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
     m_stateJsonPath = node.GetRootDocument().GetOriginFilePath();
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
-
+    
+    // Set up some functors for the state list UI
     std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool
     {
-        if (m_stateMap.Insert(id, m_stateFlags, false))
+        if (m_stateMap.Insert(id, m_jitterFlags, false))
         {
             SerialiseJson();
             return true;
@@ -72,7 +81,7 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
 
     std::function<bool(const std::string&)> onOverwriteState = [this](const std::string& id) -> bool
     {
-        if (m_stateMap.Insert(id, m_stateFlags, true))
+        if (m_stateMap.Insert(id, m_jitterFlags, true))
         {
             SerialiseJson();
             return true;
@@ -98,13 +107,26 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
     /*std::function<void(const std::string&)> onSelectItemState = [this](const std::string& id) -> void
     {
         auto it = m_stateMap.GetStateData().find(id);
-        if (it != m_stateMap.GetStateData().end()) { m_stateFlags = it->second.flags; }
+        if (it != m_stateMap.GetStateData().end()) { m_jitterFlags = it->second.flags; }
     };
     m_stateListUI.SetOnSelect(onSelectItemState);*/
 
+    // Load the JSON state dictionary
     DeserialiseJson();
 
+    // Look for scene files populate the scene list
     ScanForSceneFiles();
+
+    // Look for the light probe shelf so we can find the DAG path for the camera stats
+    for (auto& shelf : m_imguiShelves)
+    {
+        std::shared_ptr<LightProbeCameraShelf> lightProbeCameraShelf = std::dynamic_pointer_cast<LightProbeCameraShelf>(shelf.second);
+        if(lightProbeCameraShelf)
+        {
+            m_lightProbeCameraDAG = lightProbeCameraShelf->GetDAGPath();
+            break;
+        }
+    }
 }
 
 void RenderObjectStateManager::Initialise(HWND hWnd)
@@ -175,14 +197,18 @@ void RenderObjectStateManager::DeserialiseJson()
     {
         permNode.GetVector("noisySampleRange", m_noisySampleRange, jsonWarningLevel);
         permNode.GetValue("referenceSamples", m_referenceSamples, jsonWarningLevel);
+        permNode.GetValue("thumbnailSamples", m_thumbnailSamples, jsonWarningLevel);
         permNode.GetValue("strata", m_numStrata, jsonWarningLevel);
         permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
         permNode.GetVector("gridValidityRange", m_gridValidityRange, jsonWarningLevel);
         permNode.GetVector("kifsIterationRange", m_kifsIterationRange, jsonWarningLevel);
         if (permNode.GetValue("usdPathTemplate", m_usdPathTemplate, jsonWarningLevel))
         {
-            std::memset(m_usdPathUIData.data(), '\0', sizeof(char) * m_usdPathUIData.size());
-            std::memcpy(m_usdPathUIData.data(), m_usdPathTemplate.data(), sizeof(char) * m_usdPathTemplate.length());
+            CopyStringToVector(m_usdPathTemplate, m_usdPathUIData);
+        }
+        if (permNode.GetValue("pngPathTemplate", m_pngPathTemplate, jsonWarningLevel))
+        {
+            CopyStringToVector(m_pngPathTemplate, m_pngPathUIData);
         }
     }
 }
@@ -200,11 +226,13 @@ void RenderObjectStateManager::SerialiseJson() const
     {        
         permJson.AddVector("noisySampleRange", m_noisySampleRange);
         permJson.AddValue("referenceSamples", m_referenceSamples);
+        permJson.AddValue("thumbnailSamples", m_thumbnailSamples);
         permJson.AddValue("strata", m_numStrata);
         permJson.AddVector("gridValidityRange", m_gridValidityRange);
         permJson.AddVector("kifsIterationRange", m_kifsIterationRange);
         permJson.AddValue("iterations", m_numBakeIterations);
         permJson.AddValue("usdPathTemplate", std::string(m_usdPathUIData.data()));
+        permJson.AddValue("pngPathTemplate", std::string(m_pngPathUIData.data()));
     }
 
     rootDocument.Serialise(m_stateJsonPath);
@@ -253,7 +281,7 @@ void RenderObjectStateManager::ConstructStateManagerUI()
         const std::string id = m_stateListUI.GetCurrentlySelectedText();
         
         auto it = m_stateMap.GetStateData().find(id);
-        if (it != m_stateMap.GetStateData().end()) { m_stateFlags = it->second.flags; }
+        if (it != m_stateMap.GetStateData().end()) { m_jitterFlags = it->second.flags; }
 
         m_stateMap.Restore(id);
     }
@@ -265,9 +293,9 @@ void RenderObjectStateManager::ConstructStateManagerUI()
 
     auto FlaggedCheckbox = [this](const std::string& id, const uint flag)
     {
-        bool checked = m_stateFlags & flag;
+        bool checked = m_jitterFlags & flag;
         ImGui::Checkbox(id.c_str(), &checked);
-        m_stateFlags = (m_stateFlags & ~flag) | (checked ? flag : 0);
+        m_jitterFlags = (m_jitterFlags & ~flag) | (checked ? flag : 0);
     };
 
     FlaggedCheckbox("Enabled", kStateEnabled);
@@ -288,39 +316,76 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     {
         for (auto& shelf : m_imguiShelves)
         {
-            shelf.second->Jitter(m_stateFlags, Cuda::kJitterRandomise);
+            shelf.second->Jitter(m_jitterFlags, Cuda::kJitterRandomise);
         }
     } 
     SL;    
     // Reset all the jittered values to their midpoints
     if (ImGui::Button("Reset", buttonSize))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_stateFlags, Cuda::kJitterReset); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_jitterFlags, Cuda::kJitterReset); }
     }
     SL;
     // Bake the evaluated jittered values as the base parameters
     if (ImGui::Button("Flatten", buttonSize))
     {
-        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_stateFlags, Cuda::kJitterFlatten); }
+        for (auto& shelf : m_imguiShelves) { shelf.second->Jitter(m_jitterFlags, Cuda::kJitterFlatten); }
     }
 
     ImGui::PopID();
 }
 
 void RenderObjectStateManager::ParseRenderStateJson()
-{
-    Log::Debug(m_renderStateJson.Stringify(true));
-    
+{    
+    // Get the running state of the renderer
     m_renderStateJson.GetValue("renderManager/rendererStatus", m_renderState, Json::kRequiredAssert);
     
-    const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);
+    // Bake job stats...
+    const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);    
     m_isBaking = bool(bakeJson);
-    m_bakeProgress = 0.0f;
-
     if(m_isBaking)
     {
+        /*int state;
+        bakeJson.GetValue("state", state, Json::kRequiredAssert | Json::kLiteralID);
+        Log::Debug("Bake: %i", state);*/
+
         m_bakeProgress = 0.0f;
-        bakeJson.GetValue("progress", m_bakeProgress, Json::kSilent);
+        m_lastBakeSucceeded = true;
+        bakeJson.GetValue("progress", m_bakeProgress, Json::kRequiredAssert);
+        bakeJson.GetValue("succeeded", m_lastBakeSucceeded, Json::kSilent);
+    }   
+
+    // Render object stats...
+    const Json::Node& statsJson = m_renderStateJson.GetChildObject("jobs/getStats/renderObjects", Json::kSilent);
+    if (statsJson)
+    {
+        if (!m_lightProbeCameraDAG.empty())
+        {
+            const Json::Node& cameraJson = statsJson.GetChildObject(m_lightProbeCameraDAG, Json::kSilent | Json::kLiteralID);
+            if (cameraJson)
+            {
+                const Json::Node& gridListJson = cameraJson.GetChildObject("grids", Json::kRequiredAssert);                
+                
+                m_bakeGridValidity = -1.0f;
+                for (const auto& gridJson : gridListJson)
+                {
+                    if (!gridJson.IsObject()) { continue; }
+                    
+                    float meanValidity, minSamples;
+                    gridJson.GetValue("meanProbeValidity", meanValidity, Json::kRequiredAssert);
+                    gridJson.GetValue("minSamples", minSamples, Json::kRequiredAssert);
+                    
+                    if (minSamples > 0.0f)
+                    {
+                        m_bakeGridSamples = minSamples;
+                        if (meanValidity >= 0.0f)
+                        {
+                            m_bakeGridValidity = (m_bakeGridValidity < 0.0f) ? meanValidity : math::min(meanValidity, m_bakeGridValidity);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -340,8 +405,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
 
         ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
-
         ImGui::DragInt("Reference samples", &m_referenceSamples, 1.0f, 1, 1e7);
+        ImGui::DragInt("Thumbnail samples", &m_thumbnailSamples, 1.0f, 1, 1024);
 
         ImGui::TreePop();
     }
@@ -366,18 +431,20 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         m_kifsIterationRange = Cuda::ivec2(7, 9);
     }
     
+    // The number of iterations per permutation
     ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, 100000);
 
-    // New element input control
+    // The base paths that all export paths will be derived from
     ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
+    ImGui::InputText("PNG export path", m_pngPathUIData.data(), m_pngPathUIData.size());
 
-     // Reset all the jittered values to their midpoints
     ImVec2 size = ImGui::GetItemRectSize();
     size.y *= 2;
     const std::string actionText = m_isBatchRunning ? "Abort" : "Bake";
     if (ImGui::Button(actionText.c_str(), size))
     {
-        EnqueueBake();
+        // Start or abort the batch bake
+        EnqueueBatch();
     }
 
     ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
@@ -394,18 +461,24 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::Text("%s elapsed", m_isBatchRunning ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
     ImGui::Text("%s remaining", m_isBatchRunning ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_bakeProgress)).c_str() : "00:00");
 
+    bool gridOk = m_bakeGridValidity >= m_gridValidityRange[0] && m_bakeGridValidity <= m_gridValidityRange[1];
+    ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(gridOk ? 0.33f : 0.0f, 0.6f, 0.6f));
+    ImGui::Text("Bake grid validity: %.2f", m_bakeGridValidity);
+    ImGui::PopStyleColor(1);
+
+    ImGui::Text("Bake grid samples: %.2f", m_bakeGridSamples);
+
     ImGui::PopID();
 }
 
 void RenderObjectStateManager::EnqueueExportViewport()
 {
     Json::Node commandNode = m_commandQueue.AddChildObject("exportViewport");
-    std::string filePath(m_usdPathUIData.data());
-    ReplaceFilename(filePath, "blah.png");
-    commandNode.AddValue("path", filePath);
+    Log::Error(std::string(m_pngPathUIData.data()));
+    commandNode.AddValue("path", m_permutor.GeneratePNGExportPath(std::string(m_pngPathUIData.data()), m_stateJsonPath));
 }
 
-void RenderObjectStateManager::EnqueueBake()
+void RenderObjectStateManager::EnqueueBatch()
 {
     // If a batch bake is already in progress, dispatch a command to stop it
     if (m_isBaking || m_isBatchRunning)
@@ -416,33 +489,49 @@ void RenderObjectStateManager::EnqueueBake()
         return;
     }
 
-    // Initialise the permutor and prepare it with the constraints
-    if (m_permutor.Initialise(std::string(m_usdPathUIData.data()), m_stateJsonPath, m_disableLiveView, true))
+    // Initialise the permutor parameter structure
+    BakePermutor::Params params;
+    params.probeGridTemplatePath = std::string(m_usdPathUIData.data());
+    params.renderTemplatePath = std::string(m_pngPathUIData.data());
+    params.jsonRootPath = m_stateJsonPath;
+
+    params.disableLiveView = m_disableLiveView;
+    params.startWithThisView = true;
+    params.exportToUsd = m_exportToUSD;
+    params.exportToPng = true;
+
+    params.gridValidityRange = m_gridValidityRange;
+    params.kifsIterationRange = m_kifsIterationRange;
+    params.jitterFlags = m_jitterFlags;
+    params.numIterations = m_numBakeIterations;
+    params.noisyRange = m_noisySampleRange;
+    params.referenceCount = m_referenceSamples;
+    params.thumbnailCount = m_thumbnailSamples;
+    params.numStrata = m_numStrata;
+    params.kifsIterationRange = m_kifsIterationRange;
+    
+    if(m_permutor.Prepare(params))
     {
-        if (m_permutor.Prepare(m_numBakeIterations, m_noisySampleRange, m_referenceSamples, m_numStrata, m_kifsIterationRange))
-        {
-            m_isBatchRunning = true;
-        }
+        m_isBatchRunning = true;
     }
 }
 
 void RenderObjectStateManager::HandleBakeIteration()
 {
-    // Start a new iteration only if a bake has been requested and the renderer is ready
-    if (!m_isBatchRunning || m_isBaking) { return; }
+    constexpr int kMinSamplesForEstimate = 8;
     
+    if (!m_isBatchRunning || m_isBaking) { return; }  // Batch isn't running or a bake is in progress, so nothing to do
+
     // Advance to the next permutation. If this fails, we're done. 
-    if (m_permutor.Advance())
-    {       
-        Json::Node bakeJson = m_commandQueue.AddChildObject("bake");
-        bakeJson.AddValue("action", "start");
-        bakeJson.AddValue("exportToUSD", m_exportToUSD);
-        bakeJson.AddValue("minGridValidity", m_gridValidityRange.x);
-        bakeJson.AddValue("maxGridValidity", m_gridValidityRange.y);
-        bakeJson.AddArray("usdExportPaths", m_permutor.GenerateExportPaths());
+    if (m_permutor.Advance(m_lastBakeSucceeded))
+    {
+        // Reset the statistics
+        m_bakeGridValidity = -1.0f;
+        m_bakeGridSamples = 0.0f;
     }
     else
     {
+        m_isBatchRunning = false;
         if (m_shutdownOnComplete)
         {
             SendMessage(m_hWnd, WM_CLOSE, 0, 0);

@@ -205,7 +205,7 @@ namespace Cuda
         {
             std::random_device rd;
             std::mt19937 mt(rd());
-            std::uniform_int_distribution<> rng(0, std::numeric_limits<uint>::max());
+            std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
 
             t = rng(mt);
             Evaluate();

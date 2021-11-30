@@ -113,7 +113,9 @@ namespace Json
         void DeepCopy(const Node& other);
         
         inline bool HasDAGPath() const { return !m_dagPath.empty(); }
-        inline const std::string& GetDAGPath() const { return m_dagPath; }
+        inline const std::string& GetDAGPath() const { return m_dagPath; }        
+
+        std::string Stringify(const bool pretty) const;
 
         Iterator begin() { CheckOk(); return Iterator(m_node->MemberBegin(), *this); }
         Iterator end() { CheckOk(); return Iterator(m_node->MemberEnd(), *this); }
@@ -304,7 +306,6 @@ namespace Json
         void Parse(const std::string& data);
         void Deserialise(const std::string& filePath);
         void Serialise(const std::string& filePath);
-        std::string Stringify(const bool pretty) const;
 
         const std::string& GetOriginFilePath() const { return m_originFilePath; }
 

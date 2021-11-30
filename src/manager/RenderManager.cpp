@@ -19,11 +19,10 @@
 RenderManager::RenderManager() : 
 	m_threadSignal(kRenderManagerIdle),
 	m_dirtiness(kDirtinessStateClean),
-	m_frameIdx(0),
-	m_bakeProgress(0.0f)
+	m_frameIdx(0)
 {
 	// Register the list of jobs
-	RegisterJob(m_bakeJob, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
+	RegisterJob(m_bake.job, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
 	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnExportViewportDispatch, &RenderManager::OnNullPoll);
 	RegisterJob(m_statsJob, "getStats", &RenderManager::OnGatherStatsDispatch, &RenderManager::OnGatherStatsPoll);
 }
@@ -339,55 +338,55 @@ bool RenderManager::OnBakeDispatch(Job& job)
 	// Aborting the action...
 	if (action == "abort")
 	{
-		job.state = kRenderManagerJobAbort;
-
-		if (m_lightProbeCamera)
-		{
-			m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kDisarmed);
-		}
-
+		job.state = kRenderManagerJobAborting;
 		return true;
 	}
 	
 	// Sanity checks
 	AssertMsg(action == "start", "Valid bake actions are 'start' and 'abort'");
-	AssertMsg(job.state == kRenderManagerJobIdle, "A bake has already been started. Wait for it to complete or abort it before starting a new one.");
-
-	if (!m_lightProbeCamera)
-	{
-		Log::Error("ERROR: Can't start a bake because there are no light probe cameras in this scene.\n");
-		return false;
-	}
+	AssertMsgFmt(job.state == kRenderManagerJobIdle, "The bake job is not idle (code %i). Wait for it to complete or abort it before starting a new one.", job.state.load());
 
 	// Read in the parameters from the JSON dictionary
 	try
 	{
 		std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
-		job.json.GetValue("exportToUSD", m_probeGridExportParams.exportToUSD, Json::kRequiredWarn);
-		job.json.GetValue("maxGridValidity", m_probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
-		job.json.GetValue("maxGridValidity", m_probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
-		job.json.GetArrayValues("usdExportPaths", m_probeGridExportParams.usdExportPaths, Json::kRequiredWarn);
+		job.json.GetEnumeratedParameter("type", std::vector<std::string>({ "probeGrid", "render" }), m_bake.type, Json::kRequiredAssert);
+		if (m_bake.type == kBakeTypeProbeGrid)
+		{		
+			job.json.GetValue("exportToUSD", m_bake.probeGridExportParams.exportToUSD, Json::kRequiredWarn);
+			job.json.GetValue("minGridValidity", m_bake.probeGridExportParams.minGridValidity, Json::kRequiredWarn);
+			job.json.GetValue("maxGridValidity", m_bake.probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
+			job.json.GetArrayValues("usdExportPaths", m_bake.probeGridExportParams.usdExportPaths, Json::kRequiredWarn);
 
-		Assert(!m_probeGridExportParams.usdExportPaths.empty());
+			Assert(!m_bake.probeGridExportParams.usdExportPaths.empty());
+		}
+		else if (m_bake.type == kBakeTypeRender)
+		{			
+			job.json.GetValue("pngExportPath", m_bake.pngExportPath, Json::kRequiredWarn);
+		}
 	}
 	catch (const std::runtime_error& err)
 	{
 		Log::Error("Error: invalid command parameters: %s", err.what());
 		return false;
 	}
-
-	// Arm the exporter, dirty the scene, and mark the command has having started
-	m_lightProbeCamera->SetExporterState(Cuda::Host::LightProbeCamera::kArmed);
+	
+	// Dirty the scene, and mark the command has having started
 	m_dirtiness = kDirtinessStateHardReset;
 	job.state = kRenderManagerJobDispatched;
+	m_bake.succeeded = true;
 
 	return true;
 }
 
 bool RenderManager::OnBakePoll(Json::Node& outJson, const Job& job)
 {
-	outJson.AddValue("progress", m_bakeProgress);
+	outJson.AddValue("progress", m_bake.progress);
+	if (m_bake.job.state == kRenderManagerJobCompleted)
+	{
+		outJson.AddValue("succeeded", m_bake.succeeded);
+	}
 	return true;
 }
 
@@ -494,6 +493,8 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 	
 	Assert(rootJson.NumMembers() != 0);
 
+	//Log::Debug(rootJson.Stringify(true));
+
 	if (rootJson.GetChildObject("patches", Json::kSilent | Json::kLiteralID))
 	{
 		// Overwrite the command list with the new data
@@ -526,6 +527,8 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 					// Call the dispatch functor
 					Assert(job.onDispatch);
 					job.onDispatch(job);
+
+					//Log::System("Dispatched new job: %s", nodeIt.Name());
 				}
 				catch (const std::runtime_error& err)
 				{
@@ -543,6 +546,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 void RenderManager::Prepare()
 {
 	m_liveCamera = nullptr;
+	m_lightProbeCamera = nullptr;
 
 	// Get a list of cameras that are marked as active. 
 	m_activeCameras = m_renderObjects->FindAllOfType<Cuda::Host::Camera>([this](const Cuda::AssetHandle<Cuda::Host::Camera>& object) -> bool
@@ -565,7 +569,7 @@ void RenderManager::Prepare()
 	if (m_activeCameras.empty()) { Log::Error("WARNING: No camera objects were instantiated and enabled.\n"); }
 	else if (!m_liveCamera) { Log::Warning("WARNING: There are no live cameras in this scene. The viewport will not update.\n"); }
 
-	//if (!m_lightProbeCamera) { Log::Error("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
+	if (!m_lightProbeCamera) { Log::Warning("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
 
 void RenderManager::StartRenderer()
@@ -616,7 +620,7 @@ void RenderManager::Run()
 			Timer timer;
 
 			// Has the scene graph been dirtied?
-			if (!m_activeCameras.empty() && (m_dirtiness == kDirtinessStateHardReset || (m_dirtiness == kDirtinessStateSoftReset && m_frameIdx >= 2)))
+			if (m_dirtiness == kDirtinessStateHardReset || (m_dirtiness == kDirtinessStateSoftReset && m_frameIdx >= 2))
 			{
 				PatchSceneObjects();
 
@@ -624,7 +628,7 @@ void RenderManager::Run()
 				ClearRenderStates();
 			}
 
-			Assert(!(m_bakeJob.state == kRenderManagerJobDispatched && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
+			Assert(!(m_bake.job.state == kRenderManagerJobDispatched && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
 
 			// Render a pass through each camera to its render state
 			for (auto& camera : m_activeCameras)
@@ -758,30 +762,84 @@ void RenderManager::OnBakePostFrame()
 
 		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, exportPath, 2.2f);
 
-		job.state == kRenderManagerJobIdle;
+		job.state = kRenderManagerJobIdle;
 	}
 
-	// Are we baking? 
-	if (m_bakeJob.state == kRenderManagerJobAbort)
+	// Are we aborting the bake job?
+	if (m_bake.job.state == kRenderManagerJobAborting)
 	{
-		m_bakeJob.state = kRenderManagerJobIdle;
+		m_bake.job.state = kRenderManagerJobIdle;
+		return;
 	}
-	else if (m_bakeJob.state == kRenderManagerJobDispatched && m_dirtiness == kDirtinessStateClean)
-	{
-		if (m_lightProbeCamera->GetExporterState() == Cuda::Host::LightProbeCamera::kArmed)
+
+	// Not baking or the scene graph is dirty? We're done.
+	if (!(m_bake.job.state & kRenderManagerJobActive) || m_dirtiness != kDirtinessStateClean) { return; }
+
+	// If the job has just been dispatched, do some pre-flight checks
+	if (m_bake.job.state & kRenderManagerJobDispatched)
+	{		
+		if (m_bake.type == kBakeTypeProbeGrid)
 		{
-			m_bakeProgress = m_lightProbeCamera->GetBakeProgress();
-			if (m_bakeProgress == 1.0f)
+			if (!m_lightProbeCamera)
 			{
-				m_lightProbeCamera->ExportProbeGrid(m_probeGridExportParams);
-				m_bakeJob.state = kRenderManagerJobCompleted;
-				Log::Debug("Export!");
+				Log::Error("ERROR: Can't start a bake because there are no light probe cameras in this scene.\n");
+				m_bake.job.state = kRenderManagerJobIdle;
+				return;
 			}
 		}
-		else
+		else if (m_bake.type == kBakeTypeRender && !m_liveCamera)
 		{
-			Log::Warning("Internal warning: probe grid exporter is not armed.\n");
-			m_bakeJob.state = kRenderManagerJobIdle;
+			Log::Error("ERROR: Can't start a render bake because there are no live cameras in this scene.\n");
+			m_bake.job.state = kRenderManagerJobIdle;
+			return;
+		}
+		
+		m_bake.job.state = kRenderManagerJobRunning;
+	}
+	
+	// Baking a probe grid...
+	if (m_bake.type == kBakeTypeProbeGrid)
+	{		
+		constexpr float kMinSamplesForEstimate = 8.0f;
+		const auto& stats = m_lightProbeCamera->PollBakeProgress();
+		m_bake.progress = stats.bakeProgress;
+
+		// If the mean validity is outside the pre-set bounds, complete the job without 
+		if (stats.minMaxSamples[1] > kMinSamplesForEstimate && stats.meanGridValidity >= 0.0f &&
+			(stats.meanGridValidity < m_bake.probeGridExportParams.minGridValidity ||
+				stats.meanGridValidity > m_bake.probeGridExportParams.maxGridValidity))
+		{
+			Log::Error("Warning: bake was aborted because the grid validity %f was outside the specified bounds [%f, %f]", 
+				stats.meanGridValidity, m_bake.probeGridExportParams.minGridValidity, m_bake.probeGridExportParams.maxGridValidity);
+
+			m_bake.succeeded = false;
+			m_bake.job.state = kRenderManagerJobCompleted;
+			return;
+		}
+
+		if (m_bake.progress >= 1.0f)
+		{
+			m_lightProbeCamera->ExportProbeGrid(m_bake.probeGridExportParams);
+			m_bake.job.state = kRenderManagerJobCompleted;
+		}		
+	}
+
+	// Baking a regular render...
+	else if (m_bake.type == kBakeTypeRender)
+	{
+		// Estimate the render progress. This isn't terribly accurate, but it's good enough for now.
+		const auto& liveCam = m_liveCamera->GetParams();
+		m_bake.progress = float(m_frameIdx) / float(liveCam.maxSamples * liveCam.overrides.maxDepth);
+		if (m_bake.progress > 1.0f)
+		{
+			std::vector<Cuda::vec4> rawData;
+			Cuda::ivec2 dataDimensions;
+			m_liveCamera->GetRawAccumulationData(rawData, dataDimensions);
+
+			ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, m_bake.pngExportPath, 2.2f);
+
+			m_bake.succeeded = true;
+			m_bake.job.state = kRenderManagerJobCompleted;
 		}
 	}
 }

@@ -28,7 +28,7 @@ private:
     void ConstructStateManagerUI();
     void ConstructBatchProcessorUI();
     void EnqueueExportViewport();
-    void EnqueueBake();
+    void EnqueueBatch();
     void ScanForSceneFiles();
     void ParseRenderStateJson();
 
@@ -48,16 +48,22 @@ private:
     int                     m_renderState;
     bool                    m_isBaking;
     bool                    m_isBatchRunning;
+    float                   m_bakeGridValidity;
+    float                   m_bakeGridSamples;
+    bool                    m_lastBakeSucceeded;
 
     std::vector<int>        m_sampleCounts;
     int                     m_sampleCountIdx;
     int                     m_numBakeIterations;
     int                     m_bakePermutationIdx;
     float                   m_bakeProgress;
-    std::string             m_usdPathTemplate;
 
+    std::string             m_usdPathTemplate;
+    std::string             m_pngPathTemplate;
     std::vector<char>       m_usdPathUIData;
-    uint                    m_stateFlags;
+    std::vector<char>       m_pngPathUIData;
+
+    uint                    m_jitterFlags;
     std::string             m_stateJsonPath;
     bool                    m_exportToUSD;
     bool                    m_disableLiveView;
@@ -65,6 +71,7 @@ private:
     bool                    m_shutdownOnComplete;
     Cuda::ivec2             m_noisySampleRange;
     int                     m_referenceSamples;
+    int                     m_thumbnailSamples;
     int                     m_numStrata;
     Cuda::vec2              m_gridValidityRange;
     Cuda::ivec2             m_kifsIterationRange;
@@ -75,4 +82,6 @@ private:
 
     HWND                    m_hWnd;
     IMGUIDirtiness          m_dirtiness;
+
+    std::string             m_lightProbeCameraDAG;
 };

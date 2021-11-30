@@ -123,8 +123,16 @@ namespace Cuda
 		class LightProbeCamera : public Host::Camera
 		{
 		public:
-			enum ExporterState : int { kDisarmed, kArmed, kFired };
+			struct AggregateStatistics
+			{
+				float			meanGridValidity = -1.0f;
+				float			bakeProgress = -1.0f;
+				int				numActiveGrids = 0;
+				vec2			minMaxSamples;
+				bool			isConverged = false;
+			};
 
+		public:
 			__host__ LightProbeCamera(const ::Json::Node& parentNode, const std::string& id);
 			__host__ virtual ~LightProbeCamera() { OnDestroyAsset(); }
 
@@ -151,18 +159,17 @@ namespace Cuda
 			__host__ const LightProbeCameraParams& GetLightProbeCameraParams() const { return m_params; }
 			__host__ AssetHandle<Host::LightProbeGrid>  GetLightProbeGrid(const int idx) { return m_hostLightProbeGrids[idx]; }
 
-			__host__ float								GetBakeProgress();
+			__host__ const AggregateStatistics&			PollBakeProgress();
 			__host__ bool								ExportProbeGrid(const LightProbeGridExportParams& params);
-			__host__ void								SetExporterState(const int state) { m_exporterState = state; }
-			__host__ int								GetExporterState() const { return m_exporterState; }
 
 		private:
-			__host__ void								GetProbeGridAggregateStatistics();
+			__host__ void								UpdateProbeGridAggregateStatistics();
 			__host__ void								BuildLightProbeGrids();
 
 			Device::LightProbeCamera*					cu_deviceData;
 			Device::LightProbeCamera::Objects			m_deviceObjects;
 			LightProbeCameraParams						m_params;
+			AggregateStatistics							m_aggregateStats;
 
 			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
@@ -173,10 +180,6 @@ namespace Cuda
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
-			float										m_bakeProgress;
-			bool										m_isConverged;
-
-			std::atomic<int>							m_exporterState;
 		};
 	}
 }

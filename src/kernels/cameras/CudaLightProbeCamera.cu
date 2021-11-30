@@ -318,9 +318,7 @@ namespace Cuda
         Host::Camera(node, id, kRayBufferSize),
         m_block(16 * 16, 1, 1),
         m_seedGrid(1, 1, 1),
-        m_reduceGrid(1, 1, 1),
-        m_exporterState(kDisarmed),
-        m_bakeProgress(0.0f)        
+        m_reduceGrid(1, 1, 1)
     {        
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
         m_gridIDs[0] = "grid_noisy_direct";
@@ -475,8 +473,7 @@ namespace Cuda
             }
         }
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
-        m_bakeProgress = 0.0f;
-        m_isConverged = false;
+        m_aggregateStats = AggregateStatistics();
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
@@ -515,34 +512,47 @@ namespace Cuda
         camera->ReduceAccumulationBuffer(cu_accumBuffer, cu_probeGrid, reduceBatchSize, batchRange);
     }
 
-    __host__ void Host::LightProbeCamera::GetProbeGridAggregateStatistics()
+    __host__ void Host::LightProbeCamera::UpdateProbeGridAggregateStatistics()
     {
-        m_isConverged = true;
-        m_bakeProgress = 0.0f;
+        auto& as = m_aggregateStats;
+        as.isConverged = true;
+        as.bakeProgress = 0.0f;
+        as.meanGridValidity = 0.0f;
+        as.minMaxSamples = vec2(std::numeric_limits<float>::max(), 0.0f);
+        as.numActiveGrids = 0;
 
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
             auto& grid = m_hostLightProbeGrids[gridIdx];
             if (!grid) { continue; }
 
-            const auto& stats = grid->UpdateAggregateStatistics(m_params.grid.maxSamplesPerProbe);
-                
-            if (m_params.camera.maxSamples > 0)
+            const auto& gs = grid->UpdateAggregateStatistics(m_params.grid.maxSamplesPerProbe);
+
+            // Only use the direct/indirect grids to measure statistics
+            if (gridIdx < 2 && m_params.camera.maxSamples > 0)
             {
-                const float progress = clamp(std::ceil(stats.minMaxSamples.x) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
-                if (progress > 0 && (progress < m_bakeProgress || m_bakeProgress == 0.0f))
+                as.numActiveGrids++;
+
+                const float progress = clamp(std::ceil(gs.minMaxSamples.x) / float(m_params.grid.maxSamplesPerProbe), 0.0f, 1.0f);
+                if (progress > 0 && (progress < as.bakeProgress || as.bakeProgress == 0.0f))
                 {
-                    m_bakeProgress = progress;
+                    as.bakeProgress = progress;
                 }
+
+                as.minMaxSamples[0] = min(as.minMaxSamples[0], gs.minMaxSamples[0]);
+                as.minMaxSamples[1] = max(as.minMaxSamples[1], gs.minMaxSamples[1]);
+                as.meanGridValidity += gs.meanValidity;
             }
 
-            if (!stats.isConverged) { m_isConverged = false; }
+            if (!gs.isConverged) { as.isConverged = false; }
         }
+
+        as.meanGridValidity = (as.numActiveGrids == 0) ? -1.0f : (as.meanGridValidity / float(as.numActiveGrids));
 
         //Log::Write("%f", m_bakeProgress);
     }
 
-    __host__ float Host::LightProbeCamera::GetBakeProgress()
+    __host__ const Host::LightProbeCamera::AggregateStatistics& Host::LightProbeCamera::PollBakeProgress()
     {
         // FIXME: This is a horrible hack to prevent having to manually scan the accumulation buffer every frame.
         /*if (m_frameIdx < m_params.maxSamplesPerProbe)
@@ -552,19 +562,17 @@ namespace Cuda
 
         if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
-            GetProbeGridAggregateStatistics();
+                UpdateProbeGridAggregateStatistics();
         }
 
-        return m_bakeProgress;
+        return m_aggregateStats;
     }
 
     __host__ bool Host::LightProbeCamera::ExportProbeGrid(const LightProbeGridExportParams& params)
     {
-        if (m_exporterState != kArmed) { return false; }
-
         BuildLightProbeGrids();
 
-
+        UpdateProbeGridAggregateStatistics();
 
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
@@ -574,6 +582,16 @@ namespace Cuda
             // Only write grids that have valid paths associated with them
             if (gridIdx >= params.usdExportPaths.size()) { continue; }
 
+            const auto& stats = m_hostLightProbeGrids[gridIdx]->GetAggregateStatistics();
+
+            // If the validity is outside the valid range, all grids will be similarly invalid so bail immediatel
+            if (stats.meanValidity < params.minGridValidity || stats.meanValidity > params.maxGridValidity)
+            {
+                Log::Warning("Warning: Cannot not export probe grid. Mean validity %f is outside valid range [%f, %f]", stats.meanValidity, params.minGridValidity, params.maxGridValidity);
+                break;
+            }
+
+            // Only export to USD if explicitly flagged to do so
             if (params.exportToUSD)
             {
                 Log::Debug("Exporting to '%s'...\n", params.usdExportPaths[gridIdx]);
@@ -593,7 +611,6 @@ namespace Cuda
             }
         }
 
-        m_exporterState = kFired;
         return true;
     }
 
@@ -640,14 +657,14 @@ namespace Cuda
         {
             BuildLightProbeGrids();
 
-            GetProbeGridAggregateStatistics();
+            UpdateProbeGridAggregateStatistics();
         }
     }
 
     __host__ bool Host::LightProbeCamera::EmitStatistics(Json::Node& rootNode) const
     {
         rootNode.AddValue("isActive", m_params.camera.isActive);
-        rootNode.AddValue("bakeProgress", m_bakeProgress);
+        rootNode.AddValue("bakeProgress", m_aggregateStats.bakeProgress);
 
         Json::Node gridSetNode = rootNode.AddChildObject("grids");
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)

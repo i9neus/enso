@@ -134,15 +134,18 @@ void IMGUIContainer::ConstructRenderObjectShelves()
         // If the stats gathering task has finished, it'll be accompanied by data for each render object that emits it
         if (statsState == kRenderManagerJobCompleted)
         {
-            const Json::Node objectsJson = statsJson.GetChildObject("renderObjects", Json::kRequiredAssert);
-            for (const auto& shelf : m_shelves)
-            {                
-                // Look to see if there are statistics associated with this shelf
-                const Json::Node objectNode = objectsJson.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);
-                if (objectNode)
+            const Json::Node objectsJson = statsJson.GetChildObject("renderObjects", Json::kSilent);
+            if (objectsJson)
+            {
+                for (const auto& shelf : m_shelves)
                 {
-                    Assert(shelf.second);
-                    shelf.second->OnUpdateRenderObjectStatistics(objectNode);
+                    // Look to see if there are statistics associated with this shelf
+                    const Json::Node objectNode = objectsJson.GetChildObject(shelf.first, Json::kSilent | Json::kLiteralID);
+                    if (objectNode)
+                    {
+                        Assert(shelf.second);
+                        shelf.second->OnUpdateRenderObjectStatistics(objectNode);
+                    }
                 }
             }
         }
@@ -181,6 +184,8 @@ void IMGUIContainer::PollCudaRenderState()
     managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
     managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
     managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
+
+    //Log::Debug(m_renderStateJson.Stringify(true));
 }
 
 void IMGUIContainer::Render()
@@ -188,7 +193,7 @@ void IMGUIContainer::Render()
     // Poll the CUDA renderer to get the latest stats and data
     PollCudaRenderState();
     
-    if (m_renderState == kRenderManagerBakeRunning && m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
+    if (m_renderState == kRenderManagerRun && m_stateManager.GetDirtiness() == IMGUIDirtiness::kSceneReload)
     {
         Rebuild();
     }
@@ -201,7 +206,7 @@ void IMGUIContainer::Render()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
-    if (m_renderState == kRenderManagerBakeRunning)
+    if (m_renderState == kRenderManagerRun)
     {
         // Construct the state manager UI
         m_stateManager.ConstructUI();
