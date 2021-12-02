@@ -107,6 +107,7 @@ namespace Cuda
 			__host__ inline void SignalUnsetRead(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kReadLocked, AccessSignal::kUnlocked); }
 			__host__ inline void SignalSetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kUnlocked, AccessSignal::kWriteLocked);	}
 			__host__ inline void SignalUnsetWrite(cudaStream_t hostStream = nullptr) { SignalChange(hostStream, AccessSignal::kWriteLocked, AccessSignal::kUnlocked); }
+			__host__ void Clear();
 			__host__ void Clear(const T& value);
 		};
 
@@ -194,6 +195,7 @@ namespace Cuda
 		std::swap(m_hostData.cu_data, other.m_hostData.cu_data);
 
 		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, m_hostData.m_size);
+		Cuda::Synchronise(static_cast<Device::ManagedArray<T, HostType, DeviceType>*>(other.cu_deviceData), other.m_hostData.cu_data, other.m_hostData.m_size);
 	}
 
 	template<typename T, typename HostType, typename DeviceType>
@@ -226,7 +228,18 @@ namespace Cuda
 	template<typename T, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Clear(const T& value)
 	{
+		Assert(cu_deviceData);
+		
 		KernelClear << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData, value);
+		IsOk(cudaStreamSynchronize(m_hostStream));
+	}
+
+	template<typename T, typename HostType, typename DeviceType>
+	__host__ void Host::ManagedArray<T, HostType, DeviceType>::Clear()
+	{
+		Assert(cu_deviceData);
+		
+		IsOk(cudaMemset(cu_deviceData, 0, sizeof(T) * m_hostData.m_size));
 		IsOk(cudaStreamSynchronize(m_hostStream));
 	}
 

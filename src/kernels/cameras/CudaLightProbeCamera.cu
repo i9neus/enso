@@ -562,7 +562,7 @@ namespace Cuda
 
         if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
-                UpdateProbeGridAggregateStatistics();
+            UpdateProbeGridAggregateStatistics();
         }
 
         return m_aggregateStats;
@@ -646,6 +646,8 @@ namespace Cuda
 
             //const vec2 minMax = GetProbeGridAggregateStatistics();
             //Log::Debug("Samples: %i\n", minMax.x);
+
+            m_hostLightProbeGrids[gridIdx]->Integrate();
 
             IsOk(cudaStreamSynchronize(m_hostStream));
         }

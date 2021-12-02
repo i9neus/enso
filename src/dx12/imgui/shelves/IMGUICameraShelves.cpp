@@ -91,8 +91,8 @@ void LightProbeCameraShelf::Construct()
     ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
     HelpMarker("The order of the spherical harmonic encoding");
 
-    ImGui::Checkbox("Use validity", &m_p.grid.useValidity);
-    HelpMarker("Detects invalid probes and exludes from the irradiance reconstruction.");
+    ImGui::Checkbox("Dilate", &m_p.grid.dilate);
+    HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
 
     ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
     HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");

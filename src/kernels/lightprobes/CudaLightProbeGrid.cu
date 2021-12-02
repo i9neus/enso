@@ -16,13 +16,13 @@ namespace Cuda
         clipRegion[1] = gridDensity;
         shOrder = 1;
         axisMultiplier = vec3(1.0f);
-        useValidity = false;
         outputMode = kProbeGridIrradiance;
         axisSwizzle = kXYZ;
         axisMultiplier = 1.0f;
         invertX = invertY = invertZ = false;
         aspectRatio = vec3(1.0f);
         maxSamplesPerProbe = 0;
+        dilate = true;
 
         Prepare();
     }
@@ -41,8 +41,8 @@ namespace Cuda
         node.AddArray("clipRegionLower", std::vector<int>({ clipRegion[0].x, clipRegion[0].y, clipRegion[0].z }));
         node.AddArray("clipRegionUpper", std::vector<int>({ clipRegion[1].x, clipRegion[1].y, clipRegion[1].z }));
         node.AddValue("shOrder", shOrder);
-        node.AddValue("useValidity", useValidity);
-        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode);
+        node.AddValue("dilate", dilate);
+        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref" }), outputMode);
 
         node.AddValue("invertX", invertX);
         node.AddValue("invertY", invertY);
@@ -65,8 +65,8 @@ namespace Cuda
         clipRegion[1] = clamp(clipRegion[1], ivec3(0), gridDensity);
 
         node.GetValue("shOrder", shOrder, flags);
-        node.GetValue("useValidity", useValidity, flags);
-        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "validity", "harmonicmean", "pref" }), outputMode, flags);
+        node.GetValue("dilate", dilate, flags);
+        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref" }), outputMode, flags);
 
         node.GetValue("invertX", invertX, flags);
         node.GetValue("invertY", invertY, flags);
@@ -104,9 +104,11 @@ namespace Cuda
         assert(m_objects.cu_shData);
         if (kKernelIdx >= m_params.numProbes) { return; }
 
-        const ivec3 gridPos0 = GridPosFromProbeIdx(kKernelIdx, m_params.gridDensity);
+        (*m_objects.cu_validityData)[kKernelIdx] = uchar((*m_objects.cu_shData)[(kKernelIdx + 1) * m_params.coefficientsPerProbe - 1].x > 0.5f);
 
-        uchar validity = 0;
+        /*const ivec3 gridPos0 = GridPosFromProbeIdx(kKernelIdx, m_params.gridDensity);
+
+        /*uchar validity = 0;
         for (int z = 0, idx = 0; z < 2; z++)
         {
             for (int y = 0; y < 2; y++)
@@ -120,8 +122,8 @@ namespace Cuda
                         validity |= 1 << idx;
                         continue;
                     }
-                    
-                    const ivec3 gridPosK = gridPos0 + ivec3(x, y, z); 
+
+                    const ivec3 gridPosK = gridPos0 + ivec3(x, y, z);
                     const int gridIdx = m_params.coefficientsPerProbe * (ProbeIdxFromGridPos(gridPosK, m_params.gridDensity) + 1) - 1;
 
                     assert(gridIdx < m_objects.cu_shData->Size());
@@ -130,7 +132,92 @@ namespace Cuda
             }
         }
 
-        (*m_objects.cu_validityData)[kKernelIdx] = validity;
+        (*m_objects.cu_validityData)[kKernelIdx] = validity;*/
+    }
+
+    __device__ void Device::LightProbeGrid::Dilate()
+    {
+        assert(m_objects.cu_shData);
+        assert(m_objects.cu_shData->Size() == m_objects.cu_swapBuffer->Size());
+        if (kKernelIdx >= m_params.numProbes) { return; }
+
+        const int gridIdx0 = kKernelIdx * m_params.coefficientsPerProbe;
+
+        // If this probe is valid, just copy the coefficients probe over 
+        if((*m_objects.cu_validityData)[kKernelIdx])
+        {
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe; coeffIdx++)
+            {
+                (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = (*m_objects.cu_shData)[gridIdx0 + coeffIdx];
+            }
+            return;
+        }         
+
+        // Create validity and edge masks to save time later on.
+        uint validityMask = 0;
+        uint edgeMask = 0;
+        const ivec3 gridPos0 = GridPosFromProbeIdx(kKernelIdx, m_params.gridDensity);
+        for (int z = -1, idx = 0; z <= 1; z++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                for (int x = -1; x <= 1; x++, idx++)
+                {
+                    if (x == 0 && y == 0 && z == 0) { continue; }
+                    
+                    const ivec3 gridPosK = gridPos0 + ivec3(x, y, z);
+                    if (gridPosK.x < 0 || gridPosK.x >= m_params.gridDensity.x ||
+                        gridPosK.y < 0 || gridPosK.y >= m_params.gridDensity.y ||
+                        gridPosK.z < 0 || gridPosK.z >= m_params.gridDensity.z)
+                    {
+                        edgeMask |= 1 << idx;
+                        continue;
+                    }
+
+                    const uint isValid = (*m_objects.cu_validityData)[ProbeIdxFromGridPos(gridPosK, m_params.gridDensity)];
+                    validityMask |= isValid << idx;
+                }
+            }
+        }
+
+        // Clear the swap memory 
+        for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++) 
+        { 
+            (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = 0.0f; 
+        }  
+        (*m_objects.cu_swapBuffer)[gridIdx0 + m_params.shCoefficientsPerProbe] = (*m_objects.cu_shData)[gridIdx0 + m_params.shCoefficientsPerProbe];
+
+        // If the entire neighbourhood is invalid then dilation does nothing. Just set the coefficients to zero and we're done.
+        if (validityMask == 0) { return; }
+
+        int sumWeights = 0;
+        for (int z = -1, idx = 0; z <= 1; z++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                for (int x = -1; x <= 1; x++, idx++)
+                {
+                    // Neighbour is invalid, so we just skip it
+                    if (edgeMask & (1 << idx) || !(validityMask & (1 << idx))) { continue; }
+
+                    const int gridIdxK = m_params.coefficientsPerProbe * ProbeIdxFromGridPos(gridPos0 + ivec3(x, y, z), m_params.gridDensity);
+
+                    // Accumulate coefficients in the swap buffer
+                    assert(gridIdxK < m_objects.cu_shData->Size());
+                    for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++)
+                    {
+                        (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] += (*m_objects.cu_shData)[gridIdxK + coeffIdx];
+                    } 
+                    sumWeights++;
+                }
+            }
+        }
+
+        // Normalise the coefficients...
+        for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++)
+        {
+            (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] /= float(sumWeights);
+        }
     }
 
     __device__ void Device::LightProbeGrid::SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L)
@@ -200,12 +287,9 @@ namespace Cuda
         return object;
     }
 
-    __device__ vec3 Device::LightProbeGrid::WeightedInterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx, const vec3& delta, const uchar validity) const
+    __device__ vec3 Device::LightProbeGrid::InterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx, const vec3& delta) const
     {
-        float w[6] = { 1 - delta.x, delta.x, 1 - delta.y, delta.y, 1 - delta.z, delta.z };
-
-        vec3 L(0.0f);
-        float sumWeights = 0.0f;
+        vec3 vert[8];
         for (int z = 0, idx = 0; z < 2; z++)
         {
             for (int y = 0; y < 2; y++)
@@ -217,29 +301,19 @@ namespace Cuda
 
                     assert(sampleIdx < shData.Size());
 
-                    if (validity & (1 << idx))
-                    {
-                        const float weight = w[x] * w[2 + y] * w[4 + z];
-                        L += shData[sampleIdx + coeffIdx] * weight;
-                        sumWeights += weight;
-                    }
+                    vert[idx] = shData[sampleIdx + coeffIdx];
                 }
             }
         }
 
-        return L / (sumWeights + 1e-10f);
+        // Trilinear interpolate
+        return mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
+                   mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z);
     }
 
     __device__ vec3 Device::LightProbeGrid::NearestNeighbourCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx) const
     {
         return shData[m_params.coefficientsPerProbe * ProbeIdxFromGridPos(gridPos, m_params.gridDensity) + coeffIdx];
-    }
-
-    __device__ __forceinline__ uchar Device::LightProbeGrid::GetValidity(const ivec3& gridIdx) const
-    {
-        return m_params.useValidity ?
-            ((*m_objects.cu_validityData)[gridIdx.z * (m_params.gridDensity.x * m_params.gridDensity.y) + gridIdx.y * m_params.gridDensity.x + gridIdx.x]) :
-            0xff;
     }
 
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
@@ -249,7 +323,7 @@ namespace Cuda
         vec3 pGrid = PointToObjectSpace(hitCtx.hit.p, m_params.transform) / m_params.aspectRatio;
 
         // Return black for out-of-bounds look-ups
-        if (cwiseMin(pGrid) < -0.5f || cwiseMax(pGrid) >= 0.5f) { return kZero; }
+        //if (cwiseMin(pGrid) < -0.5f || cwiseMax(pGrid) >= 0.5f) { return kZero; }
 
         // FIXME: Why do we get a crash if this line is removed?
         pGrid = clamp(pGrid + vec3(0.5f), vec3(0.0f), vec3(1.0f));
@@ -286,21 +360,17 @@ namespace Cuda
         {
         case kProbeGridValidity:
         {
-            return mix(kRed, kGreen, WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta, 0xff).x); 
-            /*int set = 0;
-            const uchar validity = GetValidity(gridPos);
-            for (int bit = 0; bit < 8; ++bit) { set += (validity >> bit) & 1; }
-            return mix(kRed, kGreen, float(set) / 8.0f);*/
+            return mix(kRed, kGreen, InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta).x);         
         }
         break;
         case kProbeGridHarmonicMean:
         {
-            return vec3(WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta, GetValidity(gridPos)).y);
+            return vec3(InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta).y);
         }
         break;
         case kProbeGridLaplacian:
         {
-            L = WeightedInterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, delta, GetValidity(gridPos)) * SH::Project(n, 0);
+            L = InterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, delta) * SH::Project(n, 0);
             //return L;
             const float LEx = cwiseExtremum(L);
             return (LEx > 0.0f) ?
@@ -311,10 +381,9 @@ namespace Cuda
         default:
         {
             // Sum the SH coefficients
-            const uchar validity = GetValidity(gridPos);
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1; coeffIdx++)
             {
-                L += WeightedInterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, delta, validity) * SH::Project(n, coeffIdx);
+                L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, delta) * SH::Project(n, coeffIdx);
             }
         }
         }
@@ -470,6 +539,11 @@ namespace Cuda
         cu_grid->PrepareValidityGrid();
     }
 
+    __global__ void KernelDilate(Device::LightProbeGrid* cu_grid)
+    {
+        cu_grid->Dilate();
+    }
+
     __host__ void Host::LightProbeGrid::Prepare(const LightProbeGridParams& params)
     {
         Assert(Volume(m_params.gridDensity) > 0);
@@ -484,8 +558,7 @@ namespace Cuda
     {
         m_params.coefficientsPerProbe = SH::GetNumCoefficients(m_params.shOrder) + 1;
         m_params.numProbes = Volume(m_params.gridDensity);
-        m_params.aspectRatio = vec3(m_params.gridDensity) / cwiseMax(m_params.gridDensity);
-        //m_params.useValidity = false;        
+        m_params.aspectRatio = vec3(m_params.gridDensity) / cwiseMax(m_params.gridDensity);      
 
         const int newSize = m_params.numProbes * m_params.coefficientsPerProbe;
         int arraySize = m_shData->Size();
@@ -499,8 +572,6 @@ namespace Cuda
         }
 
         Cuda::SynchroniseObjects(cu_deviceData, m_params);
-
-        KernelPrepareValidityGrid << < (m_params.numProbes + 255) / 256, 256, 0, m_hostStream >> > (cu_deviceData);
     }
 
     __host__ void Host::LightProbeGrid::Replace(const LightProbeGrid& other)
@@ -575,16 +646,29 @@ namespace Cuda
         IsOk(cudaStreamSynchronize(m_hostStream));
 
         m_probeAggregateData.Download();
-        m_statistics.coeffHistogram.Download();
-
-        KernelPrepareValidityGrid << < (m_params.numProbes + 255) / 256, 256, 0, m_hostStream >> > (cu_deviceData);
-        IsOk(cudaStreamSynchronize(m_hostStream));
+        m_statistics.coeffHistogram.Download();      
 
         // Copy the data into the aggregate object
         *static_cast<Device::LightProbeGrid::AggregateStatistics*>(&m_statistics) = *m_probeAggregateData;        
         m_statistics.isConverged = maxSamples > 0 && m_statistics.minMaxSamples.x >= maxSamples;
 
         return m_statistics;
+    }
+
+    __host__ void Host::LightProbeGrid::Integrate()
+    {
+        if (!m_params.dilate) { return; }
+        
+        const int gridSize = (m_params.numProbes + 255) / 256;
+        KernelPrepareValidityGrid << < gridSize, 256, 0, m_hostStream >> > (cu_deviceData);
+        IsOk(cudaStreamSynchronize(m_hostStream));
+        
+        // Single-pass dilate the probe data to fill in holes and prevent shadow leaks
+        KernelDilate<< < gridSize, 256, 0, m_hostStream >> > (cu_deviceData);
+        IsOk(cudaStreamSynchronize(m_hostStream));
+
+        // Swap the buffers
+        m_shData->Swap(*m_shLaplacianData);
     }
 
     __host__ bool Host::LightProbeGrid::HasSemaphore(const std::string& tag) const
