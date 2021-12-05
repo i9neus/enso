@@ -85,13 +85,12 @@ namespace Cuda
 
         const float sinTheta = m_discRadius / originDist;
         originDist -= m_discRadius * sinTheta;
-        const float projectedDiscRadius = m_discRadius *sqrtf(1.0f - sqr(sinTheta));
+        const float projectedDiscRadius = m_discRadius * sqrtf(1.0f - sqr(sinTheta));
 
-        const vec2 disc = SampleUnitDiscLowDistortion(xi);
+        const vec3 disc(SampleUnitDiscLowDistortion(xi) * projectedDiscRadius, originDist);
         const mat3 basis = CreateBasis(originDir);
-        vec3 sampleDir = basis.x * disc.x * projectedDiscRadius +
-                         basis.y * disc.y * projectedDiscRadius +
-                         originDir * originDist;
+        vec3 sampleDir = basis * disc;
+
         const float sampleDist = length(sampleDir);
         sampleDir /= sampleDist;
 
