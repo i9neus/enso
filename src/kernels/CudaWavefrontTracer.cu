@@ -209,6 +209,9 @@ namespace Cuda
 		// Calculate the Russian roulette weight and bail out if the ray is terminated
 		if (!ApplyRussianRoulette(cwiseMax(renderCtx.emplacedRay[0].weight * albedo), split.x, stochasticWeight)) { return LExtant; }
 
+		// TODO: Remove this when done debugging
+		const auto importanceMode = GetImportanceMode(renderCtx);
+
 		// Indirect light sampling	
 		if(renderCtx.depth < m_activeParams.maxDepth)
 		{
@@ -224,7 +227,7 @@ namespace Cuda
 		}
 
 		// Direct light sampling
-		if(m_numLights > 0)
+		if(importanceMode != kImportanceBxDF && m_numLights > 0)
 		{
 			// Select a light to sample or evaluate
 			int lightIdx = 0;
@@ -252,7 +255,7 @@ namespace Cuda
 			vec3 extantDir, LLight;
 
 			// Sample the light
-			if (split.x < 0.5f || GetImportanceMode(renderCtx) == kImportanceLight)
+			if (split.x < 0.5f || importanceMode== kImportanceLight)
 			{
 				if (light.Sample(incidentRay, hitCtx, renderCtx, xi.zw, extantDir, LLight, pdfLight))
 				{
@@ -262,7 +265,7 @@ namespace Cuda
 					LLight *= renderCtx.emplacedRay[0].weight * albedo * stochasticWeight * weightBxDF * weightLight; 
 
 					// If MIS is enabled, weight the ray using the power heuristic
-					if (GetImportanceMode(renderCtx) == kImportanceMIS)
+					if (importanceMode == kImportanceMIS)
 					{
 						LLight *= PowerHeuristic(pdfLight, pdfBxDF);
 					}
