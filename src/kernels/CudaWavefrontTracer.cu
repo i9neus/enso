@@ -399,7 +399,6 @@ namespace Cuda
 						if (light->Evaluate(incidentRay, hitCtx, L, pdfLight))
 						{
 							L *= compressedRay.weight;
-							L *= float(m_objects.cu_deviceLights->Size());
 							if (GetImportanceMode(renderCtx) == kImportanceMIS)
 							{
 								L *= PowerHeuristic(compressedRay.pdf, pdfLight);
