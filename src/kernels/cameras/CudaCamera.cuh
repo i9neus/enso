@@ -13,6 +13,13 @@ namespace Cuda
 	class Ray;
 	class CompressedRay;
 
+	enum CameraSamplingModeMode : int
+	{
+		kCameraSamplingFixed,
+		kCameraSamplingAdaptiveRelative,
+		kCameraSamplingAdaptiveAbsolute
+	};
+
 	struct CameraParams
 	{
 		__host__ __device__ CameraParams();
@@ -21,7 +28,10 @@ namespace Cuda
 
 		bool				isLive;
 		bool				isActive;
-		float				splatClamp;	
+		float				splatClamp;
+
+		int					samplingMode;
+		float				sqrtErrorThreshold;
 		int					maxSamples;
 
 		int					seed;

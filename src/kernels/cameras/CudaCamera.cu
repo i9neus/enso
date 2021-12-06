@@ -20,7 +20,10 @@ namespace Cuda
         overrides.maxDepth = -1;
         seed = 0;
         randomiseSeed = false;
+
         maxSamples = -1;
+        sqrtErrorThreshold = 0.0f;
+        samplingMode = kCameraSamplingFixed;
     }
 
     __host__ void CameraParams::ToJson(::Json::Node& node) const
@@ -31,7 +34,7 @@ namespace Cuda
         node.AddValue("maxSamples", maxSamples);
         node.AddValue("seed", seed);
         node.AddValue("randomiseSeed", randomiseSeed);
-
+        node.AddEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode);
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -45,6 +48,7 @@ namespace Cuda
         node.GetValue("maxSamples", maxSamples, ::Json::kSilent);
         node.GetValue("seed", seed, ::Json::kSilent);
         node.GetValue("randomiseSeed", randomiseSeed, ::Json::kSilent);
+        node.GetEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode, flags);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)

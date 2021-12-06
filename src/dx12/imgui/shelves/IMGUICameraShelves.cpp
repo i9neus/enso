@@ -1,6 +1,8 @@
 #include "IMGUICameraShelves.h"
 #include <random>
 
+#include "kernels/cameras/CudaCamera.cuh"
+
 void PerspectiveCameraShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -85,48 +87,84 @@ void LightProbeCameraShelf::Construct()
 
     ConstructJitteredTransform(m_p.grid.transform, false);
 
-    ImGui::DragInt3("Grid density", &m_p.grid.gridDensity[0], 1.0f, 2, 50);
-    HelpMarker("The density of the light probe grid as width x height x depth");
+    //ImGuiIO& io = ImGui::GetIO();
+    //ImFontAtlas* atlas = io.Fonts; 
+    //atlas->Fonts[0]->Scale = 0.95f;
 
-    ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
-    HelpMarker("The order of the spherical harmonic encoding");
+    if (ImGui::TreeNodeEx("Encoding", ImGuiTreeNodeFlags_DefaultOpen))
+    {        
+        ImGui::DragInt3("Grid density", &m_p.grid.gridDensity[0], 1.0f, 2, 50);
+        HelpMarker("The density of the light probe grid as width x height x depth");
 
-    ImGui::Checkbox("Dilate", &m_p.grid.dilate);
-    HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
+        ConstructComboBox("SH order", { "L0", "L1", "L2" }, m_p.grid.shOrder);
+        HelpMarker("The order of the spherical harmonic encoding");
 
-    ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
-    HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
+        ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
+        HelpMarker("Specifies the interval that the light probe grid is consolidated from the accumulation buffer. Grid updating is expensive so setting this value too low may slow down the bake.");
 
-    ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
-    HelpMarker("The maximum depth a ray can travel before it's terminated.");
+        ImGui::TreePop();
+    }
 
-    ConstructComboBox("Direct/indirect", { "Combined", "Separated" }, m_p.lightingMode);
-    HelpMarker("Specifies whether direct and indirect illumination should be combined in a single pass or exported as two separate grids.");
+    if (ImGui::TreeNodeEx("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Dilate", &m_p.grid.dilate);
+        HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
 
-    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
-    HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");
+        ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
+        HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
 
-    ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
-    HelpMarker("Specifies the interval that the light probe grid is consolidated from the accumulation buffer. Grid updating is expensive so setting this value too low may slow down the bake.");
+        ConstructComboBox("Direct/indirect", { "Combined", "Separated" }, m_p.lightingMode);
+        HelpMarker("Specifies whether direct and indirect illumination should be combined in a single pass or exported as two separate grids.");
 
-    ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
-    HelpMarker("The maximum number of samples per probe.");
+        ImGui::SliderInt("Grid update interval", &m_p.gridUpdateInterval, 1, 200);
+        HelpMarker("Specifies the interval that the light probe grid is consolidated from the accumulation buffer. Grid updating is expensive so setting this value too low may slow down the bake.");
 
-    ImGui::InputInt("Seed", &m_p.camera.seed);
-    HelpMarker("The seed value used to see the random number generators.");
+        ImGui::TreePop();
+    }    
 
-    ImGui::Checkbox("Jitter seed", &m_p.camera.randomiseSeed);
-    HelpMarker("Whether the seed value should be randomised before every bake permutation.");
+    if (ImGui::TreeNodeEx("Sampling", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ConstructComboBox("Sampling mode", { "Fixed", "Adaptive (Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
+        HelpMarker("Specifies which sampling mode to use. Fixed takes a fixed number of samples up to the input value. Adaptive takes a noise threshold beyond which sampling is terminated.");
 
-    ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
-    HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+        ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
+        HelpMarker("The maximum number of samples per probe. Set to -1 to take unlimited samples.");
 
-    ImGui::Text("Invert axes"); SL;
-    ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+        if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
+        {
+            ImGui::DragFloat("Noise treshold", &m_p.camera.sqrtErrorThreshold, math::max(m_p.camera.sqrtErrorThreshold, 0.0001f), 0.0f, std::numeric_limits<float>::max());
+            HelpMarker("The noise threshold below which sampling is terminated.");
+        }
 
-    ImGui::Checkbox("X", &m_p.grid.invertX); SL;
-    ImGui::Checkbox("Y", &m_p.grid.invertY); SL;
-    ImGui::Checkbox("Z", &m_p.grid.invertZ);
+        ImGui::InputInt("Seed", &m_p.camera.seed);
+        HelpMarker("The seed value used to see the random number generators.");
+
+        ImGui::Checkbox("Jitter seed", &m_p.camera.randomiseSeed);
+        HelpMarker("Whether the seed value should be randomised before every bake permutation.");
+
+        ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
+        HelpMarker("The maximum depth a ray can travel before it's terminated.");
+
+        ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+        HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Data Export Attributes", 0))
+    {
+        ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
+        HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+        ImGui::Text("Invert axes"); SL;
+        ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+        ImGui::Checkbox("X", &m_p.grid.invertX); SL;
+        ImGui::Checkbox("Y", &m_p.grid.invertY); SL;
+        ImGui::Checkbox("Z", &m_p.grid.invertZ);
+
+        ImGui::TreePop();
+    }
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
