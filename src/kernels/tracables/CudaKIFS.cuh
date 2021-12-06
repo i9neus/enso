@@ -72,6 +72,11 @@ namespace Cuda
         kKIFSFoldCube
     };
 
+    enum KIFSSDFFlags : int
+    {
+        kKIFSClipRays = 1
+    };
+
     struct KIFSParams
     {
         __host__ __device__ KIFSParams();
@@ -95,6 +100,8 @@ namespace Cuda
 
         struct
         {
+            JitterableFlags flags;
+            
             int maxSpecularIterations;
             int maxDiffuseIterations;
             float cutoffThreshold;
@@ -103,7 +110,6 @@ namespace Cuda
             float failThreshold;
             float rayKickoff;
             
-            bool clipCameraRays;
             int clipShape;
         }
         sdf;

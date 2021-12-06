@@ -54,7 +54,7 @@ namespace Cuda
         sdf.rayIncrement = 0.9f;
         sdf.rayKickoff = 1e-4f;
         sdf.failThreshold = 1e-2f;
-        sdf.clipCameraRays = true;
+        sdf.flags = JitterableFlags(kKIFSClipRays, 1),
         sdf.clipShape = kKIFSClipBox;
     }
 
@@ -73,6 +73,7 @@ namespace Cuda
         vertScale.Update(operation);
         crustThickness.Update(operation);
         faceMask.Update(operation);
+        sdf.flags.Update(operation);
 
         transform.Update(operation);
     }
@@ -92,6 +93,7 @@ namespace Cuda
         node.AddEnumeratedParameter("primitiveType", std::vector<std::string>({ "tetrahedron", "cube", "sphere", "torus", "box", "tetrahedroncage", "cubecage" }), primitiveType); 
 
         ::Json::Node sdfNode = node.AddChildObject("sdf");
+        sdf.flags.ToJson("flags", sdfNode);
         sdfNode.AddValue("maxSpecularIterations", sdf.maxSpecularIterations);
         sdfNode.AddValue("maxDiffuseIterations", sdf.maxDiffuseIterations);
         sdfNode.AddValue("cutoffThreshold", sdf.cutoffThreshold);
@@ -99,7 +101,6 @@ namespace Cuda
         sdfNode.AddValue("rayIncrement", sdf.rayIncrement);
         sdfNode.AddValue("rayKickoff", sdf.rayKickoff);
         sdfNode.AddValue("failThreshold", sdf.failThreshold);
-        sdfNode.AddValue("clipCameraRays", sdf.clipCameraRays);
         sdfNode.AddEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape);
 
         tracable.ToJson(node);
@@ -123,6 +124,7 @@ namespace Cuda
         const ::Json::Node sdfNode = node.GetChildObject("sdf", flags);
         if (sdfNode)
         {
+            sdf.flags.FromJson("flags", sdfNode, flags);
             sdfNode.GetValue("maxSpecularIterations", sdf.maxSpecularIterations, flags);
             sdfNode.GetValue("maxDiffuseIterations", sdf.maxDiffuseIterations, flags);
             sdfNode.GetValue("cutoffThreshold", sdf.cutoffThreshold, flags);
@@ -130,7 +132,6 @@ namespace Cuda
             sdfNode.GetValue("rayIncrement", sdf.rayIncrement, flags);
             sdfNode.GetValue("rayKickoff", sdf.rayKickoff, flags);
             sdfNode.GetValue("failThreshold", sdf.failThreshold, flags);
-            sdfNode.GetValue("clipCameraRays", sdf.clipCameraRays, flags);
 
             sdfNode.GetEnumeratedParameter("clipShape", std::vector<std::string>({ "box", "sphere", "torus" }), sdf.clipShape, flags);
         }
@@ -459,7 +460,7 @@ namespace Cuda
 
             /*if(!(globalRay.flags & kRayLightProbe) && m_params.sdf.clipCameraRays && 
                 (globalRay.depth == 1 || (globalRay.depth == 2 && globalRay.flags & kRayDirectSample)))*/
-            if(m_params.sdf.clipCameraRays)
+            if(m_params.sdf.flags() & kKIFSClipRays)
             {
                 vec3 pWorld = globalRay.PointAt(t / localMag);
                 vec4 FClip;

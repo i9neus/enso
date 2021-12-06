@@ -32,6 +32,7 @@ private:
     std::string             m_stateJsonPath;
 
     IMGUIJitteredFlagArray      m_faceFlags;
+    IMGUIJitteredFlagArray      m_sdfFlags;
     IMGUIJitteredParameterTable m_jitteredParamTable;
 };
 

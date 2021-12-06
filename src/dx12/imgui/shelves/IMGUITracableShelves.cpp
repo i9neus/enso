@@ -6,9 +6,11 @@
 KIFSShelf::KIFSShelf(const Json::Node& json) :
     IMGUIShelf(json),
     m_faceFlags(m_p.faceMask, "Faces"),
+    m_sdfFlags(m_p.sdf.flags, "Flags"),
     m_jitteredParamTable("KIFS Params")
 {
     m_faceFlags.Initialise(std::vector<std::string>({ "1", "2", "3", "4", "5", "6" }));
+    m_sdfFlags.Initialise(std::vector<std::string>({ "Clip rays" }));
     m_jitteredParamTable.Push("Rotation A", "The degree of rotation applied at each iteration of the fractal.", m_p.rotateA, Cuda::vec3(0.0f, 1.0f, 0.01f));
     m_jitteredParamTable.Push("Rotation B", "The degree of rotation applied at each iteration of the fractal.", m_p.rotateB, Cuda::vec3(0.0f, 1.0f, 0.01f));
     m_jitteredParamTable.Push("Scale A", "The degree of scaling applied at each iteration of the fractal.", m_p.scaleA, Cuda::vec3(0.0f, 1.0f, 0.01f));
@@ -50,7 +52,7 @@ void KIFSShelf::Construct()
     m_faceFlags.Construct();
     HelpMarker("Enables or disables the faces of SDF primatives which support it.");
 
-    ImGui::Checkbox("SDF Clip Camera Rays", &m_p.sdf.clipCameraRays);
+    m_sdfFlags.Construct();
     HelpMarker("Only renders fractal geometry within a bounded space. This helps visaulise the geometric structure in the neighbourhood of the probe volume grid.");
 
     ConstructComboBox("SDF Clip Shape", std::vector<std::string>({ "Cube", "Sphere", "Torus" }), m_p.sdf.clipShape);
@@ -96,6 +98,7 @@ void KIFSShelf::Jitter(const uint flags, const uint operation)
         m_p.vertScale.Update(operation);
         m_p.crustThickness.Update(operation);
         m_p.faceMask.Update(operation);
+        m_p.sdf.flags.Update(operation);
 
         std::random_device rd;
         std::mt19937 mt(rd());
