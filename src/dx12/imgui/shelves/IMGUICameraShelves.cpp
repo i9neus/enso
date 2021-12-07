@@ -70,7 +70,11 @@ void PerspectiveCameraShelf::Jitter(const uint flags, const uint operation)
 }
 
 LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
-    : IMGUIShelf(json)
+    : IMGUIShelf(json),
+    m_bakeProgress(-1.0f),
+    m_bakeConvergence(-1.0f),
+    m_frameIdx(-1),
+    m_minMaxMSE(Cuda::kMinMaxReset)
 {
     m_swizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
 }
@@ -132,7 +136,7 @@ void LightProbeCameraShelf::Construct()
 
         if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
         {
-            ImGui::DragFloat("Noise treshold", &m_p.camera.sqrtErrorThreshold, math::max(m_p.camera.sqrtErrorThreshold, 0.0001f), 0.0f, std::numeric_limits<float>::max());
+            ImGui::DragFloat("Noise treshold", &m_p.camera.sqrtErrorThreshold, math::max(m_p.camera.sqrtErrorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max());
             HelpMarker("The noise threshold below which sampling is terminated.");
         }
 
@@ -168,13 +172,24 @@ void LightProbeCameraShelf::Construct()
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
-    for (auto& gridStats : m_probeGridStatistics)
+    if (m_bakeProgress >= 0.0f)     { ImGui::Text(tfm::format("Bake progress: %.2f%%", m_bakeProgress * 100.0f).c_str()); }
+    if (m_bakeConvergence >= 0.0f)  { ImGui::Text(tfm::format("Bake convergence: %.2f%%", m_bakeConvergence * 100.0f).c_str()); }
+    if (m_bakeConvergence >= 0.0f)  { ImGui::Text(tfm::format("Mean error: %.5f%%", m_MSE).c_str()); }
+
+    constexpr int kMSEPlotDensity = 10;
+    std::string mseFormat = tfm::format("%.5f", m_MSE);
+    ImGui::PlotLines("MSE", m_MSEData.data(), m_MSEData.size(), 0, mseFormat.c_str(), m_minMaxMSE.x, m_minMaxMSE.y, ImVec2(0, 80.0f));
+
+    for (int i = 0; i < m_probeGridStatistics.size(); ++i)
     {
+        if (!ImGui::TreeNodeEx(tfm::format("Grid statistics %i", i).c_str(), 0)) { continue; }
+
+        auto& gridStats = m_probeGridStatistics[i];
         ImGui::PushID(gridStats.gridID.c_str());
         ImGui::Text(gridStats.gridID.c_str());
         ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
         ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
-        ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
+        ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());       
 
         if (gridStats.hasHistogram)
         {
@@ -186,6 +201,7 @@ void LightProbeCameraShelf::Construct()
 
         ImGui::Separator();
         ImGui::PopID();
+        ImGui::TreePop();
     }
 }
 
@@ -203,6 +219,33 @@ void LightProbeCameraShelf::Randomise()
 
 void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& baseNode)
 {    
+    baseNode.GetValue("bakeProgress", m_bakeProgress, Json::kSilent);
+    baseNode.GetValue("bakeConvergence", m_bakeConvergence, Json::kSilent);    
+    
+    // Look for an MSE value
+    if (baseNode.GetValue("mse", m_MSE, Json::kSilent))
+    {
+        constexpr int kMaxMSEDataSize = 1000;
+        int frameIdx = -1;
+        baseNode.GetValue("frameIdx", frameIdx, Json::kSilent);
+
+        // If the render has been reset, clear the stored data
+        if (frameIdx <= m_frameIdx)
+        {
+            m_MSEData.clear();
+            m_minMaxMSE = Cuda::vec2(std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+        }
+        // Add the data to the history
+        if (m_MSEData.size() < kMaxMSEDataSize)
+        {
+            const float logMSE = std::log(1e-10f + m_MSE);
+            m_minMaxMSE = Cuda::MinMax(m_minMaxMSE, logMSE);
+            m_MSEData.push_back(logMSE);
+        }
+
+        m_frameIdx = frameIdx;
+    }
+
     const Json::Node gridSetNode = baseNode.GetChildObject("grids", Json::kSilent);
     if (!gridSetNode) { return; }
 
@@ -220,7 +263,7 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& bas
         gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
         gridNode.GetValue("maxSamples", stats.minSamplesTaken, Json::kSilent);
         gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
-        gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent);
+        gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent); 
 
         stats.hasHistogram = false;
         histogramMatrix.clear();

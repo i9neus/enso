@@ -196,7 +196,7 @@ void BakePermutor::RandomiseScene()
 }
 
 bool BakePermutor::Advance(const bool lastBakeSucceeded)
-{
+{    
     // Can we advance? 
     if (m_isIdle ||
         m_stateIt == m_stateMap.GetStateData().end() ||
@@ -267,7 +267,7 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
         m_lightProbeCameraShelf->Randomise();
 
         // Deactivate the perspective camera if necessary
-        perspParams.camera.isActive = m_params.disableLiveView;
+        perspParams.camera.isActive = !m_params.disableLiveView;
     }
     else if (m_sampleCountIt->second == kBakeTypeRender)
     {

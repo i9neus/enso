@@ -54,6 +54,11 @@ private:
         bool                        hasHistogram;
     };
     
-    std::vector<ProbeGridStatistics> m_probeGridStatistics;
-    
+    int                                 m_frameIdx;
+    float                               m_bakeProgress;
+    float                               m_bakeConvergence;
+    float                               m_MSE;
+    Cuda::vec2                          m_minMaxMSE;
+    std::vector<float>                  m_MSEData;
+    std::vector<ProbeGridStatistics>    m_probeGridStatistics;
 };
