@@ -27,8 +27,9 @@ namespace Cuda
         }
 
         __host__ DeviceObjectRAII& operator=(const Type& object)
-        {   
+        {              
             Upload(object);
+            return *this;
         }
 
         __host__ void Upload(const Type& object)

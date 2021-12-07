@@ -31,10 +31,11 @@ namespace Cuda
         node.AddValue("live", isLive);
         node.AddValue("active", isActive);
         node.AddValue("splatClamp", splatClamp);
-        node.AddValue("maxSamples", maxSamples);
         node.AddValue("seed", seed);
         node.AddValue("randomiseSeed", randomiseSeed);
         node.AddEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode);
+        node.AddValue("maxSamples", maxSamples);
+        node.AddValue("sqrtErrorThreshold", sqrtErrorThreshold);
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -45,10 +46,11 @@ namespace Cuda
         node.GetValue("live", isLive, flags);
         node.GetValue("active", isActive, flags);
         node.GetValue("splatClamp", splatClamp, flags);
-        node.GetValue("maxSamples", maxSamples, ::Json::kSilent);
-        node.GetValue("seed", seed, ::Json::kSilent);
-        node.GetValue("randomiseSeed", randomiseSeed, ::Json::kSilent);
+        node.GetValue("seed", seed, flags);
+        node.GetValue("randomiseSeed", randomiseSeed, flags);
         node.GetEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode, flags);
+        node.GetValue("maxSamples", maxSamples, flags);
+        node.GetValue("sqrtErrorThreshold", sqrtErrorThreshold, flags);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)

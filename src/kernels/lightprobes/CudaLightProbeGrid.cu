@@ -435,7 +435,7 @@ namespace Cuda
     }
 
     __device__ void Device::LightProbeGrid::GetProbeGridAggregateStatistics(Device::LightProbeGrid::AggregateStatistics& result) const
-    {
+    {    
         __shared__ AggregateStatistics localStats[256];
         __shared__ Device::LightProbeGrid* grid;
 
@@ -444,14 +444,15 @@ namespace Cuda
             // Initialise the data in the local stats array
             for (int i = 0; i < 256; i++)
             {
-                localStats[i].minMaxSamples = vec2(kFltMax, 0.0f);
-                for (int j = 0; j < 4; ++j)
+                auto& ls = localStats[i];
+                ls.minMaxSamples = vec2(kFltMax, 0.0f);
+                for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
                 {
-                    localStats[i].minMaxCoeffs[j] = vec2(kFltMax, -kFltMax);
+                    ls.minMaxCoeffs[j] = vec2(kFltMax, -kFltMax);
+                    ls.meanSqrIntensity[j] = 0.0f;
                 }
-                localStats[i].meanValidity = 0.0f;
-                localStats[i].meanDistance = 0.0f;
-                localStats[i].probeCount = 0;
+                ls.meanValidity = 0.0f;
+                ls.meanDistance = 0.0f;
             }
         }
 
@@ -459,43 +460,57 @@ namespace Cuda
 
         const int startIdx = (m_params.numProbes - 1) * kKernelIdx / 256;
         const int endIdx = (m_params.numProbes - 1) * (kKernelIdx + 1) / 256;
-        localStats[kKernelIdx].probeCount = 1 + endIdx - startIdx;
+        auto& ls = localStats[kKernelIdx];
 
         for (int i = startIdx; i <= endIdx; i++)
         {
             // Accumulate coefficient ranges for the histograms
-            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < 4; ++coeffIdx)
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++coeffIdx)
             {
-                const auto& coeff = LaplacianAt(i)[coeffIdx];
-                auto& minMax = localStats[kKernelIdx].minMaxCoeffs[coeffIdx];
+                const auto& coeff = At(i)[coeffIdx];
+                auto& minMax = ls.minMaxCoeffs[coeffIdx];
                 minMax.x = min(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
                 minMax.y = max(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
+
+                ls.meanSqrIntensity[coeffIdx] += cwiseMax(sqr(coeff));
             }
 
             // Accumulate probe states
             const auto& coeff = At(i)[m_params.coefficientsPerProbe - 1];
-            localStats[kKernelIdx].minMaxSamples = vec2(min(localStats[kKernelIdx].minMaxSamples.x, coeff.z), max(localStats[kKernelIdx].minMaxSamples.y, coeff.z));
-            localStats[kKernelIdx].meanValidity += coeff.x;
-            localStats[kKernelIdx].meanDistance += coeff.y;
+            ls.minMaxSamples = vec2(min(ls.minMaxSamples.x, coeff.z), max(ls.minMaxSamples.y, coeff.z));
+            ls.meanValidity += coeff.x;
+            ls.meanDistance += coeff.y;
+        }
+
+        // Normalise the local stats
+        const float probeCount = 1 + endIdx - startIdx;
+        ls.meanValidity /= probeCount;
+        ls.meanDistance /= probeCount;
+        for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++coeffIdx)
+        {            
+            ls.meanSqrIntensity[coeffIdx] /= probeCount;
         }
 
         __syncthreads();
 
+        // Accumulate global stats from shared memory
         if (kThreadIdx == 0)
         {
-            // Accumulate global stats from shared memory
-            result = localStats[0];
-            result.meanValidity /= float(max(1, localStats[0].probeCount));
-            result.meanDistance /= float(max(1, localStats[0].probeCount));
+            result = localStats[0];         
             for (int i = 1; i < 256; i++)
             {
                 result.minMaxSamples = vec2(min(localStats[i].minMaxSamples.x, result.minMaxSamples.x), max(localStats[i].minMaxSamples.y, result.minMaxSamples.y));
-                for (int j = 0; j < 4; ++j)
+                for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
                 {
                     result.minMaxCoeffs[j] = vec2(min(localStats[i].minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(localStats[i].minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
+                    result.meanSqrIntensity[j] += localStats[i].meanSqrIntensity[j];
                 }
-                result.meanValidity += localStats[i].meanValidity / float(max(1, localStats[i].probeCount));
-                result.meanDistance += localStats[i].meanDistance / float(max(1, localStats[i].probeCount));
+                result.meanValidity += localStats[i].meanValidity;
+                result.meanDistance += localStats[i].meanDistance;
+            }
+            for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
+            {
+                result.meanSqrIntensity[j] /= 256.0f;
             }
             result.meanValidity /= 256.0f;
             result.meanDistance /= 256.0f;

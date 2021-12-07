@@ -79,13 +79,16 @@ namespace Cuda
         public:
             struct AggregateStatistics
             {
-                __host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f), probeCount(0) {}
+                __host__ __device__ AggregateStatistics() : minMaxSamples(-1.0f), meanValidity(-1.0f), meanDistance(-1.0f) {}
+
+                // Only L1 at this time
+                static constexpr int kStatsNumCoeffs = 4;
 
                 vec2	minMaxSamples;
-                vec2	minMaxCoeffs[4];
+                vec2	minMaxCoeffs[kStatsNumCoeffs]; 
+                float   meanSqrIntensity[kStatsNumCoeffs];
                 float	meanValidity;
                 float	meanDistance;
-                int		probeCount;
             };           
 
             struct Objects

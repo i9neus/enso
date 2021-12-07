@@ -45,6 +45,8 @@ namespace Cuda
 	__host__ __device__ __forceinline__ int		Area(const ivec2& v)						{ return v.x * v.y; }
 	__host__ __device__ __forceinline__ uint	Area(const uvec2& v)						{ return v.x * v.y; }
 
+	__host__ __device__ __forceinline__ vec2	MinMax(const vec2& v, const float& f)		{ return vec2(min(v.x, f), max(v.y, f)); }
+
 	__host__ __device__ __forceinline__ bool	IsPointInUnitBox(const vec3& v) 
 	{ 
 		return v.x > -0.5f && v.x <= 0.5f && v.y > -0.5 && v.y <= 0.5f && v.z > -0.5f && v.z <= 0.5f;
@@ -88,6 +90,8 @@ namespace Cuda
 	#define kZero4u uvec4(0u)
 	#define kZero3u uvec3(0u)
 	#define kZero2u uvec2(0u)
+
+	#define	kMinMaxReset vec2(kFltMax, -kFltMax)
 
 	#define kBlack vec3(0.0f)
 	#define kWhite vec3(1.0f)

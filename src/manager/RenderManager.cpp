@@ -399,7 +399,7 @@ bool RenderManager::OnGatherStatsDispatch(Job& job)
 bool RenderManager::OnGatherStatsPoll(Json::Node& outJson, const Job& job)
 {
 	if (job.state != kRenderManagerJobCompleted) { return true; }
-	
+
 	// If render object stats have been been generated, copy them over
 	if (m_renderObjectStatsJson.NumMembers())
 	{
@@ -673,7 +673,7 @@ void RenderManager::Run()
 			}
 			m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
 
-			GatherRenderObjectStatistics(); // Gather statistics from the render objects
+			GatherRenderObjectStatistics(); // Gather statistics from the render objects			
 		}
 	}
 	catch (const std::runtime_error& err)
@@ -692,8 +692,8 @@ void RenderManager::Run()
 }
 
 void RenderManager::GatherRenderObjectStatistics()
-{
-	if (!m_statsJob.state == kRenderManagerJobDispatched) { return; }
+{	
+	if (m_statsJob.state != kRenderManagerJobDispatched) { return; }
 
 	Json::Document renderObjectJson;
 	Json::Document aggregatedStatsJson;
