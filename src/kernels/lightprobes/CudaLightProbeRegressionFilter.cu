@@ -217,7 +217,7 @@ namespace Cuda
         m_objects->cu_dLdC = m_hostdLdC->GetDeviceInstance();
         m_objects->cu_D = m_hostD->GetDeviceInstance();
         m_objects->cu_W = m_hostW->GetDeviceInstance();
-        m_objects->cu_T = m_hostT.GetDeviceObject();
+        m_objects->cu_T = m_hostT.GetDeviceInstance();
         m_objects.Upload();
 
         // Generate some random numbers to seed the polynomial coefficients
@@ -620,13 +620,13 @@ namespace Cuda
         {
             // Populate the kernel weights buffer ready for the regression step
             int numElements = m_objects->probesPerBatch * m_objects->regression.volume;
-            KernelComputeRegressionWeights << < (numElements + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeStartIdx);
+            KernelComputeRegressionWeights << < (numElements + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeStartIdx);
 
             // Run the regression step
-            KernelComputeRegressionIteration <<< m_regressionKernel.gridSize, m_regressionKernel.blockSize, m_regressionKernel.sharedMemoryBytes, m_hostStream >>> (m_objects.GetDeviceObject(), probeStartIdx);
+            KernelComputeRegressionIteration <<< m_regressionKernel.gridSize, m_regressionKernel.blockSize, m_regressionKernel.sharedMemoryBytes, m_hostStream >>> (m_objects.GetDeviceInstance(), probeStartIdx);
         }       
 
-        KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject());
+        KernelReconstructPolynomial << < (m_objects->gridData.totalSHCoefficients + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceInstance());
 
         m_hostOutputGrid->UpdateAggregateStatistics(0);
 

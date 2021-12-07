@@ -56,7 +56,7 @@ namespace Cuda
             return m_hostObject[0];
         }
 
-        __host__ Type* GetDeviceObject()
+        __host__ Type* GetDeviceInstance()
         {
             if (!cu_deviceObject)
             {

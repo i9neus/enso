@@ -348,11 +348,11 @@ namespace Cuda
         
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
-            KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
+            KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);
             
             if (m_objects->blocksPerProbe > 1)
             {
-                KernelCopyFromReduceBuffer << < (m_probeRange + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceObject(), probeIdx);
+                KernelCopyFromReduceBuffer << < (m_probeRange + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);
             }
 
             IsOk(cudaStreamSynchronize(m_hostStream));

@@ -68,6 +68,7 @@ namespace Cuda
 		float			meanGridValidity = -1.0f;
 		float			bakeProgress = -1.0f;
 		float			bakeConvergence = -1.0f;
+		float			meanI = 0.0f;
 		float			MSE = 0.0f;
 		int				numActiveGrids = 0;
 		vec2			minMaxSamples;
@@ -82,7 +83,9 @@ namespace Cuda
 		public:
 			struct Objects
 			{
-				__host__ __device__ Objects()
+				__host__ __device__ Objects() :
+					cu_reduceBuffer(nullptr),
+					cu_adaptiveSamplingGrid(nullptr)
 				{
 					for (int i = 0; i < kLightProbeNumBuffers; ++i)
 					{
@@ -92,14 +95,16 @@ namespace Cuda
 
 					cu_lightProbeErrorGrids[0] = nullptr;
 					cu_lightProbeErrorGrids[1] = nullptr;
+					cu_mse = nullptr;
 				}
 
-				Device::RenderState renderState;
-				Device::Array<vec4>* cu_accumBuffers[kLightProbeNumBuffers];
-				Device::Array<vec4>* cu_reduceBuffer = nullptr;
-				Device::LightProbeGrid* cu_probeGrids[kLightProbeNumBuffers];
-				Device::Array<float>* cu_lightProbeErrorGrids[2];
-				//Device::Array<float>* cu_peakL0MSE = nullptr;
+				Device::RenderState			renderState;
+				Device::Array<vec4>*		cu_accumBuffers[kLightProbeNumBuffers];
+				Device::Array<vec4>*		cu_reduceBuffer;
+				Device::LightProbeGrid*		cu_probeGrids[kLightProbeNumBuffers];
+				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
+				Device::Array<uchar>*		cu_adaptiveSamplingGrid;
+				float*						cu_mse;
 			};
 
 			__device__ LightProbeCamera();
@@ -174,9 +179,12 @@ namespace Cuda
 			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
-			std::array < AssetHandle<Host::Array<float>>, 2>						m_hostLightProbeErrorGrids;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
 			std::array<std::string, 3>												m_gridIDs;
+
+			std::array<AssetHandle<Host::Array<vec2>>, 2>							m_hostLightProbeErrorGrids;
+			AssetHandle<Host::Array<uchar>>											m_hostAdaptiveSamplingGrid;
+			DeviceObjectRAII<float>													m_hostMSE;
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;

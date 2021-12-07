@@ -14,9 +14,10 @@ namespace Cuda
     {
         kProbeGridIrradiance,
         kProbeGridLaplacian,
-        kProbeGridValidity,
         kProbeGridHarmonicMean,
-        kProbeGridPref
+        kProbeGridPref,
+        kProbeGridConvergence,
+        kProbeGridSqrError
     };
 
     __host__ __device__ __forceinline__ ivec3 GridPosFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
@@ -99,7 +100,10 @@ namespace Cuda
                     Device::Array<vec3>* cu_swapBuffer = nullptr;
                     Device::Array<vec3>* cu_shLaplacianData;
                 };
-                Device::Array<uchar>* cu_validityData = nullptr;
+                Device::Array<uchar>*   cu_validityData = nullptr;
+                Device::Array<uchar>*   cu_adaptiveSamplingData = nullptr;
+                Device::Array<vec2>*    cu_errorData = nullptr;
+                float*                  cu_mse = nullptr;
             };
 
             __host__ __device__ LightProbeGrid();
@@ -123,9 +127,36 @@ namespace Cuda
             __device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;
 
         private:
-            __device__ vec3 NearestNeighbourCoefficient(const Device::Array<vec3>& shData, const ivec3 gridIdx, const uint coeffIdx) const;
-            __device__ vec3 WeightedInterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridIdx, const uint coeffIdx, const vec3& delta, const uchar validity) const;
-            __device__ vec3 InterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridIdx, const uint coeffIdx, const vec3& delta) const;
+            template<typename T>
+            __device__ T InterpolateCoefficient(const Device::Array<T>& data, const ivec3 gridPos, const int coeffIdx, const int coeffsPerProbe, const vec3& delta) const
+            {
+                T vert[8];
+                for (int z = 0, idx = 0; z < 2; z++)
+                {
+                    for (int y = 0; y < 2; y++)
+                    {
+                        for (int x = 0; x < 2; x++, idx++)
+                        {
+                            const ivec3 vertCoord = gridPos + ivec3(x, y, z);
+                            const int sampleIdx = coeffsPerProbe * ProbeIdxFromGridPos(vertCoord, m_params.gridDensity);
+
+                            assert(sampleIdx < data.Size());
+
+                            vert[idx] = data[sampleIdx + coeffIdx];
+                        }
+                    }
+                }
+
+                // Trilinear interpolate
+                return mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
+                    mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z);
+            }
+
+            template<typename T>
+            __forceinline__ __device__ const T& NearestNeighbourCoefficient(const Device::Array<T>& data, const ivec3& gridPos, const uint coeffIdx, const uint coeffPerProbe) const
+            {
+                return data[coeffPerProbe * ProbeIdxFromGridPos(gridPos, m_params.gridDensity) + coeffIdx];
+            }
 
             LightProbeGridParams    m_params;
             Objects                 m_objects;
@@ -166,6 +197,9 @@ namespace Cuda
             __host__ bool                               IsValid() const;
             __host__ void                               GetRawData(std::vector<vec3>& data) const;
             __host__ void                               SetRawData(const std::vector<vec3>& data);
+            __host__ void                               SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, 
+                                                                           AssetHandle<Host::Array<vec2>> errorData, 
+                                                                           DeviceObjectRAII<float>& mse);
             __host__ const LightProbeGridParams&        GetParams() const { return m_params; }
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }
@@ -182,6 +216,9 @@ namespace Cuda
             AssetHandle<Host::Array<vec3>>  m_shData;            
             AssetHandle<Host::Array<uchar>> m_validityData;
             AssetHandle<Host::Array<vec3>>  m_shLaplacianData;
+            AssetHandle<Host::Array<uchar>> m_adaptiveSamplingData;
+            AssetHandle<Host::Array<vec2>>  m_errorData;
+            DeviceObjectRAII<float>*        m_hostMSE;
             
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;

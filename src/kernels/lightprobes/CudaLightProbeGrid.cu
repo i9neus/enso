@@ -4,6 +4,7 @@
 #include "generic/JsonUtils.h"
 #include "../CudaCtx.cuh"
 #include "../CudaManagedArray.cuh"
+#include "../math/CudaColourUtils.cuh"
 
 #include "../math/CudaSphericalHarmonics.cuh"
 
@@ -42,7 +43,7 @@ namespace Cuda
         node.AddArray("clipRegionUpper", std::vector<int>({ clipRegion[1].x, clipRegion[1].y, clipRegion[1].z }));
         node.AddValue("shOrder", shOrder);
         node.AddValue("dilate", dilate);
-        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref" }), outputMode);
+        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
 
         node.AddValue("invertX", invertX);
         node.AddValue("invertY", invertY);
@@ -66,7 +67,7 @@ namespace Cuda
 
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("dilate", dilate, flags);
-        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref" }), outputMode, flags);
+        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
 
         node.GetValue("invertX", invertX, flags);
         node.GetValue("invertY", invertY, flags);
@@ -285,36 +286,7 @@ namespace Cuda
         object.p = bdt.fwd * object.p;
         object.n = normalize((bdt.fwd * object.n) - object.p);
         return object;
-    }
-
-    __device__ vec3 Device::LightProbeGrid::InterpolateCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx, const vec3& delta) const
-    {
-        vec3 vert[8];
-        for (int z = 0, idx = 0; z < 2; z++)
-        {
-            for (int y = 0; y < 2; y++)
-            {
-                for (int x = 0; x < 2; x++, idx++)
-                {
-                    const ivec3 vertCoord = gridPos + ivec3(x, y, z);
-                    const int sampleIdx = m_params.coefficientsPerProbe * ProbeIdxFromGridPos(vertCoord, m_params.gridDensity);
-
-                    assert(sampleIdx < shData.Size());
-
-                    vert[idx] = shData[sampleIdx + coeffIdx];
-                }
-            }
-        }
-
-        // Trilinear interpolate
-        return mix(mix(mix(vert[0], vert[1], delta.x), mix(vert[2], vert[3], delta.x), delta.y),
-                   mix(mix(vert[4], vert[5], delta.x), mix(vert[6], vert[7], delta.x), delta.y), delta.z);
-    }
-
-    __device__ vec3 Device::LightProbeGrid::NearestNeighbourCoefficient(const Device::Array<vec3>& shData, const ivec3 gridPos, const uint coeffIdx) const
-    {
-        return shData[m_params.coefficientsPerProbe * ProbeIdxFromGridPos(gridPos, m_params.gridDensity) + coeffIdx];
-    }
+    }   
 
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
     {
@@ -358,19 +330,14 @@ namespace Cuda
         const vec3& n = hitCtx.hit.n;
         switch (m_params.outputMode)
         {
-        case kProbeGridValidity:
-        {
-            return mix(kRed, kGreen, InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta).x);         
-        }
-        break;
         case kProbeGridHarmonicMean:
         {
-            return vec3(InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, delta).y);
+            return vec3(InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta).y);
         }
         break;
         case kProbeGridLaplacian:
         {
-            L = InterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, delta) * SH::Project(n, 0);
+            L = InterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, m_params.coefficientsPerProbe, delta) * SH::Project(n, 0);
             //return L;
             const float LEx = cwiseExtremum(L);
             return (LEx > 0.0f) ?
@@ -378,12 +345,28 @@ namespace Cuda
                 mix(vec3(0.0f), kRed, min(1.0f, logf(1.0f + fabs(LEx) / logf(2.0f))));
         }
         break;
+        case kProbeGridConvergence:
+        {
+            if (!m_objects.cu_adaptiveSamplingData) { return kYellow; }
+
+            const auto& isActive = NearestNeighbourCoefficient(*m_objects.cu_adaptiveSamplingData, gridPos, 0, 1);
+            return isActive ? kRed : kGreen;
+        }
+        break;
+        case kProbeGridSqrError:
+        {
+            if (!m_objects.cu_errorData || !m_objects.cu_mse) { return kZero; }
+
+            const float sqrError = clamp(InterpolateCoefficient(*m_objects.cu_errorData, gridPos, 0, 1, delta).y / (*m_objects.cu_mse * 0.1f), 0.0f, 1.0f);
+            return Hue((1.0f - sqrtf(sqrError)) * 0.66f);
+        }
+        break;
         default:
         {
             // Sum the SH coefficients
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1; coeffIdx++)
             {
-                L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, delta) * SH::Project(n, coeffIdx);
+                L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, m_params.coefficientsPerProbe, delta) * SH::Project(n, coeffIdx);
             }
         }
         }
@@ -517,7 +500,8 @@ namespace Cuda
         }
     }
 
-    __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id)
+    __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id) :
+        m_hostMSE(nullptr)
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
 
@@ -557,7 +541,7 @@ namespace Cuda
     __global__ void KernelDilate(Device::LightProbeGrid* cu_grid)
     {
         cu_grid->Dilate();
-    }
+    }   
 
     __host__ void Host::LightProbeGrid::Prepare(const LightProbeGridParams& params)
     {
@@ -566,7 +550,7 @@ namespace Cuda
         
         m_params = params;
         
-        Prepare();
+        Prepare();        
     }
 
     __host__ void Host::LightProbeGrid::Prepare()
@@ -633,6 +617,19 @@ namespace Cuda
         m_shData->Upload(rawData);
     }
 
+    __host__ void Host::LightProbeGrid::SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, AssetHandle<Host::Array<vec2>> errorData, DeviceObjectRAII<float>& mse)
+    {
+        m_adaptiveSamplingData = adaptiveSamplingData;
+        m_errorData = errorData;
+        m_hostMSE = &mse;
+
+        m_deviceObjects.cu_adaptiveSamplingData = m_adaptiveSamplingData->GetDeviceInstance();
+        m_deviceObjects.cu_errorData = m_errorData->GetDeviceInstance();
+        m_deviceObjects.cu_mse = m_hostMSE->GetDeviceInstance();
+
+        Cuda::SynchroniseObjects(cu_deviceData, m_deviceObjects);
+    }
+
     __host__ bool Host::LightProbeGrid::IsValid() const
     {
         return m_shData->Size() > 0;
@@ -654,10 +651,10 @@ namespace Cuda
     __host__ const Host::LightProbeGrid::AggregateStatistics& Host::LightProbeGrid::UpdateAggregateStatistics(const int maxSamples)
     {
         // Compute aggregate statistics (min/max ranges, counts, etc) for the probe grid
-        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject());
+        KernelGetProbeGridAggregateStatistics << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceInstance());
 
         // Compute coefficient histograms
-        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceObject(), m_statistics.coeffHistogram.GetDeviceObject());
+        KernelComputeProbeGridHistograms << <1, 256, 0, m_hostStream >> > (cu_deviceData, m_probeAggregateData.GetDeviceInstance(), m_statistics.coeffHistogram.GetDeviceInstance());
         IsOk(cudaStreamSynchronize(m_hostStream));
 
         m_probeAggregateData.Download();

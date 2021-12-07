@@ -94,7 +94,13 @@ namespace Cuda
         std::mutex                                                      m_mutex;
     };
 
-    enum AssetHandleFlags : uint { kAssetForceDestroy = 1, kAssetAssertOnError = 2 };
+    enum AssetHandleFlags : uint 
+    { 
+        kAssetForceDestroy = 1 << 0,
+        kAssetExpectNoRefs = 1 << 1,
+        kAssetCleanupPass = 1 << 2,
+        kAssetAssertOnError = 1 << 3
+    };
 
     // FIXME: Integrate weak asset handles into their own class
     template<typename T> using WeakAssetHandle = std::weak_ptr<T>;
@@ -169,8 +175,13 @@ namespace Cuda
             // If the refcount is greater than 1, the object is still in use elsewhere
             if (m_ptr.use_count() > 1 && !(flags & kAssetForceDestroy))
             {
-                AssertMsgFmt(!(flags & kAssetAssertOnError), "Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
-                                 m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+                if (flags & kAssetExpectNoRefs)
+                {
+                    Log::Error("Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
+                                m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
+                    Assert(!(flags & kAssetAssertOnError));
+                }
+
                 return false;
             }
 

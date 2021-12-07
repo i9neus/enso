@@ -114,7 +114,7 @@ void LightProbeCameraShelf::Construct()
         ImGui::Checkbox("Dilate", &m_p.grid.dilate);
         HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
 
-        ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Validity", "Harmonic mean", "pRef" }, m_p.grid.outputMode);
+        ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Harmonic mean", "pRef", "Convergence", "Relative MSE" }, m_p.grid.outputMode);
         HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
 
         ConstructComboBox("Direct/indirect", { "Combined", "Separated" }, m_p.lightingMode);
@@ -173,8 +173,12 @@ void LightProbeCameraShelf::Construct()
     m_p.camera.seed = max(0, m_p.camera.seed);
 
     if (m_bakeProgress >= 0.0f)     { ImGui::Text(tfm::format("Bake progress: %.2f%%", m_bakeProgress * 100.0f).c_str()); }
-    if (m_bakeConvergence >= 0.0f)  { ImGui::Text(tfm::format("Bake convergence: %.2f%%", m_bakeConvergence * 100.0f).c_str()); }
-    if (m_bakeConvergence >= 0.0f)  { ImGui::Text(tfm::format("Mean error: %.5f%%", m_MSE).c_str()); }
+    if (m_bakeConvergence >= 0.0f)
+    {
+        ImGui::Text(tfm::format("Bake convergence: %.2f%%", m_bakeConvergence * 100.0f).c_str());
+        ImGui::Text(tfm::format("Mean I: %.5f%%", m_meanI).c_str());
+        ImGui::Text(tfm::format("MSE I: %.5f%%", m_MSE).c_str());
+    }
 
     constexpr int kMSEPlotDensity = 10;
     std::string mseFormat = tfm::format("%.5f", m_MSE);
@@ -223,7 +227,8 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& bas
     baseNode.GetValue("bakeConvergence", m_bakeConvergence, Json::kSilent);    
     
     // Look for an MSE value
-    if (baseNode.GetValue("mse", m_MSE, Json::kSilent))
+    if (baseNode.GetValue("mse", m_MSE, Json::kSilent) && m_MSE > 0.0f &&
+        baseNode.GetValue("meanI", m_meanI, Json::kSilent) && m_meanI > 0.0f)
     {
         constexpr int kMaxMSEDataSize = 1000;
         int frameIdx = -1;

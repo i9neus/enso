@@ -62,24 +62,22 @@ namespace Cuda
         Log::Debug("Unloading scene graph...");
         
         constexpr int kMaxAttempts = 10;
+        std::vector<std::string> activeList;
         for (int i = 0; !m_objectMap.empty() && i < kMaxAttempts; i++)
         {
             //Log::Indent indent(tfm::format("Pass %i...", i + 1));
-
             for (RenderObjectMap::iterator it = m_objectMap.begin(); it != m_objectMap.end();)
             {
-                uint flags = 0;
+                uint flags = kAssetCleanupPass;
                 if (i == kMaxAttempts - 1)
                 {
                     flags |= kAssetForceDestroy | kAssetAssertOnError;
-                }
 
-                /*if (it->second.GetReferenceCount() > 1)
-                {
-                    Log::Debug("Object '%s' has %i references. Skipping...", it->second->GetAssetID(), it->second.GetReferenceCount());
-                    ++it;
-                    continue;
-                }*/
+                    if (it->second.GetReferenceCount() > 1)
+                    {
+                        activeList.push_back(it->first);
+                    }
+                }
 
                 // Try to delete the asset
                 if (!it->second.DestroyAsset(flags))
@@ -92,6 +90,15 @@ namespace Cuda
                     m_objectMap.erase(it);
                     it = nextIt;
                 }
+            }
+        }
+
+        if (activeList.size() > 0)
+        {
+            Log::Error("ERROR: %i objects were not properly cleaned up:", activeList.size());
+            for (const auto& name : activeList)
+            {
+                Log::Error("  - %s", name);
             }
         }
     }
