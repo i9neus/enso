@@ -45,6 +45,7 @@ private:
     RenderObjectStateManager        m_stateManager;
 
     HighResolutionTimer             m_statsTimer;
+    HighResolutionTimer             m_fpsTimer;
     int                             m_frameIdx;
     float                           m_meanFrameTime;
     

@@ -114,11 +114,18 @@ std::string GetModuleDirectory()
 }
 
 template<typename HandleType>
-bool GetFileHandle(const std::string& filePath, HandleType& file, std::ios_base::openmode mode)
-{
-    // Try loading the file using the verbatim path
-    file.open(filePath, mode);
-    if (file.good()) { return true; }
+bool GetFileHandle(const std::string& filePath, HandleType& file, std::ios_base::openmode mode, std::string* actualPath = nullptr)
+{   
+    if (fs::path(filePath).is_absolute())
+    {
+        // Try loading the file using the verbatim path
+        file.open(filePath, mode);
+        if (file.is_open())
+        {
+            if (actualPath) { *actualPath = filePath; }
+            return true;
+        }
+    }
 
     // Get a path to the module directory
     std::string concatPath = GetModuleDirectory();
@@ -129,18 +136,23 @@ bool GetFileHandle(const std::string& filePath, HandleType& file, std::ios_base:
     Log::Warning("_DEBUG: Modifying local path to '%s'...\n", concatPath + filePath);
 #endif
 
-    file.open(concatPath + filePath, mode);
-    return file.good();
+    concatPath += filePath;
+    if (actualPath) { *actualPath = concatPath; }
+
+    if (!fs::path(concatPath).is_absolute()) { return false; }
+
+    file.open(concatPath, mode);
+    return file.is_open();
 }
 
-bool GetInputFileHandle(const std::string& filePath, std::ifstream& file)
+bool GetInputFileHandle(const std::string& filePath, std::ifstream& file, std::string* actualPath)
 {
-    return GetFileHandle(filePath, file, std::ios::in);
+    return GetFileHandle(filePath, file, std::ios::in, actualPath);
 }
 
-bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file)
+bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file, std::string* actualPath)
 {
-    return GetFileHandle(filePath, file, std::ios::out);
+    return GetFileHandle(filePath, file, std::ios::out, actualPath);
 }
 
 std::string ReadTextFile(const std::string& filePath)

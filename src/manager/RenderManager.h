@@ -69,7 +69,7 @@ private:
 
 	HighResolutionTimer		m_renderStatsTimer;
 	Json::Document			m_renderObjectStatsJson;
-	std::array<float, 20>	m_frameTimes;
+	std::vector<float>		m_frameTimes;
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 	TimePoint					m_renderStartTime;

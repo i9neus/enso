@@ -47,7 +47,8 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_dirtiness(IMGUIDirtiness::kClean),
     m_gridFitness(0.0f),
     m_renderStateJson(renderStateJson),
-    m_commandQueue(commandQueue)
+    m_commandQueue(commandQueue), 
+    m_bakeGridSamples(-1)
 {
     m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     m_pngPathTemplate = "probeVolume.{$ITERATION}.png";
@@ -367,17 +368,19 @@ void RenderObjectStateManager::ParseRenderStateJson()
                 const Json::Node& gridListJson = cameraJson.GetChildObject("grids", Json::kRequiredAssert);                
                 
                 m_bakeGridValidity = -1.0f;
-                for (const auto& gridJson : gridListJson)
+                const auto gridIt = gridListJson.begin();
+                if (gridIt != gridListJson.end())
                 {
-                    if (!gridJson.IsObject()) { continue; }
+                    const auto& gridJson = *gridIt;               
+                    Assert(gridJson.IsObject());
                     
-                    float meanValidity, minSamples;
+                    float meanValidity, maxSamples;
                     gridJson.GetValue("meanProbeValidity", meanValidity, Json::kRequiredAssert);
-                    gridJson.GetValue("minSamples", minSamples, Json::kRequiredAssert);
+                    gridJson.GetValue("maxSamples", maxSamples, Json::kRequiredAssert);                 
                     
-                    if (minSamples > 0.0f)
+                    if (maxSamples >= 0.0f)
                     {
-                        m_bakeGridSamples = minSamples;
+                        m_bakeGridSamples = maxSamples;
                         if (meanValidity >= 0.0f)
                         {
                             m_bakeGridValidity = (m_bakeGridValidity < 0.0f) ? meanValidity : math::min(meanValidity, m_bakeGridValidity);
@@ -466,7 +469,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::Text("Bake grid validity: %.2f", m_bakeGridValidity);
     ImGui::PopStyleColor(1);
 
-    ImGui::Text("Bake grid samples: %.2f", m_bakeGridSamples);
+    ImGui::Text("Bake grid samples: %i", int(m_bakeGridSamples));
 
     ImGui::PopID();
 }

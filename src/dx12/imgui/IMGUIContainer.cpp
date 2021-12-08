@@ -144,7 +144,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
                     if (objectNode)
                     {
                         Assert(shelf.second);
-                        shelf.second->OnUpdateRenderObjectStatistics(objectNode);
+                        shelf.second->OnUpdateRenderObjectStatistics(objectNode, m_renderStateJson);
                     }
                 }
             }
@@ -155,7 +155,7 @@ void IMGUIContainer::ConstructRenderObjectShelves()
     ImGui::Text(tfm::format("Frame index: %i", m_frameIdx).c_str());
     if (m_meanFrameTime > 0.0f)
     {
-        ImGui::Text(tfm::format("%.2f FPS (%.fms per frame)", 1.0f / m_meanFrameTime, m_meanFrameTime * 1e3f).c_str());
+        ImGui::Text(tfm::format("%.2f FPS (%.2fms per frame)", 1.0f / m_meanFrameTime, m_meanFrameTime * 1e3f).c_str());
     }
     ImGui::Separator();
 

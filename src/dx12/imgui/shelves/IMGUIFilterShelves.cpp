@@ -89,9 +89,9 @@ void LightProbeRegressionFilterShelf::Reset()
 
 }
 
-void LightProbeRegressionFilterShelf::OnUpdateRenderObjectStatistics(const Json::Node& baseNode)
+void LightProbeRegressionFilterShelf::OnUpdateRenderObjectStatistics(const Json::Node& shelfNode, const Json::Node& rootNode)
 {
-    const Json::Node gridSetNode = baseNode.GetChildObject("grids", Json::kSilent);
+    const Json::Node gridSetNode = shelfNode.GetChildObject("grids", Json::kSilent);
     if (!gridSetNode) { return; }
 
     Assert(gridSetNode.IsObject());

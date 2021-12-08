@@ -36,7 +36,7 @@ public:
     virtual void Construct() override final;
     virtual void Jitter(const uint flags, const uint operation) override final {}
     virtual void Reset() override final;
-    virtual void OnUpdateRenderObjectStatistics(const Json::Node& node) override final;
+    virtual void OnUpdateRenderObjectStatistics(const Json::Node& shelfNode, const Json::Node& rootNode) override final;
 
 private:
     struct HistogramWidgetData

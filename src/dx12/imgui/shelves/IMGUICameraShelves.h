@@ -7,6 +7,7 @@
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
 #include "IMGUIAbstractShelf.h"
+#include "generic/HighResolutionTimer.h"
 
 // Perspective camera
 class PerspectiveCameraShelf : public IMGUIShelf<Cuda::Host::PerspectiveCamera, Cuda::PerspectiveCameraParams>
@@ -30,7 +31,7 @@ public:
     static std::shared_ptr<IMGUIShelf> Instantiate(const Json::Node& json) { return std::shared_ptr<IMGUIShelf>(new LightProbeCameraShelf(json)); }
     virtual void Construct() override final;
     virtual void Jitter(const uint flags, const uint operation) override final {}
-    virtual void OnUpdateRenderObjectStatistics(const Json::Node& node) override final;
+    virtual void OnUpdateRenderObjectStatistics(const Json::Node& shelfNode, const Json::Node& rootNode) override final;
 
     void Randomise();
 
@@ -58,7 +59,14 @@ private:
     float                               m_bakeProgress;
     float                               m_bakeConvergence;
     float                               m_meanI, m_MSE;
+    float                               m_meanFrameTime;
     Cuda::vec2                          m_minMaxMeanI, m_minMaxMSE;
     std::vector<float>                  m_meanIData, m_MSEData;
     std::vector<ProbeGridStatistics>    m_probeGridStatistics;
+
+    HighResolutionTimer                 m_performanceTimer;
+    std::vector<std::pair<float, float>> m_performanceLog;
+
+private:
+    void ExportStatsLog();
 };

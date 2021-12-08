@@ -45,10 +45,10 @@ std::string ReadTextFile(const std::string& filePath);
 void WriteTextFile(const std::string& filePath, const std::string& data);
 
 // Get a file handle to the specified path
-bool GetInputFileHandle(const std::string& filePath, std::ifstream& file);
+bool GetInputFileHandle(const std::string& filePath, std::ifstream& file, std::string* actualPath = nullptr);
 
 // Get a file handle to the specified path
-bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file);
+bool GetOutputFileHandle(const std::string& filePath, std::ofstream& file, std::string* actualPath = nullptr);
 
 // Returns true if the path is absolute i.e. it's unambiguous on the filesystem
 bool IsAbsolutePath(const std::string& path);

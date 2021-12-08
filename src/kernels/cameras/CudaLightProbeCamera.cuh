@@ -29,10 +29,16 @@ namespace Cuda
 		kLightProbeNumBuffers
 	};
 
+	enum ProbeBakeTraversalMode : int
+	{
+		kBakeTraversalLinear,
+		kBakeTraversalHilbert
+	};
+
 	struct LightProbeCameraParams
 	{
 		__host__ __device__ LightProbeCameraParams();
-		__host__ LightProbeCameraParams(const ::Json::Node& node);
+		__host__ LightProbeCameraParams(const ::Json::Node& node, const uint flags);
 
 		__host__ void ToJson(::Json::Node& node) const;
 		__host__ void FromJson(const ::Json::Node& node, const uint flags);
@@ -52,6 +58,7 @@ namespace Cuda
 		vec3						aspectRatio;
 
 		int							lightingMode;
+		int							traversalMode;
 		int							gridUpdateInterval;
 	};
 
@@ -93,6 +100,7 @@ namespace Cuda
 						cu_probeGrids[i] = nullptr;
 					}
 
+					cu_hilbertBuffer = nullptr;
 					cu_lightProbeErrorGrids[0] = nullptr;
 					cu_lightProbeErrorGrids[1] = nullptr;
 					cu_meanI = nullptr;
@@ -101,6 +109,7 @@ namespace Cuda
 				Device::RenderState			renderState;
 				Device::Array<vec4>*		cu_accumBuffers[kLightProbeNumBuffers];
 				Device::Array<vec4>*		cu_reduceBuffer;
+				Device::Array<uint>*		cu_hilbertBuffer;
 				Device::LightProbeGrid*		cu_probeGrids[kLightProbeNumBuffers];
 				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
 				Device::Array<uchar>*		cu_adaptiveSamplingGrid;
@@ -123,7 +132,7 @@ namespace Cuda
 
 		private:
 			__device__ void Prepare();
-			__device__ void CreateRays(const uint& accumIdx, CompressedRay* rays, const int frameIdx) const;
+			__device__ void CreateRays(const int& probeIdx, const int& subsampleIdx, CompressedRay* rays, const int frameIdx) const;
 			__device__ __forceinline__ void ReduceAccumulatedSample(vec4& dest, const vec4& source);
 
 		private:
@@ -149,7 +158,6 @@ namespace Cuda
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return nullptr; }
 			__host__ virtual void						ClearRenderState() override final;
 			__host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
-			__host__ void								Prepare();
 			__host__ virtual bool						IsBakingCamera() const override final { return true; }
 			__host__ virtual bool						EmitStatistics(Json::Node& node) const override final;
 
@@ -171,6 +179,8 @@ namespace Cuda
 			__host__ void								UpdateProbeGridAggregateStatistics();
 			__host__ void								BuildLightProbeGrids();
 			__host__ void								BuildLightProbeErrorGrid();
+			__host__ void								Prepare(LightProbeCameraParams newParams);
+			__host__ void								GenerateHilbertBuffer(const LightProbeCameraParams& newParams);
 
 			Device::LightProbeCamera*					cu_deviceData;
 			Device::LightProbeCamera::Objects			m_deviceObjects;
@@ -179,6 +189,7 @@ namespace Cuda
 			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
+			AssetHandle<Host::Array<uint>>											m_hostHilbertBuffer;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
 			std::array<std::string, 3>												m_gridIDs;
 

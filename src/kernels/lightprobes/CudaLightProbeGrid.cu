@@ -24,6 +24,7 @@ namespace Cuda
         aspectRatio = vec3(1.0f);
         maxSamplesPerProbe = 0;
         dilate = true;
+        numProbes = 0;
 
         Prepare();
     }

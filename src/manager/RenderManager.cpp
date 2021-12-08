@@ -19,7 +19,8 @@
 RenderManager::RenderManager() : 
 	m_threadSignal(kRenderManagerIdle),
 	m_dirtiness(kDirtinessStateClean),
-	m_frameIdx(0)
+	m_frameIdx(0),
+	m_frameTimes(20)
 {
 	// Register the list of jobs
 	RegisterJob(m_bake.job, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);

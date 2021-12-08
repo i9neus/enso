@@ -3,6 +3,8 @@
 
 #include "kernels/cameras/CudaCamera.cuh"
 
+#include "generic/FilesystemUtils.h"
+
 void PerspectiveCameraShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
@@ -109,13 +111,16 @@ void LightProbeCameraShelf::Construct()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNodeEx("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::TreeNodeEx("Baking", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::Checkbox("Dilate", &m_p.grid.dilate);
         HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
 
         ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Harmonic mean", "pRef", "Convergence", "Relative MSE" }, m_p.grid.outputMode);
         HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
+
+        ConstructComboBox("Traversal mode", { "Linear", "Hilbert curve" }, m_p.traversalMode);
+        HelpMarker("Specifies the pattern used to traverse the grid while baking.");
 
         ConstructComboBox("Direct/indirect", { "Combined", "Separated" }, m_p.lightingMode);
         HelpMarker("Specifies whether direct and indirect illumination should be combined in a single pass or exported as two separate grids.");
@@ -138,6 +143,9 @@ void LightProbeCameraShelf::Construct()
         {
             ImGui::DragFloat("Noise treshold", &m_p.camera.errorThreshold, math::max(m_p.camera.errorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max(), "%.7f");
             HelpMarker("The noise threshold below which sampling is terminated.");
+
+            ImGui::DragFloat("Adaptive sampling gamma", &m_p.camera.adaptiveSamplingGamma, math::max(m_p.camera.adaptiveSamplingGamma * 1e-3f, 1e-3f), 0.1f, 10.0f, "%.3f");
+            HelpMarker("Gamma correction factor applied to the adaptive sampling calculations.");
         }
 
         ImGui::InputInt("Seed", &m_p.camera.seed);
@@ -172,6 +180,7 @@ void LightProbeCameraShelf::Construct()
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
+    ImGui::Text(tfm::format("Frame: %i", m_frameIdx).c_str());
     if (m_bakeProgress >= 0.0f)     { ImGui::Text(tfm::format("Bake progress: %.2f%%", m_bakeProgress * 100.0f).c_str()); }
     if (m_bakeConvergence >= 0.0f)
     {
@@ -209,6 +218,11 @@ void LightProbeCameraShelf::Construct()
         ImGui::PopID();
         ImGui::TreePop();
     }
+
+    if (ImGui::Button("Export Log"))
+    {
+        ExportStatsLog();
+    }
 }
 
 void LightProbeCameraShelf::Randomise()
@@ -223,26 +237,34 @@ void LightProbeCameraShelf::Randomise()
     }
 }
 
-void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& baseNode)
+void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& shelfNode, const Json::Node& rootNode)
 {    
-    baseNode.GetValue("bakeProgress", m_bakeProgress, Json::kSilent);
-    baseNode.GetValue("bakeConvergence", m_bakeConvergence, Json::kSilent);    
+    // Pull some stats from the render manager
+    const Json::Node managerJson = rootNode.GetChildObject("renderManager", Json::kRequiredAssert | Json::kLiteralID);
+    int newFrameIdx = -1;
+    managerJson.GetValue("frameIdx", newFrameIdx, Json::kRequiredAssert);
+    managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
+
+    // If the render has been reset, clear the stored data
+    if (newFrameIdx <= m_frameIdx)
+    {
+        m_MSEData.clear();
+        m_meanIData.clear();
+        m_performanceLog.clear();
+        m_minMaxMeanI = m_minMaxMSE = Cuda::kMinMaxReset;
+    }
     
+    // Get the progress and convergence metrics for the bake in progress
+    shelfNode.GetValue("bakeProgress", m_bakeProgress, Json::kSilent);
+    shelfNode.GetValue("bakeConvergence", m_bakeConvergence, Json::kSilent);
+
     // Look for an MSE value
-    if (baseNode.GetValue("mse", m_MSE, Json::kSilent) && m_MSE > 0.0f &&
-        baseNode.GetValue("meanI", m_meanI, Json::kSilent) && m_meanI > 0.0f)
+    if (shelfNode.GetValue("mse", m_MSE, Json::kSilent) && m_MSE > 0.0f &&
+        shelfNode.GetValue("meanI", m_meanI, Json::kSilent) && m_meanI > 0.0f)
     {
         constexpr int kMaxMSEDataSize = 1000;
-        int frameIdx = -1;
-        baseNode.GetValue("frameIdx", frameIdx, Json::kSilent);
-
-        // If the render has been reset, clear the stored data
-        if (frameIdx <= m_frameIdx)
-        {
-            m_MSEData.clear();
-            m_meanIData.clear();
-            m_minMaxMeanI = m_minMaxMSE = Cuda::kMinMaxReset;
-        }
+        shelfNode.GetValue("frameIdx", newFrameIdx, Json::kSilent);
+    
         // Add the data to the history
         if (m_MSE > 0.0f && m_MSEData.size() < kMaxMSEDataSize)
         {
@@ -250,54 +272,82 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& bas
             m_minMaxMSE = Cuda::MinMax(m_minMaxMSE, logMSE);
             m_MSEData.push_back(logMSE);
         }
-        if(m_meanIData.size() < kMaxMSEDataSize)
+        if (m_meanIData.size() < kMaxMSEDataSize)
         {
             m_minMaxMeanI = Cuda::MinMax(m_minMaxMeanI, m_meanI);
-            m_meanIData.push_back(m_meanI);            
+            m_meanIData.push_back(m_meanI);
         }
-
-        m_frameIdx = frameIdx;
     }
 
-    const Json::Node gridSetNode = baseNode.GetChildObject("grids", Json::kSilent);
-    if (!gridSetNode) { return; }
+    const Json::Node gridSetNode = shelfNode.GetChildObject("grids", Json::kSilent);
+    if (gridSetNode)
+    {
+        Assert(gridSetNode.IsObject());
+        m_probeGridStatistics.resize(gridSetNode.NumMembers());
 
-    Assert(gridSetNode.IsObject());
-    m_probeGridStatistics.resize(gridSetNode.NumMembers());
-
-    int gridIdx = 0;
-    std::vector<std::vector<uint>> histogramMatrix;
-    for (::Json::Node::ConstIterator it = gridSetNode.begin(); it != gridSetNode.end(); ++it, ++gridIdx)
-    {    
-        const auto& gridNode = *it;
-        auto& stats = m_probeGridStatistics[gridIdx];
-
-        stats.gridID = it.Name();
-        gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
-        gridNode.GetValue("maxSamples", stats.minSamplesTaken, Json::kSilent);
-        gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
-        gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent); 
-
-        stats.hasHistogram = false;
-        histogramMatrix.clear();
-        if (gridNode.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
+        int gridIdx = 0;
+        std::vector<std::vector<uint>> histogramMatrix;
+        for (::Json::Node::ConstIterator it = gridSetNode.begin(); it != gridSetNode.end(); ++it, ++gridIdx)
         {
-            // Map the input data into something the widget can use
-            stats.histogramWidgetData.resize(histogramMatrix.size());
-            for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
+            const auto& gridNode = *it;
+            auto& stats = m_probeGridStatistics[gridIdx];
+
+            stats.gridID = it.Name();
+            gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
+            gridNode.GetValue("maxSamples", stats.maxSamplesTaken, Json::kSilent);
+            gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
+            gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent);
+
+            stats.hasHistogram = false;
+            histogramMatrix.clear();
+            if (gridNode.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))
             {
-                const auto& inputData = histogramMatrix[histogramIdx];
-                auto& outputData = stats.histogramWidgetData[histogramIdx];
-                outputData.data.resize(inputData.size());
-                outputData.maxValue = 0;
-                for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+                // Map the input data into something the widget can use
+                stats.histogramWidgetData.resize(histogramMatrix.size());
+                for (int histogramIdx = 0; histogramIdx < histogramMatrix.size(); ++histogramIdx)
                 {
-                    //outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
-                    outputData.data[binIdx] = inputData[binIdx];
-                    outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+                    const auto& inputData = histogramMatrix[histogramIdx];
+                    auto& outputData = stats.histogramWidgetData[histogramIdx];
+                    outputData.data.resize(inputData.size());
+                    outputData.maxValue = 0;
+                    for (int binIdx = 0; binIdx < inputData.size(); ++binIdx)
+                    {
+                        //outputData.data[binIdx] = std::log(1.0f + inputData[binIdx]);
+                        outputData.data[binIdx] = inputData[binIdx];
+                        outputData.maxValue = max(outputData.maxValue, outputData.data[binIdx]);
+                    }
                 }
+                stats.hasHistogram = true;
             }
-            stats.hasHistogram = true;
         }
+    }
+
+    // Is it time to log the performance 
+    if (m_performanceTimer.Get() > 0.1f)
+    {
+        m_performanceTimer.Reset();
+
+        const size_t kMaxFPSHistory = 10000;
+        if (m_performanceLog.size() < kMaxFPSHistory)
+        {
+            m_performanceLog.emplace_back(m_bakeConvergence, m_meanFrameTime);
+        }
+    }
+
+    m_frameIdx = newFrameIdx;
+}
+
+void LightProbeCameraShelf::ExportStatsLog()
+{
+    std::ofstream file;
+    std::string actualPath;
+    if (GetOutputFileHandle("fps.txt", file, &actualPath))
+    {
+        for (auto& fps : m_performanceLog)
+        {
+            file << fps.first << " " << fps.second << std::endl;
+        }
+        file.close();
+        Log::Write("Exported FPS log to '%s'", actualPath);
     }
 }

@@ -23,14 +23,15 @@ namespace Cuda
     __host__ __device__ LightProbeCameraParams::LightProbeCameraParams()
     {
         lightingMode = kBakeLightingCombined;
+        traversalMode = kBakeTraversalLinear;
         gridUpdateInterval = 10;
         minViableValidity = 0.0f;
     }
 
-    __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node) :
+    __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node, const uint flags) :
         LightProbeCameraParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, flags);
     }
 
     __host__ void LightProbeCameraParams::ToJson(::Json::Node& node) const
@@ -40,6 +41,7 @@ namespace Cuda
         camera.ToJson(node);
 
         node.AddEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode);
+        node.AddEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode);
         node.AddValue("gridUpdateInterval", gridUpdateInterval);
         node.AddValue("minViableValidity", minViableValidity);
     }
@@ -51,6 +53,7 @@ namespace Cuda
         camera.FromJson(node, flags);
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
+        node.GetEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode, flags);
         node.GetValue("gridUpdateInterval", gridUpdateInterval, flags);
         node.GetValue("minViableValidity", minViableValidity, flags);
     }      
@@ -72,6 +75,21 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::SeedRayBuffer(const int frameIdx)
     {
         assert(kKernelIdx * 2 < kRayBufferSize);
+
+        int probeIdx = kKernelIdx / m_params.subsamplesPerProbe;
+        if (probeIdx >= m_params.grid.numProbes) { return; }
+
+        // FIXME: This asserts, but it shouldn't. Find out why.
+        //assert(probeIdx < m_params.grid.numProbes);
+
+        // Apply indirection
+        if (m_params.traversalMode != kBakeTraversalLinear)
+        {
+            probeIdx = (*m_objects.cu_hilbertBuffer)[probeIdx];
+        }
+        
+        // If adaptive sampling is enabled and the probe is converged, don't spawn any more rays.
+        if (m_params.camera.samplingMode != kCameraSamplingFixed && (*m_objects.cu_adaptiveSamplingGrid)[probeIdx] == 0) { return; }
         
         CompressedRay* compressedRays = &(*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx * 2];
 
@@ -93,7 +111,7 @@ namespace Cuda
         if (!compressedRays[0].IsAlive() && !compressedRays[1].IsAlive() &&
             (m_params.camera.maxSamples <= 0 || int(compressedRays[0].sampleIdx - m_seedOffset) < m_params.maxSamplesPerBucket))
         {
-            CreateRays(kKernelIdx, compressedRays, frameIdx);
+            CreateRays(probeIdx, kKernelIdx % m_params.subsamplesPerProbe, compressedRays, frameIdx);
         }
     }
 
@@ -125,20 +143,16 @@ namespace Cuda
         m_seedOffset = HashOf(uint(m_params.camera.seed) & ((1u << 31) - 1u));
     }
 
-    __device__ void Device::LightProbeCamera::CreateRays(const uint& subsampleIdx, CompressedRay* rays, const int frameIdx) const
-    {
-        assert(subsampleIdx < kAccumBufferSize);
-        
-        const int probeIdx = subsampleIdx / m_params.subsamplesPerProbe;
+    __device__ void Device::LightProbeCamera::CreateRays(const int& probeIdx, const int& subsampleIdx, CompressedRay* rays, const int frameIdx) const
+    {        
+        //const int probeIdx = kKernelIdx / m_params.subsamplesPerProbe;
         const ivec3 gridIdx = GridPosFromProbeIdx(probeIdx, m_params.grid.gridDensity);
-
-        // If adaptive sampling is enabled and the probe is converged, don't spawn any more rays.
-        if (m_params.camera.samplingMode != kCameraSamplingFixed && (*m_objects.cu_adaptiveSamplingGrid)[probeIdx] == 0) { return; }
+        const uint accumIdx = probeIdx * m_params.subsamplesPerProbe + subsampleIdx;
 
         auto& primary = rays[0]; 
         auto& secondary = rays[1];
         
-        primary.accumIdx = subsampleIdx;
+        primary.accumIdx = accumIdx;
         primary.sampleIdx++;
         primary.depth = 0;
         RNG rng(primary);
@@ -160,7 +174,7 @@ namespace Cuda
         primary.od.o = m_params.grid.aspectRatio * vec3(gridIdx) / vec3(m_params.grid.gridDensity - 1) - vec3(0.5f);
         primary.od.o = m_params.grid.transform.PointToWorldSpace(primary.od.o);
 
-        secondary.accumIdx = subsampleIdx;
+        secondary.accumIdx = accumIdx;
         secondary.probeDir = primary.probeDir;
         secondary.sampleIdx = primary.sampleIdx;
     }
@@ -355,8 +369,15 @@ namespace Cuda
             const vec3 L1Half(PHalf[1][chnlIdx], PHalf[2][chnlIdx], PHalf[3][chnlIdx]);
 
             // Estimate the peak irradiance over the unit sphere
-            const float M = L0Half * SH::GetLegendreCoefficient(0) + length(L1Half) * SH::GetLegendreCoefficient(1);
-            const float N = (L0 - L0Half) * SH::GetLegendreCoefficient(0) + (length(L1) - length(L1Half)) * SH::GetLegendreCoefficient(1);
+            float M = L0Half * SH::GetLegendreCoefficient(0) + length(L1Half) * SH::GetLegendreCoefficient(1);
+            float N = (L0 - L0Half) * SH::GetLegendreCoefficient(0) + (length(L1) - length(L1Half)) * SH::GetLegendreCoefficient(1);
+
+            // Gamma ramp
+            if (m_params.camera.adaptiveSamplingGamma != 1.0f)
+            {
+                M = powf(M, 1 / m_params.camera.adaptiveSamplingGamma);
+                N = powf(N, 1 / m_params.camera.adaptiveSamplingGamma);
+            }
 
             // Update the peak irradiance and error over all channels
             peakSqrErrorI = max(peakSqrErrorI, sqr(M - N) * 2.0f);
@@ -495,6 +516,7 @@ namespace Cuda
 
         // Create reduction and adaptive sampling buffers
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
+        m_hostHilbertBuffer = AssetHandle<Host::Array<uint>>(tfm::format("%s_hilbertBuffer", id), kAccumBufferSize, m_hostStream);
         m_hostLightProbeErrorGrids[0] = AssetHandle<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids0", id), kAccumBufferSize, m_hostStream);
         m_hostLightProbeErrorGrids[1] = AssetHandle<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids1", id), kAccumBufferSize, m_hostStream);
         m_hostAdaptiveSamplingGrid = AssetHandle<Host::Array<uchar>>(tfm::format("%s_adaptiveSamplingGrid", id), kAccumBufferSize, m_hostStream);
@@ -522,6 +544,7 @@ namespace Cuda
         // Sychronise the device objects
         m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
+        m_deviceObjects.cu_hilbertBuffer = m_hostHilbertBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
         m_deviceObjects.cu_lightProbeErrorGrids[0] = m_hostLightProbeErrorGrids[0]->GetDeviceInstance();
@@ -568,63 +591,174 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {       
-        m_params.FromJson(parentNode, flags);
-
-        Prepare();
+        Prepare(LightProbeCameraParams(parentNode, flags));
     }
 
-    __host__ void Host::LightProbeCamera::Prepare()
+    __host__ void Host::LightProbeCamera::GenerateHilbertBuffer(const LightProbeCameraParams& newParams)
     {
-        m_params.grid.Prepare();
+        if (newParams.grid.gridDensity == m_params.grid.gridDensity &&
+            newParams.traversalMode == m_params.traversalMode) { return; }
+
+        if (newParams.grid.numProbes == 0)
+        {
+            m_hostHilbertBuffer->Resize(0);
+            return;
+        }        
+         
+        /*
+            Symbol table for Lindenmayer system for 3D Hilbert curve
+            0 = Rotate 90 anticlockwise around X axis
+            1 = Rotate 90 clockwise around X axis
+            2 = Rotate 90 anticlockwise around Y axis,
+            ....
+            * = Recurse
+            + = Forward 1 unit
+        */
+
+        static const std::string LSystem = "24*+24*+*1+255*+*3+055*+*1+5*15";
+
+        std::array<int, 36> transformLUT;
+        std::array<ivec3, 6> directionLUT;
+        static const std::array<imat3, 6> rotMat = 
+        {
+            imat3(ivec3(0, 1, 0), ivec3(-1, 0, 0), ivec3(0, 0, 1)),
+            imat3(ivec3(0, -1, 0), ivec3(1, 0, 0), ivec3(0, 0, 1)),
+            imat3(ivec3(0, 0, 1), ivec3(0, 1, 0), ivec3(-1, 0, 0)),
+            imat3(ivec3(0, 0, -1), ivec3(0, 1, 0), ivec3(1, 0, 0)),
+            imat3(ivec3(1, 0, 0), ivec3(0, 0, 1), ivec3(0, -1, 0)),
+            imat3(ivec3(1, 0, 0), ivec3(0, 0, -1), ivec3(0, 1, 0))
+        }; 
+
+        std::vector<uint> hilbertIndices;
+        std::vector<int> LStack;
+
+        // Reserve some space for the indirection buffer
+        hilbertIndices.reserve(newParams.grid.numProbes);
+        hilbertIndices.push_back(0);
+        LStack.push_back(0);
+
+        // Compute the size of the Hilbert cube that will completely enclose the probe grid
+        int hilbertSize;
+        int numIterations = 1;
+        for (hilbertSize = 2; hilbertSize < cwiseMax(newParams.grid.gridDensity); hilbertSize <<= 1, ++numIterations) {}
+        Assert(numIterations < 8); // Sanity check       
+
+        ivec3 turtleP(0);
+        imat3 turtleM = imat3::Indentity();
+
+        std::vector<uchar> checksum(newParams.grid.numProbes, 0);
+
+        while (!LStack.empty())
+        {
+            const char L = LSystem[LStack.back()++];
+            switch (L)
+            {
+            case '*':
+                // Recurse by pushing a new rule onto the stack
+                if (LStack.size() < numIterations)
+                {
+                    LStack.push_back(0);
+                }
+                break;
+            case '+':
+                // Increment the position by point unit in the current direction
+                turtleP += ivec3(turtleM[0][0], -turtleM[1][0], -turtleM[2][0]);
+
+                AssertMsgFmt(!(turtleP.x < 0 || turtleP.x >= hilbertSize || turtleP.y < 0 || turtleP.y >= hilbertSize || turtleP.z < 0 || turtleP.z >= hilbertSize),
+                    "Turtle went out of bounds: %s", turtleP.format().c_str());
+
+                if (turtleP.x < newParams.grid.gridDensity.x && turtleP.y < newParams.grid.gridDensity.y && turtleP.z < newParams.grid.gridDensity.z)
+                {
+                    // Push the index of this voxel into the indirection buffer
+                    hilbertIndices.push_back(newParams.grid.gridDensity.x * (turtleP.z * newParams.grid.gridDensity.y + turtleP.y) + turtleP.x);
+                    checksum[hilbertIndices.back()]++;
+                }
+                break;
+
+            default:
+                // Transform the turtleP direction
+                turtleM = turtleM * rotMat[int(L) - int('0')];
+            }
+
+            // If we've reached the end of the rule, pop it off the stack
+            if (LStack.back() == LSystem.length()) { LStack.pop_back(); }
+        }        
+
+        AssertMsgFmt(hilbertIndices.size() == newParams.grid.numProbes, "Size mismatch: %i -> %i", hilbertIndices.size(), newParams.grid.numProbes); // Sanity check
+
+        // Diagnostics
+        int count[3] = { 0, 0, 0 };
+        for (int i = 0; i < checksum.size(); ++i)
+        {
+            count[min(2, int(checksum[i]))]++;
+        }
+        Log::Error("%i -> %i, %i, %i", checksum.size(), count[0], count[1], count[2]);
+
+        //for (int i = 0; i < newParams.grid.numProbes; ++i) { hilbertIndices[i] = i; }
+
+        // Upload the indices to the device
+        m_hostHilbertBuffer->Upload(hilbertIndices);
+
+    }
+
+    __host__ void Host::LightProbeCamera::Prepare(LightProbeCameraParams newParams)
+    {
+        newParams.grid.Prepare();
 
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
-        const int maxNumProbes = min(kAccumBufferSize / m_params.grid.coefficientsPerProbe, kRayBufferNumBuckets);
-        if (Volume(m_params.grid.gridDensity) > maxNumProbes)
+        const int maxNumProbes = min(kAccumBufferSize / newParams.grid.coefficientsPerProbe, kRayBufferNumBuckets);
+        if (Volume(newParams.grid.gridDensity) > maxNumProbes)
         {
-            const auto oldDensity = m_params.grid.gridDensity;
-            while (Volume(m_params.grid.gridDensity) > maxNumProbes)
+            const auto oldDensity = newParams.grid.gridDensity;
+            while (Volume(newParams.grid.gridDensity) > maxNumProbes)
             {
-                m_params.grid.gridDensity = max(ivec3(1), m_params.grid.gridDensity - ivec3(1));
+                newParams.grid.gridDensity = max(ivec3(1), newParams.grid.gridDensity - ivec3(1));
             }
-            Log::Error("WARNING: The size of the probe grid %s is too large for the accumulation buffer. Reducing to %s.\n", oldDensity.format(), m_params.grid.gridDensity.format());
+            Log::Error("WARNING: The size of the probe grid %s is too large for the accumulation buffer. Reducing to %s.\n", oldDensity.format(), newParams.grid.gridDensity.format());
         }
 
         // Prepare the light probe grid with the new parameters
-        m_params.grid.camera = m_params.camera;
+        newParams.grid.camera = newParams.camera;
         for (auto& grid : m_hostLightProbeGrids)
         {
-            if (grid) { grid->Prepare(m_params.grid); }
+            if (grid) { grid->Prepare(newParams.grid); }
         }
 
         // Number of light probes in the grid
-        m_params.grid.numProbes = Volume(m_params.grid.gridDensity);
+        newParams.grid.numProbes = Volume(newParams.grid.gridDensity);
         // Number of SH parameter sets per probe, reduced later to get the final value 
-        m_params.subsamplesPerProbe = min(kRayBufferNumBuckets / m_params.grid.numProbes,
-            kAccumBufferSize / (m_params.grid.numProbes * m_params.grid.coefficientsPerProbe));
+        newParams.subsamplesPerProbe = min(kRayBufferNumBuckets / newParams.grid.numProbes,
+            kAccumBufferSize / (newParams.grid.numProbes * newParams.grid.coefficientsPerProbe));
 
         // The maximum number of samples per bucket based on the number of buckets per coefficient
-        m_params.grid.maxSamplesPerProbe = m_params.maxSamplesPerBucket = std::numeric_limits<int>::max();
-        if (m_params.camera.maxSamples > 0)
+        newParams.grid.maxSamplesPerProbe = newParams.maxSamplesPerBucket = std::numeric_limits<int>::max();
+        if (newParams.camera.maxSamples > 0)
         {
-            m_params.grid.maxSamplesPerProbe = m_params.camera.maxSamples;
-            m_params.maxSamplesPerBucket = int(1.0f + float(m_params.camera.maxSamples) / float(m_params.subsamplesPerProbe));
+            newParams.grid.maxSamplesPerProbe = newParams.camera.maxSamples;
+            newParams.maxSamplesPerBucket = int(1.0f + float(newParams.camera.maxSamples) / float(newParams.subsamplesPerProbe));
         }
 
         // Derive some more values
-        m_params.bucketsPerProbe = m_params.subsamplesPerProbe * m_params.grid.coefficientsPerProbe;
-        m_params.totalBuckets = m_params.bucketsPerProbe * m_params.grid.numProbes;
-        m_params.totalSubsamples = m_params.subsamplesPerProbe * m_params.grid.numProbes;
+        newParams.bucketsPerProbe = newParams.subsamplesPerProbe * newParams.grid.coefficientsPerProbe;
+        newParams.totalBuckets = newParams.bucketsPerProbe * newParams.grid.numProbes;
+        newParams.totalSubsamples = newParams.subsamplesPerProbe * newParams.grid.numProbes;
 
         // Used when parallel reducing the accumluation buffer
-        uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.subsamplesPerProbe);
+        uint reduceBatchSizePow2 = NearestPow2Ceil(newParams.subsamplesPerProbe);
 
-        Log::Debug("coefficientsPerProbe: %i\n", m_params.grid.coefficientsPerProbe);
-        Log::Debug("numProbes: %i\n", m_params.grid.numProbes);
-        Log::Debug("subsamplesPerProbe: %i\n", m_params.subsamplesPerProbe);
-        Log::Debug("bucketsPerProbe: %i\n", m_params.bucketsPerProbe);
-        Log::Debug("totalBuckets: %i\n", m_params.totalBuckets);
-        Log::Debug("maxSamplesPerBucket: %i\n", m_params.maxSamplesPerBucket);
+        Log::Debug("coefficientsPerProbe: %i\n", newParams.grid.coefficientsPerProbe);
+        Log::Debug("numProbes: %i\n", newParams.grid.numProbes);
+        Log::Debug("subsamplesPerProbe: %i\n", newParams.subsamplesPerProbe);
+        Log::Debug("bucketsPerProbe: %i\n", newParams.bucketsPerProbe);
+        Log::Debug("totalBuckets: %i\n", newParams.totalBuckets);
+        Log::Debug("maxSamplesPerBucket: %i\n", newParams.maxSamplesPerBucket);
         Log::Debug("reduceBatchSizePow2: %i\n", reduceBatchSizePow2);
+
+        // Update the Hilbert indirect buffer if required
+        GenerateHilbertBuffer(newParams);
+
+        // Update the camera params object with the new params
+        m_params = newParams;
 
         // Sync everything with the device
         SynchroniseObjects(cu_deviceData, m_deviceObjects);
@@ -810,10 +944,9 @@ namespace Cuda
         return true;
     }
 
-    __host__ void Host::LightProbeCamera::SetLightProbeCameraParams(const LightProbeCameraParams& params)
+    __host__ void Host::LightProbeCamera::SetLightProbeCameraParams(const LightProbeCameraParams& newParams)
     {
-        m_params = params;
-        Prepare();
+        Prepare(newParams);
     }
 
     __host__ void Host::LightProbeCamera::BuildLightProbeGrids()
@@ -895,7 +1028,7 @@ namespace Cuda
     }
 
     __host__ bool Host::LightProbeCamera::EmitStatistics(Json::Node& rootNode) const
-    {
+    {        
         rootNode.AddValue("isActive", m_params.camera.isActive);
         rootNode.AddValue("bakeProgress", m_aggregateStats->bakeProgress);
         rootNode.AddValue("bakeConvergence", m_aggregateStats->bakeConvergence);
@@ -916,13 +1049,13 @@ namespace Cuda
             gridNode.AddValue("meanProbeValidity", stats.meanValidity);
             gridNode.AddValue("meanProbeDistance", stats.meanDistance);
 
-            std::vector<std::vector<uint>> histogramData(4);
+            /*std::vector<std::vector<uint>> histogramData(4);
             for (int idx = 0; idx < 4; ++idx)
             {
                 histogramData[idx].resize(50);
                 std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
             }
-            gridNode.AddArray2D("coeffHistograms", histogramData);
+            gridNode.AddArray2D("coeffHistograms", histogramData);*/
 
             std::vector<float> peakIntensityData(4);
             std:memcpy(peakIntensityData.data(), stats.meanSqrIntensity, sizeof(float) * 4);
