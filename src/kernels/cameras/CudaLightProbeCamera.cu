@@ -132,6 +132,9 @@ namespace Cuda
         const int probeIdx = subsampleIdx / m_params.subsamplesPerProbe;
         const ivec3 gridIdx = GridPosFromProbeIdx(probeIdx, m_params.grid.gridDensity);
 
+        // If adaptive sampling is enabled and the probe is converged, don't spawn any more rays.
+        if (m_params.camera.samplingMode != kCameraSamplingFixed && (*m_objects.cu_adaptiveSamplingGrid)[probeIdx] == 0) { return; }
+
         auto& primary = rays[0]; 
         auto& secondary = rays[1];
         
@@ -405,33 +408,41 @@ namespace Cuda
     {
         assert(m_objects.cu_lightProbeErrorGrids[0]);
         assert(m_objects.cu_adaptiveSamplingGrid);
-        assert(m_objects.cu_mse);
+        assert(m_objects.cu_meanI);
         
         constexpr float kMinMSENorm = 1e-10f;
         
         __shared__ int localNumActiveProbes[256], numActiveProbes;
-        __shared__ vec2 localErrorData[256], errorData;
+        __shared__ vec2 localI[256], I;
 
         const int startIdx = m_params.grid.numProbes * kKernelIdx / 256;
         const int endIdx = m_params.grid.numProbes * (kKernelIdx + 1) / 256;
 
         // Sum peak irradiance over the grid
         localNumActiveProbes[kKernelIdx] = 0;
-        localErrorData[kKernelIdx] = vec2(0.0f);
-        for (int i = startIdx; i < endIdx; i++)
+        localI[kKernelIdx] = vec2(0.0f);
+        for (int idx = startIdx; idx < endIdx; idx++)
         {          
-            localErrorData[kKernelIdx] += (*m_objects.cu_lightProbeErrorGrids[0])[i];
+            localI[kKernelIdx] += (*m_objects.cu_lightProbeErrorGrids[0])[idx];
         }
-        localErrorData[kKernelIdx] /= max(1, endIdx - startIdx);
+        localI[kKernelIdx] /= max(1, endIdx - startIdx);
 
         __syncthreads();
 
         if (kKernelIdx == 0)
         {       
-            errorData = vec2(0.0f);
-            for (int i = 0; i < 256; i++) { errorData += localErrorData[i]; }
+            I = vec2(0.0f);
+            for (int idx = 0; idx < 256; idx++) { I += localI[idx]; }
+            I /= 256.0f;
 
-            stats.meanI = errorData.x / 256.0f;
+            // Update the MSE value and normalise it if necessary
+            stats.meanI =  I.x;
+            *m_objects.cu_meanI = I.x;
+            stats.MSE = I.y;
+            if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
+            {
+                stats.MSE /= max(kMinMSENorm, I.x);
+            }
         }
 
         __syncthreads();
@@ -446,11 +457,11 @@ namespace Cuda
             // the mean is half the value we need to normalise by.
             if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
             {
-                sqrError /= max(kMinMSENorm, 2.0f * errorData.x);
+                sqrError /= max(kMinMSENorm, sqr(I.x * 2.0f));
             }
             
             // Set the entry in the adaptive sampling grid and accumulate the number of active probes
-            const bool isActive = sqrError > sqr(m_params.camera.sqrtErrorThreshold);
+            const bool isActive = sqrError > sqr(m_params.camera.errorThreshold);
             (*m_objects.cu_adaptiveSamplingGrid)[i] = uchar(isActive);
 
             localNumActiveProbes[kKernelIdx] += int(isActive);
@@ -461,17 +472,9 @@ namespace Cuda
         if (kKernelIdx == 0)
         {
             int numActiveProbes = 0;
-            for (int i = 0; i < 256; i++) { numActiveProbes += localNumActiveProbes[i]; }            
-
-            // Update the MSE value and normalise it if necessary
-            stats.MSE = errorData.y / 256.0f;
-            if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
-            {
-                stats.MSE /= max(kMinMSENorm, errorData.x);
-            }
+            for (int idx = 0; idx < 256; idx++) { numActiveProbes += localNumActiveProbes[idx]; }
             
             stats.bakeConvergence = 1.0f - numActiveProbes / float(m_params.grid.numProbes);
-            *m_objects.cu_mse = errorData.y;
         }
     }
 
@@ -480,15 +483,15 @@ namespace Cuda
         m_block(16 * 16, 1, 1),
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
-        m_hostMSE(1.0f)
-    {        
+        m_hostMeanI(1.0f)
+    {
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
         m_gridIDs[0] = "grid_noisy_direct";
         m_gridIDs[1] = "grid_noisy_indirect";
 
         node.GetValue("gridDirectID", m_gridIDs[0], Json::kRequiredWarn | Json::kNotBlank);
         node.GetValue("gridIndirectID", m_gridIDs[1], Json::kRequiredWarn | Json::kNotBlank);
-        node.GetValue("gridHalfID", m_gridIDs[2], Json::kSilent);       
+        node.GetValue("gridHalfID", m_gridIDs[2], Json::kSilent);
 
         // Create reduction and adaptive sampling buffers
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
@@ -511,7 +514,7 @@ namespace Cuda
 
             // Create the probe grid objects and attach external buffers to them
             m_hostLightProbeGrids[idx] = AssetHandle<Host::LightProbeGrid>(m_gridIDs[idx], m_gridIDs[idx]);
-            m_hostLightProbeGrids[idx]->SetExternalBuffers(m_hostAdaptiveSamplingGrid, m_hostLightProbeErrorGrids[0], m_hostMSE);
+            m_hostLightProbeGrids[idx]->SetExternalBuffers(m_hostAdaptiveSamplingGrid, m_hostLightProbeErrorGrids[0], m_hostMeanI);
 
             m_deviceObjects.cu_probeGrids[idx] = m_hostLightProbeGrids[idx]->GetDeviceInstance();
         }
@@ -524,7 +527,7 @@ namespace Cuda
         m_deviceObjects.cu_lightProbeErrorGrids[0] = m_hostLightProbeErrorGrids[0]->GetDeviceInstance();
         m_deviceObjects.cu_lightProbeErrorGrids[1] = m_hostLightProbeErrorGrids[1]->GetDeviceInstance();
         m_deviceObjects.cu_adaptiveSamplingGrid = m_hostAdaptiveSamplingGrid->GetDeviceInstance();
-        m_deviceObjects.cu_mse = m_hostMSE.GetDeviceInstance();
+        m_deviceObjects.cu_meanI = m_hostMeanI.GetDeviceInstance();
 
         // Objects are re-synchronised at every JSON update
         FromJson(node, ::Json::kRequiredWarn);
@@ -587,6 +590,7 @@ namespace Cuda
         }
 
         // Prepare the light probe grid with the new parameters
+        m_params.grid.camera = m_params.camera;
         for (auto& grid : m_hostLightProbeGrids)
         {
             if (grid) { grid->Prepare(m_params.grid); }
@@ -647,7 +651,8 @@ namespace Cuda
             }
         }
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
-        m_hostLightProbeErrorGrids[0]->Clear(vec2(0.0f));
+        //m_hostLightProbeErrorGrids[0]->Clear(vec2(0.0f));
+        m_hostAdaptiveSamplingGrid->Clear(1);
         *m_aggregateStats = LightProbeCameraAggregateStatistics();
     }
 

@@ -57,7 +57,7 @@ namespace Cuda
 
         node.GetVector("gridDensity", gridDensity, flags);
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
-        
+
         clipRegion[0] = ivec3(0, 0, 0);
         clipRegion[1] = gridDensity;
         node.GetVector("clipRegionLower", clipRegion[0], ::Json::kSilent);
@@ -90,7 +90,7 @@ namespace Cuda
     __host__ __device__  bool LightProbeGridParams::operator!=(const LightProbeGridParams& rhs) const
     {
         return gridDensity != rhs.gridDensity ||
-               shOrder != rhs.shOrder;
+            shOrder != rhs.shOrder;
     }
 
     __host__ __device__ Device::LightProbeGrid::LightProbeGrid() { }
@@ -145,14 +145,14 @@ namespace Cuda
         const int gridIdx0 = kKernelIdx * m_params.coefficientsPerProbe;
 
         // If this probe is valid, just copy the coefficients probe over 
-        if((*m_objects.cu_validityData)[kKernelIdx])
+        if ((*m_objects.cu_validityData)[kKernelIdx])
         {
             for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe; coeffIdx++)
             {
                 (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = (*m_objects.cu_shData)[gridIdx0 + coeffIdx];
             }
             return;
-        }         
+        }
 
         // Create validity and edge masks to save time later on.
         uint validityMask = 0;
@@ -165,7 +165,7 @@ namespace Cuda
                 for (int x = -1; x <= 1; x++, idx++)
                 {
                     if (x == 0 && y == 0 && z == 0) { continue; }
-                    
+
                     const ivec3 gridPosK = gridPos0 + ivec3(x, y, z);
                     if (gridPosK.x < 0 || gridPosK.x >= m_params.gridDensity.x ||
                         gridPosK.y < 0 || gridPosK.y >= m_params.gridDensity.y ||
@@ -182,10 +182,10 @@ namespace Cuda
         }
 
         // Clear the swap memory 
-        for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++) 
-        { 
-            (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = 0.0f; 
-        }  
+        for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++)
+        {
+            (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = 0.0f;
+        }
         (*m_objects.cu_swapBuffer)[gridIdx0 + m_params.shCoefficientsPerProbe] = (*m_objects.cu_shData)[gridIdx0 + m_params.shCoefficientsPerProbe];
 
         // If the entire neighbourhood is invalid then dilation does nothing. Just set the coefficients to zero and we're done.
@@ -208,7 +208,7 @@ namespace Cuda
                     for (int coeffIdx = 0; coeffIdx < m_params.shCoefficientsPerProbe; coeffIdx++)
                     {
                         (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] += (*m_objects.cu_shData)[gridIdxK + coeffIdx];
-                    } 
+                    }
                     sumWeights++;
                 }
             }
@@ -245,11 +245,11 @@ namespace Cuda
         (*m_objects.cu_shLaplacianData)[idx] = L;
     }
 
-    __device__ vec3* Device::LightProbeGrid::At(const int probeIdx) 
+    __device__ vec3* Device::LightProbeGrid::At(const int probeIdx)
     {
         assert(m_objects.cu_shData);
         assert(probeIdx < m_params.numProbes);
-        
+
         return &(*m_objects.cu_shData)[probeIdx * m_params.coefficientsPerProbe];
     }
 
@@ -270,10 +270,12 @@ namespace Cuda
     }
 
     __device__ int Device::LightProbeGrid::IdxAt(const ivec3& gridIdx) const
-    {        
-        if(gridIdx.x < m_params.clipRegion[0].x || gridIdx.x >= m_params.clipRegion[1].x ||
-           gridIdx.y < m_params.clipRegion[0].y || gridIdx.y >= m_params.clipRegion[1].y ||
-           gridIdx.z < m_params.clipRegion[0].z || gridIdx.z >= m_params.clipRegion[1].z) { return -1; }
+    {
+        if (gridIdx.x < m_params.clipRegion[0].x || gridIdx.x >= m_params.clipRegion[1].x ||
+            gridIdx.y < m_params.clipRegion[0].y || gridIdx.y >= m_params.clipRegion[1].y ||
+            gridIdx.z < m_params.clipRegion[0].z || gridIdx.z >= m_params.clipRegion[1].z) {
+            return -1;
+        }
 
         return gridIdx.z * m_params.gridDensity.x * m_params.gridDensity.y + gridIdx.y * m_params.gridDensity.x + gridIdx.x;
     }
@@ -286,7 +288,7 @@ namespace Cuda
         object.p = bdt.fwd * object.p;
         object.n = normalize((bdt.fwd * object.n) - object.p);
         return object;
-    }   
+    }
 
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
     {
@@ -355,10 +357,18 @@ namespace Cuda
         break;
         case kProbeGridSqrError:
         {
-            if (!m_objects.cu_errorData || !m_objects.cu_mse) { return kZero; }
+            if (!m_objects.cu_errorData) { return kZero; }
 
-            const float sqrError = clamp(InterpolateCoefficient(*m_objects.cu_errorData, gridPos, 0, 1, delta).y / (*m_objects.cu_mse * 0.1f), 0.0f, 1.0f);
-            return Hue((1.0f - sqrtf(sqrError)) * 0.66f);
+            float sqrError = InterpolateCoefficient(*m_objects.cu_errorData, gridPos, 0, 1, delta).y;
+            if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative && m_objects.cu_meanI)
+            {
+                sqrError /= sqr(*m_objects.cu_meanI * 2.0f);
+            }
+            const float sqrThreshold = sqr(m_params.camera.errorThreshold);
+
+            constexpr float kHeapmapGain = 1.0f;
+            const float impulse = 2.0f / (1.0f + expf(-max(0.0f, sqrError - sqrThreshold))) - 1.0f;
+            return Heatmap(saturate(kHeapmapGain * sqrtf(impulse)));
         }
         break;
         default:
@@ -501,7 +511,7 @@ namespace Cuda
     }
 
     __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id) :
-        m_hostMSE(nullptr)
+        m_hostMeanI(nullptr)
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
 
@@ -617,15 +627,15 @@ namespace Cuda
         m_shData->Upload(rawData);
     }
 
-    __host__ void Host::LightProbeGrid::SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, AssetHandle<Host::Array<vec2>> errorData, DeviceObjectRAII<float>& mse)
+    __host__ void Host::LightProbeGrid::SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, AssetHandle<Host::Array<vec2>> errorData, DeviceObjectRAII<float>& meanI)
     {
         m_adaptiveSamplingData = adaptiveSamplingData;
         m_errorData = errorData;
-        m_hostMSE = &mse;
+        m_hostMeanI = &meanI;
 
         m_deviceObjects.cu_adaptiveSamplingData = m_adaptiveSamplingData->GetDeviceInstance();
         m_deviceObjects.cu_errorData = m_errorData->GetDeviceInstance();
-        m_deviceObjects.cu_mse = m_hostMSE->GetDeviceInstance();
+        m_deviceObjects.cu_meanI = m_hostMeanI->GetDeviceInstance();
 
         Cuda::SynchroniseObjects(cu_deviceData, m_deviceObjects);
     }

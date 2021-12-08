@@ -31,7 +31,7 @@ namespace Cuda
 		float				splatClamp;
 
 		int					samplingMode;
-		float				sqrtErrorThreshold;
+		float				errorThreshold;
 		int					maxSamples;
 
 		int					seed;

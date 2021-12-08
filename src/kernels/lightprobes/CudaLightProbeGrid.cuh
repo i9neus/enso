@@ -2,6 +2,7 @@
 
 #include "../CudaRenderObjectContainer.cuh"
 #include "../CudaDeviceObjectRAII.cuh"
+#include "../cameras/CudaCamera.cuh"
 
 namespace Cuda
 {
@@ -69,6 +70,8 @@ namespace Cuda
         int                         numProbes;
         vec3						aspectRatio;
         int                         maxSamplesPerProbe;
+
+        CameraParams                camera;
     };
 
     namespace Device
@@ -103,7 +106,7 @@ namespace Cuda
                 Device::Array<uchar>*   cu_validityData = nullptr;
                 Device::Array<uchar>*   cu_adaptiveSamplingData = nullptr;
                 Device::Array<vec2>*    cu_errorData = nullptr;
-                float*                  cu_mse = nullptr;
+                float*                  cu_meanI = nullptr;
             };
 
             __host__ __device__ LightProbeGrid();
@@ -199,7 +202,7 @@ namespace Cuda
             __host__ void                               SetRawData(const std::vector<vec3>& data);
             __host__ void                               SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, 
                                                                            AssetHandle<Host::Array<vec2>> errorData, 
-                                                                           DeviceObjectRAII<float>& mse);
+                                                                           DeviceObjectRAII<float>& meanI);
             __host__ const LightProbeGridParams&        GetParams() const { return m_params; }
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }
@@ -218,7 +221,7 @@ namespace Cuda
             AssetHandle<Host::Array<vec3>>  m_shLaplacianData;
             AssetHandle<Host::Array<uchar>> m_adaptiveSamplingData;
             AssetHandle<Host::Array<vec2>>  m_errorData;
-            DeviceObjectRAII<float>*        m_hostMSE;
+            DeviceObjectRAII<float>*        m_hostMeanI;
             
             LightProbeGridParams            m_params;
             std::string                     m_usdExportPath;

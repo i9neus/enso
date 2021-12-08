@@ -58,7 +58,7 @@ private:
     float                               m_bakeProgress;
     float                               m_bakeConvergence;
     float                               m_meanI, m_MSE;
-    Cuda::vec2                          m_minMaxMSE;
-    std::vector<float>                  m_MSEData;
+    Cuda::vec2                          m_minMaxMeanI, m_minMaxMSE;
+    std::vector<float>                  m_meanIData, m_MSEData;
     std::vector<ProbeGridStatistics>    m_probeGridStatistics;
 };

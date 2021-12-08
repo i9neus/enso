@@ -7,10 +7,30 @@ namespace Cuda
     __host__ __device__  vec3 Hue(float phi)
     {
         phi *= 6.0f;
-        int i = int(phi);
+        const int i = int(phi);
         const vec3 c0 = vec3(((i + 4) / 3) & 1, ((i + 2) / 3) & 1, ((i + 0) / 3) & 1);
         const vec3 c1 = vec3(((i + 5) / 3) & 1, ((i + 3) / 3) & 1, ((i + 1) / 3) & 1);
         return mix(c0, c1, phi - float(i));
+    }
+
+    __host__ __device__ vec3 Heatmap(float phi)
+    {
+        constexpr int kGradLevels = 7;
+        phi *= kGradLevels;
+        int i = int(phi);
+        if (phi >= kGradLevels) { phi = kGradLevels; i = kGradLevels - 1; }
+        switch (i)
+        {
+        case 0: return mix(vec3(0.0f),             vec3(0.5f, 0.0f, 0.5f), phi - float(i)); 
+        case 1: return mix(vec3(0.5f, 0.0f, 0.5f), vec3(0.0f, 0.0f, 1.0f), phi - float(i));
+        case 2: return mix(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 1.0f), phi - float(i));
+        case 3: return mix(vec3(0.0f, 1.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f), phi - float(i));
+        case 4: return mix(vec3(0.0f, 1.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), phi - float(i));
+        case 5: return mix(vec3(1.0f, 1.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), phi - float(i));
+        case 6: return mix(vec3(1.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 1.0f), phi - float(i));
+        }
+
+        return kZero;
     }
 
     __host__ __device__  vec3 HSLToRGB(const vec3& hsl)

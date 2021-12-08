@@ -136,7 +136,7 @@ void LightProbeCameraShelf::Construct()
 
         if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
         {
-            ImGui::DragFloat("Noise treshold", &m_p.camera.sqrtErrorThreshold, math::max(m_p.camera.sqrtErrorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max());
+            ImGui::DragFloat("Noise treshold", &m_p.camera.errorThreshold, math::max(m_p.camera.errorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max(), "%.7f");
             HelpMarker("The noise threshold below which sampling is terminated.");
         }
 
@@ -181,8 +181,10 @@ void LightProbeCameraShelf::Construct()
     }
 
     constexpr int kMSEPlotDensity = 10;
+    std::string meanIFormat = tfm::format("%.5f", m_meanI);
+    ImGui::PlotLines("Mean I", m_meanIData.data(), m_meanIData.size(), 0, meanIFormat.c_str(), 0.0f, m_minMaxMeanI.y, ImVec2(0, 50.0f));
     std::string mseFormat = tfm::format("%.5f", m_MSE);
-    ImGui::PlotLines("MSE", m_MSEData.data(), m_MSEData.size(), 0, mseFormat.c_str(), m_minMaxMSE.x, m_minMaxMSE.y, ImVec2(0, 80.0f));
+    ImGui::PlotLines("MSE I", m_MSEData.data(), m_MSEData.size(), 0, mseFormat.c_str(), m_minMaxMSE.x, m_minMaxMSE.y, ImVec2(0, 50.0f));
 
     for (int i = 0; i < m_probeGridStatistics.size(); ++i)
     {
@@ -238,14 +240,20 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& bas
         if (frameIdx <= m_frameIdx)
         {
             m_MSEData.clear();
-            m_minMaxMSE = Cuda::vec2(std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+            m_meanIData.clear();
+            m_minMaxMeanI = m_minMaxMSE = Cuda::kMinMaxReset;
         }
         // Add the data to the history
-        if (m_MSEData.size() < kMaxMSEDataSize)
+        if (m_MSE > 0.0f && m_MSEData.size() < kMaxMSEDataSize)
         {
             const float logMSE = std::log(1e-10f + m_MSE);
             m_minMaxMSE = Cuda::MinMax(m_minMaxMSE, logMSE);
             m_MSEData.push_back(logMSE);
+        }
+        if(m_meanIData.size() < kMaxMSEDataSize)
+        {
+            m_minMaxMeanI = Cuda::MinMax(m_minMaxMeanI, m_meanI);
+            m_meanIData.push_back(m_meanI);            
         }
 
         m_frameIdx = frameIdx;

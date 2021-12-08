@@ -95,7 +95,7 @@ namespace Cuda
 
 					cu_lightProbeErrorGrids[0] = nullptr;
 					cu_lightProbeErrorGrids[1] = nullptr;
-					cu_mse = nullptr;
+					cu_meanI = nullptr;
 				}
 
 				Device::RenderState			renderState;
@@ -104,7 +104,7 @@ namespace Cuda
 				Device::LightProbeGrid*		cu_probeGrids[kLightProbeNumBuffers];
 				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
 				Device::Array<uchar>*		cu_adaptiveSamplingGrid;
-				float*						cu_mse;
+				float*						cu_meanI;
 			};
 
 			__device__ LightProbeCamera();
@@ -184,7 +184,7 @@ namespace Cuda
 
 			std::array<AssetHandle<Host::Array<vec2>>, 2>							m_hostLightProbeErrorGrids;
 			AssetHandle<Host::Array<uchar>>											m_hostAdaptiveSamplingGrid;
-			DeviceObjectRAII<float>													m_hostMSE;
+			DeviceObjectRAII<float>													m_hostMeanI;
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;

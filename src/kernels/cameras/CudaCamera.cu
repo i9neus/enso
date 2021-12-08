@@ -22,7 +22,7 @@ namespace Cuda
         randomiseSeed = false;
 
         maxSamples = -1;
-        sqrtErrorThreshold = 0.0f;
+        errorThreshold = 0.0f;
         samplingMode = kCameraSamplingFixed;
     }
 
@@ -35,7 +35,7 @@ namespace Cuda
         node.AddValue("randomiseSeed", randomiseSeed);
         node.AddEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode);
         node.AddValue("maxSamples", maxSamples);
-        node.AddValue("sqrtErrorThreshold", sqrtErrorThreshold);
+        node.AddValue("errorThreshold", errorThreshold);
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -50,7 +50,7 @@ namespace Cuda
         node.GetValue("randomiseSeed", randomiseSeed, flags);
         node.GetEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode, flags);
         node.GetValue("maxSamples", maxSamples, flags);
-        node.GetValue("sqrtErrorThreshold", sqrtErrorThreshold, flags);
+        node.GetValue("errorThreshold", errorThreshold, flags);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)
