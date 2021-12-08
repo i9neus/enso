@@ -7,35 +7,36 @@ namespace Cuda
 {
 	#define _det2(a, b, c, d) ((a) * (d) - (b) * (c))
 	
-	struct mat3
+	template<typename Type>
+	struct __mat3
 	{
 		enum _attrs : size_t { kDims = 3 };
-		using kVecType = vec3;
+		using VecType = __vec_swizzle<Type, 3, 3, 0, 1, 2>;
 
 		union
 		{
-			struct { vec3 x, y, z; };
+			struct { VecType x, y, z; };
 			struct
 			{
-				float i00, i01, i02;
-				float i10, i11, i12;
-				float i20, i21, i22;
+				Type i00, i01, i02;
+				Type i10, i11, i12;
+				Type i20, i21, i22;
 			};
-			vec3 data[3];
+			VecType data[3];
 		};
 
-		__host__ __device__ __forceinline__ mat3() {}
-		__host__ __device__ __forceinline__ mat3(const mat3&) = default;
-		__host__ __device__ __forceinline__ mat3(const vec3& x_, const vec3& y_, const vec3& z_) : x(x_), y(y_), z(z_) {}
+		__host__ __device__ __forceinline__ __mat3() {}
+		__host__ __device__ __forceinline__ __mat3(const __mat3&) = default;
+		__host__ __device__ __forceinline__ __mat3(const VecType& x_, const VecType& y_, const VecType& z_) : x(x_), y(y_), z(z_) {}
 
-		__host__ __device__ __forceinline__ static mat3 Indentity()
+		__host__ __device__ __forceinline__ static __mat3 Indentity()
 		{
-			return mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f));
+			return __mat3(VecType(1.0f, 0.0f, 0.0f), VecType(0.0f, 1.0f, 0.0f), VecType(0.0f, 0.0f, 1.0f));
 		}
 
-		__host__ __device__ __forceinline__  static mat3 Null()
+		__host__ __device__ __forceinline__  static __mat3 Null()
 		{
-			return mat3(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f));
+			return __mat3(VecType(0.0f, 0.0f, 0.0f), VecType(0.0f, 0.0f, 0.0f), VecType(0.0f, 0.0f, 0.0f));
 		}
 
 		__host__ __device__ __forceinline__ bool IsSymmetric() const
@@ -43,8 +44,8 @@ namespace Cuda
 			return i10 == i01 && i20 == i02 && i21 == i12;
 		}
 
-		__host__ __device__ __forceinline__ const vec3& operator[](const unsigned int idx) const { return data[idx]; }
-		__host__ __device__ __forceinline__ vec3& operator[](const unsigned int idx) { return data[idx]; }
+		__host__ __device__ __forceinline__ const VecType& operator[](const unsigned int idx) const { return data[idx]; }
+		__host__ __device__ __forceinline__ VecType& operator[](const unsigned int idx) { return data[idx]; }
 
 		__host__ inline std::string format(const bool pretty = false) const
 		{
@@ -53,9 +54,14 @@ namespace Cuda
 		}
 	};
 
-	__host__ __device__ __forceinline__ mat3 operator *(const mat3& a, const mat3& b)
+	using mat3 = __mat3<float>;
+	using imat3 = __mat3<int>;
+	using umat3 = __mat3<uint>;
+
+	template<typename Type>
+	__host__ __device__ __forceinline__ __mat3<Type> operator *(const __mat3<Type>& a, const __mat3<Type>& b)
 	{
-		mat3 r;
+		__mat3<Type> r;
 		r.i00 = a.i00 * b.i00 + a.i01 * b.i10 + a.i02 * b.i20;
 		r.i10 = a.i10 * b.i00 + a.i11 * b.i10 + a.i12 * b.i20;
 		r.i20 = a.i20 * b.i00 + a.i21 * b.i10 + a.i22 * b.i20;
@@ -68,32 +74,37 @@ namespace Cuda
 		return r;
 	}
 
-	__host__ __device__ __forceinline__ mat3& operator *=(mat3& a, const mat3& b)
+	template<typename Type>
+	__host__ __device__ __forceinline__ __mat3<Type>& operator *=(__mat3<Type>& a, const __mat3<Type>& b)
 	{
-		const mat3 r = a * b;
+		const __mat3<Type> r = a * b;
 		return a = r;
 	}
 
-	__host__ __device__ __forceinline__ vec3 operator *(const mat3& a, const vec3& b)
+	template<typename Type>
+	__host__ __device__ __forceinline__ typename __mat3<Type>::VecType operator *(const __mat3<Type>& a, const typename __mat3<Type>::VecType& b)
 	{
-		vec3 r;
+		typename __mat3<Type>::VecType r;
 		r.x = a.i00 * b.x + a.i01 * b.y + a.i02 * b.z;
 		r.y = a.i10 * b.x + a.i11 * b.y + a.i12 * b.z;
 		r.z = a.i20 * b.x + a.i21 * b.y + a.i22 * b.z;
 		return r;
 	}
 
-	__host__ __device__ __forceinline__ mat3 operator *(const mat3& a, const float& b)
+	template<typename Type>
+	__host__ __device__ __forceinline__ __mat3<Type> operator *(const __mat3<Type>& a, const Type& b)
 	{
-		return mat3(a[0] * b, a[1] * b, a[2] * b);
+		return __mat3<Type>(a[0] * b, a[1] * b, a[2] * b);
 	}
 
-	__host__ __device__ __forceinline__ float trace(const mat3& m)
+	template<typename Type>
+	__host__ __device__ __forceinline__ Type trace(const __mat3<Type>& m)
 	{
 		return m.i00 + m.i11 + m.i22;
 	}
 
-	__host__ __device__ __forceinline__ float det(const mat3& m)
+	template<typename Type>
+	__host__ __device__ __forceinline__ Type det(const __mat3<Type>& m)
 	{
 		return m.i00 * m.i11 * m.i22 +
 			m.i01 * m.i12 * m.i20 +
@@ -103,22 +114,24 @@ namespace Cuda
 			m.i00 * m.i12 * m.i21;
 	}
 
-	__host__ __device__ __forceinline__ mat3 transpose(const mat3& m)
+	template<typename Type>
+	__host__ __device__ __forceinline__ __mat3<Type> transpose(const __mat3<Type>& m)
 	{
-		mat3 r;
+		__mat3<Type> r;
 		r.i00 = m.i00; r.i01 = m.i10; r.i02 = m.i20;
 		r.i10 = m.i01; r.i11 = m.i11; r.i12 = m.i21;
 		r.i20 = m.i02; r.i21 = m.i12; r.i22 = m.i22;
 		return r;
 	}
 
-	__host__ __device__ __forceinline__ mat3 inverse(const mat3& m)
+	template<typename Type, typename = typename std::enable_if<std::is_floating_point<Type>::value>>
+	__host__ __device__ __forceinline__ __mat3<Type> inverse(const __mat3<Type>& m)
 	{
-		constexpr float kInverseEpsilon = 1e-20f;
+		constexpr Type kInverseEpsilon = 1e-20f;
 
-		const float determinant = det(m);
-		if (fabs(determinant) < kInverseEpsilon) { return mat3::Null(); }
-		const float invDet = 1 / determinant;
+		const Type determinant = det(m);
+		if (fabs(determinant) < kInverseEpsilon) { return __mat3<Type>::Null(); }
+		const Type invDet = 1 / determinant;
 
 		// The adjugate matrix divided by the determinant
 		return { { _det2(m.i11, m.i12, m.i21, m.i22) * invDet, -_det2(m.i01, m.i02, m.i21, m.i22) * invDet, _det2(m.i01, m.i02, m.i11, m.i12) * invDet},
@@ -126,11 +139,15 @@ namespace Cuda
 				 { _det2(m.i10, m.i11, m.i20, m.i21) * invDet, -_det2(m.i00, m.i01, m.i20, m.i21) * invDet, _det2(m.i00, m.i01, m.i10, m.i11) * invDet } };
 	}
 
-	__host__ __device__ __forceinline__ vec3 BasisU(const mat3& m) { return vec3(m.i00, m.i10, m.i20); }
-	__host__ __device__ __forceinline__ vec3 BasisV(const mat3& m) { return vec3(m.i01, m.i11, m.i21); }
-	__host__ __device__ __forceinline__ vec3 BasisW(const mat3& m) { return vec3(m.i02, m.i12, m.i22); }
+	template<typename Type>
+	__host__ __device__ __forceinline__ typename __mat3<Type>::VecType BasisU(const __mat3<Type>& m) { return typename __mat3<Type>::VecType(m.i00, m.i10, m.i20); }
+	template<typename Type>
+	__host__ __device__ __forceinline__ typename __mat3<Type>::VecType BasisV(const __mat3<Type>& m) { return typename __mat3<Type>::VecType(m.i01, m.i11, m.i21); }
+	template<typename Type>
+	__host__ __device__ __forceinline__ typename __mat3<Type>::VecType BasisW(const __mat3<Type>& m) { return typename __mat3<Type>::VecType(m.i02, m.i12, m.i22); }
 
-	__host__ __device__ __forceinline__ bool operator ==(const mat3& a, const mat3& b)
+	template<typename Type>
+	__host__ __device__ __forceinline__ bool operator ==(const __mat3<Type>& a, const __mat3<Type>& b)
 	{
 		for (int i = 0; i < 3; i++)
 		{
@@ -141,5 +158,6 @@ namespace Cuda
 		}
 		return true;
 	}
-	__host__ __device__ __forceinline__ bool operator !=(const mat3& a, const mat3& b) { return !(a == b); }
+	template<typename Type>
+	__host__ __device__ __forceinline__ bool operator !=(const __mat3<Type>& a, const __mat3<Type>& b) { return !(a == b); }
 }
