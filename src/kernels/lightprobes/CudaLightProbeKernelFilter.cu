@@ -1,4 +1,5 @@
 ﻿#include "CudaLightProbeKernelFilter.cuh"
+#include "../cameras/CudaLightProbeCamera.cuh"
 #include "../CudaManagedArray.cuh"
 
 #include "generic/JsonUtils.h"
@@ -79,6 +80,13 @@ namespace Cuda
         m_hostReduceBuffer.DestroyAsset();
     }
 
+    /*template<typename Subclass, typename DeligateLambda>
+    __host__ void Listen2(Subclass& owner, const std::string& eventID, DeligateLambda deligate)
+    {
+        std::function<void(const Host::RenderObject&, const std::string&)> a = std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2);
+        //m_actionDeligates.emplace(eventID, EventDeligate(owner, s));
+    }*/
+
     __host__ void Host::LightProbeKernelFilter::Bind(RenderObjectContainer& sceneObjects)
     {
         m_hostInputGrid = sceneObjects.FindByID(m_inputGridID).DynamicCast<Host::LightProbeGrid>();
@@ -99,7 +107,14 @@ namespace Cuda
             }
         }
 
-        Prepare();   
+        // Get the light probe camera object and listen out for rebuilds
+        auto& probeCamera = sceneObjects.FindFirstOfType<Host::LightProbeCamera>();
+        if(!probeCamera)
+        {
+            probeCamera->Listen(*this, "OnBuildGrids", &Host::LightProbeKernelFilter::OnBuildInputGrids);
+        }
+
+        Prepare();
     }
 
     __host__ void Host::LightProbeKernelFilter::Prepare()
@@ -322,34 +337,31 @@ namespace Cuda
         outputBuffer[objects->gridData.shCoeffsPerProbe] = inputBuffer[objects->gridData.shCoeffsPerProbe];
     }
 
-    __host__ void Host::LightProbeKernelFilter::OnPostRenderPass()
-    {              
+    __host__ void Host::LightProbeKernelFilter::OnBuildInputGrids(const RenderObject& originObject, const std::string& eventID)
+    {
+        // Run the filter every time the input grids are updated
+        Execute();
+    }
+
+    __host__ void Host::LightProbeKernelFilter::Execute()
+    {
         // Filter isn't yet bound, so do nothing
-        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }        
-        
+        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
+
         // Pass-through filter just copies the data
-        if (m_objects->params.filterType == kKernelFilterNull || !m_hostInputGrid->IsConverged())
+        if (m_objects->params.filterType == kKernelFilterNull/* || !m_hostInputGrid->IsConverged()*/)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             m_isActive = true;
             return;
         }
 
-        // If the input grid is requesting a filter op, enable the filter
-        if (m_hostInputGrid->GetSemaphore("tag_do_filter") == true)
-        {
-            m_hostInputGrid->SetSemaphore("tag_do_filter", false);
-            m_isActive = true;
-        }
-
-        if (!m_isActive) { return; }
-
         m_hostInputGrid->PushClipRegion(m_objects->params.clipRegion);
-        
+
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
             KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);
-            
+
             if (m_objects->blocksPerProbe > 1)
             {
                 KernelCopyFromReduceBuffer << < (m_probeRange + 255) / 256, 256, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);

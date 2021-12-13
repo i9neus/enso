@@ -14,7 +14,7 @@ namespace Cuda
     enum ProbeGridOutputMode : int
     {
         kProbeGridIrradiance,
-        kProbeGridLaplacian,
+        kProbeGridValidity,
         kProbeGridHarmonicMean,
         kProbeGridPref,
         kProbeGridConvergence,

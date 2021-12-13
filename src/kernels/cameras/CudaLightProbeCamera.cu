@@ -506,6 +506,9 @@ namespace Cuda
         m_reduceGrid(1, 1, 1),
         m_hostMeanI(1.0f)
     {
+        // Register events for deligates to watch
+        RegisterEvent("OnBuildGrids");
+
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
         m_gridIDs[0] = "grid_noisy_direct";
         m_gridIDs[1] = "grid_noisy_indirect";
@@ -961,6 +964,8 @@ namespace Cuda
             // Indirect buffer isn't used when running in combined mode
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
 
+            auto& grid = *m_hostLightProbeGrids[gridIdx];
+
             // Reduce until the batch range is equal to the size of the block
             uint batchSize = reduceBatchSizePow2;
             while (batchSize > 1)
@@ -976,10 +981,12 @@ namespace Cuda
             //const vec2 minMax = GetProbeGridAggregateStatistics();
             //Log::Debug("Samples: %i\n", minMax.x);
 
-            m_hostLightProbeGrids[gridIdx]->Integrate();
+            grid.Integrate();
 
             IsOk(cudaStreamSynchronize(m_hostStream));
         }
+
+        OnEvent("OnBuildGrids");
     }
 
     __global__ void KernelBuildLightProbeErrorGrid(Device::LightProbeCamera* cu_camera)
@@ -1060,6 +1067,7 @@ namespace Cuda
             std::vector<float> peakIntensityData(4);
             std:memcpy(peakIntensityData.data(), stats.meanSqrIntensity, sizeof(float) * 4);
             gridNode.AddArray("peakIntensity", peakIntensityData);
+
         }
 
         return true;

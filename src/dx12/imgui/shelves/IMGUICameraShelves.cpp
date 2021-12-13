@@ -116,7 +116,7 @@ void LightProbeCameraShelf::Construct()
         ImGui::Checkbox("Dilate", &m_p.grid.dilate);
         HelpMarker("Prevents shadow leaks by dilating valid regions into invalid regions.");
 
-        ConstructComboBox("Output mode", { "Irradiance", "Irradiance Laplacian", "Harmonic mean", "pRef", "Convergence", "Relative MSE" }, m_p.grid.outputMode);
+        ConstructComboBox("Output mode", { "Irradiance", "Probe validity", "Mean distance", "pRef", "Convergence", "Relative MSE" }, m_p.grid.outputMode);
         HelpMarker("Specifies the output of thee light probe evaluation. Use this to debug probe validity and other values.");
 
         ConstructComboBox("Traversal mode", { "Linear", "Hilbert curve" }, m_p.traversalMode);
@@ -180,49 +180,52 @@ void LightProbeCameraShelf::Construct()
 
     m_p.camera.seed = max(0, m_p.camera.seed);
 
-    ImGui::Text(tfm::format("Frame: %i", m_frameIdx).c_str());
-    if (m_bakeProgress >= 0.0f)     { ImGui::Text(tfm::format("Bake progress: %.2f%%", m_bakeProgress * 100.0f).c_str()); }
-    if (m_bakeConvergence >= 0.0f)
+    if (ImGui::TreeNodeEx("Statistics", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::Text(tfm::format("Bake convergence: %.2f%%", m_bakeConvergence * 100.0f).c_str());
+        ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f), tfm::format("%.2f%%", m_bakeProgress * 100.0f).c_str()); SL; ImGui::Text("Bake");
+        ImGui::ProgressBar(m_bakeConvergence, ImVec2(0.0f, 0.0f), tfm::format("%.2f%%", m_bakeConvergence * 100.0f).c_str()); SL; ImGui::Text("Convergence");
+        ImGui::Text(tfm::format("Frame: %i", m_frameIdx).c_str());
         ImGui::Text(tfm::format("Mean I: %.5f%%", m_meanI).c_str());
         ImGui::Text(tfm::format("MSE I: %.5f%%", m_MSE).c_str());
-    }
 
-    constexpr int kMSEPlotDensity = 10;
-    std::string meanIFormat = tfm::format("%.5f", m_meanI);
-    ImGui::PlotLines("Mean I", m_meanIData.data(), m_meanIData.size(), 0, meanIFormat.c_str(), 0.0f, m_minMaxMeanI.y, ImVec2(0, 50.0f));
-    std::string mseFormat = tfm::format("%.5f", m_MSE);
-    ImGui::PlotLines("MSE I", m_MSEData.data(), m_MSEData.size(), 0, mseFormat.c_str(), m_minMaxMSE.x, m_minMaxMSE.y, ImVec2(0, 50.0f));
 
-    for (int i = 0; i < m_probeGridStatistics.size(); ++i)
-    {
-        if (!ImGui::TreeNodeEx(tfm::format("Grid statistics %i", i).c_str(), 0)) { continue; }
+        constexpr int kMSEPlotDensity = 10;
+        std::string meanIFormat = tfm::format("%.5f", m_meanI);
+        ImGui::PlotLines("Mean I", m_meanIData.data(), m_meanIData.size(), 0, meanIFormat.c_str(), m_minMaxMeanI.x, m_minMaxMeanI.y, ImVec2(0, 50.0f));
+        std::string mseFormat = tfm::format("%.5f", m_MSE);
+        ImGui::PlotLines("MSE I", m_MSEData.data(), m_MSEData.size(), 0, mseFormat.c_str(), m_minMaxMSE.x, m_minMaxMSE.y, ImVec2(0, 50.0f));
 
-        auto& gridStats = m_probeGridStatistics[i];
-        ImGui::PushID(gridStats.gridID.c_str());
-        ImGui::Text(gridStats.gridID.c_str());
-        ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
-        ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
-        ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());       
-
-        if (gridStats.hasHistogram)
+        if (ImGui::Button("Export Log"))
         {
-            for (const auto& histogramWidget : gridStats.histogramWidgetData)
-            {
-                ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
-            }
+            ExportStatsLog();
         }
 
-        ImGui::Separator();
-        ImGui::PopID();
-        ImGui::TreePop();
-    }
+        for (int i = 0; i < m_probeGridStatistics.size(); ++i)
+        {
+            if (!ImGui::TreeNodeEx(tfm::format("Grid statistics %i", i).c_str(), 0)) { continue; }
 
-    if (ImGui::Button("Export Log"))
-    {
-        ExportStatsLog();
-    }
+            auto& gridStats = m_probeGridStatistics[i];
+            ImGui::PushID(gridStats.gridID.c_str());
+            ImGui::Text(gridStats.gridID.c_str());
+            ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
+            ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
+            ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
+
+            if (gridStats.hasHistogram)
+            {
+                for (const auto& histogramWidget : gridStats.histogramWidgetData)
+                {
+                    ImGui::PlotHistogram("Distance histogram", histogramWidget.data.data(), histogramWidget.data.size(), 0, NULL, 0.0f, histogramWidget.maxValue, ImVec2(0, 50.0f));
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::PopID();
+            ImGui::TreePop();
+        }
+
+        ImGui::TreePop();
+    }    
 }
 
 void LightProbeCameraShelf::Randomise()

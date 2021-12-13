@@ -120,7 +120,7 @@ namespace Cuda
             advance = true;
         }
 
-        m_hostInputGrid->SetSemaphore("tag_do_filter", true);
+        //m_hostInputGrid->SetSemaphore("tag_do_filter", true);
         return true;
     }
 
@@ -170,6 +170,8 @@ namespace Cuda
     __host__ void Host::LightProbeIO::ExportProbeGrid(const std::string& filePath) const
     {
         Assert(!m_usdImportPath.empty());
+
+        const std::string extension = GetExtension(filePath);
 
         // Pull the raw data from the light probe grid object
         std::vector<vec3> rawData;

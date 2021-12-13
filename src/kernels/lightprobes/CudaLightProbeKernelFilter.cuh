@@ -58,13 +58,14 @@ namespace Cuda
         public:
             __host__ LightProbeKernelFilter(const ::Json::Node& jsonNode, const std::string& id);
             __host__ virtual ~LightProbeKernelFilter() = default;
+            
+            __host__ void                                       Execute();
 
             __host__ static AssetHandle<Host::RenderObject>     Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
             __host__ virtual void                               FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void								Bind(RenderObjectContainer& sceneObjects) override final; 
-            __host__ virtual void                               Prepare();
-            __host__ virtual void						        OnPostRenderPass() override final;
+            __host__ virtual void                               Prepare();            
             __host__ virtual void                               OnDestroyAsset() override final;
             __host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
 
@@ -72,6 +73,9 @@ namespace Cuda
             __host__ static std::string                         GetAssetDescriptionString() { return "Light Probe Kernel Filter"; }
             __host__ static AssetType                           GetAssetStaticType() { return AssetType::kLightProbeFilter; }
             __host__ virtual std::vector<AssetHandle<Host::RenderObject>> GetChildObjectHandles() override final;
+
+        private:
+            __host__ void                                       OnBuildInputGrids(const RenderObject& originObject, const std::string& eventID);
         };
     }
 }

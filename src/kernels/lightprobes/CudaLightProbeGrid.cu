@@ -44,7 +44,7 @@ namespace Cuda
         node.AddArray("clipRegionUpper", std::vector<int>({ clipRegion[1].x, clipRegion[1].y, clipRegion[1].z }));
         node.AddValue("shOrder", shOrder);
         node.AddValue("dilate", dilate);
-        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
+        node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
 
         node.AddValue("invertX", invertX);
         node.AddValue("invertY", invertY);
@@ -68,7 +68,7 @@ namespace Cuda
 
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("dilate", dilate, flags);
-        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "laplacian", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
+        node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
 
         node.GetValue("invertX", invertX, flags);
         node.GetValue("invertY", invertY, flags);
@@ -338,19 +338,14 @@ namespace Cuda
             return vec3(InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta).y);
         }
         break;
-        case kProbeGridLaplacian:
+        case kProbeGridValidity:
         {
-            L = InterpolateCoefficient(*m_objects.cu_shLaplacianData, gridPos, 0, m_params.coefficientsPerProbe, delta) * SH::Project(n, 0);
-            //return L;
-            const float LEx = cwiseExtremum(L);
-            return (LEx > 0.0f) ?
-                mix(vec3(0.0f), kGreen, min(1.0f, logf(1.0f + LEx) / logf(2.0f))) :
-                mix(vec3(0.0f), kRed, min(1.0f, logf(1.0f + fabs(LEx) / logf(2.0f))));
+            return mix(kRed, kGreen, InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta).x);
         }
         break;
         case kProbeGridConvergence:
         {
-            if (!m_objects.cu_adaptiveSamplingData) { return kYellow; }
+            if (!m_objects.cu_adaptiveSamplingData) { return kZero; }
 
             const auto& isActive = NearestNeighbourCoefficient(*m_objects.cu_adaptiveSamplingData, gridPos, 0, 1);
             return isActive ? kRed : kGreen;

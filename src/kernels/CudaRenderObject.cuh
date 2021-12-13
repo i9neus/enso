@@ -2,7 +2,9 @@
 
 #include "math/CudaMath.cuh"
 #include "CudaAsset.cuh"
+
 #include <map>
+#include <unordered_set>
 
 namespace Cuda
 {
@@ -80,6 +82,24 @@ namespace Cuda
                                         (flags & kRenderObjectUserFacingParameterMask);
             }
 
+            template<typename Subclass, typename DeligateLambda>
+            __host__ void Listen(Subclass& owner, const std::string& eventID, DeligateLambda deligate)
+            {
+                for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
+                {
+                    if (&it->second.m_owner == static_cast<RenderObject*>(&owner))
+                    {
+                        Log::Error("Internal error: deligate '%s' ['%s' -> '%s'] is already registered", eventID, GetAssetID(), owner.GetAssetID());
+                        return;
+                    }
+                }
+
+                m_actionDeligates.emplace(eventID, EventDeligate(owner,
+                    std::function<void(const RenderObject&, const std::string&)>(std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2))));
+            }
+
+            __host__ void  Unlisten(const RenderObject& owner, const std::string& eventID);
+
         protected:
             __host__ RenderObject() : m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
@@ -99,7 +119,7 @@ namespace Cuda
                 AssetHandle<BindType> downcastAsset = baseAsset.DynamicCast<BindType>();
                 if (!downcastAsset)
                 {
-                    Log::Error("Unable to bind %s '%s' to %s '%s': asset is not the correct type.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
+                    Log::Error("Unable to bind %s '%s' to %s '%s': asset is not  he correct type.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
                     return nullptr;
                 }
               
@@ -107,9 +127,32 @@ namespace Cuda
                 return downcastAsset;
             } 
 
+            __host__ void                   OnEvent(const std::string& eventID);
+            __host__ void                   RegisterEvent(const std::string& eventID);
+
         private:
             std::string         m_dagPath;
             uint                m_renderObjectFlags;
+
+            struct EventDeligate
+            {
+                EventDeligate(RenderObject& owner, std::function<void(const RenderObject&, const std::string&)>& functor) :
+                    m_owner(owner),
+                    m_functor(functor) {}
+
+                RenderObject&                                                   m_owner;
+                std::function<void(const RenderObject&, const std::string&)>    m_functor;
+
+                bool operator <(const EventDeligate& rhs)
+                {
+                    return std::hash<RenderObject*>{}(&m_owner) < std::hash<RenderObject*>{}(&rhs.m_owner);
+                }
+            };
+
+            using EventDeligateMap = std::multimap <std::string, EventDeligate>;
+            std::unordered_set<std::string>     m_eventRegistry;
+            EventDeligateMap                    m_actionDeligates;
+
         };     
     }      
 }
