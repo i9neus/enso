@@ -109,7 +109,7 @@ namespace Cuda
 
         // Get the light probe camera object and listen out for rebuilds
         auto& probeCamera = sceneObjects.FindFirstOfType<Host::LightProbeCamera>();
-        if(!probeCamera)
+        if(probeCamera)
         {
             probeCamera->Listen(*this, "OnBuildGrids", &Host::LightProbeKernelFilter::OnBuildInputGrids);
         }

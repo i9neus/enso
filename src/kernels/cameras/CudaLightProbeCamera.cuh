@@ -25,7 +25,8 @@ namespace Cuda
 	{
 		kLightProbeBufferDirect = 0,
 		kLightProbeBufferIndirect,
-		kLightProbeBufferHalf,
+		kLightProbeBufferDirectHalf,
+		kLightProbeBufferIndirectHalf,
 		kLightProbeNumBuffers
 	};
 
@@ -191,7 +192,7 @@ namespace Cuda
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
 			AssetHandle<Host::Array<uint>>											m_hostHilbertBuffer;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
-			std::array<std::string, 3>												m_gridIDs;
+			std::array<std::string, 4>												m_gridIDs;
 
 			std::array<AssetHandle<Host::Array<vec2>>, 2>							m_hostLightProbeErrorGrids;
 			AssetHandle<Host::Array<uchar>>											m_hostAdaptiveSamplingGrid;

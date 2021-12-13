@@ -208,16 +208,18 @@ namespace Cuda
             
             // Should we accumulate this sample?
             bool accumulate;
-            switch (gridIdx)
+            switch (gridIdx % 2)
             {
             case kLightProbeBufferDirect:
                 accumulate = m_params.lightingMode == kBakeLightingCombined || incidentRay.depth <= 1; break;
             case kLightProbeBufferIndirect:
                 accumulate = m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1; break;
-            default: // kLightProbeBufferHalf
-                // NOTE: Half buffer gets all types of samples regardless of what lighting mode we're using
-                accumulate = emplacedRay.sampleIdx % 2 == 1;
+            default:
+                assert(false);
             }
+             
+            // Half buffers only get every second sample
+            if (gridIdx > kLightProbeBufferIndirect) { accumulate = emplacedRay.sampleIdx % 2 == 1; }
 
             if(accumulate)  
             {              
@@ -233,9 +235,9 @@ namespace Cuda
                 for (int shIdx = 0; shIdx < m_params.grid.coefficientsPerProbe - 1; ++shIdx, ++accumIdx) { accumBuffer[accumIdx][3] += weight; }
             }
 
-            if (gridIdx != kLightProbeBufferHalf && incidentRay.IsIndirectSample())//&& incidentRay.depth == 1)
-            {
-                // Accumulate validity and mean distance
+            // Accumulate validity and mean distance       
+            if (gridIdx <= kLightProbeBufferIndirect && incidentRay.IsIndirectSample())
+            {                
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene
                 accumBuffer[accumIdx] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing), 
                                               //1.0f / max(1e-10f, incidentRay.tNear),
@@ -346,27 +348,28 @@ namespace Cuda
 
         const vec3* P0 = m_objects.cu_probeGrids[0]->At(kKernelIdx);
         const vec3* P1 = m_objects.cu_probeGrids[1]->At(kKernelIdx);
-        const vec3* PHalf = m_objects.cu_probeGrids[2]->At(kKernelIdx);       
+        const vec3* P0Half = m_objects.cu_probeGrids[2]->At(kKernelIdx);
+        const vec3* P1Half = m_objects.cu_probeGrids[3]->At(kKernelIdx);
 
         // Go channel by channel to find the peak irradiance
         float peakSqrErrorI = 0.0f;
         float peakI = 0.0f;
         for (int chnlIdx = 0; chnlIdx < 3; ++chnlIdx)
         {
-            // Load the coefficients from the first map
+            // Load the coefficients from the direct map
             float L0 = P0[0][chnlIdx];
+            float L0Half = P0Half[0][chnlIdx];
             vec3 L1(P0[1][chnlIdx], P0[2][chnlIdx], P0[3][chnlIdx]);
+            vec3 L1Half(P0Half[1][chnlIdx], P0Half[2][chnlIdx], P0Half[3][chnlIdx]);
 
-            // Add the coefficients from the second map if we're in separated mode
+            // If we're in separated mode, load the coefficients from the indirect map
             if (m_params.lightingMode == kBakeLightingSeparated)
             {
                 L0 += P1[0][chnlIdx];
                 L1 += vec3(P1[1][chnlIdx], P1[2][chnlIdx], P1[3][chnlIdx]);
+                L0Half += P1Half[0][chnlIdx];
+                L1Half += vec3(P1Half[1][chnlIdx], P1Half[2][chnlIdx], P1Half[3][chnlIdx]);
             }
-
-            // Load the coefficients from the third map
-            const float L0Half = PHalf[0][chnlIdx];
-            const vec3 L1Half(PHalf[1][chnlIdx], PHalf[2][chnlIdx], PHalf[3][chnlIdx]);
 
             // Estimate the peak irradiance over the unit sphere
             float M = L0Half * SH::GetLegendreCoefficient(0) + length(L1Half) * SH::GetLegendreCoefficient(1);
@@ -513,9 +516,10 @@ namespace Cuda
         m_gridIDs[0] = "grid_noisy_direct";
         m_gridIDs[1] = "grid_noisy_indirect";
 
-        node.GetValue("gridDirectID", m_gridIDs[0], Json::kRequiredWarn | Json::kNotBlank);
-        node.GetValue("gridIndirectID", m_gridIDs[1], Json::kRequiredWarn | Json::kNotBlank);
-        node.GetValue("gridHalfID", m_gridIDs[2], Json::kSilent);
+        node.GetValue("gridDirectID", m_gridIDs[0], Json::kRequiredAssert | Json::kNotBlank);
+        node.GetValue("gridIndirectID", m_gridIDs[1], Json::kRequiredAssert | Json::kNotBlank);
+        node.GetValue("gridDirectHalfID", m_gridIDs[2], Json::kRequiredAssert | Json::kNotBlank);
+        node.GetValue("gridIndirectHalfID", m_gridIDs[3], Json::kRequiredAssert | Json::kNotBlank);
 
         // Create reduction and adaptive sampling buffers
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
@@ -531,7 +535,7 @@ namespace Cuda
         for (int idx = 0; idx < m_hostAccumBuffers.size(); ++idx)
         {
             // Don't create grids that don't have IDs
-            if (m_gridIDs[idx].empty()) { continue; }
+            Assert(!m_gridIDs[idx].empty());
 
             m_hostAccumBuffers[idx] = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer%i", id, idx), kAccumBufferSize, m_hostStream);
             m_hostAccumBuffers[idx]->Clear(vec4(0.0f));
