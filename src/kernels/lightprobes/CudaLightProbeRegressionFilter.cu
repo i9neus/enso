@@ -171,7 +171,9 @@ namespace Cuda
         Assert(m_hostC); // Sanity check
 
         // Establish the dimensions of the kernel
-        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostCrossGrid, m_hostCrossHalfGrid, m_hostOutputGrid);
+        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostCrossHalfGrid,
+                                                        m_hostCrossGrid, m_hostCrossHalfGrid, 
+                                                        m_hostOutputGrid, AssetHandle<Host::LightProbeGrid>(nullptr));
         Assert(m_objects->gridData.coefficientsPerProbe <= kMaxCoefficients);
      
         // Precompute some values for the regression step

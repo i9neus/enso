@@ -37,16 +37,20 @@ namespace Cuda
     }
 
     __host__ LightProbeFilterGridData& LightProbeFilterGridData::Initialise(AssetHandle<Host::LightProbeGrid>& hostInputGrid,
+                                                                            AssetHandle<Host::LightProbeGrid>& hostInputHalfGrid,
                                                                             AssetHandle<Host::LightProbeGrid>& hostCrossGrid,
                                                                             AssetHandle<Host::LightProbeGrid>& hostCrossHalfGrid,
-                                                                            AssetHandle<Host::LightProbeGrid>& hostOutputGrid)
+                                                                            AssetHandle<Host::LightProbeGrid>& hostOutputGrid,
+                                                                            AssetHandle<Host::LightProbeGrid>& hostOutputHalfGrid)
     {
         Assert(hostInputGrid);
         
         cu_inputGrid = hostInputGrid->GetDeviceInstance();
+        cu_inputHalfGrid = (hostCrossHalfGrid) ? hostInputHalfGrid->GetDeviceInstance() : nullptr;
         cu_crossGrid = (hostCrossGrid) ? hostCrossGrid->GetDeviceInstance() : nullptr;
         cu_crossHalfGrid = (hostCrossHalfGrid) ? hostCrossHalfGrid->GetDeviceInstance() : nullptr;
         cu_outputGrid = (hostOutputGrid) ? hostOutputGrid->GetDeviceInstance() : nullptr;
+        cu_outputHalfGrid = (hostOutputHalfGrid) ? hostOutputHalfGrid->GetDeviceInstance() : nullptr;
 
         // Copy some variables out of the input grid to save time
         const auto& gridParams = hostInputGrid->GetParams();

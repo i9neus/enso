@@ -47,17 +47,24 @@ namespace Cuda
         FromJson(node, Json::kRequiredWarn);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
-        node.GetValue("inputGridHalfID", m_inputGridHalfID, Json::kNotBlank);
+        node.GetValue("inputHalfGridID", m_inputHalfGridID, Json::kNotBlank);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
+        node.GetValue("outputHalfGridID", m_outputHalfGridID, Json::kSilent);
          
         AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
+        AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputHalfGridID), "Error: an asset with ID '%s' already exists'.", m_outputHalfGridID.c_str());
 
         // Create some objects
         m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
         m_hostReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_reduceBuffer", id));
-        
-        // FIXME: Static size; needs to be dynamic. 
-        m_hostReduceBuffer->Resize(1024 * 1024);
+        m_hostReduceBuffer->Resize(1024 * 1024);// FIXME: Static size; needs to be dynamic. 
+
+        if (!m_outputHalfGridID.empty())
+        {
+            m_hostOutputHalfGrid = AssetHandle<Host::LightProbeGrid>(m_outputHalfGridID, m_outputHalfGridID);
+            m_hostHalfReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_halfReduceBuffer", id));
+            m_hostHalfReduceBuffer->Resize(1024 * 1024);
+        }       
     }
     
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeKernelFilter::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -77,15 +84,11 @@ namespace Cuda
     __host__ void Host::LightProbeKernelFilter::OnDestroyAsset()
     {
         m_hostOutputGrid.DestroyAsset();
-        m_hostReduceBuffer.DestroyAsset();
-    }
+        m_hostOutputHalfGrid.DestroyAsset();
 
-    /*template<typename Subclass, typename DeligateLambda>
-    __host__ void Listen2(Subclass& owner, const std::string& eventID, DeligateLambda deligate)
-    {
-        std::function<void(const Host::RenderObject&, const std::string&)> a = std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2);
-        //m_actionDeligates.emplace(eventID, EventDeligate(owner, s));
-    }*/
+        m_hostReduceBuffer.DestroyAsset();
+        m_hostHalfReduceBuffer.DestroyAsset();
+    }
 
     __host__ void Host::LightProbeKernelFilter::Bind(RenderObjectContainer& sceneObjects)
     {
@@ -97,12 +100,12 @@ namespace Cuda
         }
 
         m_hostInputHalfGrid = nullptr;
-        if (!m_inputGridHalfID.empty())
+        if (!m_inputHalfGridID.empty())
         {
-            m_hostInputHalfGrid = sceneObjects.FindByID(m_inputGridHalfID).DynamicCast<Host::LightProbeGrid>();
+            m_hostInputHalfGrid = sceneObjects.FindByID(m_inputHalfGridID).DynamicCast<Host::LightProbeGrid>();
             if (!m_hostInputHalfGrid)
             {
-                Log::Error("Error: LightProbeKernelFilter::Bind(): the specified half input light probe grid '%s' is invalid.\n", m_inputGridHalfID);
+                Log::Error("Error: LightProbeKernelFilter::Bind(): the specified half input light probe grid '%s' is invalid.\n", m_inputHalfGridID);
                 return;
             }
         }
@@ -127,7 +130,7 @@ namespace Cuda
         Assert(m_hostReduceBuffer);
 
         // Establish the dimensions of the kernel   
-        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid);
+        auto& gridData = m_objects->gridData.Initialise(m_hostInputGrid, m_hostInputHalfGrid, m_hostInputGrid, m_hostInputHalfGrid, m_hostOutputGrid, m_hostOutputHalfGrid);
 
         Assert(gridData.coefficientsPerProbe <= kMaxCoefficients);
 
@@ -157,10 +160,18 @@ namespace Cuda
         Log::Debug("probeRange: %i\n", m_probeRange);
         Log::Debug("gridSize: %i\n", m_gridSize);
 
-        // Initialise the output grid so it has the same dimensions as the input
+        // Initialise the output grids so it has the same dimensions as the input
         m_hostOutputGrid->Prepare(gridParams);
+        if (m_hostOutputHalfGrid)
+        {
+            m_hostOutputHalfGrid->Prepare(gridParams);
+        }
         
         m_objects->cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
+        if (m_hostHalfReduceBuffer) 
+        { 
+            m_objects->cu_halfReduceBuffer = m_hostHalfReduceBuffer->GetDeviceInstance(); 
+        }
         m_objects.Upload();
     }
 
@@ -168,6 +179,7 @@ namespace Cuda
     {
         __shared__ Host::LightProbeKernelFilter::Objects objects;
         __shared__ vec3 weightedCoeffs[kBlockSize * kMaxCoefficients];
+        __shared__ vec3 weightedHalfCoeffs[kBlockSize * kMaxCoefficients];
         __shared__ float weights[kBlockSize];
 
         if (kThreadIdx == 0)
@@ -175,10 +187,17 @@ namespace Cuda
             assert(objectsPtr);
             objects = *objectsPtr;
             assert(objects.gridData.cu_inputGrid);
-            assert(objects.gridData.cu_outputGrid);
+            assert(objects.gridData.cu_outputGrid);            
             assert(objects.params.kernelRadius <= 20);
+            assert(objects.cu_reduceBuffer);
+            if (objects.gridData.cu_outputHalfGrid || objects.cu_halfReduceBuffer)
+            {
+                assert(objects.cu_halfReduceBuffer);
+                assert(objects.gridData.cu_outputHalfGrid);
+            }
 
             memset(weightedCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
+            memset(weightedHalfCoeffs, 0, sizeof(vec3) * kBlockSize * kMaxCoefficients);
         }    
 
         __syncthreads();
@@ -244,6 +263,15 @@ namespace Cuda
                     {
                         weightedCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] = inputCoeff[coeffIdx] * weight;
                     }
+                    // Accumulated the half coefficients too if required
+                    if (gridData.cu_outputHalfGrid)
+                    {
+                        const vec3* inputHalfCoeff = gridData.cu_inputHalfGrid->At(probeIdxN);
+                        for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
+                        {
+                            weightedHalfCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] = inputHalfCoeff[coeffIdx] * weight;
+                        }
+                    }
                 }
             }
         }
@@ -255,10 +283,20 @@ namespace Cuda
         {
             if (threadIdx.x < interval && weights[threadIdx.x + interval] > 0.0f)
             {
+                // Full buffer
                 for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
                 {
                     weightedCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] += weightedCoeffs[(threadIdx.x + interval) * kMaxCoefficients + coeffIdx];
                 }
+                // Half buffer
+                if (gridData.cu_outputHalfGrid)
+                {
+                    for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
+                    {
+                        weightedHalfCoeffs[threadIdx.x * kMaxCoefficients + coeffIdx] += weightedHalfCoeffs[(threadIdx.x + interval) * kMaxCoefficients + coeffIdx];
+                    }
+                }
+                // Weights
                 weights[threadIdx.x] += weights[threadIdx.x + interval];
             }
 
@@ -270,27 +308,53 @@ namespace Cuda
             // If the entire convolution operation fits into a single block, copy straight into the output buffer
             if (objects.blocksPerProbe == 1)
             {
+                // Full buffer
                 vec3* outputBuffer = gridData.cu_outputGrid->At(probeIdx0);
                 for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx] / weights[0];
                 }
-                // Don't filter the metadata. Just copy.
+                // Don't filter the metadata. Just copy from the origin probe.
                 outputBuffer[gridData.shCoeffsPerProbe] = gridData.cu_inputGrid->At(probeIdx0)[gridData.shCoeffsPerProbe];
+                outputBuffer[gridData.shCoeffsPerProbe][kProbeFilterWeights] = weights[0];
+
+                // Half buffer
+                if (gridData.cu_outputHalfGrid)
+                {
+                    vec3* outputHalfBuffer = gridData.cu_outputHalfGrid->At(probeIdx0);
+                    for (int coeffIdx = 0; coeffIdx < gridData.shCoeffsPerProbe; ++coeffIdx)
+                    {
+                        outputHalfBuffer[coeffIdx] = weightedHalfCoeffs[coeffIdx] / weights[0];
+                    }
+                    outputHalfBuffer[gridData.shCoeffsPerProbe] = gridData.cu_inputHalfGrid->At(probeIdx0)[gridData.shCoeffsPerProbe];                    
+                    outputHalfBuffer[gridData.shCoeffsPerProbe][kProbeFilterWeights] = weights[0];
+                }
             }
             else
             {
                 // Copy the data into the intermediate buffer. 
                 // We store the weighted SH coefficients as vec3s followed by a final vec3 whose first element contains the weight.
-                assert(objects.cu_reduceBuffer);
                 const int outputIdx = blockIdx.x * (gridData.coefficientsPerProbe + 1);
                 assert(outputIdx < objects.cu_reduceBuffer->Size());
+                
+                // Full buffer
                 vec3* outputBuffer = &(*objects.cu_reduceBuffer)[outputIdx];
                 for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe; ++coeffIdx)
                 {
                     outputBuffer[coeffIdx] = weightedCoeffs[coeffIdx];
                 }
                 outputBuffer[gridData.coefficientsPerProbe].x = weights[0];
+
+                // Half buffer
+                if (gridData.cu_outputHalfGrid)
+                {
+                    vec3* outputHalfBuffer = &(*objects.cu_halfReduceBuffer)[outputIdx];
+                    for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe; ++coeffIdx)
+                    {
+                        outputHalfBuffer[coeffIdx] /= weightedHalfCoeffs[coeffIdx];
+                    }
+                    outputHalfBuffer[gridData.coefficientsPerProbe].x = weights[0];
+                }
             }
         }
     } 
@@ -303,38 +367,66 @@ namespace Cuda
         if (probeStartIdx + kKernelX >= objects->gridData.numProbes) { return; }
 
         const int probeIdx0 = probeStartIdx + kKernelX;
-        const vec3* inputBuffer = objects->gridData.cu_inputGrid->At(probeIdx0);
-        vec3* outputBuffer = objects->gridData.cu_outputGrid->At(probeIdx0);
+        auto& gridData = objects->gridData;
+        const vec3* inputBuffer = gridData.cu_inputGrid->At(probeIdx0);
+        const vec3* inputHalfBuffer = gridData.cu_inputHalfGrid->At(probeIdx0);
+        vec3* outputBuffer = gridData.cu_outputGrid->At(probeIdx0);
+        vec3* outputHalfBuffer = gridData.cu_outputHalfGrid ? gridData.cu_outputHalfGrid->At(probeIdx0) : nullptr;
 
         // If the input probe isn't valid, just copy over the unconvolved probe
         if (inputBuffer[objects->gridData.coefficientsPerProbe - 1].x < 0.5f)
         {
             memcpy(outputBuffer, inputBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
+            if (outputHalfBuffer)
+            {
+                memcpy(outputHalfBuffer, inputHalfBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
+            }
             return;
         }        
         
         memset(outputBuffer, 0, sizeof(vec3) * objects->gridData.coefficientsPerProbe);     
         const vec3* reduceCoeff = &(*objects->cu_reduceBuffer)[kKernelX * objects->blocksPerProbe * (objects->gridData.coefficientsPerProbe + 1)];
+        const vec3* halfReduceCoeff = objects->cu_halfReduceBuffer ? 
+                                      &(*objects->cu_halfReduceBuffer)[kKernelX * objects->blocksPerProbe * (objects->gridData.coefficientsPerProbe + 1)] : nullptr;
         
         // Sum the coefficients and weights over all the blocks
         float sumWeights = 0.0;
         for (int blockIdx = 0, reduceIdx = 0; blockIdx < objects->blocksPerProbe; ++blockIdx)
         {
+            // Full buffer
             for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++reduceIdx)
             {                                
                 outputBuffer[coeffIdx] += reduceCoeff[reduceIdx];
             }
-            reduceIdx++;
+            // Half buffer
+            if (outputHalfBuffer)
+            {
+                for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++reduceIdx)
+                {
+                    outputHalfBuffer[coeffIdx] += halfReduceCoeff[reduceIdx];
+                }
+            }
+            reduceIdx++; // Jump the probe metadata; we don't filter it.
             sumWeights += reduceCoeff[reduceIdx++].x;
         }
 
-        // Normalise the accumulated coefficients by the sum of the kernel weights
-        for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx)
-        {
-            outputBuffer[coeffIdx] /= sumWeights;
+        // Normalise the accumulated coefficients by the sum of the kernel weights. Don't filter the metadata; just copy.
+        for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx) 
+        { 
+            outputBuffer[coeffIdx] /= sumWeights; 
         }
-        // Don't filter the metadata. Just copy.
         outputBuffer[objects->gridData.shCoeffsPerProbe] = inputBuffer[objects->gridData.shCoeffsPerProbe];
+        outputBuffer[objects->gridData.shCoeffsPerProbe][kProbeFilterWeights] = sumWeights;
+
+        if (outputHalfBuffer)
+        {
+            for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx) 
+            { 
+                outputHalfBuffer[coeffIdx] /= sumWeights; 
+            }
+            outputHalfBuffer[objects->gridData.shCoeffsPerProbe] = inputHalfBuffer[objects->gridData.shCoeffsPerProbe];
+            outputHalfBuffer[objects->gridData.shCoeffsPerProbe][kProbeFilterWeights] = sumWeights;
+        }        
     }
 
     __host__ void Host::LightProbeKernelFilter::OnBuildInputGrids(const RenderObject& originObject, const std::string& eventID)
@@ -352,6 +444,10 @@ namespace Cuda
         if (m_objects->params.filterType == kKernelFilterNull/* || !m_hostInputGrid->IsConverged()*/)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
+            if (m_hostOutputHalfGrid)
+            {
+                m_hostOutputHalfGrid->Replace(*m_hostInputHalfGrid);
+            }
             m_isActive = true;
             return;
         }
@@ -380,6 +476,10 @@ namespace Cuda
     {
         std::vector<AssetHandle<Host::RenderObject>> objects;
         objects.emplace_back(m_hostOutputGrid);
+        if (m_hostOutputHalfGrid)
+        { 
+            objects.emplace_back(m_hostOutputHalfGrid); 
+        }
         return objects;
     }
 

@@ -33,7 +33,8 @@ namespace Cuda
 		int					samplingMode;
 		float				errorThreshold;
 		float				adaptiveSamplingGamma;
-		int					maxSamples;
+		ivec2				minMaxSamples;
+		bool				useFilteredError;
 
 		int					seed;
 		bool				randomiseSeed;

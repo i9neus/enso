@@ -137,7 +137,7 @@ namespace Json
         template<typename VecType>
         void AddVector(const std::string& name, const VecType& vec)
         {
-            std::vector<typename VecType::kType> values(typename VecType::kDims);
+            std::vector<typename VecType::kType> values(VecType::kDims);
             for (int i = 0; i < VecType::kDims; i++) { values[i] = vec[i]; }            
             
             AddArray(name, values);

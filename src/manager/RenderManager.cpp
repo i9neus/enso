@@ -830,7 +830,7 @@ void RenderManager::OnBakePostFrame()
 	{
 		// Estimate the render progress. This isn't terribly accurate, but it's good enough for now.
 		const auto& liveCam = m_liveCamera->GetParams();
-		m_bake.progress = float(m_frameIdx) / float(liveCam.maxSamples * liveCam.overrides.maxDepth);
+		m_bake.progress = float(m_frameIdx) / float(liveCam.minMaxSamples.y * liveCam.overrides.maxDepth);
 		if (m_bake.progress > 1.0f)
 		{
 			std::vector<Cuda::vec4> rawData;

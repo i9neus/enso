@@ -100,7 +100,7 @@ namespace USDIO
         pxr::VtFloatArray dataMeanDistance;
 
         Assert(GetUSDAttribute(prim, "description", usdDescription));
-        Assert(GetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe));
+        Assert(GetUSDAttribute(prim, "sampleNum", gridParams.minMaxSamplesPerProbe.y));
         Assert(GetUSDAttribute(prim, "size", gridSize));
         Assert(GetUSDAttribute(prim, "resolution", gridResolution));
         Assert(GetUSDAttribute(prim, "coefficients", coeffs));
@@ -224,7 +224,7 @@ namespace USDIO
         Assert(prim);
         
         SetUSDAttribute(prim, "description", usdDescription);
-        SetUSDAttribute(prim, "sampleNum", gridParams.maxSamplesPerProbe);
+        SetUSDAttribute(prim, "sampleNum", gridParams.minMaxSamplesPerProbe.y);
         SetUSDAttribute(prim, "size", pxr::GfVec3f(gridParams.transform.scale().x, gridParams.transform.scale().y, gridParams.transform.scale().z));
         SetUSDAttribute(prim, "resolution", pxr::GfVec3f(gridParams.gridDensity.x, gridParams.gridDensity.y, gridParams.gridDensity.z));
 

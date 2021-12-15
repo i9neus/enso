@@ -152,8 +152,9 @@ namespace Cuda
         }
 
         if (!compressedRays[0].IsAlive() && !compressedRays[1].IsAlive() &&
-            (m_params.camera.maxSamples <= 0 || int(compressedRays[0].sampleIdx - m_seedOffset) < m_params.camera.maxSamples))
+            (m_params.camera.minMaxSamples.y <= 0 || int(compressedRays[0].sampleIdx - m_seedOffset) < m_params.camera.minMaxSamples.y))
         {
+            
             if (m_params.isRealtime)
             {
                 m_objects.cu_accumBuffer->At(compressedRays[0].GetViewportPos()) = vec4(0.0f);

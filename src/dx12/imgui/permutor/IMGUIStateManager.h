@@ -70,7 +70,7 @@ private:
     bool                    m_startWithThisView;
     bool                    m_shutdownOnComplete;
     Cuda::ivec2             m_noisySampleRange;
-    int                     m_referenceSamples;
+    Cuda::ivec2             m_minMaxReferenceSamples;
     int                     m_thumbnailSamples;
     int                     m_numStrata;
     Cuda::vec2              m_gridValidityRange;

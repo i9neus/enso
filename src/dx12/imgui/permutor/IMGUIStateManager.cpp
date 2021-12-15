@@ -29,7 +29,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_renderManager(renderManager),
     m_stateListUI("Parameter states", "Add", "Overwrite", "Delete", ""),
     m_noisySampleRange(64, 2048),
-    m_referenceSamples(100000),
+    m_minMaxReferenceSamples(10000, 100000),
     m_thumbnailSamples(128),
     m_numBakeIterations(1),
     m_isBaking(false),
@@ -197,7 +197,7 @@ void RenderObjectStateManager::DeserialiseJson()
     if (permNode)
     {
         permNode.GetVector("noisySampleRange", m_noisySampleRange, jsonWarningLevel);
-        permNode.GetValue("referenceSamples", m_referenceSamples, jsonWarningLevel);
+        permNode.GetVector("referenceSamples", m_minMaxReferenceSamples, jsonWarningLevel);
         permNode.GetValue("thumbnailSamples", m_thumbnailSamples, jsonWarningLevel);
         permNode.GetValue("strata", m_numStrata, jsonWarningLevel);
         permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
@@ -226,7 +226,7 @@ void RenderObjectStateManager::SerialiseJson() const
     Json::Node permJson = rootDocument.AddChildObject("permutations");
     {        
         permJson.AddVector("noisySampleRange", m_noisySampleRange);
-        permJson.AddValue("referenceSamples", m_referenceSamples);
+        permJson.AddVector("referenceSamples", m_minMaxReferenceSamples);
         permJson.AddValue("thumbnailSamples", m_thumbnailSamples);
         permJson.AddValue("strata", m_numStrata);
         permJson.AddVector("gridValidityRange", m_gridValidityRange);
@@ -408,7 +408,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
 
         ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
-        ImGui::DragInt("Reference samples", &m_referenceSamples, 1.0f, 1, 1e7);
+        ImGui::DragInt2("Min/max reference samples", &m_minMaxReferenceSamples[0], 1.0f, 1, 1e7);
         ImGui::DragInt("Thumbnail samples", &m_thumbnailSamples, 1.0f, 1, 1024);
 
         ImGui::TreePop();
@@ -428,7 +428,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     if (ImGui::Button("Reset Defaults"))
     {
         m_noisySampleRange = Cuda::ivec2(64, 2048);
-        m_referenceSamples = 100000;
+        m_minMaxReferenceSamples = Cuda::ivec2(10000, 100000);
         m_numStrata = 20;
         m_gridValidityRange = Cuda::vec2(0.7f, 0.95f);
         m_kifsIterationRange = Cuda::ivec2(7, 9);
@@ -508,7 +508,7 @@ void RenderObjectStateManager::EnqueueBatch()
     params.jitterFlags = m_jitterFlags;
     params.numIterations = m_numBakeIterations;
     params.noisyRange = m_noisySampleRange;
-    params.referenceCount = m_referenceSamples;
+    params.minMaxReferenceSamples = m_minMaxReferenceSamples;
     params.thumbnailCount = m_thumbnailSamples;
     params.numStrata = m_numStrata;
     params.kifsIterationRange = m_kifsIterationRange;

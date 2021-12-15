@@ -39,8 +39,9 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
     HelpMarker("The gamma value applied to the viewport window.");
 
-    ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
-    HelpMarker("The maximum number of samples per pixel. -1 = infinite.");
+    ImGui::DragInt2("Max/min samples", &m_p.camera.minMaxSamples[0], 1.0f, -1, std::numeric_limits<int>::max());
+    HelpMarker("The maximum and minimum number of samples per pixel. -1 = infinite.");
+    m_p.camera.minMaxSamples.x = min(m_p.camera.minMaxSamples.x, m_p.camera.minMaxSamples.y);
 
     ImGui::InputInt("Seed", &m_p.camera.seed);
     HelpMarker("The seed value used to see the random number generators.");
@@ -135,9 +136,13 @@ void LightProbeCameraShelf::Construct()
     {
         ConstructComboBox("Sampling mode", { "Fixed", "Adaptive (Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
         HelpMarker("Specifies which sampling mode to use. Fixed takes a fixed number of samples up to the input value. Adaptive takes a noise threshold beyond which sampling is terminated.");
+        
+        ConstructComboBox("Filtering mode", { "Disabled", "Enabled(Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
+        HelpMarker("Specifies which sampling mode to use. Fixed takes a fixed number of samples up to the input value. Adaptive takes a noise threshold beyond which sampling is terminated.");
 
-        ImGui::DragInt("Max samples", &m_p.camera.maxSamples, 1.0f, -1, std::numeric_limits<int>::max());
+        ImGui::DragInt2("Min/max samples", &m_p.camera.minMaxSamples[0], 1.0f, -1, std::numeric_limits<int>::max());
         HelpMarker("The maximum number of samples per probe. Set to -1 to take unlimited samples.");
+        m_p.camera.minMaxSamples.x = Cuda::clamp(m_p.camera.minMaxSamples.x, 0, m_p.camera.minMaxSamples.y);
 
         if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
         {
@@ -146,7 +151,12 @@ void LightProbeCameraShelf::Construct()
 
             ImGui::DragFloat("Adaptive sampling gamma", &m_p.camera.adaptiveSamplingGamma, math::max(m_p.camera.adaptiveSamplingGamma * 1e-3f, 1e-3f), 0.1f, 10.0f, "%.3f");
             HelpMarker("Gamma correction factor applied to the adaptive sampling calculations.");
+
+            ImGui::Checkbox("Use filtered error estimate", &m_p.camera.useFilteredError);
+            HelpMarker("Use a filtered error estimate to compute the adaptive sampling metrics.");
         }
+
+        ImGui::Checkbox("Filter grids", &m_p.filterGrids);
 
         ImGui::InputInt("Seed", &m_p.camera.seed);
         HelpMarker("The seed value used to see the random number generators.");
@@ -165,6 +175,8 @@ void LightProbeCameraShelf::Construct()
 
     if (ImGui::TreeNodeEx("Data Export Attributes", 0))
     {
+        ConstructComboBox("File format", { "Fixed", "Adaptive (Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
+        
         ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
         HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
 

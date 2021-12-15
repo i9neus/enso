@@ -37,6 +37,7 @@ namespace Cuda
                 int                             blocksPerProbe;
                
                 Device::Array<vec3>*            cu_reduceBuffer = nullptr;
+                Device::Array<vec3>*            cu_halfReduceBuffer = nullptr;
             };
 
         private:
@@ -44,11 +45,14 @@ namespace Cuda
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostInputHalfGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
+            AssetHandle<Host::LightProbeGrid>       m_hostOutputHalfGrid;
             AssetHandle<Host::Array<vec3>>          m_hostReduceBuffer;
+            AssetHandle<Host::Array<vec3>>          m_hostHalfReduceBuffer;
 
             std::string                             m_inputGridID;
-            std::string                             m_inputGridHalfID;
+            std::string                             m_inputHalfGridID;
             std::string                             m_outputGridID;
+            std::string                             m_outputHalfGridID;
 
             int                                     m_gridSize;
             int                                     m_blockSize;

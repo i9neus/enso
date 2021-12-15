@@ -21,6 +21,13 @@ namespace Cuda
         kProbeGridSqrError
     };
 
+    enum ProbeGridMetadata : int
+    {
+        kProbeValidity = 0,
+        kProbeFilterWeights = 1,
+        kProbeNumSamples = 2
+    };
+
     __host__ __device__ __forceinline__ ivec3 GridPosFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
     {
         return ivec3(probeIdx % gridDensity.x, 
@@ -69,7 +76,7 @@ namespace Cuda
         int                         coefficientsPerProbe;
         int                         numProbes;
         vec3						aspectRatio;
-        int                         maxSamplesPerProbe;
+        ivec2                       minMaxSamplesPerProbe;
 
         CameraParams                camera;
     };
@@ -203,6 +210,7 @@ namespace Cuda
             __host__ void                               SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, 
                                                                            AssetHandle<Host::Array<vec2>> errorData, 
                                                                            DeviceObjectRAII<float>& meanI);
+            __host__ void                               SetOutputMode(const int& outputMode);
             __host__ const LightProbeGridParams&        GetParams() const { return m_params; }
             __host__ const std::string&                 GetUSDExportPath() const { return m_usdExportPath; }
             __host__ AssetHandle<Host::Array<vec3>>&    GetSHDataAsset() { return m_shData; }

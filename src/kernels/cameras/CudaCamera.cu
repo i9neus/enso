@@ -21,23 +21,36 @@ namespace Cuda
         seed = 0;
         randomiseSeed = false;
 
-        maxSamples = -1;
+        minMaxSamples = ivec2(-1, -1);
         errorThreshold = 0.0f;
         samplingMode = kCameraSamplingFixed;
         adaptiveSamplingGamma = 1.0f;
+        useFilteredError = false;
+    }
+
+    template<typename VecType>
+    void AddVector2(const std::string& name, const VecType& vec)
+    {
+        std::vector<typename VecType::kType> values(VecType::kDims);
+        for (int i = 0; i < VecType::kDims; i++) { values[i] = vec[i]; }
     }
 
     __host__ void CameraParams::ToJson(::Json::Node& node) const
     {
+        AddVector2("minMaxSamples", minMaxSamples);
+        using T = Cuda::__vec_swizzle<int, 2, 2, 0, 1>;
+        int i = T::kDims;
+        
         node.AddValue("live", isLive);
         node.AddValue("active", isActive);
         node.AddValue("splatClamp", splatClamp);
         node.AddValue("seed", seed);
         node.AddValue("randomiseSeed", randomiseSeed);
         node.AddEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode);
-        node.AddValue("maxSamples", maxSamples);
+        node.AddVector("minMaxSamples", minMaxSamples);
         node.AddValue("errorThreshold", errorThreshold);
         node.AddValue("adaptiveSamplingGamma", adaptiveSamplingGamma);
+        node.AddValue("useFilteredError", useFilteredError);
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
@@ -51,9 +64,10 @@ namespace Cuda
         node.GetValue("seed", seed, flags);
         node.GetValue("randomiseSeed", randomiseSeed, flags);
         node.GetEnumeratedParameter("samplingMode", std::vector<std::string>({ "fixed", "adaptiverelative", "adaptiveabsolute" }), samplingMode, flags);
-        node.GetValue("maxSamples", maxSamples, flags);
+        node.GetVector("minMaxSamples", minMaxSamples, flags);
         node.GetValue("errorThreshold", errorThreshold, flags);
         node.GetValue("adaptiveSamplingGamma", adaptiveSamplingGamma, flags);
+        node.GetValue("useFilteredError", useFilteredError, flags);
         
         auto childNode = node.GetChildObject("overrides", flags);
         if (childNode)

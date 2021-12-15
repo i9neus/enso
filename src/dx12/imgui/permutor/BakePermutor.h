@@ -25,15 +25,26 @@ public:
         int numStrata = 0; 
 
         Cuda::ivec2 noisyRange;
-        int referenceCount = 0;
+        Cuda::ivec2 minMaxReferenceSamples = Cuda::ivec2(0);
         int thumbnailCount = 0;
+    };
+
+    struct IterationData
+    {
+        IterationData(const int type, const Cuda::ivec2& minMax, const int mode, const bool filter) :
+            bakeType(type), minMaxSamples(minMax), sampleMode(mode), filterGrids(filter) {}
+
+        int             bakeType;
+        Cuda::ivec2     minMaxSamples;
+        int             sampleMode;
+        bool            filterGrids;
     };
 
 public:
     BakePermutor(IMGUIAbstractShelfMap& imguiShelves, RenderObjectStateMap& stateMap, Json::Document& commandQueue);
 
     void                        Clear();
-    std::vector<std::pair<int, int>>& GetSampleCountList() { return m_sampleCountList; }
+    std::vector<IterationData>& GetIterationList() { return m_iterationList; }
     bool                        Prepare(const Params& params);
     bool                        Advance(const bool lastBakeSucceeded);
     float                       GetProgress() const;
@@ -49,12 +60,12 @@ private:
     std::vector<std::string>    GenerateExportPaths(const std::vector<std::string>& templateTokens, const int numPaths) const;
 
     void                        RandomiseScene();
-    int                         GenerateStratifiedSampleCountSet();
+    int                         GenerateIterationList();
 
     Params                      m_params;
 
-    std::vector<std::pair<int, int>>                    m_sampleCountList;
-    std::vector<std::pair<int, int>>::const_iterator    m_sampleCountIt;
+    std::vector<IterationData>                    m_iterationList;
+    std::vector<IterationData>::const_iterator    m_iterationIt;
     int                         m_sampleCountIdx;
     int                         m_kifsIterationIdx;
     int                         m_iterationIdx;

@@ -55,12 +55,13 @@ namespace Cuda
 		uint						totalBuckets; //				<-- The total number of accumulation units in the grid
 		uint						totalSubsamples; //				<-- The total number of subsamples in the grid
 
-		int							maxSamplesPerBucket; // 		<-- The maximum number of samples that should be taken per bucket
+		ivec2						minMaxSamplesPerBucket; // 		<-- The min/max number of samples that should be taken per bucket
 		vec3						aspectRatio;
 
 		int							lightingMode;
 		int							traversalMode;
 		int							gridUpdateInterval;
+		bool						filterGrids;
 	};
 
 	struct LightProbeGridExportParams
@@ -93,12 +94,13 @@ namespace Cuda
 			{
 				__host__ __device__ Objects() :
 					cu_reduceBuffer(nullptr),
-					cu_adaptiveSamplingGrid(nullptr)
+					cu_convergenceGrid(nullptr)
 				{
 					for (int i = 0; i < kLightProbeNumBuffers; ++i)
 					{
 						cu_accumBuffers[i] = nullptr;
 						cu_probeGrids[i] = nullptr;
+						cu_filteredProbeGrids[i] = nullptr;
 					}
 
 					cu_hilbertBuffer = nullptr;
@@ -112,8 +114,9 @@ namespace Cuda
 				Device::Array<vec4>*		cu_reduceBuffer;
 				Device::Array<uint>*		cu_hilbertBuffer;
 				Device::LightProbeGrid*		cu_probeGrids[kLightProbeNumBuffers];
+				Device::LightProbeGrid*		cu_filteredProbeGrids[kLightProbeNumBuffers];
 				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
-				Device::Array<uchar>*		cu_adaptiveSamplingGrid;
+				Device::Array<uchar>*		cu_convergenceGrid;
 				float*						cu_meanI;
 			};
 
@@ -151,7 +154,8 @@ namespace Cuda
 			__host__ virtual ~LightProbeCamera() { OnDestroyAsset(); }
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
-
+			
+			__host__ virtual void						Bind(RenderObjectContainer& sceneObjects) override final;
 			__host__ virtual void                       OnDestroyAsset() override final;
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
@@ -189,13 +193,15 @@ namespace Cuda
 
 			std::array<AssetHandle<Host::Array<vec4>>, kLightProbeNumBuffers>		m_hostAccumBuffers;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
+			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostFilteredLightProbeGrids;
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
 			AssetHandle<Host::Array<uint>>											m_hostHilbertBuffer;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
 			std::array<std::string, 4>												m_gridIDs;
+			std::array<std::string, 4>												m_filteredGridIDs;
 
 			std::array<AssetHandle<Host::Array<vec2>>, 2>							m_hostLightProbeErrorGrids;
-			AssetHandle<Host::Array<uchar>>											m_hostAdaptiveSamplingGrid;
+			AssetHandle<Host::Array<uchar>>											m_hostConvergenceGrid;
 			DeviceObjectRAII<float>													m_hostMeanI;
 
 			dim3										m_block;

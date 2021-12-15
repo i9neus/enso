@@ -22,7 +22,7 @@ namespace Cuda
         axisMultiplier = 1.0f;
         invertX = invertY = invertZ = false;
         aspectRatio = vec3(1.0f);
-        maxSamplesPerProbe = 0;
+        minMaxSamplesPerProbe = 0;
         dilate = true;
         numProbes = 0;
 
@@ -187,6 +187,8 @@ namespace Cuda
         {
             (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] = 0.0f;
         }
+
+        // Set the probe metadata to the origin probe. It won't be averaged together like the SH coefficients. 
         (*m_objects.cu_swapBuffer)[gridIdx0 + m_params.shCoefficientsPerProbe] = (*m_objects.cu_shData)[gridIdx0 + m_params.shCoefficientsPerProbe];
 
         // If the entire neighbourhood is invalid then dilation does nothing. Just set the coefficients to zero and we're done.
@@ -335,12 +337,13 @@ namespace Cuda
         {
         case kProbeGridHarmonicMean:
         {
-            return vec3(InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta).y);
+            const float weights = InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta)[kProbeFilterWeights];
+            return Hue(0.33f * saturate(1 / weights));
         }
         break;
         case kProbeGridValidity:
         {
-            return mix(kRed, kGreen, InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta).x);
+            return mix(kRed, kGreen, InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta)[kProbeValidity]);
         }
         break;
         case kProbeGridConvergence:
@@ -621,6 +624,12 @@ namespace Cuda
             "Raw data has size %i; expected %i", rawData.size(), m_params.numProbes * m_params.coefficientsPerProbe);
 
         m_shData->Upload(rawData);
+    }
+
+    __host__ void Host::LightProbeGrid::SetOutputMode(const int& mode)
+    {
+        m_params.outputMode = mode;
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::LightProbeGrid::SetExternalBuffers(AssetHandle<Host::Array<uchar>> adaptiveSamplingData, AssetHandle<Host::Array<vec2>> errorData, DeviceObjectRAII<float>& meanI)
