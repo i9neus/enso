@@ -156,6 +156,7 @@ namespace Cuda
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 			
 			__host__ virtual void						Bind(RenderObjectContainer& sceneObjects) override final;
+			__host__ virtual void						OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
 			__host__ virtual void                       OnDestroyAsset() override final;
 			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
@@ -208,6 +209,7 @@ namespace Cuda
 			dim3										m_seedGrid, m_reduceGrid;
 			int											m_frameIdx;
 			std::string									m_probeGridID;
+			bool										m_needsRebind;
 		};
 	}
 }

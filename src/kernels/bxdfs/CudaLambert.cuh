@@ -8,16 +8,25 @@ namespace Cuda
 {
     namespace Host { class LambertBRDF; }
 
+    enum LambertProbeGridFlags : uint
+    {
+        kLambertGridChannel0 = 1 << 0,
+        kLambertGridChannel1 = 1 << 1,
+        kLambertGridChannel2 = 1 << 2,
+        kLambertGridChannel3 = 1 << 3,
+        kLambertUseProbeGrid = 1 << 4,
+        kLambertGridNumChannels = 4
+    };
+
     struct LambertBRDFParams
     {
-        __host__ __device__ LambertBRDFParams() : lightProbeGridIdx(0), useLightProbeGrid(false) {}
+        __host__ __device__ LambertBRDFParams() : probeGridFlags(kLambertUseProbeGrid | kLambertGridChannel0 | kLambertGridChannel1) { }
         __host__ LambertBRDFParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
-        bool    useLightProbeGrid;
-        int     lightProbeGridIdx;
+        uint    probeGridFlags;
     };
 
     namespace Device
@@ -31,7 +40,7 @@ namespace Cuda
         public:
             struct Objects
             {
-                Device::LightProbeGrid* lightProbeGrids[2] = { nullptr, nullptr };
+                Device::LightProbeGrid* lightProbeGrids[kLambertGridNumChannels] = { nullptr, nullptr, nullptr, nullptr };
             };
 
             LambertBRDF() = default;
@@ -61,9 +70,9 @@ namespace Cuda
         private:
             Device::LambertBRDF*                    cu_deviceData;
             Device::LambertBRDF                     m_hostData; 
-            std::array<AssetHandle<Host::LightProbeGrid>, 2>	    m_hostLightProbeGrids;
+            std::array<AssetHandle<Host::LightProbeGrid>, kLambertGridNumChannels> m_hostLightProbeGrids;
 
-            std::string                             m_gridIDs[2];
+            std::string                             m_gridIDs[kLambertGridNumChannels];
             LambertBRDFParams                       m_params;
 
         public:

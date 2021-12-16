@@ -66,7 +66,7 @@ namespace Cuda
     __device__ void Device::LightProbeCamera::Synchronise(const LightProbeCameraParams& params)
     {
         m_params = params;
-        if (m_params.camera.minMaxSamples.x < 0 || m_params.camera.minMaxSamples.y < 0) { m_params.camera.minMaxSamples = ivec2(INT_MAX); }
+        printf("%i %i\n", m_params.camera.minMaxSamples.x, m_params.camera.minMaxSamples.y);
 
         Prepare();
     }
@@ -203,26 +203,29 @@ namespace Cuda
             if (!m_objects.cu_accumBuffers[gridIdx]) { continue; }
 
             // Don't write into the indirect grid at all when in combined lighting mode
-            if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
+            const int componentIdx = gridIdx % 2;
+            if (m_params.lightingMode == kBakeLightingCombined && componentIdx == kLightProbeBufferIndirect) { continue; }
             
             int accumIdx = emplacedRay.accumIdx * m_params.grid.coefficientsPerProbe;
             auto& accumBuffer = *(m_objects.cu_accumBuffers[gridIdx]);
             const float weight = !isAlive;
             
             // Should we accumulate this sample?
-            bool accumulate;
-            switch (gridIdx % 2)
+            bool accumulate = true;
+            switch (componentIdx)
             {
             case kLightProbeBufferDirect:
-                accumulate = m_params.lightingMode == kBakeLightingCombined || incidentRay.depth <= 1; break;
+                accumulate = m_params.lightingMode == kBakeLightingCombined || incidentRay.depth <= 1; 
+                break;                
             case kLightProbeBufferIndirect:
-                accumulate = m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1; break;
+                accumulate = m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1; 
+                break;
             default:
                 assert(false);
-            }
+            }            
              
             // Half buffers only get every second sample
-            if (gridIdx > kLightProbeBufferIndirect) { accumulate &= emplacedRay.sampleIdx % 2 == 1; }
+            if (gridIdx > kLightProbeBufferIndirect) { accumulate &= emplacedRay.sampleIdx % 2 == 1; }      
 
             if(accumulate)  
             {              
@@ -239,7 +242,7 @@ namespace Cuda
             }
 
             // Accumulate validity and mean distance       
-            if (gridIdx <= kLightProbeBufferIndirect && incidentRay.IsIndirectSample())
+            if (incidentRay.IsIndirectSample())
             {                
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene
                 accumBuffer[accumIdx] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing), 
@@ -493,15 +496,29 @@ namespace Cuda
                 sqrError /= max(kMinMSENorm, sqr(I.x * 2.0f));
             }
 
-            // Get the sample count from the direct grid
-            const float sampleCount = (*m_objects.cu_probeGrids)[kLightProbeBufferDirect].At(i)[m_params.grid.shCoefficientsPerProbe].z;
+            uchar convergenceFlags = 0;
+            const int sampleCount = (*m_objects.cu_probeGrids)[kLightProbeBufferDirect].At(i)[m_params.grid.shCoefficientsPerProbe][kProbeNumSamples];
+            
+            // If the probe is below the minimum sample count, flag it and mark as active
+            if (sampleCount < m_params.camera.minMaxSamples.x)
+            {
+                convergenceFlags |= kProbeBelowSampleMin;
+            }
+            // Otherwise, if the probe has reached the maximum number of samples, mark it as converged
+            else if (sampleCount >= m_params.camera.minMaxSamples.y)
+            {
+                convergenceFlags |= kProbeAtSampleMax;
+            }
+            
+            // If the probe is still below the error threshold, mark is active
+            if (sqrError > sqr(m_params.camera.errorThreshold)) 
+            { 
+                convergenceFlags |= kProbeUnconverged; 
+            }
             
             // Set the entry in the adaptive sampling grid and accumulate the number of active probes
-            const bool isActive = (sqrError > sqr(m_params.camera.errorThreshold) || sampleCount < m_params.camera.minMaxSamples.x);
-            (*m_objects.cu_convergenceGrid)[i] = uchar(isActive);
-
-            // Count the number of active probes
-            localNumActiveProbes[kKernelIdx] += int(isActive);
+            (*m_objects.cu_convergenceGrid)[i] = convergenceFlags;
+            localNumActiveProbes[kKernelIdx] += uchar((convergenceFlags & (kProbeUnconverged | kProbeBelowSampleMin)) != 0 && !(convergenceFlags & kProbeAtSampleMax));
         }
 
         __syncthreads();
@@ -520,7 +537,8 @@ namespace Cuda
         m_block(16 * 16, 1, 1),
         m_seedGrid(1, 1, 1),
         m_reduceGrid(1, 1, 1),
-        m_hostMeanI(1.0f)
+        m_hostMeanI(1.0f),
+        m_needsRebind(false)
     {
         // Register events for deligates to watch
         RegisterEvent("OnBuildGrids");
@@ -536,10 +554,10 @@ namespace Cuda
         node.GetValue("gridIndirectHalfID", m_gridIDs[3], Json::kRequiredAssert | Json::kNotBlank);
         
         // Input grid IDs for adaptive sampling
-        node.GetValue("gridFilteredDirectID", m_filteredGridIDs[0], Json::kSilent);
-        node.GetValue("gridFilteredIndirectID", m_filteredGridIDs[1], Json::kSilent);
-        node.GetValue("gridFilteredDirectHalfID", m_filteredGridIDs[2], Json::kSilent);
-        node.GetValue("gridFilteredIndirectHalfID", m_filteredGridIDs[3], Json::kSilent);        
+        node.GetValue("gridFilteredDirectID", m_filteredGridIDs[0], Json::kNotBlank);
+        node.GetValue("gridFilteredIndirectID", m_filteredGridIDs[1], Json::kNotBlank);
+        node.GetValue("gridFilteredDirectHalfID", m_filteredGridIDs[2], Json::kNotBlank);
+        node.GetValue("gridFilteredIndirectHalfID", m_filteredGridIDs[3], Json::kNotBlank);
 
         // Create reduction and adaptive sampling buffers
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
@@ -748,13 +766,14 @@ namespace Cuda
 
         // Prepare the light probe grids with the new parameters
         newParams.grid.camera = newParams.camera;
+        int q = 0;
         for (auto& grid : m_hostLightProbeGrids)
         {
-            if (grid) { grid->Prepare(newParams.grid); }
+            if (grid) { Log::Debug("%i\n", ++q); grid->Prepare(newParams.grid); }
         }
         for (auto& grid : m_hostFilteredLightProbeGrids)
         {
-            if (grid) { grid->SetOutputMode(newParams.grid.outputMode); }
+            if (grid) { Log::Debug("%i\n", ++q); grid->SetOutputMode(newParams.grid.outputMode); }
         }
 
         // Number of light probes in the grid
@@ -804,6 +823,7 @@ namespace Cuda
         Log::Debug("m_reduceGrid: [%i, %i, %i]\n", m_reduceGrid.x, m_reduceGrid.y, m_reduceGrid.z);
 
         m_frameIdx = 0;
+        m_needsRebind = true;
     }
 
     __host__ void Host::LightProbeCamera::ClearRenderState()
@@ -878,7 +898,7 @@ namespace Cuda
 
         auto& as = *m_aggregateStats;
         as.isConverged = true;
-        as.bakeProgress = 0.0f;
+        as.bakeProgress = 0.0f; 
         as.meanGridValidity = 0.0f;
         as.minMaxSamples = vec2(std::numeric_limits<float>::max(), 0.0f);
         as.numActiveGrids = 0;
@@ -946,7 +966,7 @@ namespace Cuda
             const auto& grid = m_params.filterGrids ? m_hostFilteredLightProbeGrids[gridIdx] : m_hostLightProbeGrids[gridIdx];
             const auto& stats = grid->GetAggregateStatistics();
 
-            // If the validity is outside the valid range, all grids will be similarly invalid so bail immediatel
+            // If the validity is outside the valid range, all grids will be similarly invalid so bail immediately
             if (stats.meanValidity < params.minGridValidity || stats.meanValidity > params.maxGridValidity)
             {
                 Log::Warning("Warning: Cannot not export probe grid. Mean validity %f is outside valid range [%f, %f]", stats.meanValidity, params.minGridValidity, params.maxGridValidity);
@@ -1068,15 +1088,11 @@ namespace Cuda
     }
 
     __host__ void Host::LightProbeCamera::Bind(RenderObjectContainer& sceneObjects)
-    {        
-        // If we're not using the filtered error, don't try and bind a different set of adaptive sampling grids
-        if (!m_params.camera.useFilteredError) { return; }
-        
+    {                
         // Bind the adaptive sampling grids
         for (int idx = 0; idx < m_hostFilteredLightProbeGrids.size(); ++idx)
-        {
-            m_hostFilteredLightProbeGrids[idx] = m_hostLightProbeGrids[idx];
-            if (!m_filteredGridIDs[idx].empty())          
+        {  
+            if (m_params.camera.useFilteredError && !m_filteredGridIDs[idx].empty())
             {
                 m_hostFilteredLightProbeGrids[idx] = sceneObjects.FindByID(m_filteredGridIDs[idx]).DynamicCast<Host::LightProbeGrid>();
                 AssertMsgFmt(m_hostFilteredLightProbeGrids[idx], "Error: LightProbeCamera::Bind(): the specified light probe grid '%s' is invalid.\n", m_filteredGridIDs[idx].c_str());
@@ -1084,16 +1100,31 @@ namespace Cuda
                 m_hostFilteredLightProbeGrids[idx]->SetExternalBuffers(m_hostConvergenceGrid, m_hostLightProbeErrorGrids[0], m_hostMeanI);
 
                 m_deviceObjects.cu_filteredProbeGrids[idx] = m_hostFilteredLightProbeGrids[idx]->GetDeviceInstance();
+                Log::Write("Bound light probe grid '%s' to light probe camera '%s'", m_filteredGridIDs[idx], GetAssetID());
+            }
+            else
+            {
+                // If we're not using the filtered error, don't try and bind a different set of adaptive sampling grids
+                m_hostFilteredLightProbeGrids[idx] = m_hostLightProbeGrids[idx];
             }
         }
 
         SynchroniseObjects(cu_deviceData, m_deviceObjects);
     }
 
+    __host__ void Host::LightProbeCamera::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    {
+        if (m_needsRebind)
+        {
+            Bind(sceneObjects);
+            m_needsRebind = true;
+        }
+    }
+
     __host__ bool Host::LightProbeCamera::EmitStatistics(Json::Node& rootNode) const
     {        
-        rootNode.AddValue("isActive", m_params.camera.isActive);
-        rootNode.AddValue("bakeProgress", m_aggregateStats->bakeProgress);
+        rootNode.AddValue("isActive", m_params.camera.isActive);        
+        rootNode.AddValue("bakeProgress", (m_params.camera.samplingMode == kCameraSamplingFixed) ? m_aggregateStats->bakeProgress : m_aggregateStats->bakeConvergence);
         rootNode.AddValue("bakeConvergence", m_aggregateStats->bakeConvergence);
         rootNode.AddValue("mse", m_aggregateStats->MSE);
         rootNode.AddValue("meanI", m_aggregateStats->meanI);
@@ -1112,13 +1143,13 @@ namespace Cuda
             gridNode.AddValue("meanProbeValidity", stats.meanValidity);
             gridNode.AddValue("meanProbeDistance", stats.meanDistance);
 
-            /*std::vector<std::vector<uint>> histogramData(4);
+            std::vector<std::vector<uint>> histogramData(4);
             for (int idx = 0; idx < 4; ++idx)
             {
                 histogramData[idx].resize(50);
                 std::memcpy(histogramData[idx].data(), &stats.coeffHistogram[50 * idx], sizeof(uint) * 50);
             }
-            gridNode.AddArray2D("coeffHistograms", histogramData);*/
+            gridNode.AddArray2D("coeffHistograms", histogramData);
 
             std::vector<float> peakIntensityData(4);
             std:memcpy(peakIntensityData.data(), stats.meanSqrIntensity, sizeof(float) * 4);

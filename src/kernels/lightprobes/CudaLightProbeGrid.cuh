@@ -28,6 +28,13 @@ namespace Cuda
         kProbeNumSamples = 2
     };
 
+    enum ProbeGridConvergenceFlags : uchar
+    {
+        kProbeUnconverged = 1,
+        kProbeBelowSampleMin = 2,
+        kProbeAtSampleMax = 4
+    };
+
     __host__ __device__ __forceinline__ ivec3 GridPosFromProbeIdx(const int& probeIdx, const ivec3& gridDensity)
     {
         return ivec3(probeIdx % gridDensity.x, 

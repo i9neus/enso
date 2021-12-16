@@ -39,9 +39,9 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderFloat("Display gamma", &m_p.displayGamma, 0.01f, 5.0f);
     HelpMarker("The gamma value applied to the viewport window.");
 
-    ImGui::DragInt2("Max/min samples", &m_p.camera.minMaxSamples[0], 1.0f, -1, std::numeric_limits<int>::max());
+    ImGui::DragInt2("Min/max samples", &m_p.camera.minMaxSamples[0], 1.0f, -1, std::numeric_limits<int>::max());
     HelpMarker("The maximum and minimum number of samples per pixel. -1 = infinite.");
-    m_p.camera.minMaxSamples.x = min(m_p.camera.minMaxSamples.x, m_p.camera.minMaxSamples.y);
+    m_p.camera.minMaxSamples.x = max(0, m_p.camera.minMaxSamples.x);
 
     ImGui::InputInt("Seed", &m_p.camera.seed);
     HelpMarker("The seed value used to see the random number generators.");
@@ -136,13 +136,10 @@ void LightProbeCameraShelf::Construct()
     {
         ConstructComboBox("Sampling mode", { "Fixed", "Adaptive (Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
         HelpMarker("Specifies which sampling mode to use. Fixed takes a fixed number of samples up to the input value. Adaptive takes a noise threshold beyond which sampling is terminated.");
-        
-        ConstructComboBox("Filtering mode", { "Disabled", "Enabled(Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
-        HelpMarker("Specifies which sampling mode to use. Fixed takes a fixed number of samples up to the input value. Adaptive takes a noise threshold beyond which sampling is terminated.");
 
         ImGui::DragInt2("Min/max samples", &m_p.camera.minMaxSamples[0], 1.0f, -1, std::numeric_limits<int>::max());
         HelpMarker("The maximum number of samples per probe. Set to -1 to take unlimited samples.");
-        m_p.camera.minMaxSamples.x = Cuda::clamp(m_p.camera.minMaxSamples.x, 0, m_p.camera.minMaxSamples.y);
+        m_p.camera.minMaxSamples.x = max(0, m_p.camera.minMaxSamples.x);
 
         if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
         {

@@ -169,6 +169,7 @@ protected:
     void ConstructJitteredFloat(Cuda::JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
     void ConstructListBox(const std::string& name, const std::vector<std::string>& listItems, int& selected);
+    void ConstructFlagCheckBox(const std::string& name, const uint& mask, uint& flags);
     
     template<typename T>
     void ConstructMappedListBox(const std::string& id, const std::map<const std::string, T>& container, std::string& selectedStr, int& selectedIdx)

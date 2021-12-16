@@ -470,5 +470,10 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     ImGui::TreePop(); 
 } 
 
-
+void IMGUIElement::ConstructFlagCheckBox(const std::string& name, const uint& mask, uint& flags)
+{
+   bool isEnabled = (flags & mask);
+   ImGui::Checkbox(name.c_str(), &isEnabled);
+   flags = (flags & ~mask) | ((uint(!isEnabled) - 1) & mask);
+}
 

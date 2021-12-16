@@ -350,8 +350,14 @@ namespace Cuda
         {
             if (!m_objects.cu_adaptiveSamplingData) { return kZero; }
 
-            const auto& isActive = NearestNeighbourCoefficient(*m_objects.cu_adaptiveSamplingData, gridPos, 0, 1);
-            return isActive ? kRed : kGreen;
+            const auto& flags = NearestNeighbourCoefficient(*m_objects.cu_adaptiveSamplingData, gridPos, 0, 1);
+            switch (flags)
+            {
+            case kProbeUnconverged: return kYellow;
+            case (kProbeUnconverged | kProbeBelowSampleMin): return kBlue;
+            case (kProbeUnconverged | kProbeAtSampleMax): return kRed;
+            default: return kGreen;
+            }
         }
         break;
         case kProbeGridSqrError:

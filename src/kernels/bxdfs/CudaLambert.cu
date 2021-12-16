@@ -10,16 +10,12 @@ namespace Cuda
 
     __host__ void LambertBRDFParams::ToJson(::Json::Node& node) const
     {
-        node.AddValue("lightProbeGridIndex", lightProbeGridIdx);
-        node.AddValue("useLightProbeGrid", useLightProbeGrid);
+        node.AddValue("probeGridFlags", probeGridFlags);
     }
 
     __host__ void LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetValue("lightProbeGridIndex", lightProbeGridIdx, ::Json::kRequiredWarn);
-        node.GetValue("useLightProbeGrid", useLightProbeGrid, ::Json::kRequiredWarn);
-        lightProbeGridIdx = clamp(lightProbeGridIdx, 1, 3);
-
+        node.GetValue("probeGridFlags", probeGridFlags, flags);
     }
     
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const
@@ -43,11 +39,13 @@ namespace Cuda
 
     __device__ vec3 Device::LambertBRDF::EvaluateCachedRadiance(const HitCtx& hitCtx) const
     {
-        if (!m_params.useLightProbeGrid) { return kZero; }
+        if (m_params.probeGridFlags == 0) { return kZero; }
 
         vec3 L(0.0f);
-        if (m_params.lightProbeGridIdx & 1 && m_objects.lightProbeGrids[0]) { L += m_objects.lightProbeGrids[0]->Evaluate(hitCtx); }
-        if (m_params.lightProbeGridIdx & 2 && m_objects.lightProbeGrids[1]) { L += m_objects.lightProbeGrids[1]->Evaluate(hitCtx); }
+        if (m_params.probeGridFlags & kLambertGridChannel0 && m_objects.lightProbeGrids[0]) { L += m_objects.lightProbeGrids[0]->Evaluate(hitCtx); }
+        if (m_params.probeGridFlags & kLambertGridChannel1 && m_objects.lightProbeGrids[1]) { L += m_objects.lightProbeGrids[1]->Evaluate(hitCtx); }
+        if (m_params.probeGridFlags & kLambertGridChannel2 && m_objects.lightProbeGrids[2]) { L += m_objects.lightProbeGrids[2]->Evaluate(hitCtx); }
+        if (m_params.probeGridFlags & kLambertGridChannel3 && m_objects.lightProbeGrids[3]) { L += m_objects.lightProbeGrids[3]->Evaluate(hitCtx); }
         return L;
     }
 
@@ -83,16 +81,17 @@ namespace Cuda
         //m_gridIDs[0] = "grid_noisy_direct";
         //m_gridIDs[1] = "grid_noisy_indirect";
 
-        parentNode.GetValue("gridDirectID", m_gridIDs[0], ::Json::kRequiredWarn);
-        parentNode.GetValue("gridIndirectID", m_gridIDs[1], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridChannel0ID", m_gridIDs[0], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridChannel1ID", m_gridIDs[1], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridChannel2ID", m_gridIDs[2], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridChannel3ID", m_gridIDs[3], ::Json::kRequiredWarn);
     }
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
     {
         m_hostData.m_objects = Device::LambertBRDF::Objects();
-        
-        Assert(m_params.lightProbeGridIdx >= 1 && m_params.lightProbeGridIdx <= 3);
-        for (int gridIdx = 0; gridIdx < 2; ++gridIdx)
+       
+        for (int gridIdx = 0; gridIdx < kLambertGridNumChannels; ++gridIdx)
         {
             if (!m_gridIDs[gridIdx].empty())
             {
