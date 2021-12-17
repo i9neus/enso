@@ -49,7 +49,7 @@ namespace Cuda
     {        
         sdf.maxSpecularIterations = 50;
         sdf.maxDiffuseIterations = 15;
-        sdf.cutoffThreshold = 1e-4f;
+        sdf.cutoffThreshold = 1e-5f;
         sdf.escapeThreshold = 1.0f;
         sdf.rayIncrement = 0.9f;
         sdf.rayKickoff = 1e-4f;
@@ -484,7 +484,7 @@ namespace Cuda
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (i == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (F.x > 0.0 && F.x < m_params.sdf.cutoffThreshold * localMag) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
+            else if (fabsf(F.x) < m_params.sdf.cutoffThreshold * localMag) { hitCtx.debug = vec3(0.0f, 0.0f, 1.0f) * float(i) / float(maxIterations); break; }
 
             if (F.x > m_params.sdf.escapeThreshold) { hitCtx.debug = vec3(1.0, 0.0f, 0.0f) * float(i) / float(maxIterations); return false; }
 

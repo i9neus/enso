@@ -1098,8 +1098,7 @@ namespace Cuda
                 AssertMsgFmt(m_hostFilteredLightProbeGrids[idx], "Error: LightProbeCamera::Bind(): the specified light probe grid '%s' is invalid.\n", m_filteredGridIDs[idx].c_str());
 
                 m_hostFilteredLightProbeGrids[idx]->SetExternalBuffers(m_hostConvergenceGrid, m_hostLightProbeErrorGrids[0], m_hostMeanI);
-
-                m_deviceObjects.cu_filteredProbeGrids[idx] = m_hostFilteredLightProbeGrids[idx]->GetDeviceInstance();
+                
                 Log::Write("Bound light probe grid '%s' to light probe camera '%s'", m_filteredGridIDs[idx], GetAssetID());
             }
             else
@@ -1107,6 +1106,8 @@ namespace Cuda
                 // If we're not using the filtered error, don't try and bind a different set of adaptive sampling grids
                 m_hostFilteredLightProbeGrids[idx] = m_hostLightProbeGrids[idx];
             }
+
+            m_deviceObjects.cu_filteredProbeGrids[idx] = m_hostFilteredLightProbeGrids[idx]->GetDeviceInstance();
         }
 
         SynchroniseObjects(cu_deviceData, m_deviceObjects);

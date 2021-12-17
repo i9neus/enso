@@ -138,7 +138,7 @@ namespace Cuda
             __device__ vec3* At(const ivec3& gridIdx);
             __device__ const vec3* At(const ivec3& gridIdx) const { return const_cast<LightProbeGrid*>(this)->At(gridIdx); }
             __device__ int IdxAt(const ivec3& gridIdx) const;
-            __device__ vec3 Evaluate(const HitCtx& hitCtx) const;
+            __device__ vec3 Evaluate(const HitCtx& hitCtx, const int maxSHOrder) const;
             __device__ const LightProbeGridParams& GetParams() const { return m_params; }
             __device__ void GetProbeGridAggregateStatistics(AggregateStatistics& result) const;
             __device__ void ComputeProbeGridHistograms(AggregateStatistics& result, uint* distanceHistogram) const;

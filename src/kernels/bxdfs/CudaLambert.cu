@@ -11,11 +11,15 @@ namespace Cuda
     __host__ void LambertBRDFParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("probeGridFlags", probeGridFlags);
+        node.AddValue("maxSHOrder", maxSHOrder);
     }
 
     __host__ void LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("probeGridFlags", probeGridFlags, flags);
+        node.GetValue("maxSHOrder", maxSHOrder, flags);
+
+        clamp(maxSHOrder, 0, 2);
     }
     
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const
@@ -39,13 +43,13 @@ namespace Cuda
 
     __device__ vec3 Device::LambertBRDF::EvaluateCachedRadiance(const HitCtx& hitCtx) const
     {
-        if (m_params.probeGridFlags == 0) { return kZero; }
+        if (!(m_params.probeGridFlags & kLambertUseProbeGrid)) { return kZero; }
 
         vec3 L(0.0f);
-        if (m_params.probeGridFlags & kLambertGridChannel0 && m_objects.lightProbeGrids[0]) { L += m_objects.lightProbeGrids[0]->Evaluate(hitCtx); }
-        if (m_params.probeGridFlags & kLambertGridChannel1 && m_objects.lightProbeGrids[1]) { L += m_objects.lightProbeGrids[1]->Evaluate(hitCtx); }
-        if (m_params.probeGridFlags & kLambertGridChannel2 && m_objects.lightProbeGrids[2]) { L += m_objects.lightProbeGrids[2]->Evaluate(hitCtx); }
-        if (m_params.probeGridFlags & kLambertGridChannel3 && m_objects.lightProbeGrids[3]) { L += m_objects.lightProbeGrids[3]->Evaluate(hitCtx); }
+        if (m_params.probeGridFlags & kLambertGridChannel0 && m_objects.lightProbeGrids[0]) { L += m_objects.lightProbeGrids[0]->Evaluate(hitCtx, m_params.maxSHOrder); }
+        if (m_params.probeGridFlags & kLambertGridChannel1 && m_objects.lightProbeGrids[1]) { L += m_objects.lightProbeGrids[1]->Evaluate(hitCtx, m_params.maxSHOrder); }
+        if (m_params.probeGridFlags & kLambertGridChannel2 && m_objects.lightProbeGrids[2]) { L += m_objects.lightProbeGrids[2]->Evaluate(hitCtx, m_params.maxSHOrder); }
+        if (m_params.probeGridFlags & kLambertGridChannel3 && m_objects.lightProbeGrids[3]) { L += m_objects.lightProbeGrids[3]->Evaluate(hitCtx, m_params.maxSHOrder); }
         return L;
     }
 

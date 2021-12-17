@@ -10,6 +10,9 @@ void LambertBRDFShelf::Construct()
     ConstructFlagCheckBox("Use light probe grid", Cuda::kLambertUseProbeGrid, m_p.probeGridFlags);
     if (m_p.probeGridFlags & Cuda::kLambertUseProbeGrid)
     {
+        ConstructComboBox("Max SH order", { "0", "1", "2" }, m_p.maxSHOrder);
+        HelpMarker("Specifies the maximum spherical harmonic order to use.");
+        
         ImGui::Text("Channels"); SL;
         for (int i = 0; i < Cuda::kLambertGridNumChannels; ++i)
         {

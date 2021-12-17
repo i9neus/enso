@@ -293,7 +293,7 @@ namespace Cuda
         return object;
     }
 
-    __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx) const
+    __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx, const int maxSHOrder) const
     {
         assert(m_objects.cu_shData);
 
@@ -379,7 +379,7 @@ namespace Cuda
         default:
         {
             // Sum the SH coefficients
-            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1; coeffIdx++)
+            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx <= maxSHOrder; coeffIdx++)
             {
                 L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, m_params.coefficientsPerProbe, delta) * SH::Project(n, coeffIdx);
             }

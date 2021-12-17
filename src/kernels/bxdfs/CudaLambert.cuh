@@ -20,13 +20,14 @@ namespace Cuda
 
     struct LambertBRDFParams
     {
-        __host__ __device__ LambertBRDFParams() : probeGridFlags(kLambertUseProbeGrid | kLambertGridChannel0 | kLambertGridChannel1) { }
+        __host__ __device__ LambertBRDFParams() : probeGridFlags(kLambertUseProbeGrid | kLambertGridChannel0 | kLambertGridChannel1), maxSHOrder(2) { }
         __host__ LambertBRDFParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void FromJson(const ::Json::Node& node, const uint flags);
 
         uint    probeGridFlags;
+        int     maxSHOrder;
     };
 
     namespace Device
