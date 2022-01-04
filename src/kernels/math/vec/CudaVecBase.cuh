@@ -59,6 +59,11 @@ namespace Cuda
 		}
 	};
 
+	// Generic vector types for more convenient templatisation
+	template<typename T> using Tvec4 = __vec_swizzle<T, 4, 4, 0, 1, 2, 3>;
+	template<typename T> using Tvec3 = __vec_swizzle<T, 3, 3, 0, 1, 2>;
+	template<typename T> using Tvec2 = __vec_swizzle<T, 2, 2, 0, 1>;
+
 	template<typename T> __host__ __device__ __forceinline__ T max(const T& a, const T& b) { return (a > b) ? a : b; }
 	template<typename T> __host__ __device__ __forceinline__ T min(const T& a, const T& b) { return (a < b) ? a : b; }
 	__host__ __device__ __forceinline__ float clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }

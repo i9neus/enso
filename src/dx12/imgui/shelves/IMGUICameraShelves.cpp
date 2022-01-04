@@ -171,18 +171,30 @@ void LightProbeCameraShelf::Construct()
     }
 
     if (ImGui::TreeNodeEx("Data Export Attributes", 0))
-    {
-        ConstructComboBox("File format", { "Fixed", "Adaptive (Relative)", "Adaptive (Absolute)" }, m_p.camera.samplingMode);
-        
-        ConstructComboBox("Swizzle", m_swizzleLabels, m_p.grid.axisSwizzle);
+    {        
+        ConstructComboBox("Position swizzle", m_swizzleLabels, m_p.grid.posSwizzle);
         HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
 
-        ImGui::Text("Invert axes"); SL;
+        ImGui::Text("Invert position"); SL;
         ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
 
-        ImGui::Checkbox("X", &m_p.grid.invertX); SL;
-        ImGui::Checkbox("Y", &m_p.grid.invertY); SL;
-        ImGui::Checkbox("Z", &m_p.grid.invertZ);
+        ImGui::PushID("posInvert");
+        ImGui::Checkbox("X", &m_p.grid.posInvertX); SL;
+        ImGui::Checkbox("Y", &m_p.grid.posInvertY); SL;
+        ImGui::Checkbox("Z", &m_p.grid.posInvertZ);
+        ImGui::PopID();
+
+        ConstructComboBox("SH swizzle", m_swizzleLabels, m_p.grid.shSwizzle);
+        HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+        ImGui::Text("Invert SH"); SL;
+        ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+        ImGui::PushID("shInvert");
+        ImGui::Checkbox("X", &m_p.grid.shInvertX); SL;
+        ImGui::Checkbox("Y", &m_p.grid.shInvertY); SL;
+        ImGui::Checkbox("Z", &m_p.grid.shInvertZ);
+        ImGui::PopID();
 
         ImGui::TreePop();
     }

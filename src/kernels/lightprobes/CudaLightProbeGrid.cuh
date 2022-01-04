@@ -72,12 +72,15 @@ namespace Cuda
         int							shOrder;
         bool                        dilate;
 
-        int                         axisSwizzle;
-        vec3                        axisMultiplier;
+        int                         posSwizzle;
+        int                         shSwizzle;
+        bool                        posInvertX, posInvertY, posInvertZ;
+        bool                        shInvertX, shInvertY, shInvertZ;
+
+        //vec3                        axisMultiplier;
 
         bool                        useValidity;
         int                         outputMode;
-        bool                        invertX, invertY, invertZ;
 
         int                         shCoefficientsPerProbe;
         int                         coefficientsPerProbe;

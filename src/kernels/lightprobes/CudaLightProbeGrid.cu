@@ -16,11 +16,15 @@ namespace Cuda
         clipRegion[0] = ivec3(0, 0, 0);
         clipRegion[1] = gridDensity;
         shOrder = 1;
-        axisMultiplier = vec3(1.0f);
         outputMode = kProbeGridIrradiance;
-        axisSwizzle = kXYZ;
-        axisMultiplier = 1.0f;
-        invertX = invertY = invertZ = false;
+        posSwizzle = kXYZ;
+        posInvertX = false;
+        posInvertY = false;
+        posInvertZ = true;
+        shSwizzle = kZXY;
+        shInvertX = false;
+        shInvertY = false;
+        shInvertZ = true;
         aspectRatio = vec3(1.0f);
         minMaxSamplesPerProbe = 0;
         dilate = true;
@@ -46,10 +50,15 @@ namespace Cuda
         node.AddValue("dilate", dilate);
         node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
 
-        node.AddValue("invertX", invertX);
-        node.AddValue("invertY", invertY);
-        node.AddValue("invertZ", invertZ);
-        node.AddEnumeratedParameter("axisSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), axisSwizzle);
+        node.AddValue("posInvertX", posInvertX);
+        node.AddValue("posInvertY", posInvertY);
+        node.AddValue("posInvertZ", posInvertZ);
+        node.AddEnumeratedParameter("posSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), posSwizzle);
+
+        node.AddValue("shInvertX", shInvertX);
+        node.AddValue("shInvertY", shInvertY);
+        node.AddValue("shInvertZ", shInvertZ);
+        node.AddEnumeratedParameter("shSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), shSwizzle);
     }
 
     __host__ void LightProbeGridParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -70,13 +79,18 @@ namespace Cuda
         node.GetValue("dilate", dilate, flags);
         node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
 
-        node.GetValue("invertX", invertX, flags);
-        node.GetValue("invertY", invertY, flags);
-        node.GetValue("invertZ", invertZ, flags);
-        node.GetEnumeratedParameter("axisSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), axisSwizzle, flags);
+        node.GetValue("posInvertX", posInvertX, flags);
+        node.GetValue("posInvertY", posInvertY, flags);
+        node.GetValue("posInvertZ", posInvertZ, flags);
+        node.GetEnumeratedParameter("posSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), posSwizzle, flags);
+
+        node.GetValue("shInvertX", shInvertX, flags);
+        node.GetValue("shInvertY", shInvertY, flags);
+        node.GetValue("shInvertZ", shInvertZ, flags);
+        node.GetEnumeratedParameter("shSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), shSwizzle, flags);
 
         shOrder = clamp(shOrder, 0, 2);
-        axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
+        //axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
 
         Prepare();
     }
