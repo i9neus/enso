@@ -960,26 +960,28 @@ namespace Cuda
             if (m_params.lightingMode == kBakeLightingCombined && gridIdx == kLightProbeBufferIndirect) { continue; }
 
             // Only write grids that have valid paths associated with them
-            if (gridIdx >= params.usdExportPaths.size()) { continue; }
-
-            // Get a handle to the filtered or unfiltered grid and its stats
-            const auto& grid = m_params.filterGrids ? m_hostFilteredLightProbeGrids[gridIdx] : m_hostLightProbeGrids[gridIdx];
-            const auto& stats = grid->GetAggregateStatistics();
+            if (gridIdx >= params.exportPaths.size()) { continue; }
 
             // If the validity is outside the valid range, all grids will be similarly invalid so bail immediately
+            const auto& stats = m_hostLightProbeGrids[gridIdx]->GetAggregateStatistics();
             if (stats.meanValidity < params.minGridValidity || stats.meanValidity > params.maxGridValidity)
             {
-                Log::Warning("Warning: Cannot not export probe grid. Mean validity %f is outside valid range [%f, %f]", stats.meanValidity, params.minGridValidity, params.maxGridValidity);
+                Log::Warning("Warning: Cannot export %s probe grid. Mean validity %f is outside valid range [%f, %f]", 
+                    (gridIdx == 0) ? "direct" : "indirect", stats.meanValidity, params.minGridValidity, params.maxGridValidity);
                 break;
             }
 
+            //const std::string fileExtension = GetExtension(
+
             // Only export to USD if explicitly flagged to do so
-            if (params.exportToUSD)
+            if (params.isArmed)
             {
-                Log::Debug("Exporting to '%s'...\n", params.usdExportPaths[gridIdx]);
+                Log::Debug("Exporting to '%s'...\n", params.exportPaths[gridIdx]);
                 try
                 {
-                    USDIO::ExportLightProbeGrid(grid, params.usdExportPaths[gridIdx], USDIO::SHPackingFormat::kUnity);
+                    // Get a handle to the filtered or unfiltered grid and its stats
+                    const auto& grid = m_params.filterGrids ? m_hostFilteredLightProbeGrids[gridIdx] : m_hostLightProbeGrids[gridIdx];
+                    USDIO::ExportLightProbeGrid(grid, m_params.grid, params.exportPaths[gridIdx], USDIO::SHPackingFormat::kUnity);
                 }
                 catch (const std::runtime_error& err)
                 {
@@ -988,7 +990,7 @@ namespace Cuda
             }
             else
             {
-                Log::Warning("Warning: Skipped USD export to '%s' because setting was not enabled.\n", params.usdExportPaths[gridIdx]);
+                Log::Warning("Warning: Skipped USD export to '%s' because setting was not enabled.\n", params.exportPaths[gridIdx]);
                 break;
             }
         }

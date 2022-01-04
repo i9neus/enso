@@ -54,9 +54,10 @@ public:
     float                       EstimateRemainingTime(const float bakeProgress) const;
 
     std::string                 GeneratePNGExportPath(const std::string& renderTemplatePath, const std::string& jsonRootPath);
+    std::vector<std::string>    GenerateGridExportPaths(const std::string& renderTemplatePath, const std::string& jsonRootPath);
 
 private:
-    void                        ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath, std::vector<std::string>& templateTokens);
+    std::vector<std::string>    TokeniseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath);
     std::vector<std::string>    GenerateExportPaths(const std::vector<std::string>& templateTokens, const int numPaths) const;
 
     void                        RandomiseScene();

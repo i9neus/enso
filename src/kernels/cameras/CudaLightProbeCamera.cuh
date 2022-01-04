@@ -66,8 +66,8 @@ namespace Cuda
 
 	struct LightProbeGridExportParams
 	{
-		std::vector<std::string>	usdExportPaths;
-		bool						exportToUSD = false;
+		std::vector<std::string>	exportPaths;
+		bool						isArmed = false;
 		float						minGridValidity = 0.0f;
 		float						maxGridValidity = 1.0f;
 	};

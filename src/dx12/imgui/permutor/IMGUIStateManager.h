@@ -28,6 +28,7 @@ private:
     void ConstructStateManagerUI();
     void ConstructBatchProcessorUI();
     void EnqueueExportViewport();
+    void EnqueueExportProbeGrids();
     void EnqueueBatch();
     void ScanForSceneFiles();
     void ParseRenderStateJson();

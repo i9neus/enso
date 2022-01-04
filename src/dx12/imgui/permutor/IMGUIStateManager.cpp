@@ -454,9 +454,13 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     ImGui::Checkbox("Disable live view", &m_disableLiveView); SL;
     ImGui::Checkbox("Shutdown on complete", &m_shutdownOnComplete);
 
-    if (ImGui::Button("Save PNG"))
+    if (ImGui::Button("Export PNG"))
     {        
         EnqueueExportViewport();
+    }
+    if (ImGui::Button("Export grids"))
+    {
+        EnqueueExportProbeGrids();
     }
 
     ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
@@ -477,8 +481,13 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
 void RenderObjectStateManager::EnqueueExportViewport()
 {
     Json::Node commandNode = m_commandQueue.AddChildObject("exportViewport");
-    Log::Error(std::string(m_pngPathUIData.data()));
     commandNode.AddValue("path", m_permutor.GeneratePNGExportPath(std::string(m_pngPathUIData.data()), m_stateJsonPath));
+}
+
+void RenderObjectStateManager::EnqueueExportProbeGrids()
+{
+    Json::Node commandNode = m_commandQueue.AddChildObject("exportGrids");
+    commandNode.AddArray("paths", m_permutor.GenerateGridExportPaths(std::string(m_usdPathUIData.data()), m_stateJsonPath));
 }
 
 void RenderObjectStateManager::EnqueueBatch()

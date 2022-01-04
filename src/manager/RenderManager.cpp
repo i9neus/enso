@@ -24,8 +24,9 @@ RenderManager::RenderManager() :
 {
 	// Register the list of jobs
 	RegisterJob(m_bake.job, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
-	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnExportViewportDispatch, &RenderManager::OnNullPoll);
-	RegisterJob(m_statsJob, "getStats", &RenderManager::OnGatherStatsDispatch, &RenderManager::OnGatherStatsPoll);
+	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnDefaultDispatch, &RenderManager::OnDefaultPoll);
+	RegisterJob(m_exportGridsJob, "exportGrids", &RenderManager::OnExportGridsDispatch, &RenderManager::OnDefaultPoll);
+	RegisterJob(m_statsJob, "getStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherStatsPoll);
 }
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -355,12 +356,12 @@ bool RenderManager::OnBakeDispatch(Job& job)
 		job.json.GetEnumeratedParameter("type", std::vector<std::string>({ "probeGrid", "render" }), m_bake.type, Json::kRequiredAssert);
 		if (m_bake.type == kBakeTypeProbeGrid)
 		{		
-			job.json.GetValue("exportToUSD", m_bake.probeGridExportParams.exportToUSD, Json::kRequiredWarn);
+			job.json.GetValue("isArmed", m_bake.probeGridExportParams.isArmed, Json::kRequiredWarn);
 			job.json.GetValue("minGridValidity", m_bake.probeGridExportParams.minGridValidity, Json::kRequiredWarn);
 			job.json.GetValue("maxGridValidity", m_bake.probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
-			job.json.GetArrayValues("usdExportPaths", m_bake.probeGridExportParams.usdExportPaths, Json::kRequiredWarn);
+			job.json.GetArrayValues("exportPaths", m_bake.probeGridExportParams.exportPaths, Json::kRequiredWarn);
 
-			Assert(!m_bake.probeGridExportParams.usdExportPaths.empty());
+			Assert(!m_bake.probeGridExportParams.exportPaths.empty());
 		}
 		else if (m_bake.type == kBakeTypeRender)
 		{			
@@ -391,7 +392,7 @@ bool RenderManager::OnBakePoll(Json::Node& outJson, const Job& job)
 	return true;
 }
 
-bool RenderManager::OnGatherStatsDispatch(Job& job)
+bool RenderManager::OnExportGridsDispatch(Job& job)
 {
 	job.state = kRenderManagerJobDispatched;
 	return true;
@@ -414,8 +415,9 @@ bool RenderManager::OnGatherStatsPoll(Json::Node& outJson, const Job& job)
 	return true;
 }
 
-bool RenderManager::OnExportViewportDispatch(Job& job)
+bool RenderManager::OnDefaultDispatch(Job& job)
 {
+	// Default dispatch handler for any job that doesn't have its own custom callback
 	job.state = kRenderManagerJobDispatched;
 	return true;
 }
@@ -518,10 +520,9 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 			auto commandIt = m_jobMap.find(nodeIt.Name());
 			if (commandIt != m_jobMap.end())
 			{
+				auto& job = commandIt->second;			
 				try
-				{
-					auto& job = commandIt->second;
-					
+				{					
 					// Copy any JSON data that accompanies this command
 					job.json.DeepCopy(*nodeIt);
 
@@ -764,6 +765,18 @@ void RenderManager::OnBakePostFrame()
 		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, exportPath, 2.2f);
 
 		job.state = kRenderManagerJobIdle;
+	}
+
+	if (m_exportGridsJob.state == kRenderManagerJobDispatched)
+	{
+		Cuda::LightProbeGridExportParams exportParams;
+		exportParams.isArmed = true;
+		exportParams.minGridValidity = 0;
+		exportParams.maxGridValidity = 1;
+		m_exportGridsJob.json.GetArrayValues("paths", exportParams.exportPaths, Json::kRequiredAssert);
+
+		m_lightProbeCamera->ExportProbeGrid(exportParams);
+		m_exportGridsJob.state = kRenderManagerJobCompleted;
 	}
 
 	// Are we aborting the bake job?

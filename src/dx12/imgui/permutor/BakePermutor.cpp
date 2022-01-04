@@ -86,8 +86,8 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
     m_params = params;
 
     // Decompose the template paths into tokens
-    ParseTemplatePath(m_params.probeGridTemplatePath, m_params.jsonRootPath, m_probeGridTemplateTokens);
-    ParseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath, m_renderTemplateTokens);
+    m_probeGridTemplateTokens = TokeniseTemplatePath(m_params.probeGridTemplatePath, m_params.jsonRootPath);
+    m_probeGridTemplateTokens = TokeniseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath);
 
     // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
@@ -154,28 +154,31 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
     return true;
 }
 
-void BakePermutor::ParseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath, std::vector<std::string>& templateTokens)
+std::vector<std::string> BakePermutor::TokeniseTemplatePath(const std::string& templatePath, const std::string& jsonRootPath)
 {
+    std::vector<std::string> tokens;
     m_jsonRootPath = jsonRootPath;
     
     // Parse the template path
-    templateTokens.clear();
+    tokens.clear();
     Lexer lex(templatePath);
     while (lex)
     {
         std::string newToken;
         if (lex.ParseToken(newToken, [](const char c) { return c != '{'; }))
         {
-            templateTokens.push_back(newToken);
+            tokens.push_back(newToken);
         }
         if (lex && *lex == '{')
         {
             if (lex.ParseToken(newToken, [](const char c) { return c != '}'; }, Lexer::IncludeDelimiter))
             {
-                templateTokens.push_back(newToken);
+                tokens.push_back(newToken);
             }
         }
     }
+
+    return tokens;
 }
 
 void BakePermutor::RandomiseScene()
@@ -295,10 +298,10 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
     {
         bakeJson.AddValue("type", "probeGrid");
-        bakeJson.AddValue("exportToUSD", m_params.exportToUsd);
+        bakeJson.AddValue("isArmed", m_params.exportToUsd);
         bakeJson.AddValue("minGridValidity", m_params.gridValidityRange.x);
         bakeJson.AddValue("maxGridValidity", m_params.gridValidityRange.y);
-        bakeJson.AddArray("usdExportPaths", GenerateExportPaths(m_probeGridTemplateTokens, 2));
+        bakeJson.AddArray("exportPaths", GenerateExportPaths(m_probeGridTemplateTokens, 2));
     }
     else
     {
@@ -318,9 +321,19 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
 
  std::string BakePermutor::GeneratePNGExportPath(const std::string& renderTemplatePath, const std::string& jsonRootPath)
  { 
-     ParseTemplatePath(renderTemplatePath, jsonRootPath, m_renderTemplateTokens);
+     return GenerateExportPaths(TokeniseTemplatePath(renderTemplatePath, jsonRootPath), 1)[0];
+ }
 
-     return GenerateExportPaths(m_renderTemplateTokens, 1)[0]; 
+ std::vector<std::string> BakePermutor::GenerateGridExportPaths(const std::string& renderTemplatePath, const std::string& jsonRootPath)
+ {
+     auto exportPaths = GenerateExportPaths(TokeniseTemplatePath(renderTemplatePath, jsonRootPath), 2);
+
+     for (auto& path : exportPaths)
+     {
+
+     }
+
+     return exportPaths;
  }
 
 std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std::string>& templateTokens, const int numPaths) const
@@ -328,7 +341,12 @@ std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std
     // Naming convention:
     // SceneNameXXX.random10digits.6digitsSampleCount.usd
 
-    AssertMsg(!templateTokens.empty(), "Can't generate paths. Token list is empty.");
+    if (templateTokens.empty())
+    {
+        Log::Error("Error: Can't generate export paths; token list is empty.");
+        return std::vector<std::string>();
+    }
+
     Assert(numPaths >= 1);
 
     std::vector<std::string> exportPaths(numPaths);
@@ -358,13 +376,10 @@ std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std
             }
             else if (token == "{$ITERATION}") { path += tfm::format("%06.i", m_iterationIdx); }
             else if (token == "{$KIFS}") { path += tfm::format("%i", m_kifsIterationIdx); }
-            else if (token == "{$SAMPLE_COUNT}" && m_iterationIt != m_iterationList.end()) { path += tfm::format("%06.i", m_iterationIt->minMaxSamples.y); }
+            else if (token == "{$SAMPLE_COUNT}") { path += tfm::format("%06.i", (m_iterationIt != m_iterationList.end()) ? m_iterationIt->minMaxSamples.y : 0); }
             else if (token == "{$PERMUTATION}") { path += tfm::format("%i", m_permutationIdx); }
             else if (token == "{$SEED}") { path += tfm::format("%.6i", m_bakeSeed % 1000000); }
-            else if (token == "{$STATE}" && m_stateIt != m_stateMap.GetStateData().end()) 
-            { 
-                path += m_stateIt->first; 
-            }
+            else if (token == "{$STATE}") { path += (m_stateIt != m_stateMap.GetStateData().end()) ? m_stateIt->first : "default"; }
             else { path += token; }
         }
 

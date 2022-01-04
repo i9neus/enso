@@ -107,6 +107,7 @@ private:
 	std::unordered_map<std::string, Job&>						m_jobMap;
 	Job															m_statsJob;	
 	Job															m_exportViewportJob;
+	Job															m_exportGridsJob;
 
 	struct 
 	{
@@ -140,12 +141,12 @@ private:
 	void GatherRenderObjectStatistics();
 	void Prepare();
 
-	bool OnGatherStatsDispatch(Job&);
+	bool OnExportGridsDispatch(Job&);
 	bool OnGatherStatsPoll(Json::Node&, const Job&);
 	bool OnBakeDispatch(Job&);
 	bool OnBakePoll(Json::Node&, const Job&);
-	bool OnExportViewportDispatch(Job&);
-	bool OnNullPoll(Json::Node&, const Job&) { return true; }
+	bool OnDefaultDispatch(Job&);
+	bool OnDefaultPoll(Json::Node&, const Job&) { return true; }
 
 	template<typename DispatchLambda, typename PollLambda>
 	void RegisterJob(Job& job, const std::string& name, DispatchLambda onDispatch, PollLambda onPoll)
