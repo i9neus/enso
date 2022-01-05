@@ -77,7 +77,7 @@ namespace Cuda
 			assert(false);
 		}
 
-		__host__ __device__ __forceinline__ float GetLegendreCoefficient(const uint idx)
+		__host__ __device__ __forceinline__ float Legendre(const uint idx)
 		{
 			switch (idx)
 			{

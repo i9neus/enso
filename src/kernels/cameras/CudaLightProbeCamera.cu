@@ -387,8 +387,8 @@ namespace Cuda
                 }
 
                 // Estimate the peak irradiance over the unit sphere
-                float M = max(0.0f, L0Half * SH::GetLegendreCoefficient(0) + length(L1Half) * SH::GetLegendreCoefficient(1));
-                float N = max(0.0f, (L0 - L0Half) * SH::GetLegendreCoefficient(0) + (length(L1) - length(L1Half)) * SH::GetLegendreCoefficient(1));
+                float M = max(0.0f, L0Half * SH::Legendre(0) + length(L1Half) * SH::Legendre(1));
+                float N = max(0.0f, (L0 - L0Half) * SH::Legendre(0) + (length(L1) - length(L1Half)) * SH::Legendre(1));
 
                 // Gamma ramp
                 if (m_params.camera.adaptiveSamplingGamma != 1.0f)

@@ -32,9 +32,6 @@ namespace USDIO
     void PackCoefficients(const std::vector<Cuda::vec3>& gridData, const Cuda::LightProbeGridParams& gridParams, const SHPackingFormat shFormat, ContainerType& coeffs, ContainerType& dataValidity)
     {
         // Precompute some coefficients
-        const float kRootPi = std::sqrt(kPi);
-        const float fC0 = 1.0f / (2.0f * kRootPi);
-        const float fC1 = std::sqrt(3.0f) / (3.0f * kRootPi);
         Cuda::vec3 C[5], D[5];
 
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
@@ -47,15 +44,10 @@ namespace USDIO
                 for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe; ++coeffIdx) { C[coeffIdx] = gridData[sourceIdx + coeffIdx]; }
 
                 // Pre-multiply the coefficients
-                C[0] *= fC0;
-                C[1] *= fC1;
-                C[2] *= fC1;
-                C[3] *= fC1;
-
-                /*C[0] *= Cuda::SH::GetLegendreCoefficient(0);
-                C[1] *= Cuda::SH::GetLegendreCoefficient(1);
-                C[2] *= Cuda::SH::GetLegendreCoefficient(1);
-                C[3] *= Cuda::SH::GetLegendreCoefficient(1);*/
+                C[0] *= Cuda::SH::Legendre(0);
+                C[1] *= Cuda::SH::Legendre(1);
+                C[2] *= Cuda::SH::Legendre(1);
+                C[3] *= Cuda::SH::Legendre(1);
 
                 // Pack the coefficients using Unity's perferred format
                 D[0] = C[0];
