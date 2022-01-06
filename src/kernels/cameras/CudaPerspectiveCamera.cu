@@ -266,12 +266,17 @@ namespace Cuda
 
     __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
     {
-        const bool doAccum = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
-                            (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1) ||
-                            (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
+        // Ray isn't carrying any energy and its weight is zero so bail out early.
+        if (cwiseMax(value) < 1e-15f && isAlive) { return; }
+        
+        bool accumulate = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
+                         (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1) ||
+                         (m_params.lightProbeEmulation == kLightProbeEmulationIndirect && incidentRay.depth > 1);
+
+        if (incidentRay.depth < m_params.camera.overrides.minDepth) { accumulate = false; }
 
         vec3 L(0.0f);
-        if (doAccum)
+        if (accumulate)
         {
             L = value;
             if (m_params.camera.splatClamp > 0.0)

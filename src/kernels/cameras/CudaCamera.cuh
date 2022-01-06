@@ -42,6 +42,7 @@ namespace Cuda
 		struct
 		{
 			int maxDepth = -1;
+			int minDepth = -1;
 		} 
 		overrides;
 	};

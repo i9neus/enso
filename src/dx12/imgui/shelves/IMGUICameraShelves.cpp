@@ -52,6 +52,9 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
     HelpMarker("The maximum depth a ray can travel before it's terminated.");
 
+    ImGui::SliderInt("Min path depth", &m_p.camera.overrides.minDepth, -1, 20);
+    HelpMarker("The minimum depth a ray has to travel before its contribution is accumulated.");
+
     ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
     HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");
 
@@ -163,6 +166,9 @@ void LightProbeCameraShelf::Construct()
 
         ImGui::SliderInt("Max path depth", &m_p.camera.overrides.maxDepth, -1, 20);
         HelpMarker("The maximum depth a ray can travel before it's terminated.");
+
+        ImGui::SliderInt("Min path depth", &m_p.camera.overrides.minDepth, -1, 20);
+        HelpMarker("The minimum depth a ray has to travel before its contribution is accumulated.");
 
         ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
         HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");

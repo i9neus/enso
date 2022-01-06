@@ -28,19 +28,8 @@ namespace Cuda
         useFilteredError = false;
     }
 
-    template<typename VecType>
-    void AddVector2(const std::string& name, const VecType& vec)
-    {
-        std::vector<typename VecType::kType> values(VecType::kDims);
-        for (int i = 0; i < VecType::kDims; i++) { values[i] = vec[i]; }
-    }
-
     __host__ void CameraParams::ToJson(::Json::Node& node) const
-    {
-        AddVector2("minMaxSamples", minMaxSamples);
-        using T = Cuda::__vec_swizzle<int, 2, 2, 0, 1>;
-        int i = T::kDims;
-        
+    {        
         node.AddValue("live", isLive);
         node.AddValue("active", isActive);
         node.AddValue("splatClamp", splatClamp);
@@ -54,6 +43,7 @@ namespace Cuda
         
         auto childNode = node.AddChildObject("overrides");
         childNode.AddValue("maxDepth", overrides.maxDepth);
+        childNode.AddValue("minDepth", overrides.minDepth);
     }
 
     __host__ void CameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -73,6 +63,7 @@ namespace Cuda
         if (childNode)
         {
             childNode.GetValue("maxDepth", overrides.maxDepth, flags);
+            childNode.GetValue("minDepth", overrides.minDepth, flags);
         }
     }
     
