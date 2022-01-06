@@ -53,6 +53,11 @@ private:
     Json::Document                  m_commandQueue;
     int                             m_renderState;
 
+    bool                            m_showCombinatorics;
+    bool                            m_showRenderObjects;
+    bool                            m_showConsole;
+    std::string                     m_renderStateFmt;
+
 public:
     IMGUIContainer(RenderManager& cudaRenderer);
 
@@ -63,8 +68,9 @@ public:
     void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
     void Destroy();
     void DispatchRenderCommands();
+
+private:
     void PollCudaRenderState();
-
+    void ConstructConsole();
     void ConstructRenderObjectShelves();
-
 };

@@ -14,7 +14,10 @@ IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) :
     m_cudaRenderer(cudaRenderer),
     m_stateManager(m_shelves, cudaRenderer, m_renderStateJson, m_commandQueue),
     m_frameIdx(0),
-    m_meanFrameTime(-1.0f)
+    m_meanFrameTime(-1.0f),
+    m_showCombinatorics(true),
+    m_showRenderObjects(true),
+    m_showConsole(false)
 {
 
 }
@@ -110,9 +113,18 @@ void IMGUIContainer::DispatchRenderCommands()
     }
 }
 
+void IMGUIContainer::ConstructConsole()
+{
+    ImGui::Begin("Console");
+    
+    ImGui::TextWrapped(m_renderStateFmt.c_str(), m_showConsole);
+
+    ImGui::End();
+}
+
 void IMGUIContainer::ConstructRenderObjectShelves()
 {
-    ImGui::Begin("Render Objects");
+    ImGui::Begin("Render Objects", &m_showRenderObjects);
 
     // Only poll the render object manager occasionally
     if (m_statsTimer.Get() > 0.5f)
@@ -185,7 +197,7 @@ void IMGUIContainer::PollCudaRenderState()
     managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
     managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
 
-    //Log::Debug(m_renderStateJson.Stringify(true));
+    m_renderStateFmt = m_renderStateJson.Stringify(true);
 }
 
 void IMGUIContainer::Render()
@@ -206,17 +218,32 @@ void IMGUIContainer::Render()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
+    // Menu Bar
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Window"))
+        {
+            ImGui::MenuItem("Combinatorics", NULL, &m_showCombinatorics);
+            ImGui::MenuItem("Render Objects", NULL, &m_showRenderObjects);
+            ImGui::MenuItem("Console", NULL, &m_showConsole);
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
     if (m_renderState == kRenderManagerRun)
     {
         // Construct the state manager UI
-        m_stateManager.ConstructUI();
+        if (m_showCombinatorics) { m_stateManager.ConstructUI(); }
 
         // Construct the render objects shelves
-        ConstructRenderObjectShelves();
+        if (m_showRenderObjects) { ConstructRenderObjectShelves(); }
 
         // Handle the bake iteration 
         m_stateManager.HandleBakeIteration();
     }
+
+    if (m_showConsole) { ConstructConsole(); }
 
     ImGui::PopStyleColor(1);
 
