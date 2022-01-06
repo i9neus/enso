@@ -6,12 +6,14 @@ namespace Cuda
     __host__ void PlaneParams::ToJson(::Json::Node& node) const
     {
         node.AddValue("bounded", isBounded);
+        node.AddValue("isDoubleSided", isDoubleSided);
         tracable.ToJson(node);
     }
 
     __host__ void PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("bounded", isBounded, flags);
+        node.GetValue("isDoubleSided", isDoubleSided, flags);
         tracable.FromJson(node, flags);
     }
 
@@ -36,7 +38,12 @@ namespace Cuda
         //HitPoint hit = m_transform.HitToWorldSpace(HitPoint(ray.HitPoint(), vec3(0.0f, 0.0f, 1.0f)));
         //if (dot(hit.n, ray.od.o - hit.o) < 0.0f) { hit.n = -hit.n; }
 
-        hitCtx.Set(HitPoint(ray.HitPoint(), NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f), m_params.tracable.transform)), localRay.o.z < 0.0f, vec2(u, v), 1e-5f, m_objects.lightId);
+        hitCtx.Set(HitPoint(ray.HitPoint(), 
+                   NormalToWorldSpace((localRay.o.z < 0.0f && m_params.isDoubleSided) ? vec3(0.0f, 0.0f, -1.0f) : vec3(0.0f, 0.0f, 1.0f), m_params.tracable.transform)),
+                   localRay.o.z < 0.0f && !m_params.isDoubleSided, 
+                   vec2(u, v), 1e-5f, 
+                   m_objects.lightId);
+
         return true;
     }
 

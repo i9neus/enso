@@ -8,8 +8,8 @@ namespace Cuda
 
     struct PlaneParams
     {
-        __host__ __device__ PlaneParams() : isBounded(false) {}
-        __host__ __device__ PlaneParams(const BidirectionalTransform& transform_, const bool isBounded_) : tracable(transform_), isBounded(isBounded_) {}
+        __host__ __device__ PlaneParams() : isBounded(false), isDoubleSided(false) {}
+        __host__ __device__ PlaneParams(const BidirectionalTransform& transform_, const bool isBounded_) : PlaneParams() { tracable = transform_; isBounded = isBounded_; }
         __host__ PlaneParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
@@ -19,6 +19,7 @@ namespace Cuda
         
         TracableParams tracable;
         bool isBounded;
+        bool isDoubleSided;
     };
 
     namespace Device

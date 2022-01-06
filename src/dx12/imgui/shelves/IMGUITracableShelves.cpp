@@ -193,8 +193,11 @@ void PlaneShelf::Construct()
     m_flags.Construct();
     ConstructJitteredTransform(m_p.tracable.transform, true);
     
-    ImGui::Checkbox("Bounded", &m_p.isBounded);
-    HelpMarker("Check to bound the plane in the range [-0.5, 0.5] in object space. Uncheck to trace to infinity in all directions.");
+    ImGui::Checkbox("Bounded", &m_p.isBounded); 
+    HelpMarker("Check to bound the plane in the range [-0.5, 0.5] in object space. Uncheck to trace to infinity in all directions."); SL;
+
+    ImGui::Checkbox("Double sided", &m_p.isDoubleSided);
+    HelpMarker("");
 }
 
 void PlaneShelf::Jitter(const uint flags, const uint operation)
