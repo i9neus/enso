@@ -6,20 +6,33 @@ namespace Cuda
 {
     namespace Host { class Box; }
 
+    struct BoxParams
+    {
+        __host__ __device__ BoxParams() : size(1.0) {}
+        __host__ BoxParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+        TracableParams  tracable;
+        BidirectionalTransform transform;
+        vec3            size;
+    };
+
     namespace Device
     {
         class Box : public Device::Tracable
         {
             friend Host::Box;
         private:
-            TracableParams m_params;
+            BoxParams m_params;
 
         public:
             __device__ Box() {}
             __device__ ~Box() {}
 
             __device__ virtual bool Intersect(Ray& ray, HitCtx& hit) const override final;
-            __device__ void Synchronise(const TracableParams& params)
+            __device__ void Synchronise(const BoxParams& params)
             {
                 m_params = params;
             }
@@ -32,7 +45,7 @@ namespace Cuda
         {
         private:
             Device::Box* cu_deviceData;
-            TracableParams    m_params;
+            BoxParams    m_params;
 
         public:
             __host__ Box();
@@ -43,7 +56,7 @@ namespace Cuda
             __host__ static std::string GetAssetTypeString() { return "box"; }
             __host__ static std::string GetAssetDescriptionString() { return "Box"; }
             __host__ virtual int GetIntersectionCostHeuristic() const override final { return 10; };
-            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.renderObject; }
+            __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.tracable.renderObject; }
 
             __host__ virtual void OnDestroyAsset() override final;
             __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;

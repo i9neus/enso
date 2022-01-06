@@ -3,9 +3,23 @@
 
 namespace Cuda
 {
+    __host__ void BoxParams::ToJson(::Json::Node& node) const
+    {
+        tracable.ToJson(node);
+    }
+
+    __host__ void BoxParams::FromJson(const ::Json::Node& node, const uint flags)
+    {
+        tracable.FromJson(node, flags);
+
+        // FIXME: This is a hack because non-linear scaling is broken in the bidirectional transform object. 
+        transform.Set(tracable.transform.trans(), tracable.transform.rot(), vec3(1.0f));
+        size = tracable.transform.scale() * 0.5f;
+    }
+    
     __device__  bool Device::Box::Intersect(Ray& ray, HitCtx& hitCtx) const
     {
-        if (ray.flags & kRayLightProbe && m_params.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
+        if (ray.flags & kRayLightProbe && m_params.tracable.renderObject.flags() & kRenderObjectExcludeFromBake) { return false; }
 
         const RayBasic localRay = RayToObjectSpace(ray.od, m_params.transform);
 
@@ -14,8 +28,8 @@ namespace Cuda
         {
             if (fabs(localRay.d[dim]) > 1e-10f)
             {
-                float t0 = (0.5 - localRay.o[dim]) / localRay.d[dim];
-                float t1 = (-0.5 - localRay.o[dim]) / localRay.d[dim];
+                float t0 = (m_params.size[dim] - localRay.o[dim]) / localRay.d[dim];
+                float t1 = (-m_params.size[dim] - localRay.o[dim]) / localRay.d[dim];
                 if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
                 else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
             }
@@ -33,9 +47,9 @@ namespace Cuda
         if (t > ray.tNear) { return false; }
 
         vec3 hitLocal = localRay.PointAt(t);
-        int normPlane = (fabs(hitLocal.x) > fabs(hitLocal.y)) ?
-                        ((fabs(hitLocal.x) > fabs(hitLocal.z)) ? 0 : 2) :
-                        ((fabs(hitLocal.y) > fabs(hitLocal.z)) ? 1 : 2);
+        int normPlane = (fabs(hitLocal.x / m_params.size.x) > fabs(hitLocal.y / m_params.size.y)) ?
+                        ((fabs(hitLocal.x / m_params.size.x) > fabs(hitLocal.z / m_params.size.z)) ? 0 : 2) :
+                        ((fabs(hitLocal.y / m_params.size.y) > fabs(hitLocal.z / m_params.size.z)) ? 1 : 2);
         vec3 n = kZero;
         n[normPlane] = sign(hitLocal[normPlane]);
 
@@ -43,9 +57,9 @@ namespace Cuda
         HitPoint hit;
         hit.p = ray.HitPoint();
         hit.n = NormalToWorldSpace(n, m_params.transform);
-        if (dot(hit.n, ray.od.o - hit.p) < 0.0f) { hit.n = -hit.n; }
+        //if (dot(hit.n, ray.od.o - hit.p) < 0.0f) { hit.n = -hit.n; }
 
-        hitCtx.Set(hit, IsPointInUnitBox(localRay.o), vec2(0.0f), 1e-5f, kNotALight);
+        hitCtx.Set(hit, IsPointInUnitBox(localRay.o / (m_params.size * 2.0f)), vec2(0.0f), 1e-5f, kNotALight);
 
         return true;
     }
@@ -81,7 +95,7 @@ namespace Cuda
         Host::Tracable::FromJson(node, flags);
 
         m_params.FromJson(node, flags);
-        RenderObject::SetUserFacingRenderObjectFlags(m_params.renderObject.flags());
+        RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, m_params);
     }
