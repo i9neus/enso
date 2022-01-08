@@ -87,7 +87,7 @@ namespace Cuda
         // Apply indirection
         if (m_params.traversalMode != kBakeTraversalLinear)
         {
-            probeIdx = (*m_objects.cu_hilbertBuffer)[probeIdx];
+            probeIdx = (*m_objects.cu_indirectionBuffer)[probeIdx];
         }
         
         // If adaptive sampling is enabled and the probe is converged, don't spawn any more rays.
@@ -564,7 +564,7 @@ namespace Cuda
 
         // Create reduction and adaptive sampling buffers
         m_hostReduceBuffer = AssetHandle<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
-        m_hostHilbertBuffer = AssetHandle<Host::Array<uint>>(tfm::format("%s_hilbertBuffer", id), kAccumBufferSize, m_hostStream);
+        m_hostIndirectionBuffer = AssetHandle<Host::Array<uint>>(tfm::format("%s_indirectionBuffer", id), kAccumBufferSize, m_hostStream);
         m_hostLightProbeErrorGrids[0] = AssetHandle<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids0", id), kAccumBufferSize, m_hostStream);
         m_hostLightProbeErrorGrids[1] = AssetHandle<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids1", id), kAccumBufferSize, m_hostStream);
         m_hostConvergenceGrid = AssetHandle<Host::Array<uchar>>(tfm::format("%s_adaptiveSamplingGrid", id), kAccumBufferSize, m_hostStream);
@@ -594,7 +594,7 @@ namespace Cuda
         // Sychronise the device objects
         m_deviceObjects.cu_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_compressedRayBuffer = m_hostCompressedRayBuffer->GetDeviceInstance();
-        m_deviceObjects.cu_hilbertBuffer = m_hostHilbertBuffer->GetDeviceInstance();
+        m_deviceObjects.cu_indirectionBuffer = m_hostIndirectionBuffer->GetDeviceInstance();
         m_deviceObjects.renderState.cu_blockRayOccupancy = m_hostBlockRayOccupancy->GetDeviceInstance();
         m_deviceObjects.renderState.cu_renderStats = m_hostRenderStats->GetDeviceInstance();
         m_deviceObjects.cu_lightProbeErrorGrids[0] = m_hostLightProbeErrorGrids[0]->GetDeviceInstance();
@@ -651,7 +651,7 @@ namespace Cuda
 
         if (newParams.grid.numProbes == 0)
         {
-            m_hostHilbertBuffer->Resize(0);
+            m_hostIndirectionBuffer->Resize(0);
             return;
         }        
          
@@ -745,7 +745,7 @@ namespace Cuda
         Log::Error("%i -> %i, %i, %i", checksum.size(), count[0], count[1], count[2]);*/
 
         // Upload the indices to the device
-        m_hostHilbertBuffer->Upload(hilbertIndices);
+        m_hostIndirectionBuffer->Upload(hilbertIndices);
 
     }
 

@@ -117,7 +117,7 @@ namespace Cuda
 						cu_filteredProbeGrids[i] = nullptr;
 					}
 
-					cu_hilbertBuffer = nullptr;
+					cu_indirectionBuffer = nullptr;
 					cu_lightProbeErrorGrids[0] = nullptr;
 					cu_lightProbeErrorGrids[1] = nullptr;
 					cu_meanI = nullptr;
@@ -126,7 +126,7 @@ namespace Cuda
 				Device::RenderState			renderState;
 				Device::Array<vec4>*		cu_accumBuffers[kLightProbeNumBuffers];
 				Device::Array<vec4>*		cu_reduceBuffer;
-				Device::Array<uint>*		cu_hilbertBuffer;
+				Device::Array<uint>*		cu_indirectionBuffer;
 				Device::LightProbeGrid*		cu_probeGrids[kLightProbeNumBuffers];
 				Device::LightProbeGrid*		cu_filteredProbeGrids[kLightProbeNumBuffers];
 				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
@@ -210,7 +210,7 @@ namespace Cuda
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostLightProbeGrids;
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostFilteredLightProbeGrids;
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
-			AssetHandle<Host::Array<uint>>											m_hostHilbertBuffer;
+			AssetHandle<Host::Array<uint>>											m_hostIndirectionBuffer;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
 			std::array<std::string, 4>												m_gridIDs;
 			std::array<std::string, 4>												m_filteredGridIDs;
