@@ -346,13 +346,9 @@ void RenderObjectStateManager::ParseRenderStateJson()
     m_isBaking = bool(bakeJson);
     if(m_isBaking)
     {
-        /*int state;
-        bakeJson.GetValue("state", state, Json::kRequiredAssert | Json::kLiteralID);
-        Log::Debug("Bake: %i", state);*/
-
         m_bakeProgress = 0.0f;
         m_lastBakeSucceeded = true;
-        bakeJson.GetValue("progress", m_bakeProgress, Json::kRequiredAssert);
+        bakeJson.GetValue("progress", m_bakeProgress, Json::kSilent);
         bakeJson.GetValue("succeeded", m_lastBakeSucceeded, Json::kSilent);
     }   
 
@@ -365,28 +361,10 @@ void RenderObjectStateManager::ParseRenderStateJson()
             const Json::Node& cameraJson = statsJson.GetChildObject(m_lightProbeCameraDAG, Json::kSilent | Json::kLiteralID);
             if (cameraJson)
             {
-                const Json::Node& gridListJson = cameraJson.GetChildObject("grids", Json::kRequiredAssert);                
-                
-                m_bakeGridValidity = -1.0f;
-                const auto gridIt = gridListJson.begin();
-                if (gridIt != gridListJson.end())
-                {
-                    const auto& gridJson = *gridIt;               
-                    Assert(gridJson.IsObject());
-                    
-                    float meanValidity, maxSamples;
-                    gridJson.GetValue("meanProbeValidity", meanValidity, Json::kRequiredAssert);
-                    gridJson.GetValue("maxSamples", maxSamples, Json::kRequiredAssert);                 
-                    
-                    if (maxSamples >= 0.0f)
-                    {
-                        m_bakeGridSamples = maxSamples;
-                        if (meanValidity >= 0.0f)
-                        {
-                            m_bakeGridValidity = (m_bakeGridValidity < 0.0f) ? meanValidity : math::min(meanValidity, m_bakeGridValidity);
-                        }
-                    }
-                }
+                float meanValidity;
+                float meanSamples;
+                cameraJson.GetValue("meanValidity", m_bakeGridValidity, Json::kRequiredAssert);
+                cameraJson.GetValue("meanSamples", m_bakeGridSamples, Json::kRequiredAssert);
             }
         }
     }
@@ -463,17 +441,31 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         EnqueueExportProbeGrids();
     }
 
-    ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Permutation %");
-    ImGui::ProgressBar(m_permutor.GetProgress(), ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
-    ImGui::Text("%s elapsed", m_isBatchRunning ? FormatElapsedTime(m_permutor.GetElapsedTime()).c_str() : "00:00");
-    ImGui::Text("%s remaining", m_isBatchRunning ? FormatElapsedTime(m_permutor.EstimateRemainingTime(m_bakeProgress)).c_str() : "00:00");
+    //if (m_isBatchRunning)
+    {
+        const auto stats = m_permutor.GetBatchProgress(m_bakeProgress);       
+        //Assert(stats.isRunning);
 
-    bool gridOk = m_bakeGridValidity >= m_gridValidityRange[0] && m_bakeGridValidity <= m_gridValidityRange[1];
-    ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(gridOk ? 0.33f : 0.0f, 0.6f, 0.6f));
-    ImGui::Text("Bake grid validity: %.2f", m_bakeGridValidity);
-    ImGui::PopStyleColor(1);
+        {
+            IMGUIDataTable table("stats", 3);
 
-    ImGui::Text("Bake grid samples: %i", int(m_bakeGridSamples));
+            table << "Grid validity";
+            bool gridOk = m_bakeGridValidity >= m_gridValidityRange[0] && m_bakeGridValidity <= m_gridValidityRange[1];
+            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(gridOk ? 0.33f : 0.0f, 0.6f, 0.6f));
+            table << m_bakeGridValidity << nullptr;
+            ImGui::PopStyleColor(1);
+
+            table << "Mean samples:" << m_bakeGridSamples << nullptr;
+            table << "Iteration:" << tfm::format("%i of %i", stats.permutationRange.x, stats.permutationRange.y) << nullptr;
+            table << nullptr << tfm::format("Succeeded: %i", stats.numSucceeded) << tfm::format("Failed: %i", stats.numFailed);
+            table << "Bake type:" << stats.bakeType << nullptr;
+            table << "Elapsed:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.elapsed).c_str() : "00:00") << nullptr;
+            table << "Remaining:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.remaining).c_str() : "00:00") << nullptr;
+        }
+
+        ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
+        ImGui::ProgressBar(stats.totalProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Total %");
+    }
 
     ImGui::PopID();
 }

@@ -210,11 +210,22 @@ void LightProbeCameraShelf::Construct()
     if (ImGui::TreeNodeEx("Statistics", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f), tfm::format("%.2f%%", m_bakeProgress * 100.0f).c_str()); SL; ImGui::Text("Bake");
-        ImGui::ProgressBar(m_bakeConvergence, ImVec2(0.0f, 0.0f), tfm::format("%.2f%%", m_bakeConvergence * 100.0f).c_str()); SL; ImGui::Text("Convergence");
+        if (m_bakeConvergence < 0.0f)
+        {
+            ImGui::ProgressBar(0.0f, ImVec2(0.0f, 0.0f), ""); 
+        }
+        else
+        {
+            ImGui::ProgressBar(m_bakeConvergence, ImVec2(0.0f, 0.0f), tfm::format("%.2f%%", m_bakeConvergence * 100.0f).c_str()); 
+        }
+        SL; ImGui::Text("Convergence");
         ImGui::Text(tfm::format("Frame: %i", m_frameIdx).c_str());
+        ImGui::Text(tfm::format("Min/max samples: [%i, %i]", int(m_minMaxSamplesTaken.x), int(m_minMaxSamplesTaken.y)).c_str());
+        ImGui::Text(tfm::format("Mean samples: %i", int(m_meanSamplesTaken)).c_str());
+        ImGui::Text(tfm::format("Mean probe validity: %.2f", m_meanProbeValidity).c_str());
+        ImGui::Text(tfm::format("Mean probe distance: %.5f", m_meanProbeDistance).c_str());
         ImGui::Text(tfm::format("Mean I: %.5f%%", m_meanI).c_str());
         ImGui::Text(tfm::format("MSE I: %.5f%%", m_MSE).c_str());
-
 
         constexpr int kMSEPlotDensity = 10;
         std::string meanIFormat = tfm::format("%.5f", m_meanI);
@@ -234,9 +245,6 @@ void LightProbeCameraShelf::Construct()
             auto& gridStats = m_probeGridStatistics[i];
             ImGui::PushID(gridStats.gridID.c_str());
             ImGui::Text(gridStats.gridID.c_str());
-            ImGui::Text(tfm::format("Min/max samples: [%i, %i]", gridStats.minSamplesTaken, gridStats.maxSamplesTaken).c_str());
-            ImGui::Text(tfm::format("Mean probe validity: %.2f%%", gridStats.meanProbeValidity * 100.0f).c_str());
-            ImGui::Text(tfm::format("Mean probe distance: %.5f", gridStats.meanProbeDistance).c_str());
 
             if (gridStats.hasHistogram)
             {
@@ -275,6 +283,12 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& she
     managerJson.GetValue("frameIdx", newFrameIdx, Json::kRequiredAssert);
     managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
 
+    shelfNode.GetValue("minSamples", m_minMaxSamplesTaken.x, Json::kRequiredAssert);
+    shelfNode.GetValue("maxSamples", m_minMaxSamplesTaken.y, Json::kRequiredAssert);
+    shelfNode.GetValue("meanSamples", m_meanSamplesTaken, Json::kRequiredAssert);
+    shelfNode.GetValue("meanValidity", m_meanProbeValidity, Json::kRequiredAssert);
+    shelfNode.GetValue("meanDistance", m_meanProbeDistance, Json::kRequiredAssert);
+
     // If the render has been reset, clear the stored data
     if (newFrameIdx <= m_frameIdx)
     {
@@ -285,15 +299,18 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& she
     }
     
     // Get the progress and convergence metrics for the bake in progress
-    shelfNode.GetValue("bakeProgress", m_bakeProgress, Json::kSilent);
-    shelfNode.GetValue("bakeConvergence", m_bakeConvergence, Json::kSilent);
+    auto bakeNode = shelfNode.GetChildObject("bake", Json::kRequiredAssert);
+    bakeNode.GetValue("progress", m_bakeProgress, Json::kRequiredAssert);
+    bakeNode.GetValue("probesConverged", m_bakeConvergence, Json::kRequiredAssert);
+    bakeNode.GetValue("probesFull", m_bakeProbesFull, Json::kRequiredAssert);
 
     // Look for an MSE value
-    if (shelfNode.GetValue("mse", m_MSE, Json::kSilent) && m_MSE > 0.0f &&
-        shelfNode.GetValue("meanI", m_meanI, Json::kSilent) && m_meanI > 0.0f)
+    auto errorNode = shelfNode.GetChildObject("error", Json::kRequiredAssert);
+    if (errorNode.GetValue("mse", m_MSE, Json::kSilent) && m_MSE > 0.0f &&
+        errorNode.GetValue("meanI", m_meanI, Json::kSilent) && m_meanI > 0.0f)
     {
         constexpr int kMaxMSEDataSize = 1000;
-        shelfNode.GetValue("frameIdx", newFrameIdx, Json::kSilent);
+        shelfNode.GetValue("frameIdx", newFrameIdx, Json::kRequiredAssert);
     
         // Add the data to the history
         if (m_MSE > 0.0f && m_MSEData.size() < kMaxMSEDataSize)
@@ -323,11 +340,6 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& she
             auto& stats = m_probeGridStatistics[gridIdx];
 
             stats.gridID = it.Name();
-            gridNode.GetValue("minSamples", stats.minSamplesTaken, Json::kSilent);
-            gridNode.GetValue("maxSamples", stats.maxSamplesTaken, Json::kSilent);
-            gridNode.GetValue("meanProbeValidity", stats.meanProbeValidity, Json::kSilent);
-            gridNode.GetValue("meanProbeDistance", stats.meanProbeDistance, Json::kSilent);
-
             stats.hasHistogram = false;
             histogramMatrix.clear();
             if (gridNode.GetArray2DValues("coeffHistograms", histogramMatrix, Json::kSilent))

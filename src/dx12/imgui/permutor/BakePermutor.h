@@ -4,6 +4,8 @@
 #include "../shelves/IMGUIAbstractShelf.h"
 #include <set>
 
+class LambertBRDFShelf;
+
 class BakePermutor
 {
 public:
@@ -29,12 +31,29 @@ public:
         int thumbnailCount = 0;
     };
 
+    struct BatchProgress
+    {     
+        bool isRunning = false;
+        float totalProgress = 0.0;
+        Cuda::ivec2 permutationRange;
+        int numSucceeded = 0;
+        int numFailed = 0;
+        std::string bakeType;   
+        struct
+        {
+            float elapsed = 0.0;
+            float remaining = 0.0;
+        }
+        time;
+    };
+
     struct IterationData
     {
-        IterationData(const int type, const Cuda::ivec2& minMax, const int mode, const bool filter) :
-            bakeType(type), minMaxSamples(minMax), sampleMode(mode), filterGrids(filter) {}
+        IterationData(const int type, const std::string& desc, const Cuda::ivec2& minMax, const int mode, const bool filter) :
+            bakeType(type), description(desc), minMaxSamples(minMax), sampleMode(mode), filterGrids(filter) {}
 
         int             bakeType;
+        std::string     description;
         Cuda::ivec2     minMaxSamples;
         int             sampleMode;
         bool            filterGrids;
@@ -47,11 +66,10 @@ public:
     std::vector<IterationData>& GetIterationList() { return m_iterationList; }
     bool                        Prepare(const Params& params);
     bool                        Advance(const bool lastBakeSucceeded);
-    float                       GetProgress() const;
+    BatchProgress               GetBatchProgress(const float bakeProgress) const;
     bool                        IsIdle() const { return m_isIdle; }
 
     float                       GetElapsedTime() const;
-    float                       EstimateRemainingTime(const float bakeProgress) const;
 
     std::string                 GeneratePNGExportPath(const std::string& renderTemplatePath, const std::string& jsonRootPath);
     std::vector<std::string>    GenerateGridExportPaths(const std::string& renderTemplatePath, const std::string& jsonRootPath);
@@ -76,6 +94,7 @@ private:
     RenderObjectStateMap::StateMap::const_iterator m_stateIt;
     int                         m_stateIdx;
     int                         m_numStates;
+    int                         m_numSucceeded, m_numFailed;
     
     std::vector<std::string>    m_probeGridTemplateTokens;
     std::vector<std::string>    m_renderTemplateTokens;
@@ -86,6 +105,7 @@ private:
     std::shared_ptr<LightProbeCameraShelf>      m_lightProbeCameraShelf;
     std::shared_ptr<PerspectiveCameraShelf>     m_perspectiveCameraShelf;
     std::shared_ptr<WavefrontTracerShelf>       m_wavefrontTracerShelf;
+    std::shared_ptr<LambertBRDFShelf>           m_lambertShelf;
     std::shared_ptr<KIFSShelf>                  m_kifsShelf;
 
     RenderObjectStateMap&                       m_stateMap;

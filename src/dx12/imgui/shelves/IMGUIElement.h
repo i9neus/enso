@@ -45,6 +45,24 @@ static void HelpMarker(const char* desc)
     }
 }
 
+class IMGUIDataTable
+{
+public:
+    IMGUIDataTable(const std::string& id, const int numCols);
+    ~IMGUIDataTable();
+
+    IMGUIDataTable& operator <<(const std::string& str);
+    IMGUIDataTable& operator <<(const int& i);
+    IMGUIDataTable& operator <<(const float& f);
+    IMGUIDataTable& operator <<(nullptr_t);
+
+private:
+    void NextCell();
+
+    int m_numCols;
+    int m_cellIdx;
+};
+
 class IMGUIListBox
 {
 public:

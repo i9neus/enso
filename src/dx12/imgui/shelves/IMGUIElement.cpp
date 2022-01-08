@@ -477,3 +477,53 @@ void IMGUIElement::ConstructFlagCheckBox(const std::string& name, const uint& ma
    flags = (flags & ~mask) | ((uint(!isEnabled) - 1) & mask);
 }
 
+IMGUIDataTable::IMGUIDataTable(const std::string& id, const int numCols)
+{
+    m_numCols = numCols;
+    m_cellIdx = -1;
+
+    Assert(ImGui::BeginTable(id.c_str(), m_numCols));
+}
+
+IMGUIDataTable::~IMGUIDataTable()
+{
+    ImGui::EndTable();
+}
+
+void IMGUIDataTable::NextCell()
+{
+    ++m_cellIdx;
+    if (m_cellIdx % m_numCols == 0)
+    {
+        ImGui::TableNextRow();
+    }
+    ImGui::TableSetColumnIndex(m_cellIdx % m_numCols);
+}
+
+IMGUIDataTable& IMGUIDataTable::operator <<(const std::string& str)
+{
+    NextCell();
+    ImGui::Text(str.c_str());
+    return *this;
+}
+
+IMGUIDataTable& IMGUIDataTable::operator <<(const float& f)
+{
+    NextCell();
+    ImGui::Text(tfm::format("%f", f).c_str());
+    return *this;
+}
+
+IMGUIDataTable& IMGUIDataTable::operator <<(const int& i)
+{
+    NextCell();
+    ImGui::Text(tfm::format("%i", i).c_str());
+    return *this;
+}
+
+IMGUIDataTable& IMGUIDataTable::operator <<(nullptr_t)
+{
+    NextCell();
+    return *this;
+}
+

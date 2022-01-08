@@ -49,13 +49,13 @@ namespace Cuda
 
 		float						minViableValidity;
 
-		uint						subsamplesPerProbe;	//			<-- A sub-sample is a set of SH coefficients plus data.
-		uint						bucketsPerProbe; //				<-- The total number of accumulation units per probe
+		uint						subprobesPerProbe;	//			<-- A sub-probe is a set of SH coefficients + data. Multiple sub-probes are accumulated to make a full probe. 
+		uint						bucketsPerProbe; //				<-- The total number of accumulation units (coefficients + data) per probe
 
 		uint						totalBuckets; //				<-- The total number of accumulation units in the grid
-		uint						totalSubsamples; //				<-- The total number of subsamples in the grid
+		uint						totalSubprobes; //				<-- The total number of subprobes in the grid
 
-		ivec2						minMaxSamplesPerBucket; // 		<-- The min/max number of samples that should be taken per bucket
+		ivec2						minMaxSamplesPerSubprobe; // 	<-- The min/max number of samples that should be taken per sub-probe
 		vec3						aspectRatio;
 
 		int							lightingMode;
@@ -74,15 +74,29 @@ namespace Cuda
 
 	struct LightProbeCameraAggregateStatistics
 	{
-		float			meanGridValidity = -1.0f;
-		float			bakeProgress = -1.0f;
-		float			bakeConvergence = -1.0f;
-		float			meanI = 0.0f;
-		float			MSE = 0.0f;
-		int				numActiveGrids = 0;
+		static constexpr float kInvalidMetric = -1.0f;
+		
+		LightProbeCameraAggregateStatistics() : minMaxSamples(kInvalidMetric) {}
+
+		float			meanValidity = kInvalidMetric;
+		float			meanDistance = kInvalidMetric;
 		vec2			minMaxSamples;
-		float			meanSamples;
-		bool			isConverged = false;
+		float			meanSamples = kInvalidMetric;
+
+		struct
+		{
+			float			probesFull = kInvalidMetric;
+			float			probesConverged = kInvalidMetric;
+			float			progress = kInvalidMetric;
+		} 
+		bake;
+
+		struct
+		{
+			float			meanI = 0.0f;
+			float			MSE = 0.0f;
+		} 
+		error;		
 	};
 
 	namespace Device

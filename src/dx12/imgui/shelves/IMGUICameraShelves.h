@@ -58,9 +58,14 @@ private:
     int                                 m_frameIdx;
     float                               m_bakeProgress;
     float                               m_bakeConvergence;
+    float                               m_bakeProbesFull;
     float                               m_meanI, m_MSE;
-    float                               m_meanFrameTime;
+    float                               m_meanFrameTime;    
     Cuda::vec2                          m_minMaxMeanI, m_minMaxMSE;
+    Cuda::ivec2                         m_minMaxSamplesTaken;
+    float                               m_meanSamplesTaken;
+    float                               m_meanProbeValidity;
+    float                               m_meanProbeDistance;
     std::vector<float>                  m_meanIData, m_MSEData;
     std::vector<ProbeGridStatistics>    m_probeGridStatistics;
 

@@ -57,7 +57,7 @@ int BakePermutor::GenerateIterationList()
 
         Assert(stratumRange >= 0);
         if (stratumRange == 0) { continue; }
-        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeProbeGrid, Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false); continue; }
+        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false); continue; }
         
         // Generate some candidate samples and reject if they're already in the list.
         for (int tries = 0; tries < 10; ++tries)
@@ -65,7 +65,7 @@ int BakePermutor::GenerateIterationList()
             const int candidate = stratumLower + rng(mt) % stratumRange;
             if (sampleCountSet.find(candidate) == sampleCountSet.end())
             {
-                m_iterationList.emplace_back(kBakeTypeProbeGrid, Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false);
+                m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false);
                 sampleCountSet.emplace(candidate);
                 totalSamples += candidate;
                 break;
@@ -74,8 +74,8 @@ int BakePermutor::GenerateIterationList()
     }
     
     // Add the reference sample count and the thumbnail render
-    m_iterationList.emplace_back(kBakeTypeProbeGrid, m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true);
-    m_iterationList.emplace_back(kBakeTypeRender, Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false);
+    m_iterationList.emplace_back(kBakeTypeProbeGrid, "Reference grid", m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true);
+    m_iterationList.emplace_back(kBakeTypeRender, "Preview image", Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false);
 
     m_iterationIt = m_iterationList.cbegin();
     return totalSamples;
@@ -87,7 +87,7 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
 
     // Decompose the template paths into tokens
     m_probeGridTemplateTokens = TokeniseTemplatePath(m_params.probeGridTemplatePath, m_params.jsonRootPath);
-    m_probeGridTemplateTokens = TokeniseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath);
+    m_renderTemplateTokens = TokeniseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath);
 
     // Get the handles to the required shelves
     for (auto& shelf : m_imguiShelves)
@@ -108,6 +108,10 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
         {
             m_kifsShelf = std::dynamic_pointer_cast<KIFSShelf>(shelf.second);
         }
+        if (!m_lambertShelf)
+        {
+            m_lambertShelf = std::dynamic_pointer_cast<LambertBRDFShelf>(shelf.second);
+        }
     }
 
     if (!m_lightProbeCameraShelf)
@@ -123,6 +127,11 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
     if (!m_kifsShelf)
     {
         Log::Warning("Warning: bake permutor was unable to find an instance of KIFSShelf.\n");
+        return false;
+    }
+    if (!m_lambertShelf)
+    {
+        Log::Warning("Warning: bake permutor was unable to find an instance of LambertBRDFShelf.\n");
         return false;
     }
 
@@ -142,6 +151,7 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
     m_permutationIdx = -1;
     m_stateIt = m_stateMap.GetFirstPermutableState();
     m_isIdle = false;
+    m_numSucceeded = m_numFailed = 0;
 
     m_numPermutations = m_iterationList.size() * m_params.numIterations * m_numStates * (1 + m_params.kifsIterationRange[1] - m_params.kifsIterationRange[0]);
     m_totalSamples *= m_params.numIterations * m_numStates;
@@ -150,6 +160,9 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
 
     // Restore the state pointed to by the state iterator
     m_stateMap.Restore(*m_stateIt);
+
+    // Randomise the scene
+    RandomiseScene();
 
     return true;
 }
@@ -183,11 +196,12 @@ std::vector<std::string> BakePermutor::TokeniseTemplatePath(const std::string& t
 
 void BakePermutor::RandomiseScene()
 {
-    if (m_params.startWithThisView && m_iterationIdx == 0) { return; }
+    //if (m_params.startWithThisView && m_iterationIdx == 0) { return; }
 
     Assert(m_stateIt != m_stateMap.GetStateData().end());
 
     // Randomise the shelves depending on which types are selected
+    Log::Write("Randomising scene...");
     for (auto& shelf : m_imguiShelves)
     {
         shelf.second->Jitter(m_stateIt->second.flags, Cuda::kJitterRandomise);
@@ -219,6 +233,8 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
         m_completedSamples += m_iterationIt->minMaxSamples.y;
         if (++m_iterationIt == m_iterationList.cend() || !lastBakeSucceeded)
         {
+            m_numFailed += max(0, int(std::distance(m_iterationIt, m_iterationList.cend())) - 1);
+            
             GenerateIterationList();
 
             // KIFS iteration set...
@@ -243,26 +259,30 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
                     // Restore the next state in the sequence
                     m_stateMap.Restore(*m_stateIt);
                 }
+            }         
 
-                // Randomise all the shelves
-                RandomiseScene();
-            }
+            // Randomise all the shelves after every iteration set
+            RandomiseScene();
         }
     }
+
+    if (lastBakeSucceeded) { ++m_numSucceeded; }
+
     ++m_permutationIdx;
     
     // Get the handles to the camera objects
     auto& probeParams = m_lightProbeCameraShelf->GetParamsObject();
     auto& perspParams = m_perspectiveCameraShelf->GetParamsObject();
+    auto& brdfParams = m_lambertShelf->GetParamsObject();
 
     // Set the sample counts depending on the type of bake we're doing
     if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
     {
         // Set the sample count on the light probe camera          
-        probeParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
         probeParams.camera.isActive = true;
+        probeParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
         probeParams.camera.samplingMode = m_iterationIt->sampleMode;
-        probeParams.filterGrids = m_iterationIt->filterGrids;
+        probeParams.filterGrids = m_iterationIt->filterGrids;        
 
         // Always randomise the probe shelf to generate a new seed
         m_lightProbeCameraShelf->Randomise();
@@ -272,10 +292,12 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     }
     else if (m_iterationIt->bakeType == kBakeTypeRender)
     {
-        perspParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
-        perspParams.camera.overrides.maxDepth = 3;
         perspParams.camera.isActive = true;
-        
+        perspParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
+        perspParams.camera.overrides.maxDepth = 0;
+        // Set the grids used to visualise the preview
+        brdfParams.probeGridFlags = Cuda::kLambertUseProbeGrid;
+        brdfParams.probeGridFlags |= (!probeParams.filterGrids) ? (Cuda::kLambertGridChannel0 | Cuda::kLambertGridChannel1) : (Cuda::kLambertGridChannel2 | Cuda::kLambertGridChannel3);        
         // Always deactivate the probe grid when baking
         probeParams.camera.isActive = false;
     }
@@ -326,14 +348,7 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
 
  std::vector<std::string> BakePermutor::GenerateGridExportPaths(const std::string& renderTemplatePath, const std::string& jsonRootPath)
  {
-     auto exportPaths = GenerateExportPaths(TokeniseTemplatePath(renderTemplatePath, jsonRootPath), 2);
-
-     for (auto& path : exportPaths)
-     {
-
-     }
-
-     return exportPaths;
+     return GenerateExportPaths(TokeniseTemplatePath(renderTemplatePath, jsonRootPath), 2);
  }
 
 std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std::string>& templateTokens, const int numPaths) const
@@ -392,20 +407,24 @@ std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std
     return exportPaths;
 }
 
-float BakePermutor::GetProgress() const
-{    
-    return m_isIdle ? 0.0f : float(m_completedSamples) / float(m_totalSamples);
+BakePermutor::BatchProgress BakePermutor::GetBatchProgress(const float bakeProgress) const
+{   
+    //if (m_isIdle) { return BatchProgress(); }
+
+    BatchProgress stats;
+    stats.isRunning = true;
+    stats.totalProgress = ((float(m_permutationIdx) + bakeProgress) / float(m_numPermutations));
+    stats.permutationRange = Cuda::ivec2(1 + m_permutationIdx, m_numPermutations);
+    stats.numSucceeded = m_numSucceeded;
+    stats.numFailed = m_numFailed;
+    stats.bakeType = (m_isIdle || m_iterationIt == m_iterationList.end()) ? std::string("Idle") : m_iterationIt->description;
+    stats.time.elapsed = GetElapsedTime();
+    stats.time.remaining = stats.time.elapsed * (1.0f - stats.totalProgress) / max(1e-10f, stats.totalProgress);
+
+    return stats;
 }
 
 float BakePermutor::GetElapsedTime() const
 {
     return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
-}
-
-float BakePermutor::EstimateRemainingTime(const float bakeProgress) const
-{
-    const int currentSampleCount = (m_iterationIt == m_iterationList.end()) ? 0 : m_iterationIt->minMaxSamples.y;
-    const float progress = (m_completedSamples + bakeProgress * currentSampleCount) / float(m_totalSamples);
-
-    return GetElapsedTime() * (1.0f - progress) / max(1e-6f, progress);
 }

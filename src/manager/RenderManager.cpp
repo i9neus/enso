@@ -816,15 +816,15 @@ void RenderManager::OnBakePostFrame()
 	{		
 		constexpr float kMinSamplesForEstimate = 8.0f;
 		const auto& stats = m_lightProbeCamera->PollBakeProgress();
-		m_bake.progress = stats.bakeProgress;
+		m_bake.progress = stats.bake.progress;
 
 		// If the mean validity is outside the pre-set bounds, complete the job without 
-		if (stats.minMaxSamples[1] > kMinSamplesForEstimate && stats.meanGridValidity >= 0.0f &&
-			(stats.meanGridValidity < m_bake.probeGridExportParams.minGridValidity ||
-				stats.meanGridValidity > m_bake.probeGridExportParams.maxGridValidity))
+		if (stats.minMaxSamples[1] > kMinSamplesForEstimate && stats.meanValidity >= 0.0f &&
+			(stats.meanValidity < m_bake.probeGridExportParams.minGridValidity ||
+				stats.meanValidity > m_bake.probeGridExportParams.maxGridValidity))
 		{
 			Log::Error("Warning: bake was aborted because the grid validity %f was outside the specified bounds [%f, %f]", 
-				stats.meanGridValidity, m_bake.probeGridExportParams.minGridValidity, m_bake.probeGridExportParams.maxGridValidity);
+				stats.meanValidity, m_bake.probeGridExportParams.minGridValidity, m_bake.probeGridExportParams.maxGridValidity);
 
 			m_bake.succeeded = false;
 			m_bake.job.state = kRenderManagerJobCompleted;

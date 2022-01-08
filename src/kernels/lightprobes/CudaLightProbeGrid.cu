@@ -458,6 +458,7 @@ namespace Cuda
             {
                 auto& ls = localStats[i];
                 ls.minMaxSamples = vec2(kFltMax, 0.0f);
+                ls.meanSamples = 0.0f;
                 for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
                 {
                     ls.minMaxCoeffs[j] = vec2(kFltMax, -kFltMax);
@@ -490,6 +491,7 @@ namespace Cuda
             // Accumulate probe states
             const auto& coeff = At(i)[m_params.coefficientsPerProbe - 1];
             ls.minMaxSamples = vec2(min(ls.minMaxSamples.x, coeff.z), max(ls.minMaxSamples.y, coeff.z));
+            ls.meanSamples += coeff.z;
             ls.meanValidity += coeff.x;
             ls.meanDistance += coeff.y;
         }
@@ -498,6 +500,7 @@ namespace Cuda
         const float probeCount = 1 + endIdx - startIdx;
         ls.meanValidity /= probeCount;
         ls.meanDistance /= probeCount;
+        ls.meanSamples /= probeCount;
         for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++coeffIdx)
         {            
             ls.meanSqrIntensity[coeffIdx] /= probeCount;
@@ -511,19 +514,22 @@ namespace Cuda
             result = localStats[0];         
             for (int i = 1; i < 256; i++)
             {
-                result.minMaxSamples = vec2(min(localStats[i].minMaxSamples.x, result.minMaxSamples.x), max(localStats[i].minMaxSamples.y, result.minMaxSamples.y));
+                const auto& ls = localStats[i];
+                result.minMaxSamples = vec2(min(ls.minMaxSamples.x, result.minMaxSamples.x), max(ls.minMaxSamples.y, result.minMaxSamples.y));
+                result.meanSamples += ls.meanSamples;
                 for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
                 {
-                    result.minMaxCoeffs[j] = vec2(min(localStats[i].minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(localStats[i].minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
-                    result.meanSqrIntensity[j] += localStats[i].meanSqrIntensity[j];
+                    result.minMaxCoeffs[j] = vec2(min(ls.minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(ls.minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
+                    result.meanSqrIntensity[j] += ls.meanSqrIntensity[j];
                 }
-                result.meanValidity += localStats[i].meanValidity;
-                result.meanDistance += localStats[i].meanDistance;
+                result.meanValidity += ls.meanValidity;
+                result.meanDistance += ls.meanDistance;
             }
             for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
             {
                 result.meanSqrIntensity[j] /= 256.0f;
             }
+            result.meanSamples /= 256.0f;
             result.meanValidity /= 256.0f;
             result.meanDistance /= 256.0f;
         }
