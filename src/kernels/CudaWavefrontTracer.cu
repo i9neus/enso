@@ -24,6 +24,19 @@
 
 #define kMaxLights 10
 
+//#define kDebugRays
+
+#ifdef kDebugRays
+#define InitRayDebug(condition, idx) bool __debugRays = ((condition) && (kKernelIdx / 2) == idx)
+#define RayDebug(message, ...) \
+        if(__debugRays) {  
+			printf(message, __VA_ARGS__); \
+        }
+#else
+#define InitRayDebug(condition, idx) 
+#define RayDebug(message, ...)
+#endif
+
 namespace Cuda
 {
 	__host__ WavefrontTracerParams::WavefrontTracerParams() :
@@ -325,25 +338,26 @@ namespace Cuda
 	}
 
 	__device__ bool Device::WavefrontTracer::Trace(CompressedRay& compressedRay) const
-	{	
-		// Horrible hack to simulate Unity's weird radiance/irradiance baking system
+	{			
+		InitRayDebug(175, compressedRay.flags & kRayLightProbe && m_frameIdx % 60 == 0);
+		
+		// Horrible hack to simulate Unity's weird radiance/irradiance baking system.  
 		if (compressedRay.flags & kRayLightProbe && compressedRay.IsAlive() && compressedRay.depth == 1 && kKernelIdx % 2 == 0)
 		{
 			Ray tempRay(compressedRay);
 			RenderCtx tempCtx(compressedRay);
 			
-			// Pretend that we're casting a NEE ray from the last bounce
+			// We're effectively "shading" a virtual hitpoint at the position of the probe by casting a NEE ray from it.
 			tempCtx.depth = m_activeParams.maxDepth;
 			compressedRay.weight = 1.0f;
-			//RenderCtx tempCtx(compressedRay);
-
 			HitCtx hitCtx;
 			hitCtx.Set(HitPoint(tempRay.od.o, tempRay.od.d), false, vec2(0.0f), 0.0f, kNotALight);
 
+			// Create the ray and spoof its depth
 			Shade(tempRay, m_lightProbeMaterial, hitCtx, tempCtx);
-
-			// Spoof the depth of this spawned ray
 			(&compressedRay)[1].depth = 1;
+
+			RayDebug("%i: Probe direct sample: [%f, %f, %f]\n", 1, (&compressedRay)[1].weight.x, (&compressedRay)[1].weight.y, (&compressedRay)[1].weight.z);
 		}
 
 		// Sync here so that the hack above has time to take effect
@@ -371,6 +385,8 @@ namespace Cuda
 			}
 		}
 
+		RayDebug("%i: Intersect %s\n", incidentRay.depth, hitObject ? "hit" : "miss");
+
 		// Shading normals mode just requires we splat the normals into the framebuffer
 		if (m_activeParams.shadingMode == kShadeNormals)
 		{
@@ -381,6 +397,8 @@ namespace Cuda
 		}
 
 		vec3 L(0.0f);
+
+		RayDebug("%i: Accumulate direct: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
 
 		// If this is a NEE ray, evaluate it first...
 		if ((kKernelIdx % 2 == 1) && incidentRay.IsDirectSample())
@@ -405,24 +423,26 @@ namespace Cuda
 							}
 						}
 					}
+
+					RayDebug("%i: Light evaluate\n", incidentRay.depth);
 				}
 				// If the light itself was sampled, everything's baked into the throughput
 				else
 				{
 					L = compressedRay.weight;
+					RayDebug("%i: Light sample\n", incidentRay.depth);
 				}
 			}
 
+			RayDebug("%i: Accumulate direct: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
 			// Accumulate extant radiance
-			if (cwiseMax(L) > 1e-15f)
-			{
-				m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
-			}
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
 		}
 
 		// Synchronise with the rest of the warp to guarantee that any NEE rays are dead
 		__syncwarp();
 
+		// Evaluate indirect sample
 		if (kKernelIdx % 2 == 0)
 		{			
 			if(hitObject)
@@ -456,16 +476,15 @@ namespace Cuda
 			{
 				L = hitCtx.debug;
 				compressedRay.Kill();
-			}			
-
-			// Accumulate extant radiance
-			if (cwiseMax(L) > 1e-15f || !compressedRay.IsAlive())
-			{			
-				m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
 			}
+
+			RayDebug("%i: Accumulate indirect: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
+
+			// Accumulate extant radiance			
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
 		}
 
-		__shared__ uchar deadRays[16 * 16];
+		/*__shared__ uchar deadRays[16 * 16];
 		deadRays[kThreadIdx] = !compressedRay.IsAlive();
 
 		// Reduce the contents of the block buffer to count the number of dead rays 
@@ -482,7 +501,7 @@ namespace Cuda
 		if (kThreadIdx < 8)
 		{
 			(*m_objects.cu_blockRayOccupancy)[kBlockIdx * 8 + kThreadIdx] = deadRays[0];
-		}
+		}*/
 
 		return compressedRay.IsAlive();
 	}
@@ -674,7 +693,7 @@ namespace Cuda
 			break;
 		}
 
-		KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
+		//KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}
 
 	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime, const uint frameIdx)
