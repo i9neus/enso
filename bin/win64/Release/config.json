@@ -1,10 +1,9 @@
 {
-    "scene": "c:/projects/probegen-scenes/lightprobedenoiser/random/random9.json",
-    //"scene": "c:/projects/probegen-sceneds/lightprobedenoiser/misc/cornell.json",
+    "scene": "c:/projects/probegen-scenes/lightprobedenoiser/mono/mono.json",
+    //"scene": "c:/projects/probegen-scenes/misc/cornell.json",
     "usd": {
         "templatePath": "c:/projects/probegen/scenes/template.usda",
-        "pluginDirectory": "",
-        "exportPath": "c:/projects/probegen/data/usd/test.usda"
+        "pluginDirectory": ""
     },
 
     "generator": {
