@@ -32,6 +32,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_minMaxReferenceSamples(10000, 100000),
     m_thumbnailSamples(128),
     m_numBakeIterations(1),
+    m_startBakeIteration(0),
     m_isBaking(false),
     m_isBatchRunning(false),
     m_permutor(imguiShelves, m_stateMap, commandQueue),
@@ -413,7 +414,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     }
     
     // The number of iterations per permutation
-    ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, 100000);
+    ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, std::numeric_limits<int>::max());    
+    ImGui::DragInt("Start iteration", &m_startBakeIteration, 1, 1, std::numeric_limits<int>::max());
 
     // The base paths that all export paths will be derived from
     ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
@@ -456,7 +458,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
             ImGui::PopStyleColor(1);
 
             table << "Mean samples:" << m_bakeGridSamples << nullptr;
-            table << "Iteration:" << tfm::format("%i of %i", stats.permutationRange.x, stats.permutationRange.y) << nullptr;
+            table << "Permutation:" << tfm::format("%i of %i", stats.permutationRange.x, stats.permutationRange.y) << nullptr;
             table << nullptr << tfm::format("Succeeded: %i", stats.numSucceeded) << tfm::format("Failed: %i", stats.numFailed);
             table << "Bake type:" << stats.bakeType << nullptr;
             table << "Elapsed:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.elapsed).c_str() : "00:00") << nullptr;
@@ -508,6 +510,7 @@ void RenderObjectStateManager::EnqueueBatch()
     params.kifsIterationRange = m_kifsIterationRange;
     params.jitterFlags = m_jitterFlags;
     params.numIterations = m_numBakeIterations;
+    params.startIteration = m_startBakeIteration;
     params.noisyRange = m_noisySampleRange;
     params.minMaxReferenceSamples = m_minMaxReferenceSamples;
     params.thumbnailCount = m_thumbnailSamples;

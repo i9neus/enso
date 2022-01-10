@@ -329,7 +329,7 @@ namespace Cuda
 
             //const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
             //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.grid.coefficientsPerProbe;
-            if (coeffIdx == m_params.grid.coefficientsPerProbe - 1)
+            if (coeffIdx == m_params.grid.shCoefficientsPerProbe)
             {
                const float norm = max(1.0f, texel.w);
 

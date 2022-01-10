@@ -24,6 +24,7 @@ public:
         Cuda::ivec2 kifsIterationRange;
         uint jitterFlags = 0;
         int numIterations = 0;
+        int startIteration = 0;
         int numStrata = 0; 
 
         Cuda::ivec2 noisyRange;

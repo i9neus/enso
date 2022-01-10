@@ -79,6 +79,7 @@ LightProbeCameraShelf::LightProbeCameraShelf(const Json::Node& json)
     : IMGUIShelf(json),
     m_bakeProgress(-1.0f),
     m_bakeConvergence(-1.0f),
+    m_bakeEfficiency(0.0f),
     m_frameIdx(-1),
     m_minMaxMSE(Cuda::kMinMaxReset)
 {
@@ -226,6 +227,7 @@ void LightProbeCameraShelf::Construct()
         ImGui::Text(tfm::format("Mean probe distance: %.5f", m_meanProbeDistance).c_str());
         ImGui::Text(tfm::format("Mean I: %.5f%%", m_meanI).c_str());
         ImGui::Text(tfm::format("MSE I: %.5f%%", m_MSE).c_str());
+        ImGui::Text(tfm::format("Bake efficiency: %.2f%%%%", 100.0f * m_bakeEfficiency.x / max(1.0f, m_bakeEfficiency.y)).c_str());
 
         constexpr int kMSEPlotDensity = 10;
         std::string meanIFormat = tfm::format("%.5f", m_meanI);
@@ -296,6 +298,7 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& she
         m_meanIData.clear();
         m_performanceLog.clear();
         m_minMaxMeanI = m_minMaxMSE = Cuda::kMinMaxReset;
+        m_bakeEfficiency = Cuda::vec2(0.0);
     }
     
     // Get the progress and convergence metrics for the bake in progress
@@ -303,6 +306,7 @@ void LightProbeCameraShelf::OnUpdateRenderObjectStatistics(const Json::Node& she
     bakeNode.GetValue("progress", m_bakeProgress, Json::kRequiredAssert);
     bakeNode.GetValue("probesConverged", m_bakeConvergence, Json::kRequiredAssert);
     bakeNode.GetValue("probesFull", m_bakeProbesFull, Json::kRequiredAssert);
+    m_bakeEfficiency += Cuda::vec2(1.0f - m_bakeConvergence, 1.0f);
 
     // Look for an MSE value
     auto errorNode = shelfNode.GetChildObject("error", Json::kRequiredAssert);

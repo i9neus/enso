@@ -56,6 +56,7 @@ private:
     std::vector<int>        m_sampleCounts;
     int                     m_sampleCountIdx;
     int                     m_numBakeIterations;
+    int                     m_startBakeIteration;
     int                     m_bakePermutationIdx;
     float                   m_bakeProgress;
 

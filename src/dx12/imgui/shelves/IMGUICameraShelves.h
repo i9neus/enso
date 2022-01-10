@@ -63,6 +63,7 @@ private:
     float                               m_meanFrameTime;    
     Cuda::vec2                          m_minMaxMeanI, m_minMaxMSE;
     Cuda::ivec2                         m_minMaxSamplesTaken;
+    Cuda::vec2                          m_bakeEfficiency;
     float                               m_meanSamplesTaken;
     float                               m_meanProbeValidity;
     float                               m_meanProbeDistance;

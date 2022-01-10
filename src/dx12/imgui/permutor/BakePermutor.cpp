@@ -389,7 +389,7 @@ std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std
                 std::uniform_int_distribution<> rng(0, std::numeric_limits<int>::max());
                 path += tfm::format("%010.i", rng(mt) % 10000000000);
             }
-            else if (token == "{$ITERATION}") { path += tfm::format("%06.i", m_iterationIdx); }
+            else if (token == "{$ITERATION}") { path += tfm::format("%06.i", m_iterationIdx + m_params.startIteration); }
             else if (token == "{$KIFS}") { path += tfm::format("%i", m_kifsIterationIdx); }
             else if (token == "{$SAMPLE_COUNT}") { path += tfm::format("%06.i", (m_iterationIt != m_iterationList.end()) ? m_iterationIt->minMaxSamples.y : 0); }
             else if (token == "{$PERMUTATION}") { path += tfm::format("%i", m_permutationIdx); }
