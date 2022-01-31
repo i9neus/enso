@@ -25,12 +25,18 @@ namespace Cuda
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         const std::string& assetId = object->GetAssetID();
-        AssertMsgFmt(m_assetMap.find(assetId) == m_assetMap.end(), "Object '%s' does not exist in asset registry!", assetId.c_str());
+        if (m_assetMap.find(assetId) == m_assetMap.end())
+        {
+            Log::Error("ERROR: Deregister asset: object '%s' does not exist in the registry!", assetId);
+        }
 
         auto memoryIt = m_deviceMemoryMap.find(assetId);
-        AssertMsgFmt(memoryIt == m_deviceMemoryMap.end(), "Object '%s' has %ll bytes of outstanding device memory that have not been deallocated.", assetId.c_str(), memoryIt->second);
+        if (memoryIt != m_deviceMemoryMap.end())
+        {
+            Log::Error("ERROR: Deregister asset: object '%s' has %i bytes of outstanding device memory that have not been deallocated.", assetId, memoryIt->second);
+        }
 
-        //AssertMsgFmt(m_assetMap.find(assetId) != m_assetMap.end(), "Object '%s' does not exist in asset registry!", object->GetAssetID().c_str());
+        m_deviceMemoryMap.erase(assetId);
         m_assetMap.erase(assetId);
     }
 

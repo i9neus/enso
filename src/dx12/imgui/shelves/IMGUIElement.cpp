@@ -481,13 +481,20 @@ IMGUIDataTable::IMGUIDataTable(const std::string& id, const int numCols)
 {
     m_numCols = numCols;
     m_cellIdx = -1;
+    m_isEnded = false;
 
     Assert(ImGui::BeginTable(id.c_str(), m_numCols));
 }
 
 IMGUIDataTable::~IMGUIDataTable()
 {
+    AssertMsg(m_isEnded, "IMGUIDataTable::End() was not called");
+}
+
+void IMGUIDataTable::End()
+{
     ImGui::EndTable();
+    m_isEnded = true;
 }
 
 void IMGUIDataTable::NextCell()

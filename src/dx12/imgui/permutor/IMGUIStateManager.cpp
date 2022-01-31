@@ -448,22 +448,21 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         const auto stats = m_permutor.GetBatchProgress(m_bakeProgress);       
         //Assert(stats.isRunning);
 
-        {
-            IMGUIDataTable table("stats", 3);
+        IMGUIDataTable table("stats", 3);
 
-            table << "Grid validity";
-            bool gridOk = m_bakeGridValidity >= m_gridValidityRange[0] && m_bakeGridValidity <= m_gridValidityRange[1];
-            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(gridOk ? 0.33f : 0.0f, 0.6f, 0.6f));
-            table << m_bakeGridValidity << nullptr;
-            ImGui::PopStyleColor(1);
+        table << "Grid validity";
+        bool gridOk = m_bakeGridValidity >= m_gridValidityRange[0] && m_bakeGridValidity <= m_gridValidityRange[1];
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(gridOk ? 0.33f : 0.0f, 0.6f, 0.6f));
+        table << m_bakeGridValidity << nullptr;
+        ImGui::PopStyleColor(1);
 
-            table << "Mean samples:" << m_bakeGridSamples << nullptr;
-            table << "Permutation:" << tfm::format("%i of %i", stats.permutationRange.x, stats.permutationRange.y) << nullptr;
-            table << nullptr << tfm::format("Succeeded: %i", stats.numSucceeded) << tfm::format("Failed: %i", stats.numFailed);
-            table << "Bake type:" << stats.bakeType << nullptr;
-            table << "Elapsed:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.elapsed).c_str() : "00:00") << nullptr;
-            table << "Remaining:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.remaining).c_str() : "00:00") << nullptr;
-        }
+        table << "Mean samples:" << m_bakeGridSamples << nullptr;
+        table << "Permutation:" << tfm::format("%i of %i", stats.permutationRange.x, stats.permutationRange.y) << nullptr;
+        table << nullptr << tfm::format("Succeeded: %i", stats.numSucceeded) << tfm::format("Failed: %i", stats.numFailed);
+        table << "Bake type:" << stats.bakeType << nullptr;
+        table << "Elapsed:" << (m_isBatchRunning ? FormatElapsedTime(stats.time.elapsed).c_str() : "00:00") << nullptr;
+        
+        table.End();
 
         ImGui::ProgressBar(m_bakeProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Bake %");
         ImGui::ProgressBar(stats.totalProgress, ImVec2(0.0f, 0.0f)); SL; ImGui::Text("Total %");

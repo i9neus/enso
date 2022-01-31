@@ -26,7 +26,8 @@ RenderManager::RenderManager() :
 	RegisterJob(m_bake.job, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
 	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnDefaultDispatch, &RenderManager::OnDefaultPoll);
 	RegisterJob(m_exportGridsJob, "exportGrids", &RenderManager::OnExportGridsDispatch, &RenderManager::OnDefaultPoll);
-	RegisterJob(m_statsJob, "getStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherStatsPoll);
+	RegisterJob(m_renderStatsJob, "getRenderStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherRenderStatsPoll);
+	RegisterJob(m_memoryStatsJob, "getMemoryStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherMemoryStatsPoll);
 }
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -132,7 +133,7 @@ void RenderManager::UnloadScene(bool report)
 		
 		if (report)
 		{
-			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().GetNumAssets()));
+			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().NumAssets()));
 			Cuda::AR().Report();
 		}
 
@@ -381,7 +382,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 	return true;
 }
 
-bool RenderManager::OnBakePoll(Json::Node& outJson, const Job& job)
+bool RenderManager::OnBakePoll(Json::Node& outJson, Job& job)
 {
 	outJson.AddValue("progress", m_bake.progress);
 	if (m_bake.job.state == kRenderManagerJobCompleted)
@@ -397,7 +398,7 @@ bool RenderManager::OnExportGridsDispatch(Job& job)
 	return true;
 }
 
-bool RenderManager::OnGatherStatsPoll(Json::Node& outJson, const Job& job)
+bool RenderManager::OnGatherRenderStatsPoll(Json::Node& outJson, Job& job)
 {
 	if (job.state != kRenderManagerJobCompleted) { return true; }
 
@@ -411,6 +412,24 @@ bool RenderManager::OnGatherStatsPoll(Json::Node& outJson, const Job& job)
 		m_renderObjectStatsJson.Clear();
 	}
 
+	return true;
+}
+
+bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
+{
+	std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
+	job.state = kRenderManagerJobCompleted;
+
+	Json::Node assetJson = outJson.AddChildObject("assets");
+	const auto& registry = Cuda::GlobalResourceRegistry::Get();
+	const auto& assetMap = registry.GetAssetMap();
+	const auto& deviceMemoryMap = registry.GetDeviceMemoryMap();
+
+	for (const auto& asset : deviceMemoryMap)
+	{
+		assetJson.AddValue(asset.first, int(asset.second));
+	}
+	
 	return true;
 }
 
@@ -459,12 +478,13 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 		auto& job = jobObject.second;
 		if (job.state != kRenderManagerJobIdle)
 		{
-			Json::Node statsJson = jobJson.AddChildObject(jobObject.first);
-			const int state = job.state;
-			statsJson.AddValue("state", state);
+			Json::Node statsJson = jobJson.AddChildObject(jobObject.first);			
 
 			// If this command has a functor, call it now
 			if (job.onPoll) { job.onPoll(statsJson, job); }
+
+			// Write the state to the stats
+			statsJson.AddValue("state", job.state.load());
 
 			// Flip the state from completed to idle once the data has been polled
 			if (job.state == kRenderManagerJobCompleted) { job.state = kRenderManagerJobIdle; }
@@ -694,7 +714,7 @@ void RenderManager::Run()
 
 void RenderManager::GatherRenderObjectStatistics()
 {	
-	if (m_statsJob.state != kRenderManagerJobDispatched) { return; }
+	if (m_renderStatsJob.state != kRenderManagerJobDispatched) { return; }
 
 	Json::Document renderObjectJson;
 	Json::Document aggregatedStatsJson;
@@ -713,7 +733,7 @@ void RenderManager::GatherRenderObjectStatistics()
 	m_renderObjectStatsJson.DeepCopy(aggregatedStatsJson);
 	m_renderStatsTimer.Reset();
 
-	m_statsJob.state = kRenderManagerJobCompleted;
+	m_renderStatsJob.state = kRenderManagerJobCompleted;
 }
 
 void RenderManager::PatchSceneObjects()

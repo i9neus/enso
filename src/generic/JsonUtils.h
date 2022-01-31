@@ -72,6 +72,7 @@ namespace Json
             inline bool operator!=(const __Iterator& other) const { return m_it != other.m_it; }
 
             inline std::string Name() const { return m_it->name.GetString(); }
+            inline const rapidjson::Value& Value() const { return m_it->value; }
 
         private:
             rapidjson::Value::MemberIterator     m_it;

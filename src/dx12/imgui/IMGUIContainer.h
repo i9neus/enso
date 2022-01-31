@@ -44,18 +44,21 @@ private:
     IMGUIAbstractShelfMap           m_shelves;
     RenderObjectStateManager        m_stateManager;
 
-    HighResolutionTimer             m_statsTimer;
+    HighResolutionTimer             m_renderStatsTimer;
+    HighResolutionTimer             m_memoryStatsTimer;
     HighResolutionTimer             m_fpsTimer;
     int                             m_frameIdx;
     float                           m_meanFrameTime;
     
     Json::Document                  m_renderStateJson;
+    Json::Document                  m_memoryStateJson;
     Json::Document                  m_commandQueue;
     int                             m_renderState;
 
     bool                            m_showCombinatorics;
     bool                            m_showRenderObjects;
     bool                            m_showConsole;
+    bool                            m_showMemoryMonitor;
     std::string                     m_renderStateFmt;
 
 public:
@@ -72,5 +75,6 @@ public:
 private:
     void PollCudaRenderState();
     void ConstructConsole();
+    void ConstructMemoryMonitor();
     void ConstructRenderObjectShelves();
 };

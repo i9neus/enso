@@ -122,22 +122,62 @@ void IMGUIContainer::ConstructConsole()
     ImGui::End();
 }
 
+void IMGUIContainer::ConstructMemoryMonitor()
+{
+    ImGui::Begin("Memory Monitor");
+
+    // Only poll the render object manager occasionally
+    if (m_memoryStatsTimer.Get() > 0.5f)
+    {
+        // If we're waiting on a previous stats job, don't dispatch a new one
+        if (!m_renderStateJson.GetChildObject("jobs/getMemoryStats", Json::kSilent))
+        {
+            m_commandQueue.AddChildObject("getMemoryStats");
+            m_memoryStatsTimer.Reset();
+        }
+    }
+
+    // Make a copy of the memory stats if any have been emitted
+    const Json::Node statsJson = m_renderStateJson.GetChildObject("jobs/getMemoryStats", Json::kSilent);
+    if (statsJson)
+    {
+        int statsState;
+        statsJson.GetValue("state", statsState, Json::kRequiredAssert);
+
+        // If the stats gathering task has finished, it'll be accompanied by data for each render object that emits it
+        if (statsState == kRenderManagerJobCompleted)
+        {
+            const Json::Node assetJson = statsJson.GetChildObject("assets", Json::kSilent);
+            m_memoryStateJson.DeepCopy(assetJson);
+        }
+    }     
+    
+    IMGUIDataTable table("stats", 2);
+    for (auto it = m_memoryStateJson.begin(); it != m_memoryStateJson.end(); ++it)
+    {
+        table << it.Name() << it.Value().GetInt();
+    }
+    table.End();    
+
+    ImGui::End();
+}
+
 void IMGUIContainer::ConstructRenderObjectShelves()
 {
     ImGui::Begin("Render Objects", &m_showRenderObjects);
 
     // Only poll the render object manager occasionally
-    if (m_statsTimer.Get() > 0.5f)
+    if (m_renderStatsTimer.Get() > 0.5f)
     {
         // If we're waiting on a previous stats job, don't dispatch a new one
-        if (!m_renderStateJson.GetChildObject("jobs/getStats", Json::kSilent))
+        if (!m_renderStateJson.GetChildObject("jobs/getRenderStats", Json::kSilent))
         {
-            m_commandQueue.AddChildObject("getStats");
-            m_statsTimer.Reset();
+            m_commandQueue.AddChildObject("getRenderStats");
+            m_renderStatsTimer.Reset();
         }
     }
 
-    const Json::Node statsJson = m_renderStateJson.GetChildObject("jobs/getStats", Json::kSilent);
+    const Json::Node statsJson = m_renderStateJson.GetChildObject("jobs/getRenderStats", Json::kSilent);
     if(statsJson)
     {
         int statsState;
@@ -224,8 +264,10 @@ void IMGUIContainer::Render()
         if (ImGui::BeginMenu("Window"))
         {
             ImGui::MenuItem("Combinatorics", NULL, &m_showCombinatorics);
-            ImGui::MenuItem("Render Objects", NULL, &m_showRenderObjects);
+            ImGui::MenuItem("Render objects", NULL, &m_showRenderObjects);
+            ImGui::Separator();
             ImGui::MenuItem("Console", NULL, &m_showConsole);
+            ImGui::MenuItem("Memory monitor", NULL, &m_showMemoryMonitor);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -244,6 +286,8 @@ void IMGUIContainer::Render()
     }
 
     if (m_showConsole) { ConstructConsole(); }
+
+    if (m_showMemoryMonitor) { ConstructMemoryMonitor(); }
 
     ImGui::PopStyleColor(1);
 

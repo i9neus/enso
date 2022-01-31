@@ -99,13 +99,14 @@ private:
 		Job() noexcept : state(kRenderManagerJobIdle) {}
 
 		std::function<bool(Job&)>								onDispatch;
-		std::function<bool(Json::Node&, const Job&)>			onPoll;
+		std::function<bool(Json::Node&, Job&)>					onPoll;
 		std::atomic<int>										state;
 		Json::Document											json;
 	};
 	
 	std::unordered_map<std::string, Job&>						m_jobMap;
-	Job															m_statsJob;	
+	Job															m_renderStatsJob;	
+	Job															m_memoryStatsJob;
 	Job															m_exportViewportJob;
 	Job															m_exportGridsJob;
 
@@ -142,11 +143,12 @@ private:
 	void Prepare();
 
 	bool OnExportGridsDispatch(Job&);
-	bool OnGatherStatsPoll(Json::Node&, const Job&);
+	bool OnGatherRenderStatsPoll(Json::Node&, Job&);
+	bool OnGatherMemoryStatsPoll(Json::Node&, Job&);
 	bool OnBakeDispatch(Job&);
-	bool OnBakePoll(Json::Node&, const Job&);
+	bool OnBakePoll(Json::Node&, Job&);
 	bool OnDefaultDispatch(Job&);
-	bool OnDefaultPoll(Json::Node&, const Job&) { return true; }
+	bool OnDefaultPoll(Json::Node&, Job&) { return true; }
 
 	template<typename DispatchLambda, typename PollLambda>
 	void RegisterJob(Job& job, const std::string& name, DispatchLambda onDispatch, PollLambda onPoll)

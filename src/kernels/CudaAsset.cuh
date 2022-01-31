@@ -82,7 +82,10 @@ namespace Cuda
         void VerifyEmpty();
         void Report();
         bool Exists(const std::string& id) const;
-        size_t GetNumAssets() const { return m_assetMap.size(); }
+
+        const std::unordered_map<std::string, std::weak_ptr<Host::Asset>>& GetAssetMap() const { return m_assetMap; }
+        const std::unordered_map<std::string, int64_t>& GetDeviceMemoryMap() const { return m_deviceMemoryMap; }
+        size_t NumAssets() const { return m_assetMap.size(); }
 
     private:
         GlobalResourceRegistry() = default;
@@ -230,7 +233,7 @@ namespace Cuda
     inline AssetHandle<AssetType> CreateAsset(const std::string& id, Pack... args)
     {
         AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr.reset(new AssetType(id, args...));
+        newAsset.m_ptr.reset(new AssetType( id, args...));
 
         GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
 
