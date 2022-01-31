@@ -131,30 +131,30 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLight) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::QuadLight(json, id), id);
+        return CreateAsset<Host::QuadLight>(id, json);
     }
     
-    __host__  Host::QuadLight::QuadLight(const ::Json::Node& jsonNode, const std::string& id) :
-        Host::Light(jsonNode),
+    __host__  Host::QuadLight::QuadLight(const std::string& id, const ::Json::Node& jsonNode) :
+        Host::Light(id, jsonNode),
         cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kRenderObjectIsChild), id + "_material");
+        m_lightMaterialAsset = CreateAsset<Host::EmitterMaterial>(id + "_material", kRenderObjectIsChild);
         Assert(m_lightMaterialAsset);
 
         // Instantiate the plane tracable
-        m_lightPlaneAsset = AssetHandle<Host::Plane>(new Host::Plane(kRenderObjectIsChild), id + "_planeTracable");
+        m_lightPlaneAsset = CreateAsset<Host::Plane>(id + "_planeTracable", kRenderObjectIsChild);
         Assert(m_lightPlaneAsset);
         m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
 
         // Finally, instantitate the light itself 
-        cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
+        cu_deviceData = InstantiateOnDevice<Device::QuadLight>(id);
         FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)

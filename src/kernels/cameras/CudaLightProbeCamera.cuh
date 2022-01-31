@@ -164,7 +164,7 @@ namespace Cuda
 		class LightProbeCamera : public Host::Camera
 		{
 		public:
-			__host__ LightProbeCamera(const ::Json::Node& parentNode, const std::string& id);
+			__host__ LightProbeCamera(const std::string& id, const ::Json::Node& parentNode);
 			__host__ virtual ~LightProbeCamera() { OnDestroyAsset(); }
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

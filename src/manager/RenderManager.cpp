@@ -83,8 +83,7 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
 
 	// Create some Cuda objects
-	m_compositeImage = Cuda::AssetHandle<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
-	//m_wavefrontTracer = Cuda::AssetHandle<Cuda::Host::WavefrontTracer>("id_wavefrontTracer", m_renderStream);
+	m_compositeImage = Cuda::CreateAsset<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
 
 	Cuda::VerifyTypeSizes();
 
@@ -133,7 +132,7 @@ void RenderManager::UnloadScene(bool report)
 		
 		if (report)
 		{
-			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().Size()));
+			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().GetNumAssets()));
 			Cuda::AR().Report();
 		}
 
@@ -155,7 +154,7 @@ void RenderManager::Build(const Json::Document& sceneJson)
 		Log::Indent indent("Building render manager...\n");		
 
 		// Create a container for the render objects
-		m_renderObjects = Cuda::AssetHandle<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
+		m_renderObjects = Cuda::CreateAsset<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
 
 		// Instantiate them according to the scene JSON		
 		{

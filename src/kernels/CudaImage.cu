@@ -41,7 +41,8 @@ namespace Cuda
 	}
 
 	template<typename T>
-	__host__ Host::Image<T>::Image(unsigned int width, unsigned int height, cudaStream_t hostStream) :
+	__host__ Host::Image<T>::Image(const std::string& id, unsigned int width, unsigned int height, cudaStream_t hostStream) :
+		Asset(id),
 		cu_deviceData(nullptr)
 	{		
 		// Prepare the host data
@@ -49,9 +50,9 @@ namespace Cuda
 		m_hostData.m_height = height;
 		m_hostData.m_accessSignal = kImageUnlocked;
 
-		SafeAllocDeviceMemory(&m_hostData.cu_data, width * height);
+		GuardedAllocDeviceArray(GetAssetID(), width * height, &m_hostData.cu_data);
 
-		cu_deviceData = InstantiateOnDevice<Device::Image<T>>(width, height, m_hostData.cu_data);
+		cu_deviceData = InstantiateOnDevice<Device::Image<T>>(id, width, height, m_hostData.cu_data);
 
 		m_hostStream = hostStream;
 		m_block = dim3(16, 16, 1);
@@ -74,8 +75,8 @@ namespace Cuda
 	template<typename T>
 	__host__ void Host::Image<T>::OnDestroyAsset()
 	{		
-		DestroyOnDevice(cu_deviceData);
-		SafeFreeDeviceMemory(&m_hostData.cu_data);
+		DestroyOnDevice(GetAssetID(), cu_deviceData);
+		GuardedFreeDeviceArray(GetAssetID(), m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
 	}
 
 	template<typename T>

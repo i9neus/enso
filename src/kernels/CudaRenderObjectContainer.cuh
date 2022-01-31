@@ -38,7 +38,7 @@ namespace Cuda
         using Iterator = __Iterator<RenderObjectMap::iterator, false>;
         using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
 
-        __host__ RenderObjectContainer() = default;
+        __host__ RenderObjectContainer(const std::string& id) : Asset(id) {}
         __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
         __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;

@@ -30,7 +30,8 @@ namespace Cuda
         node.GetValue("exportUSD", exportUSD, flags);
     }
 
-    __host__ Host::LightProbeIO::LightProbeIO(const ::Json::Node& node, const std::string& id) :
+    __host__ Host::LightProbeIO::LightProbeIO(const std::string& id, const ::Json::Node& node) :
+        RenderObject(id),
         m_isBatchActive(false),
         m_currentIOPaths(m_usdIOList.end())
     {
@@ -45,10 +46,10 @@ namespace Cuda
 
         AssertMsg(!m_inputGridID.empty() && !m_outputGridID.empty(), "Must specify an input and output light probe grid ID.");
 
-        AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_inputGridID), "Error: an asset with ID '%s' already exists'.", m_inputGridID.c_str());
+        AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_inputGridID), "Error: an asset with ID '%s' already exists'.", m_inputGridID.c_str());
 
         // Create some objects
-        m_hostInputGrid = AssetHandle<Host::LightProbeGrid>(m_inputGridID, m_inputGridID);
+        m_hostInputGrid = CreateAsset<Host::LightProbeGrid>(m_inputGridID);
 
         EnumerateProbeGrids();
         ImportProbeGrid(m_usdImportPath);
@@ -58,7 +59,7 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLightProbeFilter) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::LightProbeIO(json, id), id);
+        return CreateAsset<Host::LightProbeIO>(id, json);
     }
 
     __host__ void Host::LightProbeIO::FromJson(const ::Json::Node& node, const uint flags)

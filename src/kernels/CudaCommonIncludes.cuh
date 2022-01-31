@@ -56,64 +56,79 @@ __host__ inline void CudaHostAssert(T result, char const* const func, const char
 
 namespace Cuda
 {		
-	template<typename T>
-	__host__ inline void SafeFreeDeviceMemory(T** deviceData)
+	template<typename ObjectType>
+	__host__ inline void GuardedFreeDeviceArray(const std::string& assetId, const size_t numElements, ObjectType** deviceData)
 	{
 		Assert(deviceData);
 		if (*deviceData != nullptr)
 		{
 			IsOk(cudaFree(*deviceData));
 			*deviceData = nullptr;
+
+			GlobalResourceRegistry::Get().DeregisterDeviceMemory(assetId, sizeof(ObjectType) * numElements);
 		}
+	} 
+
+	template<typename ObjectType>
+	__host__ inline void GuardedFreeDeviceObject(const std::string& assetId, ObjectType** deviceData)
+	{
+		GuardedFreeDeviceArray(assetId, 1, deviceData);
 	}
 
-	template<typename T>
-	__host__ inline void SafeAllocDeviceMemory(T** deviceObject, size_t numElements)
+	template<typename ObjectType>
+	__host__ inline void GuardedAllocDeviceArray(const std::string& assetId, const size_t numElements, ObjectType** deviceObject)
 	{
 		Assert(deviceObject);
 		AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
 
 		if (numElements == 0) { return; }
 
-		const size_t arraySize = sizeof(T) * numElements;
-
-		Log::System("Allocated %i bytes of GPU memory (%i elements)\n", arraySize, numElements);
-
+		const size_t arraySize = sizeof(ObjectType) * numElements;
 		IsOk(cudaMalloc((void**)deviceObject, arraySize));
+
+		GlobalResourceRegistry::Get().RegisterDeviceMemory(assetId, arraySize);
+	}
+	 
+	template<typename ObjectType>
+	__host__ inline void GuardedAllocDeviceObject(const std::string& assetId, ObjectType** deviceObject)
+	{
+		GuardedAllocDeviceArray(assetId, 1, deviceObject);
 	}
 
-	template<typename T>
-	__host__ inline void SafeAllocAndCopyToDeviceMemory(T** deviceObject, size_t numElements, T* hostData)
+	template<typename ObjectType>
+	__host__ inline void GuardedAllocAndCopyToDeviceArray(const std::string& assetId, ObjectType** deviceObject, size_t numElements, ObjectType* hostData)
 	{
 		Assert(hostData);
-		
-		SafeAllocDeviceMemory(deviceObject, numElements);
 
-		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(T) * numElements, cudaMemcpyHostToDevice));
-	}
+		GuardedAllocDeviceArray(assetId, numElements, deviceObject);
 
-	template<typename T, typename... Pack>
-	__global__ inline void KernelCreateDeviceInstance(T** newInstance, Pack... args)
-	{
-		assert(newInstance);
-		assert(!*newInstance);
-		
-		*newInstance = new T(args...); 
+		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(ObjectType) * numElements, cudaMemcpyHostToDevice));
 	}
 
 	template<typename ObjectType, typename... Pack>
-	__host__ inline ObjectType* InstantiateOnDevice(Pack... args)
-	{		
+	__global__ inline void KernelCreateDeviceInstance(ObjectType** newInstance, Pack... args)
+	{
+		assert(newInstance);
+		assert(!*newInstance);
+
+		*newInstance = new ObjectType(args...);
+	}
+
+	template<typename ObjectType, typename... Pack>
+	__host__ inline ObjectType* InstantiateOnDevice(const std::string& assetId, Pack... args)
+	{
 		ObjectType** cu_tempBuffer;
 		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
 		IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
 
-		KernelCreateDeviceInstance<<<1, 1>>>(cu_tempBuffer, args...);
+		KernelCreateDeviceInstance << <1, 1 >> > (cu_tempBuffer, args...);
 		IsOk(cudaDeviceSynchronize());
 
 		ObjectType* cu_data = nullptr;
 		IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
 		IsOk(cudaFree(cu_tempBuffer));
+
+		GlobalResourceRegistry::Get().RegisterDeviceMemory(assetId, sizeof(ObjectType));
 
 		Log::System("Instantiated device object at 0x%x\n", cu_data);
 		return cu_data;
@@ -121,7 +136,7 @@ namespace Cuda
 
 	// Instantiate an instance of ObjectType, copies params to device memory, and passes it with the ctor parameters
 	template<typename ObjectType, typename ParamsType, typename... Pack>
-	__host__ inline ObjectType* InstantiateOnDeviceWithParams(const ParamsType& params, Pack... args)
+	__host__ inline ObjectType* InstantiateOnDeviceWithParams(const std::string& assetId, const ParamsType& params, Pack... args)
 	{
 		static_assert(std::is_standard_layout<ParamsType>::value, "Parameter structure must be standard layout type.");
 		
@@ -131,18 +146,18 @@ namespace Cuda
 
 		ObjectType* cu_data = InstantiateOnDevice<ObjectType>(cu_params, args...);
 
-		IsOk(cudaFree(cu_params));
+		IsOk(cudaFree(cu_params));		
 		return cu_data;
 	}	
 
-	template<typename T>
-	__host__ bool IsParameterStandardType(const T t) 
+	template<typename ObjectType>
+	__host__ bool IsParameterStandardType(const ObjectType t)
 	{ 
-		return std::is_standard_layout<T>::value;
+		return std::is_standard_layout<ObjectType>::value;
 	}
 
-	template<typename T, typename... Pack>
-	__host__ bool IsParameterStandardType(const T t, const Pack... pack)
+	template<typename ObjectType, typename... Pack>
+	__host__ bool IsParameterStandardType(const ObjectType t, const Pack... pack)
 	{
 		if (!IsParameterStandardType(t)) { return false; }
 
@@ -194,19 +209,21 @@ namespace Cuda
 		IsOk(cudaFree(cu_params));
 	}
 
-	template<typename T>
-	__global__ inline void KernelDestroyDeviceInstance(T* cu_instance)
+	template<typename ObjectType>
+	__global__ inline void KernelDestroyDeviceInstance(ObjectType* cu_instance)
 	{
 		if (cu_instance != nullptr) { delete cu_instance; }
 	}
 
-	template<typename T>
-	__host__ static void DestroyOnDevice(T*& cu_data)
+	template<typename ObjectType>
+	__host__ static void DestroyOnDevice(const std::string& assetId, ObjectType*& cu_data)
 	{
 		if (cu_data == nullptr) { return; }
 		
 		KernelDestroyDeviceInstance<<<1, 1>>>(cu_data);		
 		IsOk(cudaDeviceSynchronize());
+
+		GlobalResourceRegistry::Get().DeregisterDeviceMemory(assetId, sizeof(ObjectType));
 
 		cu_data = nullptr;
 	}

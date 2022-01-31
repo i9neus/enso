@@ -41,7 +41,8 @@ namespace Cuda
         kernelRadius = clamp(kernelRadius, 0, 10);
     }
     
-    __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const ::Json::Node& node, const std::string& id) : 
+    __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const std::string& id, const ::Json::Node& node) :
+        RenderObject(id),
         m_gridSize(1), m_blockSize(1)
     {
         FromJson(node, Json::kRequiredWarn);
@@ -51,18 +52,18 @@ namespace Cuda
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
         node.GetValue("outputHalfGridID", m_outputHalfGridID, Json::kSilent);
          
-        AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
-        AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputHalfGridID), "Error: an asset with ID '%s' already exists'.", m_outputHalfGridID.c_str());
+        AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
+        AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputHalfGridID), "Error: an asset with ID '%s' already exists'.", m_outputHalfGridID.c_str());
 
         // Create some objects
-        m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
-        m_hostReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_reduceBuffer", id));
+        m_hostOutputGrid = CreateAsset<Host::LightProbeGrid>(m_outputGridID);
+        m_hostReduceBuffer = CreateAsset<Host::Array<vec3>>(tfm::format("%s_reduceBuffer", id), m_hostStream);
         m_hostReduceBuffer->Resize(1024 * 1024);// FIXME: Static size; needs to be dynamic. 
 
         if (!m_outputHalfGridID.empty())
         {
-            m_hostOutputHalfGrid = AssetHandle<Host::LightProbeGrid>(m_outputHalfGridID, m_outputHalfGridID);
-            m_hostHalfReduceBuffer = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_halfReduceBuffer", id));
+            m_hostOutputHalfGrid = CreateAsset<Host::LightProbeGrid>(m_outputHalfGridID);
+            m_hostHalfReduceBuffer = CreateAsset<Host::Array<vec3>>(tfm::format("%s_halfReduceBuffer", id), m_hostStream);
             m_hostHalfReduceBuffer->Resize(1024 * 1024);
         }       
     }
@@ -71,7 +72,7 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLightProbeFilter) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::LightProbeKernelFilter(json, id), id);
+        return CreateAsset<Host::LightProbeKernelFilter>(id, json);
     }
 
     __host__ void Host::LightProbeKernelFilter::FromJson(const ::Json::Node& node, const uint flags)

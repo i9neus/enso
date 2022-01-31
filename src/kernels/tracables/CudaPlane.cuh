@@ -51,8 +51,8 @@ namespace Cuda
             PlaneParams    m_params;
 
         public:
-            __host__ Plane(const uint flags);
-            __host__ Plane(const ::Json::Node& node);
+            __host__ Plane(const std::string& id, const uint flags);
+            __host__ Plane(const std::string& id, const ::Json::Node& node);
             __host__ virtual ~Plane() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

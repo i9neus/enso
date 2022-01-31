@@ -58,7 +58,8 @@ namespace Cuda
             uchar                   m_lightId;
 
         public:
-            __host__ Light(const ::Json::Node& node)
+            __host__ Light(const std::string& id, const ::Json::Node& node) : 
+                RenderObject(id)
             {
                 Host::RenderObject::UpdateDAGPath(node);
             }

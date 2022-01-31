@@ -101,7 +101,7 @@ namespace Cuda
             __host__ void  Unlisten(const RenderObject& owner, const std::string& eventID);
 
         protected:
-            __host__ RenderObject() : m_renderObjectFlags(0) {}
+            __host__ RenderObject(const std::string& id) : Asset(id), m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() = default; 
 
             template<typename ThisType, typename BindType>

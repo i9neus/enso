@@ -52,7 +52,7 @@ namespace Cuda
             Device::SimpleMaterial* cu_deviceData;
 
         public:
-            __host__ SimpleMaterial(const ::Json::Node& jsonNode);
+            __host__ SimpleMaterial(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~SimpleMaterial() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

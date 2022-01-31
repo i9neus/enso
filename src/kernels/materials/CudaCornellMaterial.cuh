@@ -50,7 +50,7 @@ namespace Cuda
             CornellMaterialParams    m_params;
 
         public:
-            __host__ CornellMaterial(const ::Json::Node& jsonNode);
+            __host__ CornellMaterial(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~CornellMaterial() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

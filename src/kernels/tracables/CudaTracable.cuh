@@ -63,9 +63,9 @@ namespace Cuda
         class Tracable : public Host::RenderObject, public AssetTags<Host::Tracable, Device::Tracable>
         {
         protected:
-            __host__ Tracable() : m_lightId(kNotALight) {}
-            __host__ Tracable(const ::Json::Node& node) : 
-                Tracable()
+            __host__ Tracable(const std::string& id) : Host::RenderObject(id), m_lightId(kNotALight) {}
+            __host__ Tracable(const std::string& id, const ::Json::Node& node) : 
+                Tracable(id)
             {
                 Host::RenderObject::UpdateDAGPath(node);
             }

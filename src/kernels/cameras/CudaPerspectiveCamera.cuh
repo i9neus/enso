@@ -98,7 +98,7 @@ namespace Cuda
 			PerspectiveCameraParams					m_params;
 
 		public:
-			__host__ PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id);
+			__host__ PerspectiveCamera(const std::string& id, const ::Json::Node& parentNode);
 			__host__ virtual ~PerspectiveCamera() { OnDestroyAsset(); }
 
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

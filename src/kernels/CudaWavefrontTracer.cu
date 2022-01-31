@@ -527,25 +527,26 @@ namespace Cuda
 		m_hostTracables.DestroyAsset();
 		m_hostLights.DestroyAsset();
 
-		DestroyOnDevice(cu_deviceData);
+		DestroyOnDevice(GetAssetID(), cu_deviceData);
 	}
 
 	__host__ AssetHandle<Host::RenderObject> Host::WavefrontTracer::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
 	{
 		if (expectedType != AssetType::kIntegrator) { return AssetHandle<Host::RenderObject>(); }
 
-		return AssetHandle<Host::RenderObject>(new Host::WavefrontTracer(json, id), id);
+		return CreateAsset<Host::WavefrontTracer>(id, json);
 	}
 
-	__host__ Host::WavefrontTracer::WavefrontTracer(const ::Json::Node& node, const std::string& id) :
+	__host__ Host::WavefrontTracer::WavefrontTracer(const std::string& id, const ::Json::Node& node) :
+		RenderObject(id),
 		cu_deviceData(nullptr),
 		m_isDirty(true),
 		m_isInitialised(true)
 	{
-		m_hostTracables = AssetHandle<Host::AssetContainer<Host::Tracable>>(tfm::format("%s_tracablesContainer", id));
-		m_hostLights = AssetHandle<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id));
+		m_hostTracables = CreateAsset<Host::AssetContainer<Host::Tracable>>(tfm::format("%s_tracablesContainer", id));
+		m_hostLights = CreateAsset<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id));
 
-		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>();
+		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>(id);
 
 		Host::RenderObject::UpdateDAGPath(node);
 

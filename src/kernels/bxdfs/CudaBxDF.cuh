@@ -30,7 +30,7 @@ namespace Cuda
         class BxDF : public Host::RenderObject, public AssetTags<Host::BxDF, Device::BxDF>
         {
         public:
-            BxDF(const ::Json::Node& node)
+            BxDF(const std::string& id, const ::Json::Node& node) : Host::RenderObject(id)
             {
                 Host::RenderObject::UpdateDAGPath(node);
             }

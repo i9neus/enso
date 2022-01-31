@@ -536,15 +536,16 @@ namespace Cuda
     }
 
     __host__ Host::LightProbeGrid::LightProbeGrid(const std::string& id) :
+        RenderObject(id),
         m_hostMeanI(nullptr)
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
 
-        m_shData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
-        m_shLaplacianData = AssetHandle<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), m_hostStream);
-        m_validityData = AssetHandle<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
+        m_shData = CreateAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
+        m_shLaplacianData = CreateAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), m_hostStream);
+        m_validityData = CreateAsset<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
 
-        cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>();
+        cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>(id);
 
         m_deviceObjects.cu_shData = m_shData->GetDeviceInstance();
         m_deviceObjects.cu_shLaplacianData = m_shLaplacianData->GetDeviceInstance();
@@ -565,7 +566,7 @@ namespace Cuda
         m_shLaplacianData.DestroyAsset();
         m_validityData.DestroyAsset();
 
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __global__ void KernelPrepareValidityGrid(Device::LightProbeGrid* cu_grid)

@@ -41,7 +41,7 @@ namespace Cuda
     
     namespace Device
     { 
-        class Asset { };
+        class Asset {};
     }
     
     namespace Host
@@ -55,14 +55,9 @@ namespace Cuda
             cudaStream_t    m_hostStream;
             template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
 
-            __host__ Asset() : m_hostStream(0) { }
             __host__ Asset(const std::string& name) : m_assetId(name), m_hostStream(0) {  }
-
             __host__ virtual void OnDestroyAsset() = 0;
-            __host__ void SetAssetID(const std::string& name) 
-            { 
-                m_assetId = name; 
-            }
+            __host__ void SetAssetID(const std::string& name) { m_assetId = name; }           
 
         public:
             virtual ~Asset() = default;
@@ -71,26 +66,29 @@ namespace Cuda
             __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown;  }
             __host__ const inline std::string& GetAssetID() const { return m_assetId; }
             __host__ void SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
-            __host__ virtual void Synchronise() {}
+            __host__ virtual void Synchronise() {}            
         };
     }
 
-    class GlobalAssetRegistry
+    class GlobalResourceRegistry
     {
     public:
-        static GlobalAssetRegistry& Get();
+        static GlobalResourceRegistry& Get();
 
-        void Register(std::shared_ptr<Host::Asset> object);
-        void Deregister(std::shared_ptr<Host::Asset> object);
+        void RegisterAsset(std::shared_ptr<Host::Asset> object);
+        void DeregisterAsset(std::shared_ptr<Host::Asset> object);
+        void RegisterDeviceMemory(const std::string& assetId, const int64_t bytes);
+        void DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes);
         void VerifyEmpty();
         void Report();
         bool Exists(const std::string& id) const;
-        size_t Size() const { return m_assetMap.size(); }
+        size_t GetNumAssets() const { return m_assetMap.size(); }
 
     private:
-        GlobalAssetRegistry() = default;
+        GlobalResourceRegistry() = default;
 
         std::unordered_map<std::string, std::weak_ptr<Host::Asset>>     m_assetMap;
+        std::unordered_map<std::string, int64_t>                        m_deviceMemoryMap;
         std::mutex                                                      m_mutex;
     };
 
@@ -109,6 +107,8 @@ namespace Cuda
     class AssetHandle
     {
         template<typename T> friend class AssetHandle;
+        template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateAsset(const std::string&, Pack...);
+
     private:
         std::shared_ptr<T>          m_ptr;  
 
@@ -120,7 +120,7 @@ namespace Cuda
         ~AssetHandle() = default;
 
         template<typename OtherType>
-        explicit AssetHandle(AssetHandle<OtherType>& other)
+        AssetHandle(AssetHandle<OtherType>& other)
         {
             m_ptr = other.m_ptr;
         }
@@ -133,23 +133,22 @@ namespace Cuda
             m_ptr = weakHandle.lock();
         }
 
-        template<typename... Pack>
-        AssetHandle(const std::string& assetName, Pack... args)
+        /*template<typename... Pack>
+        AssetHandle(const std::string& id, Pack... args)
         {
-            m_ptr.reset(new T(args...));
-            m_ptr->SetAssetID(assetName);
+            m_ptr.reset(new T(id, args...));
 
-            GlobalAssetRegistry::Get().Register(m_ptr);
-        }
-
-        template<typename Type, typename = typename std::enable_if<std::is_base_of<Host::Asset, Type>::value>::type>
-        AssetHandle(Type* ptr, const std::string& assetName)
+            GlobalResourceRegistry::Get().RegisterAsset(m_ptr);
+        }*/
+        
+        /*template<typename Type, typename = typename std::enable_if<std::is_base_of<Host::Asset, Type>::value>::type>
+        AssetHandle(Type* ptr, const std::string& id)
         {
             m_ptr.reset(ptr);
-            m_ptr->SetAssetID(assetName);
+            m_ptr->SetAssetID(id);
 
-            GlobalAssetRegistry::Get().Register(m_ptr);
-        }
+            GlobalResourceRegistry::Get().RegisterAsset(m_ptr);
+        }*/
 
         template<typename NewType>
         AssetHandle<NewType> DynamicCast() const
@@ -187,12 +186,12 @@ namespace Cuda
 
             const std::string assetId = m_ptr->GetAssetID();
 
+            // Notify the asset that it's about to be destroyed, then deregister and delete the host object.
             m_ptr->OnDestroyAsset();
-            GlobalAssetRegistry::Get().Deregister(m_ptr);
+            GlobalResourceRegistry::Get().DeregisterAsset(m_ptr);
             m_ptr.reset();
 
             Log::Debug("Destroyed '%s'.\n", assetId.c_str());
-
             return true;
         }
 
@@ -227,5 +226,16 @@ namespace Cuda
         }
     };
 
-    __host__ inline GlobalAssetRegistry& AR() { return Cuda::GlobalAssetRegistry::Get(); }
+    template<typename AssetType, typename... Pack>
+    inline AssetHandle<AssetType> CreateAsset(const std::string& id, Pack... args)
+    {
+        AssetHandle<AssetType> newAsset;
+        newAsset.m_ptr.reset(new AssetType(id, args...));
+
+        GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
+
+        return newAsset;
+    }
+
+    __host__ inline GlobalResourceRegistry& AR() { return Cuda::GlobalResourceRegistry::Get(); }
 }

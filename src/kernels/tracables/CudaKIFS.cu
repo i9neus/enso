@@ -517,19 +517,20 @@ namespace Cuda
     {
         if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::KIFS(json), id);
+        return CreateAsset<Host::KIFS>(id, json);
     }
 
-    __host__  Host::KIFS::KIFS(const ::Json::Node& node)
-        : cu_deviceData(nullptr)
+    __host__  Host::KIFS::KIFS(const std::string& id, const ::Json::Node& node) :
+        Tracable(id),
+        cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::KIFS>();
+        cu_deviceData = InstantiateOnDevice<Device::KIFS>(id);
         FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::KIFS::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::KIFS::FromJson(const ::Json::Node& node, const uint flags)

@@ -68,26 +68,28 @@ namespace Cuda
     {
         if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::Box(json), id);
+        return CreateAsset<Host::Box>(id, json);
     }
 
     // Constructor used to instantiate child objects e.g. from quad lights
-    __host__  Host::Box::Box()
+    __host__  Host::Box::Box(const std::string& id) : 
+        Tracable(id)
     {
         AssertMsg(false, "Wrong ctor.");
     }
 
     // Constructor for user instantiations
-    __host__  Host::Box::Box(const ::Json::Node& node)
+    __host__  Host::Box::Box(const std::string& id, const ::Json::Node& node) : 
+        Tracable(id)
     {
-        cu_deviceData = InstantiateOnDevice<Device::Box>();
+        cu_deviceData = InstantiateOnDevice<Device::Box>(id);
 
         FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::Box::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::Box::FromJson(const ::Json::Node& node, const uint flags)

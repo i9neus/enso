@@ -60,7 +60,7 @@ namespace Cuda
             bool                                    m_isActive;
                  
         public:
-            __host__ LightProbeKernelFilter(const ::Json::Node& jsonNode, const std::string& id);
+            __host__ LightProbeKernelFilter(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~LightProbeKernelFilter() = default;
             
             __host__ void                                       Execute();

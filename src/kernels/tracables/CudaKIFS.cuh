@@ -186,7 +186,7 @@ namespace Cuda
             KIFSParams m_params;
 
         public:
-            __host__ KIFS(const ::Json::Node& node);
+            __host__ KIFS(const std::string& id, const ::Json::Node& node);
             __host__ virtual ~KIFS() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

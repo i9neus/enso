@@ -67,7 +67,7 @@ namespace Cuda
             AssetHandle<Host::EmitterMaterial> m_lightMaterialAsset;
 
         public:
-            __host__ SphereLight(const ::Json::Node& node, const std::string& id);
+            __host__ SphereLight(const std::string& id, const ::Json::Node& node);
             __host__ virtual ~SphereLight() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

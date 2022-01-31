@@ -81,9 +81,9 @@ namespace Cuda
 			SortFunctor											m_sortFunctor;
 
 		public:
-			__host__ AssetContainer() : cu_deviceData(nullptr) 
+			__host__ AssetContainer(const std::string& id) : Asset(id), cu_deviceData(nullptr) 
 			{
-				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
+				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>(id);
 			}
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
@@ -117,7 +117,7 @@ namespace Cuda
 			__host__ virtual void Synchronise() override final
 			{
 				// Clean up first
-				SafeFreeDeviceMemory(&m_deviceObjects.cu_data);
+				GuardedFreeDeviceArray(GetAssetID(), m_assetMap.size(), &m_deviceObjects.cu_data);
 
 				if (!m_assetMap.empty())
 				{
@@ -152,7 +152,7 @@ namespace Cuda
 					}
 
 					// Upload the array of device pointers
-					SafeAllocAndCopyToDeviceMemory(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
+					GuardedAllocAndCopyToDeviceArray(GetAssetID(), &m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
 					m_deviceObjects.numElements = m_assetMap.size();
 				}
 				else
@@ -167,8 +167,8 @@ namespace Cuda
 
 			__host__ void Destroy()
 			{
-				DestroyOnDevice(cu_deviceData);
-				SafeFreeDeviceMemory(&m_deviceObjects.cu_data);
+				DestroyOnDevice(GetAssetID(), cu_deviceData);
+				GuardedFreeDeviceArray(GetAssetID(), m_assetMap.size(), &m_deviceObjects.cu_data);
 			}
 
 			__host__ virtual void OnDestroyAsset() override final

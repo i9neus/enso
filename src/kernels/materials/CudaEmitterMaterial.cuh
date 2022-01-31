@@ -40,8 +40,8 @@ namespace Cuda
             Device::EmitterMaterial* cu_deviceData;
 
         public:
-            __host__ EmitterMaterial(const uint flags);
-            __host__ EmitterMaterial(const vec3& radiance);
+            __host__ EmitterMaterial(const std::string& id, const uint flags);
+            //__host__ EmitterMaterial(const std::string& id, const vec3& radiance);
             __host__ virtual ~EmitterMaterial() = default;
 
             __host__ virtual void                       OnDestroyAsset() override final;

@@ -59,7 +59,8 @@ namespace Cuda
         polynomialOrder = clamp(polynomialOrder, 0, 3);
     }
 
-    __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const ::Json::Node& node, const std::string& id)
+    __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const std::string& id, const ::Json::Node& node) :
+        RenderObject(id)
     {
         FromJson(node, Json::kRequiredWarn);
 
@@ -68,16 +69,16 @@ namespace Cuda
         node.GetValue("crossGridHalfID", m_crossGridHalfID, Json::kNotBlank);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
 
-        AssertMsgFmt(!GlobalAssetRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
+        AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
 
         // Create the output grid
-        m_hostOutputGrid = AssetHandle<Host::LightProbeGrid>(m_outputGridID, m_outputGridID);
+        m_hostOutputGrid = CreateAsset<Host::LightProbeGrid>(m_outputGridID);
 
         // Create the buffers used by the regressor
-        m_hostC = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_C", id));
-        m_hostD = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_D", id));
-        m_hostdLdC = AssetHandle<Host::Array<vec3>>(new Host::Array<vec3>(m_hostStream), tfm::format("%s_dLdC", id));
-        m_hostW = AssetHandle<Host::Array<float>>(new Host::Array<float>(m_hostStream), tfm::format("%s_regressionWeights", id));
+        m_hostC = CreateAsset<Host::Array<vec3>>(tfm::format("%s_C", id), m_hostStream);
+        m_hostD = CreateAsset<Host::Array<float>>(tfm::format("%s_D", id), m_hostStream);
+        m_hostdLdC = CreateAsset<Host::Array<vec3>>(tfm::format("%s_dLdC", id), m_hostStream);
+        m_hostW = CreateAsset<Host::Array<float>>(tfm::format("%s_regressionWeights", id), m_hostStream);
 
         // TODO: Make weight map dynamic
         m_hostW->Resize(1024 * 1024);
@@ -87,7 +88,7 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLightProbeFilter) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::LightProbeRegressionFilter(json, id), id);
+        return CreateAsset<Host::LightProbeRegressionFilter>(id, json);
     }
 
     __host__ void Host::LightProbeRegressionFilter::FromJson(const ::Json::Node& node, const uint flags)

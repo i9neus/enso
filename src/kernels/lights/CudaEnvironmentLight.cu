@@ -57,20 +57,20 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLight) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::EnvironmentLight(json), id);
+        return CreateAsset<Host::EnvironmentLight>(id, json);
     }
 
-    __host__  Host::EnvironmentLight::EnvironmentLight(const ::Json::Node& jsonNode) :
-        Host::Light(jsonNode),
+    __host__  Host::EnvironmentLight::EnvironmentLight(const std::string& id, const ::Json::Node& jsonNode) :
+        Host::Light(id, jsonNode),
         cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>();
+        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>(id);
         FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)

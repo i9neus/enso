@@ -4,7 +4,8 @@
 
 namespace Cuda
 {
-    __host__ Host::Material::Material(const ::Json::Node& parentNode)
+    __host__ Host::Material::Material(const std::string& id, const ::Json::Node& parentNode) :
+        RenderObject(id)
     {
         Host::RenderObject::UpdateDAGPath(parentNode);
     }

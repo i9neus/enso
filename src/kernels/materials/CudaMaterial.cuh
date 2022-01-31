@@ -34,8 +34,8 @@ namespace Cuda
         class Material : public Host::RenderObject, public AssetTags<Host::Material, Device::Material>
         {
         protected:
-            __host__ Material() = default;
-            __host__ Material(const ::Json::Node& node);
+            __host__ Material(const std::string& id) : RenderObject(id) {}
+            __host__ Material(const std::string& id, const ::Json::Node& node);
 
             std::string                             m_bxdfId;
 

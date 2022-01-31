@@ -162,7 +162,7 @@ namespace Cuda
 			std::string				m_cameraId;
 
 		public:
-			__host__ WavefrontTracer(const ::Json::Node& node, const std::string& id);
+			__host__ WavefrontTracer(const std::string& id, const ::Json::Node& node);
 			__host__ virtual ~WavefrontTracer();
 
 			__host__ static AssetHandle<Host::RenderObject>		Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

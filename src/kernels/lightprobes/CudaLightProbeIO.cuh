@@ -52,7 +52,7 @@ namespace Cuda
             __host__ void                           ExportProbeGrid(const std::string& filePath) const;
 
         public:
-            __host__ LightProbeIO(const ::Json::Node& jsonNode, const std::string& id);
+            __host__ LightProbeIO(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~LightProbeIO() = default;
 
             __host__ static AssetHandle<Host::RenderObject>     Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

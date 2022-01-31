@@ -51,20 +51,20 @@ namespace Cuda
     {
         if (expectedType != AssetType::kMaterial) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::KIFSMaterial(json), id);
+        return CreateAsset<Host::KIFSMaterial>(id, json);
     }
 
-    __host__ Host::KIFSMaterial::KIFSMaterial(const ::Json::Node& node) :
-        Material(node),
+    __host__ Host::KIFSMaterial::KIFSMaterial(const std::string& id, const ::Json::Node& node) :
+        Material(id, node),
         cu_deviceData(nullptr)
     {        
-        cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>();
+        cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>(id);
         FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::KIFSMaterial::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::KIFSMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)

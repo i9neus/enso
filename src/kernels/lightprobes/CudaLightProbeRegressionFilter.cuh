@@ -96,7 +96,7 @@ namespace Cuda
             m_regressionKernel;
 
         public:
-            __host__ LightProbeRegressionFilter(const ::Json::Node& jsonNode, const std::string& id);
+            __host__ LightProbeRegressionFilter(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~LightProbeRegressionFilter() = default;
 
             __host__ static AssetHandle<Host::RenderObject>     Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

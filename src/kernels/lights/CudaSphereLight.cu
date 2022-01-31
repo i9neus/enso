@@ -140,30 +140,30 @@ namespace Cuda
     {
         if (expectedType != AssetType::kLight) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::SphereLight(json, id), id);
+        return CreateAsset<Host::SphereLight>(id, json);
     }
 
-    __host__  Host::SphereLight::SphereLight(const ::Json::Node& jsonNode, const std::string& id) :
-        Host::Light(jsonNode),
+    __host__  Host::SphereLight::SphereLight(const std::string& id, const ::Json::Node& jsonNode) :
+        Host::Light(id, jsonNode),
         cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = AssetHandle<Host::EmitterMaterial>(new Host::EmitterMaterial(kRenderObjectIsChild), id + "_material");
+        m_lightMaterialAsset = CreateAsset<Host::EmitterMaterial>(id + "_material", kRenderObjectIsChild);
         Assert(m_lightMaterialAsset);
 
         // Instantiate the sphere tracable
-        m_lightSphereAsset = AssetHandle<Host::Sphere>(new Host::Sphere(kRenderObjectIsChild), id + "_planeTracable");
+        m_lightSphereAsset = CreateAsset<Host::Sphere>(id + "_planeTracable", kRenderObjectIsChild);
         Assert(m_lightSphereAsset);
         m_lightSphereAsset->SetBoundMaterialID(id + "_material");
 
         // Finally, instantitate the light itself 
-        cu_deviceData = InstantiateOnDevice<Device::SphereLight>();
+        cu_deviceData = InstantiateOnDevice<Device::SphereLight>(id);
         FromJson(jsonNode, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::SphereLight::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::SphereLight::FromJson(const ::Json::Node& node, const uint flags)

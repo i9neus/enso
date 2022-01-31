@@ -48,8 +48,8 @@ namespace Cuda
             BoxParams    m_params;
 
         public:
-            __host__ Box();
-            __host__ Box(const ::Json::Node& node);
+            __host__ Box(const std::string& id);
+            __host__ Box(const std::string& id, const ::Json::Node& node);
             __host__ virtual ~Box() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

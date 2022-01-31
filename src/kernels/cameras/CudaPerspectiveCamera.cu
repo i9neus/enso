@@ -292,15 +292,15 @@ namespace Cuda
         m_objects.cu_accumBuffer->Accumulate(ctx.emplacedRay[0].GetViewportPos(), L, isAlive);
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera(const ::Json::Node& parentNode, const std::string& id) :
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id, const ::Json::Node& parentNode) :
         Host::Camera(parentNode, id, kRayBufferSize)
     {
         // Create the accumulation buffer
-        m_hostAccumBuffer = AssetHandle<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), 512, 512, m_hostStream);
+        m_hostAccumBuffer = CreateAsset<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), 512, 512, m_hostStream);
         m_hostAccumBuffer->Clear(vec4(0.0f));
         
         // Instantiate the camera object on the device
-        cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
+        cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>(id);
 
         FromJson(parentNode, ::Json::kRequiredWarn);
 
@@ -320,7 +320,7 @@ namespace Cuda
     {
         if (expectedType != AssetType::kCamera) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::PerspectiveCamera(json, id), id);
+        return CreateAsset<Host::PerspectiveCamera>(id, json);
     }
 
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
@@ -329,7 +329,7 @@ namespace Cuda
         
         m_hostAccumBuffer.DestroyAsset();
         
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)

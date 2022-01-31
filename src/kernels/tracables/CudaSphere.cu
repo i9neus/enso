@@ -51,20 +51,22 @@ namespace Cuda
      {
          if (expectedType != AssetType::kTracable) { return AssetHandle<Host::RenderObject>(); }
 
-         return AssetHandle<Host::RenderObject>(new Host::Sphere(json), id);
+         return CreateAsset<Host::Sphere>(id, json);
      }
 
      // Constructor used to instantiate child objects e.g. from sphere lights
-     __host__  Host::Sphere::Sphere(const uint flags)
+     __host__  Host::Sphere::Sphere(const std::string& id, const uint flags) : 
+         Tracable(id)
      {
-         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
+         cu_deviceData = InstantiateOnDevice<Device::Sphere>(id);
          RenderObject::SetRenderObjectFlags(flags);
      }
 
      // Constructor for user instantiations
-    __host__  Host::Sphere::Sphere(const ::Json::Node& node)
+    __host__  Host::Sphere::Sphere(const std::string& id, const ::Json::Node& node) :
+        Tracable(id)
     {       
-        cu_deviceData = InstantiateOnDevice<Device::Sphere>();
+        cu_deviceData = InstantiateOnDevice<Device::Sphere>(id);
         FromJson(node, ::Json::kRequiredWarn);
     }
 
@@ -80,7 +82,7 @@ namespace Cuda
 
     __host__ void Host::Sphere::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::Sphere::UpdateParams(const BidirectionalTransform& transform)

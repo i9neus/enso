@@ -38,8 +38,8 @@ namespace Cuda
             TracableParams  m_params;
 
         public:
-            __host__ Sphere(const uint flags);
-            __host__ Sphere(const ::Json::Node& json);
+            __host__ Sphere(const std::string& id, const uint flags);
+            __host__ Sphere(const std::string& id, const ::Json::Node& json);
             __host__ virtual ~Sphere() = default;
             __host__ virtual void OnDestroyAsset() override final;
             

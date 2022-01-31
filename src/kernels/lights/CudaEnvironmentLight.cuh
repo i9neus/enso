@@ -55,7 +55,7 @@ namespace Cuda
             Device::EnvironmentLight  m_hostData;
 
         public:
-            __host__ EnvironmentLight(const ::Json::Node& jsonNode);
+            __host__ EnvironmentLight(const std::string& id, const ::Json::Node& jsonNode);
             __host__ virtual ~EnvironmentLight() = default;
 
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);

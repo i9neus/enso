@@ -61,21 +61,21 @@ namespace Cuda
     {
         if (expectedType != AssetType::kMaterial) { return AssetHandle<Host::RenderObject>(); }
 
-        return AssetHandle<Host::RenderObject>(new Host::SimpleMaterial(json), id);
+        return CreateAsset<Host::SimpleMaterial>(id, json);
     }
 
-    __host__ Host::SimpleMaterial::SimpleMaterial(const ::Json::Node& node) :
-        Material(node),
+    __host__ Host::SimpleMaterial::SimpleMaterial(const std::string& id, const ::Json::Node& node) :
+        Material(id, node),
         cu_deviceData(nullptr)
     {       
-        cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
+        cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>(id);
 
         FromJson(node, ::Json::kRequiredWarn);
     }
 
     __host__ void Host::SimpleMaterial::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
     __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
