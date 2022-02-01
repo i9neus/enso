@@ -100,6 +100,9 @@
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp">
       <Filter>generic</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\imgui\IMGUIMemoryMonitor.cpp">
+      <Filter>dx12\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -476,6 +479,9 @@
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh">
       <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\IMGUIMemoryMonitor.h">
+      <Filter>dx12\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

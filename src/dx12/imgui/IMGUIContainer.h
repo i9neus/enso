@@ -11,6 +11,7 @@
 #include "shelves/IMGUIAbstractShelf.h"
 #include "shelves/IMGUIShelfFactory.h"
 #include "permutor/IMGUIStateManager.h"
+#include "IMGUIMemoryMonitor.h"
 
 #include "generic/HighResolutionTimer.h"
 
@@ -43,15 +44,14 @@ private:
     RenderManager&                  m_cudaRenderer;
     IMGUIAbstractShelfMap           m_shelves;
     RenderObjectStateManager        m_stateManager;
+    MemoryMonitor                   m_memoryMonitor;
 
     HighResolutionTimer             m_renderStatsTimer;
-    HighResolutionTimer             m_memoryStatsTimer;
     HighResolutionTimer             m_fpsTimer;
     int                             m_frameIdx;
     float                           m_meanFrameTime;
     
     Json::Document                  m_renderStateJson;
-    Json::Document                  m_memoryStateJson;
     Json::Document                  m_commandQueue;
     int                             m_renderState;
 
@@ -75,6 +75,5 @@ public:
 private:
     void PollCudaRenderState();
     void ConstructConsole();
-    void ConstructMemoryMonitor();
     void ConstructRenderObjectShelves();
 };

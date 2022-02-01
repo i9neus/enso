@@ -13,6 +13,7 @@
 IMGUIContainer::IMGUIContainer(RenderManager& cudaRenderer) :
     m_cudaRenderer(cudaRenderer),
     m_stateManager(m_shelves, cudaRenderer, m_renderStateJson, m_commandQueue),
+    m_memoryMonitor(m_renderStateJson, m_commandQueue),
     m_frameIdx(0),
     m_meanFrameTime(-1.0f),
     m_showCombinatorics(true),
@@ -118,46 +119,6 @@ void IMGUIContainer::ConstructConsole()
     ImGui::Begin("Console");
     
     ImGui::TextWrapped(m_renderStateFmt.c_str(), m_showConsole);
-
-    ImGui::End();
-}
-
-void IMGUIContainer::ConstructMemoryMonitor()
-{
-    ImGui::Begin("Memory Monitor");
-
-    // Only poll the render object manager occasionally
-    if (m_memoryStatsTimer.Get() > 0.5f)
-    {
-        // If we're waiting on a previous stats job, don't dispatch a new one
-        if (!m_renderStateJson.GetChildObject("jobs/getMemoryStats", Json::kSilent))
-        {
-            m_commandQueue.AddChildObject("getMemoryStats");
-            m_memoryStatsTimer.Reset();
-        }
-    }
-
-    // Make a copy of the memory stats if any have been emitted
-    const Json::Node statsJson = m_renderStateJson.GetChildObject("jobs/getMemoryStats", Json::kSilent);
-    if (statsJson)
-    {
-        int statsState;
-        statsJson.GetValue("state", statsState, Json::kRequiredAssert);
-
-        // If the stats gathering task has finished, it'll be accompanied by data for each render object that emits it
-        if (statsState == kRenderManagerJobCompleted)
-        {
-            const Json::Node assetJson = statsJson.GetChildObject("assets", Json::kSilent);
-            m_memoryStateJson.DeepCopy(assetJson);
-        }
-    }     
-    
-    IMGUIDataTable table("stats", 2);
-    for (auto it = m_memoryStateJson.begin(); it != m_memoryStateJson.end(); ++it)
-    {
-        table << it.Name() << it.Value().GetInt();
-    }
-    table.End();    
 
     ImGui::End();
 }
@@ -287,7 +248,7 @@ void IMGUIContainer::Render()
 
     if (m_showConsole) { ConstructConsole(); }
 
-    if (m_showMemoryMonitor) { ConstructMemoryMonitor(); }
+    if (m_showMemoryMonitor) { m_memoryMonitor.ConstructUI(); }
 
     ImGui::PopStyleColor(1);
 
