@@ -103,6 +103,9 @@
     <ClCompile Include="src\dx12\imgui\IMGUIMemoryMonitor.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\Backtrace.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -482,6 +485,9 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\IMGUIMemoryMonitor.h">
       <Filter>dx12\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Backtrace.h">
+      <Filter>generic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

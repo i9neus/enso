@@ -30,6 +30,7 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUITracableShelves.cpp" />
     <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
+    <ClCompile Include="src\generic\Backtrace.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
@@ -71,6 +72,7 @@
     <ClInclude Include="src\dx12\imgui\shelves\IMGUITracableShelves.h" />
     <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
+    <ClInclude Include="src\generic\Backtrace.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\FilesystemUtils.h" />
     <ClInclude Include="src\generic\HighResolutionTimer.h" />
@@ -261,7 +263,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IntDir>$(Platform)/$(Configuration)/</IntDir>
-    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)/src;$(USD_ROOT)/include;$(BOOST_ROOT);$(TBB_LOCATION)/include/;</IncludePath>
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)/src;$(USD_ROOT)/include;$(BOOST_ROOT);$(TBB_LOCATION)/include/</IncludePath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
@@ -273,7 +275,7 @@
     <TargetName>probegen</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(BOOST_LIBRARYDIR);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -284,7 +286,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);$(BOOST_LIBRARYDIR)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)/probegen.exe</OutputFile>
     </Link>
     <CudaCompile>
@@ -320,7 +322,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;usd_ms.lib</AdditionalDependencies>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalOptions)</AdditionalOptions>
     </Link>

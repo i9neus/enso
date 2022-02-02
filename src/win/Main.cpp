@@ -52,6 +52,16 @@ int main(int argc, char* argv[])
 	catch (const std::runtime_error& err)
 	{
 		Log::Error("Runtime error: %s\n", err.what());
+
+		const auto backtrace = StackBacktrace::Get();
+		if (!backtrace.empty())
+		{
+			Log::Debug("Stack backtrace:");
+			for (const auto& frame : backtrace)
+			{
+				Log::Debug(frame);
+			}
+		}
 	}
 	catch (...)
 	{
