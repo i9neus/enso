@@ -541,9 +541,9 @@ namespace Cuda
     {
         RenderObject::SetRenderObjectFlags(kRenderObjectIsChild);
 
-        m_shData = CreateAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), m_hostStream);
-        m_shLaplacianData = CreateAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), m_hostStream);
-        m_validityData = CreateAsset<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
+        m_shData = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHData", id), this, m_hostStream);
+        m_shLaplacianData = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), this, m_hostStream);
+        m_validityData = CreateChildAsset<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), this, m_hostStream);
 
         cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>(id);
 

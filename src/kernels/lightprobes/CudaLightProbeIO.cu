@@ -49,7 +49,7 @@ namespace Cuda
         AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_inputGridID), "Error: an asset with ID '%s' already exists'.", m_inputGridID.c_str());
 
         // Create some objects
-        m_hostInputGrid = CreateAsset<Host::LightProbeGrid>(m_inputGridID);
+        m_hostInputGrid = CreateChildAsset<Host::LightProbeGrid>(m_inputGridID, this);
 
         EnumerateProbeGrids();
         ImportProbeGrid(m_usdImportPath);
