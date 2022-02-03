@@ -103,8 +103,11 @@
     <ClCompile Include="src\dx12\imgui\IMGUIMemoryMonitor.cpp">
       <Filter>dx12\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="src\generic\Backtrace.cpp">
-      <Filter>generic</Filter>
+    <ClCompile Include="src\generic\debug\Backtrace.cpp">
+      <Filter>generic\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp">
+      <Filter>generic\debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -486,8 +489,11 @@
     <ClInclude Include="src\dx12\imgui\IMGUIMemoryMonitor.h">
       <Filter>dx12\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\generic\Backtrace.h">
-      <Filter>generic</Filter>
+    <ClInclude Include="src\generic\debug\Backtrace.h">
+      <Filter>generic\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\debug\ProcessMemoryMonitor.h">
+      <Filter>generic\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -574,6 +580,9 @@
     </Filter>
     <Filter Include="generic">
       <UniqueIdentifier>{439db4d4-72ca-47c6-8a82-a225dfa92cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generic\debug">
+      <UniqueIdentifier>{b477dfbc-b982-4232-ac02-280763d25e19}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
