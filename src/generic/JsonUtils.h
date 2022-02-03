@@ -300,8 +300,8 @@ namespace Json
 
         void Clear()
         {
-            m_document.SetNull();
             m_document.SetObject();
+            m_allocator->Clear();
         }
 
         void Parse(const std::string& data);
