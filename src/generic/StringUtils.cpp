@@ -88,3 +88,29 @@ std::string FormatElapsedTime(const float time)
     if (seconds >= 3600) { formatted += tfm::format("%2.i:", (seconds / 3600) % 24); }
     return formatted + tfm::format("%.2i:%.2i", (seconds / 60) % 60, seconds % 60);
 }
+
+// Formats a floating point value with digit grouping to dp decimal places
+std::string FormatPrettyFloat(const float value, int dp)
+{
+    std::string strIntValue = tfm::format("%i", int(value));
+    std::string fmtValue;
+    fmtValue.reserve(strIntValue.length());
+
+    for (int idx = 0; idx < strIntValue.length(); ++idx)
+    {
+        if (idx != strIntValue.length() - 1 && (strIntValue.length() - idx - 1) % 3 == 0) { fmtValue += ','; }
+        fmtValue += strIntValue[idx];
+    }
+
+    const std::string strFloatValue = tfm::format(tfm::format("%%0.%if", dp).c_str(), std::fmod(value, 1.0f));
+    return fmtValue + strFloatValue.substr(1, strFloatValue.length() - 1);
+}
+
+std::string FormatDataSize(const float inputMB, const int dp)
+{
+    const int64_t bytes = inputMB * 1048576.f;
+    if (bytes < 1024ll)             { return tfm::format("%sB", bytes); }
+    else if (bytes < 1048576ll)     { return FormatPrettyFloat(bytes / 1024.f, 2) + "kB"; }
+    else if (bytes < 1073741824ll)  { return FormatPrettyFloat(bytes / 1048576.f, 2) + "MB"; }    
+    return FormatPrettyFloat(bytes / 1073741824.f, 2) + "GB";
+}

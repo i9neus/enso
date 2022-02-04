@@ -18,7 +18,7 @@ GlobalStateAuthority::GlobalStateAuthority()
     }
 }
 
-GlobalStateAuthority& GlobalStateAuthority::Singleton()
+GlobalStateAuthority& GlobalStateAuthority::Get()
 {
     static GlobalStateAuthority singleton;
     return singleton;

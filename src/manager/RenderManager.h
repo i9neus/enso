@@ -13,7 +13,7 @@
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-enum RenderManagerRenderState : int { kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
+enum RenderManagerRenderState : int { kRenderManagerUndefined, kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
 enum RenderManagerBakeType : int { kBakeTypeProbeGrid, kBakeTypeRender };
 
 enum RenderManagerJobState : int 
@@ -88,7 +88,8 @@ private:
 	cudaEvent_t                 m_renderEvent;
 	ComPtr<ID3D12Fence>		    m_d3dFence;
 	HANDLE						m_fenceEvent;
-
+	cudaDeviceProp				m_deviceProp;
+	
 	uint32_t					m_D3DTextureWidth;
 	uint32_t				    m_D3DTextureHeight;
 	uint32_t				    m_clientWidth;

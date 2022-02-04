@@ -6,11 +6,11 @@ Log::Indent::Indent(const std::string& onIndent,
     : m_onRestore(onRestore),
     m_onException(onException)
 {
-    if (!onIndent.empty()) { Singleton().Write(onIndent); }
+    if (!onIndent.empty()) { Get().Write(onIndent); }
 
-    m_logIndentation = (Singleton().m_logIndentation < kMaxIndent) ?
-        Singleton().m_logIndentation++ :
-        Singleton().m_logIndentation;
+    m_logIndentation = (Get().m_logIndentation < kMaxIndent) ?
+        Get().m_logIndentation++ :
+        Get().m_logIndentation;
 }
 
 Log::Indent::~Indent()
@@ -22,16 +22,16 @@ void Log::Indent::Restore()
 {
     if (m_logIndentation < 0) { return; }
 
-    Singleton().m_logIndentation = m_logIndentation;
+    Get().m_logIndentation = m_logIndentation;
     m_logIndentation = -1;
 
     if (std::uncaught_exception() && !m_onException.empty())
     {
-        Singleton().WriteImpl(m_onException, kFgYellow, kLogWarning);
+        Get().WriteImpl(m_onException, kFgYellow, kLogWarning);
     }
     else if (!m_onRestore.empty())
     {
-        Singleton().Write(m_onRestore);
+        Get().Write(m_onRestore);
     }
 }
 
@@ -49,7 +49,7 @@ Log::~Log() { }
 
 Log::Snapshot Log::GetMessageState()
 {
-    return Singleton().m_stats;
+    return Get().m_stats;
 }
 
 void Log::EnableLevel(const uint32_t flag, const bool set)
@@ -58,14 +58,14 @@ void Log::EnableLevel(const uint32_t flag, const bool set)
     else { m_logFlags &= ~(1 << flag); }
 }
 
-void Log::NL() { Singleton().WriteImpl("\n", kFgDefault, kLogNormal); }
+void Log::NL() { Get().WriteImpl("\n", kFgDefault, kLogNormal); }
 
 void Log::StaticWrite(const std::string& message, const uint32_t colour, const LogLevel level)
 {
-    Singleton().WriteImpl(message, colour, level);
+    Get().WriteImpl(message, colour, level);
 }
 
-Log& Log::Singleton()
+Log& Log::Get()
 {
     static Log state;
     return state;

@@ -33,7 +33,7 @@ namespace Cuda
         auto memoryIt = m_deviceMemoryMap.find(assetId);
         if (memoryIt != m_deviceMemoryMap.end())
         {
-            Log::Error("ERROR: Deregister asset: object '%s' has %i bytes of outstanding device memory that have not been deallocated.", assetId, memoryIt->second);
+            Log::Error("ERROR: Deregister asset: object '%s' has %i bytes of outstanding device memory that have not been deallocated.", assetId, memoryIt->second.currentBytes);
         }
 
         m_deviceMemoryMap.erase(assetId);
@@ -52,9 +52,11 @@ namespace Cuda
         std::lock_guard<std::mutex> mutexLock(m_mutex);        
 
         auto& entry = m_deviceMemoryMap[assetId];
-        entry += bytes;
+        entry.currentBytes += bytes;
+        entry.peakBytes = std::max(entry.peakBytes, entry.currentBytes);
+        entry.deltaBytes = bytes;
 
-        Log::System("Device alloc: %s allocated %ll bytes (%ll total).", assetId, bytes, int64_t(entry));
+        Log::System("Device alloc: %s allocated %i bytes (%i total).", assetId, bytes, int64_t(entry.currentBytes));
     }
 
     void GlobalResourceRegistry::DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes)
@@ -65,12 +67,14 @@ namespace Cuda
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto it = m_deviceMemoryMap.find(assetId);
-        AssertMsgFmt(it != m_deviceMemoryMap.end() && int64_t(it->second) - int64_t(bytes) >= 0ll, 
+        AssertMsgFmt(it != m_deviceMemoryMap.end() && int64_t(it->second.currentBytes) - int64_t(bytes) >= 0ll, 
             "Asset '%s' is trying to deallocate more memory than it originally allocated.", assetId.c_str());
 
         // Decrement the allocated bytes and clean up the entry if necessary. 
-        it->second -= bytes;
-        if (it->second == 0ll) { m_deviceMemoryMap.erase(it); }
+        auto& stats = it->second;
+        stats.currentBytes -= bytes;
+        stats.deltaBytes = -bytes;
+        if (stats.currentBytes == 0) { m_deviceMemoryMap.erase(it); }
     }
 
     void GlobalResourceRegistry::Report()
@@ -111,10 +115,9 @@ namespace Cuda
         }
 
         Log::Warning("WARNING: The following %i objects were not explicitly destroyed!\n", m_assetMap.size());
-
         Report();
 
-        throw std::runtime_error("FAILED.");
+        Assert(m_assetMap.empty(), "Scene unloading resulted in errors.");
     }
 
     bool GlobalResourceRegistry::Exists(const std::string& assetId) const

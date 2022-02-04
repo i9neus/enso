@@ -2,6 +2,8 @@
 
 #include "../StdIncludes.h"
 
+struct _PROCESS_MEMORY_COUNTERS;
+
 class ProcessMemoryMonitor
 {
 public:
@@ -15,6 +17,6 @@ private:
     ProcessMemoryMonitor();
 
 private:
-    PROCESS_MEMORY_COUNTERS m_pmcStart;
-    bool                    m_isGood;
+    std::unique_ptr<_PROCESS_MEMORY_COUNTERS> m_pmcStart;
+    bool                                     m_isGood;
 };

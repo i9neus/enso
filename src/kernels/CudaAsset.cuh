@@ -49,29 +49,39 @@ namespace Cuda
         class Asset
         {
         private:
-            std::string     m_assetId;
+            std::string             m_assetId;
+            std::string             m_parentAssetId;
 
         protected:
             cudaStream_t    m_hostStream;
-            template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/> friend class AssetHandle;
+            template<typename AssetType> friend class AssetHandle;
 
             __host__ Asset(const std::string& name) : m_assetId(name), m_hostStream(0) {  }
             __host__ virtual void OnDestroyAsset() = 0;
-            __host__ void SetAssetID(const std::string& name) { m_assetId = name; }           
 
         public:
             virtual ~Asset() = default;
 
-            __host__ virtual void FromJson(const ::Json::Node& jsonNode, const uint flags) {}
-            __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown;  }
+            __host__ virtual void FromJson(const ::Json::Node & jsonNode, const uint flags) {}
+            __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown; }
             __host__ const inline std::string& GetAssetID() const { return m_assetId; }
-            __host__ void SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
-            __host__ virtual void Synchronise() {}            
+            __host__ const inline std::string& GetParentAssetID() const { return m_parentAssetId; }
+            __host__ void SetParentAssetID(const std::string& parentId) { m_parentAssetId = parentId; }
+            __host__ void SetHostStream(cudaStream_t & hostStream) { m_hostStream = hostStream; }
+            __host__ virtual void Synchronise() {}
         };
     }
 
     class GlobalResourceRegistry
     {
+    public:
+        struct MemoryStats
+        {
+            int64_t     currentBytes = 0;
+            int64_t     peakBytes = 0;
+            int64_t     deltaBytes = 0;
+        };
+
     public:
         static GlobalResourceRegistry& Get();
 
@@ -84,19 +94,19 @@ namespace Cuda
         bool Exists(const std::string& id) const;
 
         const std::unordered_map<std::string, std::weak_ptr<Host::Asset>>& GetAssetMap() const { return m_assetMap; }
-        const std::unordered_map<std::string, int64_t>& GetDeviceMemoryMap() const { return m_deviceMemoryMap; }
+        const std::unordered_map<std::string, MemoryStats>& GetDeviceMemoryMap() const { return m_deviceMemoryMap; }
         size_t NumAssets() const { return m_assetMap.size(); }
 
     private:
         GlobalResourceRegistry() = default;
 
         std::unordered_map<std::string, std::weak_ptr<Host::Asset>>     m_assetMap;
-        std::unordered_map<std::string, int64_t>                        m_deviceMemoryMap;
+        std::unordered_map<std::string, MemoryStats>                    m_deviceMemoryMap;
         std::mutex                                                      m_mutex;
     };
 
-    enum AssetHandleFlags : uint 
-    { 
+    enum AssetHandleFlags : uint
+    {
         kAssetForceDestroy = 1 << 0,
         kAssetExpectNoRefs = 1 << 1,
         kAssetCleanupPass = 1 << 2,
@@ -111,6 +121,7 @@ namespace Cuda
     {
         template<typename T> friend class AssetHandle;
         template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateAsset(const std::string&, Pack...);
+        template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateChildAsset(const std::string&, const Host::Asset*, Pack...);
 
     private:
         std::shared_ptr<T>          m_ptr;  
@@ -230,13 +241,22 @@ namespace Cuda
     };
 
     template<typename AssetType, typename... Pack>
-    inline AssetHandle<AssetType> CreateAsset(const std::string& id, Pack... args)
+    inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Pack... args)
     {
         AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr.reset(new AssetType( id, args...));
+        newAsset.m_ptr.reset(new AssetType(newId, args...));
 
         GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
 
+        return newAsset;
+    }
+
+    template<typename AssetType, typename... Pack>
+    inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, const Host::Asset* parentAsset, Pack... args)
+    {
+        AssertMsg(parentAsset, "'%s' must specify a parent asset.", newId.c_str());
+        AssetHandle<AssetType> newAsset = CreateAsset<AssetType, Pack...>(newId, args...);
+        newAsset->SetParentAssetID(parentAsset->GetAssetID());
         return newAsset;
     }
 

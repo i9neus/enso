@@ -371,6 +371,13 @@ void IMGUIJitteredFlagArray::Construct()
     ImGui::TreePop();
 }
 
+void IMGUIElement::Text(const std::string& text, const ImColor colour)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(colour));
+    ImGui::Text(text.c_str());
+    ImGui::PopStyleColor(1);
+}
+
 void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale)
 {
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
@@ -488,7 +495,7 @@ IMGUIDataTable::IMGUIDataTable(const std::string& id, const int numCols)
 
 IMGUIDataTable::~IMGUIDataTable()
 {
-    AssertMsg(m_isEnded, "IMGUIDataTable::End() was not called");
+    AssertMsg(m_isEnded || std::uncaught_exception(), "IMGUIDataTable::End() was not called");
 }
 
 void IMGUIDataTable::End()

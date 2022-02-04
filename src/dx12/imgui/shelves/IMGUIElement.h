@@ -19,6 +19,26 @@ public:
     ~UIStyle();
 };
 
+// Little RAII class to make sure indents are closed when going out of scope
+class ImGuiIndent
+{
+public:
+    ImGuiIndent(const float margin = -1.0f) : m_margin(margin)
+    { 
+        if (m_margin >= 0.0f) { ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, m_margin); }
+        ImGui::Indent(); 
+    }
+
+    ~ImGuiIndent() 
+    { 
+        ImGui::Unindent(); 
+        if (m_margin >= 0.0f) { ImGui::PopStyleVar(); }
+    }
+
+private:
+    float m_margin;
+};
+
 static void ToolTip(const char* desc)
 {
     if (ImGui::IsItemHovered())
@@ -186,6 +206,8 @@ public:
     IMGUIElement() = default;
 
 protected:
+    void Text(const std::string& text, const ImColor colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f));
+
     void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale = false);
     void ConstructJitteredFloat(Cuda::JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);

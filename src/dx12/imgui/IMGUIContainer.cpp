@@ -117,8 +117,9 @@ void IMGUIContainer::DispatchRenderCommands()
 void IMGUIContainer::ConstructConsole()
 {
     ImGui::Begin("Console");
-    
-    ImGui::TextWrapped(m_renderStateFmt.c_str(), m_showConsole);
+
+    m_renderStateFmt = m_renderStateJson.Stringify(true);
+    ImGui::TextWrapped(m_renderStateFmt.c_str());
 
     ImGui::End();
 }
@@ -193,12 +194,13 @@ void IMGUIContainer::PollCudaRenderState()
 {
     Assert(m_cudaRenderer.PollRenderState(m_renderStateJson));
 
-    const Json::Node managerJson = m_renderStateJson.GetChildObject("renderManager", Json::kRequiredAssert | Json::kLiteralID);
-    managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
-    managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
-    managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
-
-    m_renderStateFmt = m_renderStateJson.Stringify(true);
+    const Json::Node managerJson = m_renderStateJson.GetChildObject("renderManager", Json::kSilent | Json::kLiteralID);
+    if (managerJson)
+    {
+        managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
+        managerJson.GetValue("meanFrameTime", m_meanFrameTime, Json::kRequiredAssert);
+        managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
+    }
 }
 
 void IMGUIContainer::Render()
@@ -217,6 +219,8 @@ void IMGUIContainer::Render()
     ImGui::ImplWin32_NewFrame();
     ImGui::NewFrame();
 
+    const auto kBaseSize = ImGui::CalcTextSize("A");
+    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, kBaseSize.x * 2.0f);
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
     // Menu Bar
@@ -250,7 +254,8 @@ void IMGUIContainer::Render()
 
     if (m_showMemoryMonitor) { m_memoryMonitor.ConstructUI(); }
 
-    ImGui::PopStyleColor(1);
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
 
     // Rendering
     ImGui::Render();

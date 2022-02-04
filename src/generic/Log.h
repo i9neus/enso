@@ -91,7 +91,7 @@ public:
     static constexpr int32_t kMaxIndent = 5;
     static constexpr int32_t kIndentChars = 3;
 
-    static Log& Singleton();
+    static Log& Get();
     static void NL();   
     static Snapshot GetMessageState();
 

@@ -15,6 +15,7 @@
 #include "io/USDIO.h"
 #include "io/ImageIO.h"
 #include "generic/GlobalStateAuthority.h"
+#include "generic/debug/ProcessMemoryMonitor.h"
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kRenderManagerIdle),
@@ -46,15 +47,11 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 	{
 		Log::Indent indent1;
 
-		cudaDeviceProp devProp;
-		checkCudaErrors(cudaGetDeviceProperties(&devProp, devId));
+		checkCudaErrors(cudaGetDeviceProperties(&m_deviceProp, devId));
 
-		if ((memcmp(&dx12DeviceLUID.LowPart, devProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
-			(memcmp(&dx12DeviceLUID.HighPart, devProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
+		if ((memcmp(&dx12DeviceLUID.LowPart, m_deviceProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
+			(memcmp(&dx12DeviceLUID.HighPart, m_deviceProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
 		{
-			cudaDeviceProp deviceProp;
-			IsOk(cudaGetDeviceProperties(&deviceProp, devId));
-
 			int pLow, pHigh;
 			IsOk(cudaDeviceGetStreamPriorityRange(&pLow, &pHigh));
 
@@ -62,14 +59,14 @@ void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT client
 
 			IsOk(cudaSetDevice(devId));
 			m_cudaDeviceID = devId;
-			m_nodeMask = devProp.luidDeviceNodeMask;
+			m_nodeMask = m_deviceProp.luidDeviceNodeMask;
 			checkCudaErrors(cudaStreamCreateWithPriority(&m_D3DStream, cudaStreamNonBlocking, pHigh));
 			checkCudaErrors(cudaStreamCreate(&m_renderStream));
-			Log::Write("CUDA Device Used [%d] %s\n", devId, devProp.name);
+			Log::Write("CUDA Device Used [%d] %s\n", devId, m_deviceProp.name);
 			{
 				Log::Indent indent2;
-				Log::Debug("- sharedMemPerMultiprocessor: %i bytes\n", deviceProp.sharedMemPerMultiprocessor);
-				Log::Debug("- sharedMemPerBlock: %i bytes\n", deviceProp.sharedMemPerBlock);
+				Log::Debug("- sharedMemPerMultiprocessor: %i bytes\n", m_deviceProp.sharedMemPerMultiprocessor);
+				Log::Debug("- sharedMemPerBlock: %i bytes\n", m_deviceProp.sharedMemPerBlock);
 			}
 			break;
 		}
@@ -420,6 +417,20 @@ bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
 	std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
 	job.state = kRenderManagerJobCompleted;
 
+	// Device memory stats
+	size_t freeBytes, totalBytes;
+	IsOk(cudaMemGetInfo(&freeBytes, &totalBytes));	
+	Json::Node deviceJson = outJson.AddChildObject("device");
+	deviceJson.AddValue("name", std::string(m_deviceProp.name));
+	deviceJson.AddValue("freeMB", float(freeBytes) / 1048576.f);
+	deviceJson.AddValue("totalMB", float(totalBytes) / 1048576.f);
+
+	// Host memory stats
+	const int64_t workingSetSize = ProcessMemoryMonitor::Get().GetWorkingSetSize();
+	Json::Node hostJson = outJson.AddChildObject("host");
+	hostJson.AddValue("totalMB", float(workingSetSize) / 1048576.f);
+
+	// Asset stats
 	Json::Node assetJson = outJson.AddChildObject("assets");
 	const auto& registry = Cuda::GlobalResourceRegistry::Get();
 	const auto& assetMap = registry.GetAssetMap();
@@ -427,7 +438,17 @@ bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
 
 	for (const auto& asset : deviceMemoryMap)
 	{
-		assetJson.AddValue(asset.first, int(asset.second));
+		Json::Node objectJson = assetJson.AddChildObject(asset.first);
+		auto it = assetMap.find(asset.first);
+		if (it != assetMap.end())
+		{
+			auto& ptr = it->second;
+			Assert(!ptr.expired());
+			objectJson.AddValue("parent", ptr.lock()->GetParentAssetID());
+		}
+		objectJson.AddValue("currMB", float(asset.second.currentBytes) / 1048576.f);
+		objectJson.AddValue("peakMB", float(asset.second.peakBytes) / 1048576.f);
+		objectJson.AddValue("deltaMB", float(asset.second.deltaBytes) / 1048576.f);
 	}
 	
 	return true;
@@ -461,7 +482,7 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 
 	*/
 	
-	stateJson.Clear();	
+	stateJson.Clear();
 
 	// Add some generic data about the renderer that's exported each time the state is polled
 	Json::Node managerJson = stateJson.AddChildObject("renderManager");

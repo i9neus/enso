@@ -17,7 +17,7 @@ public:
     const std::string& GetDefaultScenePath() const { return m_defaultScenePath; }
     const std::string& GetDefaultSceneDirectory() const { return m_defaultSceneDirectory; }
 
-    static GlobalStateAuthority& Singleton();
+    static GlobalStateAuthority& Get();
 
 private:
     GlobalStateAuthority();
@@ -29,4 +29,4 @@ private:
     std::string m_defaultSceneDirectory;
 };
 
-inline GlobalStateAuthority& GSA() { return GlobalStateAuthority::Singleton(); }
+inline GlobalStateAuthority& GSA() { return GlobalStateAuthority::Get(); }

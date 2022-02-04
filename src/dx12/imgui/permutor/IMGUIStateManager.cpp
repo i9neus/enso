@@ -340,7 +340,8 @@ void RenderObjectStateManager::ConstructStateManagerUI()
 void RenderObjectStateManager::ParseRenderStateJson()
 {    
     // Get the running state of the renderer
-    m_renderStateJson.GetValue("renderManager/rendererStatus", m_renderState, Json::kRequiredAssert);
+    m_renderState = kRenderManagerUndefined;
+    m_renderStateJson.GetValue("renderManager/rendererStatus", m_renderState, Json::kSilent);
     
     // Bake job stats...
     const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);    
