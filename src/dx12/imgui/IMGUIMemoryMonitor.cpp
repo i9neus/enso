@@ -45,7 +45,7 @@ void MemoryMonitor::ParseMemoryStateJson()
     // If the stats gathering task has finished, it'll be accompanied by data for each render object that emits it
     if (statsState != kRenderManagerJobCompleted) { return; }
     
-    m_memoryStateJson.DeepCopy(statsJson);
+    m_memoryStateJson = statsJson;
 
     auto AppendLog = [](std::vector<float>& buffer, float& peakValue, const float newValue)
     {

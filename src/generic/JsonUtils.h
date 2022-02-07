@@ -298,6 +298,19 @@ namespace Json
             m_rootDocument = this;
         }
 
+        ~Document() = default;
+        Document(const Document&) = delete;
+        Document(const Document&&) = delete;
+
+        Document& operator=(const Node& node)
+        {
+            m_allocator->Clear();
+            DeepCopy(node);
+            return *this;
+        }
+
+        inline Document& operator=(const Document& node) { return this->operator=(static_cast<const Node&>(node)); }        
+
         void Clear()
         {
             m_document.SetObject();

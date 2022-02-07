@@ -540,10 +540,10 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 
 	if (rootJson.GetChildObject("patches", Json::kSilent | Json::kLiteralID))
 	{
-		// Overwrite the command list with the new data
 		std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
-		m_patchJson.DeepCopy(rootJson);
+		// Overwrite the command list with the new data
+		m_patchJson = rootJson;
 		
 		// Found a scene object parameter parameter patch, so signal that the scene graph is dirty
 		m_dirtiness = kDirtinessStateSoftReset;
@@ -564,7 +564,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 				try
 				{					
 					// Copy any JSON data that accompanies this command
-					job.json.DeepCopy(*nodeIt);
+					job.json = *nodeIt;
 
 					// Call the dispatch functor
 					Assert(job.onDispatch);
@@ -751,7 +751,7 @@ void RenderManager::GatherRenderObjectStatistics()
 	}
 
 	std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
-	m_renderObjectStatsJson.DeepCopy(aggregatedStatsJson);
+	m_renderObjectStatsJson = aggregatedStatsJson;
 	m_renderStatsTimer.Reset();
 
 	m_renderStatsJob.state = kRenderManagerJobCompleted;

@@ -181,6 +181,9 @@ namespace Json
 
     void Node::DeepCopy(const Node& other)
     {
+        // FIXME: SetObject does not automatically deallocate memory that may have been allocated to store nodes already at this location. 
+        // Deallocation must be done by manually calling Clear() on the allocator object. This is a fundamental problem with rapidJson
+        // so consider swapping it out with a better JSON library. e.g. https://github.com/nlohmann/json
         m_node->SetObject();
         m_node->CopyFrom(*other.m_node, *m_allocator);
     }
