@@ -97,7 +97,7 @@ namespace Cuda
 			__host__ void Resize(const uint size);
 			__host__ inline bool Expand(const uint size);
 			__host__ inline bool ExpandToNearestPow2(const uint size);
-			__host__ void Download(std::vector<ElementType>& rawData) const;
+			__host__ void Download(std::vector<ElementType>& rawData, int numElements = -1) const;
 			__host__ void Upload(const std::vector<ElementType>& rawData);
 			__host__ void Swap(ManagedArray& other);
 			__host__ void Replace(const ManagedArray& other);
@@ -252,14 +252,16 @@ namespace Cuda
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>
-	__host__ void Host::ManagedArray<ElementType, HostType, DeviceType>::Download(std::vector<ElementType>& rawData) const
+	__host__ void Host::ManagedArray<ElementType, HostType, DeviceType>::Download(std::vector<ElementType>& rawData, int numElements) const
 	{
-		Assert(m_hostData.cu_data);
+		Assert(m_hostData.cu_data);		
 		if (m_hostData.m_size == 0) { return; }
+		if (numElements < 0) { numElements = m_hostData.m_size; }
+		Assert(numElements <= m_hostData.m_size);
 
-		rawData.resize(m_hostData.m_size);
+		rawData.resize(numElements);
 
-		IsOk(cudaMemcpy(rawData.data(), m_hostData.cu_data, sizeof(ElementType) * m_hostData.m_size, cudaMemcpyDeviceToHost));
+		IsOk(cudaMemcpy(rawData.data(), m_hostData.cu_data, sizeof(ElementType) * numElements, cudaMemcpyDeviceToHost));
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>

@@ -599,6 +599,7 @@ namespace Cuda
         int arraySize = m_shData->Size();
 
         // Resize the array as a power of two 
+        // TODO: Managed arrays should have a notion of size vs. capacity. Add support for this.
         m_validityData->ExpandToNearestPow2(newSize);
         m_shLaplacianData->ExpandToNearestPow2(newSize);
         if (m_shData->ExpandToNearestPow2(newSize))
@@ -647,10 +648,14 @@ namespace Cuda
 
     __host__ void Host::LightProbeGrid::SetRawData(const std::vector<vec3>& rawData)
     {
-        AssertMsgFmt(rawData.size() == m_params.numProbes * m_params.coefficientsPerProbe, 
+        // FIXME: Size of data returned by Download is not the same as that expected by Upload.
+        //AssertMsgFmt(rawData.size() == m_params.numProbes * m_params.coefficientsPerProbe,
+
+        AssertMsgFmt(rawData.size() >= m_params.numProbes * m_params.coefficientsPerProbe, 
             "Raw data has size %i; expected %i", rawData.size(), m_params.numProbes * m_params.coefficientsPerProbe);
 
         m_shData->Upload(rawData);
+        
     }
 
     __host__ void Host::LightProbeGrid::SetOutputMode(const int& mode)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "generic/StdIncludes.h"
+#include "kernels/math/CudaMath.cuh"
 
 // Forward declare a bunch of structures used by ONNX runtime
 namespace Ort
@@ -20,10 +21,9 @@ namespace ONNX
         ~Grid2Grid();
 
         void Initialise(const std::string& modelPath);
-        void Evaluate(const std::vector<float>& directData, std::vector<float>& indirectData);
+        void Evaluate(const std::vector<Cuda::vec3>& directData, std::vector<Cuda::vec3>& indirectData);
 
     private:       
-        void RunSession(const std::vector<float>& directData, std::vector<float>& indirectData);
         void Destroy();
 
         std::unique_ptr<Ort::Value>     m_ortInputTensor;
@@ -35,6 +35,8 @@ namespace ONNX
         std::vector<float>              m_outputTensorData;
         std::vector<int64_t>            m_inputTensorShape;
         std::vector<int64_t>            m_outputTensorShape;
+
+        bool                            m_signalIsOkay;
 
     };
 }

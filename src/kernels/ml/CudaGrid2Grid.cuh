@@ -38,6 +38,7 @@ namespace Cuda
             DeviceObjectRAII<Objects>               m_objects;
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
+            std::vector<vec3>                       m_rawData;
 
             std::string                             m_inputGridID;
             std::string                             m_outputGridID;
@@ -48,6 +49,7 @@ namespace Cuda
             int                                     m_blockSize;
             int                                     m_probeRange;
             bool                                    m_isActive;
+            bool                                    m_isValidInput;
 
         public:
             __host__ Grid2Grid(const std::string& id, const ::Json::Node& jsonNode);

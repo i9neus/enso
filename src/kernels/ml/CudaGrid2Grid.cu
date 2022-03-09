@@ -39,6 +39,8 @@ namespace Cuda
 
         // Initialise the grid2grid model
         m_onnxEvaluator.Initialise("C:/projects/probegen/data/onnx/test.onnx");
+
+        m_rawData.reserve(8 * 8 * 8 * 5);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::Grid2Grid::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
@@ -82,11 +84,19 @@ namespace Cuda
     __host__ void Host::Grid2Grid::Prepare()
     {
         m_isActive = true;
+        m_isValidInput = true;
 
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
         const auto& gridParams = m_hostInputGrid->GetParams();
+
+        if (gridParams.gridDensity != ivec3(8, 8, 8) || gridParams.shOrder != 1)
+        {
+            Log::Error("Error: Grid2Grid requires 8x8x8 grid of order L1. Input is %s of order L%i.", gridParams.gridDensity.format(), gridParams.shOrder);
+            m_isValidInput = false;
+            return;
+        }
 
         // Initialise the output grids so it has the same dimensions as the input
         m_hostOutputGrid->Prepare(gridParams);
@@ -105,13 +115,21 @@ namespace Cuda
         // Filter isn't yet bound, so do nothing
         if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
 
+        const LightProbeGridParams& gridParams = m_hostInputGrid->GetParams();
+
         // Pass-through filter just copies the data
         //if (m_objects->params.filterType == kKernelFilterNull/* || !m_hostInputGrid->IsConverged()*/)
+        if (!m_isValidInput)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);           
             m_isActive = true;
             return;
         }
+
+        // Invoke the grid2grid model
+        m_hostInputGrid->GetRawData(m_rawData);
+        m_onnxEvaluator.Evaluate(m_rawData, m_rawData); 
+        m_hostOutputGrid->SetRawData(m_rawData);
         
         m_isActive = false;
     }
