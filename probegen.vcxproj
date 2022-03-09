@@ -38,6 +38,7 @@
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
     <ClCompile Include="src\io\ImageIO.cpp" />
+    <ClCompile Include="src\io\ORTIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\RenderManager.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
@@ -86,6 +87,7 @@
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
     <ClInclude Include="src\io\ImageIO.h" />
+    <ClInclude Include="src\io\ORTIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
@@ -137,6 +139,7 @@
     <ClInclude Include="src\kernels\math\vec\CudaVec4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh" />
+    <ClInclude Include="src\kernels\ml\CudaGrid2Grid.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaCornellBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
@@ -212,6 +215,7 @@
     <CudaCompile Include="src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="src\kernels\ml\CudaGrid2Grid.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />

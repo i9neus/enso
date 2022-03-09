@@ -116,23 +116,21 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
 
     if (!m_lightProbeCameraShelf)
     {
-        Log::Warning("Warning: bake permutor was unable to find an instance of LightProbeCameraShelf.\n");
+        Log::Error("Error: bake permutor was unable to find an instance of LightProbeCameraShelf.\n");
         return false;
     }
     if (!m_wavefrontTracerShelf)
     {
-        Log::Warning("Warning: bake permutor was unable to find an instance of WavefrontTracerShelf.\n");
+        Log::Error("Error: bake permutor was unable to find an instance of WavefrontTracerShelf.\n");
         return false;
     }
     if (!m_kifsShelf)
     {
         Log::Warning("Warning: bake permutor was unable to find an instance of KIFSShelf.\n");
-        return false;
     }
     if (!m_lambertShelf)
     {
         Log::Warning("Warning: bake permutor was unable to find an instance of LambertBRDFShelf.\n");
-        return false;
     }
 
     m_numStates = m_stateMap.GetNumPermutableStates();
@@ -273,7 +271,6 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     // Get the handles to the camera objects
     auto& probeParams = m_lightProbeCameraShelf->GetParamsObject();
     auto& perspParams = m_perspectiveCameraShelf->GetParamsObject();
-    auto& brdfParams = m_lambertShelf->GetParamsObject();
 
     // Set the sample counts depending on the type of bake we're doing
     if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
@@ -295,17 +292,24 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
         perspParams.camera.isActive = true;
         perspParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
         perspParams.camera.overrides.maxDepth = 0;
-        // Set the grids used to visualise the preview
-        brdfParams.probeGridFlags = Cuda::kLambertUseProbeGrid;
-        brdfParams.probeGridFlags |= (!probeParams.filterGrids) ? (Cuda::kLambertGridChannel0 | Cuda::kLambertGridChannel1) : (Cuda::kLambertGridChannel2 | Cuda::kLambertGridChannel3);        
+        if (m_lambertShelf)
+        {
+            // Set the grids used to visualise the preview
+            auto& brdfParams = m_lambertShelf->GetParamsObject();
+            brdfParams.probeGridFlags = Cuda::kLambertUseProbeGrid;
+            brdfParams.probeGridFlags |= (!probeParams.filterGrids) ? (Cuda::kLambertGridChannel0 | Cuda::kLambertGridChannel1) : (Cuda::kLambertGridChannel2 | Cuda::kLambertGridChannel3);
+        }
         // Always deactivate the probe grid when baking
         probeParams.camera.isActive = false;
     }
     else { Assert(false); }
 
     // Set the iteration count on the KIFS object
-    auto& kifsParams = m_kifsShelf->GetParamsObject(); 
-    kifsParams.numIterations = m_kifsIterationIdx;
+    if (m_kifsShelf)
+    {
+        auto& kifsParams = m_kifsShelf->GetParamsObject();
+        kifsParams.numIterations = m_kifsIterationIdx;
+    }
 
     // Set the shading mode to full illumination
     m_wavefrontTracerShelf->GetParamsObject().shadingMode = Cuda::kShadeFull;

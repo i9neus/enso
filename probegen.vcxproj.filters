@@ -109,6 +109,9 @@
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp">
       <Filter>generic\debug</Filter>
     </ClCompile>
+    <ClCompile Include="src\io\ORTIO.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -495,6 +498,12 @@
     <ClInclude Include="src\generic\debug\ProcessMemoryMonitor.h">
       <Filter>generic\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\ml\CudaGrid2Grid.cuh">
+      <Filter>kernels\ml</Filter>
+    </ClInclude>
+    <ClInclude Include="src\io\ORTIO.h">
+      <Filter>io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -583,6 +592,9 @@
     </Filter>
     <Filter Include="generic\debug">
       <UniqueIdentifier>{b477dfbc-b982-4232-ac02-280763d25e19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\ml">
+      <UniqueIdentifier>{21110cc5-3680-4f80-9102-ccf489d1154c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -696,6 +708,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeIO.cu">
       <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\ml\CudaGrid2Grid.cu">
+      <Filter>kernels\ml</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

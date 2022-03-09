@@ -28,6 +28,8 @@
 #include "lightprobes/CudaLightProbeRegressionFilter.cuh"
 #include "lightprobes/CudaLightProbeIO.cuh"
 
+#include "ml/CudaGrid2Grid.cuh"
+
 #include "CudaWavefrontTracer.cuh"
 
 namespace Cuda
@@ -61,6 +63,8 @@ namespace Cuda
         AddInstantiator<Host::LightProbeKernelFilter>();
         AddInstantiator<Host::LightProbeRegressionFilter>();
         AddInstantiator<Host::LightProbeIO>();
+
+        AddInstantiator<Host::Grid2Grid>();
     }    
 
     template<typename T, typename... Pack>
