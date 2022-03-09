@@ -34,8 +34,10 @@
 .vs/*
 bin/*
 tests/x64/*
+tools/libtorch/x64/*
 data/*
 x64/*
 *.png
 *.jpg
 *.ini
+*.zip
