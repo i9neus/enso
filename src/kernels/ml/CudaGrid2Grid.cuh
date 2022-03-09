@@ -2,6 +2,8 @@
 
 #include "../lightprobes/CudaLightProbeGrid.cuh"
 
+#include "onnx/Grid2Grid.h"
+
 namespace Json { class Node; }
 
 namespace Cuda
@@ -39,6 +41,8 @@ namespace Cuda
 
             std::string                             m_inputGridID;
             std::string                             m_outputGridID;
+
+            ONNX::Grid2Grid                         m_onnxEvaluator;
 
             int                                     m_gridSize;
             int                                     m_blockSize;

@@ -1,8 +1,6 @@
 ﻿#include "CudaGrid2Grid.cuh"
 #include "../cameras/CudaLightProbeCamera.cuh"
 
-#include "io/ORTIO.h"
-
 #include "generic/JsonUtils.h"
 
 #define kBlockSize 256
@@ -38,6 +36,9 @@ namespace Cuda
 
         // Create some objects
         m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
+
+        // Initialise the grid2grid model
+        m_onnxEvaluator.Initialise("C:/projects/probegen/data/onnx/test.onnx");
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::Grid2Grid::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

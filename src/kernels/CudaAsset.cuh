@@ -254,7 +254,7 @@ namespace Cuda
     template<typename AssetType, typename... Pack>
     inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, const Host::Asset* parentAsset, Pack... args)
     {
-        AssertMsg(parentAsset, "'%s' must specify a parent asset.", newId.c_str());
+        AssertMsgFmt(parentAsset, "'%s' must specify a parent asset.", newId.c_str());
         AssetHandle<AssetType> newAsset = CreateAsset<AssetType, Pack...>(newId, args...);
         newAsset->SetParentAssetID(parentAsset->GetAssetID());
         return newAsset;

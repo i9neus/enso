@@ -109,8 +109,8 @@
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp">
       <Filter>generic\debug</Filter>
     </ClCompile>
-    <ClCompile Include="src\io\ORTIO.cpp">
-      <Filter>io</Filter>
+    <ClCompile Include="src\onnx\Grid2Grid.cpp">
+      <Filter>onnx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -501,8 +501,8 @@
     <ClInclude Include="src\kernels\ml\CudaGrid2Grid.cuh">
       <Filter>kernels\ml</Filter>
     </ClInclude>
-    <ClInclude Include="src\io\ORTIO.h">
-      <Filter>io</Filter>
+    <ClInclude Include="src\onnx\Grid2Grid.h">
+      <Filter>onnx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -595,6 +595,9 @@
     </Filter>
     <Filter Include="kernels\ml">
       <UniqueIdentifier>{21110cc5-3680-4f80-9102-ccf489d1154c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="onnx">
+      <UniqueIdentifier>{dae644da-b6df-4dfb-86e4-cde8a510a05d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
