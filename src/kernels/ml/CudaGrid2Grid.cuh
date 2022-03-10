@@ -42,6 +42,7 @@ namespace Cuda
 
             std::string                             m_inputGridID;
             std::string                             m_outputGridID;
+            std::string                             m_modelPath;
 
             ONNX::Grid2Grid                         m_onnxEvaluator;
 

@@ -31,6 +31,7 @@ namespace Cuda
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
+        node.GetValue("modelPath", m_modelPath, Json::kRequiredAssert | Json::kNotBlank);
 
         AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
 
@@ -38,7 +39,7 @@ namespace Cuda
         m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
 
         // Initialise the grid2grid model
-        m_onnxEvaluator.Initialise("C:/projects/probegen/data/onnx/test.onnx");
+        m_onnxEvaluator.Initialise(m_modelPath);
 
         m_rawData.reserve(8 * 8 * 8 * 5);
     }

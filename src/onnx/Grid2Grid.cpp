@@ -1,5 +1,6 @@
 #include "Grid2Grid.h"
 #include "generic/StringUtils.h"
+#include <random>
 
 #include <onnxruntime/onnxruntime_cxx_api.h>
 
@@ -8,7 +9,7 @@ namespace ONNX
     Grid2Grid::Grid2Grid() :
         m_ortInputTensor(new Ort::Value(nullptr)),
         m_ortOutputTensor(new Ort::Value(nullptr)),
-        m_signalIsOkay(false) {}
+        m_isModelReady(false){}
 
     Grid2Grid::Grid2Grid(const std::string& modelPath) : Grid2Grid()       
     {
@@ -37,6 +38,8 @@ namespace ONNX
                 m_outputTensorShape.data(), m_outputTensorShape.size());
 
             m_ortSession = std::make_unique< Ort::Session>(*m_ortEnvironment, Widen(modelPath).c_str(), Ort::SessionOptions(nullptr));
+
+            m_isModelReady = true;
         }
         catch (const Ort::Exception& err)
         {
@@ -48,10 +51,17 @@ namespace ONNX
     {
         m_ortEnvironment.reset();
         m_ortSession.reset();
+        m_isModelReady = false;
     }
 
     void Grid2Grid::Evaluate(const std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
     {
+        if (!m_isModelReady) { return; }
+        
+        /*std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<> rng(0.0f, 1.0f);*/
+        
         // Transpose the raw SH data into the tensor format required by the grid2grid model
         for (int c = 0, idx = 0; c < 3; ++c)
         {
@@ -72,7 +82,7 @@ namespace ONNX
 
             m_ortSession->Run(Ort::RunOptions(nullptr), inputNames, m_ortInputTensor.get(), 1, outputNames, m_ortOutputTensor.get(), 1);
 
-            Log::System("grid2grid: Okay!");            
+            Log::SystemOnce("grid2grid: Okay!");
         }
         catch (const Ort::Exception& err)
         {

@@ -36,7 +36,7 @@ namespace ONNX
         std::vector<int64_t>            m_inputTensorShape;
         std::vector<int64_t>            m_outputTensorShape;
 
-        bool                            m_signalIsOkay;
+        bool                            m_isModelReady;
 
     };
 }
