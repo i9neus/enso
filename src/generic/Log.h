@@ -5,6 +5,7 @@
 #include <iostream>
 #include <mutex>
 #include <array>
+#include <set>
 #include "Constants.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 
@@ -98,8 +99,12 @@ public:
     void EnableLevel(const uint32_t flags, bool set);
 
 #define LOG_TYPE(Name, Colour, Type) template<typename... Args> \
-                                     static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(tfm::format(message.c_str(), args...), Colour, Type); } \
-                                     static void Name(const std::string& message) { Log::StaticWrite(message, Colour, Type); }
+                                     static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(nullptr, -1, tfm::format(message.c_str(), args...), Colour, Type); } \
+                                     static void Name(const std::string& message) { Log::StaticWrite("", -1, message, Colour, Type); }
+
+#define LOG_TYPE_ONCE(Name, Colour, Type) template<typename... Args> \
+                                     static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(__FILE__, __LINE__, tfm::format(message.c_str(), args...), Colour, Type); } \
+                                     static void Name(const std::string& message) { Log::StaticWrite(__FILE__, __LINE__, message, Colour, Type); }
 
     LOG_TYPE(Write, kFgDefault, kLogNormal)
     LOG_TYPE(Debug, kFgGreen, kLogDebug)
@@ -107,12 +112,18 @@ public:
     LOG_TYPE(Error, kBgRed, kLogError)
     LOG_TYPE(System, kFgTeal, kLogSystem)
 
+    LOG_TYPE_ONCE(WriteOnce, kFgDefault, kLogNormal)
+    LOG_TYPE_ONCE(DebugOnce, kFgGreen, kLogDebug)
+    LOG_TYPE_ONCE(WarningOnce, kFgYellow, kLogWarning)
+    LOG_TYPE_ONCE(ErrorOnce, kBgRed, kLogError)
+    LOG_TYPE_ONCE(SystemOnce, kFgTeal, kLogSystem)
+
 private:
     Log();
     ~Log();
 
-    static void StaticWrite(const std::string& formatted, const uint32_t colour, const LogLevel level);
-    void WriteImpl(const std::string& formatted, const uint32_t colour, const LogLevel level);
+    static void StaticWrite(const char* file, const int line, const std::string& formatted, const uint32_t colour, const LogLevel level);
+    void WriteImpl(const char* file, const int line, const std::string& formatted, const uint32_t colour, const LogLevel level);
 
     std::ostream&       m_logTerminalOut;
     std::mutex          m_logFileMutex;
@@ -121,4 +132,6 @@ private:
     uint32_t            m_logFlags;
     
     Snapshot            m_stats;
+
+    std::set<std::string> m_triggeredSet; 
 };

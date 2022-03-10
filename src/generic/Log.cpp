@@ -27,7 +27,7 @@ void Log::Indent::Restore()
 
     if (std::uncaught_exception() && !m_onException.empty())
     {
-        Get().WriteImpl(m_onException, kFgYellow, kLogWarning);
+        Get().WriteImpl(nullptr, -1, m_onException, kFgYellow, kLogWarning);
     }
     else if (!m_onRestore.empty())
     {
@@ -58,11 +58,11 @@ void Log::EnableLevel(const uint32_t flag, const bool set)
     else { m_logFlags &= ~(1 << flag); }
 }
 
-void Log::NL() { Get().WriteImpl("\n", kFgDefault, kLogNormal); }
+void Log::NL() { Get().WriteImpl(nullptr, -1, "\n", kFgDefault, kLogNormal); }
 
-void Log::StaticWrite(const std::string& message, const uint32_t colour, const LogLevel level)
+void Log::StaticWrite(const char* file, const int line, const std::string& message, const uint32_t colour, const LogLevel level)
 {
-    Get().WriteImpl(message, colour, level);
+    Get().WriteImpl(file, line, message, colour, level);
 }
 
 Log& Log::Get()
@@ -71,9 +71,17 @@ Log& Log::Get()
     return state;
 }
 
-void Log::WriteImpl(const std::string& messageStr, const uint32_t colour, const LogLevel level)
-{
+void Log::WriteImpl(const char* file, const int line, const std::string& messageStr, const uint32_t colour, const LogLevel level)
+{    
     if (messageStr.empty() || !(m_logFlags & (1 << level))) { return; }
+
+    // If this message has an ID associated with it, it's once-only. Check to see if it's already been triggered and bail if so.
+    if (file != nullptr)
+    {
+        const std::string id = tfm::format("%s:%i", file, line);
+        if (m_triggeredSet.find(id) != m_triggeredSet.end()) { return; }
+        m_triggeredSet.insert(id);
+    }
     
     // Apply indentation
     std::string formattedStr;
