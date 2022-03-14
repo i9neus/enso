@@ -387,7 +387,7 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         ImGui::DragInt2("Noisy sample range", &m_noisySampleRange[0], 1.0f, 1, 1e7);
         m_noisySampleRange.y = max(m_noisySampleRange.x + 1, m_noisySampleRange.y);
 
-        ImGui::SliderInt("Strata", &m_numStrata, 1, 50);
+        ImGui::SliderInt("Strata", &m_numStrata, 0, 50);
         ImGui::DragInt2("Min/max reference samples", &m_minMaxReferenceSamples[0], 1.0f, 1, 1e7);
         ImGui::DragInt("Thumbnail samples", &m_thumbnailSamples, 1.0f, 1, 1024);
 

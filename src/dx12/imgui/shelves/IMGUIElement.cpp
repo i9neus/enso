@@ -399,12 +399,12 @@ void IMGUIElement::ConstructJitteredTransform(Cuda::BidirectionalTransform& tran
     ImGui::Separator();
 
     ImGui::PushID("rot");
-    ImGui::DragFloat3("Rotation", &transform.rot.p[0], math::max(0.01f, cwiseMax(transform.rot.p) * 0.01f));
+    ImGui::DragFloat3("Rotation", &transform.rot.p[0], 0.5f);
     HelpMarker("The base position of the rotation.");
 
     if (isJitterable)
     {
-        ImGui::DragFloat3("+/-", &transform.rot.dpdt[0], math::max(0.0001f, cwiseMax(transform.rot.dpdt) * 0.01f));
+        ImGui::DragFloat3("+/-", &transform.rot.dpdt[0], 0.5f);
         HelpMarker("The relative range relative over which the transform rotation may be jittered.");
 
         ImGui::SliderFloat3("~", &transform.rot.t[0], 0.0f, 1.0f);
