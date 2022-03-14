@@ -94,7 +94,7 @@ namespace Cuda
 
         if (gridParams.gridDensity != ivec3(8, 8, 8) || gridParams.shOrder != 1)
         {
-            Log::Error("Error: Grid2Grid requires 8x8x8 grid of order L1. Input is %s of order L%i.", gridParams.gridDensity.format(), gridParams.shOrder);
+            Log::Warning("Warning: Grid2Grid requires 8x8x8 grid of order L1. Input is %s of order L%i.", gridParams.gridDensity.format(), gridParams.shOrder);
             m_isValidInput = false;
             return;
         }

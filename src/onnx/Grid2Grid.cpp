@@ -61,15 +61,27 @@ namespace ONNX
         /*std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> rng(0.0f, 1.0f);*/
+
+        static const int shSwizzle[4] = {0, 3, 1, 2};
+        static const float shSign[4] = {1.0, -1.0, -1.0, 1.0};
         
         // Transpose the raw SH data into the tensor format required by the grid2grid model
-        for (int c = 0, idx = 0; c < 3; ++c)
+        for (int c = 0, tensorIdx = 0; c < 3; ++c)
         {
-            for (int p = 0; p < 8 * 8 * 8; ++p)
+            for(int z = 0; z < 8; ++z)
             {
-                for (int sh = 0; sh < 4; ++sh, ++idx)
+                for (int y = 0; y < 8; ++y)
                 {
-                    m_inputTensorData[idx] = rawInputData[p * 5 + sh][c];
+                    for (int x = 0; x < 8; ++x, tensorIdx += 4)
+                    {
+                        const int inputIdx = (64 * (7 - z) + 8 * y + x) * 5;
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            float sh = shSign[i] * rawInputData[inputIdx][c + shSwizzle[i]];
+                            sh = std::copysign(std::log(1.0 + std::abs(sh)), sh);
+                            m_inputTensorData[tensorIdx + i] = sh;
+                        }
+                    }
                 }
             }
         }
@@ -90,13 +102,22 @@ namespace ONNX
         }
 
         // Transpose the data back again 
-        for (int c = 0, idx = 0; c < 3; ++c)
+        for (int c = 0, tensorIdx = 0; c < 3; ++c)
         {
-            for (int p = 0; p < 8 * 8 * 8; ++p)
+            for (int z = 0; z < 8; ++z)
             {
-                for (int sh = 0; sh < 4; ++sh, ++idx)
+                for (int y = 0; y < 8; ++y)
                 {
-                    rawOutputData[p * 5 + sh][c] = m_outputTensorData[idx];
+                    for (int x = 0; x < 8; ++x, tensorIdx += 4)
+                    {
+                        const int outputIdx = (64 * (7 - z) + 8 * y + x) * 5;
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            float sh = m_outputTensorData[tensorIdx + i];
+                            sh = std::copysign(std::exp(std::abs(sh)) - 1.0f, sh);
+                            rawOutputData[outputIdx + shSwizzle[i]] = shSign[i] * sh;
+                        }
+                    }
                 }
             }
         }
