@@ -393,7 +393,8 @@ namespace Cuda
         default:
         {
             // Sum the SH coefficients
-            for (int coeffIdx = 0; coeffIdx < m_params.coefficientsPerProbe - 1 && coeffIdx <= maxSHOrder; coeffIdx++)
+            const int maxSHCoeff = min(m_params.shCoefficientsPerProbe, sqr(maxSHOrder + 1));
+            for (int coeffIdx = 0; coeffIdx < maxSHCoeff; coeffIdx++)
             {
                 L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, m_params.coefficientsPerProbe, delta) * SH::Project(n, coeffIdx);
             }

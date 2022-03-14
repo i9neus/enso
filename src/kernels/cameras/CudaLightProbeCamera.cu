@@ -196,7 +196,12 @@ namespace Cuda
             {
                 L *= m_params.camera.splatClamp / intensity;
             }
-        }
+        } 
+
+        // Colour encoding of the probe position
+        //L = saturate(vec3(GridPosFromProbeIdx(emplacedRay.accumIdx / m_params.subprobesPerProbe, ivec3(8))) / 8.0);
+        // Colour encoding of the probe direction
+        //L = ctx.emplacedRay[0].probeDir;
   
         // Loop through the direct and indirect accumulation buffers
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
@@ -1059,7 +1064,7 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
     {
-        if ((m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
+        if (m_frameIdx > 2 && (m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
         {
             Compile();
         }
