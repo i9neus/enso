@@ -33,6 +33,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_thumbnailSamples(128),
     m_numBakeIterations(1),
     m_startBakeIteration(0),
+    m_trainTestRatio(4, 1),
     m_isBaking(false),
     m_isBatchRunning(false),
     m_permutor(imguiShelves, m_stateMap, commandQueue),
@@ -51,10 +52,12 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_commandQueue(commandQueue), 
     m_bakeGridSamples(-1)
 {
-    m_usdPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
+    m_usdTrainPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
+    m_usdTestPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
     m_pngPathTemplate = "probeVolume.{$ITERATION}.png";
 
-    CopyStringToVector(m_usdPathTemplate, m_usdPathUIData);
+    CopyStringToVector(m_usdTrainPathTemplate, m_usdTrainPathUIData);
+    CopyStringToVector(m_usdTestPathTemplate, m_usdTestPathUIData);
     CopyStringToVector(m_pngPathTemplate, m_pngPathUIData);   
 }
 
@@ -204,9 +207,14 @@ void RenderObjectStateManager::DeserialiseJson()
         permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
         permNode.GetVector("gridValidityRange", m_gridValidityRange, jsonWarningLevel);
         permNode.GetVector("kifsIterationRange", m_kifsIterationRange, jsonWarningLevel);
-        if (permNode.GetValue("usdPathTemplate", m_usdPathTemplate, jsonWarningLevel))
+        if (permNode.GetValue("usdPathTemplate", m_usdTrainPathTemplate, jsonWarningLevel) || 
+            permNode.GetValue("usdTrainPathTemplate", m_usdTrainPathTemplate, jsonWarningLevel))
         {
-            CopyStringToVector(m_usdPathTemplate, m_usdPathUIData);
+            CopyStringToVector(m_usdTrainPathTemplate, m_usdTrainPathUIData);
+        }
+        if (permNode.GetValue("usdTestPathTemplate", m_usdTestPathTemplate, jsonWarningLevel))
+        {
+            CopyStringToVector(m_usdTestPathTemplate, m_usdTestPathUIData);
         }
         if (permNode.GetValue("pngPathTemplate", m_pngPathTemplate, jsonWarningLevel))
         {
@@ -233,7 +241,8 @@ void RenderObjectStateManager::SerialiseJson() const
         permJson.AddVector("gridValidityRange", m_gridValidityRange);
         permJson.AddVector("kifsIterationRange", m_kifsIterationRange);
         permJson.AddValue("iterations", m_numBakeIterations);
-        permJson.AddValue("usdPathTemplate", std::string(m_usdPathUIData.data()));
+        permJson.AddValue("usdTrainPathTemplate", std::string(m_usdTrainPathUIData.data()));
+        permJson.AddValue("usdTestPathTemplate", std::string(m_usdTestPathUIData.data()));
         permJson.AddValue("pngPathTemplate", std::string(m_pngPathUIData.data()));
     }
 
@@ -417,10 +426,18 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
     // The number of iterations per permutation
     ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, std::numeric_limits<int>::max());    
     ImGui::DragInt("Start iteration", &m_startBakeIteration, 1, 1, std::numeric_limits<int>::max());
+    ImGui::DragInt2("Train/test ratio", &m_trainTestRatio[0], 1, 0, std::numeric_limits<int>::max());
+    if (m_trainTestRatio[0] + m_trainTestRatio[1] == 0) { m_trainTestRatio = Cuda::ivec2(1, 0); }
 
-    // The base paths that all export paths will be derived from
-    ImGui::InputText("USD export path", m_usdPathUIData.data(), m_usdPathUIData.size());    
-    ImGui::InputText("PNG export path", m_pngPathUIData.data(), m_pngPathUIData.size());
+    if (ImGui::TreeNodeEx("Export paths", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        // The base paths that all export paths will be derived from
+        ImGui::InputText("USD train set", m_usdTrainPathUIData.data(), m_usdTrainPathUIData.size());
+        ImGui::InputText("USD test set", m_usdTestPathUIData.data(), m_usdTestPathUIData.size());
+        ImGui::InputText("PNG preview", m_pngPathUIData.data(), m_pngPathUIData.size());
+
+        ImGui::TreePop();
+    }
 
     ImVec2 size = ImGui::GetItemRectSize();
     size.y *= 2;
@@ -481,7 +498,7 @@ void RenderObjectStateManager::EnqueueExportViewport()
 void RenderObjectStateManager::EnqueueExportProbeGrids()
 {
     Json::Node commandNode = m_commandQueue.AddChildObject("exportGrids");
-    commandNode.AddArray("paths", m_permutor.GenerateGridExportPaths(std::string(m_usdPathUIData.data()), m_stateJsonPath));
+    commandNode.AddArray("paths", m_permutor.GenerateGridExportPaths(std::string(m_usdTrainPathUIData.data()), m_stateJsonPath));
 }
 
 void RenderObjectStateManager::EnqueueBatch()
@@ -497,7 +514,8 @@ void RenderObjectStateManager::EnqueueBatch()
 
     // Initialise the permutor parameter structure
     BakePermutor::Params params;
-    params.probeGridTemplatePath = std::string(m_usdPathUIData.data());
+    params.probeGridTrainTemplatePath = std::string(m_usdTrainPathUIData.data());
+    params.probeGridTestTemplatePath = std::string(m_usdTestPathUIData.data());
     params.renderTemplatePath = std::string(m_pngPathUIData.data());
     params.jsonRootPath = m_stateJsonPath;
 
@@ -511,6 +529,7 @@ void RenderObjectStateManager::EnqueueBatch()
     params.jitterFlags = m_jitterFlags;
     params.numIterations = m_numBakeIterations;
     params.startIteration = m_startBakeIteration;
+    params.trainTestRatio = m_trainTestRatio;
     params.noisyRange = m_noisySampleRange;
     params.minMaxReferenceSamples = m_minMaxReferenceSamples;
     params.thumbnailCount = m_thumbnailSamples;

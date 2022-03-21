@@ -6,6 +6,7 @@
 #include "../CudaCtx.cuh"
 #include "../CudaManagedArray.cuh"
 #include "../CudaManagedObject.cuh"
+#include "../math/CudaColourUtils.cuh"
 
 #include "../math/CudaSphericalHarmonics.cuh"
 
@@ -24,6 +25,7 @@ namespace Cuda
     {
         lightingMode = kBakeLightingCombined;
         traversalMode = kBakeTraversalLinear;
+        outputColourSpace = kColourSpaceRGB;
         gridUpdateInterval = 10;
         minViableValidity = 0.0f;
         filterGrids = false;
@@ -43,6 +45,7 @@ namespace Cuda
 
         node.AddEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode);
         node.AddEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode);
+        node.AddEnumeratedParameter("outputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), outputColourSpace);
         node.AddValue("gridUpdateInterval", gridUpdateInterval);
         node.AddValue("minViableValidity", minViableValidity);
         node.AddValue("filterGrids", filterGrids);
@@ -56,6 +59,7 @@ namespace Cuda
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
         node.GetEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode, flags);
+        node.GetEnumeratedParameter("outputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), outputColourSpace, flags);
         node.GetValue("gridUpdateInterval", gridUpdateInterval, flags);
         node.GetValue("minViableValidity", minViableValidity, flags);
         node.GetValue("filterGrids", filterGrids, flags);
@@ -196,7 +200,18 @@ namespace Cuda
             {
                 L *= m_params.camera.splatClamp / intensity;
             }
-        } 
+        }  
+
+        // Colour space transformation
+        switch (m_params.outputColourSpace)
+        {
+        case kColourSpaceCIEXYZ:
+            L = RGBToCIEXYZ(L); break;
+        case kColourSpaceCIExyY:
+            L = XYZToxyY(RGBToCIEXYZ(L)); break;
+        case kColourSpaceChroma:
+            L = RGBToChroma(L); break;
+        }
 
         // Colour encoding of the probe position
         //L = saturate(vec3(GridPosFromProbeIdx(emplacedRay.accumIdx / m_params.subprobesPerProbe, ivec3(8))) / 8.0);

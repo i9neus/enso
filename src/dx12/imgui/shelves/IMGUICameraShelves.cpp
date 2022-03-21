@@ -127,6 +127,12 @@ void LightProbeCameraShelf::Construct()
         ConstructComboBox("Traversal mode", { "Linear", "Hilbert curve" }, m_p.traversalMode);
         HelpMarker("Specifies the pattern used to traverse the grid while baking.");
 
+        ConstructComboBox("Output colour space", { "RGB", "XYZ", "xyY", "Chroma" }, m_p.outputColourSpace);
+        HelpMarker("The colour space to which probe grids are encoded");
+
+        ConstructComboBox("Input colour space", { "RGB", "XYZ", "xyY", "Chroma" }, m_p.grid.inputColourSpace);
+        HelpMarker("The colour space from which probe grids are decoded.");
+
         ConstructComboBox("Direct/indirect", { "Combined", "Separated" }, m_p.lightingMode);
         HelpMarker("Specifies whether direct and indirect illumination should be combined in a single pass or exported as two separate grids.");
 

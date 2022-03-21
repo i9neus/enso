@@ -81,6 +81,7 @@ namespace Cuda
 
         bool                        useValidity;
         int                         outputMode;
+        int                         inputColourSpace;
 
         int                         shCoefficientsPerProbe;
         int                         coefficientsPerProbe;

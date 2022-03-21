@@ -20,6 +20,7 @@ namespace ONNX
         Grid2Grid(const std::string& modelPath);
         ~Grid2Grid();
 
+        void Reinitialise();
         void Initialise(const std::string& modelPath);
         void Evaluate(const std::vector<Cuda::vec3>& directData, std::vector<Cuda::vec3>& indirectData);
 
@@ -37,6 +38,6 @@ namespace ONNX
         std::vector<int64_t>            m_outputTensorShape;
 
         bool                            m_isModelReady;
-
+        std::string                     m_modelPath;
     };
 }

@@ -12,6 +12,7 @@
 
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
+#include "kernels/math/CudaColourUtils.cuh"
 
 #include <random>
 
@@ -57,7 +58,7 @@ int BakePermutor::GenerateIterationList()
 
         Assert(stratumRange >= 0);
         if (stratumRange == 0) { continue; }
-        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false); continue; }
+        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma); continue; }
         
         // Generate some candidate samples and reject if they're already in the list.
         for (int tries = 0; tries < 10; ++tries)
@@ -65,7 +66,7 @@ int BakePermutor::GenerateIterationList()
             const int candidate = stratumLower + rng(mt) % stratumRange;
             if (sampleCountSet.find(candidate) == sampleCountSet.end())
             {
-                m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false);
+                m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma);
                 sampleCountSet.emplace(candidate);
                 totalSamples += candidate;
                 break;
@@ -74,8 +75,8 @@ int BakePermutor::GenerateIterationList()
     }
     
     // Add the reference sample count and the thumbnail render
-    m_iterationList.emplace_back(kBakeTypeProbeGrid, "Reference grid", m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true);
-    m_iterationList.emplace_back(kBakeTypeRender, "Preview image", Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false);
+    m_iterationList.emplace_back(kBakeTypeProbeGrid, "Reference grid", m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true, Cuda::kColourSpaceChroma);
+    m_iterationList.emplace_back(kBakeTypeRender, "Preview image", Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma);
 
     m_iterationIt = m_iterationList.cbegin();
     return totalSamples;
@@ -86,7 +87,8 @@ bool BakePermutor::Prepare(const BakePermutor::Params& params)
     m_params = params;
 
     // Decompose the template paths into tokens
-    m_probeGridTemplateTokens = TokeniseTemplatePath(m_params.probeGridTemplatePath, m_params.jsonRootPath);
+    m_probeGridTrainTemplateTokens = TokeniseTemplatePath(m_params.probeGridTrainTemplatePath, m_params.jsonRootPath);
+    m_probeGridTestTemplateTokens = TokeniseTemplatePath(m_params.probeGridTestTemplatePath, m_params.jsonRootPath);
     m_renderTemplateTokens = TokeniseTemplatePath(m_params.renderTemplatePath, m_params.jsonRootPath);
 
     // Get the handles to the required shelves
@@ -275,11 +277,13 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     // Set the sample counts depending on the type of bake we're doing
     if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
     {
-        // Set the sample count on the light probe camera          
+        // Set the sample count on the light probe camera
         probeParams.camera.isActive = true;
         probeParams.camera.minMaxSamples = m_iterationIt->minMaxSamples;
         probeParams.camera.samplingMode = m_iterationIt->sampleMode;
-        probeParams.filterGrids = m_iterationIt->filterGrids;        
+        probeParams.outputColourSpace = m_iterationIt->outputColourSpace;
+        probeParams.grid.inputColourSpace = m_iterationIt->outputColourSpace;
+        probeParams.filterGrids = m_iterationIt->filterGrids;  
 
         // Always randomise the probe shelf to generate a new seed
         m_lightProbeCameraShelf->Randomise();
@@ -301,6 +305,8 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
         }
         // Always deactivate the probe grid when baking
         probeParams.camera.isActive = false;
+        probeParams.outputColourSpace = m_iterationIt->outputColourSpace;
+        probeParams.grid.inputColourSpace = m_iterationIt->outputColourSpace;
     }
     else { Assert(false); }
 
@@ -323,11 +329,15 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     bakeJson.AddValue("action", "start");
     if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
     {
+        // Choose either the training or testing export path based on the current iteration
+        const auto& tokens = ((m_iterationIdx + m_params.startIteration) % max(1, m_params.trainTestRatio[0] + m_params.trainTestRatio[1]) < m_params.trainTestRatio[0]) ?
+            m_probeGridTrainTemplateTokens : m_probeGridTestTemplateTokens;
+        
         bakeJson.AddValue("type", "probeGrid");
         bakeJson.AddValue("isArmed", m_params.exportToUsd);
         bakeJson.AddValue("minGridValidity", m_params.gridValidityRange.x);
         bakeJson.AddValue("maxGridValidity", m_params.gridValidityRange.y);
-        bakeJson.AddArray("exportPaths", GenerateExportPaths(m_probeGridTemplateTokens, 2));
+        bakeJson.AddArray("exportPaths", GenerateExportPaths(tokens, 2));
     }
     else
     {

@@ -8,7 +8,7 @@ namespace Cuda
 	struct __builtin_align__(16) mat4
 	{
 		enum _attrs : size_t { kDims = 4 };
-		using kVecType = vec4;
+		using VecType = vec4;
 
 		union
 		{
@@ -36,6 +36,14 @@ namespace Cuda
 		__host__ __device__ __forceinline__ mat4() {}
 		__host__ __device__ __forceinline__ mat4(const mat4&) = default;
 		__host__ __device__ __forceinline__ mat4(const vec4& x_, const vec4& y_, const vec4& z_, const vec4& w_) : x(x_), y(y_), z(z_), w(w_) {}
+		__host__ __device__ __forceinline__ mat4(const float& i00_, const float& i01_, const float& i02_, const float& i03_,
+												 const float& i10_, const float& i11_, const float& i12_, const float& i13_,
+											     const float& i20_, const float& i21_, const float& i22_, const float& i23_,
+												 const float& i30_, const float& i31_, const float& i32_, const float& i33_) :
+			i00(i00_), i01(i01_), i02(i02_), i03(i03_),
+			i10(i10_), i11(i11_), i12(i12_), i13(i13_),
+			i20(i20_), i21(i21_), i22(i22_), i23(i23_),
+			i30(i30_), i31(i31_), i32(i32_), i33(i33_) {}
 
 		__host__ __device__ __forceinline__ const vec4& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ __forceinline__ vec4& operator[](const unsigned int idx) { return data[idx]; }

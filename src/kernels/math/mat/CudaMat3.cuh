@@ -28,6 +28,12 @@ namespace Cuda
 		__host__ __device__ __forceinline__ __mat3() {}
 		__host__ __device__ __forceinline__ __mat3(const __mat3&) = default;
 		__host__ __device__ __forceinline__ __mat3(const VecType& x_, const VecType& y_, const VecType& z_) : x(x_), y(y_), z(z_) {}
+		__host__ __device__ __forceinline__ __mat3(const float& i00_, const float& i01_, const float& i02_, 
+											       const float& i10_, const float& i11_, const float& i12_, 
+												   const float& i20_, const float& i21_, const float& i22_) : 
+			i00(i00_), i01(i01_), i02(i02_), 
+			i10(i10_), i11(i11_), i12(i12_),
+			i20(i20_), i21(i21_), i22(i22_) {}
 
 		__host__ __device__ __forceinline__ static __mat3 Indentity()
 		{

@@ -1,5 +1,7 @@
 #include "Grid2Grid.h"
 #include "generic/StringUtils.h"
+#include "generic/HighResolutionTimer.h"
+#include "kernels/math/CudaColourUtils.cuh"
 #include <random>
 
 #include <onnxruntime/onnxruntime_cxx_api.h>
@@ -17,6 +19,11 @@ namespace ONNX
     }
 
     Grid2Grid::~Grid2Grid() { Destroy(); }
+
+    void Grid2Grid::Reinitialise()
+    {
+        Initialise(m_modelPath);
+    }
 
     void Grid2Grid::Initialise(const std::string& modelPath)
     {
@@ -40,6 +47,7 @@ namespace ONNX
             m_ortSession = std::make_unique< Ort::Session>(*m_ortEnvironment, Widen(modelPath).c_str(), Ort::SessionOptions(nullptr));
 
             m_isModelReady = true;
+            m_modelPath = modelPath;
         }
         catch (const Ort::Exception& err)
         {
@@ -63,24 +71,32 @@ namespace ONNX
         std::uniform_real_distribution<> rng(0.0f, 1.0f);*/
 
         static const int shSwizzle[4] = {0, 3, 1, 2};
-        static const float shSign[4] = {1.0, -1.0, -1.0, 1.0};
+        static const float shSign[4] = {1.0, 1.0, 1.0, -1.0};
+
+        constexpr int W = 8, H = 8, D = 8;
+        constexpr int kNumProbes = W * H * D;
+        constexpr int kTensorChannelStride = kNumProbes * 4;
+
+        Assert(rawInputData.size() >= kNumProbes * 5);
+        Assert(rawOutputData.size() >= kNumProbes * 5);
         
         // Transpose the raw SH data into the tensor format required by the grid2grid model
-        for (int c = 0, tensorIdx = 0; c < 3; ++c)
+        Timer timer;
+        for (int z = 0, inputIdx = 0; z < 8; ++z)
         {
-            for(int z = 0; z < 8; ++z)
+            for (int y = 0; y < 8; ++y)
             {
-                for (int y = 0; y < 8; ++y)
+                for (int x = 0; x < 8; ++x, inputIdx+=5)
                 {
-                    for (int x = 0; x < 8; ++x, tensorIdx += 4)
+                    const int tensorIdx = (W * H * (W - 1 - z) + W * y + x) * 4;
+                    for (int i = 0; i < 4; ++i)
                     {
-                        const int inputIdx = (64 * (7 - z) + 8 * y + x) * 5;
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            float sh = shSign[i] * rawInputData[inputIdx][c + shSwizzle[i]];
-                            sh = std::copysign(std::log(1.0 + std::abs(sh)), sh);
-                            m_inputTensorData[tensorIdx + i] = sh;
-                        }
+                        auto sh = rawInputData[inputIdx + shSwizzle[i]] * shSign[i];
+                        //sh = log(abs(sh) + 1.0f) * sign(sh);
+ 
+                        m_inputTensorData[tensorIdx + i] = sh[0];
+                        m_inputTensorData[tensorIdx + i + kTensorChannelStride] = sh[1];
+                        m_inputTensorData[tensorIdx + i + kTensorChannelStride * 2] = sh[2];
                     }
                 }
             }
@@ -101,25 +117,27 @@ namespace ONNX
             AssertMsgFmt("Error: ONNX runtime: %s (code %i)", err.what(), err.GetOrtErrorCode());
         }
 
-        // Transpose the data back again 
-        for (int c = 0, tensorIdx = 0; c < 3; ++c)
+        // Transpose the data back again      
+        for (int z = 0, outputIdx = 0; z < 8; ++z)
         {
-            for (int z = 0; z < 8; ++z)
+            for (int y = 0; y < 8; ++y)
             {
-                for (int y = 0; y < 8; ++y)
+                for (int x = 0; x < 8; ++x, outputIdx+=5)
                 {
-                    for (int x = 0; x < 8; ++x, tensorIdx += 4)
+                    const int tensorIdx = (W*H * (W-1-z) + W*y + x) * 4;
+                    for (int i = 0; i < 4; ++i)
                     {
-                        const int outputIdx = (64 * (7 - z) + 8 * y + x) * 5;
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            float sh = m_outputTensorData[tensorIdx + i];
-                            sh = std::copysign(std::exp(std::abs(sh)) - 1.0f, sh);
-                            rawOutputData[outputIdx + shSwizzle[i]] = shSign[i] * sh;
-                        }
+                        Cuda::vec3 sh(m_outputTensorData[tensorIdx + i],
+                                      m_outputTensorData[tensorIdx + i + kTensorChannelStride], 
+                                      m_outputTensorData[tensorIdx + i + kTensorChannelStride*2]);
+                        
+                        //sh = (exp(abs(sh)) - 1.0f) * sign(sh);                      
+                        rawOutputData[outputIdx + shSwizzle[i]] = sh * shSign[i];
                     }
                 }
             }
         }
+
+        Log::SystemOnce("grid2grid: Evaluated in %.2fms.", timer.Get() * 1e3f);
     }
 }

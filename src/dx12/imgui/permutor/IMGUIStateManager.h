@@ -57,12 +57,15 @@ private:
     int                     m_sampleCountIdx;
     int                     m_numBakeIterations;
     int                     m_startBakeIteration;
+    Cuda::ivec2             m_trainTestRatio;
     int                     m_bakePermutationIdx;
     float                   m_bakeProgress;
 
-    std::string             m_usdPathTemplate;
+    std::string             m_usdTrainPathTemplate;
+    std::string             m_usdTestPathTemplate;
     std::string             m_pngPathTemplate;
-    std::vector<char>       m_usdPathUIData;
+    std::vector<char>       m_usdTrainPathUIData;
+    std::vector<char>       m_usdTestPathUIData;
     std::vector<char>       m_pngPathUIData;
 
     uint                    m_jitterFlags;

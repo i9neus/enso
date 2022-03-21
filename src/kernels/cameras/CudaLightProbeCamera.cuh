@@ -60,6 +60,7 @@ namespace Cuda
 
 		int							lightingMode;
 		int							traversalMode;
+		int							outputColourSpace;
 		int							gridUpdateInterval;
 		bool						filterGrids;
 	};

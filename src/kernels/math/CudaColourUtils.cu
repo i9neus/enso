@@ -63,4 +63,48 @@ namespace Cuda
 
         return hsv;
     }
+
+    __host__ __device__ vec3 RGBToCIEXYZ(const vec3& rgb)
+    {
+        return mat3(0.4887180f, 0.3106803f, 0.2006017f,
+                    0.1762044f, 0.8129847f, 0.0108109f,
+                    0.0, 0.0102048f, 0.9897952f) * rgb;
+    }
+
+    __host__ __device__ vec3 CIEXYZToRGB(const vec3& xyz)
+    {
+        return mat3(2.3706743f, -0.9000405f, -0.4706338f,
+                    -0.5138850f, 1.4253036f, 0.0885814f,
+                    0.0052982f, -0.0146949f, 1.0093968f) * xyz;
+    }
+
+    __host__ __device__ vec3 RGBToChroma(const vec3& rgb)
+    {
+        // Chroma space is a linear transform whereby RGB space is rotated such that greyscale values
+        // are colinear to the Y axis.
+        return mat3(0.5773502691896258f, 0.5773502691896258f, 0.5773502691896258f,
+                    -0.7071067811865475f, 0.7071067811865475f, 0.0f,
+                    -0.4082482904638631f, -0.4082482904638631f, 0.816496580927726f) * rgb;
+    }
+
+    __host__ __device__ vec3 ChromaToRGB(const vec3& chr)
+    {
+        return mat3(0.5773502691896258f, -0.7071067811865475f, -0.4082482904638631f,
+                    0.5773502691896258f, 0.7071067811865475f, -0.4082482904638631f,
+                    0.5773502691896258f, 0.f, 0.81649658092772f) * chr;
+    }
+
+    __host__ __device__ vec3 XYZToxyY(const vec3& xyz)
+    {
+        float sum = xyz.x + xyz.y + xyz.z;
+        if (fabsf(sum) < 1e-10f) { sum = 1e-10f; }
+        return vec3(xyz.x / sum, xyz.y / sum, xyz.y);
+    }
+
+    __host__ __device__ vec3 xyYToXYZ(const vec3& xyy)
+    {
+        return vec3(xyy.x * xyy.z / xyy.y, 
+                    xyy.z, 
+                    (1.0f - xyy.x - xyy.y) * xyy.z / xyy.y);
+    }
 }

@@ -11,7 +11,8 @@ class BakePermutor
 public:
     struct Params
     {
-        std::string probeGridTemplatePath;
+        std::string probeGridTrainTemplatePath;
+        std::string probeGridTestTemplatePath;
         std::string renderTemplatePath; 
         std::string jsonRootPath;
         
@@ -25,6 +26,7 @@ public:
         uint jitterFlags = 0;
         int numIterations = 0;
         int startIteration = 0;
+        Cuda::ivec2 trainTestRatio = Cuda::ivec2(4, 1);
         int numStrata = 0; 
 
         Cuda::ivec2 noisyRange;
@@ -50,13 +52,14 @@ public:
 
     struct IterationData
     {
-        IterationData(const int type, const std::string& desc, const Cuda::ivec2& minMax, const int mode, const bool filter) :
-            bakeType(type), description(desc), minMaxSamples(minMax), sampleMode(mode), filterGrids(filter) {}
+        IterationData(const int type, const std::string& desc, const Cuda::ivec2& minMax, const int mode, const bool filter, const int colourSpace) :
+            bakeType(type), description(desc), minMaxSamples(minMax), sampleMode(mode), filterGrids(filter), outputColourSpace(colourSpace) {}
 
         int             bakeType;
         std::string     description;
         Cuda::ivec2     minMaxSamples;
         int             sampleMode;
+        int             outputColourSpace;
         bool            filterGrids;
     };
 
@@ -97,7 +100,8 @@ private:
     int                         m_numStates;
     int                         m_numSucceeded, m_numFailed;
     
-    std::vector<std::string>    m_probeGridTemplateTokens;
+    std::vector<std::string>    m_probeGridTrainTemplateTokens;
+    std::vector<std::string>    m_probeGridTestTemplateTokens;
     std::vector<std::string>    m_renderTemplateTokens;
 
     Json::Document&             m_commandQueue;

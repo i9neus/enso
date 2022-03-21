@@ -17,6 +17,7 @@ namespace Cuda
         clipRegion[1] = gridDensity;
         shOrder = 1;
         outputMode = kProbeGridIrradiance;
+        inputColourSpace = kColourSpaceRGB;
         posSwizzle = kXYZ;
         posInvertX = false;
         posInvertY = false;
@@ -49,6 +50,7 @@ namespace Cuda
         node.AddValue("shOrder", shOrder);
         node.AddValue("dilate", dilate);
         node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
+        node.AddEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace);
 
         node.AddValue("posInvertX", posInvertX);
         node.AddValue("posInvertY", posInvertY);
@@ -78,6 +80,7 @@ namespace Cuda
         node.GetValue("shOrder", shOrder, flags);
         node.GetValue("dilate", dilate, flags);
         node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
+        node.GetEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace, flags);
 
         node.GetValue("posInvertX", posInvertX, flags);
         node.GetValue("posInvertY", posInvertY, flags);
@@ -105,7 +108,8 @@ namespace Cuda
     __host__ __device__  bool LightProbeGridParams::operator!=(const LightProbeGridParams& rhs) const
     {
         return gridDensity != rhs.gridDensity ||
-            shOrder != rhs.shOrder;
+               shOrder != rhs.shOrder ||
+               inputColourSpace != rhs.inputColourSpace;
     }
 
     __host__ __device__ Device::LightProbeGrid::LightProbeGrid() { }
@@ -397,6 +401,17 @@ namespace Cuda
             for (int coeffIdx = 0; coeffIdx < maxSHCoeff; coeffIdx++)
             {
                 L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, m_params.coefficientsPerProbe, delta) * SH::Project(n, coeffIdx);
+            }
+
+            // Remap to RGB
+            switch (m_params.inputColourSpace)
+            {
+            case kColourSpaceCIEXYZ:
+                L = CIEXYZToRGB(L); break;
+            case kColourSpaceCIExyY:
+                L = CIEXYZToRGB(xyYToXYZ(L)); break;
+            case kColourSpaceChroma:
+                L = ChromaToRGB(L); break;
             }
         }
         }
