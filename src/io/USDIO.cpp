@@ -391,6 +391,7 @@ namespace USDIO
         shSwiz[3] = SwizzleIndices(exportParams.shSwizzle)[2] + 1;
 
         // Swizzle the axes
+        Cuda::vec2 coeffMinMax = Cuda::kMinMaxReset;
         for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
         {
             Cuda::ivec3 gridPos = Cuda::GridPosFromProbeIdx(probeIdx, gridParams.gridDensity);            
@@ -410,10 +411,22 @@ namespace USDIO
             // Copy the coefficient data and multiply by the orientation coefficients
             for (int coeffIdx = 0; coeffIdx < gridParams.coefficientsPerProbe; ++coeffIdx)
             {
-                swizzledData[swizzledProbeIdx * gridParams.coefficientsPerProbe + coeffIdx] = 
-                    rawData[probeIdx * gridParams.coefficientsPerProbe + shSwiz[coeffIdx]] * shDirs[coeffIdx];
+                const auto sh = rawData[probeIdx * gridParams.coefficientsPerProbe + shSwiz[coeffIdx]] * shDirs[coeffIdx];
+
+                if (coeffIdx < gridParams.shCoefficientsPerProbe)
+                {
+                    coeffMinMax = Cuda::MinMax(coeffMinMax, sh[0]);
+                    coeffMinMax = Cuda::MinMax(coeffMinMax, sh[1]);
+                    coeffMinMax = Cuda::MinMax(coeffMinMax, sh[2]);
+                }
+                
+                swizzledData[swizzledProbeIdx * gridParams.coefficientsPerProbe + coeffIdx] = sh;
             }
         }
+
+        // If the grid is empty i.e. has zero energy, signal a warning
+        if (coeffMinMax[1] - coeffMinMax[0] < 1e-10f) { Log::Error("Warning: grid contains constant value %f", coeffMinMax[1] - coeffMinMax[0]); }
+        else { Log::Write("Export USD: coefficient range [%f, %f]", coeffMinMax[0], coeffMinMax[1]); }
 
         const std::string ext = GetExtension(exportPath);
 
