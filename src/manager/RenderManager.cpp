@@ -548,7 +548,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 		// Found a scene object parameter parameter patch, so signal that the scene graph is dirty
 		m_dirtiness = kDirtinessStateSoftReset;
 
-		Log::Debug("Updated! %s\n", m_patchJson.Stringify(true));
+		//Log::Debug("Updated! %s\n", m_patchJson.Stringify(true));
 	}
 
 	const Json::Node commandsJson = rootJson.GetChildObject("commands", Json::kSilent | Json::kLiteralID);

@@ -852,15 +852,21 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::ClearRenderState()
     {
+        // Clear the light probe grids
+        for (auto& grid : m_hostLightProbeGrids)
+        {
+            if (grid) { grid->Clear(); }
+        }
+        
+        // Clear the accumulation and ray buffers
         for (auto& accumBuffer : m_hostAccumBuffers)
         {
-            if (accumBuffer)
-            {
-                accumBuffer->Clear(vec4(0.0f));
-            }
-        }
+            if (accumBuffer) { accumBuffer->Clear(vec4(0.0f)); }
+        }       
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
-        m_hostConvergenceGrid->Clear(1);
+        m_hostConvergenceGrid->Clear(kProbeUnconverged);
+
+        // Reset the stats
         *m_aggregateStats = LightProbeCameraAggregateStatistics();
     }
 

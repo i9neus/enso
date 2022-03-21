@@ -240,7 +240,7 @@ namespace Cuda
 	{
 		Assert(cu_deviceData);
 
-		IsOk(cudaMemset(cu_deviceData, 0, sizeof(ElementType) * m_hostData.m_size));
+		IsOk(cudaMemset(m_hostData.cu_data, 0, sizeof(ElementType) * m_hostData.m_size));
 		IsOk(cudaStreamSynchronize(m_hostStream));
 	}
 

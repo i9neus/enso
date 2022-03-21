@@ -208,6 +208,7 @@ namespace Cuda
             __host__ void                               Integrate();
             __host__ void                               Replace(const LightProbeGrid& other);
             __host__ void                               Swap(LightProbeGrid& other);
+            __host__ void                               Clear();
 
             __host__  virtual void                      OnDestroyAsset() override final;
             __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;

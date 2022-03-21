@@ -746,6 +746,12 @@ namespace Cuda
         m_shData->Swap(*m_shLaplacianData);
     }
 
+    __host__ void Host::LightProbeGrid::Clear()
+    {
+        // Reset the SH data
+        m_shData->Clear();
+    }
+
     __host__ bool Host::LightProbeGrid::HasSemaphore(const std::string& tag) const
     {
         return m_semaphoreRegistry.find(tag) != m_semaphoreRegistry.end();
