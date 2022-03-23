@@ -237,10 +237,10 @@ namespace Cuda
                 switch (componentIdx)
                 {
                 case kLightProbeBufferDirect:
-                    accumulate = m_params.lightingMode == kBakeLightingCombined || incidentRay.depth <= 1;
+                    accumulate = m_params.lightingMode == kBakeLightingCombined || incidentRay.depth == 0;
                     break;
                 case kLightProbeBufferIndirect:
-                    accumulate = m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 1;
+                    accumulate = m_params.lightingMode == kBakeLightingSeparated && incidentRay.depth > 0;
                     break;
                 default:
                     assert(false);

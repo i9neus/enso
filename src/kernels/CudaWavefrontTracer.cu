@@ -355,7 +355,7 @@ namespace Cuda
 
 			// Create the ray and spoof its depth
 			Shade(tempRay, m_lightProbeMaterial, hitCtx, tempCtx);
-			(&compressedRay)[1].depth = 1;
+			(&compressedRay)[1].depth = 0;
 
 			RayDebug("%i: Probe direct sample: [%f, %f, %f]\n", 1, (&compressedRay)[1].weight.x, (&compressedRay)[1].weight.y, (&compressedRay)[1].weight.z);
 		}
