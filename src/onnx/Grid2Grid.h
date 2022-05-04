@@ -1,18 +1,22 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
-#include "kernels/math/CudaMath.cuh"
-
-// Forward declare a bunch of structures used by ONNX runtime
-namespace Ort
-{
-    struct Env;
-    struct Value;
-    struct Session;
-}
+#include "OnnxRuntime.h"
 
 namespace ONNX
 {
+#ifdef DEBUG     
+    class Grid2GridInterface
+    {
+    public:
+        Grid2GridInterface() = default;
+        Grid2GridInterface(const std::string& modelPath) {}
+
+        void Reinitialise() {}
+        void Initialise(const std::string& modelPath) {}
+        void Evaluate(const std::vector<Cuda::vec3>& directData, std::vector<Cuda::vec3>& indirectData) {}
+    };
+
+#else
     class Grid2Grid
     {
     public:
@@ -40,4 +44,6 @@ namespace ONNX
         bool                            m_isModelReady;
         std::string                     m_modelPath;
     };
+
+#endif
 }

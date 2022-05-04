@@ -4,6 +4,8 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include <random>
 
+#ifndef _DEBUG
+
 #include <onnxruntime/onnxruntime_cxx_api.h>
 
 namespace ONNX
@@ -141,3 +143,5 @@ namespace ONNX
         Log::SystemOnce("grid2grid: Evaluated in %.2fms.", timer.Get() * 1e3f);
     }
 }
+
+#endif 
