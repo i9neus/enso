@@ -29,6 +29,7 @@
 #include "lightprobes/CudaLightProbeIO.cuh"
 
 #include "ml/CudaGrid2Grid.cuh"
+#include "ml/CudaFCNNProbeDenoiser.cuh"
 
 #include "CudaWavefrontTracer.cuh"
 
@@ -65,6 +66,7 @@ namespace Cuda
         AddInstantiator<Host::LightProbeIO>();
 
         AddInstantiator<Host::Grid2Grid>();
+        AddInstantiator<Host::FCNNProbeDenoiser>();
     }    
 
     template<typename T, typename... Pack>

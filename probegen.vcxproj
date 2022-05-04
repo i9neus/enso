@@ -41,6 +41,7 @@
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\RenderManager.cpp" />
     <ClCompile Include="src\onnx\Grid2Grid.cpp" />
+    <ClCompile Include="src\onnx\FCNNProbeDenoiser.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui.cpp" />
@@ -140,6 +141,7 @@
     <ClInclude Include="src\kernels\math\vec\CudaVecBase.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObjectFactory.cuh" />
     <ClInclude Include="src\kernels\ml\CudaGrid2Grid.cuh" />
+    <ClInclude Include="src\kernels\ml\CudaFCNNProbeDenoiser.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaCornellBox.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaGenericIntersectors.cuh" />
@@ -150,6 +152,8 @@
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
     <ClInclude Include="src\manager\RenderManager.h" />
     <ClInclude Include="src\onnx\Grid2Grid.h" />
+    <ClInclude Include="src\onnx\OnnxRuntime.h" />
+    <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="src\thirdparty\imgui\imconfig.h" />
@@ -218,6 +222,7 @@
     <CudaCompile Include="src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="src\kernels\math\CudaTransform.cu" />
     <CudaCompile Include="src\kernels\ml\CudaGrid2Grid.cu" />
+    <CudaCompile Include="src\kernels\ml\CudaFCNNProbeDenoiser.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaCornellBox.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaKIFS.cu" />

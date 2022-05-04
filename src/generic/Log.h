@@ -100,7 +100,7 @@ public:
 
 #define LOG_TYPE(Name, Colour, Type) template<typename... Args> \
                                      static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(nullptr, -1, tfm::format(message.c_str(), args...), Colour, Type); } \
-                                     static void Name(const std::string& message) { Log::StaticWrite("", -1, message, Colour, Type); }
+                                     static void Name(const std::string& message) { Log::StaticWrite(nullptr, -1, message, Colour, Type); }
 
 #define LOG_TYPE_ONCE(Name, Colour, Type) template<typename... Args> \
                                      static inline void Name(const std::string& message, const Args&... args) { Log::StaticWrite(__FILE__, __LINE__, tfm::format(message.c_str(), args...), Colour, Type); } \

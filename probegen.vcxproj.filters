@@ -112,6 +112,9 @@
     <ClCompile Include="src\onnx\Grid2Grid.cpp">
       <Filter>onnx</Filter>
     </ClCompile>
+    <ClCompile Include="src\onnx\FCNNProbeDenoiser.cpp">
+      <Filter>onnx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -507,6 +510,15 @@
     <ClInclude Include="src\kernels\math\CudaGeodesics.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
+    <ClInclude Include="src\onnx\OnnxRuntime.h">
+      <Filter>onnx</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\ml\CudaFCNNProbeDenoiser.cuh">
+      <Filter>kernels\ml</Filter>
+    </ClInclude>
+    <ClInclude Include="src\onnx\FCNNProbeDenoiser.h">
+      <Filter>onnx</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -720,6 +732,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\math\CudaGeodesics.cu">
       <Filter>kernels\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\ml\CudaFCNNProbeDenoiser.cu">
+      <Filter>kernels\ml</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
