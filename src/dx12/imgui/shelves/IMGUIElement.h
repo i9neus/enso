@@ -200,6 +200,26 @@ public:
     }
 };
 
+class IMGUIInputText
+{
+public:
+    enum _attrs : int { kDefaultMinSize = 1024 };
+
+    IMGUIInputText() = delete;
+    IMGUIInputText(const std::string& label, const std::string& contents = "", const std::string& id = "", const int minSize = kDefaultMinSize);
+
+    void Construct();
+
+    IMGUIInputText& operator=(const std::string& text);
+    operator std::string() const;
+
+private:
+    std::string         m_label;
+    std::vector<char>   m_textData;
+    std::string         m_id;
+    const int           m_minSize;
+};
+
 class IMGUIElement
 {
 public:

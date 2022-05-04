@@ -12,7 +12,6 @@
 
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
 
 #include <random>
 
@@ -58,7 +57,7 @@ int BakePermutor::GenerateIterationList()
 
         Assert(stratumRange >= 0);
         if (stratumRange == 0) { continue; }
-        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma); continue; }
+        else if (stratumRange == 1) { m_iterationList.emplace_back(kBakeTypeNoisyProbeGrid, "Noisy grid", Cuda::ivec2(0, stratumLower), Cuda::kCameraSamplingFixed, false, m_params.noisyColourSpace); continue; }
         
         // Generate some candidate samples and reject if they're already in the list.
         for (int tries = 0; tries < 10; ++tries)
@@ -66,7 +65,7 @@ int BakePermutor::GenerateIterationList()
             const int candidate = stratumLower + rng(mt) % stratumRange;
             if (sampleCountSet.find(candidate) == sampleCountSet.end())
             {
-                m_iterationList.emplace_back(kBakeTypeProbeGrid, "Noisy grid", Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma);
+                m_iterationList.emplace_back(kBakeTypeNoisyProbeGrid, "Noisy grid", Cuda::ivec2(0, candidate), Cuda::kCameraSamplingFixed, false, m_params.noisyColourSpace);
                 sampleCountSet.emplace(candidate);
                 totalSamples += candidate;
                 break;
@@ -74,9 +73,14 @@ int BakePermutor::GenerateIterationList()
         }
     }
     
-    // Add the reference sample count and the thumbnail render
-    m_iterationList.emplace_back(kBakeTypeProbeGrid, "Reference grid", m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true, Cuda::kColourSpaceChroma);
-    m_iterationList.emplace_back(kBakeTypeRender, "Preview image", Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false, Cuda::kColourSpaceChroma);
+    // Add the reference bake
+    m_iterationList.emplace_back(kBakeTypeReferenceProbeGrid, "Reference grid", m_params.minMaxReferenceSamples, Cuda::kCameraSamplingAdaptiveRelative, true, m_params.referenceColourSpace);
+
+    // Add the PNG preview if required
+    if (m_params.exportToPNG)
+    {
+        m_iterationList.emplace_back(kBakeTypeRender, "Preview image", Cuda::ivec2(0, m_params.thumbnailCount), Cuda::kCameraSamplingFixed, false, m_params.referenceColourSpace);
+    }
 
     m_iterationIt = m_iterationList.cbegin();
     return totalSamples;
@@ -275,7 +279,7 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
     auto& perspParams = m_perspectiveCameraShelf->GetParamsObject();
 
     // Set the sample counts depending on the type of bake we're doing
-    if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
+    if (m_iterationIt->bakeType & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
     {
         // Set the sample count on the light probe camera
         probeParams.camera.isActive = true;
@@ -322,26 +326,26 @@ bool BakePermutor::Advance(const bool lastBakeSucceeded)
 
     // Get some parameters that we'll need to generate the file paths
     m_bakeLightingMode == probeParams.lightingMode;
-    m_bakeSeed = probeParams.camera.seed;   
+    m_bakeSeed = probeParams.camera.seed; 
+    m_bakeType = m_iterationIt->bakeType;
 
     // Enqueue the bake
     Json::Node bakeJson = m_commandQueue.AddChildObject("bake");
     bakeJson.AddValue("action", "start");
-    if (m_iterationIt->bakeType == kBakeTypeProbeGrid)
+    bakeJson.AddValue("type", m_iterationIt->bakeType);
+    if (m_iterationIt->bakeType & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
     {
         // Choose either the training or testing export path based on the current iteration
         const auto& tokens = ((m_iterationIdx + m_params.startIteration) % max(1, m_params.trainTestRatio[0] + m_params.trainTestRatio[1]) < m_params.trainTestRatio[0]) ?
-            m_probeGridTrainTemplateTokens : m_probeGridTestTemplateTokens;
-        
-        bakeJson.AddValue("type", "probeGrid");
-        bakeJson.AddValue("isArmed", m_params.exportToUsd);
+            m_probeGridTrainTemplateTokens : m_probeGridTestTemplateTokens;        
+  
+        bakeJson.AddValue("isArmed", m_params.exportToUSD);
         bakeJson.AddValue("minGridValidity", m_params.gridValidityRange.x);
         bakeJson.AddValue("maxGridValidity", m_params.gridValidityRange.y);
         bakeJson.AddArray("exportPaths", GenerateExportPaths(tokens, 2));
     }
     else
     {
-        bakeJson.AddValue("type", "render");
         bakeJson.AddValue("pngExportPath", GenerateExportPaths(m_renderTemplateTokens, 1)[0]);
     }         
 
@@ -394,6 +398,15 @@ std::vector<std::string> BakePermutor::GenerateExportPaths(const std::vector<std
             if (token == "{$COMPONENT}")
             {
                 path += (m_bakeLightingMode == Cuda::kBakeLightingCombined) ? "combined" : ((pathIdx == 0) ? "direct" : "indirect");
+            }
+            else if (token == "{$PASS}")
+            {
+                switch (m_bakeType)
+                {
+                case kBakeTypeNoisyProbeGrid: path += "noisy"; break;
+                case kBakeTypeReferenceProbeGrid: path += "reference"; break;
+                case kBakeTypeRender: path += "render"; break;
+                }
             }
             else if (token == "{$RANDOM_DIGITS}")
             {

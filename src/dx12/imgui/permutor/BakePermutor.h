@@ -3,6 +3,7 @@
 #include "RenderObjectStateMap.h"
 #include "../shelves/IMGUIAbstractShelf.h"
 #include <set>
+#include "kernels/math/CudaColourUtils.cuh"
 
 class LambertBRDFShelf;
 
@@ -18,8 +19,8 @@ public:
         
         bool disableLiveView = false;
         bool startWithThisView = false;
-        bool exportToUsd = false;
-        bool exportToPng = false; 
+        bool exportToUSD = false;
+        bool exportToPNG = false; 
 
         Cuda::vec2 gridValidityRange;
         Cuda::ivec2 kifsIterationRange;
@@ -28,6 +29,8 @@ public:
         int startIteration = 0;
         Cuda::ivec2 trainTestRatio = Cuda::ivec2(4, 1);
         int numStrata = 0; 
+        int noisyColourSpace = Cuda::kColourSpaceRGB;
+        int referenceColourSpace = Cuda::kColourSpaceRGB;
 
         Cuda::ivec2 noisyRange;
         Cuda::ivec2 minMaxReferenceSamples = Cuda::ivec2(0);
@@ -99,6 +102,7 @@ private:
     int                         m_stateIdx;
     int                         m_numStates;
     int                         m_numSucceeded, m_numFailed;
+    int                         m_bakeType;
     
     std::vector<std::string>    m_probeGridTrainTemplateTokens;
     std::vector<std::string>    m_probeGridTestTemplateTokens;

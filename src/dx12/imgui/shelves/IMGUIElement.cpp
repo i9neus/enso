@@ -541,3 +541,38 @@ IMGUIDataTable& IMGUIDataTable::operator <<(nullptr_t)
     return *this;
 }
 
+IMGUIInputText::IMGUIInputText(const std::string& label, const std::string& contents, const std::string& id, const int minSize) :
+    m_minSize(minSize),
+    m_id(id),
+    m_label(label)
+{    
+    *this = contents;        
+}
+
+IMGUIInputText& IMGUIInputText::operator=(const std::string& str)
+{
+    m_textData.resize(math::max(m_minSize, int(str.length())));
+    std::memset(m_textData.data(), '\0', sizeof(char) * m_textData.size());
+    std::memcpy(m_textData.data(), str.data(), sizeof(char) * str.length());
+
+    return *this;
+}
+
+IMGUIInputText::operator std::string() const
+{
+    return std::string(m_textData.data());
+}
+
+void IMGUIInputText::Construct()
+{
+    if (m_id.empty())
+    {
+        ImGui::InputText(m_label.c_str(), m_textData.data(), m_textData.size());
+    }
+    else
+    {
+        ImGui::PushID(m_id.c_str());
+        ImGui::InputText(m_label.c_str(), m_textData.data(), m_textData.size());
+        ImGui::PopID();
+    }
+}

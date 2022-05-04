@@ -61,12 +61,14 @@ private:
     int                     m_bakePermutationIdx;
     float                   m_bakeProgress;
 
-    std::string             m_usdTrainPathTemplate;
-    std::string             m_usdTestPathTemplate;
-    std::string             m_pngPathTemplate;
-    std::vector<char>       m_usdTrainPathUIData;
-    std::vector<char>       m_usdTestPathUIData;
-    std::vector<char>       m_pngPathUIData;
+    IMGUIInputText          m_rootPath;
+    IMGUIInputText          m_usdTrainPath;
+    IMGUIInputText          m_usdTestPath;    
+    IMGUIInputText          m_pngPath;
+    bool                    m_exportToPNG;
+
+    int                     m_noisyColourSpace;
+    int                     m_referenceColourSpace;
 
     uint                    m_jitterFlags;
     std::string             m_stateJsonPath;

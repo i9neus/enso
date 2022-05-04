@@ -39,6 +39,7 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_permutor(imguiShelves, m_stateMap, commandQueue),
     m_stateMap(imguiShelves),
     m_exportToUSD(false),
+    m_exportToPNG(true),
     m_disableLiveView(false),
     m_startWithThisView(false),
     m_shutdownOnComplete(false),
@@ -49,16 +50,15 @@ RenderObjectStateManager::RenderObjectStateManager(IMGUIAbstractShelfMap& imguiS
     m_dirtiness(IMGUIDirtiness::kClean),
     m_gridFitness(0.0f),
     m_renderStateJson(renderStateJson),
-    m_commandQueue(commandQueue), 
-    m_bakeGridSamples(-1)
+    m_commandQueue(commandQueue),
+    m_bakeGridSamples(-1),
+    m_rootPath("Root path"),
+    m_usdTrainPath("Train path", "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd", "usd_train_path"),
+    m_usdTestPath("Test path", "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd", "usd_test_path"),
+    m_pngPath("Path", "probeVolume.{$ITERATION}.png", "png_path"),
+    m_noisyColourSpace(Cuda::kColourSpaceChroma),
+    m_referenceColourSpace(Cuda::kColourSpaceChroma)
 {
-    m_usdTrainPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
-    m_usdTestPathTemplate = "probeVolume.{$SAMPLE_COUNT}.{$ITERATION}.usd";
-    m_pngPathTemplate = "probeVolume.{$ITERATION}.png";
-
-    CopyStringToVector(m_usdTrainPathTemplate, m_usdTrainPathUIData);
-    CopyStringToVector(m_usdTestPathTemplate, m_usdTestPathUIData);
-    CopyStringToVector(m_pngPathTemplate, m_pngPathUIData);   
 }
 
 RenderObjectStateManager::~RenderObjectStateManager()
@@ -71,7 +71,7 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
     m_stateJsonPath = node.GetRootDocument().GetOriginFilePath();
     std::string jsonStem = GetFileStem(m_stateJsonPath);
     ReplaceFilename(m_stateJsonPath, tfm::format("%s.states.json", jsonStem));
-    
+
     // Set up some functors for the state list UI
     std::function<bool(const std::string&)> onAddState = [this](const std::string& id) -> bool
     {
@@ -126,7 +126,7 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
     for (auto& shelf : m_imguiShelves)
     {
         std::shared_ptr<LightProbeCameraShelf> lightProbeCameraShelf = std::dynamic_pointer_cast<LightProbeCameraShelf>(shelf.second);
-        if(lightProbeCameraShelf)
+        if (lightProbeCameraShelf)
         {
             m_lightProbeCameraDAG = lightProbeCameraShelf->GetDAGPath();
             break;
@@ -135,7 +135,7 @@ void RenderObjectStateManager::Rebuild(const Json::Node& node)
 }
 
 void RenderObjectStateManager::Initialise(HWND hWnd)
-{   
+{
     m_hWnd = hWnd;
 }
 
@@ -154,7 +154,7 @@ void RenderObjectStateManager::ScanForSceneFiles()
 
         // Only consider JSON files
         auto fullPath = entry.path();
-        if(fullPath.extension().string() != ".json") { continue; }
+        if (fullPath.extension().string() != ".json") { continue; }
 
         // Ignore state files with formats similar to 'xxxx.states.json'
         auto stemPath = fullPath.stem();
@@ -163,7 +163,7 @@ void RenderObjectStateManager::ScanForSceneFiles()
         // Store the scene path
         m_sceneFilePathList.push_back(fullPath.string());
         m_sceneFileNameList.push_back(fullPath.filename().string());
-    }    
+    }
 }
 
 void RenderObjectStateManager::DeserialiseJson()
@@ -207,33 +207,42 @@ void RenderObjectStateManager::DeserialiseJson()
         permNode.GetValue("iterations", m_numBakeIterations, jsonWarningLevel);
         permNode.GetVector("gridValidityRange", m_gridValidityRange, jsonWarningLevel);
         permNode.GetVector("kifsIterationRange", m_kifsIterationRange, jsonWarningLevel);
-        if (permNode.GetValue("usdPathTemplate", m_usdTrainPathTemplate, jsonWarningLevel) || 
-            permNode.GetValue("usdTrainPathTemplate", m_usdTrainPathTemplate, jsonWarningLevel))
+        permNode.GetEnumeratedParameter("noisyColourSpace", { "RGB", "XYZ", "xyY", "Chroma" }, m_noisyColourSpace, jsonWarningLevel);
+        permNode.GetEnumeratedParameter("referenceColourSpace", { "RGB", "XYZ", "xyY", "Chroma" }, m_referenceColourSpace, jsonWarningLevel);
+
+        std::string pathString;
+        if (permNode.GetValue("rootPath", pathString, jsonWarningLevel))
         {
-            CopyStringToVector(m_usdTrainPathTemplate, m_usdTrainPathUIData);
+            m_rootPath = pathString;
         }
-        if (permNode.GetValue("usdTestPathTemplate", m_usdTestPathTemplate, jsonWarningLevel))
+        if (permNode.GetValue("usdPathTemplate", pathString, jsonWarningLevel) ||
+            permNode.GetValue("usdTrainPathTemplate", pathString, jsonWarningLevel))
         {
-            CopyStringToVector(m_usdTestPathTemplate, m_usdTestPathUIData);
+            m_usdTrainPath = pathString;
         }
-        if (permNode.GetValue("pngPathTemplate", m_pngPathTemplate, jsonWarningLevel))
+        if (permNode.GetValue("usdTestPathTemplate", pathString, jsonWarningLevel))
         {
-            CopyStringToVector(m_pngPathTemplate, m_pngPathUIData);
+            m_usdTestPath = pathString;
         }
+        if (permNode.GetValue("pngPathTemplate", pathString, jsonWarningLevel))
+        {
+            m_pngPath = pathString;
+        }
+        permNode.GetValue("exportPng", m_exportToPNG, jsonWarningLevel);
     }
 }
 
 void RenderObjectStateManager::SerialiseJson() const
 {
     if (m_stateJsonPath.empty()) { return; }
-    
+
     Json::Document rootDocument;
-    
+
     Json::Node stateNode = rootDocument.AddChildObject("states");
-    m_stateMap.ToJson(stateNode);    
+    m_stateMap.ToJson(stateNode);
 
     Json::Node permJson = rootDocument.AddChildObject("permutations");
-    {        
+    {
         permJson.AddVector("noisySampleRange", m_noisySampleRange);
         permJson.AddVector("referenceSamples", m_minMaxReferenceSamples);
         permJson.AddValue("thumbnailSamples", m_thumbnailSamples);
@@ -241,9 +250,13 @@ void RenderObjectStateManager::SerialiseJson() const
         permJson.AddVector("gridValidityRange", m_gridValidityRange);
         permJson.AddVector("kifsIterationRange", m_kifsIterationRange);
         permJson.AddValue("iterations", m_numBakeIterations);
-        permJson.AddValue("usdTrainPathTemplate", std::string(m_usdTrainPathUIData.data()));
-        permJson.AddValue("usdTestPathTemplate", std::string(m_usdTestPathUIData.data()));
-        permJson.AddValue("pngPathTemplate", std::string(m_pngPathUIData.data()));
+        permJson.AddValue("rootPath", std::string(m_rootPath));
+        permJson.AddValue("usdTrainPathTemplate", std::string(m_usdTrainPath));
+        permJson.AddValue("usdTestPathTemplate", std::string(m_usdTestPath));
+        permJson.AddValue("pngPathTemplate", std::string(m_pngPath));
+        permJson.AddValue("exportPng", m_exportToPNG);
+        permJson.AddEnumeratedParameter("noisyColourSpace", { "RGB", "XYZ", "xyY", "Chroma" }, m_noisyColourSpace);
+        permJson.AddEnumeratedParameter("referenceColourSpace", { "RGB", "XYZ", "xyY", "Chroma" }, m_referenceColourSpace);
     }
 
     rootDocument.Serialise(m_stateJsonPath);
@@ -261,7 +274,7 @@ void RenderObjectStateManager::ConstructSceneManagerUI()
 
     if (ImGui::Button("Load"))
     {
-        if(m_sceneListIdx >= 0 && m_sceneListIdx < m_sceneFilePathList.size())
+        if (m_sceneListIdx >= 0 && m_sceneListIdx < m_sceneFilePathList.size())
         {
             m_renderManager.LoadScene(m_sceneFilePathList[m_sceneListIdx]);
             m_dirtiness = IMGUIDirtiness::kSceneReload;
@@ -279,7 +292,7 @@ void RenderObjectStateManager::ConstructSceneManagerUI()
 void RenderObjectStateManager::ConstructStateManagerUI()
 {
     UIStyle style(0);
-    
+
     if (!ImGui::CollapsingHeader("State Manager", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     ImGui::PushID("StateManager");
@@ -288,9 +301,9 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     // Load a saved state to the UI
     SL;
     if (ImGui::Button("Load") && m_stateListUI.IsSelected())
-    {        
+    {
         const std::string id = m_stateListUI.GetCurrentlySelectedText();
-        
+
         auto it = m_stateMap.GetStateData().find(id);
         if (it != m_stateMap.GetStateData().end()) { m_jitterFlags = it->second.flags; }
 
@@ -314,11 +327,11 @@ void RenderObjectStateManager::ConstructStateManagerUI()
     FlaggedCheckbox("Lights", kStatePermuteLights); SL;
     FlaggedCheckbox("Geometry", kStatePermuteGeometry); SL;
     FlaggedCheckbox("Materials", kStatePermuteMaterials);
-    
+
     FlaggedCheckbox("Transforms", kStatePermuteTransforms); SL;
     FlaggedCheckbox("Colours", kStatePermuteColours); SL;
     FlaggedCheckbox("Fractals", kStatePermuteFractals); SL;
-    FlaggedCheckbox("Object flags", kStatePermuteObjectFlags); 
+    FlaggedCheckbox("Object flags", kStatePermuteObjectFlags);
 
     // Jitter the current state to generate a new scene
     ImVec2 buttonSize = ImGui::GetItemRectSize();
@@ -329,8 +342,8 @@ void RenderObjectStateManager::ConstructStateManagerUI()
         {
             shelf.second->Jitter(m_jitterFlags, Cuda::kJitterRandomise);
         }
-    } 
-    SL;    
+    }
+    SL;
     // Reset all the jittered values to their midpoints
     if (ImGui::Button("Reset", buttonSize))
     {
@@ -347,21 +360,21 @@ void RenderObjectStateManager::ConstructStateManagerUI()
 }
 
 void RenderObjectStateManager::ParseRenderStateJson()
-{    
+{
     // Get the running state of the renderer
     m_renderState = kRenderManagerUndefined;
     m_renderStateJson.GetValue("renderManager/rendererStatus", m_renderState, Json::kSilent);
-    
+
     // Bake job stats...
-    const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);    
+    const Json::Node& bakeJson = m_renderStateJson.GetChildObject("jobs/bake", Json::kSilent);
     m_isBaking = bool(bakeJson);
-    if(m_isBaking)
+    if (m_isBaking)
     {
         m_bakeProgress = 0.0f;
         m_lastBakeSucceeded = true;
         bakeJson.GetValue("progress", m_bakeProgress, Json::kSilent);
         bakeJson.GetValue("succeeded", m_lastBakeSucceeded, Json::kSilent);
-    }   
+    }
 
     // Render object stats...
     const Json::Node& statsJson = m_renderStateJson.GetChildObject("jobs/getStats/renderObjects", Json::kSilent);
@@ -384,7 +397,7 @@ void RenderObjectStateManager::ParseRenderStateJson()
 void RenderObjectStateManager::ConstructBatchProcessorUI()
 {
     UIStyle style(1);
-    
+
     if (!ImGui::CollapsingHeader("Batch Processor", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
     ParseRenderStateJson(); // Get some render state data so we know what's going on
@@ -400,6 +413,9 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         ImGui::DragInt2("Min/max reference samples", &m_minMaxReferenceSamples[0], 1.0f, 1, 1e7);
         ImGui::DragInt("Thumbnail samples", &m_thumbnailSamples, 1.0f, 1, 1024);
 
+        ConstructComboBox("Noisy colour space", { "RGB", "XYZ", "xyY", "Chroma" }, m_noisyColourSpace);
+        ConstructComboBox("Reference colour space", { "RGB", "XYZ", "xyY", "Chroma" }, m_referenceColourSpace);
+
         ImGui::TreePop();
     }
 
@@ -412,8 +428,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         m_kifsIterationRange[1] = math::max(m_kifsIterationRange[0], m_kifsIterationRange[1]);
 
         ImGui::TreePop();
-    }    
-    
+    }
+
     if (ImGui::Button("Reset Defaults"))
     {
         m_noisySampleRange = Cuda::ivec2(64, 2048);
@@ -422,33 +438,46 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         m_gridValidityRange = Cuda::vec2(0.7f, 0.95f);
         m_kifsIterationRange = Cuda::ivec2(7, 9);
     }
-    
+
     // The number of iterations per permutation
-    ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, std::numeric_limits<int>::max());    
+    ImGui::DragInt("Iterations", &m_numBakeIterations, 1, 1, std::numeric_limits<int>::max());
     ImGui::DragInt("Start iteration", &m_startBakeIteration, 1, 1, std::numeric_limits<int>::max());
     ImGui::DragInt2("Train/test ratio", &m_trainTestRatio[0], 1, 0, std::numeric_limits<int>::max());
     if (m_trainTestRatio[0] + m_trainTestRatio[1] == 0) { m_trainTestRatio = Cuda::ivec2(1, 0); }
 
-    if (ImGui::TreeNodeEx("Export paths", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::TreeNodeEx("Export", ImGuiTreeNodeFlags_DefaultOpen))
     {
         // The base paths that all export paths will be derived from
-        ImGui::InputText("USD train set", m_usdTrainPathUIData.data(), m_usdTrainPathUIData.size());
-        ImGui::InputText("USD test set", m_usdTestPathUIData.data(), m_usdTestPathUIData.size());
-        ImGui::InputText("PNG preview", m_pngPathUIData.data(), m_pngPathUIData.size());
+        m_rootPath.Construct();
+
+        if (ImGui::TreeNodeEx("USD", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            m_usdTrainPath.Construct();
+            m_usdTestPath.Construct();
+            ImGui::Checkbox("Export USD", &m_exportToUSD);
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNodeEx("PNG", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            m_pngPath.Construct();
+            ImGui::Checkbox("Export PNG", &m_exportToPNG);
+            ImGui::TreePop();
+        }
 
         ImGui::TreePop();
     }
 
     ImVec2 size = ImGui::GetItemRectSize();
     size.y *= 2;
+    size.x = 300.0f;
     const std::string actionText = m_isBatchRunning ? "Abort" : "Bake";
     if (ImGui::Button(actionText.c_str(), size))
     {
         // Start or abort the batch bake
         EnqueueBatch();
     }
-
-    ImGui::Checkbox("Export to USD", &m_exportToUSD); SL;
+    
     ImGui::Checkbox("Disable live view", &m_disableLiveView); SL;
     ImGui::Checkbox("Shutdown on complete", &m_shutdownOnComplete);
 
@@ -492,13 +521,13 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
 void RenderObjectStateManager::EnqueueExportViewport()
 {
     Json::Node commandNode = m_commandQueue.AddChildObject("exportViewport");
-    commandNode.AddValue("path", m_permutor.GeneratePNGExportPath(std::string(m_pngPathUIData.data()), m_stateJsonPath));
+    commandNode.AddValue("path", m_permutor.GeneratePNGExportPath(m_pngPath, m_stateJsonPath));
 }
 
 void RenderObjectStateManager::EnqueueExportProbeGrids()
 {
     Json::Node commandNode = m_commandQueue.AddChildObject("exportGrids");
-    commandNode.AddArray("paths", m_permutor.GenerateGridExportPaths(std::string(m_usdTrainPathUIData.data()), m_stateJsonPath));
+    commandNode.AddArray("paths", m_permutor.GenerateGridExportPaths(m_usdTrainPath, m_stateJsonPath));
 }
 
 void RenderObjectStateManager::EnqueueBatch()
@@ -514,15 +543,15 @@ void RenderObjectStateManager::EnqueueBatch()
 
     // Initialise the permutor parameter structure
     BakePermutor::Params params;
-    params.probeGridTrainTemplatePath = std::string(m_usdTrainPathUIData.data());
-    params.probeGridTestTemplatePath = std::string(m_usdTestPathUIData.data());
-    params.renderTemplatePath = std::string(m_pngPathUIData.data());
+    params.probeGridTrainTemplatePath = SlashifyPath(m_rootPath) + std::string(m_usdTrainPath);
+    params.probeGridTestTemplatePath = SlashifyPath(m_rootPath) + std::string(m_usdTestPath);
+    params.renderTemplatePath = SlashifyPath(m_rootPath) + std::string(m_pngPath);
     params.jsonRootPath = m_stateJsonPath;
 
     params.disableLiveView = m_disableLiveView;
     params.startWithThisView = true;
-    params.exportToUsd = m_exportToUSD;
-    params.exportToPng = true;
+    params.exportToUSD = m_exportToUSD;
+    params.exportToPNG = m_exportToPNG;
 
     params.gridValidityRange = m_gridValidityRange;
     params.kifsIterationRange = m_kifsIterationRange;
@@ -535,6 +564,9 @@ void RenderObjectStateManager::EnqueueBatch()
     params.thumbnailCount = m_thumbnailSamples;
     params.numStrata = m_numStrata;
     params.kifsIterationRange = m_kifsIterationRange;
+
+    params.noisyColourSpace = m_noisyColourSpace;
+    params.referenceColourSpace = m_referenceColourSpace;
     
     if(m_permutor.Prepare(params))
     {

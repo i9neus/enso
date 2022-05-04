@@ -350,8 +350,8 @@ bool RenderManager::OnBakeDispatch(Job& job)
 	{
 		std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
-		job.json.GetEnumeratedParameter("type", std::vector<std::string>({ "probeGrid", "render" }), m_bake.type, Json::kRequiredAssert);
-		if (m_bake.type == kBakeTypeProbeGrid)
+		job.json.GetValue("type", m_bake.type, Json::kRequiredAssert);
+		if (m_bake.type & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
 		{		
 			job.json.GetValue("isArmed", m_bake.probeGridExportParams.isArmed, Json::kRequiredWarn);
 			job.json.GetValue("minGridValidity", m_bake.probeGridExportParams.minGridValidity, Json::kRequiredWarn);
@@ -832,7 +832,7 @@ void RenderManager::OnBakePostFrame()
 	// If the job has just been dispatched, do some pre-flight checks
 	if (m_bake.job.state & kRenderManagerJobDispatched)
 	{		
-		if (m_bake.type == kBakeTypeProbeGrid)
+		if (m_bake.type & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
 		{
 			if (!m_lightProbeCamera)
 			{
@@ -852,7 +852,7 @@ void RenderManager::OnBakePostFrame()
 	}
 	
 	// Baking a probe grid...
-	if (m_bake.type == kBakeTypeProbeGrid)
+	if (m_bake.type & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
 	{		
 		constexpr float kMinSamplesForEstimate = 8.0f;
 		const auto& stats = m_lightProbeCamera->PollBakeProgress();

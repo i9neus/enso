@@ -14,7 +14,13 @@
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
 enum RenderManagerRenderState : int { kRenderManagerUndefined, kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
-enum RenderManagerBakeType : int { kBakeTypeProbeGrid, kBakeTypeRender };
+
+enum RenderManagerBakeType : int 
+{ 
+	kBakeTypeNoisyProbeGrid =		1, 
+	kBakeTypeReferenceProbeGrid =	2, 
+	kBakeTypeRender =				4 
+};
 
 enum RenderManagerJobState : int 
 { 
