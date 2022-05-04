@@ -28,6 +28,7 @@ namespace Cuda
 			__device__ ~ManagedArray() {}
 
 			__host__ __device__ __forceinline__ unsigned int Size() const { return m_size; }
+			__host__ __device__ __forceinline__ bool IsEmpty() const { return m_size == 0; }
 			__host__ __device__ __forceinline__ unsigned int MemorySize() const { return m_size * sizeof(T); }
 
 			__device__ ElementType* GetData() { return cu_data; }
@@ -94,6 +95,7 @@ namespace Cuda
 			__host__ inline int GetGridSize() const { return m_gridSize; }
 
 			__host__ inline uint Size() const { return m_hostData.m_size; }
+			__host__ inline bool IsEmpty() const { return m_hostData.m_size == 0; }
 			__host__ void Resize(const uint size);
 			__host__ inline bool Expand(const uint size);
 			__host__ inline bool ExpandToNearestPow2(const uint size);

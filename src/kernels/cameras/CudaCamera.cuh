@@ -73,7 +73,7 @@ namespace Cuda
 		public:
 			__device__ Camera() {}
 
-			__device__ virtual void							Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive) = 0;
+			__device__ virtual void							Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, vec3 L, const vec3& albedo, const bool isAlive) = 0;
 			__device__ virtual const Device::RenderState&	GetRenderState() const = 0;
 			__device__ virtual const CameraParams&			GetParams() const = 0;
 		protected:

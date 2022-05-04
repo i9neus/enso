@@ -55,7 +55,7 @@ namespace Cuda
 			};
 
 			__device__ PerspectiveCamera();
-			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive) override final;
+			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, vec3 L, const vec3& albedo, const bool isAlive) override final;
 			__device__ virtual void SeedRayBuffer(const ivec2& viewportPos, const uint frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;

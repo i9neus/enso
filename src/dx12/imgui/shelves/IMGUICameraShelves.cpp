@@ -160,7 +160,15 @@ void LightProbeCameraShelf::Construct()
             HelpMarker("Gamma correction factor applied to the adaptive sampling calculations.");
 
             ImGui::Checkbox("Use filtered error estimate", &m_p.camera.useFilteredError);
-            HelpMarker("Use a filtered error estimate to compute the adaptive sampling metrics.");
+            HelpMarker("Use a filtered error estimate to compute the adaptive sampling metrics.");            
+        }
+        else
+        {
+            ConstructComboBox("Sampler type", { "Random", "Geodesic" }, m_p.samplerType);
+            HelpMarker("The way samples are generated for outgoing probe directions.");
+
+            ImGui::SliderInt("Geodesic subdivs", &m_p.fixedSampleSubdivisions, 0, 5);
+            HelpMarker("The subdivision levels in the geodesic distribution");
         }
 
         ImGui::Checkbox("Filter grids", &m_p.filterGrids);

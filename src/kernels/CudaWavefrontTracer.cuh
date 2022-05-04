@@ -111,7 +111,7 @@ namespace Cuda
 			int                             m_numLights;
 
 			__device__ uchar GetImportanceMode(const RenderCtx& ctx) const;
-			__device__ vec3 Shade(const Ray& incidentRay, const Device::Material& hitMaterial, const HitCtx& hitCtx, RenderCtx& renderCtx) const;
+			__device__ vec3 Shade(const Ray& incidentRay, const Device::Material& hitMaterial, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& albedo) const;
 			__device__ void InitaliseScratchpadObjects() const;
 			__device__ __forceinline__ bool ApplyRussianRoulette(float rayWeight, float& xi, float& outputWeight) const;
 

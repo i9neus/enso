@@ -184,9 +184,8 @@ namespace Cuda
 		return true;
 	}
 
-	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx) const
+	__device__ vec3 Device::WavefrontTracer::Shade(const Ray& incidentRay, const Device::Material& material, const HitCtx& hitCtx, RenderCtx& renderCtx, vec3& albedo) const
 	{
-		vec3 albedo;
 		vec3 LExtant(0.0f);
 		if (!hitCtx.backfacing)
 		{
@@ -354,7 +353,8 @@ namespace Cuda
 			hitCtx.Set(HitPoint(tempRay.od.o, tempRay.od.d), false, vec2(0.0f), 0.0f, kNotALight);
 
 			// Create the ray and spoof its depth
-			Shade(tempRay, m_lightProbeMaterial, hitCtx, tempCtx);
+			vec3 albedo;
+			Shade(tempRay, m_lightProbeMaterial, hitCtx, tempCtx, albedo);
 			(&compressedRay)[1].depth = 0;
 
 			RayDebug("%i: Probe direct sample: [%f, %f, %f]\n", 1, (&compressedRay)[1].weight.x, (&compressedRay)[1].weight.y, (&compressedRay)[1].weight.z);
@@ -392,11 +392,11 @@ namespace Cuda
 		{
 			const vec3 L = hitObject ? (hitCtx.hit.n * 0.5f + vec3(0.5f)) : kZero;
 			
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, false);
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, kZero, false);
 			return false;
 		}
 
-		vec3 L(0.0f);
+		vec3 L(0.0f), albedo(0.0f);
 
 		RayDebug("%i: Accumulate direct: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
 
@@ -436,7 +436,7 @@ namespace Cuda
 
 			RayDebug("%i: Accumulate direct: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
 			// Accumulate extant radiance
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, true);
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, kZero, true);
 		}
 
 		// Synchronise with the rest of the warp to guarantee that any NEE rays are dead
@@ -453,9 +453,8 @@ namespace Cuda
 					const Device::Material* boundMaterial = hitObject->GetBoundMaterial();
 					if (boundMaterial)
 					{
-						vec3 albedo;
 						boundMaterial->Evaluate(hitCtx, albedo, L);
-						m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n), false);
+						m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, albedo * -dot(incidentRay.od.d, hitCtx.hit.n), albedo, false);
 					}
 					return false;
 				}
@@ -466,7 +465,7 @@ namespace Cuda
 					if (boundMaterial)
 					{
 						// Otherwise, it's a BxDF sample so do a regular shade op
-						L += Shade(incidentRay, *boundMaterial, hitCtx, renderCtx) * compressedRay.weight;
+						L += Shade(incidentRay, *boundMaterial, hitCtx, renderCtx, albedo) * compressedRay.weight;
 					}
 					else { L += kPink; }
 				}
@@ -480,8 +479,8 @@ namespace Cuda
 
 			RayDebug("%i: Accumulate indirect: [%f, %f, %f]\n", incidentRay.depth, L.x, L.y, L.z);
 
-			// Accumulate extant radiance			
-			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, compressedRay.IsAlive());
+			// Accumulate extant radiance		
+			m_objects.cu_camera->Accumulate(renderCtx, incidentRay, hitCtx, L, albedo, compressedRay.IsAlive());
 		}
 
 		/*__shared__ uchar deadRays[16 * 16];

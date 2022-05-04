@@ -504,6 +504,9 @@
     <ClInclude Include="src\onnx\Grid2Grid.h">
       <Filter>onnx</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\CudaGeodesics.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">
@@ -714,6 +717,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\ml\CudaGrid2Grid.cu">
       <Filter>kernels\ml</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\math\CudaGeodesics.cu">
+      <Filter>kernels\math</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

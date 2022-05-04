@@ -96,7 +96,7 @@ namespace Cuda
         // Test if the emitter is behind the shading point
         if (dot(extant, normal) <= 0.0f) { return false; }
       
-        vec3 lightNormal = m_params.light.transform.PointToWorldSpace(vec3(xi, 1.0f)) - lightPos;
+        vec3 lightNormal = m_params.light.transform.PointToWorldSpace(vec3(0.0f, 0.0f, 1.0f)) - lightPos;
         float cosPhi = dot(extant, normalize(lightNormal));
         
         // Test if the emitter is rotated away from the shading point

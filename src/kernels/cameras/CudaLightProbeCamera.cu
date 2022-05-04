@@ -7,6 +7,7 @@
 #include "../CudaManagedArray.cuh"
 #include "../CudaManagedObject.cuh"
 #include "../math/CudaColourUtils.cuh"
+#include "../math/CudaGeodesics.cuh"
 
 #include "../math/CudaSphericalHarmonics.cuh"
 
@@ -25,6 +26,8 @@ namespace Cuda
     {
         lightingMode = kBakeLightingCombined;
         traversalMode = kBakeTraversalLinear;
+        samplerType = kBakeSamplerRandom;
+        fixedSampleSubdivisions = 0;
         outputColourSpace = kColourSpaceRGB;
         gridUpdateInterval = 10;
         minViableValidity = 0.0f;
@@ -45,10 +48,12 @@ namespace Cuda
 
         node.AddEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode);
         node.AddEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode);
+        node.AddEnumeratedParameter("samplerType", std::vector<std::string>({ "random", "geodesic" }), samplerType);
         node.AddEnumeratedParameter("outputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), outputColourSpace);
         node.AddValue("gridUpdateInterval", gridUpdateInterval);
         node.AddValue("minViableValidity", minViableValidity);
         node.AddValue("filterGrids", filterGrids);
+        node.AddValue("fixedSampleSubdivisions", fixedSampleSubdivisions);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -59,11 +64,13 @@ namespace Cuda
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
         node.GetEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode, flags);
+        node.GetEnumeratedParameter("samplerType", std::vector<std::string>({ "random", "geodesic" }), samplerType, flags);
         node.GetEnumeratedParameter("outputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), outputColourSpace, flags);
         node.GetValue("gridUpdateInterval", gridUpdateInterval, flags);
         node.GetValue("minViableValidity", minViableValidity, flags);
         node.GetValue("filterGrids", filterGrids, flags);
-    }      
+        node.GetValue("fixedSampleSubdivisions", fixedSampleSubdivisions, flags);
+    }
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
 
@@ -93,13 +100,13 @@ namespace Cuda
         {
             probeIdx = (*m_objects.cu_indirectionBuffer)[probeIdx];
         }
-        
+
         // If adaptive sampling is enabled and the probe is converged, don't spawn any more rays.
         if (m_params.camera.samplingMode != kCameraSamplingFixed && (*m_objects.cu_convergenceGrid)[probeIdx] == 0) { return; }
-        
+
         CompressedRay* compressedRays = &(*m_objects.renderState.cu_compressedRayBuffer)[kKernelIdx * 2];
 
-        if (kKernelIdx > m_params.totalBuckets) 
+        if (kKernelIdx > m_params.totalBuckets)
         {
             compressedRays[0].Kill();
             compressedRays[1].Kill();
@@ -136,7 +143,7 @@ namespace Cuda
 
         // Normalise and gamma correct
         const auto& texel = (*m_objects.cu_accumBuffers[idx])[accumPos.y * kAccumBufferWidth + accumPos.x];
-        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);       
+        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
         deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
@@ -149,15 +156,15 @@ namespace Cuda
         m_seedOffset = HashOf(uint(m_params.camera.seed) & ((1u << 31) - 1u));
     }
 
-    __device__ void Device::LightProbeCamera::CreateRays(const int& probeIdx, const int& subsampleIdx, CompressedRay* rays, const int frameIdx) const
-    {        
+    __device__ void Device::LightProbeCamera::CreateRays(const int& probeIdx, const int& subprobeIdx, CompressedRay* rays, const int frameIdx) const
+    {
         //const int probeIdx = kKernelIdx / m_params.subprobesPerProbe;
         const ivec3 gridIdx = GridPosFromProbeIdx(probeIdx, m_params.grid.gridDensity);
-        const uint accumIdx = probeIdx * m_params.subprobesPerProbe + subsampleIdx;
+        const uint accumIdx = probeIdx * m_params.subprobesPerProbe + subprobeIdx;
 
-        auto& primary = rays[0]; 
+        auto& primary = rays[0];
         auto& secondary = rays[1];
-        
+
         // NOTE: Ray depth corresponds to the position on the graph at the hit-point of the ray.
         // Probe 0 -> 1 -> 2 -> ...
         primary.accumIdx = accumIdx;
@@ -165,8 +172,27 @@ namespace Cuda
         primary.depth = 0; // Set depth to zero so the RNG is correctly seeded
         RNG rng(primary);
 
-        const vec2 xi = rng.Rand<0, 1>();
-        primary.od.d = SampleUnitSphere(xi);
+        // Generate the outgoing probe direction
+        switch (m_params.samplerType)
+        {                
+        // Geodesic sampling
+        case kBakeSamplerGeodesic:              
+            assert(m_objects.cu_sampleBuffer);           
+            const auto& sampleBuffer = *m_objects.cu_sampleBuffer;
+            assert(!sampleBuffer.IsEmpty());
+            
+            const int idx = ((primary.sampleIdx - m_seedOffset - 1) * m_params.subprobesPerProbe + subprobeIdx) % sampleBuffer.Size();
+            primary.od.d = sampleBuffer[idx];
+
+            break;
+        
+        // Random sampling
+        default:                                
+            const vec2 xi = rng.Rand<0, 1>();
+            primary.od.d = SampleUnitSphere(xi);
+            break;
+        }
+
         primary.probeDir = primary.od.d;
 
         // Probes data is grouped as follows:
@@ -187,12 +213,11 @@ namespace Cuda
         secondary.sampleIdx = primary.sampleIdx;
     }
 
-    __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
-    {         
+    __device__ void Device::LightProbeCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, vec3 L, const vec3& albedo, const bool isAlive)
+    {
         auto& emplacedRay = ctx.emplacedRay[0];
         assert(emplacedRay.accumIdx < kAccumBufferSize);
-        
-        vec3 L = value;
+
         if (m_params.camera.splatClamp > 0.0)
         {
             const float intensity = cwiseMax(L);
@@ -200,7 +225,7 @@ namespace Cuda
             {
                 L *= m_params.camera.splatClamp / intensity;
             }
-        }  
+        }
 
         // Colour space transformation
         switch (m_params.outputColourSpace)
@@ -217,7 +242,7 @@ namespace Cuda
         //L = saturate(vec3(GridPosFromProbeIdx(emplacedRay.accumIdx / m_params.subprobesPerProbe, ivec3(8))) / 8.0);
         // Colour encoding of the probe direction
         //L = ctx.emplacedRay[0].probeDir;
-  
+
         // Loop through the direct and indirect accumulation buffers
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
         {
@@ -226,13 +251,13 @@ namespace Cuda
             // Don't write into the indirect grid at all when in combined lighting mode
             const int componentIdx = gridIdx % 2;
             if (m_params.lightingMode == kBakeLightingCombined && componentIdx == kLightProbeBufferIndirect) { continue; }
-            
+
             vec4* accumBuffer = &(*m_objects.cu_accumBuffers[gridIdx])[emplacedRay.accumIdx * m_params.grid.coefficientsPerProbe];
             const float weight = !isAlive;
 
             // Should we accumulate this sample?
             bool accumulate = false;
-            if(cwiseMax(L) > 1e-10f && incidentRay.depth >= m_params.camera.overrides.minDepth)
+            if (cwiseMax(L) > 1e-10f && incidentRay.depth >= m_params.camera.overrides.minDepth)
             {
                 switch (componentIdx)
                 {
@@ -250,15 +275,15 @@ namespace Cuda
                 if (gridIdx > kLightProbeBufferIndirect) { accumulate &= emplacedRay.sampleIdx % 2 == 1; }
             }
 
-            if(accumulate)  
-            {              
+            if (accumulate)
+            {
                 // Project and accumulate the SH coefficients
                 for (int shIdx = 0; shIdx < m_params.grid.shCoefficientsPerProbe; ++shIdx)
                 {
                     accumBuffer[shIdx] += vec4(L * SH::Project(ctx.emplacedRay[0].probeDir, shIdx) * kFourPi, weight);
                 }
             }
-            else if(!isAlive)
+            else if (!isAlive)
             {
                 // Just increment the weights if they're non-zero
                 for (int shIdx = 0; shIdx < m_params.grid.shCoefficientsPerProbe; ++shIdx) { accumBuffer[shIdx][3] += weight; }
@@ -266,21 +291,21 @@ namespace Cuda
 
             // Accumulate validity and mean distance       
             if (incidentRay.IsIndirectSample() && incidentRay.depth == 1)
-            {                
+            {
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene
                 accumBuffer[m_params.grid.shCoefficientsPerProbe] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing),
-                                              //1.0f / max(1e-10f, incidentRay.tNear),
-                                              //min(m_params.grid.transform.scale().x, incidentRay.tNear) / m_params.grid.transform.scale().x,
-                                              0.0f, 0.0f, 1.0f);
+                    //1.0f / max(1e-10f, incidentRay.tNear),
+                    //min(m_params.grid.transform.scale().x, incidentRay.tNear) / m_params.grid.transform.scale().x,
+                    0.0f, 0.0f, 1.0f);
             }
         }
     }
     __device__ void Device::LightProbeCamera::ReduceAccumulatedSample(vec4& dest, const vec4& source)
-    {              
-        if (int(dest.w) >= m_params.grid.minMaxSamplesPerProbe.y - 1) { return; }       
-        
+    {
+        if (int(dest.w) >= m_params.grid.minMaxSamplesPerProbe.y - 1) { return; }
+
         if (int(dest.w + source.w) < m_params.grid.minMaxSamplesPerProbe.y)
-        {           
+        {
             dest += source;
             return;
         }
@@ -289,7 +314,7 @@ namespace Cuda
     }
 
     __device__ void Device::LightProbeCamera::ReduceAccumulationBuffer(Device::Array<vec4>* cu_accumBuffer, Device::LightProbeGrid* cu_probeGrid, const uint batchSize, const uvec2 batchRange)
-    {         
+    {
         if (kKernelIdx >= m_params.totalBuckets) { return; }
 
         assert(cu_accumBuffer);
@@ -300,7 +325,7 @@ namespace Cuda
 
         auto& accumBuffer = *cu_accumBuffer;
         auto& reduceBuffer = *m_objects.cu_reduceBuffer;
-        
+
         const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
         const int probeSubsampleIdx = (kKernelIdx / m_params.grid.coefficientsPerProbe) % m_params.subprobesPerProbe;
         const int coeffIdx = kKernelIdx % m_params.grid.coefficientsPerProbe;
@@ -340,24 +365,24 @@ namespace Cuda
             }
 
             __syncthreads();
-        } 
+        }
 
         // After the last operation, cache the accumulated value in the probe grid
         if (probeSubsampleIdx == 0 && batchRange[0] == 2)
         {
-            auto& texel = reduceBuffer[kKernelIdx];         
+            auto& texel = reduceBuffer[kKernelIdx];
 
             //const int probeIdx = kKernelIdx / m_params.bucketsPerProbe;
             //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.grid.coefficientsPerProbe;
             if (coeffIdx == m_params.grid.shCoefficientsPerProbe)
             {
-               const float norm = max(1.0f, texel.w);
+                const float norm = max(1.0f, texel.w);
 
-               texel[kProbeValidity] /= norm;                   // Probe validity
-               //texel.y = norm / max(1e-10f, texel.y);         // Harmonic mean distance
-               //texel.y /= norm;                               // Geometric mean distance
-               texel[kProbeFilterWeights] = 1.0f;
-               texel[kProbeNumSamples] = texel.w;               // Store the total number of samples
+                texel[kProbeValidity] /= norm;                   // Probe validity
+                //texel.y = norm / max(1e-10f, texel.y);         // Harmonic mean distance
+                //texel.y /= norm;                               // Geometric mean distance
+                texel[kProbeFilterWeights] = 1.0f;
+                texel[kProbeNumSamples] = texel.w;               // Store the total number of samples
             }
             else
             {
@@ -387,13 +412,13 @@ namespace Cuda
         // Record data in the grid
         vec2& probe = (*m_objects.cu_lightProbeErrorGrids[0])[kKernelIdx];
         probe = 0.0f;
-        
+
         // Go channel by channel to find the peak irradiance
         for (int chnlIdx = 0; chnlIdx < 3; ++chnlIdx)
         {
             // First pass is irradiance, second pass is square error. 
             for (int passIdx = 0; passIdx < 2; ++passIdx)
-            {                
+            {
                 // Load the coefficients from the direct map
                 float L0 = PA[0][chnlIdx] * weights[passIdx][0];
                 float L0Half = PAHalf[0][chnlIdx] * weights[passIdx][0];
@@ -419,12 +444,12 @@ namespace Cuda
                     M = powf(M, 1 / m_params.camera.adaptiveSamplingGamma);
                     N = powf(N, 1 / m_params.camera.adaptiveSamplingGamma);
                 }
-                
+
                 // Update the peak irradiance and error over all channels
-                probe[passIdx] = max(probe[passIdx], 
-                                     (passIdx == 0) ? ((M + N) * 0.5f) : (sqr(M - N) * 2.0f));                
+                probe[passIdx] = max(probe[passIdx],
+                    (passIdx == 0) ? ((M + N) * 0.5f) : (sqr(M - N) * 2.0f));
             }
-        } 
+        }
 
         //printf("[%i: %f %f] ", kKernelIdx, probe.x, probe.y);
     }
@@ -447,10 +472,10 @@ namespace Cuda
                     if (gridPosK.x < 0 || gridPosK.x >= m_params.grid.gridDensity.x ||
                         gridPosK.y < 0 || gridPosK.y >= m_params.grid.gridDensity.y ||
                         gridPosK.z < 0 || gridPosK.z >= m_params.grid.gridDensity.z)
-                    {                
+                    {
                         continue;
                     }
-    
+
                     // The dilated error is simply the maximum value of its neighbours
                     const auto& probe = (*m_objects.cu_lightProbeErrorGrids[0])[ProbeIdxFromGridPos(gridPosK, m_params.grid.gridDensity)];
                     if (probe.y > peakProbe.y)
@@ -469,9 +494,9 @@ namespace Cuda
         assert(m_objects.cu_lightProbeErrorGrids[0]);
         assert(m_objects.cu_convergenceGrid);
         assert(m_objects.cu_meanI);
-        
+
         constexpr float kMinMSENorm = 1e-10f;
-        
+
         __shared__ int localNumActiveProbes[256], numActiveProbes;
         __shared__ vec2 localI[256], I;
 
@@ -482,7 +507,7 @@ namespace Cuda
         localNumActiveProbes[kKernelIdx] = 0;
         localI[kKernelIdx] = vec2(0.0f);
         for (int idx = startIdx; idx < endIdx; idx++)
-        {          
+        {
             localI[kKernelIdx] += (*m_objects.cu_lightProbeErrorGrids[0])[idx];
         }
         localI[kKernelIdx] /= max(1, endIdx - startIdx);
@@ -490,13 +515,13 @@ namespace Cuda
         __syncthreads();
 
         if (kKernelIdx == 0)
-        {       
+        {
             I = vec2(0.0f);
             for (int idx = 0; idx < 256; idx++) { I += localI[idx]; }
             I /= 256.0f;
 
             // Update the MSE value and normalise it if necessary
-            stats.error.meanI =  I.x;
+            stats.error.meanI = I.x;
             *m_objects.cu_meanI = I.x;
             stats.error.MSE = I.y;
             if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
@@ -521,7 +546,7 @@ namespace Cuda
 
             uchar convergenceFlags = 0;
             const int sampleCount = (*m_objects.cu_probeGrids)[kLightProbeBufferDirect].At(i)[m_params.grid.shCoefficientsPerProbe][kProbeNumSamples];
-            
+
             // If the probe is below the minimum sample count, flag it and mark as active
             if (sampleCount < m_params.camera.minMaxSamples.x)
             {
@@ -532,13 +557,13 @@ namespace Cuda
             {
                 convergenceFlags |= kProbeAtSampleMax;
             }
-            
+
             // If the probe is still below the error threshold, mark is active
-            if (sqrError > sqr(m_params.camera.errorThreshold)) 
-            { 
-                convergenceFlags |= kProbeUnconverged; 
+            if (sqrError > sqr(m_params.camera.errorThreshold))
+            {
+                convergenceFlags |= kProbeUnconverged;
             }
-            
+
             // Set the entry in the adaptive sampling grid and accumulate the number of active probes
             (*m_objects.cu_convergenceGrid)[i] = convergenceFlags;
             localNumActiveProbes[kKernelIdx] += uchar((convergenceFlags & (kProbeUnconverged | kProbeBelowSampleMin)) != 0 && !(convergenceFlags & kProbeAtSampleMax));
@@ -550,7 +575,7 @@ namespace Cuda
         {
             int numActiveProbes = 0;
             for (int idx = 0; idx < 256; idx++) { numActiveProbes += localNumActiveProbes[idx]; }
-            
+
             stats.bake.probesConverged = 1.0f - numActiveProbes / float(m_params.grid.numProbes);
         }
     }
@@ -575,7 +600,7 @@ namespace Cuda
         node.GetValue("gridIndirectID", m_gridIDs[1], Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("gridDirectHalfID", m_gridIDs[2], Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("gridIndirectHalfID", m_gridIDs[3], Json::kRequiredAssert | Json::kNotBlank);
-        
+
         // Input grid IDs for adaptive sampling
         node.GetValue("gridFilteredDirectID", m_filteredGridIDs[0], Json::kNotBlank);
         node.GetValue("gridFilteredIndirectID", m_filteredGridIDs[1], Json::kNotBlank);
@@ -588,6 +613,7 @@ namespace Cuda
         m_hostLightProbeErrorGrids[0] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids0", id), this, kAccumBufferSize, m_hostStream);
         m_hostLightProbeErrorGrids[1] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids1", id), this, kAccumBufferSize, m_hostStream);
         m_hostConvergenceGrid = CreateChildAsset<Host::Array<uchar>>(tfm::format("%s_adaptiveSamplingGrid", id), this, kAccumBufferSize, m_hostStream);
+        m_hostSampleBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_sampleBuffer", id), this, 0, m_hostStream);
 
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>(id);
@@ -621,6 +647,7 @@ namespace Cuda
         m_deviceObjects.cu_lightProbeErrorGrids[1] = m_hostLightProbeErrorGrids[1]->GetDeviceInstance();
         m_deviceObjects.cu_convergenceGrid = m_hostConvergenceGrid->GetDeviceInstance();
         m_deviceObjects.cu_meanI = m_hostMeanI.GetDeviceInstance();
+        m_deviceObjects.cu_sampleBuffer = m_hostSampleBuffer->GetDeviceInstance();
 
         // Objects are re-synchronised at every JSON update
         FromJson(node, ::Json::kRequiredWarn);
@@ -642,9 +669,10 @@ namespace Cuda
 
         // Destroy the rest of the objects
         for (auto& accumBuffer : m_hostAccumBuffers) { accumBuffer.DestroyAsset(); }
-        for (auto& grid : m_hostLightProbeErrorGrids) { grid.DestroyAsset();  }
+        for (auto& grid : m_hostLightProbeErrorGrids) { grid.DestroyAsset(); }
         m_hostReduceBuffer.DestroyAsset();
         m_hostConvergenceGrid.DestroyAsset();
+        m_hostSampleBuffer.DestroyAsset();
 
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
@@ -660,21 +688,23 @@ namespace Cuda
     }
 
     __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
-    {       
+    {
         Prepare(LightProbeCameraParams(parentNode, flags));
     }
 
-    __host__ void Host::LightProbeCamera::GenerateHilbertBuffer(const LightProbeCameraParams& newParams)
+    __host__ void Host::LightProbeCamera::PrepareHilbertBuffer(const LightProbeCameraParams& newParams)
     {
         if (newParams.grid.gridDensity == m_params.grid.gridDensity &&
-            newParams.traversalMode == m_params.traversalMode) { return; }
+            newParams.traversalMode == m_params.traversalMode) {
+            return;
+        }
 
         if (newParams.grid.numProbes == 0)
         {
             m_hostIndirectionBuffer->Resize(0);
             return;
-        }        
-         
+        }
+
         /*
             Symbol table for Lindenmayer system for 3D Hilbert curve
             0 = Rotate 90 anticlockwise around X axis
@@ -689,7 +719,7 @@ namespace Cuda
 
         std::array<int, 36> transformLUT;
         std::array<ivec3, 6> directionLUT;
-        static const std::array<imat3, 6> rotMat = 
+        static const std::array<imat3, 6> rotMat =
         {
             imat3(ivec3(0, 1, 0), ivec3(-1, 0, 0), ivec3(0, 0, 1)),
             imat3(ivec3(0, -1, 0), ivec3(1, 0, 0), ivec3(0, 0, 1)),
@@ -697,7 +727,7 @@ namespace Cuda
             imat3(ivec3(0, 0, -1), ivec3(0, 1, 0), ivec3(1, 0, 0)),
             imat3(ivec3(1, 0, 0), ivec3(0, 0, 1), ivec3(0, -1, 0)),
             imat3(ivec3(1, 0, 0), ivec3(0, 0, -1), ivec3(0, 1, 0))
-        }; 
+        };
 
         std::vector<uint> hilbertIndices;
         std::vector<int> LStack;
@@ -752,7 +782,7 @@ namespace Cuda
 
             // If we've reached the end of the rule, pop it off the stack
             if (LStack.back() == LSystem.length()) { LStack.pop_back(); }
-        }        
+        }
 
         AssertMsgFmt(hilbertIndices.size() == newParams.grid.numProbes, "Size mismatch: %i -> %i", hilbertIndices.size(), newParams.grid.numProbes); // Sanity check
 
@@ -766,12 +796,41 @@ namespace Cuda
 
         // Upload the indices to the device
         m_hostIndirectionBuffer->Upload(hilbertIndices);
+    }
 
+    __host__ void Host::LightProbeCamera::PrepareSampleBufffer(LightProbeCameraParams& newParams)
+    {
+        // Bail out if we're no in geodesic sampling mode 
+        if (newParams.camera.samplingMode != kCameraSamplingFixed ||
+            newParams.samplerType != kBakeSamplerGeodesic) { return; }
+
+        // Generate a new set of samples if necessary
+        if (newParams.fixedSampleSubdivisions != m_params.fixedSampleSubdivisions || m_hostSampleBuffer->IsEmpty())
+        {
+            // Generate and sync the sample points
+            std::vector<vec3> samplePoints;
+            GenerateGeodesicDistribution(samplePoints, kGeoClassIcosahedron, newParams.fixedSampleSubdivisions);
+            m_hostSampleBuffer->Upload(samplePoints);
+
+            for (int i = 0; i < samplePoints.size(); ++i)
+                Log::Debug("%i -> %s", i, samplePoints[i].format());
+
+            Log::Error("Generated %i geodesic sample points.", samplePoints.size());
+        }
+
+        // Force the number of camera samples to the number of sample points
+        newParams.camera.minMaxSamples = ivec2(m_hostSampleBuffer->Size());
     }
 
     __host__ void Host::LightProbeCamera::Prepare(LightProbeCameraParams newParams)
     {
         newParams.grid.Prepare();
+
+        // Update the Hilbert indirect buffer if required
+        PrepareHilbertBuffer(newParams);
+
+        // Generate fixed sampling buffers if required
+        PrepareSampleBufffer(newParams);
 
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
         const int maxNumProbes = min(kAccumBufferSize / newParams.grid.coefficientsPerProbe, kRayBufferNumBuckets);
@@ -829,10 +888,7 @@ namespace Cuda
             Log::Debug("Min/max samples:");
             Log::Debug("  Per probe: %s", newParams.grid.minMaxSamplesPerProbe.format());
             Log::Debug("  Per sub-probe: %s", newParams.minMaxSamplesPerSubprobe.format());
-        }
-
-        // Update the Hilbert indirect buffer if required
-        GenerateHilbertBuffer(newParams);
+        }       
 
         // Update the camera params object with the new params
         m_params = newParams;
@@ -1085,7 +1141,8 @@ namespace Cuda
 
     __host__ void Host::LightProbeCamera::OnPostRenderPass()
     {
-        if (m_frameIdx > 2 && (m_frameIdx - 2) % m_params.gridUpdateInterval == 0)
+        constexpr int kFrameDelay = 1;
+        if (m_frameIdx > kFrameDelay && (m_frameIdx - kFrameDelay) % m_params.gridUpdateInterval == 0)
         {
             Compile();
         }

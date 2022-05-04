@@ -36,6 +36,12 @@ namespace Cuda
 		kBakeTraversalHilbert
 	};
 
+	enum ProbeBakeSampleMode : int
+	{
+		kBakeSamplerRandom,
+		kBakeSamplerGeodesic
+	};
+
 	struct LightProbeCameraParams
 	{
 		__host__ __device__ LightProbeCameraParams();
@@ -63,6 +69,9 @@ namespace Cuda
 		int							outputColourSpace;
 		int							gridUpdateInterval;
 		bool						filterGrids;
+
+		int							samplerType;
+		int							fixedSampleSubdivisions;
 	};
 
 	struct LightProbeGridExportParams
@@ -122,6 +131,7 @@ namespace Cuda
 					cu_lightProbeErrorGrids[0] = nullptr;
 					cu_lightProbeErrorGrids[1] = nullptr;
 					cu_meanI = nullptr;
+					cu_sampleBuffer = nullptr;
 				}
 
 				Device::RenderState			renderState;
@@ -132,11 +142,12 @@ namespace Cuda
 				Device::LightProbeGrid*		cu_filteredProbeGrids[kLightProbeNumBuffers];
 				Device::Array<vec2>*		cu_lightProbeErrorGrids[2];
 				Device::Array<uchar>*		cu_convergenceGrid;
+				Device::Array<vec3>*		cu_sampleBuffer;
 				float*						cu_meanI;
 			};
 
 			__device__ LightProbeCamera();
-			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive) override final;
+			__device__ virtual void Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, vec3 L, const vec3& albedo, const bool isAlive) override final;
 			__device__ void SeedRayBuffer(const int frameIdx);
 			__device__ virtual const Device::RenderState& GetRenderState() const override final { return m_objects.renderState; }
 			__device__ void Composite(const ivec2& accumPos, Device::ImageRGBA* deviceOutputImage) const;
@@ -201,7 +212,8 @@ namespace Cuda
 			__host__ void								BuildLightProbeGrids();
 			__host__ void								BuildLightProbeErrorGrid();
 			__host__ void								Prepare(LightProbeCameraParams newParams);
-			__host__ void								GenerateHilbertBuffer(const LightProbeCameraParams& newParams);
+			__host__ void								PrepareHilbertBuffer(const LightProbeCameraParams& newParams);
+			__host__ void								PrepareSampleBufffer(LightProbeCameraParams& newParams);
 
 			Device::LightProbeCamera*					cu_deviceData;
 			Device::LightProbeCamera::Objects			m_deviceObjects;
@@ -212,6 +224,7 @@ namespace Cuda
 			std::array<AssetHandle<Host::LightProbeGrid>, kLightProbeNumBuffers>	m_hostFilteredLightProbeGrids;
 			AssetHandle<Host::Array<vec4>>											m_hostReduceBuffer;
 			AssetHandle<Host::Array<uint>>											m_hostIndirectionBuffer;
+			AssetHandle<Host::Array<vec3>>											m_hostSampleBuffer;
 			DeviceObjectRAII<LightProbeCameraAggregateStatistics>					m_aggregateStats;
 			std::array<std::string, 4>												m_gridIDs;
 			std::array<std::string, 4>												m_filteredGridIDs;

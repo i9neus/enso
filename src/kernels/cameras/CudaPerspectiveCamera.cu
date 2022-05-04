@@ -264,10 +264,10 @@ namespace Cuda
         //ray.lambda = mix(3800.0f, 7000.0f, mu);
     }
 
-    __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, const vec3& value, const bool isAlive)
+    __device__ void Device::PerspectiveCamera::Accumulate(const RenderCtx& ctx, const Ray& incidentRay, const HitCtx& hitCtx, vec3 L, const vec3& albedo, const bool isAlive)
     {
         // Ray isn't carrying any energy and its weight is zero so bail out early.
-        if (cwiseMax(value) < 1e-15f && isAlive) { return; }
+        if (cwiseMax(L) < 1e-15f && isAlive) { return; }
         
         bool accumulate = m_params.lightProbeEmulation <= kLightProbeEmulationAll ||
                          (m_params.lightProbeEmulation == kLightProbeEmulationDirect && incidentRay.depth == 1) ||
@@ -275,10 +275,8 @@ namespace Cuda
 
         if (incidentRay.depth < m_params.camera.overrides.minDepth) { accumulate = false; }
 
-        vec3 L(0.0f);
         if (accumulate)
         {
-            L = value;
             if (m_params.camera.splatClamp > 0.0)
             {
                 const float intensity = cwiseMax(L);
