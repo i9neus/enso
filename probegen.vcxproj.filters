@@ -519,6 +519,9 @@
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h">
       <Filter>onnx</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh">
+      <Filter>kernels\lightprobes</Filter>
+    </ClInclude>
     <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh">
       <Filter>kernels\math\mat</Filter>
     </ClInclude>
@@ -738,6 +741,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\ml\CudaFCNNProbeDenoiser.cu">
       <Filter>kernels\ml</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
+      <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

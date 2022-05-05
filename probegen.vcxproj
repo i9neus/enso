@@ -111,6 +111,7 @@
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
+    <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
@@ -201,6 +202,7 @@
     <CudaCompile Include="src\kernels\CudaRenderObjectContainer.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeIO.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeRegressionFilter.cu" />
