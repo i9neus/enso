@@ -130,6 +130,7 @@
     <ClInclude Include="src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="src\kernels\math\CudaSphericalHarmonics.cuh" />
     <ClInclude Include="src\kernels\math\CudaTransform.cuh" />
+    <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat3.cuh" />
     <ClInclude Include="src\kernels\math\mat\CudaMat4.cuh" />
     <ClInclude Include="src\kernels\math\vec\CudaIVec2.cuh" />

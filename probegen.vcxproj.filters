@@ -519,6 +519,9 @@
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h">
       <Filter>onnx</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh">
+      <Filter>kernels\math\mat</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dx12">

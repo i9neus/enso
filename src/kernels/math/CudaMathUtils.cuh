@@ -3,9 +3,12 @@
 #include "vec/CudaIVec2.cuh"
 #include "vec/CudaIVec3.cuh"
 #include "vec/CudaIVec4.cuh"
+
 #include "vec/CudaVec2.cuh"
 #include "vec/CudaVec3.cuh"
 #include "vec/CudaVec4.cuh"
+
+#include "mat/CudaMat2.cuh"
 #include "mat/CudaMat3.cuh"
 #include "mat/CudaMat4.cuh"
 
