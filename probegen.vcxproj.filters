@@ -620,6 +620,9 @@
     <Filter Include="onnx">
       <UniqueIdentifier>{dae644da-b6df-4dfb-86e4-cde8a510a05d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{83c200b9-de7f-4867-9f6d-174c22f80d32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">

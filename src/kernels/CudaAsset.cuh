@@ -1,6 +1,6 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
+#include <generic/StdIncludes.h>
 #include <memory>
 
 namespace Json { class Node; }

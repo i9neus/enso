@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\src\generic\debug\Backtrace.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\generic\FilesystemUtils.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\generic\GlobalStateAuthority.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\generic\JsonUtils.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\generic\Log.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\generic\StringUtils.cpp">
+      <Filter>dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\generic\debug\Backtrace.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\Assert.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\Constants.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\FilesystemUtils.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\GlobalStateAuthority.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\HighResolutionTimer.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\JsonUtils.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\Log.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\Math.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\StdIncludes.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\StringUtils.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaMath.cuh">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaTransform.cuh">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\generic\D3DIncludes.h">
+      <Filter>dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\Tracables.cuh">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\IO.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\TestSuite.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
+      <Filter>dependencies</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
+    <CudaCompile Include="..\src\kernels\math\CudaTransform.cu">
+      <Filter>dependencies</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="dependencies">
+      <UniqueIdentifier>{905da528-3964-4127-a2ac-362ea55912a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="suites">
+      <UniqueIdentifier>{4460e639-1e14-49d4-b91c-4355be052ec7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
