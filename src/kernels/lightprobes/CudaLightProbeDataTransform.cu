@@ -37,17 +37,17 @@ namespace Cuda
         shSwiz[2] = SwizzleIndices(m_gridParams.shSwizzle)[1] + 1;
         shSwiz[3] = SwizzleIndices(m_gridParams.shSwizzle)[2] + 1;
 
-        // Convert the coefficient offsets into per-channel coefficients
+        // Convert the coefficient offsets into per-channel offsets
         // E.g. { 0, 2, 1 } -> { 0, 1, 2, 6, 7, 8, 3, 4, 5 }
         for (int i = 0; i < m_forward.coeffIdx.size(); ++i)
         {
-            m_forward.coeffIdx[i] = shSwiz[i / 3] + i % 3;
+            m_forward.coeffIdx[i] = shSwiz[i / 3] * 3 + i % 3;
         }
 
         // Unity coefficient packing. L0 remains RGB, but L1 is grouped by R, G and B
         auto& f = m_forward.coeffIdx;
-        auto g = f;
-        g[0] = f[1];   g[1] = f[1];   g[2] = f[2];      // L0
+        std::vector<int> g = f;
+        g[0] = f[0];   g[1] = f[1];   g[2] = f[2];      // L0
         g[3] = f[3];   g[4] = f[6];   g[5] = f[9];      // L1_1
         g[6] = f[4];   g[7] = f[7];   g[8] = f[10];     // L10
         g[9] = f[5];   g[10] = f[8];  g[11] = f[11];    // L11
@@ -72,7 +72,7 @@ namespace Cuda
 
         // Initialise the forward transformation with the directional scaling factors
         auto& fwdSh = m_forward.sh;
-        for (int i = 0; i < m_forward.coeffIdx.size(); ++i)
+        for (int i = 0; i < m_forward.sh.size(); ++i)
         {
             fwdSh[i] = mat2(shDirs[i], 0.0, 0.0, 1.0);
         }
@@ -137,6 +137,9 @@ namespace Cuda
             return;
         }
 
+        m_forward.Initialise(gridParams);
+        m_inverse.Initialise(gridParams);
+
         // Construct each component of the transform
         ConstructProbePositionIndices();
         ConstructSHIndices();
@@ -159,7 +162,7 @@ namespace Cuda
         {
             // Read in the block of SH coefficients
             const int inputIdx = probeIdx * m_gridParams.coefficientsPerProbe;
-            std::memcpy(&swapBufferA[0], &inputData[inputIdx], 3 * m_gridParams.coefficientsPerProbe);
+            std::memcpy(&swapBufferA[0], &inputData[inputIdx], sizeof(float) * 3 * m_gridParams.coefficientsPerProbe);
   
             // Forward transform SH coefficients
             for (int shIdx = 0; shIdx < m_gridParams.coefficientsPerProbe; ++shIdx)
@@ -177,7 +180,7 @@ namespace Cuda
 
             // Write the probe positions to the transformed destination
             const int outputIdx = m_forward.probeIdx[probeIdx] * m_gridParams.coefficientsPerProbe;
-            std::memcpy(&outputData[outputIdx], &swapBufferA[0], sizeof(vec3) * m_gridParams.coefficientsPerProbe);
+            std::memcpy(&outputData[outputIdx], &swapBufferA[0], sizeof(float) * 3 * m_gridParams.coefficientsPerProbe);
         }
     }
 
@@ -197,12 +200,12 @@ namespace Cuda
         {
             // Read in the block of SH coefficients
             const int inputIdx = probeIdx * m_gridParams.coefficientsPerProbe;
-            std::memcpy(&swapBufferA[0], &inputData[inputIdx], 3 * m_gridParams.coefficientsPerProbe);
+            std::memcpy(&swapBufferA[0], &inputData[inputIdx], sizeof(vec3) * m_gridParams.coefficientsPerProbe);
 
-            // Forward transform SH positions
+            // Invert transform SH positions
             for (int shIdx = 0; shIdx < 3 * m_gridParams.coefficientsPerProbe; ++shIdx)
             {
-                swapBufferB[shIdx] = swapBufferA[m_forward.coeffIdx[shIdx]];
+                swapBufferB[shIdx] = swapBufferA[m_inverse.coeffIdx[shIdx]];
             }
             
             // Inverse transform SH coefficients
