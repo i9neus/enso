@@ -3,5 +3,7 @@
 #include "suites\CudaMathTests.h"
 #include "suites\CudaTracableTests.h"
 #include "suites\CudaVecTests.h"
+#include "suites\IOTests.h"
+
 
 

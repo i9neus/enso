@@ -2,6 +2,9 @@
 
 #include "SuiteBase.h"
 
+#include "kernels\CudaRay.cuh"
+#include "kernels\tracables\CudaGenericIntersectors.cuh"
+
 namespace Tests
 {
 	TEST_CLASS(CudaTracableTests), MatrixTestUtils

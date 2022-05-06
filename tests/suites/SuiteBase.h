@@ -4,15 +4,49 @@
 #include "generic\StdIncludes.h"
 #include "generic\Math.h"
 #include "kernels\math\CudaMath.cuh"
-#include "kernels\CudaRay.cuh"
-#include "kernels\tracables\CudaGenericIntersectors.cuh"
+#include "kernels\CudaSampler.cuh"
 #include "generic\StringUtils.h"
+
+#include <random>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace Cuda;
 
 namespace Tests
 {
+	class SuiteBase
+	{
+	protected:
+		std::mt19937 m_mt;
+		std::uniform_real_distribution<> m_rng;
+
+	protected:
+		SuiteBase() :
+			m_mt(0),
+			m_rng(0.0f, 1.0f)
+		{}
+
+		void ReseedRNG(const uint seed)
+		{
+			m_mt = std::mt19937(seed);
+		}
+
+		inline vec3 RandVec3(const float rangeLow, const float rangeHigh)
+		{
+			return vec3(mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)));
+		}
+
+		inline vec3 RandNormVec3()
+		{
+			return SampleUnitSphere(vec2(m_rng(m_mt), m_rng(m_mt)));
+		}
+
+		inline float Rand()
+		{
+			return  m_rng(m_mt);
+		}
+	};
+	
 	class MatrixTestUtils
 	{
 	public:

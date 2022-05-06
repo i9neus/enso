@@ -32,6 +32,7 @@
     <ClInclude Include="..\src\generic\Math.h" />
     <ClInclude Include="..\src\generic\StdIncludes.h" />
     <ClInclude Include="..\src\generic\StringUtils.h" />
+    <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaTransform.cuh" />
@@ -40,9 +41,17 @@
     <ClInclude Include="suites\CudaMathTests.h" />
     <ClInclude Include="suites\CudaTracableTests.h" />
     <ClInclude Include="suites\CudaVecTests.h" />
+    <ClInclude Include="suites\IOTests.h" />
     <ClInclude Include="suites\SuiteBase.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\src\kernels\cameras\CudaCamera.cu" />
+    <CudaCompile Include="..\src\kernels\CudaAsset.cu" />
+    <CudaCompile Include="..\src\kernels\CudaImage.cu" />
+    <CudaCompile Include="..\src\kernels\CudaRenderObject.cu" />
+    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
+    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
+    <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaTransform.cu" />
   </ItemGroup>
@@ -54,7 +63,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
@@ -79,7 +88,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(IncludePath);$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)include;$(ONNXRUNTIME_ROOT)\include;$(MSBuildProjectDirectory)\..\src</IncludePath>
+    <IncludePath>$(IncludePath);$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)include;$(ONNXRUNTIME_ROOT)\include;$(MSBuildProjectDirectory)\..\src;$(CudaToolkitIncludeDir)\include</IncludePath>
+    <OutDir>$(MSBuildProjectDirectory)/../../bin/win64/$(Configuration)/</OutDir>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(BOOST_LIBRARYDIR);$(ONNXRUNTIME_ROOT)/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(IncludePath);$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)include;$(ONNXRUNTIME_ROOT)\include;$(MSBuildProjectDirectory)\..\src</IncludePath>
@@ -91,14 +102,19 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart_static.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(BOOST_LIBRARYDIR)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>./;../../common/inc</Include>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <Runtime>MDd</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
