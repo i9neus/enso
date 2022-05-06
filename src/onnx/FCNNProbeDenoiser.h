@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OnnxRuntime.h"
+#include "OnnxModel.h"
 
 namespace ONNX
 {    
@@ -15,7 +15,7 @@ namespace ONNX
     };
     
 #ifdef _DEBUG     
-    class FCNNProbeDenoiser
+    class FCNNProbeDenoiser : public ONNXModel
     {
     public:
         FCNNProbeDenoiserInterface() = default;
@@ -26,7 +26,7 @@ namespace ONNX
     };
 
 #else
-    class FCNNProbeDenoiser
+    class FCNNProbeDenoiser : public ONNXModel
     {
     public:
         FCNNProbeDenoiser();
@@ -38,6 +38,9 @@ namespace ONNX
 
     private:
         void Destroy();
+
+        void PackTensor(const std::vector<Cuda::vec3>& rawInputData, std::vector<float>& inputTensorData) const;
+        void UnpackTensor(const std::vector<float>& outputTensorData, std::vector<Cuda::vec3>& rawOutputData) const;
 
         std::unique_ptr<Ort::Value>     m_ortInputTensor;
         std::unique_ptr<Ort::Value>     m_ortOutputTensor;

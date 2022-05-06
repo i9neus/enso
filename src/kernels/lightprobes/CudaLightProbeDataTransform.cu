@@ -20,25 +20,32 @@ namespace Cuda
     {
         return ivec3(v[i[0]], v[i[1]], v[i[2]]);
     }
+
+    __host__ void LightProbeDataTransform::DirectionalTransform::Initialise(const LightProbeGridParams& gridParams)
+    {
+        probeIdx.resize(gridParams.numProbes);
+        coeffIdx.resize(gridParams.coefficientsPerProbe * 3);
+        sh.resize(gridParams.coefficientsPerProbe);
+    }
     
-    __host__ void GenerateSHIndices(const LightProbeGridParams& gridParams, LightProbeDataTransform& transform)
+    __host__ void LightProbeDataTransform::ConstructSHIndices()
     {
         // Swizzle the indices for the L1 RGB coefficients
-        std::vector<int> shSwiz(gridParams.coefficientsPerProbe);
+        std::vector<int> shSwiz(m_gridParams.coefficientsPerProbe);
         for (int i = 0; i < shSwiz.size(); ++i) { shSwiz[i] = i; }
-        shSwiz[1] = SwizzleIndices(gridParams.shSwizzle)[0] + 1;
-        shSwiz[2] = SwizzleIndices(gridParams.shSwizzle)[1] + 1;
-        shSwiz[3] = SwizzleIndices(gridParams.shSwizzle)[2] + 1;
+        shSwiz[1] = SwizzleIndices(m_gridParams.shSwizzle)[0] + 1;
+        shSwiz[2] = SwizzleIndices(m_gridParams.shSwizzle)[1] + 1;
+        shSwiz[3] = SwizzleIndices(m_gridParams.shSwizzle)[2] + 1;
 
         // Convert the coefficient offsets into per-channel coefficients
         // E.g. { 0, 2, 1 } -> { 0, 1, 2, 6, 7, 8, 3, 4, 5 }
-        for (int i = 0; i < transform.forward.coeffIdx.size(); ++i)
+        for (int i = 0; i < m_forward.coeffIdx.size(); ++i)
         {
-            transform.forward.coeffIdx[i] = shSwiz[i / 3] + i % 3;
+            m_forward.coeffIdx[i] = shSwiz[i / 3] + i % 3;
         }
 
         // Unity coefficient packing. L0 remains RGB, but L1 is grouped by R, G and B
-        auto& f = transform.forward.coeffIdx;
+        auto& f = m_forward.coeffIdx;
         auto g = f;
         g[0] = f[1];   g[1] = f[1];   g[2] = f[2];      // L0
         g[3] = f[3];   g[4] = f[6];   g[5] = f[9];      // L1_1
@@ -48,24 +55,24 @@ namespace Cuda
         f = g;
 
         // Derive the inverse coefficient mapping
-        for (int i = 0; i < transform.forward.coeffIdx.size(); ++i)
+        for (int i = 0; i < m_forward.coeffIdx.size(); ++i)
         {
-            g[transform.forward.coeffIdx[i]] = i;
+            g[m_forward.coeffIdx[i]] = i;
         }
-        transform.inverse.coeffIdx = g;
+        m_inverse.coeffIdx = g;
     }
 
-    __host__ void GenerateSHTransforms(const LightProbeGridParams& gridParams, LightProbeDataTransform& transform)
+    __host__ void LightProbeDataTransform::ConstructSHTransforms()
     {
         // Factors for inverting L1 SH coefficients
-        std::vector<float> shDirs(gridParams.coefficientsPerProbe, 1.0f);
-        if (gridParams.shInvertX) { shDirs[1] = -1.0f; }
-        if (gridParams.shInvertY) { shDirs[2] = -1.0f; }
-        if (gridParams.shInvertZ) { shDirs[3] = -1.0f; }
+        std::vector<float> shDirs(m_gridParams.coefficientsPerProbe, 1.0f);
+        if (m_gridParams.shInvertX) { shDirs[1] = -1.0f; }
+        if (m_gridParams.shInvertY) { shDirs[2] = -1.0f; }
+        if (m_gridParams.shInvertZ) { shDirs[3] = -1.0f; }
 
         // Initialise the forward transformation with the directional scaling factors
-        auto& fwdSh = transform.forward.sh;
-        for (int i = 0; i < transform.forward.coeffIdx.size(); ++i)
+        auto& fwdSh = m_forward.sh;
+        for (int i = 0; i < m_forward.coeffIdx.size(); ++i)
         {
             fwdSh[i] = mat2(shDirs[i], 0.0, 0.0, 1.0);
         }
@@ -78,57 +85,139 @@ namespace Cuda
         fwdSh[4] = mat2(-1.0, 0.0, 0.0, 1.0);
 
         // Invert the forward transformation
-        auto& invSh = transform.inverse.sh;
+        auto& invSh = m_inverse.sh;
         for (int i = 0; i < invSh.size(); ++i)
         {
             invSh[i] = inverse(fwdSh[i]);
         }
     }
 
-    __host__ void GenerateProbePositionIndices(const LightProbeGridParams& gridParams, LightProbeDataTransform& transform)
+    __host__ void LightProbeDataTransform::ConstructProbePositionIndices()
     {
         // Generate swizzle indices for probe positions
-        const ivec3 posSwiz = SwizzleIndices(gridParams.posSwizzle);
+        const ivec3 posSwiz = SwizzleIndices(m_gridParams.posSwizzle);
 
         // Swizzle the grid density
-        const ivec3 swizzledGridDensity = SwizzleVector(gridParams.gridDensity, posSwiz);
+        const ivec3 swizzledGridDensity = SwizzleVector(m_gridParams.gridDensity, posSwiz);
 
         // Swizzle the axes
-        for (int probeIdx = 0; probeIdx < gridParams.numProbes; ++probeIdx)
+        for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx)
         {
-            ivec3 gridPos = GridPosFromProbeIdx(probeIdx, gridParams.gridDensity);
+            ivec3 gridPos = GridPosFromProbeIdx(probeIdx, m_gridParams.gridDensity);
 
             // Invert the axes where appropriate
-            if (gridParams.posInvertX) { gridPos.x = gridParams.gridDensity.x - gridPos.x - 1; }
-            if (gridParams.posInvertY) { gridPos.y = gridParams.gridDensity.y - gridPos.y - 1; }
-            if (gridParams.posInvertZ) { gridPos.z = gridParams.gridDensity.z - gridPos.z - 1; }
+            if (m_gridParams.posInvertX) { gridPos.x = m_gridParams.gridDensity.x - gridPos.x - 1; }
+            if (m_gridParams.posInvertY) { gridPos.y = m_gridParams.gridDensity.y - gridPos.y - 1; }
+            if (m_gridParams.posInvertZ) { gridPos.z = m_gridParams.gridDensity.z - gridPos.z - 1; }
 
             // Swizzle the grid index
             ivec3 swizzledGridPos = SwizzleVector(gridPos, posSwiz);
 
             // Map back onto the data array
             const uint swizzledProbeIdx = ProbeIdxFromGridPos(swizzledGridPos, swizzledGridDensity);
-            Assert(swizzledProbeIdx < gridParams.numProbes);
+            Assert(swizzledProbeIdx < m_gridParams.numProbes);
 
             // Store the indirections
-            transform.forward.probeIdx[probeIdx] = swizzledProbeIdx;
-            transform.inverse.probeIdx[swizzledProbeIdx] = probeIdx;
+            m_forward.probeIdx[probeIdx] = swizzledProbeIdx;
+            m_inverse.probeIdx[swizzledProbeIdx] = probeIdx;
         }
     }
 
-    __host__ LightProbeDataTransform GenerateLightProbeDataTransform(const LightProbeGridParams& gridParams)
+    __host__ void LightProbeDataTransform::Construct(const LightProbeGridParams& gridParams)
     {
         // Forward transformation operations are applied in this order:
         //   1. Swizzle probe positions
         //   2. Transform coefficients
         //   3. Swizzle coefficients
 
-        LightProbeDataTransform transform(gridParams);          
+        m_gridParams = gridParams;
+        if (m_gridParams.shOrder != 1)
+        {
+            Log::Error("Error: light probe data transform currently only supports L1 probes.");
+            return;
+        }
 
-        GenerateProbePositionIndices(gridParams, transform);
-        GenerateSHIndices(gridParams, transform);
-        GenerateSHTransforms(gridParams, transform);
-
-        return transform;
+        // Construct each component of the transform
+        ConstructProbePositionIndices();
+        ConstructSHIndices();
+        ConstructSHTransforms();
     }
+
+    __host__ void LightProbeDataTransform::Forward(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const
+    {
+        if (inputData.size() < m_forward.probeIdx.size())
+        {
+            Log::Error("Cannot forward transform probe grid data. Size of input data buffer is smaller the transform (%ix%ix%i).",
+                m_gridParams.gridDensity.x, m_gridParams.gridDensity.y, m_gridParams.gridDensity.z);
+            return;
+        }
+
+        std::vector<float> swapBufferA(3 * m_gridParams.coefficientsPerProbe);
+        std::vector<float> swapBufferB(3 * m_gridParams.coefficientsPerProbe);
+
+        for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx)
+        {
+            // Read in the block of SH coefficients
+            const int inputIdx = probeIdx * m_gridParams.coefficientsPerProbe;
+            std::memcpy(&swapBufferA[0], &inputData[inputIdx], 3 * m_gridParams.coefficientsPerProbe);
+  
+            // Forward transform SH coefficients
+            for (int shIdx = 0; shIdx < m_gridParams.coefficientsPerProbe; ++shIdx)
+            {
+                swapBufferB[shIdx * 3] = (m_forward.sh[shIdx] * vec2(swapBufferA[shIdx * 3], 1.0)).x;
+                swapBufferB[shIdx * 3 + 1] = (m_forward.sh[shIdx] * vec2(swapBufferA[shIdx * 3 + 1], 1.0)).x;
+                swapBufferB[shIdx * 3 + 2] = (m_forward.sh[shIdx] * vec2(swapBufferA[shIdx * 3 + 2], 1.0)).x;
+            }
+            
+            // Forward transform SH positions
+            for (int shIdx = 0; shIdx < 3 * m_gridParams.coefficientsPerProbe; ++shIdx)
+            {
+                swapBufferA[shIdx] = swapBufferB[m_forward.coeffIdx[shIdx]];
+            }
+
+            // Write the probe positions to the transformed destination
+            const int outputIdx = m_forward.probeIdx[probeIdx] * m_gridParams.coefficientsPerProbe;
+            std::memcpy(&outputData[outputIdx], &swapBufferA[0], sizeof(vec3) * m_gridParams.coefficientsPerProbe);
+        }
+    }
+
+    __host__ void LightProbeDataTransform::Inverse(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const
+    {
+        if (inputData.size() < m_inverse.probeIdx.size())
+        {
+            Log::Error("Cannot inverse transform probe grid data. Size of input data buffer is smaller the transform (%ix%ix%i).",
+                m_gridParams.gridDensity.x, m_gridParams.gridDensity.y, m_gridParams.gridDensity.z);
+            return;
+        }
+        
+        std::vector<float> swapBufferA(3 * m_gridParams.coefficientsPerProbe);
+        std::vector<float> swapBufferB(3 * m_gridParams.coefficientsPerProbe);
+
+        for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx)
+        {
+            // Read in the block of SH coefficients
+            const int inputIdx = probeIdx * m_gridParams.coefficientsPerProbe;
+            std::memcpy(&swapBufferA[0], &inputData[inputIdx], 3 * m_gridParams.coefficientsPerProbe);
+
+            // Forward transform SH positions
+            for (int shIdx = 0; shIdx < 3 * m_gridParams.coefficientsPerProbe; ++shIdx)
+            {
+                swapBufferB[shIdx] = swapBufferA[m_forward.coeffIdx[shIdx]];
+            }
+            
+            // Inverse transform SH coefficients
+            for (int shIdx = 0; shIdx < m_gridParams.coefficientsPerProbe; ++shIdx)
+            {
+                swapBufferA[shIdx * 3] = (m_inverse.sh[shIdx] * vec2(swapBufferB[shIdx * 3], 1.0)).x;
+                swapBufferA[shIdx * 3 + 1] = (m_inverse.sh[shIdx] * vec2(swapBufferB[shIdx * 3 + 1], 1.0)).x;
+                swapBufferA[shIdx * 3 + 2] = (m_inverse.sh[shIdx] * vec2(swapBufferB[shIdx * 3 + 2], 1.0)).x;
+            }
+
+            // Write the probe positions to the transformed destination
+            const int outputIdx = m_inverse.probeIdx[probeIdx] * m_gridParams.coefficientsPerProbe;
+            std::memcpy(&outputData[outputIdx], &swapBufferA[0], sizeof(vec3) * m_gridParams.coefficientsPerProbe);
+        }
+    }
+
+
 }

@@ -21,6 +21,33 @@ namespace ONNX
     {
         m_params = params;
 
+        try
+        {
+            /*Destroy();
+
+            m_ortEnvironment.reset(new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "grid2grid"));
+            auto ortAllocatorInfo = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+
+            m_inputTensorData.resize(3 * 8 * 8 * 32);
+            m_outputTensorData.resize(3 * 8 * 8 * 32);
+            m_inputTensorShape = { 1, 3, 8, 8, 32 };
+            m_outputTensorShape = { 1, 3, 8, 8, 32 };
+
+            *m_ortInputTensor = Ort::Value::CreateTensor<float>(ortAllocatorInfo, m_inputTensorData.data(), m_inputTensorData.size(),
+                m_inputTensorShape.data(), m_inputTensorShape.size());
+            *m_ortOutputTensor = Ort::Value::CreateTensor<float>(ortAllocatorInfo, m_outputTensorData.data(), m_outputTensorData.size(),
+                m_outputTensorShape.data(), m_outputTensorShape.size());
+
+            m_ortSession = std::make_unique< Ort::Session>(*m_ortEnvironment, Widen(modelPath).c_str(), Ort::SessionOptions(nullptr));
+
+            m_isModelReady = true;
+            m_modelPath = modelPath;*/
+        }
+        catch (const Ort::Exception& err)
+        {
+            AssertMsgFmt("Error: ONNX runtime: %s (code %i)", err.what(), err.GetOrtErrorCode());
+        }
+
         m_isModelReady = true;
     }
     
@@ -45,6 +72,16 @@ namespace ONNX
 
 
         Log::SystemOnce("FCNNProbeDenoiser: Evaluated in %.2fms.", timer.Get() * 1e3f);
+    }
+
+    void FCNNProbeDenoiser::PackTensor(const std::vector<Cuda::vec3>& rawInputData, std::vector<float>& inputTensorData) const
+    {
+        //const std::vector<Cuda::vec3>& transformedInputData;
+    }
+
+    void FCNNProbeDenoiser::UnpackTensor(const std::vector<float>& outputTensorData, std::vector<Cuda::vec3>& rawOutputData) const
+    {
+
     }
 }
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "OnnxRuntime.h"
+#include "OnnxModel.h"
 
 namespace ONNX
 {
 #ifdef DEBUG     
-    class Grid2GridInterface
+    class Grid2GridInterface : public ONNXModel
     {
     public:
         Grid2GridInterface() = default;
