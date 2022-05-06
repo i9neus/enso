@@ -67,13 +67,22 @@
     <ClInclude Include="..\src\generic\D3DIncludes.h">
       <Filter>dependencies</Filter>
     </ClInclude>
-    <ClInclude Include="suites\Tracables.cuh">
+    <ClInclude Include="suites\CudaMat3Tests.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="suites\IO.h">
+    <ClInclude Include="suites\CudaMat4Tests.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="suites\TestSuite.h">
+    <ClInclude Include="suites\CudaMathTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\CudaTracableTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\CudaVecTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\SuiteBase.h">
       <Filter>suites</Filter>
     </ClInclude>
   </ItemGroup>

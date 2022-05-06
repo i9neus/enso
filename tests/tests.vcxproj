@@ -35,9 +35,12 @@
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaTransform.cuh" />
-    <ClInclude Include="suites\IO.h" />
-    <ClInclude Include="suites\TestSuite.h" />
-    <ClInclude Include="suites\Tracables.cuh" />
+    <ClInclude Include="suites\CudaMat3Tests.h" />
+    <ClInclude Include="suites\CudaMat4Tests.h" />
+    <ClInclude Include="suites\CudaMathTests.h" />
+    <ClInclude Include="suites\CudaTracableTests.h" />
+    <ClInclude Include="suites\CudaVecTests.h" />
+    <ClInclude Include="suites\SuiteBase.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
