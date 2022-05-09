@@ -58,9 +58,6 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIElement.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
     <ClCompile Include="src\io\ImageIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
@@ -114,6 +111,18 @@
     </ClCompile>
     <ClCompile Include="src\onnx\FCNNProbeDenoiser.cpp">
       <Filter>onnx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\onnx\OnnxModel.cpp">
+      <Filter>onnx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.cpp">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.cpp">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.cpp">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -420,9 +429,6 @@
     <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIElement.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
     <ClInclude Include="src\io\ImageIO.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -510,13 +516,13 @@
     <ClInclude Include="src\kernels\math\CudaGeodesics.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\onnx\OnnxRuntime.h">
-      <Filter>onnx</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\ml\CudaFCNNProbeDenoiser.cuh">
       <Filter>kernels\ml</Filter>
     </ClInclude>
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h">
+      <Filter>onnx</Filter>
+    </ClInclude>
+    <ClInclude Include="src\onnx\OnnxModel.h">
       <Filter>onnx</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh">
@@ -524,6 +530,18 @@
     </ClInclude>
     <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh">
       <Filter>kernels\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.h">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.h">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIUtils.h">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.h">
+      <Filter>dx12\imgui\shelves\widgets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -622,6 +640,9 @@
     </Filter>
     <Filter Include="tests">
       <UniqueIdentifier>{83c200b9-de7f-4867-9f6d-174c22f80d32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12\imgui\shelves\widgets">
+      <UniqueIdentifier>{c2279a7e-784c-4345-bba7-80bb9d75e2f0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

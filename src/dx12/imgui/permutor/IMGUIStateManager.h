@@ -4,7 +4,7 @@
 #include "../shelves/IMGUIAbstractShelf.h"
 #include <set>
 
-class RenderObjectStateManager : public IMGUIElement
+class RenderObjectStateManager : public IMGUIWidget
 {
 public:
     RenderObjectStateManager(IMGUIAbstractShelfMap& imguiShelves, RenderManager& renderManager, const Json::Document& renderStateJson, Json::Document& commandQueue);

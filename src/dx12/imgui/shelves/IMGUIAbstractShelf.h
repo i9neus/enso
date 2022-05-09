@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IMGUIElement.h"
+#include "widgets/IMGUIWidget.h"
 
 enum StateObjectFlags : uint
 {
@@ -22,7 +22,7 @@ enum class IMGUIDirtiness : int
     kSceneReload
 };
 
-class IMGUIAbstractShelf : public IMGUIElement
+class IMGUIAbstractShelf : public IMGUIWidget
 {
 public:
     enum RandomiseFlags : int { kReset = 1 };

@@ -8,7 +8,7 @@
 #include "shelves/IMGUIAbstractShelf.h"
 #include <set>
 
-class MemoryMonitor : public IMGUIElement
+class MemoryMonitor : public IMGUIWidget
 {
 public:
     MemoryMonitor(const Json::Document& renderStateJson, Json::Document& commandQueue);
