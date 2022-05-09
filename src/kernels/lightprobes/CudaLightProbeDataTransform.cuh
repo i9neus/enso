@@ -3,6 +3,8 @@
 #include "CudaLightProbeGrid.cuh"
 #include "kernels/math/CudaSphericalHarmonics.cuh"
 
+namespace Json { class Node; }
+
 namespace Cuda
 {
     // Describes how the probe grid data should be transformed between the format used by Probegen and the format used by

@@ -54,6 +54,20 @@ namespace Cuda
         return gridIdx.z * gridDensity.x * gridDensity.y + gridIdx.y * gridDensity.x + gridIdx.x;
     }
 
+    struct LightProbeDataTransformParams
+    {
+        __host__ __device__ LightProbeDataTransformParams();
+        __host__ LightProbeDataTransformParams(const ::Json::Node& node);
+
+        __host__ void ToJson(::Json::Node& node) const;
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+
+        int                         posSwizzle;
+        int                         shSwizzle;
+        bool                        posInvertX, posInvertY, posInvertZ;
+        bool                        shInvertX, shInvertY, shInvertZ;
+    };
+
     struct LightProbeGridParams
     {        
         __host__ __device__ LightProbeGridParams();
@@ -72,10 +86,7 @@ namespace Cuda
         int							shOrder;
         bool                        dilate;
 
-        int                         posSwizzle;
-        int                         shSwizzle;
-        bool                        posInvertX, posInvertY, posInvertZ;
-        bool                        shInvertX, shInvertY, shInvertZ;
+        LightProbeDataTransformParams dataTransform;
 
         //vec3                        axisMultiplier;
 

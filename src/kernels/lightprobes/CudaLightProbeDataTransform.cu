@@ -1,4 +1,5 @@
 #include "CudaLightProbeDataTransform.cuh"
+#include "generic/JsonUtils.h"
 
 namespace Cuda
 {
@@ -33,9 +34,9 @@ namespace Cuda
         // Swizzle the indices for the L1 RGB coefficients
         std::vector<int> shSwiz(m_gridParams.coefficientsPerProbe);
         for (int i = 0; i < shSwiz.size(); ++i) { shSwiz[i] = i; }
-        shSwiz[1] = SwizzleIndices(m_gridParams.shSwizzle)[0] + 1;
-        shSwiz[2] = SwizzleIndices(m_gridParams.shSwizzle)[1] + 1;
-        shSwiz[3] = SwizzleIndices(m_gridParams.shSwizzle)[2] + 1;
+        shSwiz[1] = SwizzleIndices(m_gridParams.dataTransform.shSwizzle)[0] + 1; 
+        shSwiz[2] = SwizzleIndices(m_gridParams.dataTransform.shSwizzle)[1] + 1;
+        shSwiz[3] = SwizzleIndices(m_gridParams.dataTransform.shSwizzle)[2] + 1;
 
         // Convert the coefficient offsets into per-channel offsets
         // E.g. { 0, 2, 1 } -> { 0, 1, 2, 6, 7, 8, 3, 4, 5 }
@@ -66,9 +67,9 @@ namespace Cuda
     {
         // Factors for inverting L1 SH coefficients
         std::vector<float> shDirs(m_gridParams.coefficientsPerProbe, 1.0f);
-        if (m_gridParams.shInvertX) { shDirs[1] = -1.0f; }
-        if (m_gridParams.shInvertY) { shDirs[2] = -1.0f; }
-        if (m_gridParams.shInvertZ) { shDirs[3] = -1.0f; }
+        if (m_gridParams.dataTransform.shInvertX) { shDirs[1] = -1.0f; }
+        if (m_gridParams.dataTransform.shInvertY) { shDirs[2] = -1.0f; }
+        if (m_gridParams.dataTransform.shInvertZ) { shDirs[3] = -1.0f; }
 
         // Initialise the forward transformation with the directional scaling factors
         auto& fwdSh = m_forward.sh;
@@ -82,6 +83,8 @@ namespace Cuda
         fwdSh[1].i00 *= SH::Legendre(1);
         fwdSh[2].i00 *= SH::Legendre(1);
         fwdSh[3].i00 *= SH::Legendre(1);
+
+        // Unity validity is 1 minus the actual validity. 
         fwdSh[4] = mat2(-1.0, 0.0, 0.0, 1.0);
 
         // Invert the forward transformation
@@ -95,7 +98,7 @@ namespace Cuda
     __host__ void LightProbeDataTransform::ConstructProbePositionIndices()
     {
         // Generate swizzle indices for probe positions
-        const ivec3 posSwiz = SwizzleIndices(m_gridParams.posSwizzle);
+        const ivec3 posSwiz = SwizzleIndices(m_gridParams.dataTransform.posSwizzle);
 
         // Swizzle the grid density
         const ivec3 swizzledGridDensity = SwizzleVector(m_gridParams.gridDensity, posSwiz);
@@ -106,9 +109,9 @@ namespace Cuda
             ivec3 gridPos = GridPosFromProbeIdx(probeIdx, m_gridParams.gridDensity);
 
             // Invert the axes where appropriate
-            if (m_gridParams.posInvertX) { gridPos.x = m_gridParams.gridDensity.x - gridPos.x - 1; }
-            if (m_gridParams.posInvertY) { gridPos.y = m_gridParams.gridDensity.y - gridPos.y - 1; }
-            if (m_gridParams.posInvertZ) { gridPos.z = m_gridParams.gridDensity.z - gridPos.z - 1; }
+            if (m_gridParams.dataTransform.posInvertX) { gridPos.x = m_gridParams.gridDensity.x - gridPos.x - 1; }
+            if (m_gridParams.dataTransform.posInvertY) { gridPos.y = m_gridParams.gridDensity.y - gridPos.y - 1; }
+            if (m_gridParams.dataTransform.posInvertZ) { gridPos.z = m_gridParams.gridDensity.z - gridPos.z - 1; }
 
             // Swizzle the grid index
             ivec3 swizzledGridPos = SwizzleVector(gridPos, posSwiz);

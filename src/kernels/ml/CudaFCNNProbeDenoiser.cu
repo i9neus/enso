@@ -8,19 +8,21 @@
 
 namespace Cuda
 {
-    __host__ __device__ FCNNProbeDenoiserParams::FCNNProbeDenoiserParams()
+    __host__ __device__ FCNNProbeDenoiserParams::FCNNProbeDenoiserParams() :
+        doEvaluate(false)
     {
-
     }
 
     __host__ void FCNNProbeDenoiserParams::ToJson(::Json::Node& node) const
     {
-
+        dataTransform.ToJson(node);
+        node.AddValue("doEvaluate", doEvaluate);
     }
 
     __host__ void FCNNProbeDenoiserParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-
+        dataTransform.FromJson(node, flags);
+        node.GetValue("doEvaluate", doEvaluate, Json::kSilent);
     }
 
     __host__ Host::FCNNProbeDenoiser::FCNNProbeDenoiser(const std::string& id, const ::Json::Node& node) :
@@ -30,7 +32,7 @@ namespace Cuda
         FromJson(node, Json::kRequiredWarn);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
-        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
+        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);  
         node.GetValue("modelRootPath", m_onnxParams.modelRootPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelProprocessPath", m_onnxParams.modelPreprocessPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelPostprocessPath", m_onnxParams.modelPostprocessPath, Json::kRequiredAssert | Json::kNotBlank);
@@ -40,9 +42,6 @@ namespace Cuda
 
         // Create some objects
         m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
-
-        // Initialise the grid2grid model
-        m_onnxEvaluator.Initialise(m_onnxParams);
     }
     __host__ AssetHandle<Host::RenderObject> Host::FCNNProbeDenoiser::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
@@ -55,7 +54,10 @@ namespace Cuda
     {
         m_params.FromJson(node, flags);
 
-        Prepare();
+        if (m_params.doEvaluate)
+        {
+            Execute();
+        }
     }
 
     __host__ void Host::FCNNProbeDenoiser::OnDestroyAsset()
@@ -73,42 +75,17 @@ namespace Cuda
         }
 
         // Get the light probe camera object and listen out for rebuilds
-        auto& probeCamera = sceneObjects.FindFirstOfType<Host::LightProbeCamera>();
+        /*auto& probeCamera = sceneObjects.FindFirstOfType<Host::LightProbeCamera>();
         if (probeCamera)
         {
             probeCamera->Listen(*this, "OnBuildGrids", &Host::FCNNProbeDenoiser::OnBuildInputGrids);
-        }
-
-        Prepare();
-    }
-
-    __host__ void Host::FCNNProbeDenoiser::Prepare()
-    {
-        m_isActive = true;
-        m_isValidInput = true;
-
-        // Filter isn't yet bound, so do nothing
-        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
-
-        const auto& gridParams = m_hostInputGrid->GetParams();
-
-        if (cwiseMin(gridParams.gridDensity) < 16 || gridParams.shOrder != 1)
-        {
-            Log::Warning("Warning: FCNNProbeDenoiser requires grid of at least 16x16x16 or order L1. Input is %s of order L%i.", gridParams.gridDensity.format(), gridParams.shOrder);
-            m_isValidInput = false;
-            return;
-        }
-        
-        m_rawData.reserve(Volume(gridParams.gridDensity) * 5);
-
-        // Initialise the output grids so it has the same dimensions as the input
-        m_hostOutputGrid->Prepare(gridParams);
+        }*/
     }
 
     __host__ void Host::FCNNProbeDenoiser::OnBuildInputGrids(const RenderObject& originObject, const std::string& eventID)
     {
         // Run the filter every time the input grids are updated
-        Execute();
+        //Execute();
     }
 
     __host__ void Host::FCNNProbeDenoiser::Execute()
@@ -118,16 +95,36 @@ namespace Cuda
 
         const LightProbeGridParams& gridParams = m_hostInputGrid->GetParams();
 
+        if (cwiseMin(gridParams.gridDensity) < 16 || gridParams.shOrder != 1)
+        {
+            Log::Warning("Warning: FCNNProbeDenoiser requires grid of at least 16x16x16 or order L1. Input is %s of order L%i.", gridParams.gridDensity.format(), gridParams.shOrder);
+            m_isValidInput = false;
+            return;
+        }
+
+        m_rawData.reserve(Volume(gridParams.gridDensity) * 5);
+
+        // Initialise the output grids so it has the same dimensions as the input
+        m_hostOutputGrid->Prepare(gridParams);
+
+        // Prepare the grid params in the model data structure
+        m_onnxParams.grid = gridParams;
+        m_onnxParams.grid.dataTransform = m_params.dataTransform;
+        m_onnxParams.grid.Prepare();
+
         // Pass-through filter just copies the data
         //if (m_objects->params.filterType == kKernelFilterNull/* || !m_hostInputGrid->IsConverged()*/)
-        if (!m_isValidInput)
+        /*if (!m_isValidInput)
         {
             m_hostOutputGrid->Replace(*m_hostInputGrid);
             m_isActive = true;
             return;
-        }
+        }*/
 
-        // Invoke the grid2grid model
+        // Initialise the grid2grid model
+        m_onnxEvaluator.Initialise(m_onnxParams);
+
+        // Invoke the model
         m_hostInputGrid->GetRawData(m_rawData);
         m_onnxEvaluator.Evaluate(m_rawData, m_rawData);
         m_hostOutputGrid->SetRawData(m_rawData);
@@ -145,7 +142,7 @@ namespace Cuda
         if (m_hostInputGrid && m_hostOutputGrid &&
             m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())
         {
-            Prepare();
+            
         }
     }
 }

@@ -1,28 +1,32 @@
 #pragma once
 
 #include "OnnxModel.h"
+#include "kernels/lightprobes/CudaLightProbeGrid.cuh"
+#include "kernels/lightprobes/CudaLightProbeDataTransform.cuh"
 
 namespace ONNX
 {    
     struct FCNNProbeDenoiserParams
     {
+        __host__ __device__ FCNNProbeDenoiserParams();
+
         std::string     modelRootPath;
         std::string     modelPreprocessPath;
-        std::string     modelPostprocessPath; 
+        std::string     modelPostprocessPath;
         std::string     modelDenoiserPath;
 
-        Cuda::ivec3     gridResolution;
+        Cuda::LightProbeGridParams grid;
     };
     
 #ifdef _DEBUG     
     class FCNNProbeDenoiser : public ONNXModel
     {
     public:
-        FCNNProbeDenoiserInterface() = default;
+        FCNNProbeDenoiser() = default;
 
         void Reinitialise() {}
         void Initialise(const FCNNProbeDenoiserParams& params) {}
-        void Evaluate(const std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData) {}
+        void Evaluate(std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData) {}
     };
 
 #else
@@ -34,7 +38,7 @@ namespace ONNX
 
         void Reinitialise();
         void Initialise(const FCNNProbeDenoiserParams& params);
-        void Evaluate(const std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
+        void Evaluate(std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
 
     private:
         void Destroy();

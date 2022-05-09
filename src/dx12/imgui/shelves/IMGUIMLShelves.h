@@ -7,8 +7,8 @@
 
 #include "IMGUIAbstractShelf.h"
 
-// Light probe kernel filter
-class FCNNProbeDenoiserShelf : public IMGUIShelf<Cuda::Host::FCNNProbeDenoiser, Cuda::LightProbeGridParams>
+// FCNN Probe Denoiser
+class FCNNProbeDenoiserShelf : public IMGUIShelf<Cuda::Host::FCNNProbeDenoiser, Cuda::FCNNProbeDenoiserParams>
 {
 public:
     FCNNProbeDenoiserShelf(const Json::Node& json);
@@ -19,5 +19,10 @@ public:
     virtual void Jitter(const uint flags, const uint operation) override final {}
     virtual void Reset() override final;
 
+private:
+    IMGUIInputText      m_modelRootPath;
+    IMGUIInputText      m_modelPreprocessPath;
+    IMGUIInputText      m_modelPostprocessPath;
+    IMGUIInputText      m_modelDenoiserPath;
 };
 

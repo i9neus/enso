@@ -10,6 +10,52 @@
 
 namespace Cuda
 {
+    static const std::vector<std::string> kSwizzleLabels = { "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" };
+    
+    __host__ __device__ LightProbeDataTransformParams::LightProbeDataTransformParams() :
+        posSwizzle(kXYZ),
+        posInvertX(false),
+        posInvertY(false),
+        posInvertZ(true),
+        shSwizzle(kZXY),
+        shInvertX(false),
+        shInvertY(false),
+        shInvertZ(true)
+    {
+    }
+
+    __host__ LightProbeDataTransformParams::LightProbeDataTransformParams(const ::Json::Node& node) :
+        LightProbeDataTransformParams()
+    {
+        FromJson(node, Json::kRequiredWarn);
+    }
+
+    __host__ void LightProbeDataTransformParams::ToJson(Json::Node& node) const
+    {
+        node.AddValue("posInvertX", posInvertX);
+        node.AddValue("posInvertY", posInvertY);
+        node.AddValue("posInvertZ", posInvertZ);
+        node.AddEnumeratedParameter("posSwizzle", kSwizzleLabels, posSwizzle);
+
+        node.AddValue("shInvertX", shInvertX);
+        node.AddValue("shInvertY", shInvertY);
+        node.AddValue("shInvertZ", shInvertZ);
+        node.AddEnumeratedParameter("shSwizzle", kSwizzleLabels, shSwizzle);
+    }
+
+    __host__ void LightProbeDataTransformParams::FromJson(const Json::Node& node, const uint flags)
+    {
+        node.GetValue("posInvertX", posInvertX, flags);
+        node.GetValue("posInvertY", posInvertY, flags);
+        node.GetValue("posInvertZ", posInvertZ, flags);
+        node.GetEnumeratedParameter("posSwizzle", kSwizzleLabels, posSwizzle, flags);
+
+        node.GetValue("shInvertX", shInvertX, flags);
+        node.GetValue("shInvertY", shInvertY, flags);
+        node.GetValue("shInvertZ", shInvertZ, flags);
+        node.GetEnumeratedParameter("shSwizzle", kSwizzleLabels, shSwizzle, flags);
+    }
+    
     __host__ __device__ LightProbeGridParams::LightProbeGridParams()
     {
         gridDensity = ivec3(5, 5, 5);
@@ -17,15 +63,7 @@ namespace Cuda
         clipRegion[1] = gridDensity;
         shOrder = 1;
         outputMode = kProbeGridIrradiance;
-        inputColourSpace = kColourSpaceRGB;
-        posSwizzle = kXYZ;
-        posInvertX = false;
-        posInvertY = false;
-        posInvertZ = true;
-        shSwizzle = kZXY;
-        shInvertX = false;
-        shInvertY = false;
-        shInvertZ = true;
+        inputColourSpace = kColourSpaceRGB;        
         aspectRatio = vec3(1.0f);
         minMaxSamplesPerProbe = 0;
         dilate = true;
@@ -43,6 +81,7 @@ namespace Cuda
     __host__ void LightProbeGridParams::ToJson(::Json::Node& node) const
     {
         transform.ToJson(node);
+        dataTransform.ToJson(node);
 
         node.AddArray("gridDensity", std::vector<int>({ gridDensity.x, gridDensity.y, gridDensity.z }));
         node.AddArray("clipRegionLower", std::vector<int>({ clipRegion[0].x, clipRegion[0].y, clipRegion[0].z }));
@@ -50,22 +89,13 @@ namespace Cuda
         node.AddValue("shOrder", shOrder);
         node.AddValue("dilate", dilate);
         node.AddEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode);
-        node.AddEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace);
-
-        node.AddValue("posInvertX", posInvertX);
-        node.AddValue("posInvertY", posInvertY);
-        node.AddValue("posInvertZ", posInvertZ);
-        node.AddEnumeratedParameter("posSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), posSwizzle);
-
-        node.AddValue("shInvertX", shInvertX);
-        node.AddValue("shInvertY", shInvertY);
-        node.AddValue("shInvertZ", shInvertZ);
-        node.AddEnumeratedParameter("shSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), shSwizzle);
+        node.AddEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace);       
     }
 
     __host__ void LightProbeGridParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
+        dataTransform.FromJson(node, flags);
 
         node.GetVector("gridDensity", gridDensity, flags);
         gridDensity = clamp(gridDensity, ivec3(2), ivec3(1000));
@@ -81,16 +111,6 @@ namespace Cuda
         node.GetValue("dilate", dilate, flags);
         node.GetEnumeratedParameter("outputMode", std::vector<std::string>({ "irradiance", "validity", "harmonicmean", "pref", "convergence", "sqrerror" }), outputMode, flags);
         node.GetEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace, flags);
-
-        node.GetValue("posInvertX", posInvertX, flags);
-        node.GetValue("posInvertY", posInvertY, flags);
-        node.GetValue("posInvertZ", posInvertZ, flags);
-        node.GetEnumeratedParameter("posSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), posSwizzle, flags);
-
-        node.GetValue("shInvertX", shInvertX, flags);
-        node.GetValue("shInvertY", shInvertY, flags);
-        node.GetValue("shInvertZ", shInvertZ, flags);
-        node.GetEnumeratedParameter("shSwizzle", std::vector<std::string>({ "xyz", "xzy", "yxz", "yzx", "zxy", "zyx" }), shSwizzle, flags);
 
         shOrder = clamp(shOrder, 0, 2);
         //axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);

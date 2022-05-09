@@ -8,18 +8,19 @@ namespace Json { class Node; }
 
 namespace Cuda
 {
-    namespace Host { class LightProbeKernelFilter; }
-
     struct FCNNProbeDenoiserParams
     {
         __host__ __device__ FCNNProbeDenoiserParams();
         __host__ FCNNProbeDenoiserParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ void FromJson(const ::Json::Node& node, const uint flags);       
 
+        Cuda::LightProbeDataTransformParams dataTransform;
+
+        bool            doEvaluate;
     };
-
+    
     namespace Host
     {
         class FCNNProbeDenoiser : public Host::RenderObject
@@ -34,7 +35,7 @@ namespace Cuda
 
             __host__ virtual void                               FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void								Bind(RenderObjectContainer& sceneObjects) override final;
-            __host__ virtual void                               Prepare();
+            //__host__ virtual void                               Prepare();
             __host__ virtual void                               OnDestroyAsset() override final;
             __host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
             
@@ -47,15 +48,14 @@ namespace Cuda
             __host__ void                                       OnBuildInputGrids(const RenderObject& originObject, const std::string& eventID);
 
         private:
-            FCNNProbeDenoiserParams                 m_params;
-            
             AssetHandle<Host::LightProbeGrid>       m_hostInputGrid;
             AssetHandle<Host::LightProbeGrid>       m_hostOutputGrid;
             std::vector<vec3>                       m_rawData;
 
             std::string                             m_inputGridID;
             std::string                             m_outputGridID;
-
+            
+            FCNNProbeDenoiserParams                 m_params;
             ONNX::FCNNProbeDenoiserParams           m_onnxParams;
             ONNX::FCNNProbeDenoiser                 m_onnxEvaluator;
 

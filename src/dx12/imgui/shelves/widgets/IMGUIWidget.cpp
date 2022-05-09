@@ -1,6 +1,6 @@
 #include "IMGUIWidget.h"
 
-#include "kernels/lightprobes/CudaLightProbeGrid.cuh"
+#include "kernels/lightprobes/CudaLightProbeDataTransform.cuh"
 #include "kernels/math/CudaMath.cuh"
 #include "kernels/CudaAsset.cuh"
 
@@ -163,7 +163,7 @@ void IMGUIWidget::ConstructComboBox(const std::string& name, const std::vector<s
     }
 }
 
-void IMGUIWidget::ConstructProbeDataTransform(Cuda::LightProbeGridParams& params)
+void IMGUIWidget::ConstructProbeDataTransform(Cuda::LightProbeDataTransformParams& params)
 {
     static const std::vector<std::string> kSwizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
     

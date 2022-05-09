@@ -4,12 +4,22 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include <random>
 
-#ifndef _DEBUG 
+#include "generic/JsonUtils.h"
 
+#ifndef _DEBUG 
 #include <onnxruntime/onnxruntime_cxx_api.h>
+#endif
 
 namespace ONNX
 {
+
+    FCNNProbeDenoiserParams::FCNNProbeDenoiserParams()
+    {
+        grid.gridDensity = Cuda::ivec3(-1);
+    }
+
+#ifndef _DEBUG 
+
     FCNNProbeDenoiser::FCNNProbeDenoiser() :
         m_ortInputTensor(new Ort::Value(nullptr)),
         m_ortOutputTensor(new Ort::Value(nullptr)),
@@ -19,6 +29,8 @@ namespace ONNX
 
     void FCNNProbeDenoiser::Initialise(const FCNNProbeDenoiserParams& params)
     {
+        if (params.grid.gridDensity == m_params.grid.gridDensity) { return; }
+        
         m_params = params;
 
         try
@@ -50,7 +62,7 @@ namespace ONNX
 
         m_isModelReady = true;
     }
-    
+
     void FCNNProbeDenoiser::Reinitialise()
     {
         Initialise(m_params);
@@ -63,10 +75,10 @@ namespace ONNX
         m_isModelReady = false;
     }
 
-    void FCNNProbeDenoiser::Evaluate(const std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
+    void FCNNProbeDenoiser::Evaluate(std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
     {
         if (!m_isModelReady) { return; }
-        
+
         // Transpose the raw SH data into the tensor format required by the grid2grid model
         Timer timer;
 
@@ -83,6 +95,7 @@ namespace ONNX
     {
 
     }
-}
 
 #endif 
+
+}
