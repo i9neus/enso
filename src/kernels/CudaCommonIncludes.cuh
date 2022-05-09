@@ -112,6 +112,8 @@ namespace Cuda
 		assert(!*newInstance);
 
 		*newInstance = new ObjectType(args...);
+
+		assert(*newInstance);
 	}
 
 	template<typename ObjectType, typename... Pack>
