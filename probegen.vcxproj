@@ -26,6 +26,7 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUILightShelves.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.cpp" />
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMLShelves.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\IMGUITracableShelves.cpp" />
     <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.cpp" />
@@ -73,6 +74,7 @@
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUILightShelves.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.h" />
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMLShelves.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h" />
     <ClInclude Include="src\dx12\imgui\shelves\IMGUITracableShelves.h" />
     <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.h" />

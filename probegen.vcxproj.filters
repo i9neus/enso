@@ -124,6 +124,9 @@
     <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.cpp">
       <Filter>dx12\imgui\shelves\widgets</Filter>
     </ClCompile>
+    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMLShelves.cpp">
+      <Filter>dx12\imgui\shelves</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -542,6 +545,9 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.h">
       <Filter>dx12\imgui\shelves\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMLShelves.h">
+      <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

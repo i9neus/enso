@@ -191,7 +191,7 @@ void LightProbeCameraShelf::Construct()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNodeEx("Data Export Attributes", 0))
+    if (ImGui::TreeNodeEx("Data Export Transform", 0))
     {        
         ConstructProbeDataTransform(m_p.grid);     
 
