@@ -1,5 +1,9 @@
 #include "IMGUIWidget.h"
 
+#include "kernels/lightprobes/CudaLightProbeGrid.cuh"
+#include "kernels/math/CudaMath.cuh"
+#include "kernels/CudaAsset.cuh"
+
 void IMGUIWidget::Text(const std::string& text, const ImColor colour)
 {
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(colour));
@@ -157,6 +161,35 @@ void IMGUIWidget::ConstructComboBox(const std::string& name, const std::vector<s
         }
         ImGui::EndCombo();
     }
+}
+
+void IMGUIWidget::ConstructProbeDataTransform(Cuda::LightProbeGridParams& params)
+{
+    static const std::vector<std::string> kSwizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
+    
+    ConstructComboBox("Position swizzle", kSwizzleLabels, params.posSwizzle);
+    HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+    ImGui::Text("Invert position"); SL;
+    ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+    ImGui::PushID("posInvert");
+    ImGui::Checkbox("X", &params.posInvertX); SL;
+    ImGui::Checkbox("Y", &params.posInvertY); SL;
+    ImGui::Checkbox("Z", &params.posInvertZ);
+    ImGui::PopID();
+
+    ConstructComboBox("SH swizzle", kSwizzleLabels, params.shSwizzle);
+    HelpMarker("The swizzle factor applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+    ImGui::Text("Invert SH"); SL;
+    ToolTip("Axis inverstion applied to the SH coefficients as they're baked out. Configure this value to match coordiante spaces between Unity and Probegen.");
+
+    ImGui::PushID("shInvert");
+    ImGui::Checkbox("X", &params.shInvertX); SL;
+    ImGui::Checkbox("Y", &params.shInvertY); SL;
+    ImGui::Checkbox("Z", &params.shInvertZ);
+    ImGui::PopID();
 }
 
 void IMGUIJitteredColourPicker::Construct()

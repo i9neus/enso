@@ -4,6 +4,11 @@
 #include "IMGUIListBox.h"
 #include "IMGUIUtils.h"
 
+namespace Cuda
+{
+    class LightProbeGridParams;
+}
+
 class IMGUIWidget
 {
 public:
@@ -17,6 +22,7 @@ protected:
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
     void ConstructListBox(const std::string& name, const std::vector<std::string>& listItems, int& selected);
     void ConstructFlagCheckBox(const std::string& name, const uint& mask, uint& flags);
+    void ConstructProbeDataTransform(Cuda::LightProbeGridParams& params);
 
     template<typename T>
     void ConstructMappedListBox(const std::string& id, const std::map<const std::string, T>& container, std::string& selectedStr, int& selectedIdx)
