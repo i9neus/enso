@@ -75,7 +75,6 @@ namespace Tests
 						
 						for (int sh = 0; sh < params.coefficientsPerProbe; ++sh, ++coeffIdx)
 						{
-							//Logger::WriteMessage(tfm::format("%i, %i, %i, -> %f, %f, %f\n", x, y, z, (referenceData[coeffIdx][0]), (outputData[coeffIdx][1]), (outputData[coeffIdx][2])).c_str()); 
 							for (int c = 0; c < 3; ++c)
 							{
 								float error = std::abs(outputData[coeffIdx][c] - referenceData[coeffIdx][c]);
@@ -105,10 +104,10 @@ namespace Tests
 
 			params.gridDensity = gridDensity;
 			params.shOrder = 1;
-			params.posSwizzle = kXYZ;
-			params.shSwizzle = kXYZ;
-			params.posInvertX = params.posInvertY = params.posInvertZ = false;
-			params.shInvertX = params.shInvertY = params.shInvertZ = false;
+			params.dataTransform.posSwizzle = kXYZ;
+			params.dataTransform.shSwizzle = kXYZ;
+			params.dataTransform.posInvertX = params.dataTransform.posInvertY = params.dataTransform.posInvertZ = false;
+			params.dataTransform.shInvertX = params.dataTransform.shInvertY = params.dataTransform.shInvertZ = false;
 			params.Prepare();
 			
 			return params;
@@ -125,7 +124,7 @@ namespace Tests
 		{
 			LightProbeGridParams params = DefaultGridParams();
 
-			params.posSwizzle = kYXZ;
+			params.dataTransform.posSwizzle = kYXZ;
 
 			CheckForwardBackwardMap(params, false);
 		}
@@ -134,7 +133,7 @@ namespace Tests
 		{
 			LightProbeGridParams params = DefaultGridParams();
 
-			params.shSwizzle = kXYZ;
+			params.dataTransform.shSwizzle = kXYZ;
 
 			CheckForwardBackwardMap(params, false);
 		}
@@ -143,9 +142,9 @@ namespace Tests
 		{
 			LightProbeGridParams params = DefaultGridParams();
 		
-			params.posInvertX = true;
-			params.posInvertY = true;
-			params.posInvertZ = true;
+			params.dataTransform.posInvertX = true;
+			params.dataTransform.posInvertY = true;
+			params.dataTransform.posInvertZ = true;
 
 			CheckForwardBackwardMap(params, false);
 		}
@@ -154,9 +153,9 @@ namespace Tests
 		{
 			LightProbeGridParams params = DefaultGridParams();
 
-			params.shInvertX = true;
-			params.shInvertY = true;
-			params.shInvertZ = true;
+			params.dataTransform.shInvertX = true;
+			params.dataTransform.shInvertY = true;
+			params.dataTransform.shInvertZ = true;
 
 			CheckForwardBackwardMap(params, false);
 		}
@@ -176,14 +175,14 @@ namespace Tests
 
 			params.gridDensity = ivec3(2 + rng(m_mt) % 18, 2 + rng(m_mt) % 18, 2 + rng(m_mt) % 18);
 			params.shOrder = 1;
-			params.posSwizzle = rng(m_mt) % 6;
-			params.shSwizzle = rng(m_mt) % 6;
-			params.posInvertX = bool(rng(m_mt) % 2);
-			params.posInvertY = bool(rng(m_mt) % 2);
-			params.posInvertZ = bool(rng(m_mt) % 2);
-			params.shInvertX = bool(rng(m_mt) % 2);
-			params.shInvertY = bool(rng(m_mt) % 2);
-			params.shInvertZ = bool(rng(m_mt) % 2);
+			params.dataTransform.posSwizzle = rng(m_mt) % 6;
+			params.dataTransform.shSwizzle = rng(m_mt) % 6;
+			params.dataTransform.posInvertX = bool(rng(m_mt) % 2);
+			params.dataTransform.posInvertY = bool(rng(m_mt) % 2);
+			params.dataTransform.posInvertZ = bool(rng(m_mt) % 2);
+			params.dataTransform.shInvertX = bool(rng(m_mt) % 2);
+			params.dataTransform.shInvertY = bool(rng(m_mt) % 2);
+			params.dataTransform.shInvertZ = bool(rng(m_mt) % 2);
 			params.Prepare();
 
 			CheckForwardBackwardMap(params, false);
