@@ -32,11 +32,11 @@ namespace Tests
 			data[coeffIdx + 4] = kZero;
 		}
 
-		void CheckForwardBackwardMap(const LightProbeGridParams& params, const bool forwardOnly)
+		std::vector<vec3> GenerateReferenceGrid(const LightProbeGridParams& params)
 		{
+			// Create a light probe grid with random data
 			std::vector<vec3> referenceData(params.numProbes * params.coefficientsPerProbe);
 
-			// Create a light probe grid with random data
 			for (int x = 0, coeffIdx = 0; x < params.gridDensity.x; ++x)
 			{
 				for (int y = 0; y < params.gridDensity.y; ++y)
@@ -48,6 +48,41 @@ namespace Tests
 					}
 				}
 			}
+			return referenceData;
+		}
+
+		float ComputeGridL1Error(const LightProbeGridParams& params, const std::vector<vec3>& outputData, const std::vector<vec3>& referenceData)
+		{
+			// Verify the data integrity
+			float sumError = 0.0;
+			for (int x = 0, coeffIdx = 0; x < params.gridDensity.x; ++x)
+			{
+				for (int y = 0; y < params.gridDensity.y; ++y)
+				{
+					for (int z = 0; z < params.gridDensity.z; ++z)
+					{
+
+						for (int sh = 0; sh < params.coefficientsPerProbe; ++sh, ++coeffIdx)
+						{
+							for (int c = 0; c < 3; ++c)
+							{
+								float error = std::abs(outputData[coeffIdx][c] - referenceData[coeffIdx][c]);
+								sumError += error;
+								/*Assert::IsTrue(std::abs(outputData[coeffIdx][c] - referenceData[coeffIdx][c]) < kErrorEpsilon,
+									Widen(tfm::format("Element ", a.format(), c.format())).c_str())*/
+							}
+						}
+					}
+				}
+			}
+
+			return sumError;
+		}
+
+		void CheckForwardBackwardMap(const LightProbeGridParams& params, const bool forwardOnly)
+		{
+			// Create a grid with random data
+			std::vector<vec3> referenceData = GenerateReferenceGrid(params);			
 
 			// Make a copy
 			std::vector<vec3> inputData = referenceData;
@@ -64,37 +99,17 @@ namespace Tests
 			}
 
 			// Verify the data integrity
-			constexpr float kErrorThreshold = 1e-3f;
-			float sumError = 0.0;
-			for (int x = 0, coeffIdx = 0; x < params.gridDensity.x; ++x)
-			{
-				for (int y = 0; y < params.gridDensity.y; ++y)
-				{
-					for (int z = 0; z < params.gridDensity.z; ++z)
-					{
-						
-						for (int sh = 0; sh < params.coefficientsPerProbe; ++sh, ++coeffIdx)
-						{
-							for (int c = 0; c < 3; ++c)
-							{
-								float error = std::abs(outputData[coeffIdx][c] - referenceData[coeffIdx][c]);
-								sumError += error;								
-								/*Assert::IsTrue(std::abs(outputData[coeffIdx][c] - referenceData[coeffIdx][c]) < kErrorEpsilon,
-									Widen(tfm::format("Element ", a.format(), c.format())).c_str())*/
-							}
-						}
-					}
-				}
-			}
+			float l1Error = ComputeGridL1Error(params, outputData, referenceData);
+			constexpr float kErrorThreshold = 1e-3f;			
 
 			// Forward only test should result a large error
 			if (forwardOnly)
 			{
-				Assert::IsFalse(sumError < kErrorThreshold, Widen(tfm::format("Error %.5f is close to zero.", sumError, kErrorThreshold)).c_str());
+				Assert::IsFalse(l1Error < kErrorThreshold, Widen(tfm::format("Error %.5f is close to zero.", l1Error, kErrorThreshold)).c_str());
 			}
 			else
 			{
-				Assert::IsTrue(sumError < kErrorThreshold, Widen(tfm::format("Error %.5f exceeded threshold of %.5f", sumError, kErrorThreshold)).c_str());
+				Assert::IsTrue(l1Error < kErrorThreshold, Widen(tfm::format("Error %.5f exceeded threshold of %.5f", l1Error, kErrorThreshold)).c_str());
 			}
 		}
 
@@ -201,6 +216,34 @@ namespace Tests
 			for (int runIdx = 0; runIdx < kNumRuns; ++runIdx)
 			{
 				CheckRandomParamsImpl(rng, false);
+			}
+		}
+
+		TEST_METHOD(CheckPacking)
+		{
+			try
+			{
+				// Create a reference grid
+				LightProbeGridParams params = DefaultGridParams();
+				const std::vector<vec3> referenceGrid = GenerateReferenceGrid(params);
+
+				std::vector<float> shData(params.numProbes * params.shCoefficientsPerProbe * 3);
+				std::vector<float> validityData(params.numProbes);
+				std::vector<vec3> repackedGrid(params.numProbes * params.coefficientsPerProbe);
+
+				// Unpack and repack the coefficients
+				LightProbeDataTransform transform(params);
+				transform.UnpackCoefficients(referenceGrid, shData, validityData);
+				transform.PackCoefficients(shData, validityData, repackedGrid);
+
+				// Compute and check the error
+				constexpr float kErrorThreshold = 1e-3f;
+				float l1Error = ComputeGridL1Error(params, repackedGrid, referenceGrid);
+				Assert::IsTrue(l1Error < kErrorThreshold, Widen(tfm::format("Error %.5f exceeded threshold of %.5f", l1Error, kErrorThreshold)).c_str());
+			}
+			catch (const std::runtime_error& err)
+			{
+				Assert::Fail(Widen(err.what()).c_str());
 			}
 		}
 	};

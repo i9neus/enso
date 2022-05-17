@@ -151,9 +151,6 @@ namespace Cuda
 
     __host__ void LightProbeDataTransform::Forward(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const
     {
-        AssertMsgFmt(inputData.size() == outputData.size(), 
-                     "Mismatch between input and output data sizes. %i -> %i", inputData.size(), outputData.size());
-        
         if (inputData.size() < m_forward.probeIdx.size())
         {
             Log::Error("Cannot forward transform probe grid data. Size of input data buffer is smaller the transform (%ix%ix%i).",
@@ -161,8 +158,10 @@ namespace Cuda
             return;
         }
 
+        // Allocate swap buffers and resize the output
         std::vector<float> swapBufferA(3 * m_gridParams.coefficientsPerProbe);
         std::vector<float> swapBufferB(3 * m_gridParams.coefficientsPerProbe);
+        outputData.resize(m_gridParams.numProbes * m_gridParams.coefficientsPerProbe);
 
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx)
         {
@@ -192,18 +191,17 @@ namespace Cuda
 
     __host__ void LightProbeDataTransform::Inverse(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const
     {
-        AssertMsgFmt(inputData.size() == outputData.size(),
-            "Mismatch between input and output data sizes. %i -> %i", inputData.size(), outputData.size());
-        
         if (inputData.size() / 3 < m_inverse.probeIdx.size())
         {
             Log::Error("Cannot inverse transform probe grid data. Size of input data buffer is smaller the transform (%ix%ix%i).",
                 m_gridParams.gridDensity.x, m_gridParams.gridDensity.y, m_gridParams.gridDensity.z);
             return;
         }
-        
+
+        // Allocate swap buffers and resize the output
         std::vector<float> swapBufferA(3 * m_gridParams.coefficientsPerProbe);
         std::vector<float> swapBufferB(3 * m_gridParams.coefficientsPerProbe);
+        outputData.resize(m_gridParams.numProbes * m_gridParams.coefficientsPerProbe);
 
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx)
         {
@@ -234,7 +232,7 @@ namespace Cuda
     // Pack the SH and validity data into the contiguous format used by Probegen
     __host__ void LightProbeDataTransform::PackCoefficients(const std::vector<float>& shData, const std::vector<float>& validityData, std::vector<vec3>& packedData) const
     {
-        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 4 == packedData.size() / 5);
+        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 12 == packedData.size() / 5);
         
         int shIdx = 0, packedIdx = 0, validityIdx = 0;
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx, shIdx += 12, packedIdx += 5, validityIdx++)
@@ -249,7 +247,7 @@ namespace Cuda
     // Unpack the SH and validity data into separate arrays
     __host__ void LightProbeDataTransform::UnpackCoefficients(const std::vector<vec3>& packedData, std::vector<float>& shData, std::vector<float>& validityData) const
     {
-        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 4 == packedData.size() / 5);
+        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 12 == packedData.size() / 5);
         
         int shIdx = 0, packedIdx = 0, validityIdx = 0;
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx, shIdx += 12, packedIdx += 5, validityIdx++)

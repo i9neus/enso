@@ -25,8 +25,8 @@ namespace ONNX
         FCNNProbeDenoiser() = default;
 
         void Reinitialise() {}
-        void Initialise(const FCNNProbeDenoiserParams& params) {}
-        void Evaluate(std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData) {}
+        void Initialise(const FCNNProbeDenoiserParams&) {}
+        void Evaluate(const FCNNProbeDenoiserParams&, std::vector<Cuda::vec3>&, std::vector<Cuda::vec3>&) {}
     };
 
 #else

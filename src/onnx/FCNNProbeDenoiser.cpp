@@ -91,18 +91,18 @@ namespace ONNX
         m_initFlags = 0;
     }
 
-    void FCNNProbeDenoiser::Evaluate(const FCNNProbeDenoiserParams& params, std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
+    void FCNNProbeDenoiser::Evaluate(const FCNNProbeDenoiserParams& evalParams, std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
     {
-        if (m_initFlags | kInitORT) 
+        if (!(m_initFlags | kInitORT))
         {
-            Log::Error("Error: model is not properly initialised: %u", m_initFlags);
+            Log::Error("Error: ONNX runtime is not initialised: %u", m_initFlags);
             return;
         }
 
         Timer timer;
-        const int w = m_params.grid.gridDensity.x, h = m_params.grid.gridDensity.y, d = m_params.grid.gridDensity.z;
+        const int w = evalParams.grid.gridDensity.x, h = evalParams.grid.gridDensity.y, d = evalParams.grid.gridDensity.z;
 
-        if (params.grid.gridDensity != m_params.grid.gridDensity)
+        if (evalParams.grid.gridDensity != m_params.grid.gridDensity || !(m_initFlags | kInitTensors))
         {
             // Initialise the tensor wrapper objects
             m_unprocSHTensor.Initialise({ 1, h, w, d, 12 });
@@ -115,26 +115,20 @@ namespace ONNX
             m_padTensor.Initialise({ 6 });
             m_statTensor.Initialise({ 2 });
 
-            m_packedCoeffData.resize(w * d * h * 5);
+            m_packedCoeffData.reserve(w * d * h * 5);
 
             m_initFlags |= kInitTensors;
             Log::Debug("Reinitialised tensors.");
         }
-        if (params.grid.dataTransform != m_params.grid.dataTransform)
+        if (evalParams.grid.dataTransform != m_params.grid.dataTransform  || !(m_initFlags | kInitTransforms))
         {
             // Constuct a transform for the grid
-            m_dataTransform.Construct(params.grid);
+            m_dataTransform.Construct(evalParams.grid);
 
             m_initFlags |= kInitTransforms;
             Log::Debug("Reconstructed probe data transform");
         }        
-        m_params = params;
-
-        if (m_initFlags != kIsModelReady)
-        {
-            Log::Error("Error: model is not properly initialised: %u", m_initFlags);
-            return;
-        }
+        m_params = evalParams;       
 
         m_params.grid.Echo();
 
