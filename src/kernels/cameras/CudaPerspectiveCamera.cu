@@ -37,7 +37,7 @@ namespace Cuda
     __host__ PerspectiveCameraParams::PerspectiveCameraParams(const ::Json::Node& node) :
         PerspectiveCameraParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void PerspectiveCameraParams::ToJson(::Json::Node& node) const
@@ -300,7 +300,7 @@ namespace Cuda
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>(id);
 
-        FromJson(parentNode, ::Json::kRequiredWarn);
+        FromJson(parentNode, ::Json::kSilent);
 
         // Sychronise the device objects
         Device::PerspectiveCamera::Objects deviceObjects;

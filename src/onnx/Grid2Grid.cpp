@@ -11,9 +11,11 @@
 namespace ONNX
 {
     Grid2Grid::Grid2Grid() :
-        m_ortInputTensor(new Ort::Value(nullptr)),
-        m_ortOutputTensor(new Ort::Value(nullptr)),
-        m_isModelReady(false){}
+        m_isModelReady(false)
+    {
+        m_ortInputTensor = std::make_unique<Ort::Value>(nullptr);
+        m_ortOutputTensor = std::make_unique<Ort::Value>(nullptr);
+    }
 
     Grid2Grid::Grid2Grid(const std::string& modelPath) : Grid2Grid()       
     {

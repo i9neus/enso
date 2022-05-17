@@ -107,13 +107,15 @@ public:
                                      static void Name(const std::string& message) { Log::StaticWrite(__FILE__, __LINE__, message, Colour, Type); }
 
     LOG_TYPE(Write, kFgDefault, kLogNormal)
-    LOG_TYPE(Debug, kFgGreen, kLogDebug)
+    LOG_TYPE(Success, kFgGreen, kLogNormal)
+    LOG_TYPE(Debug, kFgBlue, kLogDebug)
     LOG_TYPE(Warning, kFgYellow, kLogWarning)
     LOG_TYPE(Error, kBgRed, kLogError)
     LOG_TYPE(System, kFgTeal, kLogSystem)
 
     LOG_TYPE_ONCE(WriteOnce, kFgDefault, kLogNormal)
-    LOG_TYPE_ONCE(DebugOnce, kFgGreen, kLogDebug)
+    LOG_TYPE_ONCE(SuccessOnce, kFgGreen, kLogNormal)
+    LOG_TYPE_ONCE(DebugOnce, kFgBlue, kLogDebug)
     LOG_TYPE_ONCE(WarningOnce, kFgYellow, kLogWarning)
     LOG_TYPE_ONCE(ErrorOnce, kBgRed, kLogError)
     LOG_TYPE_ONCE(SystemOnce, kFgTeal, kLogSystem)

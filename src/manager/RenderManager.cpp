@@ -164,9 +164,6 @@ void RenderManager::Build(const Json::Document& sceneJson)
 		}
 		Log::Write("Successfully created %i objects\n", m_renderObjects->Size());
 
-
-		Cuda::AR().Report();
-
 		// Bind together to create the scene DAG
 		{
 			Log::Indent indent("Binding scene objects...\n");
@@ -193,8 +190,8 @@ void RenderManager::Build(const Json::Document& sceneJson)
 	}
 
 	Log::Snapshot deltaState = Log::GetMessageState() - beginState;
-	Log::Write("*** BUILD COMPLETE***\n");
-	Log::Write("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
+	Log::Success("*** BUILD COMPLETE***\n");
+	Log::Success("%i objects: %i errors, %i warnings\n", m_renderObjects->Size(), deltaState[kLogError], deltaState[kLogWarning]);
 
 	// Finally, start the renderer
 	StartRenderer();
@@ -625,7 +622,7 @@ void RenderManager::StartRenderer()
 
 	Assert(m_managerThread.joinable());
 
-	Log::Write("Okay!");
+	Log::Success("Okay!");
 }
 
 void RenderManager::ClearRenderStates()
@@ -775,12 +772,14 @@ void RenderManager::PatchSceneObjects()
 			validPatches++;
 		}
 	}
-
 	// Some objects may need to adjust their bindings now that the scene graph has been dirtied
-	for (auto& object : *m_renderObjects)
 	{
-		object->OnUpdateSceneGraph(*m_renderObjects);
-	}
+		Log::Indent indent("Updating scene graph...");
+		for (auto& object : *m_renderObjects)
+		{
+			object->OnUpdateSceneGraph(*m_renderObjects);
+		}
+	}	
 
 	// Prepare the scene for rendering
 	if (validPatches > 0) { Prepare(); }

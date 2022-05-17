@@ -72,7 +72,7 @@ namespace Cuda
         Tracable(id)
     {
         cu_deviceData = InstantiateOnDevice<Device::Plane>(id);
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::Plane::OnDestroyAsset()

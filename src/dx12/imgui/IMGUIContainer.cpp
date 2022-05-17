@@ -40,21 +40,24 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
 
     Assert(ImGui::ImplDX12_CreateDeviceObjects());
 
-    Log::Write("IMGUI successfully initialised!\n");
+    Log::Success("IMGUI successfully initialised!\n");
 }
 
 void IMGUIContainer::Rebuild()
 {
-    Log::Indent indent("Building IMGUI components...\n", "Done!\n");
-    m_shelves.clear();
+    {
+        Log::Indent indent("Building IMGUI components...");
+        m_shelves.clear();
 
-    const Json::Document& sceneJson = m_cudaRenderer.GetSceneJSON();
-    const Cuda::AssetHandle<Cuda::RenderObjectContainer> renderObjects = m_cudaRenderer.GetRenderObjectContainer();
+        const Json::Document& sceneJson = m_cudaRenderer.GetSceneJSON();
+        const Cuda::AssetHandle<Cuda::RenderObjectContainer> renderObjects = m_cudaRenderer.GetRenderObjectContainer();
 
-    IMGUIShelfFactory shelfFactory;
-    m_shelves = shelfFactory.Instantiate(sceneJson, *renderObjects);
+        IMGUIShelfFactory shelfFactory;
+        m_shelves = shelfFactory.Instantiate(sceneJson, *renderObjects);
 
-    m_stateManager.Rebuild(sceneJson);
+        m_stateManager.Rebuild(sceneJson);
+    }
+    Log::Success("Done!");
 }
 
 void IMGUIContainer::Build(HWND hwnd)

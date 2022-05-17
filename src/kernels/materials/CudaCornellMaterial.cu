@@ -17,7 +17,7 @@ namespace Cuda
     __host__ CornellMaterialParams::CornellMaterialParams(const ::Json::Node& node, const uint flags) :
         CornellMaterialParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void CornellMaterialParams::ToJson(::Json::Node& node) const
@@ -56,7 +56,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::CornellMaterial>(id);
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::CornellMaterial::OnDestroyAsset()

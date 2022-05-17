@@ -525,7 +525,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::KIFS>(id);
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::KIFS::OnDestroyAsset()

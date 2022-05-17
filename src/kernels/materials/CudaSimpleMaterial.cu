@@ -15,7 +15,7 @@ namespace Cuda
     __host__ SimpleMaterialParams::SimpleMaterialParams(const ::Json::Node& node, const uint flags) :
         SimpleMaterialParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void SimpleMaterialParams::ToJson(::Json::Node& node) const
@@ -70,7 +70,7 @@ namespace Cuda
     {       
         cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>(id);
 
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::SimpleMaterial::OnDestroyAsset()

@@ -68,7 +68,7 @@ public:
 
     IMGUIShelf(const Json::Node& json) : IMGUIShelf()
     {
-        FromJson(json, Json::kRequiredWarn, false);
+        FromJson(json, Json::kSilent, false);
     }
 
     virtual ~IMGUIShelf() = default;
@@ -93,11 +93,7 @@ public:
         if (m_isDirty) { return true; }
         //static_assert(std::is_standard_layout<ParamsType>::value, "ParamsType must be standard layout.");
 
-        for (int i = 0; i < sizeof(ParamsType); i++)
-        {
-            if (reinterpret_cast<const unsigned char*>(&m_paramsBuffer[0])[i] != reinterpret_cast<const unsigned char*>(&m_paramsBuffer[1])[i]) { return true; }
-        }
-        return false;
+        return std::memcmp(&m_paramsBuffer[0], &m_paramsBuffer[1], sizeof(ParamsType));        
     }
 
     virtual void MakeDirty() override final

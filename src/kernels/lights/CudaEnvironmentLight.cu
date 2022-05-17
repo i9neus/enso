@@ -8,7 +8,7 @@ namespace Cuda
     __host__ EnvironmentLightParams::EnvironmentLightParams(const ::Json::Node& node) :
         EnvironmentLightParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void EnvironmentLightParams::ToJson(::Json::Node& node) const
@@ -65,7 +65,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>(id);
-        FromJson(jsonNode, ::Json::kRequiredWarn);
+        FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()

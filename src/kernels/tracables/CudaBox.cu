@@ -84,7 +84,7 @@ namespace Cuda
     {
         cu_deviceData = InstantiateOnDevice<Device::Box>(id);
 
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::Box::OnDestroyAsset()

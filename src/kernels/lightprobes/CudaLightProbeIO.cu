@@ -35,7 +35,7 @@ namespace Cuda
         m_isBatchActive(false),
         m_currentIOPaths(m_usdIOList.end())
     {
-        FromJson(node, Json::kRequiredWarn);
+        FromJson(node, Json::kSilent);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredWarn);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredWarn);

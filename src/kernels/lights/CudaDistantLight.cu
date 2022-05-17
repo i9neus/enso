@@ -13,7 +13,7 @@ namespace Cuda
     __host__ DistantLightParams::DistantLightParams(const ::Json::Node& node) :
         DistantLightParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void DistantLightParams::ToJson(::Json::Node& node) const
@@ -100,7 +100,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         cu_deviceData = InstantiateOnDevice<Device::DistantLight>(id);
-        FromJson(jsonNode, ::Json::kRequiredWarn);
+        FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::DistantLight::OnDestroyAsset()

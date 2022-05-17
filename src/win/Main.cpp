@@ -44,8 +44,8 @@ int main(int argc, char* argv[])
 	// Initialise any objects that have global scope. 
 	InitialiseGlobalObjects();
 
-	Log::Get().EnableLevel(kLogSystem, true);
-	Log::Get().EnableLevel(kLogDebug, true);
+	//Log::Get().EnableLevel(kLogSystem, true);
+	//Log::Get().EnableLevel(kLogDebug, true);
 	
 	try
 	{			

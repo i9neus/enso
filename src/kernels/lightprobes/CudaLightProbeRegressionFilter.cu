@@ -62,7 +62,7 @@ namespace Cuda
     __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const std::string& id, const ::Json::Node& node) :
         RenderObject(id)
     {
-        FromJson(node, Json::kRequiredWarn);
+        FromJson(node, Json::kSilent);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
         node.GetValue("crossGridID", m_crossGridID, Json::kNotBlank);

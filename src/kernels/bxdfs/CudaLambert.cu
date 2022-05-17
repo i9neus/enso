@@ -6,7 +6,7 @@
 
 namespace Cuda
 {
-    __host__ LambertBRDFParams::LambertBRDFParams(const ::Json::Node& node) : LambertBRDFParams() { FromJson(node, ::Json::kRequiredWarn); }
+    __host__ LambertBRDFParams::LambertBRDFParams(const ::Json::Node& node) : LambertBRDFParams() { FromJson(node, ::Json::kSilent); }
 
     __host__ void LambertBRDFParams::ToJson(::Json::Node& node) const
     {
@@ -66,7 +66,7 @@ namespace Cuda
     {
         cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>(id);
 
-        FromJson(parentNode, ::Json::kRequiredWarn);
+        FromJson(parentNode, ::Json::kSilent);
     }
 
     __host__ void Host::LambertBRDF::OnDestroyAsset()
@@ -78,17 +78,17 @@ namespace Cuda
 
     __host__ void Host::LambertBRDF::FromJson(const ::Json::Node& parentNode, const uint flags)
     {      
-        Host::BxDF::FromJson(parentNode, ::Json::kRequiredWarn);
-        m_params.FromJson(parentNode, ::Json::kRequiredWarn);
+        Host::BxDF::FromJson(parentNode, flags);
+        m_params.FromJson(parentNode, flags);
 
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
         //m_gridIDs[0] = "grid_noisy_direct";
         //m_gridIDs[1] = "grid_noisy_indirect";
 
-        parentNode.GetValue("gridChannel0ID", m_gridIDs[0], ::Json::kRequiredWarn);
-        parentNode.GetValue("gridChannel1ID", m_gridIDs[1], ::Json::kRequiredWarn);
-        parentNode.GetValue("gridChannel2ID", m_gridIDs[2], ::Json::kRequiredWarn);
-        parentNode.GetValue("gridChannel3ID", m_gridIDs[3], ::Json::kRequiredWarn);
+        parentNode.GetValue("gridChannel0ID", m_gridIDs[0], flags);
+        parentNode.GetValue("gridChannel1ID", m_gridIDs[1], flags);
+        parentNode.GetValue("gridChannel2ID", m_gridIDs[2], flags);
+        parentNode.GetValue("gridChannel3ID", m_gridIDs[3], flags);
     }
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)

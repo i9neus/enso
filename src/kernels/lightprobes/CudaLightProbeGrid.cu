@@ -27,7 +27,7 @@ namespace Cuda
     __host__ LightProbeDataTransformParams::LightProbeDataTransformParams(const ::Json::Node& node) :
         LightProbeDataTransformParams()
     {
-        FromJson(node, Json::kRequiredWarn);
+        FromJson(node, Json::kSilent);
     }
 
     __host__ void LightProbeDataTransformParams::ToJson(Json::Node& node) const
@@ -80,7 +80,7 @@ namespace Cuda
     __host__ LightProbeGridParams::LightProbeGridParams(const ::Json::Node& node) :
         LightProbeGridParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void LightProbeGridParams::ToJson(::Json::Node& node) const

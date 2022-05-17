@@ -16,7 +16,7 @@ namespace Cuda
     __host__ KIFSMaterialParams::KIFSMaterialParams(const ::Json::Node& node, const uint flags) :
         KIFSMaterialParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void KIFSMaterialParams::ToJson(::Json::Node& node) const
@@ -59,7 +59,7 @@ namespace Cuda
         cu_deviceData(nullptr)
     {        
         cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>(id);
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::KIFSMaterial::OnDestroyAsset()

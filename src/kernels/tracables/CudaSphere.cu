@@ -67,7 +67,7 @@ namespace Cuda
         Tracable(id)
     {       
         cu_deviceData = InstantiateOnDevice<Device::Sphere>(id);
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::Sphere::FromJson(const ::Json::Node& node, const uint flags)

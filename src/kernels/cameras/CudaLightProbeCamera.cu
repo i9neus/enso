@@ -650,7 +650,7 @@ namespace Cuda
         m_deviceObjects.cu_sampleBuffer = m_hostSampleBuffer->GetDeviceInstance();
 
         // Objects are re-synchronised at every JSON update
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::LightProbeCamera::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

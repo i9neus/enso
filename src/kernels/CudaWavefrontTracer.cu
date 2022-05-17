@@ -549,7 +549,7 @@ namespace Cuda
 
 		Host::RenderObject::UpdateDAGPath(node);
 
-		FromJson(node, ::Json::kRequiredWarn);
+		FromJson(node, ::Json::kSilent);
 	}
 
 	__host__ Host::WavefrontTracer::~WavefrontTracer()

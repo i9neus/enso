@@ -15,7 +15,7 @@ namespace Cuda
     __host__ SphereLightParams::SphereLightParams(const ::Json::Node& node) :
         SphereLightParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void SphereLightParams::ToJson(::Json::Node& node) const
@@ -158,7 +158,7 @@ namespace Cuda
 
         // Finally, instantitate the light itself 
         cu_deviceData = InstantiateOnDevice<Device::SphereLight>(id);
-        FromJson(jsonNode, ::Json::kRequiredWarn);
+        FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::SphereLight::OnDestroyAsset()

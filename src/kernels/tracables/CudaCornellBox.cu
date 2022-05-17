@@ -82,7 +82,7 @@ namespace Cuda
     {
         cu_deviceData = InstantiateOnDevice<Device::CornellBox>(id);
 
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::CornellBox::OnDestroyAsset()

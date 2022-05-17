@@ -45,7 +45,7 @@ namespace Cuda
         RenderObject(id),
         m_gridSize(1), m_blockSize(1)
     {
-        FromJson(node, Json::kRequiredWarn);
+        FromJson(node, Json::kSilent);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
         node.GetValue("inputHalfGridID", m_inputHalfGridID, Json::kNotBlank);

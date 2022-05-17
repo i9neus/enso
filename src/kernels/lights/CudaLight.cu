@@ -12,7 +12,7 @@ namespace Cuda
     __host__ LightParams::LightParams(const ::Json::Node& node) :
         LightParams()
     {
-        FromJson(node, ::Json::kRequiredWarn);
+        FromJson(node, ::Json::kSilent);
     }
 
     __host__ void LightParams::ToJson(::Json::Node& node) const

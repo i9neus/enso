@@ -32,32 +32,45 @@ namespace ONNX
 #else
     class FCNNProbeDenoiser : public ONNXModel
     {
+    private:
+        enum InitFlags : uint 
+        { 
+            kInitORT = 1,
+            kInitTensors = 2,
+            kInitTransforms = 4,
+            kIsModelReady = kInitORT | kInitTensors | kInitTransforms
+        };
+
     public:
         FCNNProbeDenoiser();
         ~FCNNProbeDenoiser();
 
         void Reinitialise();
         void Initialise(const FCNNProbeDenoiserParams& params);
-        void Evaluate(std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
+        void Evaluate(const FCNNProbeDenoiserParams& params, std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
 
     private:
         void Destroy();
 
-        void PackTensor(const std::vector<Cuda::vec3>& rawInputData, std::vector<float>& inputTensorData) const;
-        void UnpackTensor(const std::vector<float>& outputTensorData, std::vector<Cuda::vec3>& rawOutputData) const;
+        Tensor<float>                   m_unprocSHTensor;
+        Tensor<float>                   m_procNoisySHTensor;
+        Tensor<float>                   m_procDenoisedSHTensor;
+        Tensor<float>                   m_unprocMaskTensor;
+        Tensor<float>                   m_procMaskTensor;
+        Tensor<int64_t>                 m_padTensor;
+        Tensor<float>                   m_statTensor;
 
-        std::unique_ptr<Ort::Value>     m_ortInputTensor;
-        std::unique_ptr<Ort::Value>     m_ortOutputTensor;
-        std::unique_ptr<Ort::Session>   m_ortSession;
+        std::vector<Cuda::vec3>         m_packedCoeffData;
+
+        Cuda::LightProbeDataTransform   m_dataTransform;
+
         std::unique_ptr<Ort::Env>       m_ortEnvironment;
-
-        std::vector<float>              m_inputTensorData;
-        std::vector<float>              m_outputTensorData;
-        std::vector<int64_t>            m_inputTensorShape;
-        std::vector<int64_t>            m_outputTensorShape;
+        std::unique_ptr<Ort::Session>   m_ortPreprocSession;
+        std::unique_ptr<Ort::Session>   m_ortDenoiserSession;
+        std::unique_ptr<Ort::Session>   m_ortPostprocSession;
 
         FCNNProbeDenoiserParams         m_params;
-        bool                            m_isModelReady;
+        uint                            m_initFlags;
     };
 
 #endif

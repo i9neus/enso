@@ -4,12 +4,12 @@
 
 namespace ONNX
 {
-#ifdef DEBUG     
-    class Grid2GridInterface : public ONNXModel
+#ifdef _DEBUG     
+    class Grid2Grid
     {
     public:
-        Grid2GridInterface() = default;
-        Grid2GridInterface(const std::string& modelPath) {}
+        Grid2Grid() = default;
+        Grid2Grid(const std::string& modelPath) {}
 
         void Reinitialise() {}
         void Initialise(const std::string& modelPath) {}

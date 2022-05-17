@@ -16,7 +16,7 @@ namespace Cuda
     __host__ QuadLightParams::QuadLightParams(const ::Json::Node& node) :
         QuadLightParams()
     { 
-         FromJson(node, ::Json::kRequiredWarn); 
+         FromJson(node, ::Json::kSilent);
     }
     
     __host__ void QuadLightParams::ToJson(::Json::Node& node) const
@@ -149,7 +149,7 @@ namespace Cuda
 
         // Finally, instantitate the light itself 
         cu_deviceData = InstantiateOnDevice<Device::QuadLight>(id);
-        FromJson(jsonNode, ::Json::kRequiredWarn);
+        FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
