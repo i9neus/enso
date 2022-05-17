@@ -34,7 +34,7 @@ namespace Cuda
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
         node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);  
         node.GetValue("modelRootPath", m_onnxParams.modelRootPath, Json::kRequiredAssert | Json::kNotBlank);
-        node.GetValue("modelProprocessPath", m_onnxParams.modelPreprocessPath, Json::kRequiredAssert | Json::kNotBlank);
+        node.GetValue("modelPreprocessPath", m_onnxParams.modelPreprocessPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelPostprocessPath", m_onnxParams.modelPostprocessPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelDenoiserPath", m_onnxParams.modelDenoiserPath, Json::kRequiredAssert | Json::kNotBlank);
 
@@ -42,7 +42,11 @@ namespace Cuda
 
         // Create some objects
         m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
+
+        // Initialise the grid2grid model
+        m_onnxEvaluator.Initialise(m_onnxParams);
     }
+
     __host__ AssetHandle<Host::RenderObject> Host::FCNNProbeDenoiser::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)
     {
         if (expectedType != AssetType::kLightProbeFilter) { return AssetHandle<Host::RenderObject>(); }
@@ -121,12 +125,9 @@ namespace Cuda
             return;
         }*/
 
-        // Initialise the grid2grid model
-        m_onnxEvaluator.Initialise(m_onnxParams);
-
         // Invoke the model
         m_hostInputGrid->GetRawData(m_rawData);
-        m_onnxEvaluator.Evaluate(m_rawData, m_rawData);
+        m_onnxEvaluator.Evaluate(m_onnxParams, m_rawData, m_rawData);
         m_hostOutputGrid->SetRawData(m_rawData);
 
         m_isActive = false;

@@ -49,7 +49,10 @@ namespace Cuda
         __host__ void Construct(const LightProbeGridParams& gridParams);
 
         __host__ void Forward(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const;
-        __host__ void Inverse(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const;
+        __host__ void Inverse(const std::vector<vec3>& inputData, std::vector<vec3>& outputData) const; 
+
+        __host__ void PackCoefficients(const std::vector<float>& shData, const std::vector<float>& validityData, std::vector<vec3>& packedData) const;
+        __host__ void UnpackCoefficients(const std::vector<vec3>& packedData, std::vector<float>& shData, std::vector<float>& validityData) const;
 
     private:
         __host__ void Transform(const std::vector<vec3>& inputData, const DirectionalTransform& trans, std::vector<vec3>& outputData);

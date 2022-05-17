@@ -6,18 +6,18 @@
 
 namespace fs = std::filesystem;
 
-bool VerifyFile(const std::string& absolutePath)
+bool FileExists(const std::string& absolutePath)
 {
-    AssertMsg(!absolutePath.empty(), "The specified file path is empty.");
+    if (absolutePath.empty()) { return false; }
 
     // Check to see whether the root path exists
     fs::path fsPath(absolutePath.c_str());
     return fs::exists(fsPath) && fs::is_regular_file(fsPath);
 }
 
-bool VerifyDirectory(const std::string& absolutePath)
+bool DirectoryExists(const std::string& absolutePath)
 {
-    AssertMsg(!absolutePath.empty(), "The specified directory path is empty.");
+    if (absolutePath.empty()) { return false; }
 
     // Check to see whether the root path exists
     fs::path fsPath(absolutePath.c_str());
@@ -26,7 +26,7 @@ bool VerifyDirectory(const std::string& absolutePath)
 
 bool CreateDirectory(const std::string absolutePath)
 {
-    if(VerifyDirectory(absolutePath)) { return false; }
+    if(DirectoryExists(absolutePath)) { return false; }
 
     // If the directory already exists, don't try to create it
     fs::path fsPath(absolutePath.c_str());

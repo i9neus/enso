@@ -9,10 +9,10 @@ std::string SlashifyPath(const std::string& input);
 std::string DeslashifyPath(const std::string& input);
 
 // Check to see whether a file exists
-bool VerifyFile(const std::string& absolutePath);
+bool FileExists(const std::string& absolutePath);
 
 // Check to see whether a directory exists
-bool VerifyDirectory(const std::string& absolutePath);
+bool DirectoryExists(const std::string& absolutePath);
 
 // Create a directory at the specified path
 bool CreateDirectory(const std::string absolutePath);

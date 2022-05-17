@@ -55,6 +55,11 @@ namespace Cuda
         node.GetValue("shInvertZ", shInvertZ, flags);
         node.GetEnumeratedParameter("shSwizzle", kSwizzleLabels, shSwizzle, flags);
     }
+
+    __host__ __device__ bool LightProbeDataTransformParams::operator!=(const LightProbeDataTransformParams& rhs) const
+    {
+        return std::memcmp(this, &rhs, sizeof(LightProbeDataTransformParams)) != 0;
+    }
     
     __host__ __device__ LightProbeGridParams::LightProbeGridParams()
     {
@@ -116,6 +121,19 @@ namespace Cuda
         //axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
 
         Prepare();
+    }
+
+    __host__ void LightProbeGridParams::Echo() const
+    {
+        Log::Indent indent("LightProbeGridParams");
+        Log::Debug("Grid density: %s", gridDensity.format());
+        Log::Debug("Aspect ratio: %s", aspectRatio.format());
+        Log::Debug("SH order: %i", shOrder);
+        Log::Debug("Dilation: %s", dilate ? "true" : "false");
+        Log::Debug("Coefficients per probe: %i", coefficientsPerProbe);
+        Log::Debug("Num probes: %i", numProbes);
+        Log::Debug("Min samples: %f", minMaxSamplesPerProbe.x);
+        Log::Debug("Max samples: %f", minMaxSamplesPerProbe.y);
     }
 
     __host__ __device__ void LightProbeGridParams::Prepare()
