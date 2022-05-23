@@ -120,7 +120,7 @@ namespace Cuda
 		if (fabs(determinant) < kInverseEpsilon) { return __mat2<Type>::Null(); }
 		const Type invDet = 1 / determinant;
 
-		return { { m.i11 * invDet, -m.i10 * invDet }, { -m.i01 * invDet, m.i00 * invDet } };
+		return { { m.i11 * invDet, -m.i01 * invDet }, { -m.i10 * invDet, m.i00 * invDet } };
 	}
 
 	template<typename Type>

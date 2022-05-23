@@ -36,6 +36,7 @@
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaTransform.cuh" />
+    <ClInclude Include="suites\CudaMat2Tests.h" />
     <ClInclude Include="suites\CudaMat3Tests.h" />
     <ClInclude Include="suites\CudaMat4Tests.h" />
     <ClInclude Include="suites\CudaMathTests.h" />

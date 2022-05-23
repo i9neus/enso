@@ -91,6 +91,9 @@
     <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh">
       <Filter>dependencies</Filter>
     </ClInclude>
+    <ClInclude Include="suites\CudaMat2Tests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
@@ -118,7 +121,9 @@
     <CudaCompile Include="..\src\kernels\CudaRenderObject.cu">
       <Filter>dependencies</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu" />
+    <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu">
+      <Filter>dependencies</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dependencies">
