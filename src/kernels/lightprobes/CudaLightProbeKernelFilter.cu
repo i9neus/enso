@@ -352,7 +352,7 @@ namespace Cuda
                     vec3* outputHalfBuffer = &(*objects.cu_halfReduceBuffer)[outputIdx];
                     for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe; ++coeffIdx)
                     {
-                        outputHalfBuffer[coeffIdx] /= weightedHalfCoeffs[coeffIdx];
+                        outputHalfBuffer[coeffIdx] = weightedHalfCoeffs[coeffIdx];
                     }
                     outputHalfBuffer[gridData.coefficientsPerProbe].x = weights[0];
                 }
@@ -392,29 +392,33 @@ namespace Cuda
         
         // Sum the coefficients and weights over all the blocks
         float sumWeights = 0.0;
-        for (int blockIdx = 0, reduceIdx = 0; blockIdx < objects->blocksPerProbe; ++blockIdx)
+        int reduceIdx = 0, halfReduceIdx = 0;
+        for (int blockIdx = 0; blockIdx < objects->blocksPerProbe; ++blockIdx)
         {
             // Full buffer
             for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++reduceIdx)
             {                                
                 outputBuffer[coeffIdx] += reduceCoeff[reduceIdx];
             }
+            reduceIdx++; // Jump the probe metadata; we don't filter it.
+            sumWeights += reduceCoeff[reduceIdx++].x;
+
             // Half buffer
             if (outputHalfBuffer)
             {
-                for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++reduceIdx)
+                for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx, ++halfReduceIdx)
                 {
-                    outputHalfBuffer[coeffIdx] += halfReduceCoeff[reduceIdx];
+                    outputHalfBuffer[coeffIdx] += halfReduceCoeff[halfReduceIdx];
                 }
-            }
-            reduceIdx++; // Jump the probe metadata; we don't filter it.
-            sumWeights += reduceCoeff[reduceIdx++].x;
+                halfReduceIdx++;
+            }            
         }
 
         // Normalise the accumulated coefficients by the sum of the kernel weights. Don't filter the metadata; just copy.
         for (int coeffIdx = 0; coeffIdx < objects->gridData.shCoeffsPerProbe; ++coeffIdx) 
         { 
             outputBuffer[coeffIdx] /= sumWeights; 
+            outputHalfBuffer[coeffIdx] /= sumWeights;
         }
         outputBuffer[objects->gridData.shCoeffsPerProbe] = inputBuffer[objects->gridData.shCoeffsPerProbe];
         outputBuffer[objects->gridData.shCoeffsPerProbe][kProbeFilterWeights] = sumWeights;
