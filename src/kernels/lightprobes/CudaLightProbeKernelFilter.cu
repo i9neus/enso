@@ -375,7 +375,7 @@ namespace Cuda
         vec3* outputHalfBuffer = gridData.cu_outputHalfGrid ? gridData.cu_outputHalfGrid->At(probeIdx0) : nullptr;
 
         // If the input probe isn't valid, just copy over the unconvolved probe
-        if (inputBuffer[objects->gridData.coefficientsPerProbe - 1].x < 0.5f)
+        /*if (inputBuffer[objects->gridData.coefficientsPerProbe - 1].x < 0.5f)
         {
             memcpy(outputBuffer, inputBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
             if (outputHalfBuffer)
@@ -383,7 +383,7 @@ namespace Cuda
                 memcpy(outputHalfBuffer, inputHalfBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
             }
             return;
-        }        
+        } */       
         
         memset(outputBuffer, 0, sizeof(vec3) * objects->gridData.coefficientsPerProbe);     
         const vec3* reduceCoeff = &(*objects->cu_reduceBuffer)[kKernelX * objects->blocksPerProbe * (objects->gridData.coefficientsPerProbe + 1)];
