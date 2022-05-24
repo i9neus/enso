@@ -198,6 +198,15 @@ void LightProbeCameraShelf::Construct()
         ImGui::TreePop();
     }
 
+    if (ImGui::TreeNodeEx("Debug", 0))
+    {
+        ConstructFlagCheckBox("Bake probe position", Cuda::kLightProbeDebugBakePosition, m_p.debugFlags);
+        ConstructFlagCheckBox("Bake probe direction", Cuda::kLightProbeDebugBakeDirection, m_p.debugFlags);
+        ConstructFlagCheckBox("Disable probe validity", Cuda::kLightProbeDebugDisableValidity, m_p.debugFlags);
+
+        ImGui::TreePop();
+    }
+
     m_p.camera.seed = max(0, m_p.camera.seed);
 
     if (ImGui::TreeNodeEx("Statistics", ImGuiTreeNodeFlags_DefaultOpen))

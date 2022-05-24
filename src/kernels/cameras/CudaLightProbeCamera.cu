@@ -32,6 +32,7 @@ namespace Cuda
         gridUpdateInterval = 10;
         minViableValidity = 0.0f;
         filterGrids = false;
+        debugFlags = 0;
     }
 
     __host__ LightProbeCameraParams::LightProbeCameraParams(const ::Json::Node& node, const uint flags) :
@@ -54,6 +55,7 @@ namespace Cuda
         node.AddValue("minViableValidity", minViableValidity);
         node.AddValue("filterGrids", filterGrids);
         node.AddValue("fixedSampleSubdivisions", fixedSampleSubdivisions);
+        node.AddValue("debugFlags", debugFlags);
     }
 
     __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
@@ -70,6 +72,7 @@ namespace Cuda
         node.GetValue("minViableValidity", minViableValidity, flags);
         node.GetValue("filterGrids", filterGrids, flags);
         node.GetValue("fixedSampleSubdivisions", fixedSampleSubdivisions, flags);
+        node.GetValue("debugFlags", debugFlags, flags);
     }
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -238,10 +241,16 @@ namespace Cuda
             L = RGBToChroma(L); break;
         }
 
-        // Colour encoding of the probe position
-        //L = saturate(vec3(GridPosFromProbeIdx(emplacedRay.accumIdx / m_params.subprobesPerProbe, ivec3(8))) / 8.0);
-        // Colour encoding of the probe direction
-        //L = ctx.emplacedRay[0].probeDir;
+        if (m_params.debugFlags & kLightProbeDebugBakePosition)
+        {
+            // Colour encoding of the probe position
+            L = saturate(vec3(GridPosFromProbeIdx(emplacedRay.accumIdx / m_params.subprobesPerProbe, m_params.grid.gridDensity)) / vec3(m_params.grid.gridDensity));
+        }
+        else if (m_params.debugFlags & kLightProbeDebugBakeDirection)
+        {
+            // Colour encoding of the probe direction
+            L = ctx.emplacedRay[0].probeDir;
+        }
 
         // Loop through the direct and indirect accumulation buffers
         for (int gridIdx = 0; gridIdx < kLightProbeNumBuffers; ++gridIdx)
@@ -293,10 +302,9 @@ namespace Cuda
             if (incidentRay.IsIndirectSample() && incidentRay.depth == 1)
             {
                 // A probe sample is valid if, on the first hit, it intersects with a front-facing surface or it leaves the scene
-                accumBuffer[m_params.grid.shCoefficientsPerProbe] += vec4(float(!hitCtx.isValid || !hitCtx.backfacing),
-                    //1.0f / max(1e-10f, incidentRay.tNear),
-                    //min(m_params.grid.transform.scale().x, incidentRay.tNear) / m_params.grid.transform.scale().x,
-                    0.0f, 0.0f, 1.0f);
+                const float validity = (m_params.debugFlags & kLightProbeDebugDisableValidity) ? 1.0 : float(!hitCtx.isValid || !hitCtx.backfacing);
+
+                accumBuffer[m_params.grid.shCoefficientsPerProbe] += vec4(validity, 0.0f, 0.0f, 1.0f);
             }
         }
     }

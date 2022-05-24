@@ -42,6 +42,13 @@ namespace Cuda
 		kBakeSamplerGeodesic
 	};
 
+	enum ProbeDebugFlags : uint
+	{
+		kLightProbeDebugBakePosition		= 1u,
+		kLightProbeDebugBakeDirection		= 2u,
+		kLightProbeDebugDisableValidity		= 4u
+	};
+
 	struct LightProbeCameraParams
 	{
 		__host__ __device__ LightProbeCameraParams();
@@ -72,6 +79,8 @@ namespace Cuda
 
 		int							samplerType;
 		int							fixedSampleSubdivisions;
+
+		uint 						debugFlags;
 	};
 
 	struct LightProbeGridExportParams
