@@ -55,9 +55,9 @@ namespace ONNX
             m_ortEnvironment.reset(new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "fcnndenoiser"));            
 
             // Create session objects
-            m_ortPreprocSession = std::make_unique<Ort::Session>(*m_ortEnvironment, Widen(modelPreprocessPath).c_str(), Ort::SessionOptions(nullptr));
-            m_ortDenoiserSession = std::make_unique<Ort::Session>(*m_ortEnvironment, Widen(modelDenoiserPath).c_str(), Ort::SessionOptions(nullptr));
-            m_ortPostprocSession = std::make_unique<Ort::Session>(*m_ortEnvironment, Widen(modelPostprocessPath).c_str(), Ort::SessionOptions(nullptr));
+            m_preProcSession.Initialise(*m_ortEnvironment, modelPreprocessPath, 2, 4);
+            m_denoiseSession.Initialise(*m_ortEnvironment, modelDenoiserPath, 2, 1);
+            m_postProcSession.Initialise(*m_ortEnvironment, modelPostprocessPath, 3, 1);
 
             m_initFlags |= kInitORT;
             Log::Success("Successfully initialised PCNN denoiser models");
@@ -76,38 +76,32 @@ namespace ONNX
     void FCNNProbeDenoiser::Destroy()
     {
         m_ortEnvironment.reset();
-        m_ortPreprocSession.reset();
-        m_ortDenoiserSession.reset();
-        m_ortPostprocSession.reset();
 
-        m_unprocSHTensor.Destroy();
-        m_procNoisySHTensor.Destroy();
-        m_procDenoisedSHTensor.Destroy();
-        m_unprocMaskTensor.Destroy();
-        m_procMaskTensor.Destroy();
-        m_padTensor.Destroy();
-        m_statTensor.Destroy();
+        m_preProcSession.Destroy();
+        m_denoiseSession.Destroy();
+        m_postProcSession.Destroy();
 
         m_initFlags = 0;
     }
 
-    void FCNNProbeDenoiser::Evaluate(const FCNNProbeDenoiserParams& evalParams, std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
+    void FCNNProbeDenoiser::Evaluate(const FCNNProbeDenoiserParams& evalParams, const std::vector<Cuda::vec3>& rawInputData, std::vector<Cuda::vec3>& rawOutputData)
     {
-        if (!(m_initFlags | kInitORT))
+        if (!(m_initFlags & kInitORT))
         {
             Log::Error("Error: ONNX runtime is not initialised: %u", m_initFlags);
             return;
         }
 
-        Timer timer;
-        const int w = evalParams.grid.gridDensity.x, h = evalParams.grid.gridDensity.y, d = evalParams.grid.gridDensity.z;
+        Timer timer;       
 
-        if (evalParams.grid.gridDensity != m_params.grid.gridDensity || !(m_initFlags | kInitTensors))
-        {
+        if (evalParams.grid.gridDensity != m_params.grid.gridDensity || !(m_initFlags & kInitTensors))
+        {  
+            const int w = evalParams.grid.gridDensity.x, h = evalParams.grid.gridDensity.y, d = evalParams.grid.gridDensity.z;
+            
             // Initialise the tensor wrapper objects
             m_unprocSHTensor.Initialise({ 1, h, w, d, 12 });
-            m_procNoisySHTensor.Initialise({ 1, 12, h, w, d });
-            m_procDenoisedSHTensor.Initialise({ 1, 12, h, w, d });
+            m_procNoisySHTensor.Initialise({ 1, 14, h, w, d });
+            m_procDenoisedSHTensor.Initialise({ 1, 13, h, w, d });
 
             m_unprocMaskTensor.Initialise({ 1, h, w, d, 1 });
             m_procMaskTensor.Initialise({ 1, 1, h, w, d });
@@ -115,67 +109,87 @@ namespace ONNX
             m_padTensor.Initialise({ 6 });
             m_statTensor.Initialise({ 2 });
 
-            m_packedCoeffData.reserve(w * d * h * 5);
+            // Create the pre-process ORT session
+            m_preProcSession.Inputs().CreateValue(0, "input", m_unprocSHTensor);
+            m_preProcSession.Inputs().CreateValue(1, "mask", m_unprocMaskTensor);
+            m_preProcSession.Outputs().CreateValue(0, "output", m_procNoisySHTensor);
+            m_preProcSession.Outputs().CreateValue(1, "mask_in", m_procMaskTensor);
+            m_preProcSession.Outputs().CreateValue(2, "pad", m_padTensor);
+            m_preProcSession.Outputs().CreateValue(3, "stat", m_statTensor);
+            m_preProcSession.Finalise();
+
+            // Create the denoiser ORT session
+            m_denoiseSession.Inputs().CreateValue(0, "input", m_procNoisySHTensor);
+            m_denoiseSession.Inputs().CreateValue(1, "mask", m_procMaskTensor);
+            m_denoiseSession.Outputs().CreateValue(0, "output", m_procDenoisedSHTensor);
+            m_denoiseSession.Finalise();           
+
+            // Create the post-process ORT session
+            m_postProcSession.Inputs().CreateValue(0, "input", m_procDenoisedSHTensor);
+            m_postProcSession.Inputs().CreateValue(1, "pad", m_padTensor);
+            m_postProcSession.Inputs().CreateValue(2, "stat", m_statTensor);
+            m_postProcSession.Outputs().CreateValue(0, "output", m_unprocSHTensor);
+            m_postProcSession.Finalise();
 
             m_initFlags |= kInitTensors;
-            Log::Debug("Reinitialised tensors.");
+            Log::Warning("Reinitialised tensors.");
         }
-        if (evalParams.grid.dataTransform != m_params.grid.dataTransform  || !(m_initFlags | kInitTransforms))
+        if (evalParams.grid.dataTransform != m_params.grid.dataTransform  || !(m_initFlags & kInitTransforms))
         {
             // Constuct a transform for the grid
             m_dataTransform.Construct(evalParams.grid);
 
             m_initFlags |= kInitTransforms;
-            Log::Debug("Reconstructed probe data transform");
-        }        
+            Log::Warning("Reconstructed probe data transform");
+        }     
+        
         m_params = evalParams;       
-
-        m_params.grid.Echo();
+        Assert(m_initFlags == kIsModelReady);
 
         // Evaluate the model
         try
         {
+            Log::Indent indent("FCNNProbeDenoiser: Running...");
+            
             // Transform the probe data into the space used by the model
             m_dataTransform.Forward(rawInputData, m_packedCoeffData);
             
-            // Unpack the into the input tensors
+            // Unpack the data into the input tensors
             m_dataTransform.UnpackCoefficients(m_packedCoeffData, m_unprocSHTensor.data, m_unprocMaskTensor.data);
             
             // Execute the pre-process model
-            static const char* preProcInputNames[2] = { "input", "mask" };
-            static const char* preProcOutputNames[4] = { "output", "mask_in", "pad", "stat" };
-            Ort::Value* const preProcInputPtrs[2] = { m_unprocSHTensor.ort.get(), m_unprocMaskTensor.ort.get() };
-            Ort::Value* const preProcOutputPtrs[4] = { m_procNoisySHTensor.ort.get(), m_procMaskTensor.ort.get(), m_padTensor.ort.get(), m_statTensor.ort.get() };
-            m_ortPreprocSession->Run(Ort::RunOptions(nullptr), preProcInputNames, preProcInputPtrs[0], 2, preProcOutputNames, preProcOutputPtrs[0], 4);
+            m_preProcSession.Run();
+            Log::WriteOnce("FCNNProbeDenoiser: Pre-process in %.2fms.", timer.Get() * 1e3f);
 
-            // Execute the denoise model
-            static const char* denoiseInputNames[2] = { "input", "mask" };
-            static const char* denoiseOutputNames[1] = { "output" };
-            Ort::Value* const denoiseInputPtrs[2] = { m_procNoisySHTensor.ort.get(), m_procMaskTensor.ort.get() };
-            Ort::Value* const denoiseOutputPtrs[1] = { m_procDenoisedSHTensor.ort.get() };
-            m_ortPreprocSession->Run(Ort::RunOptions(nullptr), denoiseInputNames, denoiseInputPtrs[0], 2, denoiseOutputNames, denoiseOutputPtrs[0], 1);
+            /*for (auto i : m_padTensor.data) Log::Warning("%i", i);
+            for (auto i : m_statTensor.data) Log::Warning("%f", i);
+            for (int i = 0; i < 100 && i < m_procNoisySHTensor.data.size(); ++i)
+            {
+                Log::Warning("%f, %f", m_procNoisySHTensor.data[i], m_procMaskTensor.data[i]);
+            }*/
 
-            // Execute the post-process model
-            static const char* postProcInputNames[3] = { "input", "pad", "stat" };
-            static const char* postProcOutputNames[1] = { "output" };
-            Ort::Value* const postProcInputPtrs[3] = { m_procNoisySHTensor.ort.get(), m_padTensor.ort.get(), m_statTensor.ort.get() };
-            Ort::Value* const postProcOutputPtrs[1] = { m_unprocSHTensor.ort.get() };
-            m_ortPreprocSession->Run(Ort::RunOptions(nullptr), postProcInputNames, postProcInputPtrs[0], 3, postProcOutputNames, postProcOutputPtrs[0], 1);
+            m_denoiseSession.Run();
+            Log::Write("FCNNProbeDenoiser: Denoiser in %.2fms.", timer.Get() * 1e3f);
 
+            m_postProcSession.Run();
+            Log::Write("FCNNProbeDenoiser: Post-process in %.2fms.", timer.Get() * 1e3f);
+          
             // Pack the denoised data 
             m_dataTransform.PackCoefficients(m_unprocSHTensor.data, m_unprocMaskTensor.data, m_packedCoeffData);
             
             // Invert the data transform
             m_dataTransform.Inverse(m_packedCoeffData, rawOutputData);
-
-            Log::SystemOnce("grid2grid: Okay!");
         }
         catch (const Ort::Exception& err)
         {
             Log::Error("Error: ONNX runtime: %s (code %i)", err.what(), err.GetOrtErrorCode());
         }
+        catch (...)
+        {
+            Log::Error("Error: ONNX runtime: unhandled error.");
+        }
 
-        Log::SystemOnce("FCNNProbeDenoiser: Evaluated in %.2fms.", timer.Get() * 1e3f);
+        Log::Success("FCNNProbeDenoiser: Evaluated in %.2fms.", timer.Get() * 1e3f);
     }
 
 #endif 

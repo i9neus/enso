@@ -85,7 +85,7 @@ namespace Cuda
         fwdSh[3].i00 *= SH::Legendre(1);
 
         // Unity validity is 1 minus the actual validity. 
-        fwdSh[4] = mat2(-1.0, 0.0, 0.0, 1.0);
+        fwdSh[4] = mat2(1.0, 0.0, 0.0, 1.0);
 
         // Invert the forward transformation
         auto& invSh = m_inverse.sh;
@@ -232,7 +232,8 @@ namespace Cuda
     // Pack the SH and validity data into the contiguous format used by Probegen
     __host__ void LightProbeDataTransform::PackCoefficients(const std::vector<float>& shData, const std::vector<float>& validityData, std::vector<vec3>& packedData) const
     {
-        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 12 == packedData.size() / 5);
+        AssertMsgFmt(validityData.size() == packedData.size() / 5, "Validity data and packed data size mismatch. %i -> %i", validityData.size(), packedData.size() / 5);
+        AssertMsgFmt(shData.size() / 12 == packedData.size() / 5, "SH data and packed data size mismatch. %i -> %i", shData.size() / 12, packedData.size() / 5);
         
         int shIdx = 0, packedIdx = 0, validityIdx = 0;
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx, shIdx += 12, packedIdx += 5, validityIdx++)
@@ -247,7 +248,8 @@ namespace Cuda
     // Unpack the SH and validity data into separate arrays
     __host__ void LightProbeDataTransform::UnpackCoefficients(const std::vector<vec3>& packedData, std::vector<float>& shData, std::vector<float>& validityData) const
     {
-        Assert(validityData.size() == packedData.size() / 5 && shData.size() / 12 == packedData.size() / 5);
+        AssertMsgFmt(validityData.size() == packedData.size() / 5, "Validity data and packed data size mismatch. %i -> %i", validityData.size(), packedData.size() / 5);
+        AssertMsgFmt(shData.size() / 12 == packedData.size() / 5, "SH data and packed data size mismatch. %i -> %i", shData.size() / 12, packedData.size() / 5);
         
         int shIdx = 0, packedIdx = 0, validityIdx = 0;
         for (int probeIdx = 0; probeIdx < m_gridParams.numProbes; ++probeIdx, shIdx += 12, packedIdx += 5, validityIdx++)

@@ -26,7 +26,7 @@ namespace ONNX
 
         void Reinitialise() {}
         void Initialise(const FCNNProbeDenoiserParams&) {}
-        void Evaluate(const FCNNProbeDenoiserParams&, std::vector<Cuda::vec3>&, std::vector<Cuda::vec3>&) {}
+        void Evaluate(const FCNNProbeDenoiserParams&, const std::vector<Cuda::vec3>&, std::vector<Cuda::vec3>&) {}
     };
 
 #else
@@ -47,7 +47,7 @@ namespace ONNX
 
         void Reinitialise();
         void Initialise(const FCNNProbeDenoiserParams& params);
-        void Evaluate(const FCNNProbeDenoiserParams& params, std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
+        void Evaluate(const FCNNProbeDenoiserParams& params, const std::vector<Cuda::vec3>& inputData, std::vector<Cuda::vec3>& outputData);
 
     private:
         void Destroy();
@@ -60,8 +60,11 @@ namespace ONNX
         Tensor<int64_t>                 m_padTensor;
         Tensor<float>                   m_statTensor;
 
-        std::vector<Cuda::vec3>         m_packedCoeffData;
+        OrtSession                      m_preProcSession;
+        OrtSession                      m_denoiseSession;
+        OrtSession                      m_postProcSession;
 
+        std::vector<Cuda::vec3>         m_packedCoeffData;
         Cuda::LightProbeDataTransform   m_dataTransform;
 
         std::unique_ptr<Ort::Env>       m_ortEnvironment;
