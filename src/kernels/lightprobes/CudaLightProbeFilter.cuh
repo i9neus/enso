@@ -15,7 +15,7 @@ namespace Cuda
         kKernelFilterBox,
         kKernelFilterGaussian,
         kKernelFilterNLM,
-        kKernelFilterNLMConst
+        kKernelFilterNLMEpanechnikov
     };
 
     struct LightProbeFilterGridData
@@ -92,4 +92,12 @@ namespace Cuda
     __device__ float ComputeNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK);
 
     __device__ float ComputeConstVarianceNLMWeight(LightProbeFilterGridData& gridData, const LightProbeFilterNLMParams& nlmParams, const ivec3& pos0, const ivec3& posK);
+
+    __forceinline__ __device__ float ComputeEpanechnikovWeight(const ivec3& posK, const float kernelRadius)
+    {
+        const float len2 = length2(vec3(posK));
+        const float radius2 = sqr(kernelRadius + 1.0f);
+        
+        return (len2 >= radius2) ? 0.0 : (1.0f - len2 / radius2);
+    }
 }

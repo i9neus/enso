@@ -3,14 +3,15 @@
 
 LightProbeKernelFilterShelf::LightProbeKernelFilterShelf(const Json::Node& json) :
     IMGUIShelf(json),
-    m_linkAlphaK(m_p.nlm.alpha == m_p.nlm.K)
+    m_linkAlphaK(m_p.nlm.alpha == m_p.nlm.K),
+    m_continousEval(false)
 {}
 
 void LightProbeKernelFilterShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM" }, m_p.filterType);
+    ConstructComboBox("Kernel type", { "Null", "Box", "Gaussian", "NLM", "NLM x Epanechnikov" }, m_p.filterType);
     ImGui::SliderInt("Kernel radius", &m_p.kernelRadius, 0, 10);
     ImGui::DragInt3("Clip lower", &m_p.clipRegion[0][0], 1.0f, 0, 100);
     ImGui::DragInt3("Clip upper", &m_p.clipRegion[1][0], 1.0f, 0, 100);
@@ -25,11 +26,18 @@ void LightProbeKernelFilterShelf::Construct()
     ConstructComboBox("NLM variance format", { "Half", "2x under", "2x over"}, m_p.nlm.varianceFormat);
 
     ImGui::Checkbox("Link alpha/k", &m_linkAlphaK);
+    ImGui::Checkbox("Exclude invalid probes", &m_p.excludeInvalid);
+    ImGui::Checkbox("Continous evaluation", &m_p.continuousEval);
+
+    if (ImGui::Button("Evaluate"))
+    {
+        m_p.doEvaluate = true;
+    }
 }
 
 void LightProbeKernelFilterShelf::Reset()
 {
-
+    m_p.doEvaluate = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

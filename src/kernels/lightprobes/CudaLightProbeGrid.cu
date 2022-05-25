@@ -278,6 +278,7 @@ namespace Cuda
         {
             (*m_objects.cu_swapBuffer)[gridIdx0 + coeffIdx] /= float(sumWeights);
         }
+        //(*m_objects.cu_swapBuffer)[gridIdx0 + m_params.shCoefficientsPerProbe].x = 1.0;
     }
 
     __device__ void Device::LightProbeGrid::SetSHCoefficient(const int probeIdx, const int coeffIdx, const vec3& L)

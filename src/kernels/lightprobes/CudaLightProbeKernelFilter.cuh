@@ -19,7 +19,11 @@ namespace Cuda
         int         filterType;
         int         kernelRadius;
         ivec3       clipRegion[2];
-        LightProbeFilterNLMParams nlm;       
+        LightProbeFilterNLMParams nlm;      
+
+        bool        doEvaluate;
+        bool        continuousEval;
+        bool        excludeInvalid;
     };    
 
     namespace Host

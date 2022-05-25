@@ -11,7 +11,10 @@ namespace Cuda
 {
     __host__ __device__ LightProbeKernelFilterParams::LightProbeKernelFilterParams() : 
         filterType(kKernelFilterGaussian),
-        kernelRadius(1)
+        kernelRadius(1),
+        doEvaluate(false),
+        continuousEval(false),
+        excludeInvalid(false)
     {
         clipRegion[0] = ivec3(0);
         clipRegion[1] = ivec3(100);
@@ -19,10 +22,13 @@ namespace Cuda
     
     __host__ void LightProbeKernelFilterParams::ToJson(::Json::Node& node) const
     {
-        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType);
+        node.AddEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm", "nlmepanechnikov" }), filterType);
         node.AddValue("radius", kernelRadius);
         node.AddArray("clipRegionLower", std::vector<int>({ clipRegion[0].x, clipRegion[0].y, clipRegion[0].z }));
         node.AddArray("clipRegionUpper", std::vector<int>({ clipRegion[1].x, clipRegion[1].y, clipRegion[1].z }));
+        node.AddValue("doEvaluate", doEvaluate);
+        node.AddValue("continuousEval", continuousEval);
+        node.AddValue("excludeInvalid", excludeInvalid);
 
         Json::Node nlmNode = node.AddChildObject("nlm");
         nlm.ToJson(nlmNode);
@@ -30,10 +36,13 @@ namespace Cuda
 
     __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm" }), filterType, flags);
+        node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm", "nlmepanechnikov" }), filterType, flags);
         node.GetValue("radius", kernelRadius, flags);
         node.GetVector("clipRegionLower", clipRegion[0], flags);
         node.GetVector("clipRegionUpper", clipRegion[1], flags);
+        node.GetValue("doEvaluate", doEvaluate, flags);
+        node.GetValue("continuousEval", continuousEval, flags);
+        node.GetValue("excludeInvalid", excludeInvalid, flags);
 
         Json::Node nlmNode = node.GetChildObject("nlm", flags);
         if (nlmNode) { nlm.FromJson(nlmNode, flags); }
@@ -239,18 +248,16 @@ namespace Cuda
                     switch (params.filterType)
                     {
                     case kKernelFilterGaussian:
-                    {
-                        const float len = length(vec3(posK));
-                        if (len >= params.kernelRadius + 1.0f) { weight = 0.0f; }
-                        else
-                        {
-                            //weight = Integrate1DGaussian(len - 0.5f, len + 0.5f, params.kernelRadius);
-                            weight = 1.0f - sqr(len / float(params.kernelRadius + 1.0f));
-                        }       
+                        weight = ComputeEpanechnikovWeight(posK, params.kernelRadius);
                         break;
-                    }
+
+                    case kKernelFilterNLMEpanechnikov:
+                        weight = ComputeEpanechnikovWeight(posK, params.kernelRadius);
                     case kKernelFilterNLM:
-                        weight = ComputeNLMWeight(gridData, params.nlm, pos0, posK);
+                        if (weight > 0.0)
+                        {
+                            weight *= ComputeNLMWeight(gridData, params.nlm, pos0, posK);
+                        }
                         break;
                     };
                 }
@@ -375,7 +382,7 @@ namespace Cuda
         vec3* outputHalfBuffer = gridData.cu_outputHalfGrid ? gridData.cu_outputHalfGrid->At(probeIdx0) : nullptr;
 
         // If the input probe isn't valid, just copy over the unconvolved probe
-        /*if (inputBuffer[objects->gridData.coefficientsPerProbe - 1].x < 0.5f)
+        if (objects->params.excludeInvalid && inputBuffer[objects->gridData.coefficientsPerProbe - 1].x < 0.5f)
         {
             memcpy(outputBuffer, inputBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
             if (outputHalfBuffer)
@@ -383,7 +390,7 @@ namespace Cuda
                 memcpy(outputHalfBuffer, inputHalfBuffer, sizeof(vec3) * objects->gridData.coefficientsPerProbe);
             }
             return;
-        } */       
+        }       
         
         memset(outputBuffer, 0, sizeof(vec3) * objects->gridData.coefficientsPerProbe);     
         const vec3* reduceCoeff = &(*objects->cu_reduceBuffer)[kKernelX * objects->blocksPerProbe * (objects->gridData.coefficientsPerProbe + 1)];
@@ -442,8 +449,11 @@ namespace Cuda
 
     __host__ void Host::LightProbeKernelFilter::Execute()
     {
-        // Filter isn't yet bound, so do nothing
-        if (!m_hostInputGrid || !m_hostOutputGrid) { return; }
+        // If the evaluation hasn't been started or the filter isn't yet bound, do nothing
+        if ((!m_objects->params.continuousEval && !m_objects->params.doEvaluate) || 
+            !m_hostInputGrid || !m_hostOutputGrid) { return; }
+
+        m_objects->params.doEvaluate = false;
 
         // Pass-through filter just copies the data
         if (m_objects->params.filterType == kKernelFilterNull/* || !m_hostInputGrid->IsConverged()*/)

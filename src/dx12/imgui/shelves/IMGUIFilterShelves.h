@@ -23,6 +23,7 @@ public:
 
 private:
     bool m_linkAlphaK;
+    bool m_continousEval;
 };
 
 // Light probe regression filter
