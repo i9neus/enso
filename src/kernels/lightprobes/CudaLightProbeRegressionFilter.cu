@@ -38,7 +38,7 @@ namespace Cuda
         nlm.ToJson(nlmNode);
     }
 
-    __host__ void LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeRegressionFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("polynomialOrder", polynomialOrder, flags);
         node.GetValue("regressionRadius", regressionRadius, flags);
@@ -57,6 +57,8 @@ namespace Cuda
         regressionIterations = clamp(regressionIterations, 1, 100);
         reconstructionRadius = clamp(reconstructionRadius, 0, 10);
         polynomialOrder = clamp(polynomialOrder, 0, 3);
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ Host::LightProbeRegressionFilter::LightProbeRegressionFilter(const std::string& id, const ::Json::Node& node) :
@@ -91,11 +93,13 @@ namespace Cuda
         return CreateAsset<Host::LightProbeRegressionFilter>(id, json);
     }
 
-    __host__ void Host::LightProbeRegressionFilter::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::LightProbeRegressionFilter::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_objects->params.FromJson(node, flags);
 
         Prepare();
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::LightProbeRegressionFilter::OnDestroyAsset()
@@ -643,7 +647,7 @@ namespace Cuda
         return objects;
     }
 
-    __host__ void Host::LightProbeRegressionFilter::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::LightProbeRegressionFilter::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         if (m_hostInputGrid && m_hostOutputGrid &&
             m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())

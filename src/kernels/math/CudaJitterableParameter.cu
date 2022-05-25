@@ -6,15 +6,15 @@
 namespace Cuda
 {    
     template<typename PType>
-    __host__ void JitterableScalar<PType>::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
+    __host__ uint JitterableScalar<PType>::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
     {
         std::vector<float> data;
-        if (!node.GetArrayValues(id, data, flags)) { return; }
+        if (!node.GetArrayValues(id, data, flags)) { return 0; }
 
         if (data.size() == 0)
         {
             Json::ReportError(flags, "Warning: jitterable scalar '%s' should have at least 1 element.\n", id);
-            return;
+            return 0;
         }
         
         p = data[0];
@@ -22,6 +22,7 @@ namespace Cuda
         t = (data.size() >= 3) ? data[2] : 0.0f;
 
         Evaluate();
+        return 0;
     }
 
     template<typename PType>
@@ -71,23 +72,23 @@ namespace Cuda
     }
 
     template<typename PType, typename TType>
-    __host__ void JitterableVec<PType, TType>::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
+    __host__ uint JitterableVec<PType, TType>::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
     {
         std::vector<std::vector<float>> matrix;
-        if (!node.GetArray2DValues(id, matrix, flags)) { return; }
+        if (!node.GetArray2DValues(id, matrix, flags)) { return 0; }
 
         // Check the integrity of the data
         if (matrix.size() == 0)
         {
             Json::ReportError(flags, "Error: jitterable vec%i '%s': matrix must have at least one row.\n", PType::kDims, id);
-            return;
+            return 0;
         }
         for (int row = 0; row < matrix.size(); ++row)
         {
             if (matrix[row].size() != PType::kDims)
             {
                 Json::ReportError(flags, "Error: jitterable vec%i '%s': row %i should have %i columns but found %i.\n", PType::kDims, id, PType::kDims, matrix[row].size());
-                return;
+                return 0;
             }
         }
 
@@ -101,6 +102,7 @@ namespace Cuda
         }
 
         Evaluate();
+        return 0u;
     }
 
     template<typename PType, typename TType>
@@ -157,15 +159,15 @@ namespace Cuda
             PType(p + dpdt * (t * 2.0f - 1.0f));
     }
 
-    __host__ void JitterableFlags::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
+    __host__ uint JitterableFlags::FromJson(const std::string& id, const ::Json::Node& node, const uint flags)
     {
         std::vector<std::vector<int>> matrix;
-        if (!node.GetArray2DValues(id, matrix, flags)) { return; }
+        if (!node.GetArray2DValues(id, matrix, flags)) { return 0u; }
 
         if (matrix.size() == 0)
         {
             Json::ReportError(flags, "Warning: jitterable flags '%s' should have at least 1 element.\n", id);
-            return;
+            return 0;
         }
 
         p = dpdt = t = 0;
@@ -177,6 +179,7 @@ namespace Cuda
         }
 
         Evaluate();
+        return 0;
     }
 
     __host__ void JitterableFlags::ToJson(const std::string& id, ::Json::Node& node) const

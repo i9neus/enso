@@ -27,7 +27,7 @@ namespace Cuda
 		__host__ PerspectiveCameraParams(const ::Json::Node& node);
 
 		__host__ void ToJson(::Json::Node& node) const;
-		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+		__host__ uint FromJson(const ::Json::Node& node, const uint flags);
 		
 		vec3			position;
 		vec3			lookAt;
@@ -104,12 +104,15 @@ namespace Cuda
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
 			__host__ virtual void                       OnDestroyAsset() override final;
-			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
+			__host__ virtual uint                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return m_hostAccumBuffer; }
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
 			__host__ virtual void						ClearRenderState() override final;
-			__host__ virtual void						OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
+			__host__ virtual void						OnPreRenderPass(const float wallTime) override final;
+			__host__ virtual void						OnPostRenderPass() override final;
+			__host__ virtual void						OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) override final;
+
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
@@ -122,6 +125,7 @@ namespace Cuda
 
 			dim3                    m_blockSize;
 			dim3					m_gridSize;
+			int						m_frameIdx;
 		};
 	}
 }

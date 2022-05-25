@@ -14,7 +14,7 @@ namespace Cuda
         __host__ LightProbeRegressionFilterParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         int     filterType;
         int     polynomialOrder;
@@ -101,12 +101,12 @@ namespace Cuda
 
             __host__ static AssetHandle<Host::RenderObject>     Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
-            __host__ virtual void                               FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ virtual uint                               FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual void								Bind(RenderObjectContainer& sceneObjects) override final;
             __host__ virtual void                               Prepare();
             __host__ virtual void						        OnPostRenderPass() override final;
             __host__ virtual void                               OnDestroyAsset() override final;
-            __host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+            __host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) override final;
 
             __host__ static std::string                         GetAssetTypeString() { return "proberegressionfilter"; }
             __host__ static std::string                         GetAssetDescriptionString() { return "Light Probe Regression Filter"; }

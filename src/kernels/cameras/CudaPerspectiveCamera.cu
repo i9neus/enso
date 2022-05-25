@@ -55,9 +55,9 @@ namespace Cuda
         node.AddEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation);
     }
 
-    __host__ void PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint PerspectiveCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        camera.FromJson(node, flags);
+        uint dirtyFlags = camera.FromJson(node, flags);
 
         node.GetVector("pos", position, flags);
         node.GetVector("lookAt", lookAt, flags);
@@ -68,6 +68,8 @@ namespace Cuda
         node.GetValue("displayGamma", displayGamma, flags);
         node.GetValue("isRealtime", isRealtime, flags);
         node.GetEnumeratedParameter("lightProbeEmulation", std::vector<std::string>({ "none", "all", "direct", "indirect" }), lightProbeEmulation, flags);
+
+        return dirtyFlags | kRenderObjectDirtyRender;
     }
 
     // Returns the polar distance r to the perimeter of an n-sided polygon
@@ -291,7 +293,8 @@ namespace Cuda
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id, const ::Json::Node& parentNode) :
-        Host::Camera(parentNode, id, kRayBufferSize)
+        Host::Camera(parentNode, id, kRayBufferSize), 
+        m_frameIdx(0)
     {
         // Create the accumulation buffer
         m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), this, 512, 512, m_hostStream);
@@ -330,16 +333,19 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {        
         m_params = PerspectiveCameraParams(parentNode);
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::PerspectiveCamera::ClearRenderState()
     {
         m_hostAccumBuffer->Clear(vec4(0.0f));
         m_hostCompressedRayBuffer->Clear(Cuda::CompressedRay());
+        m_frameIdx = 0;
         //m_hostPixelFlagsBuffer->Clear(0);
     }
 
@@ -348,9 +354,14 @@ namespace Cuda
         camera->SeedRayBuffer(kKernelPos<ivec2>(), frameIdx);
     }
 
-    __host__ void Host::PerspectiveCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
+    __host__ void Host::PerspectiveCamera::OnPreRenderPass(const float wallTime)
     {
-        KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData, frameIdx);
+        KernelSeedRayBuffer << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceData, m_frameIdx);
+    }
+
+    __host__ void Host::PerspectiveCamera::OnPostRenderPass()
+    {
+        m_frameIdx++;
     }
 
     __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::PerspectiveCamera* camera)
@@ -371,5 +382,13 @@ namespace Cuda
     {
         m_hostAccumBuffer->Download(rawData);
         dimensions = m_hostAccumBuffer->GetMetadata().Dimensions();
+    }
+
+    __host__ void Host::PerspectiveCamera::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
+    {
+        if (dirtyFlags & kRenderObjectDirtyRender)
+        {
+            ClearRenderState();
+        }
     }
 }

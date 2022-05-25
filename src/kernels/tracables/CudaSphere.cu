@@ -70,7 +70,7 @@ namespace Cuda
         FromJson(node, ::Json::kSilent);
     }
 
-    __host__ void Host::Sphere::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::Sphere::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Tracable::FromJson(node, flags);
         
@@ -78,6 +78,8 @@ namespace Cuda
         RenderObject::SetUserFacingRenderObjectFlags(m_params.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ void Host::Sphere::OnDestroyAsset()

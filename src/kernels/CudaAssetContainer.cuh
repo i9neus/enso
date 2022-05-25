@@ -185,12 +185,14 @@ namespace Cuda
 			__host__ Iterator begin() { return Iterator(*this, 0); }
 			__host__ Iterator end() { return Iterator(*this, m_assetMap.size()); }
 
-			__host__ virtual void FromJson(const ::Json::Node& parentNode, const uint flags) override final
+			__host__ virtual uint FromJson(const ::Json::Node& parentNode, const uint flags) override final
 			{
 				for (auto& asset : m_assetMap)
 				{
 					asset.second->FromJson(parentNode, flags);
 				}
+
+				return kRenderObjectClean;
 			}
 
 			__host__ void AssertSize(const uint size) const

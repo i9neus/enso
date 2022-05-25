@@ -10,11 +10,13 @@ namespace Cuda
         tracable.ToJson(node);
     }
 
-    __host__ void PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint PlaneParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("bounded", isBounded, flags);
         node.GetValue("isDoubleSided", isDoubleSided, flags);
         tracable.FromJson(node, flags);
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__  bool Device::Plane::Intersect(Ray& ray, HitCtx& hitCtx) const
@@ -80,7 +82,7 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::Plane::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Tracable::FromJson(node, flags);
 
@@ -88,6 +90,8 @@ namespace Cuda
         RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, PlaneParams(node, flags));
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ void Host::Plane::UpdateParams(const BidirectionalTransform& transform, const bool isBounded)

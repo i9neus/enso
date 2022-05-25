@@ -1,6 +1,5 @@
 {
-    "scene": "c:/projects/probegen-scenes/lightprobedenoiser/mono/mono.json",
-    //"scene": "c:/projects/probegen-scenes/misc/cornell.json",
+    "scene": "C:/projects/probegen-scenes/lightprobedenoiser/onnx/kifs.json",
     "usd": {
         "templatePath": "c:/projects/probegen/scenes/template.usda",
         "pluginDirectory": ""

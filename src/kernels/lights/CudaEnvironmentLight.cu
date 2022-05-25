@@ -16,9 +16,11 @@ namespace Cuda
         light.ToJson(node);
     }
 
-    __host__ void EnvironmentLightParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint EnvironmentLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         light.FromJson(node, flags);
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ Device::EnvironmentLight::EnvironmentLight()
@@ -73,10 +75,12 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Light::FromJson(parentNode, flags);
 
         SynchroniseObjects(cu_deviceData, EnvironmentLightParams(parentNode));
+
+        return kRenderObjectDirtyAll;
     }
 }

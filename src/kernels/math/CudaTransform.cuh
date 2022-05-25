@@ -49,7 +49,7 @@ namespace Cuda
 		mat3 inv;
 		mat3 nInv;
 
-		__host__ void FromJson(const ::Json::Node& json, const uint flags);
+		__host__ uint FromJson(const ::Json::Node& json, const uint flags);
 		__host__ void ToJson(::Json::Node& json) const;
 		__host__ void Update(const uint operation);
 

@@ -14,12 +14,14 @@ namespace Cuda
         node.AddValue("maxSHOrder", maxSHOrder);
     }
 
-    __host__ void LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LambertBRDFParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("probeGridFlags", probeGridFlags, flags);
         node.GetValue("maxSHOrder", maxSHOrder, flags);
 
         clamp(maxSHOrder, 0, 2);
+
+        return kRenderObjectClean;
     }
     
     __device__ bool Device::LambertBRDF::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, const vec2& xi, vec3& extant, float& pdf) const
@@ -76,10 +78,10 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::LambertBRDF::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::LambertBRDF::FromJson(const ::Json::Node& parentNode, const uint flags)
     {      
-        Host::BxDF::FromJson(parentNode, flags);
-        m_params.FromJson(parentNode, flags);
+        uint dirtyFlags = Host::BxDF::FromJson(parentNode, flags);
+        dirtyFlags |= m_params.FromJson(parentNode, flags);
 
         // TODO: This is to maintain backwards compatibility. Deprecate it when no longer required.
         //m_gridIDs[0] = "grid_noisy_direct";
@@ -89,6 +91,8 @@ namespace Cuda
         parentNode.GetValue("gridChannel1ID", m_gridIDs[1], flags);
         parentNode.GetValue("gridChannel2ID", m_gridIDs[2], flags);
         parentNode.GetValue("gridChannel3ID", m_gridIDs[3], flags);
+
+        return dirtyFlags | kRenderObjectDirtyRender;
     }
 
     __host__ void Host::LambertBRDF::Bind(RenderObjectContainer& sceneObjects)
@@ -117,7 +121,7 @@ namespace Cuda
         Cuda::SynchroniseObjects(cu_deviceData, m_hostData.m_objects);
     }
 
-    __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         // Do a complete re-bind when the scene graph updates
         Bind(sceneObjects);

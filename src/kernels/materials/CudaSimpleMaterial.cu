@@ -25,7 +25,7 @@ namespace Cuda
         node.AddValue("useGrid", useGrid);
     }
 
-    __host__ void SimpleMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint SimpleMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         incandescenceHSV.FromJson("incandescence", node, flags);
         albedoHSV.FromJson("albedo", node, flags);
@@ -33,6 +33,8 @@ namespace Cuda
 
         incandescenceRGB = HSVToRGB(incandescenceHSV());
         albedoRGB = HSVToRGB(albedoHSV());
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ void Device::SimpleMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -78,10 +80,12 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Material::FromJson(parentNode, flags);
 
         SynchroniseObjects(cu_deviceData, SimpleMaterialParams(parentNode, flags));
+
+        return kRenderObjectDirtyAll;
     }
 }

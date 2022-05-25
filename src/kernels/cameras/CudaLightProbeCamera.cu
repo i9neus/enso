@@ -58,11 +58,11 @@ namespace Cuda
         node.AddValue("debugFlags", debugFlags);
     }
 
-    __host__ void LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeCameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         auto gridNode = node.GetChildObject("grid", flags);
-        grid.FromJson(gridNode, flags);
-        camera.FromJson(node, flags);
+        int dirtyFlags = grid.FromJson(gridNode, flags);
+        dirtyFlags |= camera.FromJson(node, flags);
 
         node.GetEnumeratedParameter("lightingMode", std::vector<std::string>({ "combined", "separated" }), lightingMode, flags);
         node.GetEnumeratedParameter("traversalMode", std::vector<std::string>({ "linear", "hilbert" }), traversalMode, flags);
@@ -73,6 +73,8 @@ namespace Cuda
         node.GetValue("filterGrids", filterGrids, flags);
         node.GetValue("fixedSampleSubdivisions", fixedSampleSubdivisions, flags);
         node.GetValue("debugFlags", debugFlags, flags);
+
+        return dirtyFlags | kRenderObjectDirtyProbeGrids | kRenderObjectDirtyRender;
     }
 
     __device__ Device::LightProbeCamera::LightProbeCamera() {  }
@@ -695,9 +697,11 @@ namespace Cuda
         return children;
     }
 
-    __host__ void Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::LightProbeCamera::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Prepare(LightProbeCameraParams(parentNode, flags));
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ void Host::LightProbeCamera::PrepareHilbertBuffer(const LightProbeCameraParams& newParams)
@@ -932,6 +936,7 @@ namespace Cuda
 
         // Reset the stats
         *m_aggregateStats = LightProbeCameraAggregateStatistics();
+        m_frameIdx = 0;
     }
 
     __global__ void KernelSeedRayBuffer(Device::LightProbeCamera* camera, const int frameIdx)
@@ -939,11 +944,20 @@ namespace Cuda
         camera->SeedRayBuffer(frameIdx);
     }
 
-    __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime, const uint frameIdx)
+    __host__ void Host::LightProbeCamera::OnPreRenderPass(const float wallTime)
     {
-        m_frameIdx = frameIdx;
+        KernelSeedRayBuffer << < m_seedGrid, m_block, 0, m_hostStream >> > (cu_deviceData, m_frameIdx);
+    }
 
-        KernelSeedRayBuffer << < m_seedGrid, m_block, 0, m_hostStream >> > (cu_deviceData, frameIdx);
+    __host__ void Host::LightProbeCamera::OnPostRenderPass()
+    {
+        constexpr int kFrameDelay = 1;
+        if (m_frameIdx > kFrameDelay && (m_frameIdx - kFrameDelay) % m_params.gridUpdateInterval == 0)
+        {
+            Compile();
+        }
+
+        m_frameIdx++;
     }
 
     __global__ void KernelComposite(Device::ImageRGBA* deviceOutputImage, const Device::LightProbeCamera* camera)
@@ -1147,15 +1161,6 @@ namespace Cuda
         m_hostLightProbeErrorGrids[0]->Swap(*m_hostLightProbeErrorGrids[1]);
     }
 
-    __host__ void Host::LightProbeCamera::OnPostRenderPass()
-    {
-        constexpr int kFrameDelay = 1;
-        if (m_frameIdx > kFrameDelay && (m_frameIdx - kFrameDelay) % m_params.gridUpdateInterval == 0)
-        {
-            Compile();
-        }
-    }
-
     __host__ void Host::LightProbeCamera::Compile()
     {
         // Compile the data in the accumulation buffer into the grid data structures
@@ -1197,12 +1202,17 @@ namespace Cuda
         SynchroniseObjects(cu_deviceData, m_deviceObjects);
     }
 
-    __host__ void Host::LightProbeCamera::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::LightProbeCamera::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         if (m_needsRebind)
         {
             Bind(sceneObjects);
             m_needsRebind = true;
+        }
+
+        if (dirtyFlags & kRenderObjectDirtyProbeGrids)
+        {
+            ClearRenderState();
         }
     }
 

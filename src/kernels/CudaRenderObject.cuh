@@ -12,16 +12,24 @@ namespace Cuda
 
     enum RenderObjectFlags : uint 
     { 
-        kRenderObjectDisabled = 1 << 0,
-        kRenderObjectExcludeFromBake = 1 << 1,        
-        kRenderObjectIsChild = 1 << 2,
-        kRenderObjectUserFacingParameterMask = (kRenderObjectExcludeFromBake << 1) - 1
+        kRenderObjectDisabled                   = 1u << 0,
+        kRenderObjectExcludeFromBake            = 1u << 1,        
+        kRenderObjectIsChild                    = 1u << 2,
+        kRenderObjectUserFacingParameterMask    = (kRenderObjectExcludeFromBake << 1) - 1u
     };
 
     enum RenderObjectInstanceFlags : uint
     {
-        kInstanceFlagsAllowMultipleInstances = 1 << 0,
-        kInstanceSingleton = 1 << 2
+        kInstanceFlagsAllowMultipleInstances    = 1u << 0,
+        kInstanceSingleton                      = 1u << 2
+    };
+
+    enum RenderObjectDirtyFlags : uint
+    {
+        kRenderObjectClean                      = 0u,
+        kRenderObjectDirtyRender                = 1u << 1,
+        kRenderObjectDirtyProbeGrids            = 1u << 2,
+        kRenderObjectDirtyAll                   = kRenderObjectDirtyRender | kRenderObjectDirtyProbeGrids
     };
 
     struct RenderObjectParams
@@ -29,7 +37,7 @@ namespace Cuda
         __host__ __device__ RenderObjectParams();
         __host__ RenderObjectParams(const ::Json::Node& node, const uint flags) : RenderObjectParams() { FromJson(node, flags);  }
 
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
         __host__ void ToJson(::Json::Node& node) const;
         __host__ void Randomise(const vec2& range);
 
@@ -64,9 +72,9 @@ namespace Cuda
 
             __host__ virtual void           OnPreRender() {}
             __host__ virtual void           OnPostRender() {}
-            __host__ virtual void           OnPreRenderPass(const float wallTime, const uint frameIdx) {}
+            __host__ virtual void           OnPreRenderPass(const float wallTime) {}
             __host__ virtual void           OnPostRenderPass() {}
-            __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) {}
+            __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) {}
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }

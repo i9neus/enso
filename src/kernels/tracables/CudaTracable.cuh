@@ -18,7 +18,7 @@ namespace Cuda
         __host__ TracableParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         RenderObjectParams      renderObject;
         BidirectionalTransform  transform;
@@ -79,7 +79,7 @@ namespace Cuda
             __host__ virtual Device::Tracable*      GetDeviceInstance() const = 0;
             __host__ virtual void                   Bind(RenderObjectContainer& objectContainer) override final;
             __host__ virtual void                   Synchronise() override final;
-            __host__ virtual void                   FromJson(const ::Json::Node& node, const uint flags) override;
+            __host__ virtual uint                   FromJson(const ::Json::Node& node, const uint flags) override;
             __host__ virtual int                    GetIntersectionCostHeuristic() const = 0;
 
             __host__ static std::string             GetAssetTypeString() { return "tracable"; }

@@ -19,10 +19,12 @@ namespace Cuda
         node.AddValue("doEvaluate", doEvaluate);
     }
 
-    __host__ void FCNNProbeDenoiserParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint FCNNProbeDenoiserParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         dataTransform.FromJson(node, flags);
         node.GetValue("doEvaluate", doEvaluate, Json::kSilent);
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ Host::FCNNProbeDenoiser::FCNNProbeDenoiser(const std::string& id, const ::Json::Node& node) :
@@ -54,7 +56,7 @@ namespace Cuda
         return CreateAsset<Host::FCNNProbeDenoiser>(id, json);
     }
 
-    __host__ void Host::FCNNProbeDenoiser::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::FCNNProbeDenoiser::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_params.FromJson(node, flags);
 
@@ -62,6 +64,8 @@ namespace Cuda
         {
             Execute();
         }
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::FCNNProbeDenoiser::OnDestroyAsset()
@@ -138,7 +142,7 @@ namespace Cuda
         return std::vector<AssetHandle<Host::RenderObject>>({ m_hostOutputGrid });
     }
 
-    __host__ void Host::FCNNProbeDenoiser::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::FCNNProbeDenoiser::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         if (m_hostInputGrid && m_hostOutputGrid &&
             m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())

@@ -12,7 +12,7 @@ namespace Cuda
         __host__ CornellBoxParams(const ::Json::Node& node, const uint flags) { FromJson(node, flags); }
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         TracableParams tracable;
         JitterableFlags faceMask;
@@ -59,7 +59,7 @@ namespace Cuda
             __host__ virtual const RenderObjectParams* GetRenderObjectParams() const override final { return &m_params.tracable.renderObject; }
 
             __host__ virtual void OnDestroyAsset() override final;
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ virtual uint FromJson(const ::Json::Node& node, const uint flags) override final;
 
             __host__ virtual Device::CornellBox* GetDeviceInstance() const override final { return cu_deviceData; }
 

@@ -25,7 +25,7 @@ namespace Cuda
         albedoHSV.ToJson("albedo", node);
     }
 
-    __host__ void KIFSMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint KIFSMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         incandescenceHSV.FromJson("incandescence", node, flags);
         albedoHSV.FromJson("albedo", node, flags);
@@ -33,6 +33,8 @@ namespace Cuda
         albedoHSVRange[1] = albedoHSV.p + albedoHSV.dpdt;
         
         incandescenceRGB = HSVToRGB(incandescenceHSV());
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ void Device::KIFSMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -67,10 +69,12 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::KIFSMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::KIFSMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Material::FromJson(parentNode, flags);
 
         SynchroniseObjects(cu_deviceData, KIFSMaterialParams(parentNode, flags));
+
+        return kRenderObjectDirtyAll;
     }
 }

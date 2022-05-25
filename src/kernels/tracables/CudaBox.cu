@@ -8,13 +8,15 @@ namespace Cuda
         tracable.ToJson(node);
     }
 
-    __host__ void BoxParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint BoxParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         tracable.FromJson(node, flags);
 
         // FIXME: This is a hack because non-linear scaling is broken in the bidirectional transform object. 
         transform.Set(tracable.transform.trans(), tracable.transform.rot(), vec3(1.0f));
         size = tracable.transform.scale() * 0.5f;
+
+        return kRenderObjectDirtyAll;
     }
     
     __device__  bool Device::Box::Intersect(Ray& ray, HitCtx& hitCtx) const
@@ -92,7 +94,7 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::Box::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::Box::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Tracable::FromJson(node, flags);
 
@@ -100,5 +102,7 @@ namespace Cuda
         RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyAll;
     }
 }

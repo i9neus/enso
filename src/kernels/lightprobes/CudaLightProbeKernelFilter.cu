@@ -34,7 +34,7 @@ namespace Cuda
         nlm.ToJson(nlmNode);
     }
 
-    __host__ void LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeKernelFilterParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetEnumeratedParameter("filterType", std::vector<std::string>({ "null", "box", "gaussian", "nlm", "nlmepanechnikov" }), filterType, flags);
         node.GetValue("radius", kernelRadius, flags);
@@ -48,6 +48,8 @@ namespace Cuda
         if (nlmNode) { nlm.FromJson(nlmNode, flags); }
          
         kernelRadius = clamp(kernelRadius, 0, 10);
+
+        return kRenderObjectDirtyRender;
     }
     
     __host__ Host::LightProbeKernelFilter::LightProbeKernelFilter(const std::string& id, const ::Json::Node& node) :
@@ -84,11 +86,18 @@ namespace Cuda
         return CreateAsset<Host::LightProbeKernelFilter>(id, json);
     }
 
-    __host__ void Host::LightProbeKernelFilter::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::LightProbeKernelFilter::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_objects->params.FromJson(node, flags);
 
         Prepare();
+
+        if (m_objects->params.doEvaluate)
+        {
+            Execute();
+        }
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::LightProbeKernelFilter::OnDestroyAsset()
@@ -498,7 +507,7 @@ namespace Cuda
         return objects;
     }
 
-    __host__ void Host::LightProbeKernelFilter::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::LightProbeKernelFilter::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         if (m_hostInputGrid && m_hostOutputGrid &&
             m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())

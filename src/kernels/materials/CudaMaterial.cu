@@ -10,7 +10,7 @@ namespace Cuda
         Host::RenderObject::UpdateDAGPath(parentNode);
     }
     
-    __host__ void Host::Material::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::Material::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         parentNode.GetValue("bxdf", m_bxdfId, flags);
     }

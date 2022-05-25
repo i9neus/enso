@@ -24,16 +24,17 @@ namespace Cuda
         scale.t.y = scale.t.z = scale.t.x;
     }
     
-    __host__ void BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint BidirectionalTransform::FromJson(const ::Json::Node& node, const uint flags)
     {
         const auto transNode = node.GetChildObject("transform", flags);
-        if (!transNode) { return; }        
+        if (!transNode) { return 0u; }        
 
         trans.FromJson("pos", transNode, flags);
         rot.FromJson("rot", transNode, ::Json::kSilent);
         scale.FromJson("sca", transNode, ::Json::kSilent);
         
         Rebuild();
+        return 0u;
     }
 
     __host__ __device__ void BidirectionalTransform::Set(const vec3& t, const vec3& r, const vec3& s)

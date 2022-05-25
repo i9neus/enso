@@ -12,9 +12,9 @@ namespace Cuda
         flags.ToJson("objectFlags", node);
     }
 
-    __host__ void RenderObjectParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint RenderObjectParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-        this->flags.FromJson("objectFlags", node, flags);
+        return this->flags.FromJson("objectFlags", node, flags);
     }
 
     __host__ void RenderObjectParams::Randomise(const vec2& range)

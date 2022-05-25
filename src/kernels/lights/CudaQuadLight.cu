@@ -24,7 +24,7 @@ namespace Cuda
         light.ToJson(node);
     }
 
-    __host__ void QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint QuadLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         light.FromJson(node, flags);
 
@@ -33,6 +33,8 @@ namespace Cuda
         peakRadiantIntensity = cwiseMax(radiantIntensity);
         radiance = radiantIntensity / (light.transform.scale().x * light.transform.scale().y);
         peakRadiance = cwiseMax(radiance);
+
+        return kRenderObjectDirtyAll;
     }
     
     __device__ Device::QuadLight::QuadLight()
@@ -157,7 +159,7 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Light::FromJson(node, flags);      
 
@@ -171,6 +173,8 @@ namespace Cuda
      
         // Synchronise with the decvice
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::QuadLight::GetChildObjectHandles()

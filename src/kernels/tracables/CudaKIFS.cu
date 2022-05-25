@@ -107,7 +107,7 @@ namespace Cuda
         transform.ToJson(node);
     }
 
-    __host__ void KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint KIFSParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         rotateA.FromJson("rotateA", node, flags);
         rotateB.FromJson("rotateB", node, flags);
@@ -138,6 +138,8 @@ namespace Cuda
 
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ void Device::KIFS::Prepare()
@@ -533,7 +535,7 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::KIFS::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::KIFS::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Tracable::FromJson(node, flags);
         
@@ -541,5 +543,7 @@ namespace Cuda
         RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyAll;
     }
 }

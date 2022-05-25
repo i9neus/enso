@@ -22,12 +22,14 @@ namespace Cuda
         node.AddValue("angle", angle);
     }
 
-    __host__ void DistantLightParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint DistantLightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         light.FromJson(node, flags);
         node.GetValue("angle", angle, flags);
 
         angle = toRad(clamp(angle, 0.0f, 80.0f));
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ Device::DistantLight::DistantLight() : m_radiance(1.0f)
@@ -108,10 +110,12 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::DistantLight::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::DistantLight::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Light::FromJson(parentNode, flags);
 
         SynchroniseObjects(cu_deviceData, DistantLightParams(parentNode));
+
+        return kRenderObjectDirtyAll;
     }
 }

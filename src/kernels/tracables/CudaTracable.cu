@@ -15,15 +15,19 @@ namespace Cuda
         transform.ToJson(node);
     }
 
-    __host__ void TracableParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint TracableParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         renderObject.FromJson(node, flags);
         transform.FromJson(node, flags);
+
+        return kRenderObjectDirtyAll;
     }
     
-    __host__ void Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::Tracable::FromJson(const ::Json::Node& node, const uint flags)
     {        
         node.GetValue("material", m_materialId, flags);
+
+        return kRenderObjectDirtyAll;
     }
     
     __host__ void Host::Tracable::Bind(RenderObjectContainer& objectContainer)

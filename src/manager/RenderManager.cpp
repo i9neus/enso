@@ -19,8 +19,6 @@
 
 RenderManager::RenderManager() : 
 	m_threadSignal(kRenderManagerIdle),
-	m_dirtiness(kDirtinessStateClean),
-	m_frameIdx(0),
 	m_frameTimes(20)
 {
 	// Register the list of jobs
@@ -29,6 +27,10 @@ RenderManager::RenderManager() :
 	RegisterJob(m_exportGridsJob, "exportGrids", &RenderManager::OnExportGridsDispatch, &RenderManager::OnDefaultPoll);
 	RegisterJob(m_renderStatsJob, "getRenderStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherRenderStatsPoll);
 	RegisterJob(m_memoryStatsJob, "getMemoryStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherMemoryStatsPoll);
+
+	// Register the list of render commands
+	m_commandMap.emplace(kRenderManagerClearStates, std::bind(&RenderManager::ClearAllRenderStates, this));
+	m_commandMap.emplace(kRenderMangerUpdateParams, std::bind(&RenderManager::PatchSceneObjects, this));
 }
 
 void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -326,6 +328,12 @@ void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, 
 	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
 }
 
+void RenderManager::EmplaceRenderCommand(const int cmd)
+{
+	std::lock_guard<std::mutex> lock(m_commandMutex);
+	m_commandSet.emplace(cmd);
+}
+
 bool RenderManager::OnBakeDispatch(Job& job)
 {
 	std::string action;
@@ -369,7 +377,8 @@ bool RenderManager::OnBakeDispatch(Job& job)
 	}
 	
 	// Dirty the scene, and mark the command has having started
-	m_dirtiness = kDirtinessStateHardReset;
+	EmplaceRenderCommand(kRenderManagerClearStates);
+
 	job.state = kRenderManagerJobDispatched;
 	m_bake.succeeded = true;
 
@@ -483,7 +492,7 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 
 	// Add some generic data about the renderer that's exported each time the state is polled
 	Json::Node managerJson = stateJson.AddChildObject("renderManager");
-	managerJson.AddValue("frameIdx", m_frameIdx);
+	managerJson.AddValue("frameIdx", m_liveCamera ? m_liveCamera->GetFrameIdx() : -1);
 	managerJson.AddValue("meanFrameTime", m_meanFrameTime);
 	const int threadSignal = m_threadSignal;
 	managerJson.AddValue("rendererStatus", threadSignal);
@@ -543,7 +552,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 		m_patchJson = rootJson;
 		
 		// Found a scene object parameter parameter patch, so signal that the scene graph is dirty
-		m_dirtiness = kDirtinessStateSoftReset;
+		EmplaceRenderCommand(kRenderMangerUpdateParams);
 
 		//Log::Debug("Updated! %s\n", m_patchJson.Stringify(true));
 	}
@@ -625,17 +634,13 @@ void RenderManager::StartRenderer()
 	Log::Success("Okay!");
 }
 
-void RenderManager::ClearRenderStates()
-{
+void RenderManager::ClearAllRenderStates()
+{	
 	// Clear the render states of all active camera objects
 	for (auto& camera : m_activeCameras) { camera->ClearRenderState(); }
 
 	// Notify scene objects that the render has been restarted
 	for (auto& object : *m_renderObjects) { object->OnPreRender(); }
-
-	// Reset the render manager state
-	m_frameIdx = 0;
-	m_dirtiness = kDirtinessStateClean;
 }
 
 void RenderManager::Run()
@@ -645,7 +650,7 @@ void RenderManager::Run()
 	constexpr float kTargetFps = 60.0f;
 	constexpr int kMaxSubframes = 1;
 	int numSubframes = kMaxSubframes;
-	m_frameIdx = 0;
+	int frameIdx = 0;
 
 	try
 	{
@@ -658,13 +663,15 @@ void RenderManager::Run()
 				});*/
 			Timer timer;
 
-			// Has the scene graph been dirtied?
-			if (m_dirtiness == kDirtinessStateHardReset || (m_dirtiness == kDirtinessStateSoftReset && m_frameIdx >= 2))
+			// Process any commands that are waiting
+			if(!m_commandSet.empty())
 			{
-				PatchSceneObjects();
-
-				// Reset the render state
-				ClearRenderStates();
+				std::lock_guard<std::mutex> lock(m_commandMutex);
+				for (auto cmd : m_commandSet)
+				{
+					m_commandMap[cmd]();
+				}
+				m_commandSet.clear();
 			}
 
 			Assert(!(m_bake.job.state == kRenderManagerJobDispatched && m_wavefrontTracer->GetParams().shadingMode != Cuda::kShadeFull));
@@ -680,8 +687,8 @@ void RenderManager::Run()
 					std::chrono::duration<double> timeDiff = std::chrono::high_resolution_clock::now() - m_renderStartTime;
 
 					// Notify objects that we're about to start the pass
-					m_wavefrontTracer->OnPreRenderPass(timeDiff.count(), m_frameIdx);
-					camera->OnPreRenderPass(timeDiff.count(), m_frameIdx);
+					m_wavefrontTracer->OnPreRenderPass(timeDiff.count());
+					camera->OnPreRenderPass(timeDiff.count());
 
 					// Trace those rays through the wavefront tracer 
 					m_wavefrontTracer->Trace();
@@ -703,14 +710,14 @@ void RenderManager::Run()
 			OnBakePostFrame();
 
 			// Compute some stats on the framerate
-			m_frameIdx++;
-			m_frameTimes[m_frameIdx % m_frameTimes.size()] = timer.Get();
+			frameIdx++;
+			m_frameTimes[frameIdx % m_frameTimes.size()] = timer.Get();
 			m_meanFrameTime = 0.0f;
 			for (const auto& ft : m_frameTimes)
 			{
 				m_meanFrameTime += ft;
 			}
-			m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
+			m_meanFrameTime /= math::min(frameIdx, int(m_frameTimes.size()));
 
 			GatherRenderObjectStatistics(); // Gather statistics from the render objects			
 		}
@@ -754,37 +761,43 @@ void RenderManager::GatherRenderObjectStatistics()
 	m_renderStatsJob.state = kRenderManagerJobCompleted;
 }
 
-void RenderManager::PatchSceneObjects()
+uint RenderManager::PatchSceneObjects()
 {
 	std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
 	Json::Node patchJson = m_patchJson.GetChildObject("patches", Json::kRequiredAssert);
 
-	if (!patchJson.NumMembers()) { return; }
+	if (!patchJson.NumMembers()) { return Cuda::kRenderObjectClean; }
 
 	int validPatches = 0;
+	uint dirtyFlags = Cuda::kRenderObjectClean;
 	for (Json::Node::Iterator it = patchJson.begin(); it != patchJson.end(); ++it)
 	{
 		Cuda::AssetHandle<Cuda::Host::RenderObject> asset = m_renderObjects->FindByDAG(it.Name());
 		if (asset)
 		{
-			asset->FromJson(*it, Json::kSilent);
+			dirtyFlags |= asset->FromJson(*it, Json::kSilent);
 			validPatches++;
 		}
 	}
-	// Some objects may need to adjust their bindings now that the scene graph has been dirtied
+	
+	if (dirtyFlags != Cuda::kRenderObjectClean)
 	{
-		Log::Indent indent("Updating scene graph...");
-		for (auto& object : *m_renderObjects)
+		// Some objects may need to adjust their bindings now that the scene graph has been dirtied
 		{
-			object->OnUpdateSceneGraph(*m_renderObjects);
+			Log::Indent indent("Updating scene graph...");
+			for (auto& object : *m_renderObjects)
+			{
+				object->OnUpdateSceneGraph(*m_renderObjects, dirtyFlags);
+			}
 		}
-	}	
 
-	// Prepare the scene for rendering
-	if (validPatches > 0) { Prepare(); }
+		// Prepare the scene for rendering
+		if (validPatches > 0) { Prepare(); }
+	}
 
 	m_patchJson.Clear();
+	return dirtyFlags;
 }
 
 void RenderManager::OnBakePostFrame()
@@ -826,7 +839,7 @@ void RenderManager::OnBakePostFrame()
 	}
 
 	// Not baking or the scene graph is dirty? We're done.
-	if (!(m_bake.job.state & kRenderManagerJobActive) || m_dirtiness != kDirtinessStateClean) { return; }
+	if (!(m_bake.job.state & kRenderManagerJobActive) || m_commandSet.find(kRenderMangerUpdateParams) != m_commandSet.end()) { return; }
 
 	// If the job has just been dispatched, do some pre-flight checks
 	if (m_bake.job.state & kRenderManagerJobDispatched)
@@ -882,7 +895,7 @@ void RenderManager::OnBakePostFrame()
 	{
 		// Estimate the render progress. This isn't terribly accurate, but it's good enough for now.
 		const auto& liveCam = m_liveCamera->GetParams();
-		m_bake.progress = float(m_frameIdx) / float(liveCam.minMaxSamples.y * liveCam.overrides.maxDepth);
+		m_bake.progress = float(m_liveCamera->GetFrameIdx()) / float(liveCam.minMaxSamples.y * liveCam.overrides.maxDepth);
 		if (m_bake.progress > 1.0f)
 		{
 			std::vector<Cuda::vec4> rawData;

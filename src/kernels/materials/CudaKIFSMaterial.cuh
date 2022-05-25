@@ -14,7 +14,7 @@ namespace Cuda
         __host__ KIFSMaterialParams(const ::Json::Node& node, const uint flags);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         JitterableVec3  albedoHSV;
         vec3            albedoHSVRange[2];
@@ -56,7 +56,7 @@ namespace Cuda
             __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 
             __host__ virtual void                       OnDestroyAsset() override final;
-            __host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ virtual uint                       FromJson(const ::Json::Node& node, const uint flags) override final;
             __host__ virtual Device::KIFSMaterial* GetDeviceInstance() const override final { return cu_deviceData; }
             __host__ static std::string GetAssetTypeString() { return "kifsmaterial"; }
             __host__ static std::string GetAssetDescriptionString() { return "KIFS Material"; }

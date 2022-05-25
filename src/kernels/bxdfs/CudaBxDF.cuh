@@ -35,10 +35,11 @@ namespace Cuda
                 Host::RenderObject::UpdateDAGPath(node);
             }
 
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
+            __host__ virtual uint FromJson(const ::Json::Node& node, const uint flags) override
             {
-                
+                return kRenderObjectClean;
             }
+
             __host__ virtual Device::BxDF*              GetDeviceInstance() const = 0;
             __host__ virtual AssetType                  GetAssetType() const override final { return AssetType::kBxDF; }
             __host__ static AssetType                   GetAssetStaticType() { return AssetType::kBxDF; }

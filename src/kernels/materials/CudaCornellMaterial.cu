@@ -28,13 +28,15 @@ namespace Cuda
         }
     }
 
-    __host__ void CornellMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint CornellMaterialParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         for (int i = 0; i < kNumWalls; i++)
         {
             albedoHSV[i].FromJson(tfm::format("albedo%i", i + 1), node, flags);
             albedoRGB[i] = HSVToRGB(albedoHSV[i]());
         }
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ void Device::CornellMaterial::Evaluate(const HitCtx& hit, vec3& albedo, vec3& incandescence) const
@@ -64,10 +66,12 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::CornellMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
+    __host__ uint Host::CornellMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         Host::Material::FromJson(parentNode, flags);
 
         SynchroniseObjects(cu_deviceData, CornellMaterialParams(parentNode, flags));
+
+        return kRenderObjectDirtyAll;
     }
 }

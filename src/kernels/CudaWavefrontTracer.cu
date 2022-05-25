@@ -61,7 +61,7 @@ namespace Cuda
 		node.AddEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode);
 	}
 
-	__host__ void WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
+	__host__ uint WavefrontTracerParams::FromJson(const ::Json::Node& node, const uint flags)
 	{
 		node.GetValue("maxDepth", maxDepth, flags);
 		node.GetValue("russianRouletteThreshold", russianRouletteThreshold, flags);
@@ -70,9 +70,13 @@ namespace Cuda
 		node.GetEnumeratedParameter("traceMode", std::vector<std::string>({ "wavefront", "path" }), traceMode, flags);
 		node.GetEnumeratedParameter("lightSelectionMode", std::vector<std::string>({ "naive", "weighted" }), lightSelectionMode, flags);
 		node.GetEnumeratedParameter("shadingMode", std::vector<std::string>({ "full", "simple", "normals", "debug" }), shadingMode, flags);
+
+		return kRenderObjectDirtyAll;
 	}
 
-	__device__ Device::WavefrontTracer::WavefrontTracer() : m_checkDigit(0)
+	__device__ Device::WavefrontTracer::WavefrontTracer() :
+		m_checkDigit(0),
+		m_frameIdx(0)
 	{
 		m_lightProbeMaterial.SetBoundBxDF(&m_lightProbeBRDF);
 	}
@@ -631,19 +635,21 @@ namespace Cuda
 		}
 	}
 
-	__host__ void Host::WavefrontTracer::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+	__host__ void Host::WavefrontTracer::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
 	{
 		// Do a complete re-bind when the scene graph updates
 		Bind(sceneObjects);
 	}
 
-	__host__ void Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
+	__host__ uint Host::WavefrontTracer::FromJson(const ::Json::Node& parentNode, const uint flags)
 	{
 		m_params.FromJson(parentNode, flags);
 		SynchroniseObjects(cu_deviceData, m_params);
 
 		parentNode.GetValue("camera", m_cameraId, flags);
 		m_isDirty = true;
+		
+		return kRenderObjectDirtyAll;
 	}
 
 	__global__ void KernelPreFrame(Device::WavefrontTracer* tracer, const float wallTime, const int frameIdx)
@@ -696,10 +702,10 @@ namespace Cuda
 		//KernelReduce << < 8192 / 256, 256, 0, m_hostStream >> > (cu_deviceData);
 	}
 
-	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime, const uint frameIdx)
+	__host__ void Host::WavefrontTracer::OnPreRenderPass(const float wallTime)
 	{
 		if (!m_isInitialised || !m_hostCameraAsset) { return; }
 
-		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, frameIdx);
+		KernelPreFrame << < 1, 1, 0, m_hostStream >> > (cu_deviceData, wallTime, m_hostCameraAsset->GetFrameIdx());
 	}
 }

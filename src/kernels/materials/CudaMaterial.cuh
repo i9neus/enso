@@ -40,7 +40,7 @@ namespace Cuda
             std::string                             m_bxdfId;
 
         public:
-            __host__ virtual void                   FromJson(const ::Json::Node& node, const uint flags) override;
+            __host__ virtual uint                   FromJson(const ::Json::Node& node, const uint flags) override;
             __host__ virtual void                   Bind(RenderObjectContainer& objectContainer) override final;
             __host__ virtual Device::Material*      GetDeviceInstance() const = 0;
 

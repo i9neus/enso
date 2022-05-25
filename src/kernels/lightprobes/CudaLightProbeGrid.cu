@@ -43,7 +43,7 @@ namespace Cuda
         node.AddEnumeratedParameter("shSwizzle", kSwizzleLabels, shSwizzle);
     }
 
-    __host__ void LightProbeDataTransformParams::FromJson(const Json::Node& node, const uint flags)
+    __host__ uint LightProbeDataTransformParams::FromJson(const Json::Node& node, const uint flags)
     {
         node.GetValue("posInvertX", posInvertX, flags);
         node.GetValue("posInvertY", posInvertY, flags);
@@ -54,6 +54,8 @@ namespace Cuda
         node.GetValue("shInvertY", shInvertY, flags);
         node.GetValue("shInvertZ", shInvertZ, flags);
         node.GetEnumeratedParameter("shSwizzle", kSwizzleLabels, shSwizzle, flags);
+
+        return 0u;
     }
 
     __host__ __device__ bool LightProbeDataTransformParams::operator!=(const LightProbeDataTransformParams& rhs) const
@@ -97,7 +99,7 @@ namespace Cuda
         node.AddEnumeratedParameter("inputColourSpace", std::vector<std::string>({ "rgb", "xyz", "xyy", "chroma" }), inputColourSpace);       
     }
 
-    __host__ void LightProbeGridParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeGridParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         transform.FromJson(node, flags);
         dataTransform.FromJson(node, flags);
@@ -121,6 +123,8 @@ namespace Cuda
         //axisMultiplier = vec3(float(invertX) * 2.0f - 1.0f, float(invertY) * 2.0f - 1.0f, float(invertZ) * 2.0f - 1.0f);
 
         Prepare();
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ void LightProbeGridParams::Echo() const
@@ -686,7 +690,7 @@ namespace Cuda
         m_validityData->Swap(*(other.m_validityData));
     }
 
-    __host__ void Host::LightProbeGrid::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::LightProbeGrid::FromJson(const ::Json::Node& node, const uint flags)
     {
         std::string usdExportPath;
         if (node.GetValue("usdExportPath", usdExportPath, ::Json::kSilent))
@@ -694,6 +698,8 @@ namespace Cuda
             m_usdExportPath = usdExportPath;
             Log::Debug("USD export path: %s\n", usdExportPath);
         }
+
+        return kRenderObjectDirtyAll;
     }
 
     __host__ void Host::LightProbeGrid::GetRawData(std::vector<vec3>& rawData) const

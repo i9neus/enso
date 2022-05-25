@@ -34,7 +34,7 @@ namespace Cuda
         __host__ __device__ NullParams() {}
 
         __host__ void ToJson(Json::Node&) const {}
-        __host__ void FromJson(const Json::Node&, const uint) {}
+        __host__ uint FromJson(const Json::Node&, const uint) {}
 
         bool operator==(const NullParams&) const { return true; }
     };
@@ -62,7 +62,7 @@ namespace Cuda
         public:
             virtual ~Asset() = default;
 
-            __host__ virtual void FromJson(const ::Json::Node & jsonNode, const uint flags) {}
+            __host__ virtual uint FromJson(const ::Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual AssetType GetAssetType() const { return AssetType::kUnknown; }
             __host__ const inline std::string& GetAssetID() const { return m_assetId; }
             __host__ const inline std::string& GetParentAssetID() const { return m_parentAssetId; }

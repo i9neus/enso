@@ -6,6 +6,7 @@
 #include "generic/Math.h"
 #include <cuda_runtime.h>
 #include "generic/JsonUtils.h"
+#include <deque>
 
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
@@ -13,7 +14,14 @@
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"
 
-enum RenderManagerRenderState : int { kRenderManagerUndefined, kRenderManagerIdle, kRenderManagerRun, kRenderManagerHalt, kRenderManagerError };
+enum RenderManagerRenderState : int 
+{ 
+	kRenderManagerUndefined, 
+	kRenderManagerIdle, 
+	kRenderManagerRun, 
+	kRenderManagerHalt, 
+	kRenderManagerError 
+};
 
 enum RenderManagerBakeType : int 
 { 
@@ -31,6 +39,12 @@ enum RenderManagerJobState : int
 	kRenderManagerJobCompleted =		8, 
 	kRenderManagerJobAborting =			16,
     kRenderManagerJobActive =			kRenderManagerJobDispatched | kRenderManagerJobRunning	
+};
+
+enum RenderManagerCommand : int
+{
+	kRenderManagerClearStates,
+	kRenderMangerUpdateParams
 };
 
 class RenderManager
@@ -68,8 +82,7 @@ private:
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_patchJson;
 	Json::Document		m_sceneJson;
-	std::atomic<int>	m_dirtiness; 
-	int					m_frameIdx;
+	std::atomic<bool>	m_isPatchUpdated;
 
 	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
@@ -100,6 +113,10 @@ private:
 	uint32_t				    m_D3DTextureHeight;
 	uint32_t				    m_clientWidth;
 	uint32_t                    m_clientHeight;
+
+	std::mutex													m_commandMutex;
+	std::unordered_map<int, std::function<void()>>				m_commandMap;
+	std::unordered_set<int>										m_commandSet;
 
 	struct Job
 	{
@@ -141,13 +158,14 @@ private:
 private:
 	void Build(const Json::Document& sceneJson);
 	void Run();
-	void ClearRenderStates();
+	void ClearAllRenderStates();
 	void HandleBakeOperations();
 	void OnBakePreFrame();
 	void OnBakePostFrame();
-	void PatchSceneObjects();
+	uint PatchSceneObjects();
 	void GatherRenderObjectStatistics();
 	void Prepare();
+	void EmplaceRenderCommand(const int cmd);
 
 	bool OnExportGridsDispatch(Job&);
 	bool OnGatherRenderStatsPoll(Json::Node&, Job&);

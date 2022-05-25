@@ -46,7 +46,7 @@ namespace Cuda
         childNode.AddValue("minDepth", overrides.minDepth);
     }
 
-    __host__ void CameraParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint CameraParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("live", isLive, flags);
         node.GetValue("active", isActive, flags);
@@ -65,10 +65,13 @@ namespace Cuda
             childNode.GetValue("maxDepth", overrides.maxDepth, flags);
             childNode.GetValue("minDepth", overrides.minDepth, flags);
         }
+
+        return kRenderObjectClean;
     }
     
     __host__ Host::Camera::Camera(const ::Json::Node& node, const std::string& id, const int rayBufferSize) :
-        Host::RenderObject(id)
+        Host::RenderObject(id),
+        m_frameIdx(0)
     {
         // Create the packed ray buffer
         m_hostCompressedRayBuffer = CreateChildAsset<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), this, rayBufferSize, m_hostStream);

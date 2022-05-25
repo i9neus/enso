@@ -25,7 +25,7 @@ namespace Cuda
         node.AddEnumeratedParameter("varianceFormat", std::vector<std::string>({ "half", "2xunder", "2xover" }), varianceFormat);        
     }
 
-    __host__ void LightProbeFilterNLMParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeFilterNLMParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("alpha", alpha, flags);
         node.GetValue("k", K, flags);
@@ -34,6 +34,8 @@ namespace Cuda
 
         alpha = clamp(alpha, 0.0f, std::numeric_limits<float>::max());
         K = clamp(K, 0.0f, std::numeric_limits<float>::max());
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ LightProbeFilterGridData& LightProbeFilterGridData::Initialise(AssetHandle<Host::LightProbeGrid>& hostInputGrid,

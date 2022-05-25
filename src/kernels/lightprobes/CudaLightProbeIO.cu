@@ -24,10 +24,12 @@ namespace Cuda
         node.AddValue("exportUSD", exportUSD);
     }
 
-    __host__ void LightProbeIOParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightProbeIOParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetValue("doCommand", doCommand, Json::kSilent);
         node.GetValue("exportUSD", exportUSD, flags);
+
+        return kRenderObjectClean;
     }
 
     __host__ Host::LightProbeIO::LightProbeIO(const std::string& id, const ::Json::Node& node) :
@@ -62,7 +64,7 @@ namespace Cuda
         return CreateAsset<Host::LightProbeIO>(id, json);
     }
 
-    __host__ void Host::LightProbeIO::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::LightProbeIO::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_params.FromJson(node, flags);
 
@@ -87,6 +89,8 @@ namespace Cuda
             }
             break;
         }
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::LightProbeIO::OnDestroyAsset()
@@ -251,7 +255,7 @@ namespace Cuda
         return objects;
     }
 
-    __host__ void Host::LightProbeIO::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::LightProbeIO::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
        
     }

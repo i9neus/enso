@@ -24,7 +24,7 @@ namespace Cuda
         __host__ LambertBRDFParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         uint    probeGridFlags;
         int     maxSHOrder;
@@ -80,15 +80,15 @@ namespace Cuda
             __host__ LambertBRDF(const std::string&, const ::Json::Node&);
             __host__ virtual ~LambertBRDF() { OnDestroyAsset(); }
 
-            __host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string&, const AssetType&, const ::Json::Node&);
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override final;
-            __host__ virtual void Bind(RenderObjectContainer& sceneObjects) override final;
-            __host__ virtual void OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+            __host__ static AssetHandle<Host::RenderObject>             Instantiate(const std::string&, const AssetType&, const ::Json::Node&);
+            __host__ virtual uint                                       FromJson(const ::Json::Node& node, const uint flags) override final;
+            __host__ virtual void                                       Bind(RenderObjectContainer& sceneObjects) override final;
+            __host__ virtual void                                       OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) override final;
 
-            __host__ virtual void OnDestroyAsset() override final;
-            __host__ static std::string GetAssetTypeString() { return "lambert"; }
-            __host__ static std::string GetAssetDescriptionString() { return "Lambertian BRDF"; }
-            __host__ virtual Device::LambertBRDF* GetDeviceInstance() const override final { return cu_deviceData; }
+            __host__ virtual void                                       OnDestroyAsset() override final;
+            __host__ static std::string                                 GetAssetTypeString() { return "lambert"; }
+            __host__ static std::string                                 GetAssetDescriptionString() { return "Lambertian BRDF"; }
+            __host__ virtual Device::LambertBRDF*                       GetDeviceInstance() const override final { return cu_deviceData; }
         };
     }
 }

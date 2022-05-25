@@ -24,7 +24,7 @@ namespace Cuda
         intensity.ToJson("intensity", node);
     }
 
-    __host__ void LightParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint LightParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         renderObject.FromJson(node, flags);
         transform.FromJson(node, flags);
@@ -34,6 +34,8 @@ namespace Cuda
 
         colourHSV.FromJson("colour", node, flags);
         intensity.FromJson("intensity", node, flags);
+
+        return kRenderObjectDirtyAll;
     }
     
     __host__ void Host::Light::Synchronise()

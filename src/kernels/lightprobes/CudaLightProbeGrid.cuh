@@ -60,7 +60,7 @@ namespace Cuda
         __host__ LightProbeDataTransformParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         bool operator!=(const LightProbeDataTransformParams&) const;
 
@@ -76,7 +76,7 @@ namespace Cuda
         __host__ LightProbeGridParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
         __host__ void Echo() const;
 
         __host__ void Prepare();
@@ -225,7 +225,7 @@ namespace Cuda
             __host__ void                               Clear();
 
             __host__  virtual void                      OnDestroyAsset() override final;
-            __host__ virtual void                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
+            __host__ virtual uint                       FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
             __host__ Device::LightProbeGrid*            GetDeviceInstance() { return cu_deviceData; }
             __host__ bool                               IsConverged() const { return m_statistics.isConverged; }
             __host__ bool                               HasSemaphore(const std::string& tag) const;

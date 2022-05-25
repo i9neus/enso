@@ -18,7 +18,7 @@ namespace Cuda
         __host__ LightParams(const ::Json::Node& node);
 
         __host__ void ToJson(::Json::Node& node) const;
-        __host__ void FromJson(const ::Json::Node& node, const uint flags);
+        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
         JitterableFloat   intensity;
         JitterableVec3    colourHSV;
@@ -64,9 +64,9 @@ namespace Cuda
                 Host::RenderObject::UpdateDAGPath(node);
             }
 
-            __host__ virtual void FromJson(const ::Json::Node& node, const uint flags) override
+            __host__ virtual uint FromJson(const ::Json::Node& node, const uint flags) override
             {
-                
+                return kRenderObjectClean;
             }
             __host__ virtual Device::Light*                 GetDeviceInstance() const = 0;
             __host__ virtual AssetHandle<Host::Tracable>    GetTracableHandle();

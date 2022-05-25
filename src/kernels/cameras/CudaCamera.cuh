@@ -24,7 +24,7 @@ namespace Cuda
 	{
 		__host__ __device__ CameraParams();
 		__host__ void ToJson(::Json::Node& node) const;
-		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+		__host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
 		bool				isLive;
 		bool				isActive;
@@ -111,6 +111,7 @@ namespace Cuda
 			__host__ virtual bool							IsBakingCamera() const = 0;
 
 			__host__ virtual void							GetRawAccumulationData(std::vector<vec4>& rawData, ivec2& dimensions) const {}
+			__host__ int									GetFrameIdx() const { return m_frameIdx; }
 
 		protected:
 			AssetHandle<Host::ManagedObject<Device::RenderState::Stats>>	m_hostRenderStats;
@@ -118,6 +119,8 @@ namespace Cuda
 			AssetHandle<Host::IndirectionBuffer>							m_hostRayIndirectionBuffer;
 			AssetHandle<Host::PixelFlagsBuffer>								m_hostPixelFlagsBuffer;
 			AssetHandle<Host::Array<uint>>									m_hostBlockRayOccupancy;
+
+			int																m_frameIdx;
 		};
 	}
 }

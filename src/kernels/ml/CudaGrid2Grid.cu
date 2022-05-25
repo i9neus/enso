@@ -18,9 +18,9 @@ namespace Cuda
       
     }
 
-    __host__ void Grid2GridParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Grid2GridParams::FromJson(const ::Json::Node& node, const uint flags)
     {
-      
+        return kRenderObjectDirtyRender;
     }
 
     __host__ Host::Grid2Grid::Grid2Grid(const std::string& id, const ::Json::Node& node) :
@@ -51,11 +51,13 @@ namespace Cuda
         return CreateAsset<Host::Grid2Grid>(id, json);
     }
 
-    __host__ void Host::Grid2Grid::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::Grid2Grid::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_objects->params.FromJson(node, flags);
 
         Prepare();
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::Grid2Grid::OnDestroyAsset()
@@ -140,7 +142,7 @@ namespace Cuda
         return std::vector<AssetHandle<Host::RenderObject>>({ m_hostOutputGrid });
     }
 
-    __host__ void Host::Grid2Grid::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects)
+    __host__ void Host::Grid2Grid::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)
     {
         if (m_hostInputGrid && m_hostOutputGrid &&
             m_hostInputGrid->GetParams() != m_hostOutputGrid->GetParams())

@@ -57,7 +57,7 @@ namespace Cuda
 		__host__ WavefrontTracerParams(const ::Json::Node& node, const uint flags) : WavefrontTracerParams() { FromJson(node, flags); }
 
 		__host__ void ToJson(::Json::Node& node) const;
-		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+		__host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
 		int			maxDepth;
 		float		russianRouletteThreshold;
@@ -160,6 +160,7 @@ namespace Cuda
 			bool					m_isDirty;
 			bool					m_isInitialised;
 			std::string				m_cameraId;
+			int						m_frameIdx;
 
 		public:
 			__host__ WavefrontTracer(const std::string& id, const ::Json::Node& node);
@@ -171,13 +172,13 @@ namespace Cuda
 			__host__ virtual AssetType							GetAssetType() const override final { return AssetType::kIntegrator; }
 			__host__ static AssetType							GetAssetStaticType() { return AssetType::kIntegrator; }
 			
-			__host__ virtual void								FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
+			__host__ virtual uint								FromJson(const ::Json::Node& renderParamsJson, const uint flags) override final;
 			__host__ virtual void								Bind(RenderObjectContainer& sceneObjects) override final;
 			__host__ void										SetDirty() { m_isDirty = true; }
 
-			__host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+			__host__ virtual void								OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) override final;
 			__host__ virtual void								OnDestroyAsset() override final;
-			__host__ virtual void								OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
+			__host__ virtual void								OnPreRenderPass(const float wallTime) override final;
 			__host__ const WavefrontTracerParams&				GetParams() const { return m_params; }
 
 			__host__ void										Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage);

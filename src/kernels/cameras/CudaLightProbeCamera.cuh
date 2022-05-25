@@ -55,7 +55,7 @@ namespace Cuda
 		__host__ LightProbeCameraParams(const ::Json::Node& node, const uint flags);
 
 		__host__ void ToJson(::Json::Node& node) const;
-		__host__ void FromJson(const ::Json::Node& node, const uint flags);
+		__host__ uint FromJson(const ::Json::Node& node, const uint flags);
 
 		LightProbeGridParams		grid;
 		CameraParams				camera;
@@ -191,9 +191,9 @@ namespace Cuda
 			__host__ static AssetHandle<Host::RenderObject> Instantiate(const std::string& classId, const AssetType& expectedType, const ::Json::Node& json);
 			
 			__host__ virtual void						Bind(RenderObjectContainer& sceneObjects) override final;
-			__host__ virtual void						OnUpdateSceneGraph(RenderObjectContainer& sceneObjects) override final;
+			__host__ virtual void						OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) override final;
 			__host__ virtual void                       OnDestroyAsset() override final;
-			__host__ virtual void                       FromJson(const ::Json::Node& node, const uint flags) override final;
+			__host__ virtual uint                       FromJson(const ::Json::Node& node, const uint flags) override final;
 			__host__ virtual void						Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
 			__host__ virtual Device::LightProbeCamera* GetDeviceInstance() const override final { return cu_deviceData; }
 			__host__ virtual AssetHandle<Host::ImageRGBW> GetAccumulationBuffer() override final { return nullptr; }
@@ -202,7 +202,7 @@ namespace Cuda
 			__host__ virtual bool						IsBakingCamera() const override final { return true; }
 			__host__ virtual bool						EmitStatistics(Json::Node& node) const override final;
 
-			__host__ virtual void						OnPreRenderPass(const float wallTime, const uint frameIdx) override final;
+			__host__ virtual void						OnPreRenderPass(const float wallTime) override final;
 			__host__ virtual void						OnPostRenderPass() override final;
 
 			__host__ static std::string					GetAssetTypeString() { return "lightprobe"; }
@@ -244,7 +244,6 @@ namespace Cuda
 
 			dim3										m_block;
 			dim3										m_seedGrid, m_reduceGrid;
-			int											m_frameIdx;
 			std::string									m_probeGridID;
 			bool										m_needsRebind;
 		};

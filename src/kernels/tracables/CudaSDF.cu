@@ -57,7 +57,7 @@ namespace Cuda
         transform.ToJson(node);
     }
 
-    __host__ void SDFParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint SDFParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         node.GetEnumeratedParameter("primitiveType", std::vector<std::string>({ "sphere", "torus", "box", "capsule" }), primitiveType, flags);
         node.GetValue("maxSpecularIterations", maxSpecularIterations, Json::kSilent);
@@ -83,6 +83,8 @@ namespace Cuda
         
         tracable.FromJson(node, flags);
         transform.FromJson(node, flags);
+
+        return kRenderObjectDirtyAll;
     }
 
     __device__ Device::SDF::SDF() { }
@@ -174,7 +176,7 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceData);
     }
 
-    __host__ void Host::SDF::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint Host::SDF::FromJson(const ::Json::Node& node, const uint flags)
     {
         Host::Tracable::FromJson(node, flags);
 
@@ -182,5 +184,7 @@ namespace Cuda
         RenderObject::SetUserFacingRenderObjectFlags(m_params.tracable.renderObject.flags());
 
         SynchroniseObjects(cu_deviceData, m_params);
+
+        return kRenderObjectDirtyAll;
     }
 }
