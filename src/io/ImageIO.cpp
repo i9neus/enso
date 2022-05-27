@@ -5,7 +5,7 @@
 
 namespace ImageIO
 {
-    void WriteAccumulationBufferPNG(const std::vector<Cuda::vec4>& rawData, const Cuda::ivec2& dimensions, std::string filePath, const float gamma)
+    void WriteAccumulationBufferPNG(const std::vector<Cuda::vec4>& rawData, const Cuda::ivec2& dimensions, std::string filePath, const float exposure, const float gamma)
     {        
         if (!ReplaceExtension(filePath, "png"))
         {
@@ -15,7 +15,8 @@ namespace ImageIO
 
         std::vector<unsigned char> outData(dimensions.x * dimensions.y * 4, 0);
         uint outIdx = 0;
-        const float invGamma = 1.0 / gamma;
+        const float invGamma = 1 / gamma;
+        const float gain = std::pow(2.0f, exposure);
 
         for (int32_t y = 0; y < dimensions.y; ++y)
         {
@@ -27,7 +28,7 @@ namespace ImageIO
                 // Normalise and saturate the pixel value
                 pixel.xyz /= Cuda::max(pixel.w, 1.0f);
                 pixel.xyz = Cuda::clamp(pixel.xyz, Cuda::kZero, Cuda::kOne);
-                pixel.xyz = Cuda::saturate(Cuda::pow(pixel.xyz, Cuda::vec3(invGamma)));
+                pixel.xyz = Cuda::saturate(Cuda::pow(pixel.xyz * gain, Cuda::vec3(invGamma)));
 
                 for (int32_t c = 0; c < 3; c++)
                 {

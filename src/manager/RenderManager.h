@@ -82,7 +82,6 @@ private:
 	std::atomic<int>	m_threadSignal;
 	Json::Document		m_patchJson;
 	Json::Document		m_sceneJson;
-	std::atomic<bool>	m_isPatchUpdated;
 
 	Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 

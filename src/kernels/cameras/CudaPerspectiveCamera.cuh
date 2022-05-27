@@ -116,6 +116,7 @@ namespace Cuda
 			__host__ static std::string					GetAssetTypeString() { return "perspective"; }
 			__host__ static std::string					GetAssetDescriptionString() { return "Perspective Camera"; }
 			__host__ virtual const CameraParams&		GetParams() const override final { return m_params.camera; }
+			__host__ const PerspectiveCameraParams&		GetPerspectiveParams() const { return m_params; }
 			__host__ virtual bool						IsBakingCamera() const override final { return false; }
 			
 			__host__ virtual void						GetRawAccumulationData(std::vector<vec4>& rawData, ivec2& dimensions) const override final;

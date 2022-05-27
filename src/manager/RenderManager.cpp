@@ -11,6 +11,7 @@
 #include "kernels/CudaAssetContainer.cuh"
 #include "kernels/tracables/CudaTracable.cuh"
 #include "kernels/cameras/CudaCamera.cuh"
+#include "kernels/cameras/CudaPerspectiveCamera.cuh"
 
 #include "io/USDIO.h"
 #include "io/ImageIO.h"
@@ -806,15 +807,26 @@ void RenderManager::OnBakePostFrame()
 	if (m_exportViewportJob.state == kRenderManagerJobDispatched)
 	{
 		auto& job = m_exportViewportJob;
-		
-		std::vector<Cuda::vec4> rawData;
-		Cuda::ivec2 dataDimensions;
-		m_liveCamera->GetRawAccumulationData(rawData, dataDimensions);
+		auto perspCam = m_liveCamera.DynamicCast<Cuda::Host::PerspectiveCamera>();
+		if (perspCam)
+		{
+			// Get the data and attributes from the camera
+			std::vector<Cuda::vec4> rawData;
+			Cuda::ivec2 dataDimensions;
+			perspCam->GetRawAccumulationData(rawData, dataDimensions);
+			const auto& params = perspCam->GetPerspectiveParams();
 
-		std::string exportPath;
-		if (!job.json.GetValue("path", exportPath, Json::kRequiredWarn)) { return; }
+			// Get the export path from the job metadata
+			std::string exportPath;
+			if (!job.json.GetValue("path", exportPath, Json::kRequiredWarn)) { return; }
 
-		ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, exportPath, 2.2f);
+			// Write out the PNG image
+			ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, exportPath, params.displayExposure, params.displayGamma);
+		}
+		else
+		{
+			Log::Error("Error: cannot export PNG of current viewport. Set a perspective camera object as live then try again.");
+		}
 
 		job.state = kRenderManagerJobIdle;
 	}
@@ -898,11 +910,23 @@ void RenderManager::OnBakePostFrame()
 		m_bake.progress = float(m_liveCamera->GetFrameIdx()) / float(liveCam.minMaxSamples.y * liveCam.overrides.maxDepth);
 		if (m_bake.progress > 1.0f)
 		{
+			// Get the raw data from the camera
 			std::vector<Cuda::vec4> rawData;
 			Cuda::ivec2 dataDimensions;
 			m_liveCamera->GetRawAccumulationData(rawData, dataDimensions);
 
-			ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, m_bake.pngExportPath, 2.2f);
+			// Try to pull exposure and gamma values from the perspective camera
+			float pngExposure = 1.0, pngGamma = 2.2f;
+			auto perspCam = m_liveCamera.DynamicCast<Cuda::Host::PerspectiveCamera>();
+			if (perspCam)
+			{
+				const auto& params = perspCam->GetPerspectiveParams();
+				pngExposure = params.displayExposure;
+				pngGamma = params.displayGamma;
+			}
+
+			// Write the PNG image
+			ImageIO::WriteAccumulationBufferPNG(rawData, dataDimensions, m_bake.pngExportPath, pngExposure, pngGamma);
 
 			m_bake.succeeded = true;
 			m_bake.job.state = kRenderManagerJobCompleted;
