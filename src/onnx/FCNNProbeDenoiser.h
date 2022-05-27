@@ -5,7 +5,7 @@
 #include "kernels/lightprobes/CudaLightProbeDataTransform.cuh"
 
 namespace ONNX
-{    
+{  
     struct FCNNProbeDenoiserParams
     {
         __host__ __device__ FCNNProbeDenoiserParams();
@@ -14,6 +14,8 @@ namespace ONNX
         std::string     modelPreprocessPath;
         std::string     modelPostprocessPath;
         std::string     modelDenoiserPath;
+
+        int             inferenceBackend;
 
         Cuda::LightProbeGridParams grid;
     };

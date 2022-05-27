@@ -102,9 +102,9 @@ namespace ONNX
         m_ortSession.reset();
     }
 
-    void OrtSession::Initialise(Ort::Env& ortEnvironment, const std::string& modelPath, const int numInputs, const int numOutputs)
+    void OrtSession::Initialise(Ort::Env& ortEnvironment, const Ort::SessionOptions& sessionOptions, const std::string& modelPath, const int numInputs, const int numOutputs)
     {
-        m_ortSession = std::make_unique<Ort::Session>(ortEnvironment, Widen(modelPath).c_str(), Ort::SessionOptions(nullptr));
+        m_ortSession = std::make_unique<Ort::Session>(ortEnvironment, Widen(modelPath).c_str(), sessionOptions);
 
         m_inputParams.Initialise(numInputs);
         m_outputParams.Initialise(numOutputs);

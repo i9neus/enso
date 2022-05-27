@@ -9,7 +9,9 @@
 namespace Cuda
 {
     __host__ __device__ FCNNProbeDenoiserParams::FCNNProbeDenoiserParams() :
-        doEvaluate(false)
+        doEvaluate(false),
+        doReloadModel(false),
+        inferenceBackend(ONNX::kInferenceBackendCPU)
     {
     }
 
@@ -17,12 +19,16 @@ namespace Cuda
     {
         dataTransform.ToJson(node);
         node.AddValue("doEvaluate", doEvaluate);
+        node.AddValue("doReloadModel", doReloadModel);
+        node.AddEnumeratedParameter("inferenceBackend", std::vector<std::string>({ "cpu", "cuda", "tensorrt" }), inferenceBackend);
     }
 
     __host__ uint FCNNProbeDenoiserParams::FromJson(const ::Json::Node& node, const uint flags)
     {
         dataTransform.FromJson(node, flags);
         node.GetValue("doEvaluate", doEvaluate, Json::kSilent);
+        node.GetValue("doReloadModel", doReloadModel, Json::kSilent);
+        node.GetEnumeratedParameter("inferenceBackend", std::vector<std::string>({ "cpu", "cuda", "tensorrt" }), inferenceBackend, flags);
 
         return kRenderObjectDirtyRender;
     }
@@ -34,7 +40,7 @@ namespace Cuda
         FromJson(node, Json::kSilent);
 
         node.GetValue("inputGridID", m_inputGridID, Json::kRequiredAssert);
-        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);  
+        node.GetValue("outputGridID", m_outputGridID, Json::kRequiredAssert);
         node.GetValue("modelRootPath", m_onnxParams.modelRootPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelPreprocessPath", m_onnxParams.modelPreprocessPath, Json::kRequiredAssert | Json::kNotBlank);
         node.GetValue("modelPostprocessPath", m_onnxParams.modelPostprocessPath, Json::kRequiredAssert | Json::kNotBlank);
@@ -59,6 +65,12 @@ namespace Cuda
     __host__ uint Host::FCNNProbeDenoiser::FromJson(const ::Json::Node& node, const uint flags)
     {
         m_params.FromJson(node, flags);
+
+        if (m_params.doReloadModel)
+        {
+            m_onnxParams.inferenceBackend = m_params.inferenceBackend;
+            m_onnxEvaluator.Initialise(m_onnxParams);
+        }
 
         if (m_params.doEvaluate)
         {
@@ -117,6 +129,7 @@ namespace Cuda
 
         // Prepare the grid params in the model data structure
         m_onnxParams.grid = gridParams;
+        m_onnxParams.inferenceBackend = m_params.inferenceBackend;
         m_onnxParams.grid.dataTransform = m_params.dataTransform;
         m_onnxParams.grid.Prepare();
 

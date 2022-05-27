@@ -9,12 +9,13 @@
 
 #ifndef _DEBUG 
 #include <onnxruntime/onnxruntime_cxx_api.h>
+#include <onnxruntime/tensorrt_provider_factory.h>
 #endif
 
 namespace ONNX
 {
-
-    FCNNProbeDenoiserParams::FCNNProbeDenoiserParams()
+    FCNNProbeDenoiserParams::FCNNProbeDenoiserParams() : 
+        inferenceBackend(kInferenceBackendCPU)
     {
         grid.gridDensity = Cuda::ivec3(-1);
     }
@@ -47,20 +48,51 @@ namespace ONNX
         const std::string modelPostprocessPath = ProcessPath(params.modelPostprocessPath);
 
         if (!filesOkay) { return; }
+        m_params = params;
 
         try
         {
             Destroy();
 
-            m_ortEnvironment.reset(new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "fcnndenoiser"));            
+            m_ortEnvironment.reset(new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "fcnndenoiser"));
+
+            Ort::SessionOptions sessionOptions;
+            sessionOptions.SetIntraOpNumThreads(1);
+            sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+
+            // Select the backend
+            if (m_params.inferenceBackend == kInferenceBackendCUDA)
+            {
+                /*OrtCUDAProviderOptions options;
+                options.device_id = 0;
+                options.arena_extend_strategy = 0;
+                options.gpu_mem_limit = 2 * 1024 * 1024 * 1024;
+                options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearch::OrtCudnnConvAlgoSearchExhaustive;
+                options.do_copy_in_default_stream = 1;*/
+
+                Log::Warning("Using CUDA backend");
+
+                Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(sessionOptions, 0));
+            }
+            else if (m_params.inferenceBackend == kInferenceBackendTensorRT)
+            {
+                Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Tensorrt(sessionOptions, 0));
+                Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(sessionOptions, 0));
+
+                Log::Warning("Using TensorRT backend");
+            } 
+            else
+            {
+                Log::Warning("Using CPU backend");
+            }
 
             // Create session objects
-            m_preProcSession.Initialise(*m_ortEnvironment, modelPreprocessPath, 2, 4);
-            m_denoiseSession.Initialise(*m_ortEnvironment, modelDenoiserPath, 2, 1);
-            m_postProcSession.Initialise(*m_ortEnvironment, modelPostprocessPath, 3, 1);
+            m_preProcSession.Initialise(*m_ortEnvironment, sessionOptions, modelPreprocessPath, 2, 4);
+            m_denoiseSession.Initialise(*m_ortEnvironment, sessionOptions, modelDenoiserPath, 2, 1);
+            m_postProcSession.Initialise(*m_ortEnvironment, sessionOptions, modelPostprocessPath, 3, 1);
 
             m_initFlags |= kInitORT;
-            Log::Success("Successfully initialised PCNN denoiser models");
+            Log::Success("Successfully initialised FCNN denoiser models");
         }
         catch (const Ort::Exception& err)
         {
@@ -70,16 +102,25 @@ namespace ONNX
 
     void FCNNProbeDenoiser::Reinitialise()
     {
+        Log::Warning("Re-initialising FCNNProbeDenoiser model...");
+
         Initialise(m_params);
     }
 
     void FCNNProbeDenoiser::Destroy()
     {
-        m_ortEnvironment.reset();
+        try
+        {
+            m_preProcSession.Destroy();
+            m_denoiseSession.Destroy();
+            m_postProcSession.Destroy();
 
-        m_preProcSession.Destroy();
-        m_denoiseSession.Destroy();
-        m_postProcSession.Destroy();
+            m_ortEnvironment.reset();
+        }
+        catch (const Ort::Exception& err)
+        {
+            Log::Error("ONNX runtime error %i: '%s'", err.GetOrtErrorCode(), err.what());
+        }
 
         m_initFlags = 0;
     }

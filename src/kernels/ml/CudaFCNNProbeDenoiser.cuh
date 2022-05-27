@@ -19,6 +19,8 @@ namespace Cuda
         Cuda::LightProbeDataTransformParams dataTransform;
 
         bool            doEvaluate;
+        bool            doReloadModel;
+        int             inferenceBackend;
     };
     
     namespace Host

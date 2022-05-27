@@ -2,26 +2,12 @@
 #include <random>
 
 FCNNProbeDenoiserShelf::FCNNProbeDenoiserShelf(const Json::Node& json) :
-    IMGUIShelf(json),
-    m_modelRootPath("Root path"),
-    m_modelPreprocessPath("Pre-process path"),
-    m_modelDenoiserPath("Denoiser path"),
-    m_modelPostprocessPath("Post-process path")
+    IMGUIShelf(json)
 {}
 
 void FCNNProbeDenoiserShelf::Construct()
 {
     if (!ImGui::CollapsingHeader(GetShelfTitle().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-    if (ImGui::TreeNodeEx("ONNX Paths", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        m_modelRootPath.Construct();
-        m_modelPreprocessPath.Construct();
-        m_modelDenoiserPath.Construct();
-        m_modelPostprocessPath.Construct();
-        
-        ImGui::TreePop();
-    }
 
     if (ImGui::TreeNodeEx("Data Export Transform", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -30,15 +16,25 @@ void FCNNProbeDenoiserShelf::Construct()
         ImGui::TreePop();
     }
 
+    ConstructComboBox("Inference backend", { "CPU", "CUDA", "TensorRT" }, m_p.inferenceBackend);
+    HelpMarker("Specifies the sampling method for direct lights.");
+
     if (ImGui::Button("Evaluate"))
     {
         m_p.doEvaluate = true;
-    }
+    }     
+    SL;
+
+    if (ImGui::Button("Reload model"))
+    {
+        m_p.doReloadModel = true;
+    }     
 }
 
 void FCNNProbeDenoiserShelf::Reset()
 {
     m_p.doEvaluate = false;
+    m_p.doReloadModel = false;
 }
 
 

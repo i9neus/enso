@@ -20,9 +20,5 @@ public:
     virtual void Reset() override final;
 
 private:
-    IMGUIInputText      m_modelRootPath;
-    IMGUIInputText      m_modelPreprocessPath;
-    IMGUIInputText      m_modelPostprocessPath;
-    IMGUIInputText      m_modelDenoiserPath;
 };
 

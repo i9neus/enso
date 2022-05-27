@@ -9,10 +9,18 @@ namespace Ort
     struct Env;
     struct Value;
     struct Session;
+    struct SessionOptions;
 }
 
 namespace ONNX
 {
+    enum InferenceBackendType : int
+    {
+        kInferenceBackendCPU,
+        kInferenceBackendCUDA,
+        kInferenceBackendTensorRT
+    };
+    
     template<typename Type>
     struct Tensor
     {
@@ -65,7 +73,7 @@ namespace ONNX
         ~OrtSession();
 
         void Destroy();
-        void Initialise(Ort::Env& ortEnvironment, const std::string& modelPath, const int numInputs, const int numOutputs);
+        void Initialise(Ort::Env& ortEnvironment, const Ort::SessionOptions& sessionOptions, const std::string& modelPath, const int numInputs, const int numOutputs);
         void Finalise();
         void Run();
 
