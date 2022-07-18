@@ -478,6 +478,7 @@ namespace Cuda
 
         m_hostInputGrid->PushClipRegion(m_objects->params.clipRegion);
 
+        Timer timer;
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
             KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);
@@ -489,6 +490,7 @@ namespace Cuda
 
             IsOk(cudaStreamSynchronize(m_hostStream));
         }
+        Log::Success("Light probe kernel filter evaluated in %.2fms.", timer.Get() * 1e3f);
 
         m_hostInputGrid->PopClipRegion();
 
