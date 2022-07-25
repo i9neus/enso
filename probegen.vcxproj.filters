@@ -127,6 +127,18 @@
     <ClCompile Include="src\dx12\imgui\shelves\IMGUIMLShelves.cpp">
       <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
+    <ClCompile Include="src\manager\2DGIManager.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\manager\CudaObjectManager.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\manager\ShaderSandboxManager.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\manager\RenderManagerInterface.cpp">
+      <Filter>manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -548,6 +560,18 @@
     </ClInclude>
     <ClInclude Include="src\dx12\imgui\shelves\IMGUIMLShelves.h">
       <Filter>dx12\imgui\shelves</Filter>
+    </ClInclude>
+    <ClInclude Include="src\manager\2DGIManager.h">
+      <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\manager\CudaObjectManager.h">
+      <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\manager\ShaderSandboxManager.h">
+      <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\manager\RenderManagerInterface.h">
+      <Filter>manager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -42,7 +42,11 @@
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
     <ClCompile Include="src\io\ImageIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
+    <ClCompile Include="src\manager\2DGIManager.cpp" />
+    <ClCompile Include="src\manager\CudaObjectManager.cpp" />
+    <ClCompile Include="src\manager\RenderManagerInterface.cpp" />
     <ClCompile Include="src\manager\RenderManager.cpp" />
+    <ClCompile Include="src\manager\ShaderSandboxManager.cpp" />
     <ClCompile Include="src\onnx\Grid2Grid.cpp" />
     <ClCompile Include="src\onnx\FCNNProbeDenoiser.cpp" />
     <ClCompile Include="src\onnx\OnnxModel.cpp" />
@@ -160,7 +164,11 @@
     <ClInclude Include="src\kernels\tracables\CudaSDF.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
+    <ClInclude Include="src\manager\2DGIManager.h" />
+    <ClInclude Include="src\manager\CudaObjectManager.h" />
+    <ClInclude Include="src\manager\RenderManagerInterface.h" />
     <ClInclude Include="src\manager\RenderManager.h" />
+    <ClInclude Include="src\manager\ShaderSandboxManager.h" />
     <ClInclude Include="src\onnx\Grid2Grid.h" />
     <ClInclude Include="src\onnx\OnnxModel.h" />
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />

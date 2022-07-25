@@ -1,12 +1,6 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
-#include "generic/D3DIncludes.h"
-#include "generic/HighResolutionTimer.h"
-#include "generic/Math.h"
-#include <cuda_runtime.h>
-#include "generic/JsonUtils.h"
-#include <deque>
+#include "CudaObjectManager.h"
 
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
