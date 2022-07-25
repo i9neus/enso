@@ -68,7 +68,7 @@ void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT cl
 	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
 
 	// Create some Cuda objects
-	//m_compositeImage = Cuda::CreateAsset<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
+	m_compositeImage = Cuda::CreateAsset<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
 
 	Cuda::VerifyTypeSizes();
 
@@ -78,7 +78,7 @@ void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT cl
 void CudaObjectManager::DestroyCuda()
 {
 	// Destroy assets
-	//m_compositeImage.DestroyAsset();
+	m_compositeImage.DestroyAsset();
 
 	// Destroy events
 	checkCudaErrors(cudaEventDestroy(m_renderEvent));
@@ -172,7 +172,7 @@ void CudaObjectManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 	// Only emplace another copy call if the previous one has successfully executed
 	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
 	{
-		//m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
+		m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
 		IsOk(cudaEventRecord(m_renderEvent));
 	}
 	//IsOk(cudaStreamSynchronize(m_D3DStream));

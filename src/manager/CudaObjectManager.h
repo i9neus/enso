@@ -8,34 +8,40 @@
 #include "generic/JsonUtils.h"
 #include <deque>
 
+#include "kernels/CudaImage.cuh"
+
 class CudaObjectManager
 {
 public:
 	CudaObjectManager();
 	~CudaObjectManager();
 
-	void InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
-	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
-	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
-	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
+	void						InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
+	void						LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
+	void						LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, 
+													 const UINT clientWidth, const UINT clientHeight);
+	void						UpdateD3DOutputTexture(UINT64& currentFenceValue);
 
-	void OnWindowResize(const UINT clientWidth, const UINT clientHeight);
+	void						OnWindowResize(const UINT clientWidth, const UINT clientHeight);
 
 protected:
-	void DestroyCuda();
+	void						DestroyCuda();
+	const cudaDeviceProp&		GetCudaDeviceProperties() const { return m_deviceProp; }
+
+	cudaStream_t									m_D3DStream;
+	cudaStream_t									m_renderStream;
+	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
 
 private:
 
 	// CUDA objects
 	cudaExternalMemory_t	    m_externalTextureMemory;
-	cudaExternalSemaphore_t     m_externalSemaphore;
-	cudaStream_t				m_D3DStream;
-	cudaStream_t				m_renderStream;
+	cudaExternalSemaphore_t     m_externalSemaphore;	
 	LUID						m_dx12deviceluid;
 	UINT						m_cudaDeviceID;
 	UINT						m_nodeMask;
 	float						m_AnimTime;
-	void* m_cudaTexturePtr = NULL;
+	void*						m_cudaTexturePtr = NULL;
 	cudaSurfaceObject_t         m_cuSurface;
 	cudaEvent_t                 m_renderEvent;
 	ComPtr<ID3D12Fence>		    m_d3dFence;

@@ -13,6 +13,8 @@ namespace Cuda
     __host__ uint Host::Material::FromJson(const ::Json::Node& parentNode, const uint flags)
     {
         parentNode.GetValue("bxdf", m_bxdfId, flags);
+
+        return kRenderObjectDirtyRender;
     }
 
     __host__ void Host::Material::Bind(RenderObjectContainer& objectContainer)

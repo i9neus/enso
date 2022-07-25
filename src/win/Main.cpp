@@ -60,15 +60,7 @@ int main(int argc, char* argv[])
 	{
 		Log::Error("Runtime error: %s\n", err.what());
 
-		const auto backtrace = StackBacktrace::Get();
-		if (!backtrace.empty())
-		{
-			Log::Debug("Stack backtrace:");
-			for (const auto& frame : backtrace)
-			{
-				Log::Debug(frame);
-			}
-		}
+		StackBacktrace::Print();
 	}
 	catch (...)
 	{

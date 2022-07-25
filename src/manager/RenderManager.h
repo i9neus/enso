@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CudaObjectManager.h"
+#include "RenderManagerInterface.h"
 
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"
@@ -41,18 +42,18 @@ enum RenderManagerCommand : int
 	kRenderMangerUpdateParams
 };
 
-class RenderManager
+class RenderManager : public RenderManagerInterface, public CudaObjectManager
 {
 public:
 	RenderManager();
 
-	void InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
-	void LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
-	void LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight);
-	void UpdateD3DOutputTexture(UINT64& currentFenceValue);
+	virtual void Initialise() override final;
+	virtual void Destroy() override final;
+
+	virtual void OnResizeClient() override final;
+
 	void StartRenderer();
 	void StopRenderer();
-	void Destroy();
 
 	void LoadDefaultScene();
 	void LoadScene(const std::string filePath);
@@ -85,27 +86,6 @@ private:
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 	TimePoint					m_renderStartTime;
-
-	// CUDA objects
-	cudaExternalMemory_t	    m_externalTextureMemory;
-	cudaExternalSemaphore_t     m_externalSemaphore;
-	cudaStream_t				m_D3DStream;
-	cudaStream_t				m_renderStream;
-	LUID						m_dx12deviceluid;
-	UINT						m_cudaDeviceID;
-	UINT						m_nodeMask;
-	float						m_AnimTime;
-	void*						m_cudaTexturePtr = NULL;
-	cudaSurfaceObject_t         m_cuSurface;
-	cudaEvent_t                 m_renderEvent;
-	ComPtr<ID3D12Fence>		    m_d3dFence;
-	HANDLE						m_fenceEvent;
-	cudaDeviceProp				m_deviceProp;
-	
-	uint32_t					m_D3DTextureWidth;
-	uint32_t				    m_D3DTextureHeight;
-	uint32_t				    m_clientWidth;
-	uint32_t                    m_clientHeight;
 
 	std::mutex													m_commandMutex;
 	std::unordered_map<int, std::function<void()>>				m_commandMap;
@@ -141,9 +121,7 @@ private:
 	
 	float														m_meanFrameTime;		
 
-	Cuda::AssetHandle<Cuda::Host::ImageRGBA>					m_compositeImage;
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;
-
 	std::vector<Cuda::AssetHandle<Cuda::Host::Camera>>			m_activeCameras;
 	Cuda::AssetHandle<Cuda::Host::Camera>						m_liveCamera;
 	Cuda::AssetHandle<Cuda::Host::LightProbeCamera>				m_lightProbeCamera;

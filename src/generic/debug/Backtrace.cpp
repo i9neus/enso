@@ -189,6 +189,19 @@ namespace StackBacktrace
         return cachedBacktrace;
     }
 
+    void Print()
+    {
+        const auto backtrace = StackBacktrace::Get();
+        if (!backtrace.empty())
+        {
+            std::cout << "Stack backtrace:" << std::endl;
+            for (const auto& frame : backtrace)
+            {
+                std::cout << frame;
+            }
+        }
+    }
+
     inline std::string ExceptionBacktrace(_EXCEPTION_POINTERS* exPtrs)
     {
         CONTEXT* ctx = exPtrs->ContextRecord;

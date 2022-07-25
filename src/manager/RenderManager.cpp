@@ -34,61 +34,13 @@ RenderManager::RenderManager() :
 	m_commandMap.emplace(kRenderMangerUpdateParams, std::bind(&RenderManager::PatchSceneObjects, this));
 }
 
-void RenderManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
+void RenderManager::Initialise()
 {
-	Log::NL();
-	Log::Indent indent("Initialising Cuda...\n");
 
-	int num_cuda_devices = 0;
-	checkCudaErrors(cudaGetDeviceCount(&num_cuda_devices));
+}
+void RenderManager::OnResizeClient()
+{
 
-	if (!num_cuda_devices)
-	{
-		throw std::exception("No CUDA Devices found");
-	}
-	for (UINT devId = 0; devId < (UINT)num_cuda_devices; devId++)
-	{
-		Log::Indent indent1;
-
-		checkCudaErrors(cudaGetDeviceProperties(&m_deviceProp, devId));
-
-		if ((memcmp(&dx12DeviceLUID.LowPart, m_deviceProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
-			(memcmp(&dx12DeviceLUID.HighPart, m_deviceProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
-		{
-			int pLow, pHigh;
-			IsOk(cudaDeviceGetStreamPriorityRange(&pLow, &pHigh));
-
-			Log::Debug("Stream priority range: [%i, %i]\n", pLow, pHigh);
-
-			IsOk(cudaSetDevice(devId));
-			m_cudaDeviceID = devId;
-			m_nodeMask = m_deviceProp.luidDeviceNodeMask;
-			checkCudaErrors(cudaStreamCreateWithPriority(&m_D3DStream, cudaStreamNonBlocking, pHigh));
-			checkCudaErrors(cudaStreamCreate(&m_renderStream));
-			Log::Write("CUDA Device Used [%d] %s\n", devId, m_deviceProp.name);
-			{
-				Log::Indent indent2;
-				Log::Debug("- sharedMemPerMultiprocessor: %i bytes\n", m_deviceProp.sharedMemPerMultiprocessor);
-				Log::Debug("- sharedMemPerBlock: %i bytes\n", m_deviceProp.sharedMemPerBlock);
-			}
-			break;
-		}
-	}
-
-	constexpr size_t kCudaHeapSizeLimit = 128 * 1024 * 1024;
-
-	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
-
-	checkCudaErrors(cudaEventCreate(&m_renderEvent));
-
-	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);
-
-	// Create some Cuda objects
-	m_compositeImage = Cuda::CreateAsset<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
-
-	Cuda::VerifyTypeSizes();
-
-	IsOk(cudaDeviceSynchronize());
 }
 
 void RenderManager::LoadDefaultScene()
@@ -140,7 +92,6 @@ void RenderManager::UnloadScene(bool report)
 		// Destroy the render objects
 		m_renderObjects.DestroyAsset();
 	}
-
 
 }
 
@@ -221,112 +172,8 @@ void RenderManager::Destroy()
 
 	// Destroy assets
 	m_compositeImage.DestroyAsset();
-	
-	// Destroy events
-	checkCudaErrors(cudaEventDestroy(m_renderEvent));
 
-	// Destroy D3D linked objects
-	checkCudaErrors(cudaDestroyExternalSemaphore(m_externalSemaphore));
-	checkCudaErrors(cudaDestroyExternalMemory(m_externalTextureMemory));
-}
-
-void RenderManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, const UINT clientWidth, const UINT clientHeight)
-{
-	m_D3DTextureWidth = textureWidth;
-	m_D3DTextureHeight = textureHeight;
-	m_clientWidth = math::min(clientWidth, textureWidth);
-	m_clientHeight = math::min(clientHeight, textureHeight);
-
-	HANDLE sharedHandle;
-	WindowsSecurityAttributes windowsSecurityAttributes;
-	LPCWSTR name = NULL;
-	ThrowIfFailed(d3dDevice->CreateSharedHandle(d3dTexture.Get(), &windowsSecurityAttributes, GENERIC_ALL, name, &sharedHandle));
-
-	D3D12_RESOURCE_ALLOCATION_INFO d3d12ResourceAllocationInfo;
-	d3d12ResourceAllocationInfo = d3dDevice->GetResourceAllocationInfo(m_nodeMask, 1, &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32G32B32A32_FLOAT, textureWidth, textureHeight));
-
-	std::printf("d3d12ResourceAllocationInfo.SizeInBytes: %i\n", d3d12ResourceAllocationInfo.SizeInBytes);
-
-	cudaExternalMemoryHandleDesc externalMemoryHandleDesc;
-	memset(&externalMemoryHandleDesc, 0, sizeof(externalMemoryHandleDesc));
-
-	externalMemoryHandleDesc.type = cudaExternalMemoryHandleTypeD3D12Resource;
-	externalMemoryHandleDesc.handle.win32.handle = sharedHandle;
-	externalMemoryHandleDesc.size = d3d12ResourceAllocationInfo.SizeInBytes;
-	externalMemoryHandleDesc.flags = cudaExternalMemoryDedicated;
-
-	checkCudaErrors(cudaImportExternalMemory(&m_externalTextureMemory, &externalMemoryHandleDesc));
-
-	cudaExternalMemoryMipmappedArrayDesc cuExtmemMipDesc{};
-	cuExtmemMipDesc.extent = make_cudaExtent(textureWidth, textureHeight, 0);
-	cuExtmemMipDesc.formatDesc = cudaCreateChannelDesc<float4>();
-	cuExtmemMipDesc.numLevels = 1;
-	cuExtmemMipDesc.flags = cudaArraySurfaceLoadStore;
-
-	cudaMipmappedArray_t cuMipArray{};
-	checkCudaErrors(cudaExternalMemoryGetMappedMipmappedArray(&cuMipArray, m_externalTextureMemory, &cuExtmemMipDesc));
-
-	cudaArray_t cuArray{};
-	checkCudaErrors(cudaGetMipmappedArrayLevel(&cuArray, cuMipArray, 0));
-
-	cudaResourceDesc cuResDesc{};
-	cuResDesc.resType = cudaResourceTypeArray;
-	cuResDesc.res.array.array = cuArray;
-	checkCudaErrors(cudaCreateSurfaceObject(&m_cuSurface, &cuResDesc));
-}
-
-void RenderManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
-{
-	/*cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
-	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
-	externalSemaphoreWaitParams.params.fence.value = currentFenceValue;
-	externalSemaphoreWaitParams.flags = 0;
-
-	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreWaitParams, 1, m_D3DStream));*/
-
-	// If the next frame is not ready to be rendered yet, wait until it is ready.
-	if (m_d3dFence->GetCompletedValue() < currentFenceValue)
-	{
-		//std::printf("%i is waiting for %i (%i)\n", m_frameIndex, m_fenceValues[m_frameIndex], currentFenceValue);
-		ThrowIfFailed(m_d3dFence->SetEventOnCompletion(currentFenceValue, m_fenceEvent));
-		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
-	}
-
-	// Only emplace another copy call if the previous one has successfully executed
-	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
-	{
-		m_compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
-		IsOk(cudaEventRecord(m_renderEvent));
-	}
-	//IsOk(cudaStreamSynchronize(m_D3DStream));
-
-	/*cudaExternalSemaphoreSignalParams externalSemaphoreSignalParams;
-	std::memset(&externalSemaphoreSignalParams, 0, sizeof(externalSemaphoreSignalParams));
-	externalSemaphoreSignalParams.params.fence.value = ++currentFenceValue;
-	externalSemaphoreSignalParams.flags = 0;
-
-	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&m_externalSemaphore, &externalSemaphoreSignalParams, 1, m_D3DStream));*/
-
-	m_d3dFence->Signal(++currentFenceValue);
-}
-
-void RenderManager::LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent)
-{
-	m_d3dFence = d3dFence;
-	m_fenceEvent = fenceEvent;
-
-	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
-
-	memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
-	WindowsSecurityAttributes windowsSecurityAttributes;
-	LPCWSTR name = NULL;
-	HANDLE sharedHandle = NULL;
-	externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeD3D12Fence;
-	d3dDevice->CreateSharedHandle(d3dFence.Get(), &windowsSecurityAttributes, GENERIC_ALL, name, &sharedHandle);
-	externalSemaphoreHandleDesc.handle.win32.handle = (void*)(sharedHandle);
-	externalSemaphoreHandleDesc.flags = 0;
-
-	checkCudaErrors(cudaImportExternalSemaphore(&m_externalSemaphore, &externalSemaphoreHandleDesc));
+	DestroyCuda();
 }
 
 void RenderManager::EmplaceRenderCommand(const int cmd)
@@ -428,7 +275,7 @@ bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
 	size_t freeBytes, totalBytes;
 	IsOk(cudaMemGetInfo(&freeBytes, &totalBytes));	
 	Json::Node deviceJson = outJson.AddChildObject("device");
-	deviceJson.AddValue("name", std::string(m_deviceProp.name));
+	deviceJson.AddValue("name", std::string(GetCudaDeviceProperties().name));
 	deviceJson.AddValue("freeMB", float(freeBytes) / 1048576.f);
 	deviceJson.AddValue("totalMB", float(totalBytes) / 1048576.f);
 
@@ -726,11 +573,15 @@ void RenderManager::Run()
 	catch (const std::runtime_error& err)
 	{
 		Log::Error("Runtime error: %s\n", err.what());
-		m_threadSignal.store(kRenderManagerError);
+		StackBacktrace::Print();
+
+		m_threadSignal.store(kRenderManagerError);		
 	}
 	catch (...)
 	{
 		Log::Error("Unhandled error");
+		StackBacktrace::Print();
+
 		m_threadSignal.store(kRenderManagerError);
 	}
 
