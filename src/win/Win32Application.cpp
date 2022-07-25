@@ -186,6 +186,13 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 			}
 			return 0;
 
+		case WM_SIZE:
+			if (pSample)
+			{
+				pSample->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
+			}
+			return 0;
+
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			return 0;

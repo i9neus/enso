@@ -17,13 +17,17 @@ D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
 
 void D3DContainer::OnInit(HWND hWnd)
 {
+	/*
+		- Create device
+		- 
+	*/
+	
 	m_hWnd = hWnd;
+
 
 	LoadPipeline();
 
 	m_cudaRenderer.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-
-	LoadAssets();
 
 	m_cudaRenderer.LoadDefaultScene();
 	m_imgui.Build(m_hWnd);
@@ -31,8 +35,7 @@ void D3DContainer::OnInit(HWND hWnd)
 
 void D3DContainer::OnUpdate() {}
 
-// Load the rendering pipeline dependencies.
-void D3DContainer::LoadPipeline()
+void D3DContainer::CreateDevice()
 {
 	UINT dxgiFactoryFlags = 0;
 
@@ -50,13 +53,12 @@ void D3DContainer::LoadPipeline()
 		}
 	}
 #endif
-
-	ComPtr<IDXGIFactory4> factory;
-	ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
+	
+	ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
 
 	{
 		ComPtr<IDXGIAdapter1> hardwareAdapter;
-		GetHardwareAdapter(factory.Get(), &hardwareAdapter);
+		GetHardwareAdapter(m_factory.Get(), &hardwareAdapter);
 
 		ThrowIfFailed(D3D12CreateDevice(
 			hardwareAdapter.Get(),
@@ -74,32 +76,6 @@ void D3DContainer::LoadPipeline()
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
 	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
-
-	// Describe and create the swap chain.
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameCount;
-	swapChainDesc.Width = m_clientWidth;
-	swapChainDesc.Height = m_clientHeight;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.SampleDesc.Count = 1;
-
-	ComPtr<IDXGISwapChain1> swapChain;
-	ThrowIfFailed(factory->CreateSwapChainForHwnd(
-		m_commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
-		Win32Application<D3DWindowInterface>::GetHwnd(),
-		&swapChainDesc,
-		nullptr,
-		nullptr,
-		&swapChain
-	));
-
-	// This sample does not support fullscreen transitions.
-	ThrowIfFailed(factory->MakeWindowAssociation(Win32Application<D3DWindowInterface>::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-
-	ThrowIfFailed(swapChain.As(&m_swapChain));
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 
 	// Create descriptor heaps.
 	{
@@ -120,6 +96,20 @@ void D3DContainer::LoadPipeline()
 		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	}
 
+	// Create the command list.
+	{
+		// Create command allocator for each frame.
+		for (UINT n = 0; n < FrameCount; n++)
+		{
+			ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
+		}
+		
+		ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+	}
+}
+
+void D3DContainer::CreateRenderTargets()
+{
 	// Create frame resources.
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -130,10 +120,53 @@ void D3DContainer::LoadPipeline()
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
-
-			ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
 		}
 	}
+}
+
+void D3DContainer::CreateSwapChain()
+{
+	// Describe and create the swap chain.
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc.BufferCount = FrameCount;
+	swapChainDesc.Width = m_clientWidth;
+	swapChainDesc.Height = m_clientHeight;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.SampleDesc.Count = 1;
+
+	ComPtr<IDXGISwapChain1> swapChain;
+	ThrowIfFailed(m_factory->CreateSwapChainForHwnd(
+		m_commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
+		Win32Application<D3DWindowInterface>::GetHwnd(),
+		&swapChainDesc,
+		nullptr,
+		nullptr,
+		&swapChain
+	));
+
+	// This sample does not support fullscreen transitions.
+	ThrowIfFailed(m_factory->MakeWindowAssociation(Win32Application<D3DWindowInterface>::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
+
+	ThrowIfFailed(swapChain.As(&m_swapChain));
+	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+// Load the rendering pipeline dependencies.
+void D3DContainer::LoadPipeline()
+{
+	CreateDevice();
+
+	CreateSwapChain();
+
+	CreateRenderTargets();
+
+	CreateRootSignature();
+	
+	CreateAssets();
+
+	CreateSynchronisationObjects();
 }
 
 void D3DContainer::CreateRootSignature()
@@ -286,12 +319,53 @@ void D3DContainer::CreateViewportTexture()
 	}
 }
 
-// Load the sample assets.
-void D3DContainer::LoadAssets()
+void D3DContainer::CreateSynchronisationObjects()
 {
-	// Create a root signature.
-	CreateRootSignature();
+	// Create synchronization objects and wait until assets have been uploaded to the GPU.
+	{
+		ThrowIfFailed(m_device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&m_fence)));
 
+		// Create an event handle to use for frame synchronization.
+		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (m_fenceEvent == nullptr)
+		{
+			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+		}
+
+		m_cudaRenderer.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
+
+		m_fenceValues[m_frameIndex]++;
+
+		// Wait for the command list to execute; we are reusing the same command 
+		// list in our main loop but for now, we just want to wait for setup to 
+		// complete before continuing.
+		WaitForGpu();
+	}
+}
+
+void D3DContainer::DestroyDevice()
+{
+
+}
+
+void D3DContainer::DestroyRenderTargets()
+{
+
+}
+
+void D3DContainer::DestroySwapChain()
+{
+
+}
+
+void D3DContainer::DestroySynchronisationObjects()
+{
+
+}
+
+// Load the sample assets.
+void D3DContainer::CreateAssets()
+{
 	// Create the pipeline state, which includes compiling and loading shaders.
 	{
 		ComPtr<ID3DBlob> vertexShader;
@@ -362,9 +436,6 @@ void D3DContainer::LoadAssets()
 		m_imgui.Initialise(m_rootSignature, m_device, 2);
 	}
 
-	// Create the command list.
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
-
 	CreateViewportQuad();
 
 	CreateViewportTexture();
@@ -374,26 +445,6 @@ void D3DContainer::LoadAssets()
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-	// Create synchronization objects and wait until assets have been uploaded to the GPU.
-	{
-		ThrowIfFailed(m_device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&m_fence)));
-
-		// Create an event handle to use for frame synchronization.
-		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		if (m_fenceEvent == nullptr)
-		{
-			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-		}
-
-		m_cudaRenderer.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
-
-		m_fenceValues[m_frameIndex]++;	
-
-		// Wait for the command list to execute; we are reusing the same command 
-		// list in our main loop but for now, we just want to wait for setup to 
-		// complete before continuing.
-		WaitForGpu();
-	}
 }
 
 void D3DContainer::PopulateCommandList()
@@ -542,4 +593,21 @@ void D3DContainer::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** p
 	}
 
 	*ppAdapter = adapter.Detach();
+}
+
+void D3DContainer::OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam)
+{
+	if (!m_device || wParam == SIZE_MINIMIZED) { return; }
+
+	//WaitForGpu();
+
+	std::cout << "Here\n";
+
+	/*	ImGui_ImplDX12_InvalidateDeviceObjects();
+		CleanupRenderTarget();
+		ResizeSwapChain(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
+		CreateRenderTarget();
+		ImGui_ImplDX12_CreateDeviceObjects();
+	}
+	return 0;*/
 }

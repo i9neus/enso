@@ -21,6 +21,8 @@ public:
 	virtual void OnKeyDown(UINT8 /*key*/) {}
 	virtual void OnKeyUp(UINT8 /*key*/) {}
 
+	virtual void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam) {}
+
 	UINT GetClientWidth() const { return m_clientWidth; }
 	UINT GetClientHeight() const { return m_clientHeight; }
 	const CHAR* GetTitle() const { return "Container"; }

@@ -62,7 +62,25 @@ public:
 	virtual void OnDestroy() override final;
 	virtual void OnUpdate() override final;
 
+	virtual void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam) override final;
+
 private:
+
+	void CreateDevice();
+	void DestroyDevice();
+
+	void CreateRenderTargets();
+	void DestroyRenderTargets();
+
+	void CreateSwapChain();
+	void DestroySwapChain();
+
+	void CreateAssets();
+	void DestroyAssets();
+
+	void CreateSynchronisationObjects();
+	void DestroySynchronisationObjects();
+
 	// In this sample we overload the meaning of FrameCount to mean both the maximum
 	// number of frames that will be queued to the GPU at a time, as well as the number
 	// of back buffers in the DXGI swap chain. For the majority of applications, this
@@ -82,6 +100,7 @@ private:
 
 	// Pipeline objects.
 	D3D12_VIEWPORT m_viewport;
+	ComPtr<IDXGIFactory4> m_factory;
 	ComPtr<IDXGISwapChain3> m_swapChain;
 	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
@@ -123,8 +142,6 @@ private:
 	void MoveToNextFrame();
 	void WaitForGpu();
 	std::vector<float> GenerateTextureData();
-	void CreateSinewaveAssets();
-	void CreateTriangleAssets();
 	void CreateRootSignature();
 	void CreateViewportQuad();
 	void CreateViewportTexture();

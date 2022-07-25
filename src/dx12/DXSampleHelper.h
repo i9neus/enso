@@ -38,6 +38,7 @@ The MIT License (MIT)
 
 #include <stdexcept>
 #include <generic/D3DIncludes.h>
+#include "generic/debug/Backtrace.h"
 
 // Note that while ComPtr is used to manage the lifetime of resources on the CPU,
 // it has no understanding of the lifetime of resources on the GPU. Apps must account
@@ -68,6 +69,7 @@ inline void ThrowIfFailed(HRESULT hr)
 {
     if (FAILED(hr))
     {
+        StackBacktrace::Cache();
         throw HrException(hr);
     }
 }

@@ -71,6 +71,7 @@ public:
     void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
     void Destroy();
     void DispatchRenderCommands();
+    void CreateDeviceObjects();
 
 private:
     void PollCudaRenderState();

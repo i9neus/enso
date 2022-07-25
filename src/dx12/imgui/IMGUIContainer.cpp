@@ -38,9 +38,14 @@ void IMGUIContainer::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComP
     Assert(ImGui::ImplDX12_Init(device.Get(), numConcurrentFrames, DXGI_FORMAT_R8G8B8A8_UNORM, m_srvHeap.Get(),
         m_srvHeap->GetCPUDescriptorHandleForHeapStart(), m_srvHeap->GetGPUDescriptorHandleForHeapStart()));
 
-    Assert(ImGui::ImplDX12_CreateDeviceObjects());
+    CreateDeviceObjects();
 
     Log::Success("IMGUI successfully initialised!\n");
+}
+
+void IMGUIContainer::CreateDeviceObjects()
+{     
+    Assert(ImGui::ImplDX12_CreateDeviceObjects());
 }
 
 void IMGUIContainer::Rebuild()
