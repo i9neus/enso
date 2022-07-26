@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CudaObjectManager.h"
-#include "RenderManagerInterface.h"
+#include "RendererInterface.h"
 
 #include "kernels/CudaImage.cuh"
 #include "kernels/CudaWavefrontTracer.cuh"

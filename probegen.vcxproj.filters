@@ -37,9 +37,6 @@
     <ClCompile Include="src\generic\FilesystemUtils.cpp">
       <Filter>generic</Filter>
     </ClCompile>
-    <ClCompile Include="src\manager\RenderManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
     <ClCompile Include="src\io\ImageIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
@@ -63,18 +60,6 @@
     </ClCompile>
     <ClCompile Include="src\onnx\OnnxModel.cpp">
       <Filter>onnx</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\2DGIManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\CudaObjectManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\ShaderSandboxManager.cpp">
-      <Filter>manager</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\RenderManagerInterface.cpp">
-      <Filter>manager</Filter>
     </ClCompile>
     <ClCompile Include="src\win\Win32Application.cpp">
       <Filter>win</Filter>
@@ -141,6 +126,21 @@
     </ClCompile>
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\CudaObjectManager.cpp">
+      <Filter>renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\ShaderSandboxManager.cpp">
+      <Filter>renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\RendererInterface.cpp">
+      <Filter>renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\2DGI.cpp">
+      <Filter>renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\Probegen.cpp">
+      <Filter>renderers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -408,9 +408,6 @@
     <ClInclude Include="src\kernels\lights\CudaSphereLight.cuh">
       <Filter>kernels\lights</Filter>
     </ClInclude>
-    <ClInclude Include="src\manager\RenderManager.h">
-      <Filter>manager</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\materials\CudaKIFSMaterial.cuh">
       <Filter>kernels\materials</Filter>
     </ClInclude>
@@ -488,18 +485,6 @@
     </ClInclude>
     <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh">
       <Filter>kernels\math\mat</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\2DGIManager.h">
-      <Filter>manager</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\CudaObjectManager.h">
-      <Filter>manager</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\ShaderSandboxManager.h">
-      <Filter>manager</Filter>
-    </ClInclude>
-    <ClInclude Include="src\manager\RenderManagerInterface.h">
-      <Filter>manager</Filter>
     </ClInclude>
     <ClInclude Include="src\win\Win32Application.h">
       <Filter>win</Filter>
@@ -582,6 +567,21 @@
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderers\CudaObjectManager.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\ShaderSandboxManager.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\RendererInterface.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\2DGI.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\Probegen.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -641,9 +641,6 @@
     <Filter Include="io">
       <UniqueIdentifier>{972ad3d2-6574-43fd-ae49-d6d9a1e7c4eb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="manager">
-      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="kernels\lightprobes">
       <UniqueIdentifier>{c945e127-d6a1-463c-81bb-c8b8ce3907bf}</UniqueIdentifier>
     </Filter>
@@ -685,6 +682,9 @@
     </Filter>
     <Filter Include="imgui\components\probegen\bakepermutor">
       <UniqueIdentifier>{40fa271c-e671-4f9e-af74-a4fc8ea5c32a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderers">
+      <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
