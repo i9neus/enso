@@ -14,25 +14,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\dx12\D3DContainer.cpp" />
-    <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp" />
-    <ClCompile Include="src\dx12\imgui\IMGUIMemoryMonitor.cpp" />
-    <ClCompile Include="src\dx12\imgui\permutor\BakePermutor.cpp" />
-    <ClCompile Include="src\dx12\imgui\permutor\IMGUIStateManager.cpp" />
-    <ClCompile Include="src\dx12\imgui\permutor\RenderObjectStateMap.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUICameraShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIFilterShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUILightShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMLShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUITracableShelves.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.cpp" />
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.cpp" />
-    <ClCompile Include="src\dx12\SecurityAttributes.cpp" />
     <ClCompile Include="src\generic\debug\Backtrace.cpp" />
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
@@ -40,6 +21,25 @@
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\BakePermutor.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\ProbegenUI.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\CameraShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\FilterShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\LightShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MLShelves.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp" />
+    <ClCompile Include="src\imgui\elements\DataTable.cpp" />
+    <ClCompile Include="src\imgui\elements\ListBox.cpp" />
+    <ClCompile Include="src\imgui\elements\Widget.cpp" />
+    <ClCompile Include="src\imgui\ComponentManager.cpp" />
+    <ClCompile Include="src\imgui\ComponentInterface.cpp" />
+    <ClCompile Include="src\imgui\tools\MemoryMonitor.cpp" />
     <ClCompile Include="src\io\ImageIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\2DGIManager.cpp" />
@@ -58,33 +58,11 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="src\utils\BulkUSDProcessor.cpp" />
+    <ClCompile Include="src\win\D3DContainer.cpp" />
+    <ClCompile Include="src\win\SecurityAttributes.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\dx12\D3DWindowInterface.h" />
-    <ClInclude Include="src\dx12\d3dx12.h" />
-    <ClInclude Include="src\dx12\D3DContainer.h" />
-    <ClInclude Include="src\dx12\DXSampleHelper.h" />
-    <ClInclude Include="src\dx12\imgui\IMGUIContainer.h" />
-    <ClInclude Include="src\dx12\imgui\IMGUIMemoryMonitor.h" />
-    <ClInclude Include="src\dx12\imgui\permutor\BakePermutor.h" />
-    <ClInclude Include="src\dx12\imgui\permutor\IMGUIStateManager.h" />
-    <ClInclude Include="src\dx12\imgui\permutor\RenderObjectStateMap.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUICameraShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIFilterShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUILightShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMLShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUITracableShelves.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIUtils.h" />
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.h" />
-    <ClInclude Include="src\dx12\SecurityAttributes.h" />
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\debug\Backtrace.h" />
@@ -98,6 +76,27 @@
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h" />
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h" />
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h" />
+    <ClInclude Include="src\imgui\components\probegen\ProbegenUI.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\CameraShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\FilterShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\LightShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MLShelves.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.h" />
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h" />
+    <ClInclude Include="src\imgui\elements\DataTable.h" />
+    <ClInclude Include="src\imgui\elements\ListBox.h" />
+    <ClInclude Include="src\imgui\elements\Shelf.h" />
+    <ClInclude Include="src\imgui\elements\Widget.h" />
+    <ClInclude Include="src\imgui\elements\WidgetUtils.h" />
+    <ClInclude Include="src\imgui\ComponentManager.h" />
+    <ClInclude Include="src\imgui\ComponentInterface.h" />
+    <ClInclude Include="src\imgui\tools\MemoryMonitor.h" />
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
@@ -204,6 +203,11 @@
     <ClInclude Include="src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\utils\BulkUSDProcessor.h" />
+    <ClInclude Include="src\win\D3DContainer.h" />
+    <ClInclude Include="src\win\D3DWindowInterface.h" />
+    <ClInclude Include="src\win\d3dx12.h" />
+    <ClInclude Include="src\win\DXSampleHelper.h" />
+    <ClInclude Include="src\win\SecurityAttributes.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
@@ -255,10 +259,6 @@
   <ItemGroup>
     <None Include="bin\win64\Release\config.json" />
     <None Include="scenes\template.usda" />
-    <None Include="src\dx12\hlsl\helloshaders.hlsl">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <FileType>Document</FileType>
-    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{997E0757-EA74-4A4E-A0FC-47D8C8831A15}</ProjectGuid>

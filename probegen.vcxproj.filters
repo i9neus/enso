@@ -1,12 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\dx12\D3DContainer.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\SecurityAttributes.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
     <ClCompile Include="src\generic\StringUtils.cpp">
       <Filter>generic</Filter>
     </ClCompile>
@@ -46,53 +40,14 @@
     <ClCompile Include="src\manager\RenderManager.cpp">
       <Filter>manager</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\IMGUIContainer.cpp">
-      <Filter>dx12\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIShelfFactory.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
     <ClCompile Include="src\io\ImageIO.cpp">
       <Filter>io</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\permutor\BakePermutor.cpp">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\permutor\RenderObjectStateMap.cpp">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\permutor\IMGUIStateManager.cpp">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUICameraShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIFilterShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUILightShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUITracableShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\BulkUSDProcessor.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp">
       <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\IMGUIMemoryMonitor.cpp">
-      <Filter>dx12\imgui</Filter>
     </ClCompile>
     <ClCompile Include="src\generic\debug\Backtrace.cpp">
       <Filter>generic\debug</Filter>
@@ -109,18 +64,6 @@
     <ClCompile Include="src\onnx\OnnxModel.cpp">
       <Filter>onnx</Filter>
     </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.cpp">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.cpp">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.cpp">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClCompile>
-    <ClCompile Include="src\dx12\imgui\shelves\IMGUIMLShelves.cpp">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClCompile>
     <ClCompile Include="src\manager\2DGIManager.cpp">
       <Filter>manager</Filter>
     </ClCompile>
@@ -136,23 +79,71 @@
     <ClCompile Include="src\win\Win32Application.cpp">
       <Filter>win</Filter>
     </ClCompile>
+    <ClCompile Include="src\imgui\tools\MemoryMonitor.cpp">
+      <Filter>imgui\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="src\win\D3DContainer.cpp">
+      <Filter>win</Filter>
+    </ClCompile>
+    <ClCompile Include="src\win\SecurityAttributes.cpp">
+      <Filter>win</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\DataTable.cpp">
+      <Filter>imgui\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\ListBox.cpp">
+      <Filter>imgui\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\Widget.cpp">
+      <Filter>imgui\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\ProbegenUI.cpp">
+      <Filter>imgui\components\probegen</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\CameraShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\FilterShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\LightShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MLShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\ComponentInterface.cpp">
+      <Filter>imgui\components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\ComponentManager.cpp">
+      <Filter>imgui\components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\dx12\d3dx12.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\DXSampleHelper.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\D3DWindowInterface.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\D3DContainer.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\SecurityAttributes.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
       <Filter>generic</Filter>
     </ClInclude>
@@ -426,15 +417,6 @@
     <ClInclude Include="src\kernels\math\CudaColourUtils.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIAbstractShelf.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\IMGUIContainer.h">
-      <Filter>dx12\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIShelfFactory.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh">
       <Filter>kernels\math</Filter>
     </ClInclude>
@@ -444,15 +426,6 @@
     <ClInclude Include="src\kernels\lights\CudaDistantLight.cuh">
       <Filter>kernels\lights</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\permutor\BakePermutor.h">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\permutor\RenderObjectStateMap.h">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\permutor\IMGUIStateManager.h">
-      <Filter>dx12\imgui\permutor</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\tracables\CudaBox.cuh">
       <Filter>kernels\tracables</Filter>
     </ClInclude>
@@ -461,27 +434,6 @@
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh">
       <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUICameraShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIFilterShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIIntegratorShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUILightShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMaterialShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUITracableShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIBxDFShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh">
       <Filter>kernels\lightprobes</Filter>
@@ -506,9 +458,6 @@
     </ClInclude>
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh">
       <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\IMGUIMemoryMonitor.h">
-      <Filter>dx12\imgui</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\debug\Backtrace.h">
       <Filter>generic\debug</Filter>
@@ -540,21 +489,6 @@
     <ClInclude Include="src\kernels\math\mat\CudaMat2.cuh">
       <Filter>kernels\math\mat</Filter>
     </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIDataTable.h">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIListBox.h">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIUtils.h">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\widgets\IMGUIWidget.h">
-      <Filter>dx12\imgui\shelves\widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="src\dx12\imgui\shelves\IMGUIMLShelves.h">
-      <Filter>dx12\imgui\shelves</Filter>
-    </ClInclude>
     <ClInclude Include="src\manager\2DGIManager.h">
       <Filter>manager</Filter>
     </ClInclude>
@@ -570,19 +504,91 @@
     <ClInclude Include="src\win\Win32Application.h">
       <Filter>win</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgui\tools\MemoryMonitor.h">
+      <Filter>imgui\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\D3DContainer.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\D3DWindowInterface.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\d3dx12.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\DXSampleHelper.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\SecurityAttributes.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\DataTable.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\ListBox.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\Shelf.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\Widget.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\WidgetUtils.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\ProbegenUI.h">
+      <Filter>imgui\components\probegen</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h">
+      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\CameraShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\FilterShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\LightShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MLShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
+      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\ComponentInterface.h">
+      <Filter>imgui\components</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\ComponentManager.h">
+      <Filter>imgui\components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="dx12">
-      <UniqueIdentifier>{8863e2e8-e3e5-49f3-8cd9-fc79fcfef590}</UniqueIdentifier>
-    </Filter>
     <Filter Include="win">
       <UniqueIdentifier>{d46ee08f-5440-4118-b4f2-a715b7332aa1}</UniqueIdentifier>
     </Filter>
     <Filter Include="kernels">
       <UniqueIdentifier>{40d7abd6-ab81-4cd5-b3b8-3d3dc012ed71}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dx12\hlsl">
-      <UniqueIdentifier>{047e351b-1ef7-4541-aefa-5c78b7bb8897}</UniqueIdentifier>
     </Filter>
     <Filter Include="kernels\math">
       <UniqueIdentifier>{683b4a22-8741-469d-bda7-497068883385}</UniqueIdentifier>
@@ -629,9 +635,6 @@
     <Filter Include="scenes">
       <UniqueIdentifier>{cf54c47d-ed90-4617-afcb-f24ce6e443c6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dx12\imgui">
-      <UniqueIdentifier>{11088863-1c49-4f1c-b4c3-3fa6da7a1c0f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="kernels\cameras">
       <UniqueIdentifier>{16ef40bb-a36c-4763-b920-715dbd8179f8}</UniqueIdentifier>
     </Filter>
@@ -640,12 +643,6 @@
     </Filter>
     <Filter Include="manager">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dx12\imgui\shelves">
-      <UniqueIdentifier>{6761ba89-09d2-4b5d-9c9a-7041f3ab478c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dx12\imgui\permutor">
-      <UniqueIdentifier>{13417f0c-5c9a-4651-bbf2-9a809a08ebdf}</UniqueIdentifier>
     </Filter>
     <Filter Include="kernels\lightprobes">
       <UniqueIdentifier>{c945e127-d6a1-463c-81bb-c8b8ce3907bf}</UniqueIdentifier>
@@ -668,8 +665,26 @@
     <Filter Include="tests">
       <UniqueIdentifier>{83c200b9-de7f-4867-9f6d-174c22f80d32}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dx12\imgui\shelves\widgets">
-      <UniqueIdentifier>{c2279a7e-784c-4345-bba7-80bb9d75e2f0}</UniqueIdentifier>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{6cc79c4f-3a02-4ef2-bb87-e5a5089b7daa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\tools">
+      <UniqueIdentifier>{ee32136f-d601-498f-a1ee-740ac7da6b61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\elements">
+      <UniqueIdentifier>{d8fcd618-2b76-456c-8b37-32ef130d03bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\components">
+      <UniqueIdentifier>{27bf64f1-c8fa-4f31-886e-4ba1026b205c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\components\probegen">
+      <UniqueIdentifier>{9958774c-bffd-4a7d-8f53-b89d28da6515}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\components\probegen\sceneobjects">
+      <UniqueIdentifier>{a09813c1-bfeb-42d0-9078-fbb4aba47487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui\components\probegen\bakepermutor">
+      <UniqueIdentifier>{40fa271c-e671-4f9e-af74-a4fc8ea5c32a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -799,9 +814,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="src\dx12\hlsl\helloshaders.hlsl">
-      <Filter>dx12\hlsl</Filter>
-    </None>
     <None Include="bin\win64\Release\config.json">
       <Filter>scenes</Filter>
     </None>
