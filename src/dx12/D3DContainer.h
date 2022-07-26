@@ -55,9 +55,9 @@ static const char* shaderstrs =
 class D3DContainer : public D3DWindowInterface
 {
 public:
-	D3DContainer(UINT width, UINT height, std::string name);
+	D3DContainer(std::string name);
 
-	virtual void OnInit(HWND hWnd) override final;
+	virtual void OnCreate(HWND hWnd) override final;
 	virtual void OnRender() override final;
 	virtual void OnDestroy() override final;
 	virtual void OnUpdate() override final;
@@ -81,71 +81,64 @@ private:
 	void CreateSynchronisationObjects();
 	void DestroySynchronisationObjects();
 
-	// In this sample we overload the meaning of FrameCount to mean both the maximum
-	// number of frames that will be queued to the GPU at a time, as well as the number
-	// of back buffers in the DXGI swap chain. For the majority of applications, this
-	// is convenient and works well. However, there will be certain cases where an
-	// application may want to queue up more frames than there are back buffers
-	// available.
-	// It should be noted that excessive buffering of frames dependent on user input
-	// may result in noticeable latency in your app.
-	static const UINT FrameCount = 2;
-	static const UINT TextureWidth = 2048;
-	static const UINT TextureHeight = 1024;
-	static const UINT TexturePixelSize = 16;    // The number of bytes used to represent a pixel in the texture.
-	std::string shadersSrc = shaderstrs;
+	void UpdateAssetDimensions();
 
-	// Vertex Buffer dimension
-	unsigned int vertBufHeight, vertBufWidth;
+	static const UINT				kFrameCount = 2;
+	static const UINT				kTexturePixelSize = 16;    // The number of bytes used to represent a pixel in the texture.
+	std::string						shadersSrc = shaderstrs;
 
 	// Pipeline objects.
-	D3D12_VIEWPORT m_viewport;
-	ComPtr<IDXGIFactory4> m_factory;
-	ComPtr<IDXGISwapChain3> m_swapChain;
-	ComPtr<ID3D12Device> m_device;
-	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-	ComPtr<ID3D12CommandAllocator> m_commandAllocators[FrameCount];
-	ComPtr<ID3D12CommandQueue>   m_commandQueue;
-	ComPtr<ID3D12RootSignature>  m_rootSignature;
-	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
-	ComPtr<ID3D12PipelineState>  m_pipelineState;
-	ComPtr<ID3D12PipelineState>  m_trianglePipelineState;
+	D3D12_VIEWPORT					m_viewport;
+	ComPtr<IDXGIFactory4>			m_factory;
+	ComPtr<IDXGISwapChain3>			m_swapChain;
+	ComPtr<ID3D12Device>			m_device;
+	ComPtr<ID3D12Resource>			m_renderTargets[kFrameCount];
+	ComPtr<ID3D12CommandAllocator>	m_commandAllocators[kFrameCount];
+	ComPtr<ID3D12CommandQueue>		m_commandQueue;
+	ComPtr<ID3D12RootSignature>		m_rootSignature;
+	ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;
+	ComPtr<ID3D12DescriptorHeap>	m_srvHeap;
+	ComPtr<ID3D12PipelineState>		m_pipelineState;
+	ComPtr<ID3D12PipelineState>		m_trianglePipelineState;
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
-	CD3DX12_RECT m_scissorRect;
-	UINT m_rtvDescriptorSize;
-	LUID						 m_dx12deviceluid;
+	CD3DX12_RECT					m_scissorRect;
+	UINT							m_rtvDescriptorSize;
+	LUID							m_dx12deviceluid;
 
 	// App resources.
-	ComPtr<ID3D12Resource> m_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+	ComPtr<ID3D12Resource>			m_vertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW		m_vertexBufferView;
 
 	// App resources.
-	ComPtr<ID3D12Resource> m_triangleVertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_triangleVertexBufferView;
-	ComPtr<ID3D12Resource> m_texture;
+	ComPtr<ID3D12Resource>			m_triangleVertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW		m_triangleVertexBufferView;
+	ComPtr<ID3D12Resource>			m_texture;
 
 	// Synchronization objects.
-	UINT m_frameIndex;
-	HANDLE m_fenceEvent;
-	ComPtr<ID3D12Fence> m_fence;
-	UINT64 m_fenceValues[FrameCount];
+	UINT							m_frameIndex;
+	HANDLE							m_fenceEvent;
+	ComPtr<ID3D12Fence>				m_fence;
+	UINT64							m_fenceValues[kFrameCount];
 
-	RenderManager                m_cudaRenderer;
-	IMGUIContainer				 m_imgui;
-	HWND						 m_hWnd;
+	RenderManager					m_cudaRenderer;
+	IMGUIContainer					m_imgui;
+	HWND							m_hWnd;
 
-	void LoadPipeline();
-	void InitCuda();
-	void LoadAssets();
-	void PopulateCommandList();
-	void MoveToNextFrame();
-	void WaitForGpu();
-	std::vector<float> GenerateTextureData();
-	void CreateRootSignature();
-	void CreateViewportQuad();
-	void CreateViewportTexture();
-	void OnRenderGUI();
+	UINT							m_quadTexWidth;
+	UINT							m_quadTexHeight;
 
-	void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
+private:
+	void							CreatePipeline();
+	void							InitCuda();
+	void							LoadAssets();
+	void							PopulateCommandList();
+	void							MoveToNextFrame();
+	void							WaitForGpu();
+	std::vector<float>				GenerateTextureData();
+	void							CreateRootSignature();
+	void							CreateViewportQuad();
+	void							CreateViewportTexture();
+	void							OnRenderGUI();
+
+	void							GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
 };

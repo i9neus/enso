@@ -42,11 +42,10 @@ class DX12CudaSample;
 class DXSample;
 class D3DWindowInterface;
 
-template<typename T>
 class Win32Application
 {
 public:
-	static int Run(T* pSample, HINSTANCE hInstance, int nCmdShow);
+	static int Run(D3DWindowInterface& pSample, HINSTANCE hInstance, int nCmdShow);
     static HWND& GetHwnd()
     {
         static HWND hwnd = nullptr;
@@ -59,5 +58,3 @@ protected:
     static void DestroyIMGUI();
 
 };
-
-template class Win32Application<D3DWindowInterface>;

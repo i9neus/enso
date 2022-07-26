@@ -9,30 +9,17 @@
 *
 */
 
-/*Includes code from DirectX-Graphics-Samples/Samples/Desktop/D3D12HelloWorld/src/HelloTexture,
-  which is licensed as follows:
+#include "Win32Application.h"
 
-The MIT License (MIT)
-    Copyright (c) 2015 Microsoft
+#include "generic/StdIncludes.h"
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+#include "dx12/D3DContainer.h"
+#include "Win32Application.h"
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-*/
+#include "generic/StringUtils.h"
+#include "generic/JsonUtils.h"
+#include "generic/GlobalStateAuthority.h"
+#include "generic/debug/ProcessMemoryMonitor.h"
 
 #include <windows.h>
 
@@ -50,8 +37,7 @@ The MIT License (MIT)
 
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
-template<typename T>
-void Win32Application<T>::InitialiseIMGUI(HWND hWnd)
+void Win32Application::InitialiseIMGUI(HWND hWnd)
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -68,15 +54,13 @@ void Win32Application<T>::InitialiseIMGUI(HWND hWnd)
 	ImGui::ImplWin32_Init(hWnd);
 }
 
-template<typename T>
-void Win32Application<T>::DestroyIMGUI()
+void Win32Application::DestroyIMGUI()
 {
 	ImGui::ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 }
 
-template<typename T>
-int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
+int Win32Application::Run(D3DWindowInterface& d3dInterface, HINSTANCE hInstance, int nCmdShow)
 {
 	// Parse the command line parameters
 	/*int argc;
@@ -94,14 +78,17 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 	windowClass.lpszClassName = "DX12CudaSampleClass";
 	RegisterClassEx(&windowClass);
 
-	RECT windowRect = { 0, 0, static_cast<LONG>(pSample->GetClientWidth()), static_cast<LONG>(pSample->GetClientHeight()) };
+	constexpr LONG kStartupWidth = 1920;
+	constexpr LONG kStartupHeight = 1080;
+
+	RECT windowRect = { 0, 0, kStartupWidth, kStartupHeight };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
 	// Create the window and store a handle to it.
 	GetHwnd() = CreateWindow(
 		windowClass.lpszClassName,
 		"",
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPEDWINDOW | WS_MAXIMIZE,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		windowRect.right - windowRect.left,
@@ -109,14 +96,14 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 		nullptr,		// We have no parent window.
 		nullptr,		// We aren't using menus.
 		hInstance,
-		pSample);
+		&d3dInterface);
 
 	InitialiseIMGUI(GetHwnd());
 
-	// Initialize the sample. OnInit is defined in each child-implementation of DXSample.
-	pSample->OnInit(GetHwnd());
-
 	ShowWindow(GetHwnd(), nCmdShow);
+
+	// Initialize the sample. OnInit is defined in each child-implementation of DXSample.
+	d3dInterface.OnCreate(GetHwnd());
 
 	// Main sample loop.
 	MSG msg = {};
@@ -130,7 +117,7 @@ int Win32Application<T>::Run(T* pSample, HINSTANCE hInstance, int nCmdShow)
 		}
 	}
 
-	pSample->OnDestroy();
+	d3dInterface.OnDestroy();
 
 	// Return this part of the WM_QUIT message to Windows.
 	return static_cast<char>(msg.wParam);
@@ -143,14 +130,13 @@ namespace ImGui
 }
 
 // Main message handler for the sample.
-template<typename T>
-LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui::ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) { return 1; }
 
 	try
 	{
-		T* pSample = reinterpret_cast<T*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		D3DContainer* d3dContainer = reinterpret_cast<D3DContainer*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 		switch (message)
 		{
 		case WM_CREATE:
@@ -162,34 +148,34 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 		return 0;
 
 		case WM_KEYDOWN:
-			if (pSample)
+			if (d3dContainer)
 			{
-				pSample->OnKeyDown(static_cast<UINT8>(wParam));
+				d3dContainer->OnKeyDown(static_cast<UINT8>(wParam));
 			}
 			return 0;
 
 		case WM_KEYUP:
-			if (pSample)
+			if (d3dContainer)
 			{
-				pSample->OnKeyUp(static_cast<UINT8>(wParam));
+				d3dContainer->OnKeyUp(static_cast<UINT8>(wParam));
 			}
 			return 0;
 
 		case WM_PAINT:
-			if (pSample)
+			if (d3dContainer)
 			{
 				//Timer frameTimer;
-				pSample->OnUpdate();
-				pSample->OnRender();
+				d3dContainer->OnUpdate();
+				d3dContainer->OnRender();
 
 				//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
 			}
 			return 0;
 
 		case WM_SIZE:
-			if (pSample)
+			if (d3dContainer)
 			{
-				pSample->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
+				d3dContainer->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
 			}
 			return 0;
 
@@ -214,4 +200,44 @@ LRESULT CALLBACK Win32Application<T>::WindowProc(HWND hWnd, UINT message, WPARAM
 
 	// Handle any messages the switch statement didn't.
 	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+
+void InitialiseGlobalObjects()
+{
+	// Global state authority holds config data that all objects may occasionally access but which is 
+	// too cumbersome to pass in via contexts.
+	GlobalStateAuthority::Get();
+
+	// Platform-specific code which monitors the size and contents of memory at the process level. 
+	ProcessMemoryMonitor::Get();
+}
+
+int main(int argc, char* argv[])
+{
+	// Initialise any objects that have global scope. 
+	InitialiseGlobalObjects();
+
+	//Log::Get().EnableLevel(kLogSystem, true);
+	//Log::Get().EnableLevel(kLogDebug, true);
+	
+	try
+	{			
+		D3DContainer d3dContainer("Probegen");
+		auto rValue = Win32Application::Run(d3dContainer, GetModuleHandle(NULL), SW_SHOW);
+
+		Cuda::AR().VerifyEmpty();
+
+		return rValue;
+	}
+	catch (const std::runtime_error& err)
+	{
+		Log::Error("Runtime error: %s\n", err.what());
+
+		StackBacktrace::Print();
+	}
+	catch (...)
+	{
+		Log::Error("Unhandled error");
+	}
 }

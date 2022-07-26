@@ -3,19 +3,20 @@
 #include "win/Win32Application.h"
 #include "thirdparty/nvidia/helper_cuda.h"
 #include "kernels/CudaCommonIncludes.cuh"
+#include "generic/Math.h"
 
-D3DContainer::D3DContainer(UINT width, UINT height, std::string name) :
-	D3DWindowInterface(width, height, name),
+D3DContainer::D3DContainer(std::string name) :
+	D3DWindowInterface(name),
 	m_frameIndex(0),
-	m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
+	m_scissorRect(0, 0, 0, 0),
 	m_fenceValues{ 0, 0 },
 	m_rtvDescriptorSize(0),
 	m_imgui(m_cudaRenderer)
 {
-	m_viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height) };
+	m_viewport = { 0.0f, 0.0f, 0.0f, 0.0f, };
 }
 
-void D3DContainer::OnInit(HWND hWnd)
+void D3DContainer::OnCreate(HWND hWnd)
 {
 	/*
 		- Create device
@@ -24,16 +25,37 @@ void D3DContainer::OnInit(HWND hWnd)
 	
 	m_hWnd = hWnd;
 
+	UpdateAssetDimensions();
 
-	LoadPipeline();
+	// Set up the D3D pipeline
+	CreatePipeline();
 
+	// Load the renderer
 	m_cudaRenderer.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-
 	m_cudaRenderer.LoadDefaultScene();
+
+	// Build the GUI interface
 	m_imgui.Build(m_hWnd);
 }
 
 void D3DContainer::OnUpdate() {}
+
+void D3DContainer::UpdateAssetDimensions()
+{
+	// Update the window dimensions
+	RECT clientRect;
+	GetClientRect(m_hWnd, &clientRect);
+	m_clientWidth = clientRect.right;
+	m_clientHeight = clientRect.bottom;
+	m_viewport = D3D12_VIEWPORT{ 0.0f, 0.0f, float(m_clientWidth), float(m_clientHeight) };
+	m_scissorRect = CD3DX12_RECT(0, 0, LONG(m_clientWidth), LONG(m_clientHeight));
+
+	// Calcualate nearest power-of-two values for the texture
+	m_quadTexWidth = ::math::max(128u, ::math::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientWidth))))));
+	m_quadTexHeight = ::math::max(128u, ::math::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientHeight))))));
+
+	Log::System("D3D quad texture: %i x %i", m_quadTexWidth, m_quadTexHeight);
+}
 
 void D3DContainer::CreateDevice()
 {
@@ -81,7 +103,7 @@ void D3DContainer::CreateDevice()
 	{
 		// Describe and create a render target view (RTV) descriptor heap.
 		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-		rtvHeapDesc.NumDescriptors = FrameCount;
+		rtvHeapDesc.NumDescriptors = kFrameCount;
 		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
@@ -99,11 +121,11 @@ void D3DContainer::CreateDevice()
 	// Create the command list.
 	{
 		// Create command allocator for each frame.
-		for (UINT n = 0; n < FrameCount; n++)
+		for (UINT n = 0; n < kFrameCount; n++)
 		{
 			ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
 		}
-		
+
 		ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 	}
 }
@@ -115,7 +137,7 @@ void D3DContainer::CreateRenderTargets()
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 
 		// Create a RTV and a command allocator for each frame.
-		for (UINT n = 0; n < FrameCount; n++)
+		for (UINT n = 0; n < kFrameCount; n++)
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
@@ -128,7 +150,7 @@ void D3DContainer::CreateSwapChain()
 {
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameCount;
+	swapChainDesc.BufferCount = kFrameCount;
 	swapChainDesc.Width = m_clientWidth;
 	swapChainDesc.Height = m_clientHeight;
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -139,7 +161,7 @@ void D3DContainer::CreateSwapChain()
 	ComPtr<IDXGISwapChain1> swapChain;
 	ThrowIfFailed(m_factory->CreateSwapChainForHwnd(
 		m_commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
-		Win32Application<D3DWindowInterface>::GetHwnd(),
+		m_hWnd,
 		&swapChainDesc,
 		nullptr,
 		nullptr,
@@ -147,14 +169,14 @@ void D3DContainer::CreateSwapChain()
 	));
 
 	// This sample does not support fullscreen transitions.
-	ThrowIfFailed(m_factory->MakeWindowAssociation(Win32Application<D3DWindowInterface>::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
+	ThrowIfFailed(m_factory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER));
 
 	ThrowIfFailed(swapChain.As(&m_swapChain));
 	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
 
 // Load the rendering pipeline dependencies.
-void D3DContainer::LoadPipeline()
+void D3DContainer::CreatePipeline()
 {
 	CreateDevice();
 
@@ -213,8 +235,8 @@ void D3DContainer::CreateRootSignature()
 
 void D3DContainer::CreateViewportQuad()
 {
-	float uvX = float(D3DWindowInterface::GetClientWidth()) / float(TextureWidth);
-	float uvY = float(D3DWindowInterface::GetClientHeight()) / float(TextureHeight);
+	float uvX = float(D3DWindowInterface::GetClientWidth()) / float(m_quadTexWidth);
+	float uvY = float(D3DWindowInterface::GetClientHeight()) / float(m_quadTexHeight);
 
 	// Define the geometry for a triangle.
 	VertexUV triangleVertices[] =
@@ -268,8 +290,8 @@ void D3DContainer::CreateViewportTexture()
 		D3D12_RESOURCE_DESC textureDesc = {};
 		textureDesc.MipLevels = 1;
 		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		textureDesc.Width = TextureWidth;
-		textureDesc.Height = TextureHeight;
+		textureDesc.Width = m_quadTexWidth;
+		textureDesc.Height = m_quadTexHeight;
 		textureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 		textureDesc.DepthOrArraySize = 1;
 		textureDesc.SampleDesc.Count = 1;
@@ -301,8 +323,8 @@ void D3DContainer::CreateViewportTexture()
 
 		D3D12_SUBRESOURCE_DATA textureData = {};
 		textureData.pData = &texture[0];
-		textureData.RowPitch = TextureWidth * TexturePixelSize;
-		textureData.SlicePitch = textureData.RowPitch * TextureHeight;*/
+		textureData.RowPitch = m_quadTexWidth * TexturePixelSize;
+		textureData.SlicePitch = textureData.RowPitch * m_quadTexHeight;*/
 
 		// Describe and create a SRV for the texture.
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -315,7 +337,7 @@ void D3DContainer::CreateViewportTexture()
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_cudaRenderer.LinkD3DOutputTexture(m_device, m_texture, TextureWidth, TextureHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
+		m_cudaRenderer.LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
 	}
 }
 

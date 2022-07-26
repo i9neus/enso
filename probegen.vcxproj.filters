@@ -1,12 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\win\Main.cpp">
-      <Filter>win</Filter>
-    </ClCompile>
-    <ClCompile Include="src\win\Win32Application.cpp">
-      <Filter>win</Filter>
-    </ClCompile>
     <ClCompile Include="src\dx12\D3DContainer.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -139,6 +133,9 @@
     <ClCompile Include="src\manager\RenderManagerInterface.cpp">
       <Filter>manager</Filter>
     </ClCompile>
+    <ClCompile Include="src\win\Win32Application.cpp">
+      <Filter>win</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\dx12\d3dx12.h">
@@ -146,9 +143,6 @@
     </ClInclude>
     <ClInclude Include="src\dx12\DXSampleHelper.h">
       <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="src\win\Win32Application.h">
-      <Filter>win</Filter>
     </ClInclude>
     <ClInclude Include="src\dx12\D3DWindowInterface.h">
       <Filter>dx12</Filter>
@@ -572,6 +566,9 @@
     </ClInclude>
     <ClInclude Include="src\manager\RenderManagerInterface.h">
       <Filter>manager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\win\Win32Application.h">
+      <Filter>win</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,15 +5,15 @@
 class D3DWindowInterface
 {
 public:
-	D3DWindowInterface(UINT width, UINT height, std::string name)
+	D3DWindowInterface(std::string name)
 	{
-		m_clientWidth = width;
-		m_clientHeight = height;
+		m_clientWidth = 0;
+		m_clientHeight = 0;
 		m_name = name;
-		m_aspectRatio = float(width) / float(height);
+		m_aspectRatio = 1.0f;
 	}
 
-    virtual void OnInit(HWND hWnd) = 0;
+    virtual void OnCreate(HWND hWnd) = 0;
     virtual void OnUpdate() = 0;
     virtual void OnRender() = 0;
     virtual void OnDestroy() = 0;
@@ -25,7 +25,7 @@ public:
 
 	UINT GetClientWidth() const { return m_clientWidth; }
 	UINT GetClientHeight() const { return m_clientHeight; }
-	const CHAR* GetTitle() const { return "Container"; }
+	const CHAR* GetTitle() const { return "Probegen"; }
 
 protected:
 	UINT		m_clientWidth;
