@@ -109,6 +109,12 @@
     <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp">
       <Filter>imgui\components\probegen\bakepermutor</Filter>
     </ClCompile>
+    <ClCompile Include="src\imgui\ComponentInterface.cpp">
+      <Filter>imgui\components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\ComponentManager.cpp">
+      <Filter>imgui\components</Filter>
+    </ClCompile>
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
     </ClCompile>
@@ -135,12 +141,6 @@
     </ClCompile>
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
-    </ClCompile>
-    <ClCompile Include="src\imgui\ComponentInterface.cpp">
-      <Filter>imgui\components</Filter>
-    </ClCompile>
-    <ClCompile Include="src\imgui\ComponentManager.cpp">
-      <Filter>imgui\components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -549,6 +549,12 @@
     <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h">
       <Filter>imgui\components\probegen\bakepermutor</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgui\ComponentInterface.h">
+      <Filter>imgui\components</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\ComponentManager.h">
+      <Filter>imgui\components</Filter>
+    </ClInclude>
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
     </ClInclude>
@@ -575,12 +581,6 @@
     </ClInclude>
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\ComponentInterface.h">
-      <Filter>imgui\components</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\ComponentManager.h">
-      <Filter>imgui\components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -21,25 +21,59 @@
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\bakepermutor\BakePermutor.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\ProbegenUI.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\CameraShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\FilterShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\LightShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MLShelves.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp" />
-    <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp" />
-    <ClCompile Include="src\imgui\elements\DataTable.cpp" />
-    <ClCompile Include="src\imgui\elements\ListBox.cpp" />
-    <ClCompile Include="src\imgui\elements\Widget.cpp" />
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\ProbegenUI.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\CameraShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\FilterShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\LightShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\MLShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\DataTable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\ListBox.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\Widget.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\imgui\ComponentManager.cpp" />
     <ClCompile Include="src\imgui\ComponentInterface.cpp" />
-    <ClCompile Include="src\imgui\tools\MemoryMonitor.cpp" />
+    <ClCompile Include="src\imgui\tools\MemoryMonitor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\io\ImageIO.cpp" />
     <ClCompile Include="src\io\USDIO.cpp" />
     <ClCompile Include="src\manager\2DGIManager.cpp" />
@@ -76,27 +110,65 @@
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
-    <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h" />
-    <ClInclude Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h" />
-    <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h" />
-    <ClInclude Include="src\imgui\components\probegen\ProbegenUI.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\CameraShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\FilterShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\LightShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MLShelves.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.h" />
-    <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h" />
-    <ClInclude Include="src\imgui\elements\DataTable.h" />
-    <ClInclude Include="src\imgui\elements\ListBox.h" />
-    <ClInclude Include="src\imgui\elements\Shelf.h" />
-    <ClInclude Include="src\imgui\elements\Widget.h" />
-    <ClInclude Include="src\imgui\elements\WidgetUtils.h" />
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\ProbegenUI.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\CameraShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\FilterShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\IntegratorShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\LightShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MaterialShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\MLShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\ShelfFactory.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\DataTable.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\ListBox.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\Shelf.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\Widget.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\WidgetUtils.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="src\imgui\ComponentManager.h" />
     <ClInclude Include="src\imgui\ComponentInterface.h" />
-    <ClInclude Include="src\imgui\tools\MemoryMonitor.h" />
+    <ClInclude Include="src\imgui\tools\MemoryMonitor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />

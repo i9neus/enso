@@ -36,7 +36,7 @@ The MIT License (MIT)
 
 #pragma once
 
-#include "dx12/D3DWindowInterface.h"
+#include "D3DWindowInterface.h"
 
 class DX12CudaSample;
 class DXSample;

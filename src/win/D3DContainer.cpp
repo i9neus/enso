@@ -10,8 +10,7 @@ D3DContainer::D3DContainer(std::string name) :
 	m_frameIndex(0),
 	m_scissorRect(0, 0, 0, 0),
 	m_fenceValues{ 0, 0 },
-	m_rtvDescriptorSize(0),
-	m_imgui(m_cudaRenderer)
+	m_rtvDescriptorSize(0)
 {
 	m_viewport = { 0.0f, 0.0f, 0.0f, 0.0f, };
 }
@@ -35,7 +34,7 @@ void D3DContainer::OnCreate(HWND hWnd)
 	m_cudaRenderer.LoadDefaultScene();
 
 	// Build the GUI interface
-	m_imgui.Build(m_hWnd);
+	m_ui.Build(m_hWnd);
 }
 
 void D3DContainer::OnUpdate() {}
@@ -455,7 +454,7 @@ void D3DContainer::CreateAssets()
 
 	// Setup IMGUI objects
 	{
-		m_imgui.Initialise(m_rootSignature, m_device, 2);
+		m_ui.Initialise(m_rootSignature, m_device, 2);
 	}
 
 	CreateViewportQuad();
@@ -513,7 +512,7 @@ void D3DContainer::PopulateCommandList()
 
 	///////////////////////////////////
 
-	m_imgui.PopulateCommandList(m_commandList, m_frameIndex);
+	m_ui.PopulateCommandList(m_commandList, m_frameIndex);
 
 	///////////////////////////////////
 
@@ -540,7 +539,7 @@ void D3DContainer::OnRender()
 	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
 
 	// After everything's rendered, dispatch any commands that IMGUI may have emitted
-	m_imgui.DispatchRenderCommands();
+	//m_ui.DispatchRenderCommands();
 
 	m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
@@ -569,7 +568,7 @@ void D3DContainer::OnDestroy()
 	WaitForGpu();
 
 	m_cudaRenderer.Destroy();
-	m_imgui.Destroy();
+	m_ui.Destroy();
 
 	CloseHandle(m_fenceEvent);
 }

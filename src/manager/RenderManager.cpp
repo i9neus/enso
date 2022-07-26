@@ -1,7 +1,7 @@
 #include "RenderManager.h"
 
-#include "dx12/SecurityAttributes.h"
-#include "dx12/DXSampleHelper.h"
+#include "win/SecurityAttributes.h"
+#include "win/DXSampleHelper.h"
 #include "thirdparty/nvidia/helper_cuda.h"
 
 #include "kernels/CudaTests.cuh"

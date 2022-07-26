@@ -2,11 +2,12 @@
 
 #include "D3DWindowInterface.h"
 #include "DXSampleHelper.h"
-#include "imgui/IMGUIContainer.h"
+#include "imgui/ComponentManager.h"
 
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
+#include "d3dx12.h"
 
 #include "manager/RenderManager.h"
 
@@ -121,7 +122,7 @@ private:
 	UINT64							m_fenceValues[kFrameCount];
 
 	RenderManager					m_cudaRenderer;
-	IMGUIContainer					m_imgui;
+	Gui::ComponentManager			m_ui;
 	HWND							m_hWnd;
 
 	UINT							m_quadTexWidth;

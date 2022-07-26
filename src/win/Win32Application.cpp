@@ -13,7 +13,7 @@
 
 #include "generic/StdIncludes.h"
 
-#include "dx12/D3DContainer.h"
+#include "D3DContainer.h"
 #include "Win32Application.h"
 
 #include "generic/StringUtils.h"
