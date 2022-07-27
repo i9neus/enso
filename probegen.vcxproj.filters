@@ -130,16 +130,16 @@
     <ClCompile Include="src\renderers\CudaObjectManager.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\ShaderSandboxManager.cpp">
-      <Filter>renderers</Filter>
-    </ClCompile>
     <ClCompile Include="src\renderers\RendererInterface.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\2DGI.cpp">
+    <ClCompile Include="src\renderers\Probegen.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\Probegen.cpp">
+    <ClCompile Include="src\renderers\RendererManager.cpp">
+      <Filter>renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\GI2D.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
   </ItemGroup>
@@ -570,16 +570,16 @@
     <ClInclude Include="src\renderers\CudaObjectManager.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderers\ShaderSandboxManager.h">
-      <Filter>renderers</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderers\RendererInterface.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderers\2DGI.h">
+    <ClInclude Include="src\renderers\Probegen.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderers\Probegen.h">
+    <ClInclude Include="src\renderers\RendererManager.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\GI2D.h">
       <Filter>renderers</Filter>
     </ClInclude>
   </ItemGroup>

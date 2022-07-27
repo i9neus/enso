@@ -30,8 +30,8 @@ void D3DContainer::OnCreate(HWND hWnd)
 	CreatePipeline();
 
 	// Load the renderer
-	m_cudaRenderer.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-	m_cudaRenderer.LoadDefaultScene();
+	m_rendererManager.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+	//m_cudaRenderer.LoadDefaultScene();
 
 	// Build the GUI interface
 	m_ui.Build(m_hWnd);
@@ -336,7 +336,7 @@ void D3DContainer::CreateViewportTexture()
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_cudaRenderer.LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
+		m_rendererManager.LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
 	}
 }
 
@@ -353,7 +353,7 @@ void D3DContainer::CreateSynchronisationObjects()
 			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 		}
 
-		m_cudaRenderer.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
+		m_rendererManager.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
 
 		m_fenceValues[m_frameIndex]++;
 
@@ -541,7 +541,7 @@ void D3DContainer::OnRender()
 	// After everything's rendered, dispatch any commands that IMGUI may have emitted
 	//m_ui.DispatchRenderCommands();
 
-	m_cudaRenderer.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
+	m_rendererManager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 	// Update the frame index.
@@ -567,7 +567,7 @@ void D3DContainer::OnDestroy()
 	// cleaned up by the destructor.
 	WaitForGpu();
 
-	m_cudaRenderer.Destroy();
+	m_rendererManager.Destroy();
 	m_ui.Destroy();
 
 	CloseHandle(m_fenceEvent);

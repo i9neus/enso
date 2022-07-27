@@ -1,22 +1,52 @@
 #pragma once
 
 #include "generic/StdIncludes.h"
-#include "generic/D3DIncludes.h"
-#include "generic/HighResolutionTimer.h"
-#include "generic/Math.h"
-#include <cuda_runtime.h>
-#include "generic/JsonUtils.h"
-#include <deque>
+#include "CudaObjectManager.h"
 
-class RenderManagerInterface
+enum RenderManagerRenderState : int
 {
-public:
+    kRenderManagerUndefined,
+    kRenderManagerIdle,
+    kRenderManagerRun,
+    kRenderManagerHalt,
+    kRenderManagerError
+};
+
+class RendererInterface
+{
+public:    
     virtual void Initialise() = 0;
+    virtual void Start();
+    virtual void Stop();
     virtual void Destroy() = 0;
 
     virtual void OnResizeClient() = 0;
+   
+    virtual const std::string& GetRendererName() const = 0;
+    virtual const std::string& GetRendererDescription() const { return ""; }
+
+    void SetCudaObjects(Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
 
 protected:
-    RenderManagerInterface();
-    virtual ~RenderManagerInterface();
+    RendererInterface();
+    virtual ~RendererInterface();
+
+    virtual void PreRender() {};
+    virtual void Render() {};
+    virtual void PostRender() {};
+
+private:
+    void RunThread();
+
+protected:
+    Cuda::AssetHandle<Cuda::Host::ImageRGBA>        m_compositeImage;
+    cudaStream_t                                    m_renderStream;
+
+    std::atomic<int>	                            m_threadSignal;
+    std::thread			                            m_managerThread;
+
+    using                                           TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    TimePoint					                    m_renderStartTime;
+    std::vector<float>		                        m_frameTimes;
+    float                                           m_meanFrameTime;
 };

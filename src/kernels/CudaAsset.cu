@@ -95,7 +95,7 @@ namespace Cuda
         {
             if (asset.first == 1)
             {
-                Log::Debug("- '%s' with %i references\n", asset.second, asset.first);
+                Log::Warning("- '%s' with %i references\n", asset.second, asset.first);
             }
             else
             {

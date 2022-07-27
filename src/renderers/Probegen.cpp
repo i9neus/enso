@@ -1,4 +1,4 @@
-#include "RenderManager.h"
+#include "Probegen.h"
 
 #include "win/SecurityAttributes.h"
 #include "win/DXSampleHelper.h"
@@ -18,37 +18,38 @@
 #include "generic/GlobalStateAuthority.h"
 #include "generic/debug/ProcessMemoryMonitor.h"
 
-RenderManager::RenderManager() : 
+Probegen::Probegen() :
 	m_threadSignal(kRenderManagerIdle),
 	m_frameTimes(20)
 {
 	// Register the list of jobs
-	RegisterJob(m_bake.job, "bake", &RenderManager::OnBakeDispatch, &RenderManager::OnBakePoll);
-	RegisterJob(m_exportViewportJob, "exportViewport", &RenderManager::OnDefaultDispatch, &RenderManager::OnDefaultPoll);
-	RegisterJob(m_exportGridsJob, "exportGrids", &RenderManager::OnExportGridsDispatch, &RenderManager::OnDefaultPoll);
-	RegisterJob(m_renderStatsJob, "getRenderStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherRenderStatsPoll);
-	RegisterJob(m_memoryStatsJob, "getMemoryStats", &RenderManager::OnDefaultDispatch, &RenderManager::OnGatherMemoryStatsPoll);
+	RegisterJob(m_bake.job, "bake", &Probegen::OnBakeDispatch, &Probegen::OnBakePoll);
+	RegisterJob(m_exportViewportJob, "exportViewport", &Probegen::OnDefaultDispatch, &Probegen::OnDefaultPoll);
+	RegisterJob(m_exportGridsJob, "exportGrids", &Probegen::OnExportGridsDispatch, &Probegen::OnDefaultPoll);
+	RegisterJob(m_renderStatsJob, "getRenderStats", &Probegen::OnDefaultDispatch, &Probegen::OnGatherRenderStatsPoll);
+	RegisterJob(m_memoryStatsJob, "getMemoryStats", &Probegen::OnDefaultDispatch, &Probegen::OnGatherMemoryStatsPoll);
 
 	// Register the list of render commands
-	m_commandMap.emplace(kRenderManagerClearStates, std::bind(&RenderManager::ClearAllRenderStates, this));
-	m_commandMap.emplace(kRenderMangerUpdateParams, std::bind(&RenderManager::PatchSceneObjects, this));
+	m_commandMap.emplace(kRenderManagerClearStates, std::bind(&Probegen::ClearAllRenderStates, this));
+	m_commandMap.emplace(kRenderMangerUpdateParams, std::bind(&Probegen::PatchSceneObjects, this));
 }
 
-void RenderManager::Initialise()
+/*void Probegen::Initialise()
+{
+
+}*/
+
+void Probegen::OnResizeClient()
 {
 
 }
-void RenderManager::OnResizeClient()
-{
 
-}
-
-void RenderManager::LoadDefaultScene()
+void Probegen::LoadDefaultScene()
 {
 	LoadScene(GSA().GetDefaultScenePath());
 }
 
-void RenderManager::LoadScene(const std::string filePath)
+void Probegen::LoadScene(const std::string filePath)
 {
 	Log::Write("Loading scene file '%s'...\n", filePath);
 	try
@@ -60,18 +61,18 @@ void RenderManager::LoadScene(const std::string filePath)
 		Log::Error("Unable to load scene JSON: %s", err.what());
 		return;
 	}
-	
+
 	// Unload the old scene
-	UnloadScene();	
+	UnloadScene();
 
 	// Load and build the new scene
 	Build(m_sceneJson);
 }
 
-void RenderManager::UnloadScene(bool report)
+void Probegen::UnloadScene(bool report)
 {
 	if (!m_renderObjects) { return; }
-	
+
 	Log::Indent indent("Unloading scene...");
 	{
 		// Stop the renderer
@@ -82,7 +83,7 @@ void RenderManager::UnloadScene(bool report)
 		m_liveCamera = nullptr;
 		m_lightProbeCamera = nullptr;
 		m_activeCameras.clear();
-		
+
 		if (report)
 		{
 			Log::Indent indent(tfm::format("Destroying %i managed assets:", Cuda::AR().NumAssets()));
@@ -95,7 +96,7 @@ void RenderManager::UnloadScene(bool report)
 
 }
 
-void RenderManager::Build(const Json::Document& sceneJson)
+void Probegen::Build(const Json::Document& sceneJson)
 {
 	Assert(m_threadSignal == kRenderManagerIdle);
 	Assert(!m_renderObjects);
@@ -103,7 +104,7 @@ void RenderManager::Build(const Json::Document& sceneJson)
 	Log::NL();
 	const Log::Snapshot beginState = Log::GetMessageState();
 	{
-		Log::Indent indent("Building render manager...\n");		
+		Log::Indent indent("Building render manager...\n");
 
 		// Create a container for the render objects
 		m_renderObjects = Cuda::CreateAsset<Cuda::RenderObjectContainer>("__root_renderObjectContainer");
@@ -151,12 +152,12 @@ void RenderManager::Build(const Json::Document& sceneJson)
 	StartRenderer();
 }
 
-void RenderManager::StopRenderer()
+void Probegen::StopRenderer()
 {
 	if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun)
 	{
 		Log::Warning("Renderer is not running.");
-		return; 
+		return;
 	}
 
 	Log::Write("Halting renderer...\r");
@@ -166,23 +167,18 @@ void RenderManager::StopRenderer()
 	Log::Write("Done!\n");
 }
 
-void RenderManager::Destroy()
-{	
+void Probegen::Destroy()
+{
 	UnloadScene(true);
-
-	// Destroy assets
-	m_compositeImage.DestroyAsset();
-
-	DestroyCuda();
 }
 
-void RenderManager::EmplaceRenderCommand(const int cmd)
+void Probegen::EmplaceRenderCommand(const int cmd)
 {
 	std::lock_guard<std::mutex> lock(m_commandMutex);
 	m_commandSet.emplace(cmd);
 }
 
-bool RenderManager::OnBakeDispatch(Job& job)
+bool Probegen::OnBakeDispatch(Job& job)
 {
 	std::string action;
 	job.json.GetValue("action", action, Json::kRequiredAssert);
@@ -193,7 +189,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 		job.state = kRenderManagerJobAborting;
 		return true;
 	}
-	
+
 	// Sanity checks
 	AssertMsg(action == "start", "Valid bake actions are 'start' and 'abort'");
 	AssertMsgFmt(job.state == kRenderManagerJobIdle, "The bake job is not idle (code %i). Wait for it to complete or abort it before starting a new one.", job.state.load());
@@ -205,7 +201,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 
 		job.json.GetValue("type", m_bake.type, Json::kRequiredAssert);
 		if (m_bake.type & (kBakeTypeNoisyProbeGrid | kBakeTypeReferenceProbeGrid))
-		{		
+		{
 			job.json.GetValue("isArmed", m_bake.probeGridExportParams.isArmed, Json::kRequiredWarn);
 			job.json.GetValue("minGridValidity", m_bake.probeGridExportParams.minGridValidity, Json::kRequiredWarn);
 			job.json.GetValue("maxGridValidity", m_bake.probeGridExportParams.maxGridValidity, Json::kRequiredWarn);
@@ -214,7 +210,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 			Assert(!m_bake.probeGridExportParams.exportPaths.empty());
 		}
 		else if (m_bake.type == kBakeTypeRender)
-		{			
+		{
 			job.json.GetValue("pngExportPath", m_bake.pngExportPath, Json::kRequiredWarn);
 		}
 	}
@@ -223,7 +219,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 		Log::Error("Error: invalid command parameters: %s", err.what());
 		return false;
 	}
-	
+
 	// Dirty the scene, and mark the command has having started
 	EmplaceRenderCommand(kRenderManagerClearStates);
 
@@ -233,7 +229,7 @@ bool RenderManager::OnBakeDispatch(Job& job)
 	return true;
 }
 
-bool RenderManager::OnBakePoll(Json::Node& outJson, Job& job)
+bool Probegen::OnBakePoll(Json::Node& outJson, Job& job)
 {
 	outJson.AddValue("progress", m_bake.progress);
 	if (m_bake.job.state == kRenderManagerJobCompleted)
@@ -243,13 +239,13 @@ bool RenderManager::OnBakePoll(Json::Node& outJson, Job& job)
 	return true;
 }
 
-bool RenderManager::OnExportGridsDispatch(Job& job)
+bool Probegen::OnExportGridsDispatch(Job& job)
 {
 	job.state = kRenderManagerJobDispatched;
 	return true;
 }
 
-bool RenderManager::OnGatherRenderStatsPoll(Json::Node& outJson, Job& job)
+bool Probegen::OnGatherRenderStatsPoll(Json::Node& outJson, Job& job)
 {
 	if (job.state != kRenderManagerJobCompleted) { return true; }
 
@@ -266,16 +262,16 @@ bool RenderManager::OnGatherRenderStatsPoll(Json::Node& outJson, Job& job)
 	return true;
 }
 
-bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
+bool Probegen::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
 {
 	std::lock_guard<std::mutex> lock(m_jsonOutputMutex);
 	job.state = kRenderManagerJobCompleted;
 
 	// Device memory stats
 	size_t freeBytes, totalBytes;
-	IsOk(cudaMemGetInfo(&freeBytes, &totalBytes));	
+	IsOk(cudaMemGetInfo(&freeBytes, &totalBytes));
 	Json::Node deviceJson = outJson.AddChildObject("device");
-	deviceJson.AddValue("name", std::string(GetCudaDeviceProperties().name));
+	//deviceJson.AddValue("name", std::string(GetCudaDeviceProperties().name));
 	deviceJson.AddValue("freeMB", float(freeBytes) / 1048576.f);
 	deviceJson.AddValue("totalMB", float(totalBytes) / 1048576.f);
 
@@ -304,25 +300,25 @@ bool RenderManager::OnGatherMemoryStatsPoll(Json::Node& outJson, Job& job)
 		objectJson.AddValue("peakMB", float(asset.second.peakBytes) / 1048576.f);
 		objectJson.AddValue("deltaMB", float(asset.second.deltaBytes) / 1048576.f);
 	}
-	
+
 	return true;
 }
 
-bool RenderManager::OnDefaultDispatch(Job& job)
+bool Probegen::OnDefaultDispatch(Job& job)
 {
 	// Default dispatch handler for any job that doesn't have its own custom callback
 	job.state = kRenderManagerJobDispatched;
 	return true;
 }
 
-bool RenderManager::PollRenderState(Json::Document& stateJson)
+bool Probegen::PollRenderState(Json::Document& stateJson)
 {
-	/* 
-		IMPORTANT: This function may be polled rapidly by the UI, so it must remain as lightweight as possible and 
+	/*
+		IMPORTANT: This function may be polled rapidly by the UI, so it must remain as lightweight as possible and
 		only return JSON data where absolutely necessary
 
 		{
-			"renderManager": { 
+			"renderManager": {
 				"frameIdx": 10,
 				...
 			},
@@ -335,7 +331,7 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 		}
 
 	*/
-	
+
 	stateJson.Clear();
 
 	// Add some generic data about the renderer that's exported each time the state is polled
@@ -353,7 +349,7 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 		auto& job = jobObject.second;
 		if (job.state != kRenderManagerJobIdle)
 		{
-			Json::Node statsJson = jobJson.AddChildObject(jobObject.first);			
+			Json::Node statsJson = jobJson.AddChildObject(jobObject.first);
 
 			// If this command has a functor, call it now
 			if (job.onPoll) { job.onPoll(statsJson, job); }
@@ -369,7 +365,7 @@ bool RenderManager::PollRenderState(Json::Document& stateJson)
 	return true;
 }
 
-void RenderManager::Dispatch(const Json::Document& rootJson)
+void Probegen::Dispatch(const Json::Document& rootJson)
 {
 	/*
 		Job dictionary contains patch data for the render objects and command data for the render manager.
@@ -387,7 +383,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 			}
 		}
 	*/
-	
+
 	Assert(rootJson.NumMembers() != 0);
 
 	//Log::Debug(rootJson.Stringify(true));
@@ -398,7 +394,7 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 
 		// Overwrite the command list with the new data
 		m_patchJson = rootJson;
-		
+
 		// Found a scene object parameter parameter patch, so signal that the scene graph is dirty
 		EmplaceRenderCommand(kRenderMangerUpdateParams);
 
@@ -414,9 +410,9 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 			auto commandIt = m_jobMap.find(nodeIt.Name());
 			if (commandIt != m_jobMap.end())
 			{
-				auto& job = commandIt->second;			
+				auto& job = commandIt->second;
 				try
-				{					
+				{
 					// Copy any JSON data that accompanies this command
 					job.json = *nodeIt;
 
@@ -435,11 +431,11 @@ void RenderManager::Dispatch(const Json::Document& rootJson)
 			{
 				Log::Error("Error: '%s' is not a valid render manager command", nodeIt.Name());
 			}
-		}		
+		}
 	}
 }
 
-void RenderManager::Prepare()
+void Probegen::Prepare()
 {
 	m_liveCamera = nullptr;
 	m_lightProbeCamera = nullptr;
@@ -468,12 +464,12 @@ void RenderManager::Prepare()
 	if (!m_lightProbeCamera) { Log::Warning("WARNING: There are no light probe cameras in this scene. Baking is disabled.\n"); }
 }
 
-void RenderManager::StartRenderer()
+void Probegen::StartRenderer()
 {
 	Log::Write("Starting rendering...\b");
 
 	m_threadSignal = kRenderManagerRun;
-	m_managerThread = std::thread(std::bind(&RenderManager::Run, this));
+	m_managerThread = std::thread(std::bind(&Probegen::Run, this));
 
 	m_renderStartTime = std::chrono::high_resolution_clock::now();
 
@@ -482,8 +478,8 @@ void RenderManager::StartRenderer()
 	Log::Success("Okay!");
 }
 
-void RenderManager::ClearAllRenderStates()
-{	
+void Probegen::ClearAllRenderStates()
+{
 	// Clear the render states of all active camera objects
 	for (auto& camera : m_activeCameras) { camera->ClearRenderState(); }
 
@@ -491,7 +487,7 @@ void RenderManager::ClearAllRenderStates()
 	for (auto& object : *m_renderObjects) { object->OnPreRender(); }
 }
 
-void RenderManager::Run()
+void Probegen::Run()
 {
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 
@@ -512,7 +508,7 @@ void RenderManager::Run()
 			Timer timer;
 
 			// Process any commands that are waiting
-			if(!m_commandSet.empty())
+			if (!m_commandSet.empty())
 			{
 				std::lock_guard<std::mutex> lock(m_commandMutex);
 				for (auto cmd : m_commandSet)
@@ -575,7 +571,7 @@ void RenderManager::Run()
 		Log::Error("Runtime error: %s\n", err.what());
 		StackBacktrace::Print();
 
-		m_threadSignal.store(kRenderManagerError);		
+		m_threadSignal.store(kRenderManagerError);
 	}
 	catch (...)
 	{
@@ -589,8 +585,8 @@ void RenderManager::Run()
 	m_threadSignal.store(kRenderManagerIdle);
 }
 
-void RenderManager::GatherRenderObjectStatistics()
-{	
+void Probegen::GatherRenderObjectStatistics()
+{
 	if (m_renderStatsJob.state != kRenderManagerJobDispatched) { return; }
 
 	Json::Document renderObjectJson;
@@ -613,7 +609,7 @@ void RenderManager::GatherRenderObjectStatistics()
 	m_renderStatsJob.state = kRenderManagerJobCompleted;
 }
 
-uint RenderManager::PatchSceneObjects()
+uint Probegen::PatchSceneObjects()
 {
 	std::lock_guard<std::mutex> lock(m_jsonInputMutex);
 
@@ -632,7 +628,7 @@ uint RenderManager::PatchSceneObjects()
 			validPatches++;
 		}
 	}
-	
+
 	if (dirtyFlags != Cuda::kRenderObjectClean)
 	{
 		// Some objects may need to adjust their bindings now that the scene graph has been dirtied
@@ -652,7 +648,7 @@ uint RenderManager::PatchSceneObjects()
 	return dirtyFlags;
 }
 
-void RenderManager::OnBakePostFrame()
+void Probegen::OnBakePostFrame()
 {
 	// If a viewport export has been requested, do so now
 	if (m_exportViewportJob.state == kRenderManagerJobDispatched)

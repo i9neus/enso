@@ -17,6 +17,8 @@ public:
 	~CudaObjectManager();
 
 	void						InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
+	void						DestroyCuda();
+
 	void						LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void						LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, 
 													 const UINT clientWidth, const UINT clientHeight);
@@ -25,7 +27,6 @@ public:
 	void						OnWindowResize(const UINT clientWidth, const UINT clientHeight);
 
 protected:
-	void						DestroyCuda();
 	const cudaDeviceProp&		GetCudaDeviceProperties() const { return m_deviceProp; }
 
 	cudaStream_t									m_D3DStream;

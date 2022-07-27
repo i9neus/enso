@@ -42,12 +42,12 @@ enum RenderManagerCommand : int
 	kRenderMangerUpdateParams
 };
 
-class RenderManager : public RenderManagerInterface, public CudaObjectManager
+class Probegen : public RendererInterface
 {
 public:
-	RenderManager();
+	Probegen();
 
-	virtual void Initialise() override final;
+	//virtual void Initialise() override final;
 	virtual void Destroy() override final;
 
 	virtual void OnResizeClient() override final;
@@ -82,7 +82,7 @@ private:
 
 	HighResolutionTimer		m_renderStatsTimer;
 	Json::Document			m_renderObjectStatsJson;
-	std::vector<float>		m_frameTimes;
+	
 
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 	TimePoint					m_renderStartTime;
@@ -118,8 +118,6 @@ private:
 		std::string													pngExportPath;
 	}
 	m_bake;
-	
-	float														m_meanFrameTime;		
 
 	Cuda::AssetHandle<Cuda::Host::WavefrontTracer>				m_wavefrontTracer;
 	std::vector<Cuda::AssetHandle<Cuda::Host::Camera>>			m_activeCameras;

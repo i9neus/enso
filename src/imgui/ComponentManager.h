@@ -6,7 +6,6 @@
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include "generic/JsonUtils.h"
-#include "manager/RenderManager.h"
 
 //#include "tools/MemoryMonitor.h"
 

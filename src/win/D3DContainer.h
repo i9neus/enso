@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 #include "d3dx12.h"
 
-#include "manager/RenderManager.h"
+#include "renderers/RendererManager.h"
 
 using namespace DirectX;
 namespace DX = DirectX;
@@ -121,7 +121,7 @@ private:
 	ComPtr<ID3D12Fence>				m_fence;
 	UINT64							m_fenceValues[kFrameCount];
 
-	RenderManager					m_cudaRenderer;
+	RendererManager					m_rendererManager;
 	Gui::ComponentManager			m_ui;
 	HWND							m_hWnd;
 
