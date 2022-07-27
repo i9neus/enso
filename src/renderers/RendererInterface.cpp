@@ -2,7 +2,8 @@
 
 #include "RendererInterface.h"
 
-RendererInterface::RendererInterface()
+RendererInterface::RendererInterface() : 
+	m_frameTimes(20)
 {
 
 }
@@ -16,6 +17,13 @@ void RendererInterface::SetCudaObjects(Cuda::AssetHandle<Cuda::Host::ImageRGBA>&
 {
     m_compositeImage = compositeImage;
     m_renderStream = renderStream;
+}
+
+void RendererInterface::Destroy()
+{
+	// Stop and clean up the renderer object
+	Stop();
+	OnDestroy();
 }
 
 void RendererInterface::Start()
@@ -34,24 +42,22 @@ void RendererInterface::Start()
 
 void RendererInterface::Stop()
 { 
-	if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun)
-	{
-		Log::Warning("Renderer %s is not running.", GetRendererName());
-		return;
-	}
+	if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun) { return; }
 
-	Log::Write("Halting %s...\r", GetRendererName());
+	Log::Indent indent(tfm::format("Halting %s...\r", GetRendererName()));
+	
 	m_threadSignal.store(kRenderManagerHalt);
 	m_managerThread.join();
 
-	Log::Write("Done!\n");
+	Log::Success("Successfully halted '%s'!", GetRendererName());
 }
 
 void RendererInterface::RunThread()
 {
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 
-	PreRender();
+	// Notify the inheriting class that the render is about to start
+	OnPreRender();
 
 	int frameIdx = 0;
 	try
@@ -60,7 +66,8 @@ void RendererInterface::RunThread()
 		{
 			Timer timer;
 
-			Render();
+			// Notify that a render "tick" has begun
+			OnRender();
 
 			// Compute some stats on the framerate
 			frameIdx++;
@@ -83,8 +90,9 @@ void RendererInterface::RunThread()
 		Log::Error("Unhandled error");
 		StackBacktrace::Print();
 	}
-
-	PostRender();
+	
+	// Notify that the render has completed
+	OnPostRender();
 
 	// Signal that the renderer has finished
 	m_threadSignal.store(kRenderManagerIdle);

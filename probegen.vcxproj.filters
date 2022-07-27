@@ -582,6 +582,9 @@
     <ClInclude Include="src\renderers\GI2D.h">
       <Filter>renderers</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\2dgi\CudaTestCard.cuh">
+      <Filter>kernels\2dgi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -685,6 +688,9 @@
     </Filter>
     <Filter Include="renderers">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\2dgi">
+      <UniqueIdentifier>{7978a9a4-3f7d-4467-b62d-c8b4d52529a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -810,6 +816,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
       <Filter>kernels\lightprobes</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\2dgi\CudaTestCard.cu">
+      <Filter>kernels\2dgi</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

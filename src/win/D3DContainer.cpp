@@ -31,11 +31,26 @@ void D3DContainer::OnCreate(HWND hWnd)
 
 	// Load the renderer
 	m_rendererManager.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-	//m_cudaRenderer.LoadDefaultScene();
+	m_rendererManager.LoadRenderer("2dgi");	
 
 	// Build the GUI interface
 	m_ui.Build(m_hWnd);
+
+	m_rendererManager.GetRenderer()->Start();
 }
+
+void D3DContainer::OnDestroy()
+{
+	// Ensure that the GPU is no longer referencing resources that are about to be
+	// cleaned up by the destructor.
+	WaitForGpu();
+
+	m_rendererManager.Destroy();
+	m_ui.Destroy();
+
+	CloseHandle(m_fenceEvent);
+}
+
 
 void D3DContainer::OnUpdate() {}
 
@@ -559,18 +574,6 @@ void D3DContainer::OnRender()
 	m_fenceValues[m_frameIndex] = currentFenceValue + 2;
 
 	//std::printf("Frame: %i\n", m_frameIndex);
-}
-
-void D3DContainer::OnDestroy()
-{
-	// Ensure that the GPU is no longer referencing resources that are about to be
-	// cleaned up by the destructor.
-	WaitForGpu();
-
-	m_rendererManager.Destroy();
-	m_ui.Destroy();
-
-	CloseHandle(m_fenceEvent);
 }
 
 // Wait for pending GPU work to complete.

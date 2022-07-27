@@ -173,6 +173,7 @@
     </ClInclude>
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
+    <ClInclude Include="src\kernels\2dgi\CudaTestCard.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
@@ -287,6 +288,7 @@
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\kernels\2dgi\CudaTestCard.cu" />
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />

@@ -18,11 +18,11 @@ public:
     virtual void Initialise() = 0;
     virtual void Start();
     virtual void Stop();
-    virtual void Destroy() = 0;
+    virtual void Destroy();
 
     virtual void OnResizeClient() = 0;
    
-    virtual const std::string& GetRendererName() const = 0;
+    virtual std::string GetRendererName() const = 0;
     virtual const std::string& GetRendererDescription() const { return ""; }
 
     void SetCudaObjects(Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
@@ -31,9 +31,10 @@ protected:
     RendererInterface();
     virtual ~RendererInterface();
 
-    virtual void PreRender() {};
-    virtual void Render() {};
-    virtual void PostRender() {};
+    virtual void OnDestroy() {};
+    virtual void OnPreRender() {};
+    virtual void OnRender() {};
+    virtual void OnPostRender() {};
 
 private:
     void RunThread();
