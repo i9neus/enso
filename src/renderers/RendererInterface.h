@@ -18,7 +18,8 @@ public:
     virtual void Initialise() = 0;
     virtual void Start();
     virtual void Stop();
-    virtual void Destroy();
+    virtual void Destroy(); 
+    virtual bool Poll(Json::Document& stateJson);
 
     virtual void OnResizeClient() = 0;
    
@@ -50,4 +51,9 @@ protected:
     TimePoint					                    m_renderStartTime;
     std::vector<float>		                        m_frameTimes;
     float                                           m_meanFrameTime;
+    float                                           m_lastFrameTime;
+    int                                             m_frameIdx;
+
+    std::mutex		                                m_jsonInputMutex;
+    std::mutex			                            m_jsonOutputMutex;
 };

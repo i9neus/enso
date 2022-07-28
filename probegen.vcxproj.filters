@@ -692,6 +692,9 @@
     <Filter Include="kernels\2dgi">
       <UniqueIdentifier>{7978a9a4-3f7d-4467-b62d-c8b4d52529a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui\components\gi2d">
+      <UniqueIdentifier>{2cc536fb-1465-4ea7-94a5-7e142cb618bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">

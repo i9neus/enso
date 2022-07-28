@@ -26,17 +26,23 @@ void D3DContainer::OnCreate(HWND hWnd)
 
 	UpdateAssetDimensions();
 
+	// Crtate the renderer
+	m_rendererManager = std::make_shared<RendererManager>();
+
 	// Set up the D3D pipeline
 	CreatePipeline();
 
 	// Load the renderer
-	m_rendererManager.InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-	m_rendererManager.LoadRenderer("2dgi");	
+	m_rendererManager->InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+	m_rendererManager->LoadRenderer("2dgi");	
 
-	// Build the GUI interface
-	m_ui.Build(m_hWnd);
+	// Create the GUI interface
+	m_ui = std::make_unique<Gui::ComponentManager>(m_hWnd, m_rendererManager);
+	
+	// Setup IMGUI objects
+	m_ui->CreateD3DDeviceObjects(m_rootSignature, m_device, 2);	
 
-	m_rendererManager.GetRenderer()->Start();
+	m_rendererManager->GetRenderer()->Start();
 }
 
 void D3DContainer::OnDestroy()
@@ -44,13 +50,37 @@ void D3DContainer::OnDestroy()
 	// Ensure that the GPU is no longer referencing resources that are about to be
 	// cleaned up by the destructor.
 	WaitForGpu();
+	
+	m_ui->Destroy();
+	m_ui.reset();
 
-	m_rendererManager.Destroy();
-	m_ui.Destroy();
+	m_rendererManager->Destroy();
+	m_rendererManager.reset();
 
+	for (int i = 0; i < kFrameCount; ++i)
+	{
+		SafeRelease(m_renderTargets[kFrameCount]);
+		SafeRelease(m_commandAllocators[kFrameCount]);
+	}
+
+	SafeRelease(m_triangleVertexBuffer);
+	SafeRelease(m_factory);
+	SafeRelease(m_swapChain);
+	SafeRelease(m_commandQueue);
+	SafeRelease(m_rootSignature);
+	SafeRelease(m_rtvHeap);
+	SafeRelease(m_srvHeap);
+	SafeRelease(m_pipelineState);
+	SafeRelease(m_trianglePipelineState);
+	SafeRelease(m_commandList);
+	SafeRelease(m_vertexBuffer);
+	SafeRelease(m_triangleVertexBuffer);
+	SafeRelease(m_texture);
+	SafeRelease(m_fence);	
 	CloseHandle(m_fenceEvent);
-}
 
+	SafeRelease(m_device);
+}
 
 void D3DContainer::OnUpdate() {}
 
@@ -351,7 +381,7 @@ void D3DContainer::CreateViewportTexture()
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_rendererManager.LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
+		m_rendererManager->LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
 	}
 }
 
@@ -368,7 +398,7 @@ void D3DContainer::CreateSynchronisationObjects()
 			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 		}
 
-		m_rendererManager.LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
+		m_rendererManager->LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
 
 		m_fenceValues[m_frameIndex]++;
 
@@ -377,26 +407,6 @@ void D3DContainer::CreateSynchronisationObjects()
 		// complete before continuing.
 		WaitForGpu();
 	}
-}
-
-void D3DContainer::DestroyDevice()
-{
-
-}
-
-void D3DContainer::DestroyRenderTargets()
-{
-
-}
-
-void D3DContainer::DestroySwapChain()
-{
-
-}
-
-void D3DContainer::DestroySynchronisationObjects()
-{
-
 }
 
 // Load the sample assets.
@@ -467,11 +477,6 @@ void D3DContainer::CreateAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_trianglePipelineState)));
 	}
 
-	// Setup IMGUI objects
-	{
-		m_ui.Initialise(m_rootSignature, m_device, 2);
-	}
-
 	CreateViewportQuad();
 
 	CreateViewportTexture();
@@ -480,7 +485,6 @@ void D3DContainer::CreateAssets()
 	ThrowIfFailed(m_commandList->Close());
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
 }
 
 void D3DContainer::PopulateCommandList()
@@ -527,7 +531,7 @@ void D3DContainer::PopulateCommandList()
 
 	///////////////////////////////////
 
-	m_ui.PopulateCommandList(m_commandList, m_frameIndex);
+	m_ui->PopulateCommandList(m_commandList, m_frameIndex);
 
 	///////////////////////////////////
 
@@ -556,7 +560,7 @@ void D3DContainer::OnRender()
 	// After everything's rendered, dispatch any commands that IMGUI may have emitted
 	//m_ui.DispatchRenderCommands();
 
-	m_rendererManager.UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
+	m_rendererManager->UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 	//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 	// Update the frame index.

@@ -14,9 +14,7 @@ public:
     RendererManager();
 
     void                                    Destroy();
-
     std::vector<RendererComponentInfo>      GetRendererList() const;
-
     std::shared_ptr<RendererInterface>      GetRenderer() { Assert(m_activeRenderer); return m_activeRenderer; }
     void                                    LoadRenderer(const std::string& id);
     void                                    UnloadRenderer();
@@ -35,4 +33,7 @@ private:
 public:
     std::shared_ptr<RendererInterface>                                                      m_activeRenderer;
     std::unordered_map<std::string, std::function<std::shared_ptr<RendererInterface>()>>    m_instantiators;
+
+private:
+    
 };

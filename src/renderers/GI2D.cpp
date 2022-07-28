@@ -9,7 +9,7 @@ GI2D::GI2D()
 
 GI2D::~GI2D()
 {
-
+    Destroy();
 }
 
 std::shared_ptr<RendererInterface> GI2D::Instantiate()

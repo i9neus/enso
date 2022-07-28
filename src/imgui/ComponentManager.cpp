@@ -4,12 +4,20 @@
 
 namespace Gui
 {
-    ComponentManager::ComponentManager()
+    ComponentManager::ComponentManager(HWND hwnd, std::shared_ptr<RendererManager>& rendererManager) :
+        m_showConsole(false)
     {
-
+        m_hWnd = hwnd;
+        m_rendererManager = rendererManager;
+        m_activeRenderer = m_rendererManager->GetRenderer();
     }
 
-    void ComponentManager::Initialise(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
+    ComponentManager::~ComponentManager()
+    {
+        Destroy();
+    }
+
+    void ComponentManager::CreateD3DDeviceObjects(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
     {
         Assert(rootSignature);
         Assert(device);
@@ -24,28 +32,9 @@ namespace Gui
         Assert(ImGui::ImplDX12_Init(device.Get(), numConcurrentFrames, DXGI_FORMAT_R8G8B8A8_UNORM, m_srvHeap.Get(),
             m_srvHeap->GetCPUDescriptorHandleForHeapStart(), m_srvHeap->GetGPUDescriptorHandleForHeapStart()));
 
-        CreateDeviceObjects();
+        Assert(ImGui::ImplDX12_CreateDeviceObjects());
 
         Log::Success("IMGUI successfully initialised!\n");
-    }
-
-    void ComponentManager::CreateDeviceObjects()
-    {
-        Assert(ImGui::ImplDX12_CreateDeviceObjects());
-    }
-
-    void ComponentManager::Rebuild()
-    {
-        Log::Indent indent("Building IMGUI components...");
- 
-        Log::Success("Done!");
-    }
-
-    void ComponentManager::Build(HWND hwnd)
-    {
-        m_hWnd = hwnd;
-
-        Rebuild();
     }
 
     void ComponentManager::Destroy()
@@ -57,18 +46,35 @@ namespace Gui
         Log::Write("Destroyed IMGUI D3D objects.\n");
     }
 
+    void ComponentManager::PollRenderer()
+    {
+        Assert(m_activeRenderer);
+        Assert(m_activeRenderer->Poll(m_renderStateJson));
+
+        /*const Json::Node managerJson = m_renderStateJson.GetChildObject("renderer", Json::kSilent | Json::kLiteralID);
+        if (managerJson)
+        {
+            managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
+            managerJson.GetValue("smoothedFrameTime", m_meanFrameTime, Json::kRequiredAssert);
+            managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
+        } */           
+    }
+
     void ComponentManager::ConstructConsole()
     {
         ImGui::Begin("Console");
 
-        //m_renderStateFmt = m_renderStateJson.Stringify(true);
-        //ImGui::TextWrapped(m_renderStateFmt.c_str());
+        m_renderStateFmt = m_renderStateJson.Stringify(true);
+        ImGui::TextWrapped(m_renderStateFmt.c_str());
 
         ImGui::End();
     }
 
     void ComponentManager::Construct()
     {
+        // Poll the renderer for data to populate the UI
+        PollRenderer();
+        
         // Start the Dear ImGui frame
         ImGui::ImplDX12_NewFrame();
         ImGui::ImplWin32_NewFrame();
@@ -78,11 +84,22 @@ namespace Gui
         ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, kBaseSize.x * 2.0f);
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
+        if (m_showConsole) { ConstructConsole(); }
+
         // Menu Bar
         if (ImGui::BeginMainMenuBar())
         {
+            if (ImGui::BeginMenu("Renderer"))
+            {
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Window"))
             {
+                //ImGui::MenuItem("Combinatorics", NULL, &m_showCombinatorics);
+                //ImGui::MenuItem("Render objects", NULL, &m_showRenderObjects);
+                //ImGui::Separator();
+                ImGui::MenuItem("Console", NULL, &m_showConsole);
+                //ImGui::MenuItem("Memory monitor", NULL, &m_showMemoryMonitor);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -93,7 +110,7 @@ namespace Gui
         // Rendering
         ImGui::Render();
 
-        // Dispatch any commands that may have been generated
+        // Dispatch any JSON commands that may have been generated
         //DispatchRenderCommands();
     }
 

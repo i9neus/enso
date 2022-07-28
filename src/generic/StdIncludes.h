@@ -42,9 +42,14 @@ public:
         m_lambda(lambda),
         m_startTime(std::chrono::high_resolution_clock::now()) {}
 
-    inline float Get() const 
+    inline float operator()() const
     {
         return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
+    }
+
+    inline float Get() const 
+    {
+        return this->operator()();
     }
 
     inline void Write(const std::string& format) const

@@ -14,6 +14,25 @@
 using namespace DirectX;
 namespace DX = DirectX;
 
+template<typename T>
+inline void SafeRelease(ComPtr<T>& resource)
+{
+	if (resource)
+	{
+		resource.Reset();
+	}
+}
+
+template<typename T>
+inline void SafeRelease(T*& resource)
+{
+	if (resource)
+	{
+		resource->Release();
+		resource = nullptr;
+	}
+}
+
 struct Vertex
 {
 	Vertex(const XMFLOAT3& p, const XMFLOAT4& c) : position(p), color(c) {}
@@ -121,8 +140,8 @@ private:
 	ComPtr<ID3D12Fence>				m_fence;
 	UINT64							m_fenceValues[kFrameCount];
 
-	RendererManager					m_rendererManager;
-	Gui::ComponentManager			m_ui;
+	std::shared_ptr<RendererManager> m_rendererManager;
+	std::unique_ptr<Gui::ComponentManager> m_ui;
 	HWND							m_hWnd;
 
 	UINT							m_quadTexWidth;
