@@ -22,6 +22,7 @@
 #include "generic/debug/ProcessMemoryMonitor.h"
 
 #include <windows.h>
+#include <windowsx.h>
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -60,7 +61,7 @@ void Win32Application::DestroyIMGUI()
 	ImGui::DestroyContext();
 }
 
-int Win32Application::Run(D3DWindowInterface& d3dInterface, HINSTANCE hInstance, int nCmdShow)
+int Win32Application::Run(D3DContainer& d3dContainer, HINSTANCE hInstance, int nCmdShow)
 {
 	// Parse the command line parameters
 	/*int argc;
@@ -96,14 +97,14 @@ int Win32Application::Run(D3DWindowInterface& d3dInterface, HINSTANCE hInstance,
 		nullptr,		// We have no parent window.
 		nullptr,		// We aren't using menus.
 		hInstance,
-		&d3dInterface);
+		&d3dContainer);
 
 	InitialiseIMGUI(GetHwnd());
 
 	ShowWindow(GetHwnd(), nCmdShow);
 
 	// Initialize the sample. OnInit is defined in each child-implementation of DXSample.
-	d3dInterface.OnCreate(GetHwnd());
+	d3dContainer.OnCreate(GetHwnd());
 
 	// Main sample loop.
 	MSG msg = {};
@@ -117,7 +118,7 @@ int Win32Application::Run(D3DWindowInterface& d3dInterface, HINSTANCE hInstance,
 		}
 	}
 
-	d3dInterface.OnDestroy();
+	d3dContainer.OnDestroy();
 
 	// Return this part of the WM_QUIT message to Windows.
 	return static_cast<char>(msg.wParam);
@@ -137,6 +138,46 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 	try
 	{
 		D3DContainer* d3dContainer = reinterpret_cast<D3DContainer*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+		// Only process UI messages if the container object has been successfully created
+		if (d3dContainer)
+		{
+			switch (message)
+			{
+		
+			case WM_KEYDOWN:	d3dContainer->OnKey(int(wParam & 0xff), true); return 0;
+			case WM_KEYUP:		d3dContainer->OnKey(int(wParam & 0xff), false); return 0;
+
+			case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: d3dContainer->OnMouseButton(0, true); return 0;
+			case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK: d3dContainer->OnMouseButton(1, true); return 0;
+			case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: d3dContainer->OnMouseButton(2, true); return 0;
+			case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK: d3dContainer->OnMouseButton(3, true); return 0;
+		
+			case WM_LBUTTONUP: d3dContainer->OnMouseButton(0, false); return 0;
+			case WM_RBUTTONUP: d3dContainer->OnMouseButton(1, false); return 0;
+			case WM_MBUTTONUP: d3dContainer->OnMouseButton(2, false); return 0;
+			case WM_XBUTTONUP: d3dContainer->OnMouseButton(3, false); return 0;
+
+			case WM_MOUSEMOVE: d3dContainer->OnMouseMove(int(GET_X_LPARAM(lParam)), int(GET_Y_LPARAM(lParam)), wParam); return 0;
+
+			case WM_MOUSEWHEEL: d3dContainer->OnMouseWheel((float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA);
+				return 0;
+
+			case WM_PAINT:
+				//Timer frameTimer;
+				d3dContainer->OnUpdate();
+				d3dContainer->OnRender();
+
+				//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
+				return 0;
+
+			case WM_SIZE:
+				d3dContainer->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
+				return 0;
+			}
+		}
+
+		// Critical window messages
 		switch (message)
 		{
 		case WM_CREATE:
@@ -146,38 +187,6 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
 		}
 		return 0;
-
-		case WM_KEYDOWN:
-			if (d3dContainer)
-			{
-				d3dContainer->OnKeyDown(static_cast<UINT8>(wParam));
-			}
-			return 0;
-
-		case WM_KEYUP:
-			if (d3dContainer)
-			{
-				d3dContainer->OnKeyUp(static_cast<UINT8>(wParam));
-			}
-			return 0;
-
-		case WM_PAINT:
-			if (d3dContainer)
-			{
-				//Timer frameTimer;
-				d3dContainer->OnUpdate();
-				d3dContainer->OnRender();
-
-				//SetWindowText(hWnd, tfm::format("%.2f FPS", 1.0f / frameTimer.Get()).c_str());
-			}
-			return 0;
-
-		case WM_SIZE:
-			if (d3dContainer)
-			{
-				d3dContainer->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
-			}
-			return 0;
 
 		case WM_DESTROY:
 			PostQuitMessage(0);

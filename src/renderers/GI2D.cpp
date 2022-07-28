@@ -49,3 +49,23 @@ void GI2D::OnPostRender()
 {
 
 }
+
+void GI2D::OnKey(const int key, const bool isDown)
+{
+    
+}
+
+void GI2D::OnMouseButton(const int button, const bool isDown)
+{
+    
+}
+
+void GI2D::OnMouseMove(const int mouseX, const int mouseY)
+{
+    
+}
+
+void GI2D::OnMouseWheel(const float degrees)
+{
+    m_hostTestCard->m_wheel += degrees;
+}

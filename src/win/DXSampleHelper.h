@@ -74,7 +74,7 @@ inline void ThrowIfFailed(HRESULT hr)
     }
 }
 
-inline HRESULT ReadDataFromFile(LPCWSTR filename, byte** data, UINT* size)
+/*inline HRESULT ReadDataFromFile(LPCWSTR filename, byte** data, UINT* size)
 {
     using namespace Microsoft::WRL;
 
@@ -85,7 +85,7 @@ inline HRESULT ReadDataFromFile(LPCWSTR filename, byte** data, UINT* size)
     extendedParams.dwSecurityQosFlags = SECURITY_ANONYMOUS;
     extendedParams.lpSecurityAttributes = nullptr;
     extendedParams.hTemplateFile = nullptr;
-
+    
     Wrappers::FileHandle file(CreateFile2(filename, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, &extendedParams));
     if (file.Get() == INVALID_HANDLE_VALUE)
     {
@@ -112,7 +112,7 @@ inline HRESULT ReadDataFromFile(LPCWSTR filename, byte** data, UINT* size)
     }
 
     return S_OK;
-}
+}*/
 
 // Assign a name to the object to aid with debugging.
 #if defined(_DEBUG) || defined(DBG)

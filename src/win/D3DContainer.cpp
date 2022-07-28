@@ -1,4 +1,6 @@
 #include "D3DContainer.h"
+
+#include "DXSampleHelper.h"
 #include "SecurityAttributes.h"
 #include "win/Win32Application.h"
 #include "thirdparty/nvidia/helper_cuda.h"
@@ -6,7 +8,8 @@
 #include "generic/Math.h"
 
 D3DContainer::D3DContainer(std::string name) :
-	D3DWindowInterface(name),
+	m_clientWidth(0),
+	m_clientHeight(0),
 	m_frameIndex(0),
 	m_scissorRect(0, 0, 0, 0),
 	m_fenceValues{ 0, 0 },
@@ -279,8 +282,8 @@ void D3DContainer::CreateRootSignature()
 
 void D3DContainer::CreateViewportQuad()
 {
-	float uvX = float(D3DWindowInterface::GetClientWidth()) / float(m_quadTexWidth);
-	float uvY = float(D3DWindowInterface::GetClientHeight()) / float(m_quadTexHeight);
+	float uvX = float(m_clientWidth) / float(m_quadTexWidth);
+	float uvY = float(m_clientHeight) / float(m_quadTexHeight);
 
 	// Define the geometry for a triangle.
 	VertexUV triangleVertices[] =
@@ -381,7 +384,7 @@ void D3DContainer::CreateViewportTexture()
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-		m_rendererManager->LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, D3DWindowInterface::GetClientWidth(), D3DWindowInterface::GetClientHeight());
+		m_rendererManager->LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, m_clientWidth, m_clientHeight);
 	}
 }
 
@@ -638,4 +641,24 @@ void D3DContainer::OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wPa
 		ImGui_ImplDX12_CreateDeviceObjects();
 	}
 	return 0;*/
+}
+
+void D3DContainer::OnKey(const int key, const bool isDown)
+{
+	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnKey(key, isDown); }
+}
+
+void D3DContainer::OnMouseButton(const int button, const bool isDown)
+{
+	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseButton(button, isDown); }
+}
+
+void D3DContainer::OnMouseMove(const int mouseX, const int mouseY, const WPARAM flags)
+{
+	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseMove(mouseX, mouseY); }
+}
+
+void D3DContainer::OnMouseWheel(const float degrees)
+{
+	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseWheel(degrees); }
 }

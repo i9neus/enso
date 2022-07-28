@@ -1,6 +1,5 @@
 #pragma once
 
-#include "win/D3DWindowInterface.h"
 #include "win/DXSampleHelper.h"
 
 #include "generic/StdIncludes.h"

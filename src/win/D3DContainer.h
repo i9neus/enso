@@ -1,15 +1,12 @@
 #pragma once
 
-#include "D3DWindowInterface.h"
-#include "DXSampleHelper.h"
-#include "imgui/ComponentManager.h"
-
 #include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
 #include "d3dx12.h"
 
 #include "renderers/RendererManager.h"
+#include "imgui/ComponentManager.h"
 
 using namespace DirectX;
 namespace DX = DirectX;
@@ -72,17 +69,26 @@ static const char* shaderstrs =
 "  return input.color;\n" \
 " } \n";
 
-class D3DContainer : public D3DWindowInterface
+class D3DContainer
 {
 public:
 	D3DContainer(std::string name);
 
-	virtual void OnCreate(HWND hWnd) override final;
-	virtual void OnRender() override final;
-	virtual void OnDestroy() override final;
-	virtual void OnUpdate() override final;
+	void OnCreate(HWND hWnd);
+	void OnRender();
+	void OnDestroy();
+	void OnUpdate();
 
-	virtual void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam) override final;
+	void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam);
+
+	void OnKey(const int key, const bool isDown);
+	void OnMouseButton(const int button, const bool isDown);
+	void OnMouseMove(const int mouseX, const int mouseY, const WPARAM flags);
+	void OnMouseWheel(const float degrees);
+
+	UINT GetClientWidth() const { return m_clientWidth; }
+	UINT GetClientHeight() const { return m_clientHeight; }
+	const CHAR* GetTitle() const { return "Probegen"; }
 
 private:
 
@@ -146,6 +152,9 @@ private:
 
 	UINT							m_quadTexWidth;
 	UINT							m_quadTexHeight;
+
+	UINT							m_clientWidth;
+	UINT							m_clientHeight;
 
 private:
 	void							CreatePipeline();

@@ -281,7 +281,6 @@
     <ClInclude Include="src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="src\utils\BulkUSDProcessor.h" />
     <ClInclude Include="src\win\D3DContainer.h" />
-    <ClInclude Include="src\win\D3DWindowInterface.h" />
     <ClInclude Include="src\win\d3dx12.h" />
     <ClInclude Include="src\win\DXSampleHelper.h" />
     <ClInclude Include="src\win\SecurityAttributes.h" />

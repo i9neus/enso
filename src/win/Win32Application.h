@@ -36,16 +36,16 @@ The MIT License (MIT)
 
 #pragma once
 
-#include "D3DWindowInterface.h"
+#include <windows.h>
 
 class DX12CudaSample;
 class DXSample;
-class D3DWindowInterface;
+class D3DContainer;
 
 class Win32Application
 {
 public:
-	static int Run(D3DWindowInterface& pSample, HINSTANCE hInstance, int nCmdShow);
+	static int Run(D3DContainer& pSample, HINSTANCE hInstance, int nCmdShow);
     static HWND& GetHwnd()
     {
         static HWND hwnd = nullptr;

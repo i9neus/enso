@@ -15,6 +15,11 @@ public:
 
     virtual void Initialise() override final;
 
+    virtual void OnMouseMove(const int clientX, const int clientY) override final;
+    virtual void OnMouseButton(const int code, const bool isDown) override final;
+    virtual void OnMouseWheel(const float degrees) override final;
+    virtual void OnKey(const int code, const bool isDown) override final;
+
     virtual void OnResizeClient() override final;
     virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
 

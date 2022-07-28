@@ -22,6 +22,10 @@ public:
     virtual bool Poll(Json::Document& stateJson);
 
     virtual void OnResizeClient() = 0;
+    virtual void OnMouseMove(const int clientX, const int clientY) {}
+    virtual void OnMouseButton(const int code, const bool isDown) {}
+    virtual void OnMouseWheel(const float degrees) {}
+    virtual void OnKey(const int code, const bool isDown) {}
    
     virtual std::string GetRendererName() const = 0;
     virtual const std::string& GetRendererDescription() const { return ""; }

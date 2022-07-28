@@ -11,5 +11,7 @@ namespace Cuda
 
         __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
         __host__ void OnDestroyAsset();
+
+        float m_wheel;
     };
 }

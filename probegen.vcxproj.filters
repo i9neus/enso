@@ -495,9 +495,6 @@
     <ClInclude Include="src\win\D3DContainer.h">
       <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="src\win\D3DWindowInterface.h">
-      <Filter>win</Filter>
-    </ClInclude>
     <ClInclude Include="src\win\d3dx12.h">
       <Filter>win</Filter>
     </ClInclude>
