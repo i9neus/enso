@@ -1,6 +1,6 @@
 #include "RendererManager.h"
 
-#include "GI2D.h"
+#include "gi2d/GI2D.h"
 
 RendererManager::RendererManager()
 {

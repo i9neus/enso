@@ -133,14 +133,11 @@
     <ClCompile Include="src\renderers\RendererInterface.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\Probegen.cpp">
-      <Filter>renderers</Filter>
-    </ClCompile>
     <ClCompile Include="src\renderers\RendererManager.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\GI2D.cpp">
-      <Filter>renderers</Filter>
+    <ClCompile Include="src\renderers\gi2d\GI2D.cpp">
+      <Filter>renderers\gi2d</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -570,17 +567,14 @@
     <ClInclude Include="src\renderers\RendererInterface.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderers\Probegen.h">
-      <Filter>renderers</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderers\RendererManager.h">
-      <Filter>renderers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\renderers\GI2D.h">
       <Filter>renderers</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\2dgi\CudaTestCard.cuh">
       <Filter>kernels\2dgi</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\gi2d\GI2D.h">
+      <Filter>renderers\gi2d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -691,6 +685,9 @@
     </Filter>
     <Filter Include="imgui\components\gi2d">
       <UniqueIdentifier>{2cc536fb-1465-4ea7-94a5-7e142cb618bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderers\gi2d">
+      <UniqueIdentifier>{1776199d-10b9-4ac5-ab0d-3f1c7feb995f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

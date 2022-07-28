@@ -79,11 +79,8 @@
     <ClCompile Include="src\onnx\Grid2Grid.cpp" />
     <ClCompile Include="src\onnx\FCNNProbeDenoiser.cpp" />
     <ClCompile Include="src\onnx\OnnxModel.cpp" />
-    <ClCompile Include="src\renderers\GI2D.cpp" />
     <ClCompile Include="src\renderers\CudaObjectManager.cpp" />
-    <ClCompile Include="src\renderers\Probegen.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="src\renderers\gi2d\GI2D.cpp" />
     <ClCompile Include="src\renderers\RendererManager.cpp" />
     <ClCompile Include="src\renderers\RendererInterface.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
@@ -240,11 +237,8 @@
     <ClInclude Include="src\onnx\Grid2Grid.h" />
     <ClInclude Include="src\onnx\OnnxModel.h" />
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
-    <ClInclude Include="src\renderers\GI2D.h" />
     <ClInclude Include="src\renderers\CudaObjectManager.h" />
-    <ClInclude Include="src\renderers\Probegen.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="src\renderers\gi2d\GI2D.h" />
     <ClInclude Include="src\renderers\RendererManager.h" />
     <ClInclude Include="src\renderers\RendererInterface.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />

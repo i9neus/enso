@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RendererInterface.h"
+#include "../RendererInterface.h"
 
 namespace Cuda
 {
