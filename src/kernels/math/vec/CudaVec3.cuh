@@ -59,6 +59,15 @@ namespace Cuda
             swizzled.UnpackTo<0, 1, 2, In...>(data);
         }
 
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const __vec_swizzle& rhs) { x += rhs.x; y += rhs.y; z += rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const __vec_swizzle& rhs) { x -= rhs.x; y -= rhs.y; z -= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const __vec_swizzle& rhs) { x *= rhs.x; y *= rhs.y; z *= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const __vec_swizzle& rhs) { x /= rhs.x; y /= rhs.y; z /= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const float& rhs) { x += rhs; y += rhs; z += rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const float& rhs) { x -= rhs; y -= rhs; z -= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const float& rhs) { x *= rhs; y *= rhs; z *= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const float& rhs) { x /= rhs; y /= rhs; z /= rhs; return *this; }
+
         // Assign from swizzled types
         template<int RS, int R0, int R1, int R2>
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<float, RS, 3, R0, R1, R2>& rhs)

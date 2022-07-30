@@ -52,6 +52,15 @@ namespace Cuda
             return *this;
         }
 
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const __vec_swizzle& rhs) { x += rhs.x; y += rhs.y; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const __vec_swizzle& rhs) { x -= rhs.x; y -= rhs.y; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const __vec_swizzle& rhs) { x *= rhs.x; y *= rhs.y; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const __vec_swizzle& rhs) { x /= rhs.x; y /= rhs.y; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const float& rhs) { x += rhs; y += rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const float& rhs) { x -= rhs; y -= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const float& rhs) { x *= rhs; y *= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const float& rhs) { x /= rhs; y /= rhs; return *this; }
+
         // Assign from arithmetic types
         template<typename OtherType, typename = typename std::enable_if<std::is_arithmetic<OtherType>::value>::type>
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const OtherType& rhs)

@@ -73,6 +73,15 @@ namespace Cuda
             return *this;
         }
 
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const __vec_swizzle& rhs) { x += rhs.x; y += rhs.y; z += rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const __vec_swizzle& rhs) { x -= rhs.x; y -= rhs.y; z -= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const __vec_swizzle& rhs) { x *= rhs.x; y *= rhs.y; z *= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const __vec_swizzle& rhs) { x /= rhs.x; y /= rhs.y; z /= rhs.z; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const Type& rhs) { x += rhs; y += rhs; z += rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const Type& rhs) { x -= rhs; y -= rhs; z -= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const Type& rhs) { x *= rhs; y *= rhs; z *= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const Type& rhs) { x /= rhs; y /= rhs; z /= rhs; return *this; }
+
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const Type& v) { x = v; y = v; z = v; return *this; }
 
         __host__ __device__ __forceinline__ const Type& operator[](const unsigned int idx) const { return data[idx]; }
