@@ -576,6 +576,9 @@
     <ClInclude Include="src\renderers\gi2d\GI2D.h">
       <Filter>renderers\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh">
+      <Filter>kernels\math\bbox</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

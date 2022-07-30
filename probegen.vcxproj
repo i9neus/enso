@@ -206,6 +206,7 @@
     <ClInclude Include="src\kernels\materials\CudaKIFSMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh" />
+    <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh" />
     <ClInclude Include="src\kernels\math\CudaColourUtils.cuh" />
     <ClInclude Include="src\kernels\math\CudaGeodesics.cuh" />
     <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh" />
