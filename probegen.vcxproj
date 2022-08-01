@@ -21,6 +21,8 @@
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
     <ClCompile Include="src\generic\GlobalStateAuthority.cpp" />
+    <ClCompile Include="src\imgui\components\ComponentInterface.cpp" />
+    <ClCompile Include="src\imgui\components\gi2d\GI2DUI.cpp" />
     <ClCompile Include="src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -60,6 +62,7 @@
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\imgui\elements\CommandQueue.cpp" />
     <ClCompile Include="src\imgui\elements\DataTable.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -70,7 +73,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\imgui\ComponentManager.cpp" />
-    <ClCompile Include="src\imgui\ComponentInterface.cpp" />
     <ClCompile Include="src\imgui\tools\MemoryMonitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -109,6 +111,8 @@
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
+    <ClInclude Include="src\imgui\components\ComponentInterface.h" />
+    <ClInclude Include="src\imgui\components\gi2d\GI2DUI.h" />
     <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -148,6 +152,7 @@
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="src\imgui\elements\CommandQueue.h" />
     <ClInclude Include="src\imgui\elements\DataTable.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -164,13 +169,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="src\imgui\ComponentManager.h" />
-    <ClInclude Include="src\imgui\ComponentInterface.h" />
     <ClInclude Include="src\imgui\tools\MemoryMonitor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
-    <ClInclude Include="src\kernels\2dgi\CudaTestCard.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
     <ClInclude Include="src\kernels\cameras\CudaCamera.cuh" />
@@ -191,6 +194,8 @@
     <ClInclude Include="src\kernels\CudaTests.cuh" />
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
+    <ClInclude Include="src\kernels\gi2d\CudaBIH2D.cuh" />
+    <ClInclude Include="src\kernels\gi2d\CudaBVH2D.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
@@ -240,6 +245,7 @@
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
     <ClInclude Include="src\renderers\CudaObjectManager.h" />
     <ClInclude Include="src\renderers\gi2d\GI2D.h" />
+    <ClInclude Include="src\renderers\gi2d\BIH2D.h" />
     <ClInclude Include="src\renderers\RendererManager.h" />
     <ClInclude Include="src\renderers\RendererInterface.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -277,12 +283,10 @@
     <ClInclude Include="src\utils\BulkUSDProcessor.h" />
     <ClInclude Include="src\win\D3DContainer.h" />
     <ClInclude Include="src\win\d3dx12.h" />
-    <ClInclude Include="src\win\DXSampleHelper.h" />
     <ClInclude Include="src\win\SecurityAttributes.h" />
     <ClInclude Include="src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\kernels\2dgi\CudaTestCard.cu" />
     <CudaCompile Include="src\kernels\bxdfs\CudaLambert.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaCamera.cu" />
     <CudaCompile Include="src\kernels\cameras\CudaLightProbeCamera.cu" />
@@ -293,6 +297,8 @@
     <CudaCompile Include="src\kernels\CudaRenderObjectContainer.cu" />
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu" />
+    <CudaCompile Include="src\kernels\gi2d\CudaBVH2D.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeIO.cu" />

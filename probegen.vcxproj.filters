@@ -94,12 +94,6 @@
     <ClCompile Include="src\imgui\components\probegen\bakepermutor\StateManager.cpp">
       <Filter>imgui\components\probegen\bakepermutor</Filter>
     </ClCompile>
-    <ClCompile Include="src\imgui\ComponentInterface.cpp">
-      <Filter>imgui\components</Filter>
-    </ClCompile>
-    <ClCompile Include="src\imgui\ComponentManager.cpp">
-      <Filter>imgui\components</Filter>
-    </ClCompile>
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
     </ClCompile>
@@ -139,11 +133,20 @@
     <ClCompile Include="src\renderers\gi2d\GI2D.cpp">
       <Filter>renderers\gi2d</Filter>
     </ClCompile>
+    <ClCompile Include="src\imgui\components\gi2d\GI2DUI.cpp">
+      <Filter>imgui\components\gi2d</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\components\ComponentInterface.cpp">
+      <Filter>imgui\components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\ComponentManager.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui\elements\CommandQueue.cpp">
+      <Filter>imgui\elements</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\generic\D3DIncludes.h">
-      <Filter>generic</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\StdIncludes.h">
       <Filter>generic</Filter>
     </ClInclude>
@@ -495,9 +498,6 @@
     <ClInclude Include="src\win\d3dx12.h">
       <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="src\win\DXSampleHelper.h">
-      <Filter>win</Filter>
-    </ClInclude>
     <ClInclude Include="src\win\SecurityAttributes.h">
       <Filter>win</Filter>
     </ClInclude>
@@ -527,12 +527,6 @@
     </ClInclude>
     <ClInclude Include="src\imgui\components\probegen\bakepermutor\StateManager.h">
       <Filter>imgui\components\probegen\bakepermutor</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\ComponentInterface.h">
-      <Filter>imgui\components</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\ComponentManager.h">
-      <Filter>imgui\components</Filter>
     </ClInclude>
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
       <Filter>imgui\components\probegen\sceneobjects</Filter>
@@ -573,8 +567,32 @@
     <ClInclude Include="src\renderers\gi2d\GI2D.h">
       <Filter>renderers\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\CudaBVH2D.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
     <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh">
       <Filter>kernels\math\bbox</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\gi2d\BIH2D.h">
+      <Filter>renderers\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\CudaBIH2D.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\gi2d\GI2DUI.h">
+      <Filter>imgui\components\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\components\ComponentInterface.h">
+      <Filter>imgui\components</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\ComponentManager.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\elements\CommandQueue.h">
+      <Filter>imgui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\D3DIncludes.h">
+      <Filter>generic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -680,14 +698,17 @@
     <Filter Include="renderers">
       <UniqueIdentifier>{b1b37265-aa24-48e6-afa6-07bb2e7c674b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="kernels\2dgi">
-      <UniqueIdentifier>{7978a9a4-3f7d-4467-b62d-c8b4d52529a0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui\components\gi2d">
       <UniqueIdentifier>{2cc536fb-1465-4ea7-94a5-7e142cb618bc}</UniqueIdentifier>
     </Filter>
     <Filter Include="renderers\gi2d">
       <UniqueIdentifier>{1776199d-10b9-4ac5-ab0d-3f1c7feb995f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\gi2d">
+      <UniqueIdentifier>{7978a9a4-3f7d-4467-b62d-c8b4d52529a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\math\bbox">
+      <UniqueIdentifier>{6c27d4d5-18f8-4605-990f-93f63ae2c24e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -814,8 +835,11 @@
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\2dgi\CudaTestCard.cu">
-      <Filter>kernels\2dgi</Filter>
+    <CudaCompile Include="src\kernels\gi2d\CudaBVH2D.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu">
+      <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
