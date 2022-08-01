@@ -120,6 +120,7 @@ namespace Cuda
     class AssetHandle
     {
         template<typename T> friend class AssetHandle;
+        template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateAsset(const std::string&);
         template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateAsset(const std::string&, Pack...);
         template<typename AssetType, typename... Pack> friend AssetHandle<AssetType> CreateChildAsset(const std::string&, const Host::Asset*, Pack...);
 
@@ -243,17 +244,27 @@ namespace Cuda
     template<typename AssetType, typename... Pack>
     inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Pack... args)
     {
+        // TODO: Refactor this so that asset IDs are set automatically here rather than by the constructor of the new asset
         AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr.reset(new AssetType(newId, args...));
-
+        newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
         GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
+        return newAsset;
+    }
 
+    template<typename AssetType, typename... Pack>
+    inline AssetHandle<AssetType> CreateAsset(const std::string& newId)
+    {
+        // TODO: Refactor this so that asset IDs are set automatically here rather than by the constructor of the new asset
+        AssetHandle<AssetType> newAsset;
+        newAsset.m_ptr = std::make_shared<AssetType>(newId);
+        GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
         return newAsset;
     }
 
     template<typename AssetType, typename... Pack>
     inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, const Host::Asset* parentAsset, Pack... args)
     {
+        // TODO: Refactor this so that asset IDs are set automatically here rather than by the constructor of the new asset
         AssertMsgFmt(parentAsset, "'%s' must specify a parent asset.", newId.c_str());
         AssetHandle<AssetType> newAsset = CreateAsset<AssetType, Pack...>(newId, args...);
         newAsset->SetParentAssetID(parentAsset->GetAssetID());

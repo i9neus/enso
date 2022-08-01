@@ -229,4 +229,21 @@ namespace Cuda
 
 		cu_data = nullptr;
 	}
+
+	// Defines a generic kernel function that invokes the method in the referenced class
+#define DEFINE_KERNEL_PASSTHROUGH_ARGS(FunctionName) \
+        template<typename ObjectType, typename... Pack>\
+        __global__ inline void Kernel##FunctionName(ObjectType* object, Pack... pack) \
+        { \
+            assert(object); \
+            object->FunctionName(pack...); \
+        }
+
+#define DEFINE_KERNEL_PASSTHROUGH(FunctionName) \
+        template<typename ObjectType>\
+        __global__ inline void Kernel##FunctionName(ObjectType* object) \
+        { \
+            assert(object); \
+            object->FunctionName(); \
+        }
 }
