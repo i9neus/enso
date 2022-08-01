@@ -7,7 +7,7 @@
 
 namespace Tests
 {
-	TEST_CLASS(ProbeDataFransformTests), public SuiteBase
+	TEST_CLASS(ProbeDataTransformTests), public SuiteBase
 	{
 	public:
 		void SeedRandomData(std::vector<vec3>& data, const int coeffIdx)

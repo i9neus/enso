@@ -94,6 +94,9 @@
     <ClInclude Include="suites\CudaMat2Tests.h">
       <Filter>suites</Filter>
     </ClInclude>
+    <ClInclude Include="suites\CudaBIH2DTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">

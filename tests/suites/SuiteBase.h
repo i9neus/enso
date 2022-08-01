@@ -31,9 +31,19 @@ namespace Tests
 			m_mt = std::mt19937(seed);
 		}
 
+		inline vec2 RandVec2(const float rangeLow, const float rangeHigh)
+		{
+			return vec2(mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)));
+		}
+
 		inline vec3 RandVec3(const float rangeLow, const float rangeHigh)
 		{
 			return vec3(mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)));
+		}
+
+		inline vec4 RandVec4(const float rangeLow, const float rangeHigh)
+		{
+			return vec4(mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)), mix(rangeLow, rangeHigh, m_rng(m_mt)));
 		}
 
 		inline vec3 RandNormVec3()
