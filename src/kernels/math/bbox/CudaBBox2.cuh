@@ -10,15 +10,17 @@ namespace Cuda
     public:
         using ScalarType = typename VecType::kType;
 
-        BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
-        BBox2(const BBox2&) = default;
-        BBox2(BBox2&&) = default;
-        ~BBox2() = default;
+        __host__ __device__ BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
+        __host__ __device__ BBox2(const BBox2&) = default;
+        __host__ __device__ BBox2(BBox2&&) = default;
+        __host__ __device__ BBox2& operator=(const BBox2&) = default;
+        __host__ __device__ ~BBox2() = default;
 
-        __forceinline__ BBox2(const VecType & l, const VecType & u) : lower(l), upper(u) noexcept {}
-        __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) : lower(lx, ly), upper(ux, uy) noexcept {}
+        __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
+        __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
 
-        template<typename OtherType> __forceinline__  BBox2(const BBox2<OtherType>& other) :
+        template<typename OtherType>  
+        __host__ __device__ __forceinline__  BBox2(const BBox2<OtherType>& other) :
             lower(OtherType(other.lower.x), OtherType(other.lower.y)), 
             upper(OtherType(other.upper.x), OtherType(other.upper.y)) {}
 
@@ -48,7 +50,8 @@ namespace Cuda
             return ScalarType(RealType(0.5) * RealType(upper[axis] - lower[axis]));
         }
 
-        __host__ __device__ __forceinline__ ScalarType operator[](const int idx) { return v[idx]; }
+        __host__ __device__ __forceinline__ VecType& operator[](const int idx) { return v[idx]; }
+        __host__ __device__ __forceinline__ const VecType& operator[](const int idx) const { return v[idx]; }
 
         __host__ __device__ __forceinline__ bool Contains(const VecType & p)
         {
