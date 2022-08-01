@@ -42,6 +42,7 @@ namespace Json
         rapidjson::Document::AllocatorType* m_allocator;
         std::string                             m_dagPath;
 
+    public:
         Node() : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
         Node(const std::nullptr_t&) : m_node(nullptr), m_rootDocument(nullptr), m_allocator(nullptr) {}
         Node(rapidjson::Value* node, const Node& parent) : m_node(node), m_rootDocument(parent.m_rootDocument), m_allocator(parent.m_allocator) {}
