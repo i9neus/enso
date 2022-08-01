@@ -1,6 +1,6 @@
 #include "D3DContainer.h"
 
-#include "DXSampleHelper.h"
+#include "generic/D3DIncludes.h"
 #include "SecurityAttributes.h"
 #include "win/Win32Application.h"
 #include "thirdparty/nvidia/helper_cuda.h"
@@ -62,27 +62,27 @@ void D3DContainer::OnDestroy()
 
 	for (int i = 0; i < kFrameCount; ++i)
 	{
-		SafeRelease(m_renderTargets[kFrameCount]);
-		SafeRelease(m_commandAllocators[kFrameCount]);
+		ReleaseResource(m_renderTargets[kFrameCount]);
+		ReleaseResource(m_commandAllocators[kFrameCount]);
 	}
 
-	SafeRelease(m_triangleVertexBuffer);
-	SafeRelease(m_factory);
-	SafeRelease(m_swapChain);
-	SafeRelease(m_commandQueue);
-	SafeRelease(m_rootSignature);
-	SafeRelease(m_rtvHeap);
-	SafeRelease(m_srvHeap);
-	SafeRelease(m_pipelineState);
-	SafeRelease(m_trianglePipelineState);
-	SafeRelease(m_commandList);
-	SafeRelease(m_vertexBuffer);
-	SafeRelease(m_triangleVertexBuffer);
-	SafeRelease(m_texture);
-	SafeRelease(m_fence);	
+	ReleaseResource(m_triangleVertexBuffer);
+	ReleaseResource(m_factory);
+	ReleaseResource(m_swapChain);
+	ReleaseResource(m_commandQueue);
+	ReleaseResource(m_rootSignature);
+	ReleaseResource(m_rtvHeap);
+	ReleaseResource(m_srvHeap);
+	ReleaseResource(m_pipelineState);
+	ReleaseResource(m_trianglePipelineState);
+	ReleaseResource(m_commandList);
+	ReleaseResource(m_vertexBuffer);
+	ReleaseResource(m_triangleVertexBuffer);
+	ReleaseResource(m_texture);
+	ReleaseResource(m_fence);
 	CloseHandle(m_fenceEvent);
 
-	SafeRelease(m_device);
+	ReleaseResource(m_device);
 }
 
 void D3DContainer::OnUpdate() {}

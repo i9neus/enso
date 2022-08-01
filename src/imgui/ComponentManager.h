@@ -1,37 +1,14 @@
 #pragma once
 
-#include "win/DXSampleHelper.h"
-
-#include "generic/StdIncludes.h"
-#include "generic/D3DIncludes.h"
-#include "generic/JsonUtils.h"
-
-#include "renderers/RendererManager.h"
-
 //#include "tools/MemoryMonitor.h"
+#include "components/ComponentInterface.h"
 
-#include "generic/HighResolutionTimer.h"
+class RendererManager;
+class RendererInterface;
 
 namespace Gui
 {
-    template<typename T>
-    inline void SafeRelease(ComPtr<T>& resource)
-    {
-        if (resource)
-        {
-            resource.Reset();
-        }
-    }
-
-    template<typename T>
-    inline void SafeRelease(T*& resource)
-    {
-        if (resource)
-        {
-            resource->Release();
-            resource = nullptr;
-        }
-    }
+    class GI2DUI;
     
     class ComponentManager
     {
@@ -47,7 +24,8 @@ namespace Gui
     private:
         void                            ConstructConsole();
 
-        void                            PollRenderer();
+        void                            PollRenderer(); 
+        void                            DispatchCommands();
 
     private:
         ComPtr<ID3D12DescriptorHeap>            m_srvHeap;
@@ -62,8 +40,10 @@ namespace Gui
         float                                   m_meanFrameTime;
 
         Json::Document                          m_renderStateJson;
-        Json::Document                          m_commandQueue;
+        Json::CommandQueue                      m_commandQueue;
         int                                     m_renderState;
         std::string                             m_renderStateFmt;
+
+        std::unique_ptr<GI2DUI>                 m_gi2DUI;
     };
 }

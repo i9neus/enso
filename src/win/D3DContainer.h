@@ -11,25 +11,6 @@
 using namespace DirectX;
 namespace DX = DirectX;
 
-template<typename T>
-inline void SafeRelease(ComPtr<T>& resource)
-{
-	if (resource)
-	{
-		resource.Reset();
-	}
-}
-
-template<typename T>
-inline void SafeRelease(T*& resource)
-{
-	if (resource)
-	{
-		resource->Release();
-		resource = nullptr;
-	}
-}
-
 struct Vertex
 {
 	Vertex(const XMFLOAT3& p, const XMFLOAT4& c) : position(p), color(c) {}

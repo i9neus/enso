@@ -1,7 +1,7 @@
 #include "CudaObjectManager.h"
 
 #include "win/SecurityAttributes.h"
-#include "win/DXSampleHelper.h"
+#include "generic/D3DIncludes.h"
 #include "thirdparty/nvidia/helper_cuda.h"
 
 #include "kernels/CudaTests.cuh"

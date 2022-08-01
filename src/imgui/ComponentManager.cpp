@@ -2,6 +2,9 @@
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
+#include "components/gi2d/GI2DUI.h"
+#include "renderers/RendererManager.h"
+
 namespace Gui
 {
     ComponentManager::ComponentManager(HWND hwnd, std::shared_ptr<RendererManager>& rendererManager) :
@@ -10,11 +13,15 @@ namespace Gui
         m_hWnd = hwnd;
         m_rendererManager = rendererManager;
         m_activeRenderer = m_rendererManager->GetRenderer();
+
+        m_gi2DUI = std::make_unique<GI2DUI>(m_commandQueue);
     }
 
     ComponentManager::~ComponentManager()
     {
         Destroy();
+
+        m_gi2DUI.reset();
     }
 
     void ComponentManager::CreateD3DDeviceObjects(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
@@ -41,7 +48,7 @@ namespace Gui
     {
         ImGui::ImplDX12_Shutdown();
 
-        SafeRelease(m_srvHeap);
+        ReleaseResource(m_srvHeap);
 
         Log::Write("Destroyed IMGUI D3D objects.\n");
     }
@@ -72,6 +79,9 @@ namespace Gui
 
     void ComponentManager::Construct()
     {
+        // Clear out the command queue ready for the next frame
+        m_commandQueue.Clear();
+        
         // Poll the renderer for data to populate the UI
         PollRenderer();
         
@@ -83,6 +93,9 @@ namespace Gui
         const auto kBaseSize = ImGui::CalcTextSize("A");
         ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, kBaseSize.x * 2.0f);
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
+
+        // Construct the active component
+        m_gi2DUI->ConstructComponent();
 
         if (m_showConsole) { ConstructConsole(); }
 
@@ -111,7 +124,11 @@ namespace Gui
         ImGui::Render();
 
         // Dispatch any JSON commands that may have been generated
-        //DispatchRenderCommands();
+        DispatchCommands();
+    }
+
+    void ComponentManager::DispatchCommands()
+    {
     }
 
     void ComponentManager::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)
