@@ -570,9 +570,6 @@
     <ClInclude Include="src\renderers\RendererManager.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\2dgi\CudaTestCard.cuh">
-      <Filter>kernels\2dgi</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderers\gi2d\GI2D.h">
       <Filter>renderers\gi2d</Filter>
     </ClInclude>
