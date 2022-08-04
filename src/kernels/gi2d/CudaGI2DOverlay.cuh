@@ -5,12 +5,27 @@
 #include "../CudaImage.cuh"
 #include "../CudaManagedArray.cuh"
 
+#include "CudaBIH2D.cuh"
+
 namespace Cuda
-{
-    __host__ __device__ __forceinline__ vec2 TransformSceenToView2D(const mat3& m, const vec2& p)
+{     
+    class LineSegment
     {
-        return (m * vec3(p, 1.0f)).xy;
-    }
+    public:
+        __host__ __device__ LineSegment() noexcept {}
+        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1) noexcept :
+            v(v0), dv(v1 - v0) {}
+
+        float Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const;
+
+        __host__ __device__ __forceinline__ BBox2f GetBoundingBox() const
+        {
+            return BBox2f(vec2(min(v.x, v.x + dv.x), min(v.x, v.y + dv.y)),
+                          vec2(max(v.x, v.x + dv.x), max(v.x, v.y + dv.y)));
+        }
+
+        vec2 v, dv;
+    };
     
     struct GI2DOverlayParams
     {
@@ -18,6 +33,7 @@ namespace Cuda
 
         mat3 viewMatrix;
         
+        BBox2f sceneBounds;
         float viewScale;
         float majorLineSpacing;
         float minorLineSpacing;
@@ -54,6 +70,8 @@ namespace Cuda
         private:
             GI2DOverlayParams       m_params;
             Device::GI2DOverlay*    cu_deviceData = nullptr;
+
+            AssetHandle<Host::BIH2D>  m_hostBIH2D;
         };
     }
 }

@@ -2,6 +2,8 @@
 
 #include "CudaTransform.cuh"
 
+#include "bbox/CudaBBox2.cuh"
+
 namespace Cuda
 {    	
 	#define kKernelX				(blockIdx.x * blockDim.x + threadIdx.x)	

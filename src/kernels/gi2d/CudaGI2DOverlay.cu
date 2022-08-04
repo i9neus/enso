@@ -3,11 +3,18 @@
 
 namespace Cuda
 {
+    __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
+    {
+        const vec2 perp = v + saturate((dot(p, dv) - dot(v, dv)) / dot(dv, dv)) * dv;
+        return saturate(1.0f - (length(p - perp) - thickness) / dPdXY);
+    }
+    
     __host__ __device__ GI2DOverlayParams::GI2DOverlayParams()
     {
         majorLineSpacing = 1.0f;
         viewScale = 1.0f;
         lineAlpha = 0.0f;
+        sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
     }
     
     __device__ Device::GI2DOverlay::GI2DOverlay(const GI2DOverlayParams& params) :
@@ -29,16 +36,29 @@ namespace Cuda
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = (m_params.viewMatrix * vec3(vec2(xyScreen), 1.0f)).xy;
+        const vec2 xyView = m_params.viewMatrix * vec2(xyScreen);
 
-        vec3 L = vec3(0.1);
+        float L = 0.1f;
+        if (!m_params.sceneBounds.Contains(xyView))
+        {
+            deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
+            return;
+        }
+
+        const float dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
+
+        // Draw the grid
         vec2 xyGrid = fract(xyView / vec2(m_params.majorLineSpacing)) * sign(xyView);
-        if (cwiseMin(xyGrid) < 0.02f * mix(1.0, 0.1, m_params.lineAlpha)) { L = kOne * 0.3f; }
-
+        if (cwiseMin(xyGrid) < 0.02f * mix(1.0, 0.1, m_params.lineAlpha)) { L = 0.3f; }
         xyGrid = fract(xyView / vec2(m_params.minorLineSpacing)) * sign(xyView);
-        if (cwiseMin(xyGrid) < 0.02f) { L = max(L, kOne * 0.3f * m_params.lineAlpha); }
+        if (cwiseMin(xyGrid) < 0.02f) { L = max(L, 0.3f * m_params.lineAlpha); }
 
-        deviceOutputImage->At(xyScreen) = vec4(L, 1.0f);
+        LineSegment segment(vec2(-1.0f), vec2(1.0f, 1.5f));
+        float line = segment.Evaluate(xyView, 0.001f, dPdXY);
+
+        L = mix(L, 1.0f, line);
+
+        deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
     }
 
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Render);
@@ -46,6 +66,8 @@ namespace Cuda
     Host::GI2DOverlay::GI2DOverlay(const std::string& id) :
         Asset(id)
     {
+        m_hostBIH2D = CreateChildAsset<Host::BIH2D>("id_bih2D", this);
+        
         cu_deviceData = InstantiateOnDevice<Device::GI2DOverlay>(GetAssetID(), m_params);
     }
 
