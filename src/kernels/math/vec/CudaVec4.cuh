@@ -321,6 +321,8 @@ namespace Cuda
     __host__ __device__ __forceinline__ vec4 ceil(const vec4& v) { return { ceilf(v.x), ceilf(v.y), ceilf(v.z), ceilf(v.w) }; }
     __host__ __device__ __forceinline__ vec4 floor(const vec4& v) { return { floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w) }; }
     __host__ __device__ __forceinline__ vec4 sign(const vec4& v) { return { sign(v.x), sign(v.y), sign(v.z), sign(v.w) }; }
+    __host__ __device__ __forceinline__ vec4 fract(const vec4& v) { return { fmodf(v.x, 1.0f), fmodf(v.y, 1.0f), fmodf(v.z, 1.0f), fmodf(v.w, 1.0f) }; }
+    __host__ __device__ __forceinline__ vec4 mod(const vec4& a, const vec4& b) { return { fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z), fmodf(a.w, b.w) }; }
 
     __host__ __device__ __forceinline__ bool operator==(const vec4& lhs, const vec4& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w; }
     __host__ __device__ __forceinline__ bool operator!=(const vec4& lhs, const vec4& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w; }

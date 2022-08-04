@@ -21,6 +21,8 @@ namespace Json
         void Push(const Json::Node& node);
 
         void Clear();
+        inline bool IsEmpty() const { return m_rootDocument.NumMembers() == 0; }
+        const Json::Document& GetJson() const { return m_rootDocument; }
 
     private:
         Json::Document  m_rootDocument;

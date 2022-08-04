@@ -12,7 +12,7 @@ namespace Gui
     {
         m_hWnd = hwnd;
         m_rendererManager = rendererManager;
-        m_activeRenderer = m_rendererManager->GetRenderer();
+        m_activeRenderer = m_rendererManager->GetRendererPtr();
 
         m_gi2DUI = std::make_unique<GI2DUI>(m_commandQueue);
     }
@@ -129,6 +129,10 @@ namespace Gui
 
     void ComponentManager::DispatchCommands()
     {
+        if (!m_commandQueue.IsEmpty())
+        {
+            Log::Write(m_commandQueue.GetJson().Stringify(true));
+        }
     }
 
     void ComponentManager::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)

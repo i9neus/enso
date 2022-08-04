@@ -1,4 +1,6 @@
 #include "GI2DUI.h"
+#include "thirdparty/imgui/backends/imgui_impl_dx12.h"
+#include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
 namespace Gui
 {

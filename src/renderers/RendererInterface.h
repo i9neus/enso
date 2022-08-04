@@ -12,20 +12,31 @@ enum RenderManagerRenderState : int
     kRenderManagerError
 };
 
+enum RenderManagerMouseButtons : int
+{
+    kMouseLButton = 1,
+    kMouseRButton = 2,
+    kMouseMButton = 4,
+    kMouseXButton = 8
+};
+
 class RendererInterface
 {
 public:    
-    virtual void Initialise() = 0;
-    virtual void Start();
-    virtual void Stop();
-    virtual void Destroy(); 
+    friend class RendererManager;
+
+    void Initialise(const UINT clientWidth, const UINT clientHeight);
+    void Start();
+    void Stop();
+    void Destroy(); 
+
     virtual bool Poll(Json::Document& stateJson);
 
-    virtual void OnResizeClient() = 0;
-    virtual void OnMouseMove(const int clientX, const int clientY) {}
-    virtual void OnMouseButton(const int code, const bool isDown) {}
-    virtual void OnMouseWheel(const float degrees) {}
-    virtual void OnKey(const int code, const bool isDown) {}
+    void SetKey(const uint code, const bool isSysKey, const bool isDown);
+    void SetMouseButton(const uint code, const bool isDown);
+    void SetMousePos(const int mouseX, const int mouseY, const WPARAM flags);
+    void SetMouseWheel(const float angle);
+    void SetClientSize(const int width, const int height);
    
     virtual std::string GetRendererName() const = 0;
     virtual const std::string& GetRendererDescription() const { return ""; }
@@ -36,10 +47,21 @@ protected:
     RendererInterface();
     virtual ~RendererInterface();
 
+    virtual void OnMouseMove() {}
+    virtual void OnMouseButton(const uint code, const bool isDown) {}
+    virtual void OnMouseWheel() {}
+    virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) {}
+    virtual void OnResizeClient() {}
+
+    virtual void OnInitialise() {}
     virtual void OnDestroy() {};
     virtual void OnPreRender() {};
     virtual void OnRender() {};
     virtual void OnPostRender() {};
+
+    bool IsKeyDown(const uint code) const;
+    bool IsSysKeyDown(const uint code) const;
+    bool IsMouseButtonDown(const uint code) const;
 
 private:
     void RunThread();
@@ -57,7 +79,28 @@ protected:
     float                                           m_meanFrameTime;
     float                                           m_lastFrameTime;
     int                                             m_frameIdx;
+     
+    struct
+    {
+        Cuda::ivec2                                 pos;
+        Cuda::ivec2                                 prevPos;
+        Cuda::ivec2                                 delta;
+    }
+    m_mouse;
+
+
+    uint                                            m_mouseButtons;
+    float                                           m_mouseWheelAngle;
+    uint                                            m_keyCodes[4];
+    uint                                            m_sysKeyCodes[4];
+    int                                             m_clientWidth;
+    int                                             m_clientHeight;
+
+    Cuda::mat3                                      m_clientToNormMatrix;
 
     std::mutex		                                m_jsonInputMutex;
     std::mutex			                            m_jsonOutputMutex;
+    std::mutex                                      m_resourceMutex;
+
+    std::atomic<int>                                m_dirtyFlags;
 };

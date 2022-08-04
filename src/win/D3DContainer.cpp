@@ -36,7 +36,7 @@ void D3DContainer::OnCreate(HWND hWnd)
 	CreatePipeline();
 
 	// Load the renderer
-	m_rendererManager->InitialiseCuda(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+	m_rendererManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
 	m_rendererManager->LoadRenderer("2dgi");	
 
 	// Create the GUI interface
@@ -45,7 +45,7 @@ void D3DContainer::OnCreate(HWND hWnd)
 	// Setup IMGUI objects
 	m_ui->CreateD3DDeviceObjects(m_rootSignature, m_device, 2);	
 
-	m_rendererManager->GetRenderer()->Start();
+	m_rendererManager->GetRenderer().Start();
 }
 
 void D3DContainer::OnDestroy()
@@ -643,22 +643,22 @@ void D3DContainer::OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wPa
 	return 0;*/
 }
 
-void D3DContainer::OnKey(const int key, const bool isDown)
-{
-	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnKey(key, isDown); }
+void D3DContainer::OnKey(const WPARAM code, const bool isSysKey, const bool isDown)
+{	
+	if (m_rendererManager) { m_rendererManager->GetRenderer().SetKey(code, isSysKey, isDown); }
 }
 
 void D3DContainer::OnMouseButton(const int button, const bool isDown)
 {
-	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseButton(button, isDown); }
+	if (m_rendererManager) { m_rendererManager->GetRenderer().SetMouseButton(button, isDown); }
 }
 
 void D3DContainer::OnMouseMove(const int mouseX, const int mouseY, const WPARAM flags)
 {
-	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseMove(mouseX, mouseY); }
+	if (m_rendererManager) { m_rendererManager->GetRenderer().SetMousePos(mouseX, mouseY, flags); }
 }
 
 void D3DContainer::OnMouseWheel(const float degrees)
 {
-	if (m_rendererManager) { m_rendererManager->GetRenderer()->OnMouseWheel(degrees); }
+	if (m_rendererManager) { m_rendererManager->GetRenderer().SetMouseWheel(degrees); }
 }

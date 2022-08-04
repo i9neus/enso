@@ -251,6 +251,8 @@ namespace Cuda
     __host__ __device__ __forceinline__ vec3 ceil(const vec3& v) { return { ceilf(v.x), ceilf(v.y), ceilf(v.z) }; }
     __host__ __device__ __forceinline__ vec3 floor(const vec3& v) { return { floorf(v.x), floorf(v.y), floorf(v.z) }; }
     __host__ __device__ __forceinline__ vec3 sign(const vec3& v) { return { sign(v.x), sign(v.y), sign(v.z) }; }
+    __host__ __device__ __forceinline__ vec3 fract(const vec3& v) { return { fmodf(v.x, 1.0f), fmodf(v.y, 1.0f), fmodf(v.z, 1.0f) }; }
+    __host__ __device__ __forceinline__ vec3 mod(const vec3& a, const vec3& b) { return { fmodf(a.x, b.x), fmodf(a.y, b.y), fmodf(a.z, b.z) }; }
 
     __host__ __device__ __forceinline__ bool operator==(const vec3& lhs, const vec3& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z; }
     __host__ __device__ __forceinline__ bool operator!=(const vec3& lhs, const vec3& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z; }

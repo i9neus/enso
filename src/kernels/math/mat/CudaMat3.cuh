@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "CudaMat2.cuh"
 #include "../vec/CudaVec3.cuh"
 
 namespace Cuda
@@ -93,6 +94,15 @@ namespace Cuda
 		r.x = a.i00 * b.x + a.i01 * b.y + a.i02 * b.z;
 		r.y = a.i10 * b.x + a.i11 * b.y + a.i12 * b.z;
 		r.z = a.i20 * b.x + a.i21 * b.y + a.i22 * b.z;
+		return r;
+	}
+
+	template<typename Type>
+	__host__ __device__ __forceinline__ typename __mat2<Type>::VecType operator *(const __mat3<Type>& a, const typename __mat2<Type>::VecType& b)
+	{
+		typename __mat2<Type>::VecType r;
+		r.x = a.i00 * b.x + a.i01 * b.y + a.i02;
+		r.y = a.i10 * b.x + a.i11 * b.y + a.i12;
 		return r;
 	}
 

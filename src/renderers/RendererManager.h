@@ -13,9 +13,11 @@ class RendererManager : public CudaObjectManager
 public:
     RendererManager();
 
+    void                                    Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
     void                                    Destroy();
     std::vector<RendererComponentInfo>      GetRendererList() const;
-    std::shared_ptr<RendererInterface>      GetRenderer() { Assert(m_activeRenderer); return m_activeRenderer; }
+    RendererInterface&                      GetRenderer() { Assert(m_activeRenderer); return *m_activeRenderer; }
+    std::shared_ptr<RendererInterface>      GetRendererPtr() { return m_activeRenderer; }
     void                                    LoadRenderer(const std::string& id);
     void                                    UnloadRenderer();
 

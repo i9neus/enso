@@ -145,18 +145,20 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 			switch (message)
 			{
 		
-			case WM_KEYDOWN:	d3dContainer->OnKey(int(wParam & 0xff), true); return 0;
-			case WM_KEYUP:		d3dContainer->OnKey(int(wParam & 0xff), false); return 0;
+			case WM_KEYDOWN:	d3dContainer->OnKey(wParam, false, true); return 0;
+			case WM_KEYUP:		d3dContainer->OnKey(wParam, false, false); return 0;
+			case WM_SYSKEYDOWN:	d3dContainer->OnKey(wParam, true, true); return 0;
+			case WM_SYSKEYUP:	d3dContainer->OnKey(wParam, true, false); return 0;
 
-			case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: d3dContainer->OnMouseButton(0, true); return 0;
-			case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK: d3dContainer->OnMouseButton(1, true); return 0;
-			case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: d3dContainer->OnMouseButton(2, true); return 0;
-			case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK: d3dContainer->OnMouseButton(3, true); return 0;
+			case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: d3dContainer->OnMouseButton(1, true); return 0;
+			case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK: d3dContainer->OnMouseButton(2, true); return 0;
+			case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: d3dContainer->OnMouseButton(4, true); return 0;
+			case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK: d3dContainer->OnMouseButton(8, true); return 0;
 		
-			case WM_LBUTTONUP: d3dContainer->OnMouseButton(0, false); return 0;
-			case WM_RBUTTONUP: d3dContainer->OnMouseButton(1, false); return 0;
-			case WM_MBUTTONUP: d3dContainer->OnMouseButton(2, false); return 0;
-			case WM_XBUTTONUP: d3dContainer->OnMouseButton(3, false); return 0;
+			case WM_LBUTTONUP: d3dContainer->OnMouseButton(1, false); return 0;
+			case WM_RBUTTONUP: d3dContainer->OnMouseButton(2, false); return 0;
+			case WM_MBUTTONUP: d3dContainer->OnMouseButton(4, false); return 0;
+			case WM_XBUTTONUP: d3dContainer->OnMouseButton(8, false); return 0;
 
 			case WM_MOUSEMOVE: d3dContainer->OnMouseMove(int(GET_X_LPARAM(lParam)), int(GET_Y_LPARAM(lParam)), wParam); return 0;
 

@@ -33,6 +33,9 @@ protected:
 	cudaStream_t									m_renderStream;
 	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
 
+	uint32_t				    m_clientWidth;
+	uint32_t                    m_clientHeight;
+
 private:
 
 	// CUDA objects
@@ -51,6 +54,4 @@ private:
 
 	uint32_t					m_D3DTextureWidth;
 	uint32_t				    m_D3DTextureHeight;
-	uint32_t				    m_clientWidth;
-	uint32_t                    m_clientHeight;	
 };

@@ -142,8 +142,14 @@
     <ClCompile Include="src\imgui\ComponentManager.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="src\imgui\elements\CommandQueue.cpp">
-      <Filter>imgui\elements</Filter>
+    <ClCompile Include="src\generic\JsonCommandQueue.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderers\probegen\Probegen.cpp">
+      <Filter>renderers\probegen</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generic\Job.cpp">
+      <Filter>generic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -567,14 +573,8 @@
     <ClInclude Include="src\renderers\gi2d\GI2D.h">
       <Filter>renderers\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\CudaBVH2D.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh">
       <Filter>kernels\math\bbox</Filter>
-    </ClInclude>
-    <ClInclude Include="src\renderers\gi2d\BIH2D.h">
-      <Filter>renderers\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\gi2d\CudaBIH2D.cuh">
       <Filter>kernels\gi2d</Filter>
@@ -588,11 +588,20 @@
     <ClInclude Include="src\imgui\ComponentManager.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\imgui\elements\CommandQueue.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
       <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\JsonCommandQueue.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\probegen\Probegen.h">
+      <Filter>renderers\probegen</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Job.h">
+      <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh">
+      <Filter>kernels\gi2d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -709,6 +718,9 @@
     </Filter>
     <Filter Include="kernels\math\bbox">
       <UniqueIdentifier>{6c27d4d5-18f8-4605-990f-93f63ae2c24e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderers\probegen">
+      <UniqueIdentifier>{4f03bd4e-7804-4afe-9dd9-283a8042b17b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -835,10 +847,10 @@
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaBVH2D.cu">
+    <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu">
+    <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>

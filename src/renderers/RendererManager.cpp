@@ -5,8 +5,11 @@
 RendererManager::RendererManager()
 {
     AddInstantiator<GI2D>("2dgi");
+}
 
-    
+void RendererManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
+{
+    InitialiseCuda(dx12DeviceLUID, clientWidth, clientHeight);
 }
 
 void RendererManager::Destroy()
@@ -45,7 +48,7 @@ void RendererManager::LoadRenderer(const std::string& id)
     // Instantiate and set up the renderer
     m_activeRenderer = (it->second)();
     m_activeRenderer->SetCudaObjects(m_compositeImage, m_renderStream);
-    m_activeRenderer->Initialise();
+    m_activeRenderer->Initialise(m_clientWidth, m_clientHeight);
 
     Log::Success("Successfully loaded '%s'!", id);
 }

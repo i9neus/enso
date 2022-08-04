@@ -2,10 +2,22 @@
 
 #include "RendererInterface.h"
 
-RendererInterface::RendererInterface() : 
-	m_frameTimes(20)
-{
+using namespace Cuda;
 
+RendererInterface::RendererInterface() :
+	m_frameTimes(20),
+	m_mouseButtons(0),
+	m_mouseWheelAngle(0.0f),
+	m_clientWidth(1.0f),
+	m_clientHeight(1.0f),
+	m_dirtyFlags(0)
+{
+	std::memset(&m_keyCodes, 0, sizeof(uint) * 4);
+	std::memset(&m_sysKeyCodes, 0, sizeof(uint) * 4);
+
+	m_mouse.pos = std::numeric_limits<int>::min();
+	m_mouse.prevPos = std::numeric_limits<int>::min();
+	m_mouse.delta = 0.0f;
 }
 
 RendererInterface::~RendererInterface()
@@ -13,10 +25,17 @@ RendererInterface::~RendererInterface()
 
 }
 
-void RendererInterface::SetCudaObjects(Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage, cudaStream_t renderStream)
+void RendererInterface::SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream)
 {
-    m_compositeImage = compositeImage;
-    m_renderStream = renderStream;
+	m_compositeImage = compositeImage;
+	m_renderStream = renderStream;
+}
+
+void RendererInterface::Initialise(const UINT clientWidth, const UINT clientHeight)
+{
+	SetClientSize(clientWidth, clientHeight);
+
+	OnInitialise();
 }
 
 void RendererInterface::Destroy()
@@ -41,11 +60,11 @@ void RendererInterface::Start()
 }
 
 void RendererInterface::Stop()
-{ 
+{
 	if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun) { return; }
 
 	Log::Indent indent(tfm::format("Halting %s...\r", GetRendererName()));
-	
+
 	m_threadSignal.store(kRenderManagerHalt);
 	m_managerThread.join();
 
@@ -57,7 +76,10 @@ void RendererInterface::RunThread()
 	checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 
 	// Notify the inheriting class that the render is about to start
-	OnPreRender();
+	{
+		std::lock_guard<std::mutex> lock(m_resourceMutex);
+		OnPreRender();
+	}
 
 	m_frameIdx = 0;
 	try
@@ -67,7 +89,10 @@ void RendererInterface::RunThread()
 			Timer timer;
 
 			// Notify that a render "tick" has begun
-			OnRender();
+			{
+				std::lock_guard<std::mutex> lock(m_resourceMutex);
+				OnRender();
+			}
 
 			// Compute some stats on the framerate
 			m_frameIdx++;
@@ -78,7 +103,7 @@ void RendererInterface::RunThread()
 			{
 				m_meanFrameTime += ft;
 			}
-			m_meanFrameTime /= math::min(m_frameIdx, int(m_frameTimes.size()));
+			m_meanFrameTime /= ::math::min(m_frameIdx, int(m_frameTimes.size()));
 		}
 	}
 	catch (const std::runtime_error& err)
@@ -91,9 +116,12 @@ void RendererInterface::RunThread()
 		Log::Error("Unhandled error");
 		StackBacktrace::Print();
 	}
-	
+
 	// Notify that the render has completed
-	OnPostRender();
+	{
+		std::lock_guard<std::mutex> lock(m_resourceMutex);
+		OnPostRender();
+	}
 
 	// Signal that the renderer has finished
 	m_threadSignal.store(kRenderManagerIdle);
@@ -114,4 +142,79 @@ bool RendererInterface::Poll(Json::Document& stateJson)
 	managerJson.AddValue("rendererStatus", threadSignal);
 
 	return true;
+}
+
+void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool isDown)
+{
+	Assert(code >= 0 && code < 256);
+
+	uint* keyCodes = isSysKey ? m_sysKeyCodes : m_keyCodes;
+	if (isDown)
+	{
+		keyCodes[code >> 6] |= 1 << (code & 31);
+	}
+	else
+	{
+		keyCodes[code >> 6] &= ~(1 << (code & 31));
+	}
+
+	// Notify the superclass that a key state has changed
+	OnKey(code, isSysKey, isDown);
+}
+
+void RendererInterface::SetMouseButton(const uint code, const bool isDown)
+{
+	if (isDown)	{ m_mouseButtons |= code; }
+	else { m_mouseButtons &= ~code ; }
+
+	// Notify the superclass that a mouse state has changed
+	OnMouseButton(code, isDown);
+}
+
+void RendererInterface::SetMousePos(const int mouseX, const int mouseY, const WPARAM flags)
+{
+	// Update the mouse position information
+	m_mouse.prevPos = (m_mouse.pos.x == std::numeric_limits<int>::min()) ? ivec2(mouseX, m_clientHeight - 1 - mouseY) : m_mouse.pos;
+	m_mouse.pos = ivec2(mouseX, m_clientHeight - 1 - mouseY);
+	m_mouse.delta = m_mouse.pos - m_mouse.prevPos;
+
+	// Notify the superclass that a mouse state has changed
+	OnMouseMove();
+}
+
+void RendererInterface::SetMouseWheel(const float angle)
+{
+	m_mouseWheelAngle = angle;
+
+	// Notify the superclass that a mouse wheel state has changed
+	OnMouseWheel();
+}
+
+void RendererInterface::SetClientSize(const int width, const int height)
+{
+	m_clientWidth = width;
+	m_clientHeight = height;
+
+	m_clientToNormMatrix = mat3::Indentity();
+	m_clientToNormMatrix.i00 = 1.0f / height;
+	m_clientToNormMatrix.i11 = 1.0f / height;
+	m_clientToNormMatrix.i02 = -0.5f * float(width) / float(height);
+	m_clientToNormMatrix.i12 = -0.5f;
+
+	OnResizeClient();
+}
+
+bool RendererInterface::IsKeyDown(const uint code) const
+{
+	return (code > 255) ? false : ((m_keyCodes[code >> 6] & (1 << (code & 31))) != 0);
+}
+
+bool RendererInterface::IsSysKeyDown(const uint code) const
+{
+	return (code > 255) ? false : ((m_sysKeyCodes[code >> 6] & (1 << (code & 31))) != 0);
+}
+
+bool RendererInterface::IsMouseButtonDown(const uint code) const
+{
+	return (m_mouseButtons & code) != 0;
 }

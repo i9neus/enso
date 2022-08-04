@@ -48,7 +48,7 @@ namespace Cuda
         template<int RS, int R0, int R1>
         __host__ __device__ __forceinline__ __vec_swizzle& operator=(const __vec_swizzle<float, RS, 2, R0, R1>& rhs)
         {
-            x = rhs.other[R0]; y = rhs.other[R1];
+            x = rhs[R0]; y = rhs[R1];
             return *this;
         }
 
@@ -168,12 +168,12 @@ namespace Cuda
 
     // Vector functions
     template<int LS, int L0, int L1, int RS, int R0, int R1>
-    __host__ __device__ __forceinline__ float dot(__vec_swizzle<float, LS, 2, L0, L1>& lhs, const __vec_swizzle<float, RS, 2, R0, R1>& rhs)
+    __host__ __device__ __forceinline__ float dot(const __vec_swizzle<float, LS, 2, L0, L1>& lhs, const __vec_swizzle<float, RS, 2, R0, R1>& rhs)
     {
         return lhs.data[L0] * rhs.data[R0] + lhs.data[L1] * rhs.data[R1];
     }
     template<int LS, int L0, int L1>
-    __host__ __device__ __forceinline__ vec2 perpendicular(__vec_swizzle<float, LS, 2, L0, L1>& lhs)
+    __host__ __device__ __forceinline__ vec2 perpendicular(const __vec_swizzle<float, LS, 2, L0, L1>& lhs)
     {
         return { -lhs.data[L1], lhs.data[L0] };
     }
@@ -235,6 +235,8 @@ namespace Cuda
     __host__ __device__ __forceinline__ vec2 ceil(const vec2& v) { return { ceilf(v.x), ceilf(v.y) }; }
     __host__ __device__ __forceinline__ vec2 floor(const vec2& v) { return { floorf(v.x), floorf(v.y) }; }
     __host__ __device__ __forceinline__ vec2 sign(const vec2& v) { return { sign(v.x), sign(v.y) }; }
+    __host__ __device__ __forceinline__ vec2 fract(const vec2& v) { return { fmodf(v.x, 1.0f), fmodf(v.y, 1.0f) }; }
+    __host__ __device__ __forceinline__ vec2 mod(const vec2& a, const vec2& b) { return { fmodf(a.x, b.x), fmodf(a.y, b.y) }; }
 
     __host__ __device__ __forceinline__ float cwiseMax(const vec2& v) { return (v.x > v.y) ? v.x : v.y; }
     __host__ __device__ __forceinline__ float cwiseMin(const vec2& v) { return (v.x < v.y) ? v.x : v.y; }

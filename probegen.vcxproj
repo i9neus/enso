@@ -17,6 +17,8 @@
     <ClCompile Include="src\generic\debug\Backtrace.cpp" />
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
+    <ClCompile Include="src\generic\Job.cpp" />
+    <ClCompile Include="src\generic\JsonCommandQueue.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
     <ClCompile Include="src\generic\Log.cpp" />
     <ClCompile Include="src\generic\StringUtils.cpp" />
@@ -62,7 +64,6 @@
     <ClCompile Include="src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\imgui\elements\CommandQueue.cpp" />
     <ClCompile Include="src\imgui\elements\DataTable.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -83,6 +84,9 @@
     <ClCompile Include="src\onnx\OnnxModel.cpp" />
     <ClCompile Include="src\renderers\CudaObjectManager.cpp" />
     <ClCompile Include="src\renderers\gi2d\GI2D.cpp" />
+    <ClCompile Include="src\renderers\probegen\Probegen.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\renderers\RendererManager.cpp" />
     <ClCompile Include="src\renderers\RendererInterface.cpp" />
     <ClCompile Include="src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
@@ -104,6 +108,8 @@
     <ClInclude Include="src\generic\debug\ProcessMemoryMonitor.h" />
     <ClInclude Include="src\generic\FilesystemUtils.h" />
     <ClInclude Include="src\generic\HighResolutionTimer.h" />
+    <ClInclude Include="src\generic\Job.h" />
+    <ClInclude Include="src\generic\JsonCommandQueue.h" />
     <ClInclude Include="src\generic\JsonUtils.h" />
     <ClInclude Include="src\generic\Log.h" />
     <ClInclude Include="src\generic\Math.h" />
@@ -152,7 +158,6 @@
     <ClInclude Include="src\imgui\components\probegen\sceneobjects\TracableShelves.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="src\imgui\elements\CommandQueue.h" />
     <ClInclude Include="src\imgui\elements\DataTable.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -195,7 +200,7 @@
     <ClInclude Include="src\kernels\CudaWavefrontTracer.cuh" />
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaBIH2D.cuh" />
-    <ClInclude Include="src\kernels\gi2d\CudaBVH2D.cuh" />
+    <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
@@ -245,7 +250,9 @@
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
     <ClInclude Include="src\renderers\CudaObjectManager.h" />
     <ClInclude Include="src\renderers\gi2d\GI2D.h" />
-    <ClInclude Include="src\renderers\gi2d\BIH2D.h" />
+    <ClInclude Include="src\renderers\probegen\Probegen.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="src\renderers\RendererManager.h" />
     <ClInclude Include="src\renderers\RendererInterface.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -298,7 +305,7 @@
     <CudaCompile Include="src\kernels\CudaTests.cu" />
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
     <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu" />
-    <CudaCompile Include="src\kernels\gi2d\CudaBVH2D.cu" />
+    <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeIO.cu" />

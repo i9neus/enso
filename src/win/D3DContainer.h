@@ -62,7 +62,7 @@ public:
 
 	void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam);
 
-	void OnKey(const int key, const bool isDown);
+	void OnKey(const WPARAM code, const bool isSysKey, const bool isDown);
 	void OnMouseButton(const int button, const bool isDown);
 	void OnMouseMove(const int mouseX, const int mouseY, const WPARAM flags);
 	void OnMouseWheel(const float degrees);
