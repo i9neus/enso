@@ -2,7 +2,7 @@
 
 namespace Cuda
 {
-    __host__ Host::BIH2D::BIH2D(const std::string& id) : Asset(id)
+    /*__host__ Host::BIH2D::BIH2D(const std::string& id) : Asset(id)
     {
         cu_deviceData = InstantiateOnDevice<Device::BIH2D>(GetAssetID());
 
@@ -19,10 +19,5 @@ namespace Cuda
         m_hostNodes.DestroyAsset();
         
         DestroyOnDevice(GetAssetID(), cu_deviceData);
-    }
-
-    void Host::BIH2D::Resize(const size_t numPrimitives)
-    {        
-        m_hostNodes->Resize(numPrimitives);
-    }    
+    } */  
 }
