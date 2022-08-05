@@ -63,6 +63,9 @@ protected:
     bool IsSysKeyDown(const uint code) const;
     bool IsMouseButtonDown(const uint code) const;
 
+    inline void SetDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags | code; }
+    inline void ClearDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags & ~code; }
+
 private:
     void RunThread();
 
@@ -102,5 +105,5 @@ protected:
     std::mutex			                            m_jsonOutputMutex;
     std::mutex                                      m_resourceMutex;
 
-    std::atomic<int>                                m_dirtyFlags;
+    std::atomic<uint>                               m_dirtyFlags;
 };

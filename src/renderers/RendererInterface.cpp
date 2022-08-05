@@ -77,7 +77,7 @@ void RendererInterface::RunThread()
 
 	// Notify the inheriting class that the render is about to start
 	{
-		std::lock_guard<std::mutex> lock(m_resourceMutex);
+		//std::lock_guard<std::mutex> lock(m_resourceMutex);
 		OnPreRender();
 	}
 
@@ -90,7 +90,7 @@ void RendererInterface::RunThread()
 
 			// Notify that a render "tick" has begun
 			{
-				std::lock_guard<std::mutex> lock(m_resourceMutex);
+				//std::lock_guard<std::mutex> lock(m_resourceMutex);
 				OnRender();
 			}
 
@@ -119,7 +119,7 @@ void RendererInterface::RunThread()
 
 	// Notify that the render has completed
 	{
-		std::lock_guard<std::mutex> lock(m_resourceMutex);
+		//std::lock_guard<std::mutex> lock(m_resourceMutex);
 		OnPostRender();
 	}
 
