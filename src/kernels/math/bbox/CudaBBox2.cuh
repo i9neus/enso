@@ -4,11 +4,12 @@
  
 namespace Cuda
 {
-    template<typename VecType, typename RealType = float>
+    template<typename T>
     struct BBox2
     {
     public:
-        using ScalarType = typename VecType::kType;
+        using ScalarType = typename T::kType;
+        using VecType = T;
 
         __host__ __device__ BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
         __host__ __device__ BBox2(const BBox2&) = default;
@@ -16,8 +17,8 @@ namespace Cuda
         __host__ __device__ BBox2& operator=(const BBox2&) = default;
         __host__ __device__ ~BBox2() = default;
 
-        __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
-        __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
+        __host__ __device__ __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
+        __host__ __device__ __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
 
         template<typename OtherType>  
         __host__ __device__ __forceinline__  BBox2(const BBox2<OtherType>& other) :
@@ -41,24 +42,24 @@ namespace Cuda
         
         __host__ __device__ __forceinline__ VecType Centroid() const
         {
-            return VecType(ScalarType(RealType(0.5) * RealType(upper[0] - lower[0])), 
-                           ScalarType(RealType(0.5) * RealType(upper[1] - lower[1])));
+            return VecType(ScalarType(ScalarType(0.5) * ScalarType(upper[0] + lower[0])), 
+                           ScalarType(ScalarType(0.5) * ScalarType(upper[1] + lower[1])));
         }
 
         __host__ __device__ __forceinline__ ScalarType Centroid(const uint axis) const
         {
-            return ScalarType(RealType(0.5) * RealType(upper[axis] - lower[axis]));
+            return ScalarType(ScalarType(0.5) * ScalarType(upper[axis] + lower[axis]));
         }
 
         __host__ __device__ __forceinline__ VecType& operator[](const int idx) { return v[idx]; }
         __host__ __device__ __forceinline__ const VecType& operator[](const int idx) const { return v[idx]; }
 
-        __host__ __device__ __forceinline__ bool Contains(const VecType & p)
+        __host__ __device__ __forceinline__ bool Contains(const VecType & p) const
         {
             return p.x >= lower.x && p.x <= upper.x && p.y >= lower.y && p.y <= upper.y;
         }
 
-        __host__ __device__ __forceinline__ bool Contains(const BBox2 & other)
+        __host__ __device__ __forceinline__ bool Contains(const BBox2 & other) const
         {
             return lower.x <= other.lower.x && lower.y <= other.lower.y && upper.x >= other.upper.x && upper.y >= other.upper.y;
         }
@@ -73,6 +74,11 @@ namespace Cuda
         {
             lower.x -= ammount.x; lower.y -= ammount.y;
             upper.x += ammount.x; upper.y += ammount.y;
+        }
+
+        __host__ std::string& Format() const
+        {
+            return tfm::format("{%s, %s}", lower.format(), upper.format());
         }
 
     public:
@@ -94,13 +100,19 @@ namespace Cuda
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Union(const BBox2<T>& a, const BBox2<T>& b)
     {
-        return BBox2<T>(min(a.lower.x, b.lower.x), min(a.upper.y, b.upper.y), max(a.upper.x, b.upper.x), max(a.upper.y, b.upper.y));
+        return BBox2<T>(min(a.lower.x, b.lower.x), min(a.lower.y, b.lower.y), max(a.upper.x, b.upper.x), max(a.upper.y, b.upper.y));
+    }
+
+    template<typename T>
+    __host__ __device__ __forceinline__ BBox2<T> Union(const BBox2<T>& a, const vec2& b)
+    {
+        return BBox2<T>(min(a.lower.x, b.x), min(a.lower.y, b.y), max(a.upper.x, b.x), max(a.upper.y, b.y));
     }
 
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Intersection(const BBox2<T>& a, const BBox2<T>& b)
     {
-        return BBox2<T>(max(a.lower.x, b.lower.x), max(a.upper.y, b.upper.y), min(a.upper.x, b.upper.x), min(a.upper.y, b.upper.y));
+        return BBox2<T>(max(a.lower.x, b.lower.x), max(a.lower.y, b.lower.y), min(a.upper.x, b.upper.x), min(a.upper.y, b.upper.y));
     }
 
     template<typename T>
@@ -111,7 +123,7 @@ namespace Cuda
 
     template<typename T>
     __host__ __device__ __forceinline__ bool operator!=(const BBox2<T>& a, const BBox2<T>& b)
-    {
+    { 
         return !(a == b);
     }
 
@@ -125,5 +137,17 @@ namespace Cuda
     __host__ __device__ __forceinline__ BBox2<T>  operator|(const BBox2<T>& a, const BBox2<T>& b)
     {
         return Union(a, b);
+    }
+
+    template<typename T>
+    __host__ __device__ __forceinline__ BBox2<T> Grow(const BBox2<T>& bBox, const typename BBox2<T>::ScalarType& ammount)
+    {
+        return BBox2<T>(bBox.lower.x - ammount, bBox.lower.y - ammount, bBox.upper.x + ammount, bBox.upper.y + ammount);
+    }
+
+    template<typename VecType>
+    __host__ __device__ __forceinline__ BBox2<VecType> Grow(const BBox2<VecType>& bBox, const VecType& ammount)
+    {
+        return BBox2<VecType>(bBox.lower.x - ammount.x, bBox.lower.y - ammount.y, bBox.upper.x + ammount.x, bBox.upper.y + ammount.y);
     }
 }
