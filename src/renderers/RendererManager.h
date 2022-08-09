@@ -20,6 +20,7 @@ public:
     std::shared_ptr<RendererInterface>      GetRendererPtr() { return m_activeRenderer; }
     void                                    LoadRenderer(const std::string& id);
     void                                    UnloadRenderer();
+    void						            UpdateD3DOutputTexture(UINT64& currentFenceValue);
 
 private:
     template<typename HostClass>
@@ -37,5 +38,6 @@ public:
     std::unordered_map<std::string, std::function<std::shared_ptr<RendererInterface>()>>    m_instantiators;
 
 private:
+    Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
     
 };

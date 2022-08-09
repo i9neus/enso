@@ -130,9 +130,6 @@
     <ClCompile Include="src\renderers\RendererManager.cpp">
       <Filter>renderers</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderers\gi2d\GI2D.cpp">
-      <Filter>renderers\gi2d</Filter>
-    </ClCompile>
     <ClCompile Include="src\imgui\components\gi2d\GI2DUI.cpp">
       <Filter>imgui\components\gi2d</Filter>
     </ClCompile>
@@ -570,9 +567,6 @@
     <ClInclude Include="src\renderers\RendererManager.h">
       <Filter>renderers</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderers\gi2d\GI2D.h">
-      <Filter>renderers\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh">
       <Filter>kernels\math\bbox</Filter>
     </ClInclude>
@@ -584,9 +578,6 @@
     </ClInclude>
     <ClInclude Include="src\imgui\components\ComponentInterface.h">
       <Filter>imgui\components</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\ComponentManager.h">
-      <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\D3DIncludes.h">
       <Filter>generic</Filter>
@@ -602,6 +593,18 @@
     </ClInclude>
     <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh">
       <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\CudaVector.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\ComponentManager.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\CudaPrimitive2D.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderers\gi2d\GI2D.cuh">
+      <Filter>renderers\gi2d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -679,9 +682,6 @@
     </Filter>
     <Filter Include="onnx">
       <UniqueIdentifier>{dae644da-b6df-4dfb-86e4-cde8a510a05d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tests">
-      <UniqueIdentifier>{83c200b9-de7f-4867-9f6d-174c22f80d32}</UniqueIdentifier>
     </Filter>
     <Filter Include="imgui">
       <UniqueIdentifier>{6cc79c4f-3a02-4ef2-bb87-e5a5089b7daa}</UniqueIdentifier>
@@ -852,6 +852,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu">
       <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\CudaPrimitive2D.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\renderers\gi2d\GI2D.cu">
+      <Filter>renderers\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

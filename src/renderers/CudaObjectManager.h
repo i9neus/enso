@@ -22,16 +22,15 @@ public:
 	void						LinkSynchronisationObjects(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Fence>& d3dFence, HANDLE fenceEvent);
 	void						LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, ComPtr<ID3D12Resource>& d3dTexture, const UINT textureWidth, const UINT textureHeight, 
 													 const UINT clientWidth, const UINT clientHeight);
-	void						UpdateD3DOutputTexture(UINT64& currentFenceValue);
+	void						UpdateD3DOutputTexture(UINT64& currentFenceValue, Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage);
 
 	void						OnWindowResize(const UINT clientWidth, const UINT clientHeight);
 
 protected:
 	const cudaDeviceProp&		GetCudaDeviceProperties() const { return m_deviceProp; }
 
-	cudaStream_t									m_D3DStream;
-	cudaStream_t									m_renderStream;
-	Cuda::AssetHandle<Cuda::Host::ImageRGBA>		m_compositeImage;
+	cudaStream_t				m_D3DStream;
+	cudaStream_t				m_renderStream;
 
 	uint32_t				    m_clientWidth;
 	uint32_t                    m_clientHeight;

@@ -2,13 +2,7 @@
 #include "kernels/math/CudaColourUtils.cuh"
 
 namespace Cuda
-{
-    __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
-    {
-        const vec2 perp = v + saturate((dot(p, dv) - dot(v, dv)) / dot(dv, dv)) * dv;
-        return saturate(1.0f - (length(p - perp) - thickness) / dPdXY);
-    }
-    
+{    
     __host__ __device__ GI2DOverlayParams::GI2DOverlayParams()
     {
         grid.show = true;
@@ -23,10 +17,10 @@ namespace Cuda
         selectedSegmentIdx = kInvalidSegment;
     }
     
-    __device__ Device::GI2DOverlay::GI2DOverlay(const GI2DOverlayParams& params) :
-        m_params(params)
+    __device__ Device::GI2DOverlay::GI2DOverlay(const GI2DOverlayParams& params, const Objects& objects) :
+        m_params(params),
+        m_objects(objects)
     {
-
     }
 
     __device__ void Device::GI2DOverlay::Synchronise(const GI2DOverlayParams& params)
@@ -39,6 +33,13 @@ namespace Cuda
         m_objects = objects;
     }
 
+    __host__ __device__ __forceinline__ bool PointOnPerimiter(const BBox2f& bBox, const vec2& p, float thickness)
+    {
+        thickness *= 0.5f;
+        return (p.x >= bBox.lower.x - thickness && p.y >= bBox.lower.y - thickness && p.x <= bBox.upper.x + thickness && p.y <= bBox.upper.y + thickness) &&
+               (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
+    }
+
     __device__ void Device::GI2DOverlay::Render(Device::ImageRGBA* deviceOutputImage)
     {
         assert(deviceOutputImage);
@@ -48,7 +49,7 @@ namespace Cuda
 
         // Transform from screen space to view space
         const vec2 xyView = m_params.viewMatrix * vec2(xyScreen);
-
+        
         vec3 L = vec3(0.1f);
         if (!m_params.sceneBounds.Contains(xyView))
         {
@@ -65,25 +66,61 @@ namespace Cuda
             if (cwiseMin(xyGrid) < 0.02f) { L = max(L, kOne * 0.3f * m_params.grid.lineAlpha); }
         }
 
-        LineSegment segment(vec2(-1.0f), vec2(1.0f, 1.5f));
-        const float dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
-        float line = segment.Evaluate(xyView, 0.001f, dPdXY);
+        if (m_objects.bih && m_objects.lineSegments)
+        {
+            const Vector<LineSegment>& segments = *(m_objects.lineSegments);
+            auto onIntersectLeaf = [&, this](const uint idx)
+            {
+                /*BBox2f bBox = (*m_objects.lineSegments)[idx].GetBoundingBox();
+                bBox.Grow(-dPdXY * float(depth));
+                //if (PointOnPerimiter(bBox, xyView, dPdXY * 2.f))
+                if (bBox.Contains(xyView))
+                {
+                    L = mix(L, kOne, 0.3f);
+                }*/
+                const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
+                if (line > 0.f)
+                {
+                    L = mix(L, (idx == m_params.selectedSegmentIdx) ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                }
+            };        
+            
+            m_objects.bih->TestPoint(xyView, onIntersectLeaf);
 
-        L = (segment.Evaluate(m_params.mousePosView, 0.001f + 2.f * dPdXY, dPdXY) > 0.f) ?
-            mix(L, kOne, line) : mix(L, vec3(1.f, 0.f, 0.f), line);
+            //if (kThreadIdx == 0)
+                //printf("{%f, %f}, {%f, %f}\n", bih.m_bBox.lower.x, bih.m_bBox.lower.y, bih.m_bBox.upper.x, bih.m_bBox.upper.y);
+        }
+
+        /*if (m_objects.lineSegments)
+        {
+            const Vector<LineSegment>& segments = *(m_objects.lineSegments);
+            for (int idx = 0; idx < segments.Size(); ++idx)
+            {
+                const float line = segments[idx].Evaluate(xyView, 0.001f, dPdXY);
+                if (line > 0.f)
+                {
+                    L = mix(L, kOne, line);
+                }
+            }
+        }*/
+
+        //L = (segment.Evaluate(m_params.mousePosView, 0.001f + 2.f * dPdXY, dPdXY) > 0.f) ?
+            //mix(L, kOne, line) : mix(L, vec3(1.f, 0.f, 0.f), line);
 
         deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
     }
 
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Render);
 
-    Host::GI2DOverlay::GI2DOverlay(const std::string& id) :
-        Asset(id)
+    Host::GI2DOverlay::GI2DOverlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Host::Vector<LineSegment>>& lineSegments) :
+        Asset(id),
+        m_hostBIH2D(bih),
+        m_hostLineSegments(lineSegments)
     {
-        //m_hostBIH2D = CreateChildAsset<Host::BIH2D>("id_bih2D", this);
-        m_hostLineSegments = CreateChildAsset<Host::Array<LineSegment>>("id_lineSegments", this, 0, m_hostStream);
-        
-        cu_deviceData = InstantiateOnDevice<Device::GI2DOverlay>(GetAssetID(), m_params);
+        m_objects.bih = m_hostBIH2D->GetDeviceInstance();
+        m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();
+
+        cu_deviceData = InstantiateOnDevice<Device::GI2DOverlay>(GetAssetID(), m_params, m_objects); 
     }
 
     Host::GI2DOverlay::~GI2DOverlay()
@@ -118,12 +155,22 @@ namespace Cuda
         m_params.grid.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
         m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
+        m_params.dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
+
+        if (m_hostBIH2D->IsConstructed())
+        {
+            const Vector<LineSegment>& segments = *m_hostLineSegments;
+            auto onIntersectLeaf = [&, this](const uint idx)
+            {
+                if (segments[idx].Intersects(m_params.mousePosView, m_params.dPdXY * 5.0f))
+                {
+                    m_params.selectedSegmentIdx = idx;
+                }
+            };
+
+            m_hostBIH2D->TestPoint(m_params.mousePosView, onIntersectLeaf);
+        }
 
         SynchroniseObjects(cu_deviceData, m_params);
-    }
-
-    __host__ void Host::GI2DOverlay::UpdateLineSegments(const std::list<LineSegment>& segments)
-    {
-
     }
 }

@@ -2,16 +2,21 @@
 
 #include "../RendererInterface.h"
 #include "generic/Job.h"
-#include "kernels/gi2d/CudaGI2DOverlay.cuh"
 
-/*namespace Cuda
+namespace Cuda
 {
-    struct GI2DOverlayParams;
+    struct GI2DOverlayParams; 
+    struct LineSegment;
+    class Asset;
     namespace Host
     {
+        class BIH2DAsset;
         class GI2DOverlay;
+        template<typename T> class Vector;
     }
-}*/
+}
+
+struct CudaObjects;
 
 enum GI2DDirtyFlags : int
 {
@@ -56,14 +61,8 @@ private:
 private:
     enum JobIDs : uint { kJobDraw };
 
-    Cuda::AssetHandle<Cuda::Host::GI2DOverlay>  m_overlayRenderer;
+    std::unique_ptr<CudaObjects>                m_objects;
     JobManager                                  m_jobManager;
-
-    Cuda::GI2DOverlayParams                     m_overlayParams;
-
-    std::list<Cuda::LineSegment>                m_lineSegments;
-    std::list<Cuda::LineSegment>::iterator      m_startSegment;    
-    
     std::atomic<uint>                           m_editMode;
 
     struct

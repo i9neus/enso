@@ -1,6 +1,6 @@
 #include "RendererManager.h"
 
-#include "gi2d/GI2D.h"
+#include "gi2d/GI2D.cuh"
 
 RendererManager::RendererManager()
 {
@@ -10,11 +10,17 @@ RendererManager::RendererManager()
 void RendererManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
 {
     InitialiseCuda(dx12DeviceLUID, clientWidth, clientHeight);
+
+    // Create some Cuda objects
+    m_compositeImage = Cuda::CreateAsset<Cuda::Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
 }
 
 void RendererManager::Destroy()
 {
     UnloadRenderer();
+
+    // Destroy assets
+    m_compositeImage.DestroyAsset();
     
     DestroyCuda();
 }
@@ -28,6 +34,11 @@ std::vector<RendererComponentInfo> RendererManager::GetRendererList() const
     } 
      
     return rendererList;
+}
+
+void RendererManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
+{
+    CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage);
 }
 
 /*std::shared_ptr<RendererInterface> RendererManager::GetRenderer()
