@@ -7,7 +7,7 @@
 #include "../CudaAsset.cuh"
 #include "../CudaManagedObject.cuh"
 #include "../CudaImage.cuh"
-#include "../CudaManagedArray.cuh"
+#include "../CudaVector.cuh"
 
 namespace Cuda
 {
@@ -20,22 +20,70 @@ namespace Cuda
 
     struct BIH2DNode
     {
+        enum _attrs : uint { kInvalidLeaf = 0xffffffff };
+        
         __host__ __device__ BIH2DNode() = default;
 
         __host__ __device__ __forceinline__ uchar GetAxis() const { return uchar(data & 3u); }
-        __host__ __device__ __forceinline__ uint GetPrimIndex() const { return data >> 2; }
+        __host__ __device__ __forceinline__ uint GetPrimIndex() const { return idx; }
         __host__ __device__ __forceinline__ uint GetChildIndex() const { return data >> 2; }
-        
-        __host__ __device__ __forceinline__ void SetData(const uint idx, const uint flags) 
-        { 
-            assert(idx < ~3u);
-            data = (idx << 2) | (flags & 3u);
+        __host__ __device__ __forceinline__ bool IsValidLeaf() const { return idx != kInvalidLeaf; }
+        __host__ __device__ __forceinline__ bool IsLeaf() const { return uchar(data & 3u) == kBIHLeaf; }
+
+        __host__ __device__ __forceinline__ BBox2f GetLeftBBox(BBox2f parentBBox) const
+        {
+            parentBBox.upper[data & 3u] = left;
+            return parentBBox;
+        }
+
+        __host__ __device__ __forceinline__ BBox2f GetRightBBox(BBox2f parentBBox) const
+        {
+            parentBBox.lower[data & 3u] = right;
+            return parentBBox;
         }
         
+        __host__ __device__ __forceinline__ void MakeInner(const uint& i, const uint& split, const float& l, const float& r) 
+        { 
+            assert(i < ~3u);
+            data = (i << 2) | (split & 3u);
+            left = l;
+            right = r;
+        }
+
+        __host__ __device__ __forceinline__ void MakeLeaf(const uint& i)
+        {
+            data = kBIHLeaf;
+            idx = i;
+        }
+
         uint            data;
-        float           left;
-        float           right;
+        union
+        {
+            struct
+            {
+                float           left;
+                float           right;
+            };
+            uint                idx;
+        };
     };
+
+    struct BIH2DParams
+    {
+        bool                        isConstructed;
+        BBox2f                      bBox;
+        Device::Vector<BIH2DNode>*  nodes;
+    };
+
+    struct BIH2DStats
+    {
+        float buildTime = 0.f;
+        uchar maxDepth = 0;
+        uint numInnerNodes = 0;
+        uint numLeafNodes = 0;
+    };
+
+    namespace Host { class BIH2DBuilder; }
 
     class BIH2D
     {
@@ -47,28 +95,35 @@ namespace Cuda
         };
 
     public:
-        __host__ __device__ BIH2D() : m_isConstructed(false) {}
-        __host__ __device__ virtual ~BIH2D() = default;
+        friend class Host::BIH2DBuilder;
+
+        __host__ __device__ BIH2D();
+        __host__ __device__ ~BIH2D() {};
 
         __host__ __device__ bool IsConstructed() const { return m_isConstructed; }
 
-        template<typename InteresectLambda>
-        __host__ __device__ bool TestPoint(const vec2& p, InteresectLambda onIntersect) const
+        template<typename LeafLambda/*, typename InnerLambda*/>
+        __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf/*, InnerLambda onIntersectInner*/) const
         {
+            if (!m_isConstructed) { return; }
+
             #define kBIHStackSize 10
             StackElement stack[kBIHStackSize];
-            BBox2f bBoxA = m_bBox, bBoxB;
+            BBox2f bBox = m_bBox;
             BIH2DNode* node = &m_nodes[0];
             uint nodeIdx = 0;
             int stackIdx = -1;
 
+            assert(node);            
+
             do
-            {
+            {                
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
+                    assert(stackIdx >= 0);
                     nodeIdx = stack[stackIdx].nodeIdx;
-                    bBoxA = stack[stackIdx--].bBox;
+                    bBox = stack[stackIdx--].bBox;
                     node = &m_nodes[nodeIdx];
                     assert(node);
                 }
@@ -77,33 +132,45 @@ namespace Cuda
                 const uchar axis = node->GetAxis();
                 if (axis == kBIHLeaf)
                 {
-                    onIntersect(node->GetPrimIndex());
+                    if (node->IsValidLeaf())
+                    {
+                        onIntersectLeaf(node->GetPrimIndex());
+                    }
+                    node = nullptr;
                 }
                 // ...or an inner node.
                 else
                 {
-                    bBoxA = parentBBox;
-                    bBoxA[1][axis] = node->left;
-                    bBoxB = parentBBox;
-                    bBoxB[0][axis] = node->right;
+                    /*if (kThreadIdx == 0)
+                    {
+                        printf("%i\n", iterIdx);
+                        printf("A: {{%f, %f}, {%f, %f}}\n", bBoxA[0][0], bBoxA[0][1], bBoxA[1][0], bBoxA[1][1]);
+                        //printf("B: {{%f, %f}, {%f, %f}}\n", bBoxB[0][0], bBoxB[0][1], bBoxB[1][0], bBoxB[1][1]);
+                        printf("\n");
+                    }*/
+                    
+                    //if (onIntersectInner) { onIntersectInner(bBox, depth); }
 
                     // Left box hit?
-                    if (bBoxA.Contains(p))
+                    if(p[axis] < node->left)
                     {
                         // ...and right box hit?
-                        if (bBoxB.Contains(p) && stackIdx < kBIHStackSize)
+                        if (p[axis] > node->right && stackIdx < kBIHStackSize)
                         {
-                            stack[stackIdx++] = { bBoxB, node->GetChildIndex() + 1 };
+                            stack[++stackIdx] = { bBox, node->GetChildIndex() + 1 };
+                            stack[stackIdx].bBox[0][axis] = node->right;
                         }
 
                         nodeIdx = node->GetChildIndex();
                         node = &m_nodes[nodeIdx];
+                        bBox[1][axis] = node->left;
                     }
                     // Right box hit?
-                    else if (bBoxB.Contains(p))
+                    else if (p[axis] > node->right)
                     {
                         nodeIdx = node->GetChildIndex() + 1;
                         node = &m_nodes[nodeIdx];
+                        bBox[0][axis] = node->right;
                     }
                     // Nothing hit. 
                     else
@@ -111,125 +178,20 @@ namespace Cuda
                         node = nullptr;
                     }
                 }
-            } while (stackIdx >= 0 || node != nullptr);
+            } 
+            while (stackIdx >= 0 || node != nullptr);
         }
 
-        __host__ __device__ void Synchronise(BIH2DNode* nodes, const BBox2f& bBox)
-        {
-            m_nodes = nodes;
-            m_bBox = bBox;
-            m_isConstructed = true;
-        }
+        __host__ __device__ __forceinline__ const BBox2f&       GetBBox() const { return m_bBox; }
+        __host__ __device__ __forceinline__ const BIH2DNode*    GetNodes() const { return m_nodes; }
 
     protected:
-        BIH2DNode*          m_nodes;
-        BBox2f              m_bBox;
-        bool                m_isConstructed;
+        BIH2DNode*                  m_nodes;
+        BBox2f                      m_bBox;
+        bool                        m_isConstructed;
     };
 
-    template<typename NodeContainer>
-    class BIH2DBuilder
-    {
-    public:
-        BIH2DBuilder(NodeContainer& hostNodes) :
-            m_hostNodes(hostNodes)
-        {}
-
-        template<typename GetBBoxLambda>
-        void Build(std::vector<uint>& primitives, GetBBoxLambda getPrimitiveBBox)
-        {
-            //m_bih.Resize(primitives.size());
-
-            Timer timer;
-
-            // Find the global bounding box
-            m_bih.m_bBox = BBox2f::MakeInvalid();
-
-            AssertMsgFmt(m_bih.m_bBox.HasValidArea() && !m_bih.m_bBox.IsInfinite(),
-                "BIH bounding box is invalid: {%s, %s}", m_bih.m_bBox[0].format().c_str(), m_bih.m_bBox[1].format().c_str());
-
-            for (const auto idx : primitives)
-            {
-                const BBox2f primBBox = getPrimitiveBBox(idx);
-                AssertMsgFmt(primBBox.HasValidArea(),
-                    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
-                m_bih.m_bBox = Union(m_bih.m_bBox, primBBox);
-            }
-
-            // Construct the bounding interval hierarchy
-            uint nodeListIdx = 1;
-            uchar maxDepth = 0;
-            BuildPartition(primitives, 0, primitives.size(), 0, nodeListIdx, 0, maxDepth, m_bih.m_bBox, getPrimitiveBBox);
-
-            m_bih.m_isConstructed = true;
-            Log::Write("Constructed BIH in %.1fms", timer.Get() * 1e-3f);
-        }
-
-    protected:
-        template<typename GetBBoxLambda>
-        void BuildPartition(std::vector<uint>& primitives, const int i0, const int i1, const uint thisIdx, uint& nodeListIdx,
-            const uchar depth, uchar& maxDepth, const BBox2f& parentBBox, GetBBoxLambda getPrimitiveBBox)
-        {
-            // Sanity checks
-            Assert(depth < 32);
-            Assert(i0 != i1);
-
-            BIH2DNode& node = m_hostNodes[thisIdx];
-
-            // If this node only contains one primitive, it's a leaf
-            if (i1 == i0 + 1)
-            {
-                node.SetData(primitives[i0], kBIHLeaf);
-                return;
-            }
-
-            const uint axis = parentBBox.MaxAxis();
-            const float split = parentBBox.Centroid(axis);
-            BBox2f leftBBox = parentBBox, rightBBox = parentBBox;
-            leftBBox[1][axis] = -kFltMax;
-            rightBBox[0][axis] = kFltMax;
-
-            // Sort the primitives along the dominant axis
-            int j = 0;
-            uint sw;
-            for (int i = i0; i < i1; ++i)
-            {
-                const BBox2f primBBox = getPrimitiveBBox(primitives[i]);
-                const vec2 centroid = primBBox.Centroid();
-
-                if (centroid[axis] < split)
-                {
-                    // Update the partition position
-                    leftBBox[1][axis] = max(leftBBox[1][axis], primBBox[1][axis]);
-                    // Swap the element into the left-hand partition
-                    sw = primitives[j]; primitives[j] = primitives[i]; primitives[i] = sw;
-                    // Increment the partition index
-                    ++j;
-                }
-                else
-                {
-                    // Update the partition position
-                    rightBBox[0][axis] = min(rightBBox[0][axis], primBBox[0][axis]);
-                }
-            }
-
-            // Increment the list index to "allocate" two new nodes
-            nodeListIdx += 2;
-
-            // Build the inner node          
-            node.SetData(nodeListIdx - 2, axis);
-            node.left = leftBBox[1][axis];
-            node.right = rightBBox[0][axis];
-
-            // Build the child nodes
-            BuildPartition(primitives, i0, j, nodeListIdx - 2, nodeListIdx, leftBBox, getPrimitiveBBox);
-            BuildPartition(primitives, j, i1, nodeListIdx - 1, nodeListIdx, rightBBox, getPrimitiveBBox);
-        }
-
-    private:
-        BIH2D&                                      m_bih;
-        NodeContainer&                              m_hostNodes;
-    };
+    //template BIH2DBuilder<Host::Vector<BIH2DNode>>;
 
     namespace Device
     {
@@ -237,20 +199,65 @@ namespace Cuda
         {
         public:
             __device__ BIH2DAsset() {}
+
+            __device__ void Synchronise(const BIH2DParams& params);
         };
     }
 
     namespace Host
     {
-        class BIH2DAsset : public BIH2D, public Host::Asset
+        class BIH2DAsset;
+        
+        //template<typename NodeContainer>
+        class BIH2DBuilder
         {
         public:
-            __host__ BIH2DAsset() = default;
+            __host__ BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, std::function<BBox2f(uint)>& functor) noexcept;
 
-            __host__ virtual void OnDestroyAsset() override final;
+            __host__ void Build();
+
+            std::function<void(const char*)> m_debugFunctor = nullptr;
+
+
+        protected:
+            __host__ void BuildPartition(const int i0, const int i1, const uint thisIdx, const uchar depth, const BBox2f& parentBBox, const BBox2f& centroidBBox);
 
         private:
-
+            BIH2D&                                      m_bih;
+            Host::Vector<BIH2DNode>&                    m_hostNodes;
+            std::vector<uint>&                          m_primitiveIdxs;
+            std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
+            BIH2DStats&                                 m_stats;
         };
+        
+        class BIH2DAsset : public BIH2D, public Host::Asset
+        {
+        public:            
+
+            /*template<typename T> */friend class BIH2DBuilder;
+            
+            __host__ BIH2DAsset(const std::string& id);
+            __host__ virtual ~BIH2DAsset();
+
+            __host__ virtual void                   OnDestroyAsset() override final;
+
+            __host__ inline std::vector<uint>&      GetPrimitiveIndices() { return m_primitiveIdxs; }
+            __host__ void                           Build(std::function<BBox2f(uint)>& functor);
+            __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
+            __host__ void                           Synchronise();
+            __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
+            __host__ const Host::Vector<BIH2DNode>& GetHostNodes() const { return *m_hostNodes; }
+
+            std::function<void(const char*)> m_debugFunctor = nullptr;
+
+        private:
+            AssetHandle<Host::Vector<BIH2DNode>>    m_hostNodes;
+            std::vector<uint>                       m_primitiveIdxs;
+            BIH2DStats                              m_stats;
+
+            Device::BIH2DAsset*                     cu_deviceInstance;
+        };
+
+    
     }
 }
