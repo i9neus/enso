@@ -102,8 +102,22 @@ namespace Cuda
 
         __host__ __device__ bool IsConstructed() const { return m_isConstructed; }
 
-        template<typename LeafLambda/*, typename InnerLambda*/>
-        __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf/*, InnerLambda onIntersectInner*/) const
+        // Intersect point
+        __host__ __device__ __forceinline__ bool IntersectLeft(const vec2& p, const uchar& axis, const float& left, const BBox2f&) const { return p[axis] < left; }
+        __host__ __device__ __forceinline__ bool IntersectRight(const vec2& p, const uchar& axis, const float& right, const BBox2f&) const { return p[axis] > right; }
+
+        // Intersect bounding box
+        __host__ __device__ __forceinline__ bool IntersectLeft(const BBox2f& p, const uchar& axis, const float& left, const BBox2f& bBox) const
+        { 
+            return max(p.lower[axis], bBox.lower[axis]) - min(p.upper[axis], left) > 0.0f;           
+        }
+        __host__ __device__ __forceinline__ bool IntersectRight(const BBox2f& p, const uchar& axis, const float& right, const BBox2f& bBox) const
+        { 
+            return max(p.lower[axis], right) - min(p.upper[axis], bBox.upper[axis]) > 0.0f;
+        }
+
+        template<typename TestType, typename LeafLambda/*, typename InnerLambda*/>
+        __host__ __device__ void TestPrimitive(const TestType& p, LeafLambda onIntersectLeaf/*, InnerLambda onIntersectInner*/) const
         {
             if (!m_isConstructed) { return; }
 
@@ -141,21 +155,13 @@ namespace Cuda
                 // ...or an inner node.
                 else
                 {
-                    /*if (kThreadIdx == 0)
-                    {
-                        printf("%i\n", iterIdx);
-                        printf("A: {{%f, %f}, {%f, %f}}\n", bBoxA[0][0], bBoxA[0][1], bBoxA[1][0], bBoxA[1][1]);
-                        //printf("B: {{%f, %f}, {%f, %f}}\n", bBoxB[0][0], bBoxB[0][1], bBoxB[1][0], bBoxB[1][1]);
-                        printf("\n");
-                    }*/
-                    
-                    //if (onIntersectInner) { onIntersectInner(bBox, depth); }
-
                     // Left box hit?
-                    if(p[axis] < node->left)
+                    //if(p[axis] < node->left)
+                    if(IntersectLeft(p, axis, node->left, bBox))
                     {
                         // ...and right box hit?
-                        if (p[axis] > node->right && stackIdx < kBIHStackSize)
+                        //if (p[axis] > node->right && stackIdx < kBIHStackSize)
+                        if (IntersectRight(p, axis, node->right, bBox) && stackIdx < kBIHStackSize)
                         {
                             stack[++stackIdx] = { bBox, node->GetChildIndex() + 1 };
                             stack[stackIdx].bBox[0][axis] = node->right;
@@ -166,7 +172,7 @@ namespace Cuda
                         bBox[1][axis] = node->left;
                     }
                     // Right box hit?
-                    else if (p[axis] > node->right)
+                    else if (IntersectRight(p, axis, node->right, bBox))
                     {
                         nodeIdx = node->GetChildIndex() + 1;
                         node = &m_nodes[nodeIdx];
@@ -189,7 +195,7 @@ namespace Cuda
         BIH2DNode*                  m_nodes;
         BBox2f                      m_bBox;
         bool                        m_isConstructed;
-    };
+    };   
 
     //template BIH2DBuilder<Host::Vector<BIH2DNode>>;
 

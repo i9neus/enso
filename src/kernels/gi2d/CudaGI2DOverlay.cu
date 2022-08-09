@@ -85,7 +85,7 @@ namespace Cuda
                 }
             };        
             
-            m_objects.bih->TestPoint(xyView, onIntersectLeaf);
+            m_objects.bih->TestPrimitive(xyView, onIntersectLeaf);
 
             //if (kThreadIdx == 0)
                 //printf("{%f, %f}, {%f, %f}\n", bih.m_bBox.lower.x, bih.m_bBox.lower.y, bih.m_bBox.upper.x, bih.m_bBox.upper.y);
@@ -168,7 +168,7 @@ namespace Cuda
                 }
             };
 
-            m_hostBIH2D->TestPoint(m_params.mousePosView, onIntersectLeaf);
+            m_hostBIH2D->TestPrimitive(m_params.mousePosView, onIntersectLeaf);
         }
 
         SynchroniseObjects(cu_deviceData, m_params);
