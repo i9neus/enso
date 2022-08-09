@@ -19,7 +19,7 @@ namespace Tests
 				data[coeffIdx + sh] = RandVec3(-1.0f, 1.0f);
 				}
 			data[coeffIdx + 4] = kZero;
-			data[coeffIdx + 4].x = Rand();
+			data[coeffIdx + 4].x = RandFlt();
 		}
 
 		void SeedDiagnosticData(std::vector<vec3>& data, const ivec3& probePos, const int coeffIdx)

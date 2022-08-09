@@ -9,6 +9,7 @@
 #include "suites\CudaTracableTests.h"
 
 #include "suites\IOTests.h"
+#include "suites\CudaVectorTests.h"
 
 
 
