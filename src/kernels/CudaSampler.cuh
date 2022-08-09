@@ -280,13 +280,13 @@ namespace Cuda
 
     // Quick and dirty method for sampling the unit disc from two canonical random variables. For a better algorithm, see
     // A Low Distortion Map Between Disk and Square (Shirley and Chiu)
-    __device__ __forceinline__ vec2 SampleUnitDisc(const vec2& xi)
+    __host__ __device__ __forceinline__ vec2 SampleUnitDisc(const vec2& xi)
     {
         float phi = xi.y * kTwoPi;
         return vec2(sin(phi), cos(phi)) * sqrt(xi.x);
     }
 
-    __device__ __forceinline__ vec2 SampleUnitDiscLowDistortion(const vec2& xi)
+    __host__ __device__ __forceinline__ vec2 SampleUnitDiscLowDistortion(const vec2& xi)
     {
         float phi, r;
         const float a = 2.0f * xi.x - 1.0f, b = 2.0f * xi.y - 1.0f;
@@ -322,7 +322,7 @@ namespace Cuda
         return vec2(r * cosf(phi), r * sinf(phi));
     }
 
-    __device__ __forceinline__ vec3 SampleUnitSphere(vec2 xi)
+    __host__ __device__ __forceinline__ vec3 SampleUnitSphere(vec2 xi)
     {
         xi.x = xi.x * 2.0 - 1.0;
         xi.y *= kTwoPi;
@@ -331,7 +331,7 @@ namespace Cuda
         return vec3(cos(xi.y) * sinTheta, xi.x, sin(xi.y) * sinTheta);
     }
 
-    __device__ __forceinline__ vec3 SampleUnitHemisphere(vec2 xi)
+    __host__ __device__ __forceinline__ vec3 SampleUnitHemisphere(vec2 xi)
     {
         xi.y *= kTwoPi;
 
