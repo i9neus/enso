@@ -56,6 +56,8 @@ __host__ inline void CudaHostAssert(T result, char const* const func, const char
 
 namespace Cuda
 {		
+	enum MemoryAllocFlags : uint { kCudaMemoryManaged = 1 };
+	
 	template<typename ObjectType>
 	__host__ inline void GuardedFreeDeviceArray(const std::string& assetId, const size_t numElements, ObjectType** deviceData)
 	{
@@ -76,7 +78,7 @@ namespace Cuda
 	}
 
 	template<typename ObjectType>
-	__host__ inline void GuardedAllocDeviceArray(const std::string& assetId, const size_t numElements, ObjectType** deviceObject)
+	__host__ inline void GuardedAllocDeviceArray(const std::string& assetId, const size_t numElements, ObjectType** deviceObject, const uint flags = 0)
 	{
 		Assert(deviceObject);
 		AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
@@ -84,23 +86,31 @@ namespace Cuda
 		if (numElements == 0) { return; }
 
 		const size_t arraySize = sizeof(ObjectType) * numElements;
-		IsOk(cudaMalloc((void**)deviceObject, arraySize));
+
+		if (flags & kCudaMemoryManaged)
+		{
+			IsOk(cudaMalloc((void**)deviceObject, arraySize));
+		}
+		else
+		{
+			IsOk(cudaMalloc((void**)deviceObject, arraySize));
+		}
 
 		GlobalResourceRegistry::Get().RegisterDeviceMemory(assetId, arraySize);
 	}
 	 
 	template<typename ObjectType>
-	__host__ inline void GuardedAllocDeviceObject(const std::string& assetId, ObjectType** deviceObject)
+	__host__ inline void GuardedAllocDeviceObject(const std::string& assetId, ObjectType** deviceObject, const uint flags = 0)
 	{
-		GuardedAllocDeviceArray(assetId, 1, deviceObject);
+		GuardedAllocDeviceArray(assetId, 1, deviceObject, flags);
 	}
 
 	template<typename ObjectType>
-	__host__ inline void GuardedAllocAndCopyToDeviceArray(const std::string& assetId, ObjectType** deviceObject, size_t numElements, ObjectType* hostData)
+	__host__ inline void GuardedAllocAndCopyToDeviceArray(const std::string& assetId, ObjectType** deviceObject, size_t numElements, ObjectType* hostData, const uint flags = 0)
 	{
 		Assert(hostData);
 
-		GuardedAllocDeviceArray(assetId, numElements, deviceObject);
+		GuardedAllocDeviceArray(assetId, numElements, deviceObject, flags);
 
 		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(ObjectType) * numElements, cudaMemcpyHostToDevice));
 	}
@@ -222,7 +232,7 @@ namespace Cuda
 	{
 		if (cu_data == nullptr) { return; }
 		
-		KernelDestroyDeviceInstance<<<1, 1>>>(cu_data);		
+		KernelDestroyDeviceInstance << <1, 1 >> >(cu_data);		
 		IsOk(cudaDeviceSynchronize());
 
 		GlobalResourceRegistry::Get().DeregisterDeviceMemory(assetId, sizeof(ObjectType));
