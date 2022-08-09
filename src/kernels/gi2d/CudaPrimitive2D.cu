@@ -17,4 +17,10 @@ namespace Cuda
     {
         return length2(p - PerpendicularPoint(p)) < sqr(thickness);
     }
+
+    __host__ __device__ float LineSegment::Intersects(const vec2& o, const vec2& d) const
+    {
+        const vec2 n = vec2(dv.y, -dv.x);
+        return (dot(n, v) - dot(n, o)) / dot(n, d);
+    }
 }

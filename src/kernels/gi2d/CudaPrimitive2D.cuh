@@ -27,6 +27,7 @@ namespace Cuda
         __host__ __device__ __forceinline__ vec2 PerpendicularPoint(const vec2& p) const;
         __host__ __device__ float Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const;
         __host__ __device__ bool Intersects(const vec2& p, const float& thickness) const;
+        __host__ __device__ float Intersects(const vec2& o, const vec2& d) const;
         __host__ __device__ vec2 PointAt(const float& t) const { return v + dv * t; }
 
         __host__ __device__ __forceinline__ BBox2f GetBoundingBox() const

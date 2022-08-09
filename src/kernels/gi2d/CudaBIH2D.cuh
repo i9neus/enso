@@ -20,7 +20,8 @@ namespace Cuda
 
     struct BIH2DNode
     {
-        enum _attrs : uint { kInvalidLeaf = 0xffffffff };
+    public:
+        enum _attrs : uint { kLeft = 0, kRight = 1, kInvalidLeaf = 0xffffffff };
         
         __host__ __device__ BIH2DNode() = default;
 
@@ -32,22 +33,22 @@ namespace Cuda
 
         __host__ __device__ __forceinline__ BBox2f GetLeftBBox(BBox2f parentBBox) const
         {
-            parentBBox.upper[data & 3u] = left;
+            parentBBox.upper[data & 3u] = planes[BIH2DNode::kLeft];
             return parentBBox;
         }
 
         __host__ __device__ __forceinline__ BBox2f GetRightBBox(BBox2f parentBBox) const
         {
-            parentBBox.lower[data & 3u] = right;
+            parentBBox.lower[data & 3u] = planes[BIH2DNode::kRight];
             return parentBBox;
         }
         
-        __host__ __device__ __forceinline__ void MakeInner(const uint& i, const uint& split, const float& l, const float& r) 
+        __host__ __device__ __forceinline__ void MakeInner(const uint& i, const uint& split, const float& left, const float& right) 
         { 
             assert(i < ~3u);
             data = (i << 2) | (split & 3u);
-            left = l;
-            right = r;
+            planes[BIH2DNode::kLeft] = left;
+            planes[BIH2DNode::kRight] = right;
         }
 
         __host__ __device__ __forceinline__ void MakeLeaf(const uint& i)
@@ -56,15 +57,12 @@ namespace Cuda
             idx = i;
         }
 
+    public:
         uint            data;
         union
         {
-            struct
-            {
-                float           left;
-                float           right;
-            };
-            uint                idx;
+            float           planes[2];            
+            uint            idx;
         };
     };
 
@@ -83,17 +81,25 @@ namespace Cuda
         uint numLeafNodes = 0;
     };
 
+    #define kBIH2DStackSize 10
+
+    using BIH2DNearFar = vec2;
+
+    struct BIH2DPrimitiveStackElement
+    {
+        BBox2f      bBox;
+        uint        nodeIdx;
+    };
+
+    struct BIH2DRayStackElement : public BIH2DPrimitiveStackElement
+    {
+        BIH2DNearFar t;
+    };
+
     namespace Host { class BIH2DBuilder; }
 
     class BIH2D
     {
-    private:
-        struct StackElement
-        {
-            BBox2f      bBox;
-            uint        nodeIdx;
-        };
-
     public:
         friend class Host::BIH2DBuilder;
 
@@ -121,11 +127,9 @@ namespace Cuda
         {
             if (!m_isConstructed) { return; }
 
-            #define kBIHStackSize 10
-            StackElement stack[kBIHStackSize];
+            BIH2DPrimitiveStackElement stack[kBIH2DStackSize];
             BBox2f bBox = m_bBox;
             BIH2DNode* node = &m_nodes[0];
-            uint nodeIdx = 0;
             int stackIdx = -1;
 
             assert(node);            
@@ -135,10 +139,9 @@ namespace Cuda
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
-                    assert(stackIdx >= 0);
-                    nodeIdx = stack[stackIdx].nodeIdx;
-                    bBox = stack[stackIdx--].bBox;
-                    node = &m_nodes[nodeIdx];
+                    assert(stackIdx >= 0); 
+                    node = &m_nodes[stack[stackIdx].nodeIdx];
+                    bBox = stack[stackIdx--].bBox;                    
                     assert(node);
                 }
 
@@ -157,26 +160,24 @@ namespace Cuda
                 {
                     // Left box hit?
                     //if(p[axis] < node->left)
-                    if(IntersectLeft(p, axis, node->left, bBox))
+                    if(IntersectLeft(p, axis, node->planes[BIH2DNode::kLeft], bBox))
                     {
                         // ...and right box hit?
-                        //if (p[axis] > node->right && stackIdx < kBIHStackSize)
-                        if (IntersectRight(p, axis, node->right, bBox) && stackIdx < kBIHStackSize)
+                        //if (p[axis] > node->right && stackIdx < kBIH2DStackSize)
+                        if (IntersectRight(p, axis, node->planes[BIH2DNode::kRight], bBox) && stackIdx < kBIH2DStackSize)
                         {
                             stack[++stackIdx] = { bBox, node->GetChildIndex() + 1 };
-                            stack[stackIdx].bBox[0][axis] = node->right;
+                            stack[stackIdx].bBox[0][axis] = node->planes[BIH2DNode::kRight];
                         }
 
-                        nodeIdx = node->GetChildIndex();
-                        node = &m_nodes[nodeIdx];
-                        bBox[1][axis] = node->left;
+                        node = &m_nodes[node->GetChildIndex()];
+                        bBox[1][axis] = node->planes[BIH2DNode::kLeft];
                     }
                     // Right box hit?
-                    else if (IntersectRight(p, axis, node->right, bBox))
+                    else if (IntersectRight(p, axis, node->planes[BIH2DNode::kRight], bBox))
                     {
-                        nodeIdx = node->GetChildIndex() + 1;
-                        node = &m_nodes[nodeIdx];
-                        bBox[0][axis] = node->right;
+                        node = &m_nodes[node->GetChildIndex() + 1];
+                        bBox[0][axis] = node->planes[BIH2DNode::kRight];
                     }
                     // Nothing hit. 
                     else
@@ -187,9 +188,136 @@ namespace Cuda
             } 
             while (stackIdx >= 0 || node != nullptr);
         }
+       
+        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const vec2& o, const vec2& d, BIH2DNode*& const node, const uchar& axis, const uchar& nearPlaneIdx,
+                                                                      BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
+        {
+            // Nearest box hit?    
+            const float tPlaneNear = (node->planes[nearPlaneIdx] - o[axis]) / d[axis];
+            if (tPlaneNear > t[0] && tPlaneNear < t[1])
+            {
+                // ...and furthest box hit?
+                const float tPlaneFar = (node->planes[(nearPlaneIdx + 1) & 1] - o[axis]) / d[axis];
+                if (tPlaneFar > t[0] && tPlaneFar < t[1])
+                {
+                    BIH2DRayStackElement& element = stack[++stackIdx];
+                    element.nodeIdx = node->GetChildIndex() + 1;
+                    element.bBox = bBox;
+                    element.bBox[0][axis] = node->planes[(nearPlaneIdx + 1) & 1];
+
+                    // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
+                    if (element.bBox.Contains(o)) { element.t[1] = tPlaneNear; element.t[0] = 0.0f; }
+                    else { element.t[0] = tPlaneNear; }
+                }
+
+                node = &m_nodes[node->GetChildIndex()];
+                bBox[1][axis] = node->planes[nearPlaneIdx];
+                
+                // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
+                if (bBox.Contains(o)) { t[1] = tPlaneNear; t[0] = 0.0f; }
+                else { t[0] = tPlaneNear; }
+            }
+            // Furthest box hit?
+            else
+            {
+                const float tPlaneFar = (node->planes[(nearPlaneIdx + 1) & 1] - o[axis]) / d[axis];
+                if (tPlaneFar > t[0] && tPlaneFar < t[1])
+                {
+                    node = &m_nodes[node->GetChildIndex() + 1];
+                    bBox[0][axis] = node->planes[(nearPlaneIdx + 1) & 1];
+                    
+                    // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
+                    if (bBox.Contains(o)) { t[1] = tPlaneFar; t[0] = 0.0f; }
+                    else { t[0] = tPlaneFar; }
+                }
+                // Nothing hit. 
+                else
+                {
+                    node = nullptr;
+                }
+            }
+        }
+
+        template<typename LeafLambda/*, typename InnerLambda*/>
+        __host__ __device__ void TestRay(const vec2& o, const vec2& d, LeafLambda onIntersectLeaf) const
+        {           
+            if (!m_isConstructed) { return; }
+                
+            BIH2DNearFar t;
+            if(!TestRayBBox(o, d, m_bBox, t)) { return; }
+
+            // Create a stack            
+            BIH2DRayStackElement stack[kBIH2DStackSize];
+            BBox2f bBox = m_bBox;
+            BIH2DNode* node = &m_nodes[0];
+            uint nodeIdx = 0;
+            int stackIdx = -1;
+
+            assert(node);            
+
+            do
+            {                
+                // If there's no node in place, pop the stack
+                if (!node)
+                {
+                    assert(stackIdx >= 0);
+                    const BIH2DRayStackElement& element = stack[stackIdx--];
+                    t = element.t;
+                    bBox = element.bBox;
+                    node = &m_nodes[element.nodeIdx];
+                    assert(node);
+                }
+
+                // Node is a leaf?
+                const uchar axis = node->GetAxis();
+                if (axis == kBIHLeaf)
+                {
+                    if (node->IsValidLeaf())
+                    {
+                        t[0] = min(t[0], onIntersectLeaf(node->GetPrimIndex(), t[0]));
+                    }
+                    node = nullptr;
+                }
+                // ...or an inner node.
+                else
+                {                    
+                    // Left-hand node is likely closer, so traverse that one first
+                    if (o[axis] < node->planes[BIH2DNode::kLeft])
+                    {
+                        RayTraverseInnerNode(o, d, node, axis, 0, t, bBox, stack, stackIdx);
+                    }
+                    // ...otherwise traverse right-hand node first
+                    else
+                    {
+                        RayTraverseInnerNode(o, d, node, axis, 1, t, bBox, stack, stackIdx);
+                    }                    
+                }
+            } 
+            while (stackIdx >= 0 || node != nullptr);
+        }
 
         __host__ __device__ __forceinline__ const BBox2f&       GetBBox() const { return m_bBox; }
         __host__ __device__ __forceinline__ const BIH2DNode*    GetNodes() const { return m_nodes; }
+
+    protected:
+        __host__ __device__ __forceinline__ bool TestRayBBox(const vec2& o, const vec2& d, const BBox2f& bBox, BIH2DNearFar& t) const
+        {
+            vec2 tNearPlane, tFarPlane;
+            for (int dim = 0; dim < 2; dim++)
+            {
+                if (fabs(d[dim]) > 1e-10f)
+                {
+                    float t0 = (bBox.upper[dim] - o[dim]) / d[dim];
+                    float t1 = (bBox.lower[dim] - o[dim]) / d[dim];
+                    if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
+                    else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
+                }
+            }
+
+            t[0] = max(0.0f, cwiseMax(tNearPlane));
+            t[1] = cwiseMin(tFarPlane);
+            return t[0] < t[1];
+        }
 
     protected:
         BIH2DNode*                  m_nodes;
