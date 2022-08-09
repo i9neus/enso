@@ -32,30 +32,41 @@
     <ClInclude Include="..\src\generic\Math.h" />
     <ClInclude Include="..\src\generic\StdIncludes.h" />
     <ClInclude Include="..\src\generic\StringUtils.h" />
+    <ClInclude Include="..\src\kernels\gi2d\CudaBIH2D.cuh" />
+    <ClInclude Include="..\src\kernels\gi2d\CudaPrimitive2D.cuh" />
     <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaTransform.cuh" />
     <ClInclude Include="suites\CudaBIH2DTests.h" />
+    <ClInclude Include="suites\CudaBIH2DTestsImpl.cuh" />
     <ClInclude Include="suites\CudaMat2Tests.h" />
     <ClInclude Include="suites\CudaMat3Tests.h" />
     <ClInclude Include="suites\CudaMat4Tests.h" />
     <ClInclude Include="suites\CudaMathTests.h" />
     <ClInclude Include="suites\CudaTracableTests.h" />
     <ClInclude Include="suites\CudaVecTests.h" />
+    <ClInclude Include="suites\CudaVectorTestsImpl.cuh" />
     <ClInclude Include="suites\IOTests.h" />
     <ClInclude Include="suites\SuiteBase.h" />
+    <ClInclude Include="suites\CudaVectorTests.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\src\kernels\cameras\CudaCamera.cu" />
     <CudaCompile Include="..\src\kernels\CudaAsset.cu" />
     <CudaCompile Include="..\src\kernels\CudaImage.cu" />
     <CudaCompile Include="..\src\kernels\CudaRenderObject.cu" />
+    <CudaCompile Include="..\src\kernels\gi2d\CudaBIH2D.cu" />
+    <CudaCompile Include="..\src\kernels\gi2d\CudaPrimitive2D.cu" />
     <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="suites\CudaBIH2DTestsImpl.cu" />
+    <CudaCompile Include="suites\CudaVectorTestsImpl.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3821692D-C280-42B8-ACEF-EFD18F52200E}</ProjectGuid>
@@ -91,7 +102,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)include;$(ONNXRUNTIME_ROOT)\include;$(MSBuildProjectDirectory)\..\src;$(CudaToolkitIncludeDir)\include</IncludePath>
-    <OutDir>$(MSBuildProjectDirectory)/../../bin/win64/$(Configuration)/</OutDir>
+    <OutDir>$(MSBuildProjectDirectory)/../bin/win64/$(Configuration)/</OutDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(BOOST_LIBRARYDIR);$(ONNXRUNTIME_ROOT)/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -117,6 +128,7 @@
       <Include>./;../../common/inc</Include>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Runtime>MDd</Runtime>
+      <CodeGeneration>compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;compute_61,sm_61;compute_70,sm_70;compute_75,sm_75;compute_80,sm_80;compute_86,sm_86;</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

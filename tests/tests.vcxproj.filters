@@ -55,15 +55,6 @@
     <ClInclude Include="..\src\generic\StringUtils.h">
       <Filter>dependencies</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\kernels\math\CudaMath.cuh">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\kernels\math\CudaTransform.cuh">
-      <Filter>dependencies</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\generic\D3DIncludes.h">
       <Filter>dependencies</Filter>
     </ClInclude>
@@ -88,44 +79,80 @@
     <ClInclude Include="suites\IOTests.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh">
-      <Filter>dependencies</Filter>
-    </ClInclude>
     <ClInclude Include="suites\CudaMat2Tests.h">
       <Filter>suites</Filter>
     </ClInclude>
     <ClInclude Include="suites\CudaBIH2DTests.h">
       <Filter>suites</Filter>
     </ClInclude>
+    <ClInclude Include="suites\CudaVectorTestsImpl.cuh">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\CudaVectorTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\CudaBIH2DTestsImpl.cuh">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\gi2d\CudaBIH2D.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaMath.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\gi2d\CudaPrimitive2D.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\math\CudaTransform.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
-      <Filter>dependencies</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
-    <CudaCompile Include="..\src\kernels\math\CudaTransform.cu">
-      <Filter>dependencies</Filter>
+    <CudaCompile Include="suites\CudaVectorTestsImpl.cu">
+      <Filter>suites</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
-      <Filter>dependencies</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\src\kernels\CudaImage.cu">
-      <Filter>dependencies</Filter>
+    <CudaCompile Include="suites\CudaBIH2DTestsImpl.cu">
+      <Filter>suites</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\CudaAsset.cu">
-      <Filter>dependencies</Filter>
+      <Filter>dependencies\kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu">
-      <Filter>dependencies</Filter>
+    <CudaCompile Include="..\src\kernels\gi2d\CudaBIH2D.cu">
+      <Filter>dependencies\kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\cameras\CudaCamera.cu">
-      <Filter>dependencies</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\src\kernels\CudaRenderObject.cu">
-      <Filter>dependencies</Filter>
+      <Filter>dependencies\kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu">
-      <Filter>dependencies</Filter>
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\CudaImage.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\gi2d\CudaPrimitive2D.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\CudaRenderObject.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\math\CudaTransform.cu">
+      <Filter>dependencies\kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +161,9 @@
     </Filter>
     <Filter Include="suites">
       <UniqueIdentifier>{4460e639-1e14-49d4-b91c-4355be052ec7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dependencies\kernels">
+      <UniqueIdentifier>{12d3ce02-5993-4093-a74a-a09079896706}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
