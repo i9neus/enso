@@ -23,6 +23,7 @@ namespace Cuda
 
         int selectedSegmentIdx;
         vec2 mousePosView;
+        vec2 rayOriginView;
 
         struct
         {

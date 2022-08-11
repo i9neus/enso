@@ -5,7 +5,8 @@ namespace Cuda
     __host__ __device__ BIH2D::BIH2D() :
         m_bBox(vec2(0.f), vec2(0.f)),
         m_nodes(nullptr),
-        m_isConstructed(false)
+        m_isConstructed(false),
+        m_numNodes(0)
     {
 
     }    
@@ -14,6 +15,7 @@ namespace Cuda
     {
         assert(params.nodes);
         m_nodes = params.nodes->Data();
+        m_numNodes = params.nodes->Size();
         m_bBox = params.bBox;
         m_isConstructed = params.isConstructed;
     }
@@ -82,7 +84,8 @@ namespace Cuda
         BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_bBox, centroidBBox);
 
         // Update the host data structures
-        m_bih.m_nodes = m_hostNodes.GetHostData();
+        m_bih.m_nodes = m_hostNodes.GetHostData();        
+        m_bih.m_numNodes = m_hostNodes.Size();
         m_bih.m_isConstructed = true;
         
         m_stats.buildTime = timer.Get() * 1e-3f;
@@ -195,8 +198,6 @@ namespace Cuda
         // Build the child nodes
         BuildPartition(i0, j, leftIdx, depth + 1, leftBBox, leftCentroidBBox);
         BuildPartition(j, i1, rightIdx, depth + 1, rightBBox, rightCentroidBBox);
-
-        auto temp = m_hostNodes[thisIdx];
     }
 
     __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)
@@ -209,6 +210,8 @@ namespace Cuda
         builder.m_debugFunctor = m_debugFunctor;
         builder.Build();
 
+        CheckTreeNodes();
+
         // Synchronise the node data to the device
         m_hostNodes->Synchronise(kVectorSyncUpload);
         Cuda::Synchronise(cu_deviceInstance, BIH2DParams{ m_isConstructed, m_bBox, m_hostNodes->GetDeviceInstance() });
@@ -218,5 +221,36 @@ namespace Cuda
     {
         //const BIH2DParams params = {m_isConstructed, m_bBox, m_hostNodes->GetDeviceInstance() };
         //Cuda::Synchronise(cu_deviceInstance, params);
-    }        
+    } 
+
+    __host__ void Host::BIH2DAsset::CheckTreeNodes() const
+    {
+        for (int nodeIdx = 0; nodeIdx < m_hostNodes->Size(); ++nodeIdx)
+        {
+            const BIH2DNode& node = (*m_hostNodes)[nodeIdx];
+            if (node.IsLeaf())
+            {
+            }
+            else
+            {
+                for (int planeIdx = 0; planeIdx < 2; ++planeIdx)
+                {
+                    const float plane = node.planes[planeIdx];
+                    if (!std::isfinite(plane))
+                    {
+                        Log::Error("Plane %i at node %i is non-finite: %f", planeIdx, nodeIdx, plane);
+                    }
+                    if (!std::isnormal(plane))
+                    {
+                        Log::Error("Plane %i at node %i is denormalised: %f", planeIdx, nodeIdx, plane);
+                    }
+                    const uchar axis = node.GetAxis();
+                    if (plane < m_bBox.lower[axis] || plane > m_bBox.upper[axis])
+                    {
+                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_bBox.lower[axis], m_bBox.upper[axis]);
+                    }
+                }
+            }
+        }
+    }
 }

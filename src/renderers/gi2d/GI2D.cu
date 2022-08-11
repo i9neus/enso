@@ -47,23 +47,25 @@ void GI2D::OnInitialise()
     
     auto& primIdxs = m_objects->primitiveBIH->GetPrimitiveIndices();
     
-    constexpr int kCircleSegs = 10;
-    Host::Vector<LineSegment>& segments = *m_objects->hostLineSegments;
-    primIdxs.resize(kCircleSegs);
-    segments.Resize(kCircleSegs);
+    Host::Vector<LineSegment>& segments = *m_objects->hostLineSegments;   
+    /*segments.Resize(kCircleSegs);
     for (uint idx = 0; idx < kCircleSegs; ++idx)
     {
         const float theta0 = kTwoPi * float(idx) / float(kCircleSegs);
         const float theta1 = kTwoPi * float(idx + 1) / float(kCircleSegs);
         segments[idx] = LineSegment(vec2(std::cos(theta0), std::sin(theta0)) * 0.25f, vec2(std::cos(theta1), std::sin(theta1)) * 0.25f);
         primIdxs[idx] = idx;
-    }
+    }*/
+    GenerateRandomLineSegments(segments, BBox2f(vec2(-0.2f), vec2(0.2f)), ivec2(10, 10), vec2(0.1f, 0.1f), 1);
     segments.Synchronise(kVectorSyncUpload);
+    
+    primIdxs.resize(segments.Size());
+    for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
     
     // Construct the BVH
     std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
     {
-        return segments[idx].GetBoundingBox();
+        return Grow(segments[idx].GetBoundingBox(), 0.001f);
     };
     m_objects->primitiveBIH->Build(getPrimitiveBBox);
 
@@ -128,7 +130,7 @@ void GI2D::OnMouseButton(const uint code, const bool isDown)
     }
     else if(code == kMouseLButton && isDown)
     {
-       
+        m_objects->overlayParams.rayOriginView = m_objects->overlayParams.viewMatrix * vec2(m_mouse.pos);
     }
 }
 
