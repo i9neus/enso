@@ -1,10 +1,10 @@
 ﻿#include "../CudaSampler.cuh"
-#include "../CudaHash.cuh"
 #include "../CudaCtx.cuh"
 #include "../CudaRay.cuh"
 
 #include "CudaPerspectiveCamera.cuh"
 #include "generic/JsonUtils.h"
+#include "generic/Hash.h"
 #include "../CudaManagedArray.cuh"
 #include "../CudaManagedObject.cuh"
 

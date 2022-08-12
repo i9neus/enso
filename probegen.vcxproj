@@ -106,6 +106,7 @@
     <ClInclude Include="src\generic\debug\Backtrace.h" />
     <ClInclude Include="src\generic\debug\ProcessMemoryMonitor.h" />
     <ClInclude Include="src\generic\FilesystemUtils.h" />
+    <ClInclude Include="src\generic\Hash.h" />
     <ClInclude Include="src\generic\HighResolutionTimer.h" />
     <ClInclude Include="src\generic\Job.h" />
     <ClInclude Include="src\generic\JsonCommandQueue.h" />
@@ -188,7 +189,6 @@
     <ClInclude Include="src\kernels\CudaAsset.cuh" />
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh" />
     <ClInclude Include="src\kernels\CudaCtx.cuh" />
-    <ClInclude Include="src\kernels\CudaHash.cuh" />
     <ClInclude Include="src\kernels\CudaImage.cuh" />
     <ClInclude Include="src\kernels\CudaManagedObject.cuh" />
     <ClInclude Include="src\kernels\CudaRenderObject.cuh" />

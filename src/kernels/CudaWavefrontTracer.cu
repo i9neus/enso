@@ -1,7 +1,7 @@
 ﻿#include "CudaWavefrontTracer.cuh"
 #include "CudaSampler.cuh"
-#include "CudaHash.cuh"
 #include "generic/Assert.h"
+#include "generic/Hash.h"
 #include "CudaAsset.cuh"
 #include "CudaRay.cuh" 
 

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CudaRay.cuh"
-#include "CudaHash.cuh"
+#include "generic/Hash.h"
 
 namespace Cuda
 {    

@@ -1,6 +1,6 @@
 #include "CudaGI2DOverlay.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
-#include "kernels/CudaHash.cuh"
+#include "generic/Hash.h"
 
 namespace Cuda
 {    
