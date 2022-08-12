@@ -256,6 +256,7 @@
     </ClInclude>
     <ClInclude Include="src\renderers\RendererManager.h" />
     <ClInclude Include="src\renderers\RendererInterface.h" />
+    <ClInclude Include="src\renderers\UIButtonMap.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="src\thirdparty\imgui\imconfig.h" />
