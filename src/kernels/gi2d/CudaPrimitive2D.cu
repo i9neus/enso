@@ -7,7 +7,7 @@ namespace Cuda
 {
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
-       return m_v + saturate((dot(p, m_dv) - dot(m_v, m_dv)) / dot(m_dv, m_dv)) * m_dv;
+       return m_v[0] + saturate((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;
     }
 
     __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
@@ -24,12 +24,12 @@ namespace Cuda
     {
         // The intersection of the ray with the line
         vec2 n = vec2(m_dv.y, -m_dv.x);
-        float tSeg = (dot(n, m_v) - dot(n, o)) / dot(n, d);
+        float tSeg = (dot(n, m_v[0]) - dot(n, o)) / dot(n, d);
          
         if (tSeg < 0.0f) { return kFltMax; }
 
         n = vec2(d.y, -d.x);
-        float tRay = (dot(n, o) - dot(n, m_v)) / dot(n, m_dv);
+        float tRay = (dot(n, o) - dot(n, m_v[0])) / dot(n, m_dv);
 
         return (tRay >= 0.0 && tRay <= 1.0) ? tSeg : kFltMax;
 

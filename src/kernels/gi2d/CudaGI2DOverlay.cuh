@@ -33,6 +33,13 @@ namespace Cuda
             float lineAlpha;
         } 
         grid;
+
+        struct
+        {
+            BBox2f bBox;
+            bool showBounds;
+        }
+        selection;
     };
 
     namespace Device

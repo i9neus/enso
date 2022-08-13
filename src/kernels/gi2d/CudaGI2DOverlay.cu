@@ -11,6 +11,8 @@ namespace Cuda
         grid.majorLineSpacing = 1.0f;
         grid.majorLineSpacing = 1.0f;
 
+        selection.showBounds = false;
+
         mousePosView = vec2(0.f);
         rayOriginView = vec2(0.f);
         viewScale = 1.0f;
@@ -130,6 +132,12 @@ namespace Cuda
             }*/
         }       
 
+        // Draw the selection box
+        if (m_params.selection.showBounds)
+        {
+            if (PointOnPerimiter(m_params.selection.bBox, xyView, m_params.dPdXY * 1.)) { L = kOne; }
+        }
+
         deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
     }
 
@@ -195,6 +203,7 @@ namespace Cuda
         m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
         m_params.dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
+        m_params.selection.bBox.Rectify();
 
         if (m_hostBIH2D->IsConstructed())
         {

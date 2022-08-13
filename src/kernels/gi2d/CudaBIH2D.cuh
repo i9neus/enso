@@ -71,9 +71,11 @@ namespace Cuda
 
     struct BIH2DParams
     {
-        bool                        isConstructed;
+        bool                        isConstructed = false;
+        bool                        testAsList = false;
         BBox2f                      bBox;
-        Device::Vector<BIH2DNode>*  nodes;
+        Device::Vector<BIH2DNode>*  nodes = nullptr;
+        uint                        numPrims = 0;
     };
 
     struct BIH2DStats
@@ -104,6 +106,8 @@ namespace Cuda
 
     class BIH2D
     {
+        enum _attrs : uint { kMinPrimsInTree = 5 };
+
     public:
         friend class Host::BIH2DBuilder;
 
@@ -140,6 +144,19 @@ namespace Cuda
         __host__ __device__ void TestPrimitive(const TestType& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
         {
             if (!m_isConstructed) { return; }
+
+            // Chuck out primitives that don't overlap the bounding box
+            if (!m_bBox.Contains(p)) { return; }
+
+            // If there are only a handful of primitives in the tree, don't bother traversing and just test them all sequentially
+            if (m_testAsList)
+            {
+                for (int primIdx = 0; primIdx < m_numPrims; ++primIdx)
+                {
+                    onIntersectLeaf(primIdx);
+                }
+                return;
+            }
 
             BIH2DPrimitiveStackElement stack[kBIH2DStackSize];
             BBox2f bBox = m_bBox;
@@ -183,8 +200,9 @@ namespace Cuda
                     {
                         // ...and right box hit?
                         //if (p[axis] > node->right && stackIdx < kBIH2DStackSize)
-                        if (IntersectRight(p, axis, node->planes[BIH2DNode::kRight], bBox) && stackIdx < kBIH2DStackSize)
+                        if (IntersectRight(p, axis, node->planes[BIH2DNode::kRight], bBox)/* && stackIdx < kBIH2DStackSize*/)
                         {
+                            assert(stackIdx < kBIH2DStackSize);
                             stack[++stackIdx] = { bBox, node->GetChildIndex() + 1, uchar(depth + 1) };
                             stack[stackIdx].bBox[0][axis] = node->planes[BIH2DNode::kRight];
                         }
@@ -208,91 +226,11 @@ namespace Cuda
                 }
             } 
             while (stackIdx >= 0 || node != nullptr);
-        }    
-       
-        template<uint kFirstPlaneIdx>
-        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const vec2& o, const vec2& d, BIH2DNode*& const node, const uchar& axis, 
-                                                                      BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
-        {            
-            constexpr uint kLastPlaneIdx = (kFirstPlaneIdx + 1) & 1;
-            constexpr float kFirstPlaneIdxSign = 1.0f - kFirstPlaneIdx * 2.0f;
-            constexpr float kLastPlaneIdxSign = 1.0f - kLastPlaneIdx * 2.0f;
-            
-            // Nearest box hit?                
-            const float tPlaneFirst = (node->planes[kFirstPlaneIdx] - o[axis]) / d[axis];
-            const bool isInFirst = (node->planes[kFirstPlaneIdx] - o[axis]) * kFirstPlaneIdxSign > 0.f;
-            if (isInFirst || (tPlaneFirst > t[0] && tPlaneFirst < t[1]))
-            {
-                // ...and furthest box hit?
-                const float tPlaneLast = (node->planes[kLastPlaneIdx] - o[axis]) / d[axis];
-                const bool isInLast = (node->planes[kLastPlaneIdx] - o[axis]) * kLastPlaneIdxSign > 0.f;
-                if (isInLast || (tPlaneLast > t[0] && tPlaneLast < t[1]))
-                {
-                    BIH2DRayStackElement& element = stack[++stackIdx];
-                    element.nodeIdx = node->GetChildIndex() + kLastPlaneIdx;
-                    element.bBox = bBox;
-                    element.bBox[kFirstPlaneIdx][axis] = node->planes[kLastPlaneIdx];
-                    element.t = t;
-                   
-                    if (isInLast)
-                    {
-                        if (tPlaneLast > 0.f) element.t[1] = min(element.t[1], tPlaneLast);
-                    }
-                    else
-                    {
-                        element.t[0] = tPlaneLast;
-                    }
-                }
-
-                bBox[kLastPlaneIdx][axis] = node->planes[kFirstPlaneIdx];
-                node = &m_nodes[node->GetChildIndex() + kFirstPlaneIdx];
-
-                // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
-                if (isInFirst)
-                {
-                    if (tPlaneFirst > 0.f) t[1] = min(t[1], tPlaneFirst);
-                }
-                else
-                {
-                    t[0] = tPlaneFirst;
-                }
-            }
-            // Furthest box hit?
-            else
-            {
-                const float tPlaneLast = (node->planes[kLastPlaneIdx] - o[axis]) / d[axis];
-                const bool isInLast = (node->planes[kLastPlaneIdx] - o[axis]) * kLastPlaneIdxSign > 0.f;
-                if (isInLast || (tPlaneLast > t[0] && tPlaneLast < t[1]))
-                {
-                    bBox[kFirstPlaneIdx][axis] = node->planes[kLastPlaneIdx];
-                    node = &m_nodes[node->GetChildIndex() + kLastPlaneIdx];
-
-                    // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
-                    if (isInLast)
-                    {
-                        if (tPlaneLast > 0.f) t[1] = min(t[1], tPlaneLast);
-                    }
-                    else
-                    {
-                        t[0] = tPlaneLast;
-                    }
-                }
-                // Nothing hit. 
-                else
-                {
-                    node = nullptr;
-                }
-            }
-
-            /*if (kKernelIdx == 0)
-            {
-                printf("%f -> {{%f, %f}, {%f, %f}}\n", node->planes[kFirstPlaneIdx], bBox[0][0], bBox[0][1], bBox[1][0], bBox[1][1]);
-            }*/
-        }
+        }   
 
         template<uint kPlaneIdx0>
-        __host__ __device__ __forceinline__ void RayTraverseInnerNodeLegacy(const vec2& o, const vec2& d, BIH2DNode*& const node, const uchar& axis, 
-                                                                            BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
+        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const vec2& o, const vec2& d, BIH2DNode*& const node, const uchar& axis, 
+                                                                      BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
         {
             constexpr uint kPlaneIdx1 = (kPlaneIdx0 + 1) & 1;
             constexpr float kPlane0Sign = 1.0f - kPlaneIdx0 * 2.0f;
@@ -305,8 +243,9 @@ namespace Cuda
             const uchar hitFlags1 = uchar((o[axis] + d[axis] * t[kNear] - node->planes[kPlaneIdx1]) * kPlane0Sign > 0.0f) | (uchar(tPlane1 > t[kNear] && tPlane1 < t[kFar]) << 1);
             if (hitFlags0)
             {
-                if (hitFlags1)
+                if (hitFlags1/* && stackIdx < kBIH2DStackSize*/)
                 {
+                    assert(stackIdx < kBIH2DStackSize);
                     BIH2DRayStackElement& element = stack[++stackIdx];
                     element.nodeIdx = node->GetChildIndex() + kPlaneIdx1;
                     element.bBox = bBox;
@@ -357,13 +296,23 @@ namespace Cuda
             BIH2DNearFar t;
             if(!TestRayBBox(o, d, m_bBox, t)) { return; }
 
+            // If there are only a handful of primitives in the tree, don't bother traversing and just test them all as a list
+            float tNearest = t[kFar];
+            if (m_testAsList)
+            {
+                for (int primIdx = 0; primIdx < m_numPrims; ++primIdx)
+                {
+                    onIntersectLeaf(primIdx, tNearest);
+                }
+                return;
+            }
+
             // Create a stack            
             BIH2DRayStackElement stack[kBIH2DStackSize];
             BBox2f bBox = m_bBox;
             BIH2DNode* node = &m_nodes[0];
             int stackIdx = -1;
             uchar depth = 0;
-            float tNearest = kFltMax;
 
             assert(node);            
 
@@ -401,14 +350,13 @@ namespace Cuda
                     // Left-hand node is likely closer, so traverse that one first
                     if (o[axis] < node->planes[BIH2DNode::kLeft])
                     {
-                        RayTraverseInnerNodeLegacy<0>(o, d, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<0>(o, d, node, axis, t, bBox, stack, stackIdx);
                     }
                     // ...otherwise traverse right-hand node first
                     else
                     {
-                        RayTraverseInnerNodeLegacy<1>(o, d, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<1>(o, d, node, axis, t, bBox, stack, stackIdx);
                     } 
-                    //RayTraverseInnerNodeLegacy<0>(o, d, node, axis, t, bBox, stack, stackIdx);
                 }
 
                 //if (node != nullptr && ++depth > 4) break;
@@ -442,8 +390,11 @@ namespace Cuda
     protected:
         BIH2DNode*                  m_nodes;
         uint                        m_numNodes;
+        uint                        m_numPrims;
         BBox2f                      m_bBox;
+
         bool                        m_isConstructed;
+        bool                        m_testAsList;
     };   
 
     //template BIH2DBuilder<Host::Vector<BIH2DNode>>;
@@ -467,7 +418,7 @@ namespace Cuda
         class BIH2DBuilder
         {
         public:
-            __host__ BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, std::function<BBox2f(uint)>& functor) noexcept;
+            __host__ BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
 
             __host__ void Build();
 
@@ -483,6 +434,7 @@ namespace Cuda
             std::vector<uint>&                          m_primitiveIdxs;
             std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
             BIH2DStats&                                 m_stats;
+            const uint                                  m_minBuildablePrims;
         };
         
         class BIH2DAsset : public BIH2D, public Host::Asset
@@ -512,6 +464,7 @@ namespace Cuda
             AssetHandle<Host::Vector<BIH2DNode>>    m_hostNodes;
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DStats                              m_stats;
+            BIH2DParams                             m_params;
 
             Device::BIH2DAsset*                     cu_deviceInstance;
         };    

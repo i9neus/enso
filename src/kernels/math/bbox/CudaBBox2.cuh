@@ -46,6 +46,11 @@ namespace Cuda
                            ScalarType(ScalarType(0.5) * ScalarType(upper[1] + lower[1])));
         }
 
+        __host__ __device__ __forceinline__ VecType Dimensions() const
+        {
+            return VecType(upper[0] - lower[0], upper[1] - lower[1]);
+        }
+
         __host__ __device__ __forceinline__ ScalarType Centroid(const uint axis) const
         {
             return ScalarType(ScalarType(0.5) * ScalarType(upper[axis] + lower[axis]));
@@ -70,10 +75,27 @@ namespace Cuda
             upper.x += ammount; upper.y += ammount;
         }
 
+        // Grows the bounding box by a vector accmount
         __host__ __device__ __forceinline__ void Grow(const VecType & ammount)
         {
             lower.x -= ammount.x; lower.y -= ammount.y;
             upper.x += ammount.x; upper.y += ammount.y;
+        }
+
+        // Checked to see whether lower < upper and inverts them if not
+        __host__ __device__ __forceinline__ void Rectify()
+        {
+            if (lower.x > upper.x) { swap(lower.x, upper.x); }
+            if (lower.y > upper.y) { swap(lower.y, upper.y); }      
+        }
+
+        __host__ __device__ __forceinline__ BBox2& operator*=(const ScalarType& scale)
+        {
+            const VecType centroid = Centroid();
+            const VecType dimensions = Dimensions();
+            lower = centroid - dimensions * ScalarType(0.5) * scale;
+            upper = centroid + dimensions * ScalarType(0.5) * scale;
+            return *this;
         }
 
         __host__ std::string& Format() const
@@ -131,13 +153,7 @@ namespace Cuda
     __host__ __device__ __forceinline__ BBox2<T>  operator&(const BBox2<T>& a, const BBox2<T>& b)
     {
         return Intersection(a, b);
-    }
-
-    template<typename T>
-    __host__ __device__ __forceinline__ BBox2<T>  operator|(const BBox2<T>& a, const BBox2<T>& b)
-    {
-        return Union(a, b);
-    }
+    }   
 
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Grow(const BBox2<T>& bBox, const typename BBox2<T>::ScalarType& ammount)

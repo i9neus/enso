@@ -6,6 +6,7 @@ namespace Cuda
         m_bBox(vec2(0.f), vec2(0.f)),
         m_nodes(nullptr),
         m_isConstructed(false),
+        m_testAsList(false),
         m_numNodes(0)
     {
 
@@ -16,8 +17,10 @@ namespace Cuda
         assert(params.nodes);
         m_nodes = params.nodes->Data();
         m_numNodes = params.nodes->Size();
+        m_numPrims = params.numPrims;
         m_bBox = params.bBox;
         m_isConstructed = params.isConstructed;
+        m_testAsList = params.testAsList;
     }
     
     __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id) : 
@@ -41,12 +44,13 @@ namespace Cuda
         DestroyOnDevice(GetAssetID(), cu_deviceInstance);
     }
 
-    __host__ Host::BIH2DBuilder::BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, std::function<BBox2f(uint)>& functor) noexcept :
+    __host__ Host::BIH2DBuilder::BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
         m_bih(bih),
         m_hostNodes(*bih.m_hostNodes),
         m_primitiveIdxs(primitiveIdxs),
         m_getPrimitiveBBox(functor),
-        m_stats(bih.m_stats)
+        m_stats(bih.m_stats),
+        m_minBuildablePrims(minBuildablePrims)
     {
     }
 
@@ -54,38 +58,49 @@ namespace Cuda
     __host__ void Host::BIH2DBuilder::Build()
     {
         Timer timer;
-
-        // Find the global bounding box
-        m_bih.m_bBox = BBox2f::MakeInvalid();
-
         AssertMsg(m_getPrimitiveBBox, "BIH builder does not have a valid bounding box functor.");
 
+        // Find the global bounding box
         BBox2f centroidBBox = BBox2f::MakeInvalid();
-        for (const auto idx : m_primitiveIdxs)
+        m_bih.m_bBox = BBox2f::MakeInvalid();
+
+        if (!m_primitiveIdxs.empty())
         {
-            const BBox2f primBBox = m_getPrimitiveBBox(idx);
-            AssertMsgFmt(primBBox.HasValidArea(),
-                "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
-            m_bih.m_bBox = Union(m_bih.m_bBox, primBBox);
-            centroidBBox = Union(centroidBBox, primBBox.Centroid());
-        }        
+            for (const auto idx : m_primitiveIdxs)
+            {
+                const BBox2f primBBox = m_getPrimitiveBBox(idx);
+                AssertMsgFmt(primBBox.HasValidArea(),
+                    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
+                m_bih.m_bBox = Union(m_bih.m_bBox, primBBox);
+                centroidBBox = Union(centroidBBox, primBBox.Centroid());
+            }
 
-        AssertMsgFmt(m_bih.m_bBox.HasValidArea() && !m_bih.m_bBox.IsInfinite(),
-            "BIH bounding box is invalid: %s", m_bih.m_bBox.Format().c_str());
+            AssertMsgFmt(m_bih.m_bBox.HasValidArea() && !m_bih.m_bBox.IsInfinite(),
+                "BIH bounding box is invalid: %s", m_bih.m_bBox.Format().c_str());
+        }
 
-        // Reserve space for the nodes
-        m_hostNodes.Reserve(m_primitiveIdxs.size());
-        m_hostNodes.Resize(1);
+        // If the list contains below the minimum ammount of primitives, don't build and flag the tree as a list traversal
+        if (m_primitiveIdxs.size() < m_minBuildablePrims)
+        {
+            m_bih.m_testAsList = true;
+        }
+        else
+        {
+            // Reserve space for the nodes
+            m_hostNodes.Reserve(m_primitiveIdxs.size());
+            m_hostNodes.Resize(1);
 
-        // Construct the bounding interval hierarchy
-        m_stats = BIH2DStats();
-        m_stats.numInnerNodes = 0;
+            // Construct the bounding interval hierarchy
+            m_stats = BIH2DStats();
+            m_stats.numInnerNodes = 0;
 
-        BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_bBox, centroidBBox);
+            BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_bBox, centroidBBox);
+        }
 
         // Update the host data structures
         m_bih.m_nodes = m_hostNodes.GetHostData();        
         m_bih.m_numNodes = m_hostNodes.Size();
+        m_bih.m_numPrims = m_primitiveIdxs.size();
         m_bih.m_isConstructed = true;
         
         m_stats.buildTime = timer.Get() * 1e-3f;
@@ -203,18 +218,24 @@ namespace Cuda
     __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)
     {
         Assert(m_hostNodes);
-        AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
+        //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
 
         // Resize and reset pointers
-        BIH2DBuilder builder(*this, m_primitiveIdxs, functor);
+        BIH2DBuilder builder(*this, m_primitiveIdxs, 5, functor);
         builder.m_debugFunctor = m_debugFunctor;
         builder.Build();
 
-        CheckTreeNodes();
+        //CheckTreeNodes();
 
         // Synchronise the node data to the device
         m_hostNodes->Synchronise(kVectorSyncUpload);
-        Cuda::Synchronise(cu_deviceInstance, BIH2DParams{ m_isConstructed, m_bBox, m_hostNodes->GetDeviceInstance() });
+        m_params.isConstructed = m_isConstructed;
+        m_params.testAsList = m_testAsList;
+        m_params.bBox = m_bBox;
+        m_params.nodes = m_hostNodes->GetDeviceInstance();
+        m_params.numPrims = uint(m_primitiveIdxs.size());
+
+        Cuda::Synchronise(cu_deviceInstance, m_params);
     }
 
     __host__ void Host::BIH2DAsset::Synchronise()

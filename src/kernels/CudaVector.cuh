@@ -117,7 +117,7 @@ namespace Cuda
 			__host__  virtual void OnDestroyAsset() override final
 			{
 				DestroyOnDevice(GetAssetID(), cu_deviceInstance);
-				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.size, &cu_deviceData);
+				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
 
 				if (m_hostData && !(m_hostParams.flags & kVectorUnifiedMemory))
 				{
@@ -185,7 +185,7 @@ namespace Cuda
 			__host__ void PopBack()
 			{
 				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling PopBack() on a Vector that does not have host allocation.");
-				Resize(--m_hostParams.size);
+				Resize(m_hostParams.size - 1);
 			}
 
 			__host__ inline ElementType& Back()
@@ -220,12 +220,18 @@ namespace Cuda
 						ResizeImpl(m_hostParams.size, true, false);
 					}
 					
-					IsOk(cudaMemcpy(cu_deviceData, m_hostData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyHostToDevice));
-					Cuda::Synchronise(cu_deviceInstance, cu_deviceData, m_deviceParams);
+					if (cu_deviceData)
+					{
+						IsOk(cudaMemcpy(cu_deviceData, m_hostData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyHostToDevice));
+						Cuda::Synchronise(cu_deviceInstance, cu_deviceData, m_deviceParams);
+					}
 				}
 				else
 				{
-					IsOk(cudaMemcpy(m_hostData, cu_deviceData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyDeviceToHost));
+					if (cu_deviceData)
+					{
+						IsOk(cudaMemcpy(m_hostData, cu_deviceData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyDeviceToHost));
+					}
 				}
 			}
 
@@ -269,7 +275,7 @@ namespace Cuda
 			__host__ void ReserveImpl(const uint newCapacity, const bool deviceAlloc, const bool deviceCopy)
 			{			
 				// If the device is being explicitly synced or we're using unified memory, realloc the device memory 
-				if (newCapacity != m_deviceParams.capacity && (deviceAlloc || (m_hostParams.flags & kVectorUnifiedMemory)))
+				if (newCapacity > m_deviceParams.capacity && (deviceAlloc || (m_hostParams.flags & kVectorUnifiedMemory)))
 				{
 					// Don't adjust capacity if it means reducing the size of the array
 					Assert(newCapacity >= m_deviceParams.size);
@@ -279,18 +285,21 @@ namespace Cuda
 					GuardedAllocDeviceArray(GetAssetID(), newCapacity, &newDeviceData, (m_hostParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
 
 					// If we're syncing from host to device, don't copy the data from the old device buffer because it'll just get overwritten anyway
-					if (deviceCopy || (m_hostParams.flags & kVectorUnifiedMemory))
+					if (cu_deviceData)
 					{
-						IsOk(cudaMemcpy(newDeviceData, cu_deviceData, m_hostParams.size * sizeof(ElementType), cudaMemcpyDeviceToDevice));
-					}
+						if (deviceCopy || (m_hostParams.flags & kVectorUnifiedMemory))
+						{
+							IsOk(cudaMemcpy(newDeviceData, cu_deviceData, m_hostParams.size * sizeof(ElementType), cudaMemcpyDeviceToDevice));
+						}
 
-					// Deallocate the old memory
-					GuardedFreeDeviceArray(GetAssetID(), m_hostParams.capacity, &cu_deviceData);
+						// Deallocate the old memory
+						GuardedFreeDeviceArray(GetAssetID(), m_hostParams.capacity, &cu_deviceData);
+					}
 
 					m_deviceParams.capacity = newCapacity;
 					cu_deviceData = newDeviceData;
 
-					Log::Warning("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
+					Log::System("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
 				}
 
 				// Unified memory is accessible on both host and and device so just copy the pointer
@@ -300,7 +309,7 @@ namespace Cuda
 					m_hostParams.capacity = newCapacity;
 				}
 				// Otherwise, reallocate the host data
-				else if (m_hostParams.flags & kVectorHostAlloc && newCapacity != m_hostParams.capacity)
+				else if (m_hostParams.flags & kVectorHostAlloc && newCapacity > m_hostParams.capacity)
 				{
 					// Don't adjust capacity if it means reducing the size of the array
 					Assert(newCapacity >= m_hostParams.size);
@@ -315,7 +324,7 @@ namespace Cuda
 					m_hostData = newHostData;
 					m_hostParams.capacity = newCapacity;
 
-					Log::Warning("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
+					Log::System("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
 				}
 			}
 
@@ -338,7 +347,7 @@ namespace Cuda
 					m_deviceParams.size = newSize;
 				}
 
-				Log::Warning("Size of vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.size);
+				//Log::System("Size of vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.size);
 			}
 		};
 

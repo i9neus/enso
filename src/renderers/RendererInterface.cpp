@@ -146,7 +146,14 @@ void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool 
 	m_mouse.codes.Update();
 	m_keyCodes.Update(code, isDown);
 
-	m_uiGraph.OnTriggerTransition();
+	if (code == VK_ESCAPE)
+	{
+		m_uiGraph.Reset();
+	}
+	else
+	{
+		m_uiGraph.OnTriggerTransition(kUITriggerOnKeyboard);
+	}
 
 	// Notify the superclass that a key state has changed
 	OnKey(code, isSysKey, isDown);
@@ -154,10 +161,10 @@ void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool 
 
 void RendererInterface::SetMouseButton(const uint code, const bool isDown)
 {
+	// TODO: Calling Update() here feels messy and brittle. Should the UI graph have ownership of the codes?
 	m_keyCodes.Update();
 	m_mouse.codes.Update(code, isDown);
-
-	m_uiGraph.OnTriggerTransition();
+	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseButton);
 
 	// Notify the superclass that a mouse state has changed
 	OnMouseButton(code, isDown);
@@ -170,6 +177,10 @@ void RendererInterface::SetMousePos(const int mouseX, const int mouseY, const WP
 	m_mouse.pos = ivec2(mouseX, m_clientHeight - 1 - mouseY);
 	m_mouse.delta = m_mouse.pos - m_mouse.prevPos;
 
+	m_keyCodes.Update();
+	m_mouse.codes.Update();
+	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseMove);
+
 	// Notify the superclass that a mouse state has changed
 	OnMouseMove();
 }
@@ -177,6 +188,10 @@ void RendererInterface::SetMousePos(const int mouseX, const int mouseY, const WP
 void RendererInterface::SetMouseWheel(const float angle)
 {
 	m_mouseWheelAngle = angle;
+
+	m_keyCodes.Update();
+	m_mouse.codes.Update();
+	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseWheel);
 
 	// Notify the superclass that a mouse wheel state has changed
 	OnMouseWheel();

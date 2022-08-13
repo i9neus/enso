@@ -57,16 +57,19 @@ public:
     static std::shared_ptr<RendererInterface> Instantiate();
 
 private:
-    virtual void OnDestroy() override final;
-    //virtual void OnPreRender() override final;
-    virtual void OnRender() override final;
-    //virtual void OnPostRender() override final;
+    virtual void            OnDestroy() override final;
+    //virtual void          OnPreRender() override final;
+    virtual void            OnRender() override final;
+    //virtual void          OnPostRender() override final;
+    void                    OnViewChange();
 
-    void OnViewChange();
-    Cuda::mat3 ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
+    void                    RebuildBIH();
 
-    uint OnAddNewPath(const UIStateTransition& transition);
-    uint OnNullState(const UIStateTransition& transition);
+    Cuda::mat3              ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
+
+    uint OnCreatePath(const UIStateTransition& transition);
+    uint OnSelectPath(const UIStateTransition& transition);
+    uint OnIdleState(const UIStateTransition& transition);
 
 private:
     enum JobIDs : uint { kJobDraw };
@@ -97,6 +100,15 @@ private:
         float                                   scaleAnchor;
 
         Cuda::vec2                              mousePosView;
+        //Cuda::mat3                              matrix;               <------- Using OverlayParams.viewMatrix instead
     }
     m_view;
+
+    struct
+    {
+        uint                                    pathStartIdx;
+        uint                                    numVertices;
+        Cuda::vec2                              startPos;
+    } 
+    m_newPath;
 };

@@ -6,49 +6,71 @@
 
 using UIStateID = uint;
 using UITriggerHash = uint;
+struct UIStateTransition;
 
-struct UIStateTransition
+enum UIStateTransitionResult : uint
 {
-    uint                        hash;
-    KeyboardButtonMap           keyTrigger;
-    MouseButtonMap              mouseTrigger;
-    uint                        sourceStateIdx;
-    uint                        targetStateIdx;
-    std::function<uint(const UIStateTransition&)> getTargetState;
+    kUIStateOkay = 1,
+    kUIStateUpdated = 2,
+    kUIStateSucceeded = kUIStateOkay | kUIStateUpdated,
 
-    inline const bool IsNonDeterministic() const { return getTargetState != nullptr; }
+    kUIStateRejected = 4,
+    kUIStateError = 0xffffffff
+};
+
+enum UIStateTransitionFlags : uint 
+{ 
+    // These are dummy values. They shouldn't affect the hash so set them to zero    
+    kUITriggerOnKeyboard = 0, 
+    kUITriggerOnMouseButton = 0,
+
+    kUITriggerOnMouseMove = 1,
+    kUITriggerOnMouseWheel = 2
 };
 
 struct UIState
 {
+    enum _attrs : uint { kNull = 0, kInvalid = 0xffffffff };
+    
     uint                                              idx;
     std::string                                       id;
     std::function<uint(const UIStateTransition&)>     onExitState;
     std::function<uint(const UIStateTransition&)>     onEnterState;
 
-    uint                                              entryTransitionIdx;  
+    uint                                              entryTransitionIdx;
     uint                                              exitTransitionIdx;
 };
 
-enum UIStates : uint { kUIStateIdle };
-enum kUIStateTransitionResult : uint { kUIStateOkay = 0, kUIStateError = -1 };
+struct UIStateTransition
+{
+    enum _attrs : uint { kInvalid = 0xffffffff };
+    
+    uint                        hash;
+    KeyboardButtonMap           keyTrigger;
+    MouseButtonMap              mouseTrigger;
+    uint                        triggerFlags;
+    uint                        sourceStateIdx;
+    uint                        targetStateIdx;
+    std::function<uint(const UIStateTransition&)> getTargetState;
+
+    inline const bool IsNonDeterministic() const { return getTargetState != nullptr; }
+    inline const bool HasDeterministicTarget() const { return targetStateIdx != kInvalid; }
+};
 
 class UIStateGraph
 {
-    enum _attrs : uint { kNullState = 0, kInvalidState = 0xffffffff, kInvalidTransition = 0xffffffff };
-
 public:
     UIStateGraph(const KeyboardButtonMap& keyCodes, const MouseButtonMap& mouseCodes) :
         m_keyCodes(keyCodes),
         m_mouseCodes(mouseCodes),
-        m_currentState(kNullState)
+        m_currentState(UIState::kNull)
     {
     }	
 
     void DeclareState(const std::string& name)
     {
         // Push the new state to the list
-        m_uiStateList.push_back(UIState{ uint(m_uiStateList.size()), name, nullptr, nullptr, kInvalidTransition, kInvalidTransition });
+        m_uiStateList.push_back(UIState{ uint(m_uiStateList.size()), name, nullptr, nullptr, UIStateTransition::kInvalid, UIStateTransition::kInvalid });
         // Register its index in the map
         m_uiStateMap.emplace(name, m_uiStateList.size() - 1);
     }
@@ -74,19 +96,37 @@ public:
         return (it == m_uiStateMap.end()) ? nullptr : &m_uiStateList[it->second];
     }
 
-    inline const UIState& FindState(const uint idx) const 
+    inline const UIState& GetState(const uint idx) const 
     {
         AssertMsg(idx < m_uiStateList.size(), "Invalid state index.");
         return m_uiStateList[idx];
     }
 
-    void DeclareTransitionImpl(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger)
+    inline std::string GetTargetStateID(const UIStateTransition& transition) const
+    {
+        return (transition.targetStateIdx == UIState::kInvalid) ? std::string("") : m_uiStateList[transition.targetStateIdx].id;
+    }
+
+    inline void SetState(const std::string& id)
+    {
+        auto it = m_uiStateMap.find(id);
+        AssertMsgFmt(it != m_uiStateMap.end(), "Could not set state to '%s'. State not found.", id.c_str());
+        m_currentState = it->second;
+    }
+
+    inline void Reset()
+    {
+        m_currentState = 0;
+    }
+
+    void DeclareTransitionImpl(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, 
+                               const MouseButtonMap& mouseTrigger, const uint& triggerFlags)
     {
         UIState* sourceState = FindState(sourceStateID);
         AssertMsgFmt(sourceState, "Error: transition sourceState '%s' was not declared.", sourceStateID.c_str());
 
         // Each state can only have one exit transition object 
-        //AssertMsgFmt(sourceState->exitTransitionIdx == kInvalidTransition, "Error: cannot bind transition {'%s' -> '%s'} because state '%s' already has a transition bound to it",
+        //AssertMsgFmt(sourceState->exitTransitionIdx == UIStateTransition::kInvalid, "Error: cannot bind transition {'%s' -> '%s'} because state '%s' already has a transition bound to it",
         //    sourceStateID.c_str(), targetStateID.c_str(), sourceStateID.c_str());
 
         UIState* targetState = nullptr;
@@ -97,15 +137,16 @@ public:
         }        
         
         // Generate a hash from the origin state's ID and the trigger required to transition away from it
-        const uint hash = HashCombine(uint(std::hash<uint>{}(0)), keyTrigger.HashOf(), mouseTrigger.HashOf());
+        const uint hash = HashCombine(uint(std::hash<uint>{}(sourceState->idx)), keyTrigger.HashOf(), mouseTrigger.HashOf(), HashOf(triggerFlags));
 
         //Log::Error("Hash: 0x%x, 0x%x, 0x%x -> 0x%x", uint(std::hash<uint>{}(0)), keyTrigger.HashOf(), mouseTrigger.HashOf(), hash);
 
         m_uiTransitionList.push_back(UIStateTransition{ hash, 
                                                         keyTrigger,
                                                         mouseTrigger,
+                                                        triggerFlags,
                                                         sourceState->idx, 
-                                                        targetState ? targetState->idx : kInvalidState,
+                                                        targetState ? targetState->idx : UIState::kInvalid,
                                                         nullptr });
 
         // Mark the source and target states and being connected up 
@@ -118,22 +159,23 @@ public:
         m_uiStateTransitionMap.emplace(hash, m_uiTransitionList.size() - 1);
     }
 
-    inline void DeclareDeterministicTransition(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger)
+    inline void DeclareDeterministicTransition(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, 
+                                               const MouseButtonMap& mouseTrigger, const uint& triggerFlags)
     {
-        DeclareTransitionImpl(sourceStateID, targetStateID, keyTrigger, mouseTrigger);
+        DeclareTransitionImpl(sourceStateID, targetStateID, keyTrigger, mouseTrigger, triggerFlags);
     }
 
     template<class HostClass, typename GetTransitionState>
-    void DeclareNondeterministicTransition(const std::string& sourceState, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger, 
+    void DeclareNondeterministicTransition(const std::string& sourceState, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger, const uint& triggerFlags,
                                            HostClass* hostClass, GetTransitionState getTargetState)
     {
-        DeclareTransitionImpl(sourceState, "", keyTrigger, mouseTrigger);
+        DeclareTransitionImpl(sourceState, "", keyTrigger, mouseTrigger, triggerFlags);
         m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
     }
 
-	void OnTriggerTransition()
+	void OnTriggerTransition(const uint triggerFlags)
 	{
-        const uint hash = HashCombine(uint(std::hash<uint>{}(0)), m_keyCodes.HashOf(), m_mouseCodes.HashOf());
+        const uint hash = HashCombine(uint(std::hash<uint>{}(m_currentState)), m_keyCodes.HashOf(), m_mouseCodes.HashOf(), HashOf(triggerFlags));
 
         //Log::Error("Hash: 0x%x, 0x%x, 0x%x -> 0x%x", uint(std::hash<uint>{}(0)), m_keyCodes.HashOf(), m_mouseCodes.HashOf(), hash);
 
@@ -142,16 +184,19 @@ public:
 		{
             // If this transition doesn't match the trigger criteria, continue looking
             const auto& transition = m_uiTransitionList[it->second];
-            if (transition.sourceStateIdx != m_currentState || transition.keyTrigger != m_keyCodes || transition.mouseTrigger != m_mouseCodes) { continue; }
+            if (transition.sourceStateIdx != m_currentState || transition.keyTrigger != m_keyCodes || 
+                transition.mouseTrigger != m_mouseCodes || transition.triggerFlags != triggerFlags) { continue; }
 	
             // If the source state has a notification lambda, call it here
+            uint sourceStateIdx = m_currentState;
             if (m_uiStateList[m_currentState].onExitState)
             {
-                if (m_uiStateList[transition.sourceStateIdx].onExitState(transition) != kUIStateOkay)
+                const uint result = m_uiStateList[m_currentState].onExitState(transition);
+                AssertMsg(result != kUIStateError, "State transition error.");
+                if (result == kUIStateRejected)
                 {
-                    Log::Error("Error: failed to leave state '%s'.", m_uiStateList[transition.sourceStateIdx].id);
-                    m_currentState = kNullState;
-                    return;
+                    Log::Warning("Warning: failed to enter state '%s': transition was rejected.",  m_uiStateList[m_currentState].id);
+                    break;
                 }
             }
 
@@ -167,16 +212,21 @@ public:
             }
             
             // If the target (now the current) state has a lambda, call it now.
+            uint targetResult = kUIStateOkay;
             if (m_uiStateList[m_currentState].onEnterState)
             {
-                if (m_uiStateList[transition.targetStateIdx].onEnterState(transition) != kUIStateOkay)
+                const uint result = m_uiStateList[m_currentState].onEnterState(transition);
+                AssertMsg(result != kUIStateError, "State transition error.");
+
+                if (result == kUIStateRejected)
                 {
-                    Log::Error("Error: failed to enter state '%s'.", m_uiStateList[transition.targetStateIdx].id);
-                    m_currentState = kNullState;
+                    Log::Warning("Warning: failed to enter state '%s': transition was rejected.", 
+                        transition.IsNonDeterministic() ? std::string("[UNKNOWN]") : m_uiStateList[transition.targetStateIdx].id);
+                    break;
                 }
             }
-              
-            Log::Write("Fired!");
+
+            Log::Success("State changed: %s -> %s", m_uiStateList[sourceStateIdx].id, m_uiStateList[m_currentState].id);
             break;
 		}
 	}

@@ -40,12 +40,12 @@ namespace Cuda
     class LineSegment : public Primitive2D
     {
     private:
-        vec2 m_v;
+        vec2 m_v[2];
         vec2 m_dv;
     public:
-        __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v(0.0f), m_dv(0.0f) {}
+        __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
         __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags) noexcept :
-            Primitive2D(flags), m_v(v0), m_dv(v1 - v0) {}
+            Primitive2D(flags), m_v{ v0, v1 }, m_dv(v1 - v0) {}
 
         __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
@@ -54,16 +54,14 @@ namespace Cuda
         
         __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
-            return BBox2f(vec2(min(m_v.x, m_v.x + m_dv.x), min(m_v.y, m_v.y + m_dv.y)),
-                vec2(max(m_v.x, m_v.x + m_dv.x), max(m_v.y, m_v.y + m_dv.y)));
+            return BBox2f(vec2(min(m_v[0].x, m_v[1].x), min(m_v[1].y, m_v[1].y)),
+                          vec2(max(m_v[0].x, m_v[1].x), max(m_v[1].y, m_v[1].y)));
         }
 
-        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v + m_dv * t; }
+        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
 
-        __host__ __device__ __forceinline__ const vec2&     v0() const { return m_v; }
-        __host__ __device__ __forceinline__ const vec2&     v1() const { return m_v + m_dv; }
-        __host__ __device__ __forceinline__ const vec2&     dv() const { return m_dv; }
-
+        __host__ __device__ __forceinline__ vec2& operator[](const uint& idx) { return m_v[idx]; }
+        __host__ __device__ __forceinline__ vec2& dv(const uint& idx) { return m_dv; }
     };
 
     __host__ void GenerateRandomLineSegments(Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
