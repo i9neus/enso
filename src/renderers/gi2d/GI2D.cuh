@@ -27,8 +27,15 @@ enum GI2DDirtyFlags : int
 
 enum GI2DEditMode : int
 {
-    kGI2DNone,
+    kGI2DIdle,
     kGI2DAddPath
+};
+
+enum GI2DAddPath : int
+{
+    kGI2DAddPathHovering,
+    kGI2DAddPathPositioning,
+    kGI2DAddPathFinished
 };
 
 class GI2D : public RendererInterface
@@ -58,12 +65,23 @@ private:
     void OnViewChange();
     Cuda::mat3 ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
 
+    uint OnAddNewPath(const UIStateTransition& transition);
+    uint OnNullState(const UIStateTransition& transition);
+
 private:
     enum JobIDs : uint { kJobDraw };
 
-    std::unique_ptr<CudaObjects>                m_objects;
+    std::unique_ptr<CudaObjects>                m_objectsPtr;
+    CudaObjects&                                m_objects;
     JobManager                                  m_jobManager;
-    std::atomic<uint>                           m_editMode;
+
+    struct EditMode
+    {
+        uint                                    type;
+        uint                                    stage;
+    };
+    EditMode                                    m_uiEditMode;
+    EditMode                                    m_rendererEditMode;
 
     struct
     {

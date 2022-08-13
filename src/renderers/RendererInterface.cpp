@@ -6,15 +6,12 @@ using namespace Cuda;
 
 RendererInterface::RendererInterface() :
 	m_frameTimes(20),
-	m_mouseButtons(0),
 	m_mouseWheelAngle(0.0f),
 	m_clientWidth(1.0f),
 	m_clientHeight(1.0f),
-	m_dirtyFlags(0)
+	m_dirtyFlags(0),
+	m_uiGraph(m_keyCodes, m_mouse.codes)
 {
-	std::memset(&m_keyCodes, 0, sizeof(uint) * 4);
-	std::memset(&m_sysKeyCodes, 0, sizeof(uint) * 4);
-
 	m_mouse.pos = std::numeric_limits<int>::min();
 	m_mouse.prevPos = std::numeric_limits<int>::min();
 	m_mouse.delta = 0.0f;
@@ -146,17 +143,10 @@ bool RendererInterface::Poll(Json::Document& stateJson)
 
 void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool isDown)
 {
-	Assert(code >= 0 && code < 256);
+	m_mouse.codes.Update();
+	m_keyCodes.Update(code, isDown);
 
-	uint* keyCodes = isSysKey ? m_sysKeyCodes : m_keyCodes;
-	if (isDown)
-	{
-		keyCodes[code >> 6] |= 1 << (code & 31);
-	}
-	else
-	{
-		keyCodes[code >> 6] &= ~(1 << (code & 31));
-	}
+	m_uiGraph.OnTriggerTransition();
 
 	// Notify the superclass that a key state has changed
 	OnKey(code, isSysKey, isDown);
@@ -164,8 +154,10 @@ void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool 
 
 void RendererInterface::SetMouseButton(const uint code, const bool isDown)
 {
-	if (isDown)	{ m_mouseButtons |= code; }
-	else { m_mouseButtons &= ~code ; }
+	m_keyCodes.Update();
+	m_mouse.codes.Update(code, isDown);
+
+	m_uiGraph.OnTriggerTransition();
 
 	// Notify the superclass that a mouse state has changed
 	OnMouseButton(code, isDown);
@@ -202,19 +194,4 @@ void RendererInterface::SetClientSize(const int width, const int height)
 	m_clientToNormMatrix.i12 = -0.5f;
 
 	OnResizeClient();
-}
-
-bool RendererInterface::IsKeyDown(const uint code) const
-{
-	return (code > 255) ? false : ((m_keyCodes[code >> 6] & (1 << (code & 31))) != 0);
-}
-
-bool RendererInterface::IsSysKeyDown(const uint code) const
-{
-	return (code > 255) ? false : ((m_sysKeyCodes[code >> 6] & (1 << (code & 31))) != 0);
-}
-
-bool RendererInterface::IsMouseButtonDown(const uint code) const
-{
-	return (m_mouseButtons & code) != 0;
 }

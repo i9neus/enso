@@ -70,7 +70,9 @@ namespace Cuda
 
         if (m_objects.bih && m_objects.lineSegments)
         {                        
-            LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));
+            const Vector<LineSegment>& segments = *(m_objects.lineSegments);
+            
+            /*LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));            
             const float line = ray.Evaluate(xyView, 0.001f, m_params.dPdXY);
             if (line > 0.f)
             {
@@ -82,6 +84,7 @@ namespace Cuda
             auto onRayIntersectLeaf = [&, this](const uint& idx, float& tNearest) -> void
             {
                 //if (segments[idx].GetBoundingBox().Contains(xyView)) { L = mix(L, kRed, 0.2f); }
+                if (PointOnPerimiter(segments[idx].GetBoundingBox(), xyView, m_params.dPdXY * 2.)) { L = kOne; }
                 float tPrim = segments[idx].TestRay(ray.v, ray.dv);
                 if (tPrim != kFltMax && tPrim < tNearest)
                 {
@@ -91,30 +94,30 @@ namespace Cuda
             };
             auto onRayIntersectInner = [&, this](const BBox2f& bBox, const vec2& t, const bool isLeaf) -> void
             {
-                if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.)) { L = kOne; }
+                if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.)) { L = kRed; }
                 else if (isLeaf && bBox.Contains(xyView)) { L = mix(L, kRed, 0.2f); }
 
                 if (length2(ray.v + ray.dv * t[0] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kYellow;
                 if (length2(ray.v + ray.dv * t[1] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kBlue;               
             };
-            m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);
+            m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);*/
             
             auto onPointIntersectLeaf = [&, this](const uint& idx) -> void
             {
                 const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
                 if (line > 0.f)
                 {
-                    L = mix(L, (/*idx == m_params.selectedSegmentIdx || */idx == hitSegment) ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                    L = mix(L, (idx == m_params.selectedSegmentIdx) ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                     //L += kRed;
                 }
             };             
-            auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void
+            /*auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void
             {
                 //bBox.Grow(m_params.dPdXY * depth * -5.0f);
                 //if (bBox.Contains(xyView)) { L = mix(L, Hue(depth / 5.0f), 0.3f); }
                 //if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.0)) { L = kOne; }
-            };
-            m_objects.bih->TestPrimitive(xyView, onPointIntersectLeaf, onPointIntersectInner);
+            };*/
+            m_objects.bih->TestPrimitive(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
 
             /*for (int idx = 0; idx < segments.Size(); ++idx)
             {
@@ -155,7 +158,7 @@ namespace Cuda
 
     __host__ void Host::GI2DOverlay::Render(AssetHandle<Host::ImageRGBA>& hostOutputImage)
     {
-        auto onPointIntersectLeaf = [&, this](const uint& idx) -> void {};
+        /*auto onPointIntersectLeaf = [&, this](const uint& idx) -> void {};
         auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void { };
         m_hostBIH2D->TestPrimitive(m_params.mousePosView, onPointIntersectLeaf, onPointIntersectInner);
 
@@ -169,7 +172,7 @@ namespace Cuda
             }
         };
         auto onRayIntersectInner = [&, this](const BBox2f& bBox, const vec2& t, const bool&) -> void {};        
-        m_hostBIH2D->TestRay(o, d, onRayIntersectLeaf, onRayIntersectInner);
+        m_hostBIH2D->TestRay(o, d, onRayIntersectLeaf, onRayIntersectInner);*/
         
         const auto& meta = hostOutputImage->GetMetadata();
         dim3 blockSize(16, 16, 1);

@@ -2,6 +2,7 @@
 
 #include "generic/StdIncludes.h"
 #include "CudaObjectManager.h"
+#include "UIStateGraph.h"
 
 enum RenderManagerRenderState : int
 {
@@ -59,9 +60,20 @@ protected:
     virtual void OnRender() {};
     virtual void OnPostRender() {};
 
-    bool IsKeyDown(const uint code) const;
-    bool IsSysKeyDown(const uint code) const;
-    bool IsMouseButtonDown(const uint code) const;
+    inline bool IsKeyDown(const uint code) const { return m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed); }
+
+    #define IsDownImpl (m_mouse.codes.GetState(code) & (kButtonDown | kOnButtonDepressed))
+    inline bool IsMouseButtonDown(const uint code) const { return IsDownImpl; }
+    inline bool IsAnyMouseButtonDown(const uint code) const 
+    {  
+        return IsDownImpl; 
+    }
+    template<typename... Pack>
+    inline bool IsAnyMouseButtonDown(const uint code, Pack... pack) const
+    {
+        return IsAnyMouseButtonDown(pack...) | IsDownImpl;
+    }   
+    #undef IsDownImpl
 
     inline void SetDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags | code; }
     inline void ClearDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags & ~code; }
@@ -87,15 +99,13 @@ protected:
     {
         Cuda::ivec2                                 pos;
         Cuda::ivec2                                 prevPos;
-        Cuda::ivec2                                 delta;
+        Cuda::ivec2                                 delta; 
+        MouseButtonMap                              codes;
     }
     m_mouse;
 
-
-    uint                                            m_mouseButtons;
     float                                           m_mouseWheelAngle;
-    uint                                            m_keyCodes[4];
-    uint                                            m_sysKeyCodes[4];
+    KeyboardButtonMap                               m_keyCodes;
     int                                             m_clientWidth;
     int                                             m_clientHeight;
 
@@ -106,4 +116,8 @@ protected:
     std::mutex                                      m_resourceMutex;
 
     std::atomic<uint>                               m_dirtyFlags;
+
+    UIStateGraph                                    m_uiGraph;
+private:
+    
 };

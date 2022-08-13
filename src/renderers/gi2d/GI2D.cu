@@ -6,23 +6,50 @@
 
 using namespace Cuda;
 
+// All renderer objects must be declared and stored in the source file to avoid compilation errors between nvcc and Visual Studio
 struct CudaObjects
 {
     Cuda::AssetHandle<Cuda::Host::GI2DOverlay>                  overlayRenderer;
     Cuda::AssetHandle<Cuda::Host::Vector<Cuda::LineSegment>>    hostLineSegments;
 
     Cuda::GI2DOverlayParams                                     overlayParams;
-    Cuda::AssetHandle<Cuda::Host::BIH2DAsset>                   primitiveBIH;
+    Cuda::AssetHandle<Cuda::Host::BIH2DAsset>                   sceneBIH;
+    Cuda::AssetHandle<Cuda::Host::BIH2DAsset>                   newObjctBIH;
 };
 
 GI2D::GI2D() :
-    m_objects(std::make_unique<CudaObjects>())
+    m_objectsPtr(std::make_unique<CudaObjects>()),
+    m_objects(*m_objectsPtr)
 {
+    m_uiGraph.DeclareState("kNullState", this, &GI2D::OnNullState);
+
+    // 
+    m_uiGraph.DeclareState("kAddNewPathHovering", this, &GI2D::OnAddNewPath);
+    m_uiGraph.DeclareState("kAddNewPathDragging", this, &GI2D::OnAddNewPath);
+
+    m_uiGraph.DeclareDeterministicTransition("kNullState", "kAddNewPathHovering", KeyboardButtonMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), nullptr);
+    m_uiGraph.DeclareDeterministicTransition("kAddNewPathHovering", "kAddNewPathDragging", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed));
+    m_uiGraph.DeclareDeterministicTransition("kAddNewPathDragging", "kAddNewPathHovering", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed));
+    m_uiGraph.DeclareDeterministicTransition("kAddNewPathHovering", "kNullState", KeyboardButtonMap(VK_ESCAPE, kOnButtonDepressed), nullptr);
+
+    m_uiGraph.Finalise();
 }
 
 GI2D::~GI2D()
 {
     Destroy();
+}
+
+uint GI2D::OnNullState(const UIStateTransition& transition)
+{
+    Log::Success("Back home!");
+    return kUIStateOkay;
+}
+
+uint GI2D::OnAddNewPath(const UIStateTransition& transition)
+{
+    Log::Warning("Switched to %s!", m_uiGraph.FindState(transition.targetStateIdx).id);
+    return kUIStateOkay;
 }
 
 std::shared_ptr<RendererInterface> GI2D::Instantiate()
@@ -35,19 +62,19 @@ void GI2D::OnInitialise()
     m_view.trans = vec2(0.5f);
     m_view.scale = 1.0f;
     m_view.rotate = 0.0;
-    m_objects->overlayParams.viewMatrix = ConstructViewMatrix(m_view.trans, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
+    m_objects.overlayParams.viewMatrix = ConstructViewMatrix(m_view.trans, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
     m_view.zoomSpeed = 10.0f;   
 
     //m_primitiveContainer.Create(m_renderStream);
 
-    m_objects->hostLineSegments = CreateAsset<Host::Vector<LineSegment>>("id_lineSegments", kVectorHostAlloc, m_renderStream);
+    m_objects.hostLineSegments = CreateAsset<Host::Vector<LineSegment>>("id_lineSegments", kVectorHostAlloc, m_renderStream);
     
-    m_objects->primitiveBIH = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
-    m_objects->overlayRenderer = CreateAsset<Host::GI2DOverlay>("id_gi2DOverlay", m_objects->primitiveBIH, m_objects->hostLineSegments);
+    m_objects.sceneBIH = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+    m_objects.overlayRenderer = CreateAsset<Host::GI2DOverlay>("id_gi2DOverlay", m_objects.sceneBIH, m_objects.hostLineSegments);
     
-    auto& primIdxs = m_objects->primitiveBIH->GetPrimitiveIndices();
+    auto& primIdxs = m_objects.sceneBIH->GetPrimitiveIndices();
     
-    Host::Vector<LineSegment>& segments = *m_objects->hostLineSegments;   
+    Host::Vector<LineSegment>& segments = *m_objects.hostLineSegments;   
     /*segments.Resize(kCircleSegs);
     for (uint idx = 0; idx < kCircleSegs; ++idx)
     {
@@ -67,16 +94,16 @@ void GI2D::OnInitialise()
     {
         return Grow(segments[idx].GetBoundingBox(), 0.001f);
     };
-    m_objects->primitiveBIH->Build(getPrimitiveBBox);
+    m_objects.sceneBIH->Build(getPrimitiveBBox);
 
     SetDirtyFlags(kGI2DDirtyLineSegments | kGI2DDirtyParams);
 }
 
 void GI2D::OnDestroy()
 {
-    m_objects->overlayRenderer.DestroyAsset();
-    m_objects->primitiveBIH.DestroyAsset();
-    m_objects->hostLineSegments.DestroyAsset();
+    m_objects.overlayRenderer.DestroyAsset();
+    m_objects.sceneBIH.DestroyAsset();
+    m_objects.hostLineSegments.DestroyAsset();
 }
 
 void GI2D::OnRender()
@@ -87,7 +114,7 @@ void GI2D::OnRender()
     if (m_dirtyFlags & kGI2DDirtyParams)
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        m_objects->overlayRenderer->SetParams(m_objects->overlayParams);
+        m_objects.overlayRenderer->SetParams(m_objects.overlayParams);
 
         ClearDirtyFlags(kGI2DDirtyParams);
     }
@@ -97,7 +124,7 @@ void GI2D::OnRender()
         ClearDirtyFlags(kGI2DDirtyLineSegments);
     }
 
-    m_objects->overlayRenderer->Render(m_compositeImage);
+    m_objects.overlayRenderer->Render(m_compositeImage);
 }
 
 void GI2D::OnKey(const uint code, const bool isSysKey, const bool isDown)
@@ -130,7 +157,7 @@ void GI2D::OnMouseButton(const uint code, const bool isDown)
     }
     else if(code == kMouseLButton && isDown)
     {
-        m_objects->overlayParams.rayOriginView = m_objects->overlayParams.viewMatrix * vec2(m_mouse.pos);
+       
     }
 }
 
@@ -152,7 +179,7 @@ void GI2D::OnMouseMove()
     if (IsKeyDown(VK_CONTROL))
     {
         // Dragging?
-        if (IsMouseButtonDown(kMouseLButton | kMouseRButton | kMouseMButton))
+        if (IsAnyMouseButtonDown(kMouseLButton, kMouseRButton, kMouseMButton))
         {
             OnViewChange();
         }
@@ -160,7 +187,7 @@ void GI2D::OnMouseMove()
     
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        m_objects->overlayParams.mousePosView = m_objects->overlayParams.viewMatrix * vec2(m_mouse.pos);
+        m_objects.overlayParams.mousePosView = m_objects.overlayParams.viewMatrix * vec2(m_mouse.pos);
     }
 
     // Mark the scene as dirty
@@ -172,8 +199,8 @@ void GI2D::OnViewChange()
     if (IsMouseButtonDown(kMouseLButton))
     {
         // Update the transformation
-        m_objects->overlayParams.viewMatrix = ConstructViewMatrix(m_view.transAnchor, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
-        const vec2 dragDelta = (m_objects->overlayParams.viewMatrix * vec2(m_view.dragAnchor)) - (m_objects->overlayParams.viewMatrix * vec2(m_mouse.pos));
+        m_objects.overlayParams.viewMatrix = ConstructViewMatrix(m_view.transAnchor, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
+        const vec2 dragDelta = (m_objects.overlayParams.viewMatrix * vec2(m_view.dragAnchor)) - (m_objects.overlayParams.viewMatrix * vec2(m_mouse.pos));
         m_view.trans = m_view.transAnchor + dragDelta;
 
         //Log::Write("Trans: %s", m_view.trans.format());
@@ -202,8 +229,8 @@ void GI2D::OnViewChange()
     // Update the parameters in the overlay renderer
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        m_objects->overlayParams.viewMatrix = ConstructViewMatrix(m_view.trans, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
-        m_objects->overlayParams.viewScale = m_view.scale;
+        m_objects.overlayParams.viewMatrix = ConstructViewMatrix(m_view.trans, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
+        m_objects.overlayParams.viewScale = m_view.scale;
     }
 }
 

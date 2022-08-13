@@ -606,6 +606,9 @@
     <ClInclude Include="src\generic\Hash.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderers\UIStateGraph.h">
+      <Filter>renderers</Filter>
+    </ClInclude>
     <ClInclude Include="src\renderers\UIButtonMap.h">
       <Filter>renderers</Filter>
     </ClInclude>

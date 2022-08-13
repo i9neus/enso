@@ -20,6 +20,12 @@ inline std::string bstr(const T& t, const bool truncate = false)
     return str;
 }
 
+struct UICodeStatePair
+{
+    uint code;
+    uint state;
+};
+
 template<size_t NumButtons>
 class UIButtonMap
 {
@@ -31,20 +37,56 @@ public:
         std::memset(m_codes.data(), 0, sizeof(uint) * kKeyCodeArraySize);
     }
 
+    UIButtonMap(nullptr_t) : UIButtonMap() { }
+
+    UIButtonMap(const uint code, const uint state = kOnButtonDepressed) : UIButtonMap() 
+    {
+        SetState(code, state);
+    }
+
+    UIButtonMap(const std::initializer_list<UICodeStatePair>& initList) : UIButtonMap()
+    {
+        for (const auto& init : initList)
+        {
+            *this |= UIButtonMap(init.code, init.state);
+        }
+    }
+
     UIButtonMap(const UIButtonMap& other)
     {
         std::memcpy(m_codes.data(), other.m_codes.data(), sizeof(uint) * kKeyCodeArraySize);
     }
 
-    inline uint StateToBits(const uint state) const
-    {        
-        return ((state >> 1) & 1) | ((state >> 1) & 2) | ((state >> 3) * 3);
+    UIButtonMap(UIButtonMap&& other)
+    {
+        m_codes = std::move(other.m_codes);
     }
 
-    void Update(const uint code, const bool isDown)
-    {
-        Assert(code < NumButtons);
+    ~UIButtonMap() = default;    
 
+    inline uint StateToBits(const uint state) const
+    {        
+        switch (state)
+        {
+        case kOnButtonDepressed: return 1;
+        case kButtonDown: return 2;
+        case kOnButtonReleased: return 3;        
+        };
+        return 0;
+        //return ((state >> 1) & 1) | ((state >> 1) & 2) | ((state >> 3) * 3);
+    }
+
+    void Echo() const
+    {
+        Log::Error("----------");
+        for (int blockIdx = 0; blockIdx < kKeyCodeArraySize; ++blockIdx)
+        {
+            Log::Error("%i: %s", blockIdx, bstr(m_codes[blockIdx]));
+        }
+    }
+
+    void Update(bool echo = true)
+    {
         // If any keys previously registered as either actively onDown or onUp, move them to passively down or up 
         for (int blockIdx = 0; blockIdx < kKeyCodeArraySize; ++blockIdx)
         {
@@ -55,22 +97,27 @@ public:
                     uint code = (m_codes[blockIdx] >> bitIdx) & 3;
                     switch (code)
                     {
-                    case 0: code = 1; break;
-                    case 2: code = 3; break;
-                    }                    
-                    m_codes[blockIdx] = (m_codes[blockIdx] & ~(3 << bitIdx)) | (m_codes[blockIdx] << bitIdx);
+                    case 1: code = 2; break;
+                    case 3: code = 0; break;
+                    }
+                    m_codes[blockIdx] = (m_codes[blockIdx] & ~(3 << bitIdx)) | (code << bitIdx);
                 }
             }
         }
+        
+        //if(echo) Echo();
+    }
+
+    inline void Update(const uint code, const bool isDown)
+    {
+        Assert(code < NumButtons);
+
+        Update(false);
 
         // Set the new state
         SetState(code, isDown ? kOnButtonDepressed : kOnButtonReleased);
 
-        /*Log::Write("----------");
-        for (int blockIdx = 0; blockIdx < kKeyCodeArraySize; ++blockIdx)
-        {
-            Log::Write("%i: %s", blockIdx, bstr(m_codes[blockIdx]));
-        }*/
+        //Echo();
     }
 
     uint GetState(const uint code) const
@@ -82,6 +129,9 @@ public:
 
     void SetState(const uint code, const uint state)
     {        
+        // FIXME: Alt-tabbing out of the app breaks things. 
+        if (code == VK_MENU) { return; }
+        
         Assert(code < NumButtons);
         uint bitIdx = code * 2, blockIdx = bitIdx >> 5;
         bitIdx &= 31;
@@ -99,12 +149,27 @@ public:
 
     inline bool operator!=(const UIButtonMap& rhs) const { return !(this->operator==(rhs)); }
 
+    UIButtonMap& operator|=(const UIButtonMap& rhs)
+    {
+        for (int buttonIdx = 0; buttonIdx < NumButtons; ++buttonIdx)
+        {
+            const uint stateLHS = GetState(buttonIdx);
+            if (stateLHS == kButtonUp)
+            {
+                SetState(buttonIdx, rhs.GetState(buttonIdx));
+            }
+        }        
+        return *this;
+    }
+
     uint HashOf() const
     {
         uint hash = 0x8f23aba7;
+        //Log::Write("------");
         for (const auto& code : m_codes)
         {
             hash = HashCombine(hash, std::hash<uint>{}(code));
+            //Log::Write("0x%x: 0x%x", code, hash);
         }
         return hash;
     }
@@ -113,5 +178,11 @@ private:
     std::array < uint, kKeyCodeArraySize > m_codes;
 };
 
-using MouseButtonMap = UIButtonMap<256>;
+template<size_t NumButtons>
+UIButtonMap<NumButtons> operator|(const UIButtonMap<NumButtons>& lhs, const UIButtonMap<NumButtons>& rhs)
+{
+    return UIButtonMap<NumButtons>(lhs) |= rhs;
+}
+
 using KeyboardButtonMap = UIButtonMap<256>;
+using MouseButtonMap = UIButtonMap<9>;

@@ -12,32 +12,58 @@ namespace Cuda
 {    
     namespace Host { template<typename T> class Vector; }
     
-    enum GI2DLineSegmentFlags : int
+    enum GI2DPrimitiveFlags : int
     {
-        kSelected = 1
+        k2DPrimitiveSelected = 1
     };
 
-    class LineSegment
+    class Primitive2D
     {
+    protected:
+        __host__ __device__ Primitive2D() noexcept : m_flags(0) {}
+        __host__ __device__ Primitive2D(const uchar& f) noexcept : m_flags(f) {}
+
+        uchar m_flags;
+
     public:
-        __host__ __device__ LineSegment() noexcept : flags(0) {}
-        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1) noexcept :
-            flags(0), v(v0), dv(v1 - v0) {}
+        __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const = 0;
+        __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const = 0;
+        __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const = 0;
+        __host__ __device__ virtual float                   TestRay(const vec2& o, const vec2& d) const = 0;
+        __host__ __device__ virtual BBox2f                  GetBoundingBox() const = 0;
 
-        __host__ __device__ __forceinline__ vec2 PerpendicularPoint(const vec2& p) const;
-        __host__ __device__ float Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const;
-        __host__ __device__ bool TestPoint(const vec2& p, const float& thickness) const;
-        __host__ __device__ float TestRay(const vec2& o, const vec2& d) const;
-        __host__ __device__ vec2 PointAt(const float& t) const { return v + dv * t; }
+        __host__ __device__ __forceinline__ bool            IsSelected() const { return m_flags & k2DPrimitiveSelected; }
+        __host__ __device__ __forceinline__ void            SetFlags(const uchar flags) { m_flags |= flags; }
+        __host__ __device__ __forceinline__ void            UnsetFlags(const uchar flags) { m_flags &= ~flags; }
+    };
+    
+    class LineSegment : public Primitive2D
+    {
+    private:
+        vec2 m_v;
+        vec2 m_dv;
+    public:
+        __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v(0.0f), m_dv(0.0f) {}
+        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags) noexcept :
+            Primitive2D(flags), m_v(v0), m_dv(v1 - v0) {}
 
-        __host__ __device__ __forceinline__ BBox2f GetBoundingBox() const
+        __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
+        __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
+        __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
+        __host__ __device__ virtual float                   TestRay(const vec2& o, const vec2& d) const override final;
+        
+        __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
-            return BBox2f(vec2(min(v.x, v.x + dv.x), min(v.y, v.y + dv.y)),
-                vec2(max(v.x, v.x + dv.x), max(v.y, v.y + dv.y)));
+            return BBox2f(vec2(min(m_v.x, m_v.x + m_dv.x), min(m_v.y, m_v.y + m_dv.y)),
+                vec2(max(m_v.x, m_v.x + m_dv.x), max(m_v.y, m_v.y + m_dv.y)));
         }
 
-        uchar flags;
-        vec2 v, dv;
+        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v + m_dv * t; }
+
+        __host__ __device__ __forceinline__ const vec2&     v0() const { return m_v; }
+        __host__ __device__ __forceinline__ const vec2&     v1() const { return m_v + m_dv; }
+        __host__ __device__ __forceinline__ const vec2&     dv() const { return m_dv; }
+
     };
 
     __host__ void GenerateRandomLineSegments(Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
