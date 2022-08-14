@@ -31,13 +31,32 @@ GI2D::GI2D() :
     m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreatePathOpen", KeyboardButtonMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), nullptr, 0);
     m_uiGraph.DeclareDeterministicTransition("kCreatePathHover", "kCreatePathAppend", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0);
     m_uiGraph.DeclareDeterministicTransition("kCreatePathHover", "kCreatePathClose", KeyboardButtonMap(VK_ESCAPE, kOnButtonDepressed), nullptr, 0);
+    m_uiGraph.DeclareDeterministicTransition("kCreatePathHover", "kCreatePathClose", nullptr, MouseButtonMap(kMouseRButton, kOnButtonDepressed), 0);
 
-    // Select path
+    // Select/deselect path
     m_uiGraph.DeclareState("kSelectPathDragging", this, &GI2D::OnSelectPath);
     m_uiGraph.DeclareState("kSelectPathEnd", this, &GI2D::OnSelectPath);
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kSelectPathDragging", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0);
+    m_uiGraph.DeclareState("kDeselectPath", this, &GI2D::OnSelectPath);   
+    m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0, this, &GI2D::DecideOnClickState);
     m_uiGraph.DeclareDeterministicTransition("kSelectPathDragging", "kSelectPathDragging", nullptr, MouseButtonMap(kMouseLButton, kButtonDown), kUITriggerOnMouseMove);
     m_uiGraph.DeclareDeterministicTransition("kSelectPathDragging", "kSelectPathEnd", nullptr, MouseButtonMap(kMouseLButton, kOnButtonReleased), 0);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeselectPath", nullptr, MouseButtonMap(kMouseRButton, kOnButtonDepressed), 0);
+
+    // Move path
+    m_uiGraph.DeclareState("kMovePathBegin", this, &GI2D::OnMovePath);
+    m_uiGraph.DeclareState("kMovePathDragging", this, &GI2D::OnMovePath);
+    //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0, this, &GI2D::DecideOnClickState);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kMovePathBegin", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0);
+    m_uiGraph.DeclareDeterministicTransition("kMovePathDragging", "kSelectPathDragging", nullptr, MouseButtonMap(kMouseLButton, kButtonDown), kUITriggerOnMouseMove);
+    m_uiGraph.DeclareDeterministicTransition("kSelectPathDragging", "kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonReleased), 0);
+
+    // Delete path
+    m_uiGraph.DeclareState("kDeletePath", this, &GI2D::OnDeletePath);    
+    //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0, this, &GI2D::DecideOnClickState);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeletePath", KeyboardButtonMap({ {VK_DELETE, kOnButtonDepressed}}), nullptr, 0);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeletePath", KeyboardButtonMap({ {VK_BACK, kOnButtonDepressed}}), nullptr, 0);
+
+    
 
     m_uiGraph.Finalise();
 }
@@ -47,66 +66,158 @@ GI2D::~GI2D()
     Destroy();
 }
 
-uint GI2D::OnIdleState(const UIStateTransition& transition)
+uint GI2D::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
     Log::Success("Back home!");
     return kUIStateOkay;
 }
 
-uint GI2D::OnSelectPath(const UIStateTransition& transition)
-{   
-    if (!transition.HasDeterministicTarget()) { return kUIStateError; }
+uint GI2D::OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx)
+{
+    Log::Error("Delete!");
+    m_uiGraph.SetState("kIdleState");
+    return kUIStateOkay;
+}
 
-    const std::string stateID = m_uiGraph.GetTargetStateID(transition);
-    if (stateID == "kSelectPathDragging")
+uint GI2D::OnMovePath(const uint& sourceStateIdx, const uint& targetStateIdx)
+{
+    const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
+    if (stateID == "kMovePathBegin")
     {
-        auto& selection = m_objects.overlayParams.selection;
-        if (!selection.showBounds)
-        {
-            selection.bBox = BBox2f(m_objects.overlayParams.mousePosView, m_objects.overlayParams.mousePosView);
-            selection.showBounds = true;            
-        }
-        else
-        {
-            selection.bBox[1] = m_objects.overlayParams.mousePosView;
-        }
-        Log::Success("Dragging!");
+        m_movePath.dragAnchor = m_mousePosView;
     }
-    else if (stateID == "kSelectPathEnd")
+    else if (stateID == "kMovePathDragging")
     {
-        m_objects.overlayParams.selection.showBounds = false;
-        Log::Success("Finished!");
+        std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        m_uiGraph.SetState("kIdleState");
+        const vec2 delta = m_mousePosView - m_movePath.dragAnchor;
+        for (auto& segment : *m_objects.hostLineSegments)
+        {
+            if (segment.IsSelected())
+            {
+                segment[0] += delta;
+                segment[1] + delta;
+            }
+        }
+
+        m_movePath.dragAnchor = m_mousePosView;
     }
     else
     {
-        return kUIStateError;        
+        return kUIStateError;
     }
 
     SetDirtyFlags(kGI2DDirtyParams);
     return kUIStateOkay;
 }
 
-uint GI2D::OnCreatePath(const UIStateTransition& transition)
+std::string GI2D::DecideOnClickState(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
-    if (!transition.HasDeterministicTarget()) { return kUIStateError; }
+    // If there are no paths selected, enter selection state. Otherwise, enter moving state.
+    return (m_objects.overlayParams.selection.numSelected == 0) ? "kSelectPathDragging" : "kMovePathDragging";
+}
 
-    const std::string stateID = m_uiGraph.GetTargetStateID(transition);
+uint GI2D::OnSelectPath(const uint& sourceStateIdx, const uint& targetStateIdx)
+{
+    const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
+    if (stateID == "kSelectPathDragging")
+    {
+        auto& selection = m_objects.overlayParams.selection;
+        auto& lineSegments = *m_objects.hostLineSegments;
+
+        if (!selection.isLassoing)
+        {
+            // Clear all selections
+            for (auto& segment : lineSegments)
+            {
+                segment.SetFlags(k2DPrimitiveSelected, false);
+            }
+            
+            selection.mouse0 = selection.mouse1 = m_mousePosView;
+            selection.isLassoing = true;
+            selection.numSelected = 0;
+            SetDirtyFlags(kGI2DDirtyLineSegments);
+        }
+
+        selection.bBox = Rectify(BBox2f(selection.mouse0, m_mousePosView));
+
+        std::lock_guard <std::mutex> lock(m_resourceMutex);
+        if (m_objects.sceneBIH->IsConstructed())
+        {
+            const uint lastNumSelected = selection.numSelected;
+            
+            auto onIntersectPrim = [&lineSegments, &selection](const uint& startIdx, const uint& endIdx, const bool isInnerNode)
+            {
+                // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
+                if (isInnerNode)
+                {
+                    for (int idx = startIdx; idx < endIdx; ++idx) { lineSegments[idx].SetFlags(k2DPrimitiveSelected, true); }
+                    selection.numSelected += endIdx - startIdx;
+                }
+                else
+                {
+                    for (int idx = startIdx; idx < endIdx; ++idx)
+                    {
+                        const bool isCaptured = selection.bBox.Intersects(lineSegments[idx].GetBoundingBox());
+                        if (isCaptured) { ++selection.numSelected; }
+                        lineSegments[idx].SetFlags(k2DPrimitiveSelected, isCaptured);
+                    }
+                }
+            };
+            m_objects.sceneBIH->TestBBox(selection.bBox, onIntersectPrim);
+
+            // Only if the number of selected primitives has changed
+            if (lastNumSelected != selection.numSelected)
+            {
+                SetDirtyFlags(kGI2DDirtyLineSegments);
+            }
+        }
+
+        Log::Success("Selecting!");
+    }
+    else if (stateID == "kSelectPathEnd")
+    {
+        m_objects.overlayParams.selection.isLassoing = false;
+        m_objects.overlayParams.selection.numSelected = 0;
+        SetDirtyFlags(kGI2DDirtyLineSegments);
+
+        Log::Success("Finished!");
+
+        m_uiGraph.SetState("kIdleState");
+    }
+    else if (stateID == "kDeselectPath")
+    {
+
+        Log::Success("Finished!");
+
+        m_uiGraph.SetState("kIdleState");
+    }
+    else
+    {
+        return kUIStateError;
+    }
+
+    SetDirtyFlags(kGI2DDirtyParams);
+    return kUIStateOkay;
+}
+
+uint GI2D::OnCreatePath(const uint& sourceStateIdx, const uint& targetStateIdx)
+{
+    const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kCreatePathOpen")
     {
         // Record the index of the starting segment on the path 
         m_newPath.pathStartIdx = m_objects.hostLineSegments->Size() - 1;
         m_newPath.numVertices = 0;
-        
+
         m_uiGraph.SetState("kCreatePathHover");
     }
     else if (stateID == "kCreatePathHover")
     {
         if (m_newPath.numVertices >= 2)
         {
-            m_objects.hostLineSegments->Back()[1] = m_objects.overlayParams.mousePosView;
-            SetDirtyFlags(kGI2DDirtyLineSegments);
+            m_objects.hostLineSegments->Back()[1] = m_mousePosView;
+            SetDirtyFlags(kGI2DDirtyGeometry);
         }
     }
     else if (stateID == "kCreatePathAppend")
@@ -114,16 +225,18 @@ uint GI2D::OnCreatePath(const UIStateTransition& transition)
         if (m_newPath.numVertices == 0)
         {
             // Create a zero-length segment that will be manipulated later
-            m_objects.hostLineSegments->EmplaceBack(m_objects.overlayParams.mousePosView, m_objects.overlayParams.mousePosView, 0);
+            std::lock_guard <std::mutex> lock(m_resourceMutex);
+            m_objects.hostLineSegments->EmplaceBack(m_mousePosView, m_mousePosView, 0);
             m_newPath.numVertices = 2;
-            SetDirtyFlags(kGI2DDirtyLineSegments);
+            SetDirtyFlags(kGI2DDirtyGeometry);
         }
         else if (m_newPath.numVertices >= 2)
         {
             // Any more and we simply reuse the last vertex on the path as the start of the next segment
-            m_objects.hostLineSegments->EmplaceBack(m_objects.hostLineSegments->Back()[1], m_objects.overlayParams.mousePosView, 0);
+            std::lock_guard <std::mutex> lock(m_resourceMutex);
+            m_objects.hostLineSegments->EmplaceBack(m_objects.hostLineSegments->Back()[1], m_mousePosView, 0);
             m_newPath.numVertices++;
-            SetDirtyFlags(kGI2DDirtyLineSegments);
+            SetDirtyFlags(kGI2DDirtyGeometry);
         }
 
         m_uiGraph.SetState("kCreatePathHover");
@@ -136,7 +249,7 @@ uint GI2D::OnCreatePath(const UIStateTransition& transition)
     {
         return kUIStateError;
     }
-    
+
     return kUIStateOkay;
 }
 
@@ -173,16 +286,16 @@ void GI2D::OnInitialise()
     m_view.scale = 1.0f;
     m_view.rotate = 0.0;
     m_objects.overlayParams.viewMatrix = ConstructViewMatrix(m_view.trans, m_view.rotate, m_view.scale) * m_clientToNormMatrix;
-    m_view.zoomSpeed = 10.0f;   
+    m_view.zoomSpeed = 10.0f;
 
     //m_primitiveContainer.Create(m_renderStream);
 
     m_objects.hostLineSegments = CreateAsset<Host::Vector<LineSegment>>("id_lineSegments", kVectorHostAlloc, m_renderStream);
-    
+
     m_objects.sceneBIH = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
     m_objects.overlayRenderer = CreateAsset<Host::GI2DOverlay>("id_gi2DOverlay", m_objects.sceneBIH, m_objects.hostLineSegments);
 
-    SetDirtyFlags(kGI2DDirtyLineSegments | kGI2DDirtyParams);
+    SetDirtyFlags(kGI2DDirtyAll);
 }
 
 void GI2D::OnDestroy()
@@ -197,19 +310,28 @@ void GI2D::OnRender()
     //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     //Log::Write("Tick");
 
-    if (m_dirtyFlags & kGI2DDirtyParams)
+    if (m_dirtyFlags)
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        m_objects.overlayRenderer->SetParams(m_objects.overlayParams);
+        if (m_dirtyFlags & kGI2DDirtyParams)
+        {
+            m_objects.overlayParams.mousePosView = m_mousePosView;
+            m_objects.overlayRenderer->SetParams(m_objects.overlayParams);
 
-        ClearDirtyFlags(kGI2DDirtyParams);
-    }
-    if (m_dirtyFlags & kGI2DDirtyLineSegments)
-    {
-        RebuildBIH();
+            ClearDirtyFlags(kGI2DDirtyParams);
+        }
 
-        ClearDirtyFlags(kGI2DDirtyLineSegments);
+        if (m_dirtyFlags & kGI2DDirtyBIH)
+        {
+            RebuildBIH();
+            ClearDirtyFlags(kGI2DDirtyBIH);
+        }
+        else if (m_dirtyFlags & kGI2DDirtyLineSegments)
+        {
+            m_objects.hostLineSegments->Synchronise(kVectorSyncUpload);
+            ClearDirtyFlags(kGI2DDirtyLineSegments);
+        }
     }
 
     m_objects.overlayRenderer->Render(m_compositeImage);
@@ -230,7 +352,7 @@ void GI2D::OnMouseButton(const uint code, const bool isDown)
         m_view.transAnchor = m_view.trans;
         m_view.scaleAnchor = m_view.scale;
         m_view.rotAnchor = m_view.rotate;
-    } 
+    }
 }
 
 mat3 GI2D::ConstructViewMatrix(const vec2& trans, const float rotate, const float scale) const
@@ -252,10 +374,11 @@ void GI2D::OnMouseMove()
     {
         OnViewChange();
     }
-    
+
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
         m_objects.overlayParams.mousePosView = m_objects.overlayParams.viewMatrix * vec2(m_mouse.pos);
+        m_mousePosView = m_objects.overlayParams.mousePosView;
     }
 
     // Mark the scene as dirty

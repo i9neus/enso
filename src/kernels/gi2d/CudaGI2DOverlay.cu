@@ -11,7 +11,7 @@ namespace Cuda
         grid.majorLineSpacing = 1.0f;
         grid.majorLineSpacing = 1.0f;
 
-        selection.showBounds = false;
+        selection.isLassoing = false;
 
         mousePosView = vec2(0.f);
         rayOriginView = vec2(0.f);
@@ -20,7 +20,7 @@ namespace Cuda
 
         selectedSegmentIdx = kInvalidSegment;
     }
-    
+
     __device__ Device::GI2DOverlay::GI2DOverlay(const GI2DOverlayParams& params, const Objects& objects) :
         m_params(params),
         m_objects(objects)
@@ -33,7 +33,7 @@ namespace Cuda
     }
 
     __device__ void Device::GI2DOverlay::Synchronise(const Objects& objects)
-    {       
+    {
         m_objects = objects;
     }
 
@@ -41,11 +41,11 @@ namespace Cuda
     {
         thickness *= 0.5f;
         return (p.x >= bBox.lower.x - thickness && p.y >= bBox.lower.y - thickness && p.x <= bBox.upper.x + thickness && p.y <= bBox.upper.y + thickness) &&
-               (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
+            (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
     }
 
     __device__ void Device::GI2DOverlay::Render(Device::ImageRGBA* deviceOutputImage)
-    {        
+    {
         assert(deviceOutputImage);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
@@ -53,7 +53,7 @@ namespace Cuda
 
         // Transform from screen space to view space
         const vec2 xyView = m_params.viewMatrix * vec2(xyScreen);
-        
+
         vec3 L = vec3(0.1f);
         if (!m_params.sceneBounds.Contains(xyView))
         {
@@ -71,16 +71,16 @@ namespace Cuda
         }
 
         if (m_objects.bih && m_objects.lineSegments)
-        {                        
+        {
             const Vector<LineSegment>& segments = *(m_objects.lineSegments);
-            
-            /*LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));            
+
+            /*LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));
             const float line = ray.Evaluate(xyView, 0.001f, m_params.dPdXY);
             if (line > 0.f)
             {
                 L = mix(L, vec3(1.0f, 0.8f, 0.05f), line);
             }
-            
+
             const Vector<LineSegment>& segments = *(m_objects.lineSegments);
             int hitSegment = -1;
             auto onRayIntersectLeaf = [&, this](const uint& idx, float& tNearest) -> void
@@ -92,7 +92,7 @@ namespace Cuda
                 {
                     tNearest = tPrim;
                     hitSegment = idx;
-                }                
+                }
             };
             auto onRayIntersectInner = [&, this](const BBox2f& bBox, const vec2& t, const bool isLeaf) -> void
             {
@@ -100,26 +100,29 @@ namespace Cuda
                 else if (isLeaf && bBox.Contains(xyView)) { L = mix(L, kRed, 0.2f); }
 
                 if (length2(ray.v + ray.dv * t[0] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kYellow;
-                if (length2(ray.v + ray.dv * t[1] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kBlue;               
+                if (length2(ray.v + ray.dv * t[1] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kBlue;
             };
             m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);*/
-            
-            auto onPointIntersectLeaf = [&, this](const uint& idx) -> void
+
+            auto onPointIntersectLeaf = [&, this](const uint& idxStart, const uint& idxEnd) -> void
             {
-                const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
-                if (line > 0.f)
+                for (int idx = idxStart; idx < idxEnd; ++idx)
                 {
-                    L = mix(L, (idx == m_params.selectedSegmentIdx) ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                    //L += kRed;
+                    const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
+                    if (line > 0.f)
+                    {
+                        L = mix(L, segments[idx].IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                        //L += kRed;
+                    }
                 }
-            };             
+            };
             /*auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void
             {
                 //bBox.Grow(m_params.dPdXY * depth * -5.0f);
                 //if (bBox.Contains(xyView)) { L = mix(L, Hue(depth / 5.0f), 0.3f); }
                 //if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.0)) { L = kOne; }
             };*/
-            m_objects.bih->TestPrimitive(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
+            m_objects.bih->TestPoint(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
 
             /*for (int idx = 0; idx < segments.Size(); ++idx)
             {
@@ -130,10 +133,10 @@ namespace Cuda
                     L += kBlue;
                 }
             }*/
-        }       
+        }
 
         // Draw the selection box
-        if (m_params.selection.showBounds)
+        if (m_params.selection.isLassoing)
         {
             if (PointOnPerimiter(m_params.selection.bBox, xyView, m_params.dPdXY * 1.)) { L = kOne; }
         }
@@ -216,7 +219,7 @@ namespace Cuda
                 }
             };
 
-            m_hostBIH2D->TestPrimitive(m_params.mousePosView, onIntersectLeaf);
+            //m_hostBIH2D->TestPrimitive(m_params.mousePosView, onIntersectLeaf);
         }
 
         SynchroniseObjects(cu_deviceData, m_params);

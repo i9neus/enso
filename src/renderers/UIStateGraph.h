@@ -34,8 +34,9 @@ struct UIState
     
     uint                                              idx;
     std::string                                       id;
-    std::function<uint(const UIStateTransition&)>     onExitState;
-    std::function<uint(const UIStateTransition&)>     onEnterState;
+
+    std::function<uint(const uint&, const uint&)>     onExitState;
+    std::function<uint(const uint&, const uint&)>     onEnterState;
 
     uint                                              entryTransitionIdx;
     uint                                              exitTransitionIdx;
@@ -44,14 +45,17 @@ struct UIState
 struct UIStateTransition
 {
     enum _attrs : uint { kInvalid = 0xffffffff };
-    
+
     uint                        hash;
+
     KeyboardButtonMap           keyTrigger;
     MouseButtonMap              mouseTrigger;
     uint                        triggerFlags;
+
     uint                        sourceStateIdx;
     uint                        targetStateIdx;
-    std::function<uint(const UIStateTransition&)> getTargetState;
+
+    std::function<std::string(const uint&, const uint&)> getTargetState;
 
     inline const bool IsNonDeterministic() const { return getTargetState != nullptr; }
     inline const bool HasDeterministicTarget() const { return targetStateIdx != kInvalid; }
@@ -79,15 +83,15 @@ public:
     void DeclareState(const std::string& name, HostType* hostInstance, OnEnterState onEnterState, OnLeaveState onExitState)
     {
         DeclareState(name);        
-        m_uiStateList.back().onExitState = std::bind(onExitState, hostInstance, std::placeholders::_1);
-        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1);
+        m_uiStateList.back().onExitState = std::bind(onExitState, hostInstance, std::placeholders::_1, std::placeholders::_2);
+        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2);
     }
 
     template<typename HostType, typename OnEnterState>
     void DeclareState(const std::string& name, HostType* hostInstance, OnEnterState onEnterState)
     {
         DeclareState(name);
-        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1);
+        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2);
     }
 
     inline UIState* FindState(const std::string& name)
@@ -102,9 +106,9 @@ public:
         return m_uiStateList[idx];
     }
 
-    inline std::string GetTargetStateID(const UIStateTransition& transition) const
+    inline std::string GetStateID(const uint idx) const
     {
-        return (transition.targetStateIdx == UIState::kInvalid) ? std::string("") : m_uiStateList[transition.targetStateIdx].id;
+        return GetState(idx).id;
     }
 
     inline void SetState(const std::string& id)
@@ -166,11 +170,11 @@ public:
     }
 
     template<class HostClass, typename GetTransitionState>
-    void DeclareNondeterministicTransition(const std::string& sourceState, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger, const uint& triggerFlags,
+    void DeclareNonDeterministicTransition(const std::string& sourceState, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger, const uint& triggerFlags,
                                            HostClass* hostClass, GetTransitionState getTargetState)
     {
         DeclareTransitionImpl(sourceState, "", keyTrigger, mouseTrigger, triggerFlags);
-        m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
+        m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1, std::placeholders::_2);
     }
 
 	void OnTriggerTransition(const uint triggerFlags)
@@ -191,7 +195,7 @@ public:
             uint sourceStateIdx = m_currentState;
             if (m_uiStateList[m_currentState].onExitState)
             {
-                const uint result = m_uiStateList[m_currentState].onExitState(transition);
+                const uint result = m_uiStateList[m_currentState].onExitState(sourceStateIdx, UIState::kInvalid);
                 AssertMsg(result != kUIStateError, "State transition error.");
                 if (result == kUIStateRejected)
                 {
@@ -203,7 +207,14 @@ public:
             // If the transition lambda attached then it's non-deterministic. Call the lambda to determine what state we're migrating to
             if (transition.IsNonDeterministic())
             {
-                m_currentState = transition.getTargetState(transition);
+                const std::string newStateID = transition.getTargetState(sourceStateIdx, UIState::kInvalid);
+                AssertMsgFmt (!newStateID.empty(),
+                    "Error: non-deterministic transition from '%s' failed: state is empty.", m_uiStateList[m_currentState].id.c_str());
+                
+                const UIState* newState = FindState(newStateID);
+                AssertMsgFmt(newState, "Error: non-deterministic transition from '%s' failed: '%s' is not a valid state.", m_uiStateList[m_currentState].id.c_str(), newStateID.c_str());
+
+                m_currentState = newState->idx;                
             }
             // Otherwise, treat the transition as deterministic
             else
@@ -215,7 +226,7 @@ public:
             uint targetResult = kUIStateOkay;
             if (m_uiStateList[m_currentState].onEnterState)
             {
-                const uint result = m_uiStateList[m_currentState].onEnterState(transition);
+                const uint result = m_uiStateList[m_currentState].onEnterState(sourceStateIdx, m_currentState);
                 AssertMsg(result != kUIStateError, "State transition error.");
 
                 if (result == kUIStateRejected)

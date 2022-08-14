@@ -33,8 +33,12 @@ namespace Cuda
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const = 0;
 
         __host__ __device__ __forceinline__ bool            IsSelected() const { return m_flags & k2DPrimitiveSelected; }
-        __host__ __device__ __forceinline__ void            SetFlags(const uchar flags) { m_flags |= flags; }
-        __host__ __device__ __forceinline__ void            UnsetFlags(const uchar flags) { m_flags &= ~flags; }
+        __host__ __device__ __forceinline__ void            SetFlags(const uchar flags, const bool set) 
+        { 
+            if (set) { m_flags |= flags; }
+            else     { m_flags &= ~flags; }
+        }
+        //__host__ __device__ __forceinline__ void            UnsetFlags(const uchar flags) { m_flags &= ~flags; }
     };
     
     class LineSegment : public Primitive2D
@@ -54,8 +58,8 @@ namespace Cuda
         
         __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
-            return BBox2f(vec2(min(m_v[0].x, m_v[1].x), min(m_v[1].y, m_v[1].y)),
-                          vec2(max(m_v[0].x, m_v[1].x), max(m_v[1].y, m_v[1].y)));
+            return BBox2f(vec2(min(m_v[0].x, m_v[1].x), min(m_v[0].y, m_v[1].y)),
+                          vec2(max(m_v[0].x, m_v[1].x), max(m_v[0].y, m_v[1].y)));
         }
 
         __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }

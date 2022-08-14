@@ -69,6 +69,16 @@ namespace Cuda
             return lower.x <= other.lower.x && lower.y <= other.lower.y && upper.x >= other.upper.x && upper.y >= other.upper.y;
         }
 
+        __host__ __device__ __forceinline__ bool Intersects(const VecType& p) const
+        {
+            return p.x >= lower.x && p.x <= upper.x && p.y >= lower.y && p.y <= upper.y;
+        }
+
+        __host__ __device__ __forceinline__ bool Intersects(const BBox2& other) const
+        {
+            return max(lower.x, other.lower.x) < min(upper.x, other.upper.x) && max(lower.y, other.lower.y) < min(upper.y, other.upper.y);
+        }
+
         __host__ __device__ __forceinline__ void Grow(const ScalarType & ammount)
         {
             lower.x -= ammount; lower.y -= ammount;
@@ -165,5 +175,13 @@ namespace Cuda
     __host__ __device__ __forceinline__ BBox2<VecType> Grow(const BBox2<VecType>& bBox, const VecType& ammount)
     {
         return BBox2<VecType>(bBox.lower.x - ammount.x, bBox.lower.y - ammount.y, bBox.upper.x + ammount.x, bBox.upper.y + ammount.y);
+    }
+
+    template<typename VecType>
+    __host__ __device__ __forceinline__ BBox2<VecType> Rectify(const BBox2<VecType>& bBox)
+    {
+        BBox2<VecType> rect(bBox);
+        rect.Rectify();
+        return rect;
     }
 }

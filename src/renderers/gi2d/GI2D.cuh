@@ -18,11 +18,15 @@ namespace Cuda
 
 struct CudaObjects;
 
-enum GI2DDirtyFlags : int
+enum GI2DDirtyFlags : uint
 {
     kGI2DClean = 0,
     kGI2DDirtyParams = 1,
-    kGI2DDirtyLineSegments = 2
+    kGI2DDirtyLineSegments = 2,
+    kGI2DDirtyBIH = 4,
+    kGI2DDirtyGeometry = kGI2DDirtyLineSegments | kGI2DDirtyBIH,
+
+    kGI2DDirtyAll = 0xffffffff
 };
 
 enum GI2DEditMode : int
@@ -67,9 +71,13 @@ private:
 
     Cuda::mat3              ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
 
-    uint OnCreatePath(const UIStateTransition& transition);
-    uint OnSelectPath(const UIStateTransition& transition);
-    uint OnIdleState(const UIStateTransition& transition);
+    uint                    OnMovePath(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnCreatePath(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnSelectPath(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx);
+
+    std::string             DecideOnClickState(const uint& sourceStateIdx, const uint& targetStateIdx);
 
 private:
     enum JobIDs : uint { kJobDraw };
@@ -77,6 +85,8 @@ private:
     std::unique_ptr<CudaObjects>                m_objectsPtr;
     CudaObjects&                                m_objects;
     JobManager                                  m_jobManager;
+
+    Cuda::vec2                                  m_mousePosView;
 
     struct EditMode
     {
@@ -111,4 +121,16 @@ private:
         Cuda::vec2                              startPos;
     } 
     m_newPath;
+
+    struct
+    {
+        Cuda::vec2                              dragAnchor;
+    }
+    m_movePath;
+
+    struct
+    {
+        uint                                    numSelected;
+    }
+    m_lasso;
 };

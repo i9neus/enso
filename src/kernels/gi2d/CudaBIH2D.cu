@@ -2,23 +2,13 @@
 
 namespace Cuda
 {
-    __host__ __device__ BIH2D::BIH2D() :
-        m_bBox(vec2(0.f), vec2(0.f)),
-        m_nodes(nullptr),
-        m_isConstructed(false),
-        m_testAsList(false),
-        m_numNodes(0)
-    {
-
-    }    
-
-    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams& params)
+    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
     {
         assert(params.nodes);
         m_nodes = params.nodes->Data();
         m_numNodes = params.nodes->Size();
         m_numPrims = params.numPrims;
-        m_bBox = params.bBox;
+        m_treeBBox = params.bBox;
         m_isConstructed = params.isConstructed;
         m_testAsList = params.testAsList;
     }
@@ -29,7 +19,7 @@ namespace Cuda
     {
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
 
-        m_hostNodes = CreateChildAsset<Host::Vector<BIH2DNode>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
+        m_hostNodes = CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()
@@ -62,7 +52,7 @@ namespace Cuda
 
         // Find the global bounding box
         BBox2f centroidBBox = BBox2f::MakeInvalid();
-        m_bih.m_bBox = BBox2f::MakeInvalid();
+        m_bih.m_treeBBox = BBox2f::MakeInvalid();
 
         if (!m_primitiveIdxs.empty())
         {
@@ -71,12 +61,12 @@ namespace Cuda
                 const BBox2f primBBox = m_getPrimitiveBBox(idx);
                 AssertMsgFmt(primBBox.HasValidArea(),
                     "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
-                m_bih.m_bBox = Union(m_bih.m_bBox, primBBox);
+                m_bih.m_treeBBox = Union(m_bih.m_treeBBox, primBBox);
                 centroidBBox = Union(centroidBBox, primBBox.Centroid());
             }
 
-            AssertMsgFmt(m_bih.m_bBox.HasValidArea() && !m_bih.m_bBox.IsInfinite(),
-                "BIH bounding box is invalid: %s", m_bih.m_bBox.Format().c_str());
+            AssertMsgFmt(m_bih.m_treeBBox.HasValidArea() && !m_bih.m_treeBBox.IsInfinite(),
+                "BIH bounding box is invalid: %s", m_bih.m_treeBBox.Format().c_str());
         }
 
         // If the list contains below the minimum ammount of primitives, don't build and flag the tree as a list traversal
@@ -94,7 +84,7 @@ namespace Cuda
             m_stats = BIH2DStats();
             m_stats.numInnerNodes = 0;
 
-            BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_bBox, centroidBBox);
+            BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_treeBBox, centroidBBox);
         }
 
         // Update the host data structures
@@ -124,29 +114,29 @@ namespace Cuda
             if (i0 == i1)
             {
                 m_stats.numLeafNodes++;
-                m_hostNodes[thisIdx].MakeLeaf(BIH2DNode::kInvalidLeaf);
+                m_hostNodes[thisIdx].MakeLeaf(BIH2DFullNode::kInvalidLeaf, BIH2DFullNode::kInvalidLeaf);
                 //return;
             }
             else if (i1 - i0 == 1)
             {
                 m_stats.numLeafNodes++;
-                m_hostNodes[thisIdx].MakeLeaf(m_primitiveIdxs[i0]);
+                m_hostNodes[thisIdx].MakeLeaf(m_primitiveIdxs[i0], m_primitiveIdxs[i1 - 1]);
                 //return;
             }
 
-            if (m_debugFunctor)
+            /*if (m_debugFunctor)
             {
                 m_debugFunctor("----------\n");
                 m_debugFunctor(tfm::format("Leaf: %i (%i)\n", thisIdx, m_hostNodes[thisIdx].data).c_str());
                 for (int idx = 0; idx < m_hostNodes.Size(); ++idx)
                 {
                     if(m_hostNodes[idx].IsLeaf())
-                        m_debugFunctor(tfm::format("  %i -> Leaf %i\n", idx, m_hostNodes[idx].idx).c_str());
+                        m_debugFunctor(tfm::format("  %i -> Leaf %i\n", idx, m_hostNodes[idx].data.primIdxs[0]).c_str());
                     else
                         m_debugFunctor(tfm::format("  %i -> Inner %i, %i\n", idx, m_hostNodes[idx].GetAxis(), m_hostNodes[idx].GetChildIndex()).c_str());
                 }
                 m_debugFunctor("\n");
-            }
+            }*/
             return;
         }
 
@@ -193,22 +183,22 @@ namespace Cuda
         m_hostNodes.Grow(2);   
 
         // Refresh the reference and build the inner node          
-        m_hostNodes[thisIdx].MakeInner(leftIdx, axis, leftBBox[1][axis], rightBBox[0][axis]);
+        m_hostNodes[thisIdx].MakeInner(leftIdx, axis, leftBBox[1][axis], rightBBox[0][axis], i0, i1);
         m_stats.numInnerNodes++;
 
-        if (m_debugFunctor)
+        /*if (m_debugFunctor)
         {
             m_debugFunctor("----------\n");
             m_debugFunctor(tfm::format("Inner: %i (%i, %i -> %i)\n", thisIdx, leftIdx, axis, m_hostNodes[thisIdx].data).c_str());
             for (int idx = 0; idx < m_hostNodes.Size(); ++idx)
             {
                 if (m_hostNodes[idx].IsLeaf())
-                    m_debugFunctor(tfm::format("  %i -> Leaf %i\n", idx, m_hostNodes[idx].idx).c_str());
+                    m_debugFunctor(tfm::format("  %i -> Leaf %i\n", idx, m_hostNodes[idx].data.primIdxs[0]).c_str());
                 else
                     m_debugFunctor(tfm::format("  %i -> Inner %i, %i\n", idx, m_hostNodes[idx].GetAxis(), m_hostNodes[idx].GetChildIndex()).c_str());
             }
             m_debugFunctor("\n");
-        }
+        }*/
 
         // Build the child nodes
         BuildPartition(i0, j, leftIdx, depth + 1, leftBBox, leftCentroidBBox);
@@ -231,7 +221,7 @@ namespace Cuda
         m_hostNodes->Synchronise(kVectorSyncUpload);
         m_params.isConstructed = m_isConstructed;
         m_params.testAsList = m_testAsList;
-        m_params.bBox = m_bBox;
+        m_params.bBox = m_treeBBox;
         m_params.nodes = m_hostNodes->GetDeviceInstance();
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
@@ -240,7 +230,7 @@ namespace Cuda
 
     __host__ void Host::BIH2DAsset::Synchronise()
     {
-        //const BIH2DParams params = {m_isConstructed, m_bBox, m_hostNodes->GetDeviceInstance() };
+        //const BIH2DParams params = {m_isConstructed, m_treeBBox, m_hostNodes->GetDeviceInstance() };
         //Cuda::Synchronise(cu_deviceInstance, params);
     } 
 
@@ -248,7 +238,7 @@ namespace Cuda
     {
         for (int nodeIdx = 0; nodeIdx < m_hostNodes->Size(); ++nodeIdx)
         {
-            const BIH2DNode& node = (*m_hostNodes)[nodeIdx];
+            const BIH2DFullNode& node = (*m_hostNodes)[nodeIdx];
             if (node.IsLeaf())
             {
             }
@@ -256,7 +246,7 @@ namespace Cuda
             {
                 for (int planeIdx = 0; planeIdx < 2; ++planeIdx)
                 {
-                    const float plane = node.planes[planeIdx];
+                    const float plane = node.data.planes[planeIdx];
                     if (!std::isfinite(plane))
                     {
                         Log::Error("Plane %i at node %i is non-finite: %f", planeIdx, nodeIdx, plane);
@@ -266,9 +256,9 @@ namespace Cuda
                         Log::Error("Plane %i at node %i is denormalised: %f", planeIdx, nodeIdx, plane);
                     }
                     const uchar axis = node.GetAxis();
-                    if (plane < m_bBox.lower[axis] || plane > m_bBox.upper[axis])
+                    if (plane < m_treeBBox.lower[axis] || plane > m_treeBBox.upper[axis])
                     {
-                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_bBox.lower[axis], m_bBox.upper[axis]);
+                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_treeBBox.lower[axis], m_treeBBox.upper[axis]);
                     }
                 }
             }

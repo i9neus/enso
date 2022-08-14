@@ -36,7 +36,7 @@ namespace Tests
 		segments.Synchronise(kVectorSyncUpload);
 	}
 
-	__host__ void CudaBIH2DTestsImpl::BuildBIH(AssetHandle<Host::BIH2DAsset>& bih, Cuda::Host::Vector<Cuda::LineSegment>& segments)
+	__host__ void CudaBIH2DTestsImpl::BuildBIH(AssetHandle<Host::BIH2DAsset>& bih, Cuda::Host::Vector<Cuda::LineSegment>& segments, const bool printStats)
 	{
 		// Prime the list of indices ready for building
 		auto& primIdxs = bih->GetPrimitiveIndices();
@@ -46,10 +46,10 @@ namespace Tests
 			primIdxs[idx] = idx;
 		}
 		
-		bih->m_debugFunctor = [](const char* str)
+		/*bih->m_debugFunctor = [](const char* str)
 		{
 			Logger::WriteMessage(str);
-		};
+		};*/
 
 		// Construct the BVH
 		std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
@@ -59,11 +59,14 @@ namespace Tests
 		bih->Build(getPrimitiveBBox);
 
 		// Print out the stats to the log incase we need to update the baselines
-		const auto& stats = bih->GetTreeStats();
-		Logger::WriteMessage(tfm::format("Build time: %i\n", stats.buildTime).c_str());
-		Logger::WriteMessage(tfm::format("Tree depth: %i\n", stats.maxDepth).c_str());
-		Logger::WriteMessage(tfm::format("Inner nodes: %i\n", stats.numInnerNodes).c_str());
-		Logger::WriteMessage(tfm::format("Leaf nodes: %i\n", stats.numLeafNodes).c_str());
+		if (printStats)
+		{
+			const auto& stats = bih->GetTreeStats();
+			Logger::WriteMessage(tfm::format("Build time: %i\n", stats.buildTime).c_str());
+			Logger::WriteMessage(tfm::format("Tree depth: %i\n", stats.maxDepth).c_str());
+			Logger::WriteMessage(tfm::format("Inner nodes: %i\n", stats.numInnerNodes).c_str());
+			Logger::WriteMessage(tfm::format("Leaf nodes: %i\n", stats.numLeafNodes).c_str());
+		}
 	}
 	
 	__host__ void CudaBIH2DTestsImpl::BuildSimpleGeometry()
@@ -72,7 +75,7 @@ namespace Tests
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);		
 		
 		CreateCircleSegments(segments);
-		BuildBIH(bih, segments);
+		BuildBIH(bih, segments, true);
 
 		// Check that the tree is as expected for this configuration
 		constexpr int kRefDepth = 4;
@@ -86,17 +89,15 @@ namespace Tests
 		bih.DestroyAsset();
 	}
 
-	__host__ void CudaBIH2DTestsImpl::RuildRandomGeometry() {}
-
 	__host__ void CudaBIH2DTestsImpl::PointTestSimpleGeometry()
 	{
 		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
 
-		CreateRowSegments(segments);
-		BuildBIH(bih, segments);
+		CreateCircleSegments(segments);
+		BuildBIH(bih, segments, true);
 
-		const auto& hostNodes = bih->GetHostNodes();
+		/*const auto& hostNodes = bih->GetHostNodes();
 		for (int idx = 0; idx < hostNodes.Size(); ++idx)
 		{
 			const auto& node = hostNodes[idx];
@@ -108,20 +109,17 @@ namespace Tests
 			{
 				Logger::WriteMessage(tfm::format("Inner: %i -> %i\n", idx, node.GetChildIndex()).c_str());
 			}
-		}
+		}*/
 
 		// Generate random points on each of the line segments and test the tree for a hit
 		for (int idx = 0; idx < segments.Size(); ++idx)
 		{
 			bool isHit = false;
 			vec2 p = segments[idx].PointAt(RandFlt());
-			bih->TestPoint(p,
-				[&isHit, &segments, &p](const uint idx, const uchar depth) -> void
+			bih->TestPrimitive(p,
+				[&isHit, &segments, &p](const uint idx) -> void
 				{
-					isHit |= segments[idx].Intersects(p, 0.01f);
-				},
-				[](const BBox2f& idx, const uchar depth) -> void
-				{
+					isHit |= segments[idx].TestPoint(p, 0.01f);
 				});
 
 			Assert::IsTrue(isHit, Widen(tfm::format("Point %s at index %i did not register an intersection.", p.format(), idx)).c_str());
@@ -130,7 +128,90 @@ namespace Tests
 		bih.DestroyAsset();
 	}
 
-	__host__ void CudaBIH2DTestsImpl::RayTestSimpleGeometry() {}
+	__host__ void CudaBIH2DTestsImpl::RayTestSimpleGeometry() 
+	{
+		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
+
+		CreateCircleSegments(segments);
+		BuildBIH(bih, segments, true);
+
+		const vec2 o(0.0f);
+		const vec2 d = normalize(vec2(1.0f));
+				
+		int hitSegment = -1;
+		auto onRayIntersectLeaf = [&](const uint& idx, float& tNear) -> void
+		{
+			float t = segments[idx].TestRay(o, d);
+			if (t < tNear)
+			{
+				tNear = t;
+				hitSegment = idx;
+			}
+		};		
+		bih->TestRay(o, d, onRayIntersectLeaf);
+
+		bih.DestroyAsset();
+	}
+	__host__ void CudaBIH2DTestsImpl::RayTestRandomGeometry()
+	{
+		constexpr int kNumIterations = 1;
+		constexpr int kNumRays = 1000;
+		constexpr float kSizeLower = 0.001f;
+		constexpr float kSizeUpper = 0.5f;
+		constexpr int kNumSegmentsLower = 10;
+		constexpr int kNumSegmentsUpper = 1000;
+
+		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
+		
+		for (int iterIdx = 0; iterIdx < kNumIterations; ++iterIdx)
+		{
+			GenerateRandomLineSegments(segments, BBox2f(vec2(-0.5f, 0.5f), vec2(-0.5f, 0.5f)), ivec2(kNumSegmentsLower, kNumSegmentsUpper), vec2(kSizeLower, kSizeUpper), 1);
+
+			// Make sure the line segments are synchronised
+			segments.Synchronise(kVectorSyncUpload);
+			BuildBIH(bih, segments, false);
+			
+			for (int rayIdx = 0; rayIdx < kNumRays; ++rayIdx)
+			{			
+				const vec2 o = RandVec2(-1.0f, 1.0f);
+				const float theta = RandFlt() * kPi;
+				const vec2 d = vec2(std::cos(theta), std::sin(theta));
+				
+				// Test the BIH
+				int bihHitIdx = -1;
+				auto onRayIntersectLeaf = [&, this](const uint& idx, float& tNearest) -> void
+				{
+					float t = segments[idx].TestRay(o, d);
+					if (t < tNearest)
+					{
+						tNearest = t;
+						bihHitIdx = idx;
+					}
+				};
+				bih->TestRay(o, d, onRayIntersectLeaf);
+				 
+				// Brute-force test the segment list
+				float tNear = kFltMax;
+				int referenceHitIdx = -1;
+				for (int segIdx = 0; segIdx < segments.Size(); ++segIdx)
+				{
+					const float t = segments[segIdx].TestRay(o, d);
+					if (t > 0.0f && t < tNear)
+					{
+						referenceHitIdx = segIdx;
+						tNear = t;
+					}
+				}
+
+				Assert::IsTrue(bihHitIdx == referenceHitIdx, 
+					Widen(tfm::format("BIH reported ray [%s, %s] hit primitive %i. Expected %i.", o.format(), d.format(), bihHitIdx, referenceHitIdx)).c_str());
+			}
+		}	
+
+		bih.DestroyAsset();
+	}
 }
 
 /*TEST_CLASS(BoundingIntervalHierarchy2DTests), public SuiteBase
