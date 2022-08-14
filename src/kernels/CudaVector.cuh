@@ -84,6 +84,39 @@ namespace Cuda
 			VectorParams		m_deviceParams;
 
 			cudaStream_t		m_hostStream;
+		public:
+			
+			template<typename Type>
+			struct IteratorBase
+			{
+				IteratorBase(const uint idx, ElementType* data) : m_idx(idx), m_data(data) {}
+
+				IteratorBase& operator++() { ++m_idx; return *this; }
+				bool operator!=(const IteratorBase& other) const { return m_idx != other.m_idx; }
+
+				ElementType& operator*() { return m_data[m_idx]; }
+				ElementType& operator*() const { return m_data[m_idx]; }
+				ElementType* operator->() { return &m_data[m_idx]; }
+				ElementType* operator->() const { return &m_data[m_idx]; }
+
+			private:	
+				ElementType*	m_data;
+				uint			m_idx;
+			};
+
+			using Iterator = IteratorBase<ElementType>;
+			using ConstIterator = IteratorBase<const ElementType>;
+
+			/*struct Iterator : IteratorBase<Iterator>
+			{
+				ElementType& operator*() { return m_data[m_idx]; }
+				Iterator(const uint idx, ElementType* data) : IteratorBase<Iterator>(idx, data) {}
+			};
+			struct ConstIterator : IteratorBase<ConstIterator>
+			{
+				const ElementType& operator*() const { return m_data[m_idx]; }
+				ConstIterator(const uint idx, ElementType* data) : IteratorBase<ConstIterator>(idx, data) {}
+			};*/
 
 		public:
 			__host__ VectorBase(const std::string& id, const uint flags, cudaStream_t hostStream) :
@@ -134,6 +167,11 @@ namespace Cuda
 					IsOk(cudaDeviceSynchronize());
 				}
 			}
+
+			__host__ inline Iterator		begin() { return Iterator(0, m_hostData);  }
+			__host__ inline Iterator		end() { return Iterator(m_hostParams.size, m_hostData); }
+			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_hostData); }
+			__host__ inline ConstIterator	end() const { return ConstIterator(m_hostParams.size, m_hostData); }
 
 			__host__ inline DeviceType*		GetDeviceInstance() const { return cu_deviceInstance; }
 			__host__ inline ElementType*	GetHostData()
