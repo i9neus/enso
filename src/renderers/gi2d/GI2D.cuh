@@ -127,10 +127,4 @@ private:
         Cuda::vec2                              dragAnchor;
     }
     m_movePath;
-
-    struct
-    {
-        uint                                    numSelected;
-    }
-    m_lasso;
 };

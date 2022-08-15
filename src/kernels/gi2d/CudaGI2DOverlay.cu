@@ -105,7 +105,7 @@ namespace Cuda
             m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);*/
 
             auto onPointIntersectLeaf = [&, this](const uint& idxStart, const uint& idxEnd) -> void
-            {
+            {                
                 for (int idx = idxStart; idx < idxEnd; ++idx)
                 {
                     const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
@@ -138,7 +138,7 @@ namespace Cuda
         // Draw the selection box
         if (m_params.selection.isLassoing)
         {
-            if (PointOnPerimiter(m_params.selection.bBox, xyView, m_params.dPdXY * 1.)) { L = kOne; }
+            if (PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.dPdXY * 1.)) { L = kOne; }
         }
 
         deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
@@ -206,7 +206,8 @@ namespace Cuda
         m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
         m_params.dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
-        m_params.selection.bBox.Rectify();
+        m_params.selection.lassoBBox.Rectify();
+        m_params.selection.selectedBBox.Rectify();
 
         if (m_hostBIH2D->IsConstructed())
         {

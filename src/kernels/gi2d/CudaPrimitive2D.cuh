@@ -55,16 +55,34 @@ namespace Cuda
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
         __host__ __device__ virtual float                   TestRay(const vec2& o, const vec2& d) const override final;
+
+        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
         
         __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
             return BBox2f(vec2(min(m_v[0].x, m_v[1].x), min(m_v[0].y, m_v[1].y)),
                           vec2(max(m_v[0].x, m_v[1].x), max(m_v[0].y, m_v[1].y)));
         }
+        
+        __host__ __device__ void Set(const uint& idx, const vec2& v)
+        {
+            m_v[idx] = v;
+            m_dv = m_v[1] - m_v[0];
+        }
 
-        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
+        __host__ __device__ __forceinline__ LineSegment& operator+=(const vec2& v) 
+        { 
+            m_v[0] += v; m_v[1] += v; m_dv = m_v[1] - m_v[0];
+            return *this;
+        }
 
-        __host__ __device__ __forceinline__ vec2& operator[](const uint& idx) { return m_v[idx]; }
+        __host__ __device__ __forceinline__ LineSegment& operator-=(const vec2& v)
+        {
+            m_v[0] -= v; m_v[1] -= v; m_dv = m_v[1] - m_v[0];
+            return *this;
+        }
+        
+        __host__ __device__ __forceinline__ const vec2& operator[](const uint& idx) const { return m_v[idx]; }
         __host__ __device__ __forceinline__ vec2& dv(const uint& idx) { return m_dv; }
     };
 

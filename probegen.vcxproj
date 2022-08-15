@@ -115,6 +115,7 @@
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
+    <ClInclude Include="src\generic\StdUtils.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
     <ClInclude Include="src\imgui\components\ComponentInterface.h" />

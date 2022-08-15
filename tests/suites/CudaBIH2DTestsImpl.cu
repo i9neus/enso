@@ -15,7 +15,7 @@ namespace Tests
 		{
 			const float theta0 = kTwoPi * float(idx) / float(kCircleSegs);
 			const float theta1 = kTwoPi * float(idx + 1) / float(kCircleSegs);
-			segments[idx] = LineSegment(vec2(std::cos(theta0), std::sin(theta0)) * 0.25f, vec2(std::cos(theta1), std::sin(theta1)) * 0.25f);
+			segments[idx] = LineSegment(vec2(std::cos(theta0), std::sin(theta0)) * 0.25f, vec2(std::cos(theta1), std::sin(theta1)) * 0.25f, 0);
 		}
 		
 		// Make sure the line segments are synchronised
@@ -29,7 +29,7 @@ namespace Tests
 		for (uint idx = 0; idx < kRowSegments; ++idx)
 		{			
 			float px = mix(-0.5f, 0.5f, float(idx) / float(kRowSegments - 1));
-			segments[idx] = LineSegment(vec2(px, -0.1), vec2(px, 0.1));
+			segments[idx] = LineSegment(vec2(px, -0.1), vec2(px, 0.1), 0);
 		}
 
 		// Make sure the line segments are synchronised

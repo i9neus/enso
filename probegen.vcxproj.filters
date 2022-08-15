@@ -612,6 +612,9 @@
     <ClInclude Include="src\renderers\UIButtonMap.h">
       <Filter>renderers</Filter>
     </ClInclude>
+    <ClInclude Include="src\generic\StdUtils.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

@@ -37,7 +37,8 @@ namespace Cuda
         struct
         {
             vec2 mouse0, mouse1;
-            BBox2f bBox;
+            BBox2f lassoBBox;
+            BBox2f selectedBBox;
             bool isLassoing;
             uint numSelected;
         }
