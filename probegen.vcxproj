@@ -253,7 +253,7 @@
     <ClInclude Include="src\onnx\OnnxModel.h" />
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
     <ClInclude Include="src\renderers\CudaObjectManager.h" />
-    <ClInclude Include="src\renderers\gi2d\GI2D.cuh" />
+    <ClInclude Include="src\renderers\gi2d\GI2DRenderer.cuh" />
     <ClInclude Include="src\renderers\probegen\Probegen.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -345,7 +345,7 @@
     <CudaCompile Include="src\kernels\tracables\CudaSDF.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaTracable.cu" />
-    <CudaCompile Include="src\renderers\gi2d\GI2D.cu" />
+    <CudaCompile Include="src\renderers\gi2d\GI2DRenderer.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
