@@ -2,6 +2,9 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 
+#include "Ray2D.cuh"
+#include "RenderCtx.cuh"
+
 using namespace Cuda;
 
 namespace GI2D
@@ -42,12 +45,48 @@ namespace GI2D
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        //const vec2 xyView = m_params.view.matrix * vec2(xyScreen);
+        const vec2 xyView = m_params.view.matrix * vec2(xyScreen * m_params.accum.downsample);
 
-        //if (!m_params.sceneBounds.Contains(xyView)) { return; }
+        vec4& accum = m_objects.accumBuffer->At(xyScreen);
+        vec3 L(0.f);
 
-        vec3 colour1 = Hue(m_params.frameIdx / 60.0f), colour2 = Hue(0.5f + m_params.frameIdx / 60.0f);
-        m_objects.accumBuffer->At(xyScreen) = vec4(((xyScreen.x / 10 + xyScreen.y / 10) % 2 == 0) ? colour1 : colour2, 1.0f);
+        if (!m_params.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
+
+        assert(m_objects.bih);
+        const BIH2DFull& bih = *m_objects.bih;
+        const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
+        RNG rng;       
+        rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
+
+        for (int depth = 0; depth < 1; ++depth)
+        {
+            float theta = rng.Rand<0>() * kTwoPi;
+            Ray2D ray(xyView, vec2(cos(theta), sin(theta)));
+            HitCtx2D hit;
+
+            auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tNearest) -> float
+            {
+                for (uint idx = startIdx; idx < endIdx; ++idx)
+                {
+                    if (segments[idx].TestRay(ray, hit))
+                    {
+                        if (hit.tFar < tNearest)
+                        {
+                            tNearest = hit.tFar;
+                        }
+                    }
+                }
+            };
+            bih.TestRay(ray.o, ray.d, onIntersect);
+
+            if (hit.tFar != kFltMax)
+            {
+                L += kOne;
+            }
+        }
+
+        accum.xyz += L;
+        accum.w += 1.0f;
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -63,7 +102,7 @@ namespace GI2D
 
         if (!m_params.sceneBounds.Contains(xyView)) 
         { 
-            deviceOutputImage->At(xyScreen) = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            deviceOutputImage->At(xyScreen) = vec4(0.2f, 0.2f, 0.2f, 1.0f);
             return; 
         }
 
@@ -79,14 +118,19 @@ namespace GI2D
                                          const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
         Asset(id),
         m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments)
+        m_hostLineSegments(lineSegments),
+        m_isDirty(true)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
-        
+
         m_objects.bih = m_hostBIH2D->GetDeviceInstance();
         m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();
         m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+
+        m_params.accum.width = width;
+        m_params.accum.height = height;
+        m_params.accum.downsample = downsample;
 
         cu_deviceData = InstantiateOnDevice<Device::PathTracer>(GetAssetID(), m_params, m_objects);
     }
@@ -111,14 +155,20 @@ namespace GI2D
     }
 
     __host__ void Host::PathTracer::Render()
-    {        
+    {
+        if (m_isDirty)
+        {
+            m_hostAccumBuffer->Clear(vec4(0.0f));
+            m_isDirty = false;
+        }
+
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
         KernelRender << < gridSize, blockSize, 0 >> > (cu_deviceData);
         IsOk(cudaDeviceSynchronize());
     }
-    
+
     __host__ void Host::PathTracer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage)
     {
         dim3 blockSize, gridSize;
@@ -130,7 +180,12 @@ namespace GI2D
 
     __host__ void Host::PathTracer::SetParams(const PathTracerParams& newParams)
     {
-        m_params.view = newParams.view;
+        if (m_params.view.matrix != newParams.view.matrix)
+        {
+            m_params.view = newParams.view;
+            m_isDirty = true;
+        }
+
         m_params.sceneBounds = newParams.sceneBounds;
         m_params.frameIdx = newParams.frameIdx;
 

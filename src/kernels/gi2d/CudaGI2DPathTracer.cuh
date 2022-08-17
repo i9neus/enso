@@ -23,7 +23,7 @@ namespace GI2D
         {
             uint width;
             uint height;
-            uint downsample;
+            int downsample;
         }
         accum;
 
@@ -65,11 +65,12 @@ namespace GI2D
             PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>>& lineSegments, 
                        const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
             virtual ~PathTracer();
-
+           
             __host__ void Render();
             __host__ void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage);
             __host__ void OnDestroyAsset();
             __host__ void SetParams(const GI2D::PathTracerParams& newParams);
+            __host__ void SetDirty() { m_isDirty = true; }
 
         private:
             PathTracerParams               m_params;
@@ -79,7 +80,9 @@ namespace GI2D
             AssetHandle<GI2D::Host::BIH2DAsset>               m_hostBIH2D;
             AssetHandle<Cuda::Host::Vector<LineSegment>>      m_hostLineSegments;
 
-            AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;            
+            AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;      
+
+            bool                            m_isDirty;
         };
     }
 }

@@ -148,7 +148,8 @@ namespace GI2D
             m_nodes(nullptr),
             m_isConstructed(false),
             m_testAsList(false),
-            m_numNodes(0)
+            m_numNodes(0),
+            m_numPrims(0)
         {
 
         }
@@ -416,7 +417,7 @@ namespace GI2D
             float tNearest = t[kFar];
             if (m_testAsList)
             {
-                onIntersectLeaf(0, m_numPrims - 1, tNearest);                
+                onIntersectLeaf(0, m_numPrims, tNearest);                
                 return;
             }
 

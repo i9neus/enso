@@ -205,6 +205,8 @@
     <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaGI2DPathTracer.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaPrimitive2D.cuh" />
+    <ClInclude Include="src\kernels\gi2d\Ray2D.cuh" />
+    <ClInclude Include="src\kernels\gi2d\RenderCtx.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />

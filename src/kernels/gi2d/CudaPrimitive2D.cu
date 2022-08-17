@@ -32,18 +32,21 @@ namespace GI2D
         return length2(p - PerpendicularPoint(p)) < sqr(thickness);
     }
 
-    __host__ __device__ float LineSegment::TestRay(const vec2& o, const vec2& d) const
+    __host__ __device__ bool LineSegment::TestRay(const Ray2D& ray, HitCtx2D& hit) const
     {
         // The intersection of the ray with the line
         vec2 n = vec2(m_dv.y, -m_dv.x);
-        float tSeg = (dot(n, m_v[0]) - dot(n, o)) / dot(n, d);
+        float tRay = (dot(n, m_v[0]) - dot(n, ray.o)) / dot(n, ray.d);
          
-        if (tSeg < 0.0f) { return kFltMax; }
+        if (tRay < 0.0f || tRay >= hit.tFar) { return false; }
 
-        n = vec2(d.y, -d.x);
-        float tRay = (dot(n, o) - dot(n, m_v[0])) / dot(n, m_dv);
+        n = vec2(ray.d.y, -ray.d.x);
+        float tSeg = (dot(n, ray.o) - dot(n, m_v[0])) / dot(n, m_dv);
 
-        return (tRay >= 0.0 && tRay <= 1.0) ? tSeg : kFltMax;
+        if (tSeg < 0.0f || tSeg > 1.0f) { return false; }
+
+        hit.tFar = tRay;
+        return true;
 
         // Check to see whether it's bounded
         //return (length2((o + d * t - (v + m_dv * 0.5)) / (m_dv * 0.5)) > 1.0f) ? kFltMax : t;

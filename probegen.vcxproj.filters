@@ -621,6 +621,12 @@
     <ClInclude Include="src\renderers\gi2d\GI2DRenderer.cuh">
       <Filter>renderers\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\RenderCtx.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\Ray2D.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

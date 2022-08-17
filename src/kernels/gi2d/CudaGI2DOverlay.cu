@@ -46,7 +46,7 @@ namespace GI2D
     __device__ __forceinline__ vec4 Blend(vec4 lowerRgba, const vec3 upperRgba, const float& upperAlpha)
     {
         lowerRgba.xyz = lowerRgba.xyz * (1.0f - upperAlpha) + upperRgba * upperAlpha;
-        lowerRgba.w = mix(lowerRgba.w, 1.0f, upperAlpha);
+        lowerRgba.w = mix(lowerRgba.w, 1.0, upperAlpha);
         return lowerRgba;
     }
 
@@ -73,15 +73,28 @@ namespace GI2D
         // Transform from screen space to view space
         const vec2 xyView = m_params.view.matrix * vec2(xyScreen);
 
+        //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
+        //return;
+
         vec4 L(0.0f);
 
         // Draw the grid
-        if (m_params.grid.show)
+        if (!m_params.sceneBounds.Contains(xyView)) 
+        { 
+            L = vec4(0.0f);  
+        }
+        else if (m_params.grid.show)
         {
             vec2 xyGrid = fract(xyView / vec2(m_params.grid.majorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < 0.02f * mix(1.0, 0.1, m_params.grid.lineAlpha)) { L = 0.3f; }
+            if (cwiseMin(xyGrid) < m_params.view.dPdXY / m_params.grid.majorLineSpacing * mix(1.0f, 3.0f, m_params.grid.lineAlpha)) 
+            { 
+                L = Blend(L, kOne, 0.5 * (1 - m_params.grid.lineAlpha));
+            }
             xyGrid = fract(xyView / vec2(m_params.grid.minorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < 0.02f) { L = Blend(L, kOne, m_params.grid.lineAlpha * 0.2f); }
+            if (cwiseMin(xyGrid) < m_params.view.dPdXY / m_params.grid.minorLineSpacing * 1.5f)
+            { 
+                L = Blend(L, kOne, 0.5 * m_params.grid.lineAlpha);
+            }
         }
 
         if (m_objects.bih && m_objects.lineSegments)
@@ -163,7 +176,8 @@ namespace GI2D
                                    const uint width, const uint height, cudaStream_t renderStream) :
         Asset(id),
         m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments)
+        m_hostLineSegments(lineSegments),
+        m_isDirty(true)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
@@ -196,11 +210,15 @@ namespace GI2D
 
     __host__ void Host::Overlay::Render()
     {
+        if (!m_isDirty) { return; }
+        
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
         KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData);
         IsOk(cudaDeviceSynchronize());
+
+        m_isDirty = false;
     }
 
     __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage)
@@ -226,20 +244,8 @@ namespace GI2D
         m_params.selection.lassoBBox.Rectify();
         m_params.selection.selectedBBox.Rectify();
 
-        /*if (m_hostBIH2D->IsConstructed())
-        {
-            const Vector<LineSegment>& segments = *m_hostLineSegments;
-            auto onIntersectLeaf = [&, this](const uint idx)
-            {
-                if (segments[idx].TestPoint(m_params.mousePosView, m_params.dPdXY * 5.0f))
-                {
-                    m_params.selectedSegmentIdx = idx;
-                }
-            };
-
-            //m_hostBIH2D->TestPrimitive(m_params.mousePosView, onIntersectLeaf);
-        }*/
-
         SynchroniseObjects(cu_deviceData, m_params);
+
+        m_isDirty = true;
     }
 }

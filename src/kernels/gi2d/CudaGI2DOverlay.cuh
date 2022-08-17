@@ -82,16 +82,18 @@ namespace GI2D
             __host__ void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage);
             __host__ void OnDestroyAsset();
             __host__ void SetParams(const OverlayParams& newParams);
+            __host__ void SetDirty() { m_isDirty = true; }
 
         private:
-            OverlayParams               m_params;
-            Device::Overlay::Objects    m_objects;
-            Device::Overlay*            cu_deviceData = nullptr;
+            OverlayParams                               m_params;
+            Device::Overlay::Objects                    m_objects;
+            Device::Overlay*                            cu_deviceData = nullptr;
 
             AssetHandle<Host::BIH2DAsset>               m_hostBIH2D;
-            AssetHandle<Cuda::Host::Vector<LineSegment>>      m_hostLineSegments;
+            AssetHandle<Cuda::Host::Vector<LineSegment>> m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
+            bool                                        m_isDirty;
         };
     }
 }

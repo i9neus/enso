@@ -8,6 +8,8 @@
 #include "../CudaManagedObject.cuh"
 #include "../CudaImage.cuh"
 
+#include "Ray2D.cuh"
+
 using namespace Cuda;
 
 namespace Cuda
@@ -49,7 +51,7 @@ namespace GI2D
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const = 0;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const = 0;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const = 0;
-        __host__ __device__ virtual float                   TestRay(const vec2& o, const vec2& d) const = 0;
+        __host__ __device__ virtual bool                    TestRay(const Ray2D& ray, HitCtx2D& hit) const = 0;
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const = 0;
 
         __host__ __device__ __forceinline__ bool            IsSelected() const { return m_flags & k2DPrimitiveSelected; }
@@ -74,7 +76,7 @@ namespace GI2D
         __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual float                   TestRay(const vec2& o, const vec2& d) const override final;
+        __host__ __device__ virtual bool                    TestRay(const Ray2D& ray, HitCtx2D& hit) const override final;
 
         __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
         
