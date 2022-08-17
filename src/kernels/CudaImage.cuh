@@ -47,6 +47,35 @@ namespace Cuda
 				return cu_data[xy.y * m_width + xy.x];
 			}
 
+			__device__ T Lerp(const vec2& xy)
+			{
+				if (xy.x < 0. || xy.x >= m_width - 1 || xy.y < 0. || xy.y >= m_height - 1) { return T(0); }
+
+				float dx = fract(xy.x), dy = fract(xy.y);
+				int ix = int(xy.x), iy = int(xy.y);
+				
+				return (cu_data[iy  * m_width + ix] * (1.0 - dx) + cu_data[iy * m_width + (1 + ix)] * dx) * (1 - dy) +
+					   (cu_data[(iy + 1) * m_width + ix] * (1.0 - dx) + cu_data[(iy + 1) * m_width + (1 + ix)] * dx) * dy;
+			}
+
+			__device__ T Texture(vec2 uv)
+			{
+				uv *= vec2(m_width, m_height);
+				int iu = int(uv.x), iv = int(uv.y);
+				float du, dv;
+
+				// Clip to the bounds of the texture
+				if (iu < 0) { iu = 0; du = 0; }
+				else if (iu >= m_width - 1) { iu = m_width - 2; du = 1.0f; }
+				else { du = fract(uv.x); }
+				if (iv < 0) { iv = 0; dv = 0; }
+				else if (iv >= m_height - 1) { iv = m_height - 2; dv = 1.0f; }
+				else { dv = fract(uv.y); }
+
+				return (cu_data[iv * m_width + iu] * (1.0 - du) + cu_data[iv * m_width + (1 + iu)] * du) * (1 - dv) +
+					   (cu_data[(iv + 1) * m_width + iu] * (1.0 - du) + cu_data[(iv + 1) * m_width + (1 + iu)] * du) * dv;
+			}
+
 			template<typename = typename std::enable_if<std::is_same<T, vec4>::value>>
 			__device__ __forceinline__ void Accumulate(const ivec2& xy, const vec3& value, const bool isAlive)
 			{
