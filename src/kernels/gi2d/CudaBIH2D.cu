@@ -1,7 +1,9 @@
 #include "CudaBIH2D.cuh"
 
-namespace Cuda
+namespace GI2D
 {
+    using namespace Cuda;
+    
     __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
     {
         assert(params.nodes);
@@ -19,7 +21,7 @@ namespace Cuda
     {
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
 
-        m_hostNodes = CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
+        m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()

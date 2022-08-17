@@ -48,7 +48,8 @@ void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT cl
 			m_cudaDeviceID = devId;
 			m_nodeMask = m_deviceProp.luidDeviceNodeMask;
 			checkCudaErrors(cudaStreamCreateWithPriority(&m_D3DStream, cudaStreamNonBlocking, pHigh));
-			checkCudaErrors(cudaStreamCreate(&m_renderStream));
+			//checkCudaErrors(cudaStreamCreate(&m_renderStream)); 
+			m_renderStream = nullptr;
 			Log::Write("CUDA Device Used [%d] %s\n", devId, m_deviceProp.name);
 			{
 				Log::Indent indent2;
@@ -146,7 +147,7 @@ void CudaObjectManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, Co
 	checkCudaErrors(cudaCreateSurfaceObject(&m_cuSurface, &cuResDesc));
 }
 
-void CudaObjectManager::UpdateD3DOutputTexture(UINT64& currentFenceValue, Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage)
+void CudaObjectManager::UpdateD3DOutputTexture(UINT64& currentFenceValue, Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage, const bool doRedraw)
 {
 	/*cudaExternalSemaphoreWaitParams externalSemaphoreWaitParams;
 	memset(&externalSemaphoreWaitParams, 0, sizeof(externalSemaphoreWaitParams));
@@ -167,8 +168,12 @@ void CudaObjectManager::UpdateD3DOutputTexture(UINT64& currentFenceValue, Cuda::
 	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
 	{
 		Assert(compositeImage);
-		compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, m_D3DStream);
-		IsOk(cudaEventRecord(m_renderEvent));
+		if (doRedraw)
+		{
+			compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, nullptr);
+		}
+		IsOk(cudaDeviceSynchronize());
+		IsOk(cudaEventRecord(m_renderEvent, nullptr));
 	}
 	//IsOk(cudaStreamSynchronize(m_D3DStream));
 

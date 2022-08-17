@@ -10,7 +10,8 @@ RendererInterface::RendererInterface() :
 	m_clientWidth(1.0f),
 	m_clientHeight(1.0f),
 	m_dirtyFlags(0),
-	m_uiGraph(m_keyCodes, m_mouse.codes)
+	m_uiGraph(m_keyCodes, m_mouse.codes),
+	m_renderSemaphore(kRenderManagerD3DBlitFinished)
 {
 	m_mouse.pos = std::numeric_limits<int>::min();
 	m_mouse.prevPos = std::numeric_limits<int>::min();

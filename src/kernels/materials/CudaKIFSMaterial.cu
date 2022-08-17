@@ -46,7 +46,7 @@ namespace Cuda
                     ((code >> 20) & ((1 << 10) - 1)) / float((1 << 10) - 1));
 
         incandescence = m_params.incandescenceRGB;
-        albedo =  HSVToRGB(cwiseMix(m_params.albedoHSVRange[0], m_params.albedoHSVRange[1], fmod(vec3(alpha) + m_params.albedoHSV.t, kOne)));
+        albedo =  HSVToRGB(mix(m_params.albedoHSVRange[0], m_params.albedoHSVRange[1], fmod(vec3(alpha) + m_params.albedoHSV.t, kOne)));
     }
 
     __host__ AssetHandle<Host::RenderObject> Host::KIFSMaterial::Instantiate(const std::string& id, const AssetType& expectedType, const ::Json::Node& json)

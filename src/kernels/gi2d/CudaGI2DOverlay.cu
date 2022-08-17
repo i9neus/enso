@@ -2,9 +2,11 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 
-namespace Cuda
+using namespace Cuda;
+
+namespace GI2D
 {    
-    __host__ __device__ GI2DOverlayParams::GI2DOverlayParams()
+    __host__ __device__ OverlayParams::OverlayParams()
     {
         grid.show = true;
         grid.lineAlpha = 0.0;
@@ -15,24 +17,21 @@ namespace Cuda
 
         mousePosView = vec2(0.f);
         rayOriginView = vec2(0.f);
-        viewScale = 1.0f;
         sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
-
-        selectedSegmentIdx = kInvalidSegment;
     }
 
-    __device__ Device::GI2DOverlay::GI2DOverlay(const GI2DOverlayParams& params, const Objects& objects) :
+    __device__ Device::Overlay::Overlay(const OverlayParams& params, const Objects& objects) :
         m_params(params),
         m_objects(objects)
     {
     }
 
-    __device__ void Device::GI2DOverlay::Synchronise(const GI2DOverlayParams& params)
+    __device__ void Device::Overlay::Synchronise(const OverlayParams& params)
     {
         m_params = params;
     }
 
-    __device__ void Device::GI2DOverlay::Synchronise(const Objects& objects)
+    __device__ void Device::Overlay::Synchronise(const Objects& objects)
     {
         m_objects = objects;
     }
@@ -44,22 +43,37 @@ namespace Cuda
             (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
     }
 
-    __device__ void Device::GI2DOverlay::Render(Device::ImageRGBA* deviceOutputImage)
+    __device__ __forceinline__ vec4 Blend(vec4 lowerRgba, const vec3 upperRgba, const float& upperAlpha)
     {
-        assert(deviceOutputImage);
+        lowerRgba.xyz = lowerRgba.xyz * (1.0f - upperAlpha) + upperRgba * upperAlpha;
+        lowerRgba.w = mix(lowerRgba.w, 1.0f, upperAlpha);
+        return lowerRgba;
+    }
+
+    __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
+    {
+        // TODO: Make alpha compositing a generic operation inside the Image class.
+        const ivec2 xyScreen = kKernelPos<ivec2>();
+        if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
+        {
+            vec4& target = deviceOutputImage->At(xyScreen);
+            const vec4& source = m_objects.accumBuffer->At(xyScreen);
+            target = Blend(target, source.xyz, source.w);
+        }
+    }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
+
+    __device__ void Device::Overlay::Render()
+    {
+        assert(m_objects.accumBuffer);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
+        if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.viewMatrix * vec2(xyScreen);
+        const vec2 xyView = m_params.view.matrix * vec2(xyScreen);
 
-        vec3 L = vec3(0.1f);
-        if (!m_params.sceneBounds.Contains(xyView))
-        {
-            deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
-            return;
-        }
+        vec4 L(0.0f);
 
         // Draw the grid
         if (m_params.grid.show)
@@ -67,12 +81,12 @@ namespace Cuda
             vec2 xyGrid = fract(xyView / vec2(m_params.grid.majorLineSpacing)) * sign(xyView);
             if (cwiseMin(xyGrid) < 0.02f * mix(1.0, 0.1, m_params.grid.lineAlpha)) { L = 0.3f; }
             xyGrid = fract(xyView / vec2(m_params.grid.minorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < 0.02f) { L = max(L, kOne * 0.3f * m_params.grid.lineAlpha); }
+            if (cwiseMin(xyGrid) < 0.02f) { L = Blend(L, kOne, m_params.grid.lineAlpha * 0.2f); }
         }
 
         if (m_objects.bih && m_objects.lineSegments)
         {
-            const Vector<LineSegment>& segments = *(m_objects.lineSegments);
+            const Cuda::Device::Vector<LineSegment>& segments = *(m_objects.lineSegments);
 
             /*LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));
             const float line = ray.Evaluate(xyView, 0.001f, m_params.dPdXY);
@@ -105,13 +119,13 @@ namespace Cuda
             m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);*/
 
             auto onPointIntersectLeaf = [&, this](const uint& idxStart, const uint& idxEnd) -> void
-            {                
+            {
                 for (int idx = idxStart; idx < idxEnd; ++idx)
                 {
-                    const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
+                    const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.view.dPdXY);
                     if (line > 0.f)
                     {
-                        L = mix(L, segments[idx].IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                        L = Blend(L, segments[idx].IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                         //L += kRed;
                     }
                 }
@@ -138,78 +152,81 @@ namespace Cuda
         // Draw the selection box
         if (m_params.selection.isLassoing)
         {
-            if (PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.dPdXY * 1.)) { L = kOne; }
+            if (PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.view.dPdXY * 1.)) { L = vec4(kOne, 1.0f); }
         }
 
-        deviceOutputImage->At(xyScreen) = vec4(vec3(L), 1.0f);
+        m_objects.accumBuffer->At(xyScreen) = L;
     }
+    DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    DEFINE_KERNEL_PASSTHROUGH_ARGS(Render);
-
-    Host::GI2DOverlay::GI2DOverlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Host::Vector<LineSegment>>& lineSegments) :
+    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<LineSegment>>& lineSegments,
+                                   const uint width, const uint height, cudaStream_t renderStream) :
         Asset(id),
         m_hostBIH2D(bih),
         m_hostLineSegments(lineSegments)
     {
+        // Create some Cuda objects
+        m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
+
         m_objects.bih = m_hostBIH2D->GetDeviceInstance();
         m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        cu_deviceData = InstantiateOnDevice<Device::GI2DOverlay>(GetAssetID(), m_params, m_objects); 
+        cu_deviceData = InstantiateOnDevice<Device::Overlay>(GetAssetID(), m_params, m_objects); 
     }
 
-    Host::GI2DOverlay::~GI2DOverlay()
+    Host::Overlay::~Overlay()
     {
         OnDestroyAsset();
     }
 
-    __host__ void Host::GI2DOverlay::OnDestroyAsset()
+    __host__ void Host::Overlay::OnDestroyAsset()
     {
         DestroyOnDevice(GetAssetID(), cu_deviceData);
+        m_hostAccumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::GI2DOverlay::Render(AssetHandle<Host::ImageRGBA>& hostOutputImage)
+    template<typename T>
+    __host__ void KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize)
     {
-        /*auto onPointIntersectLeaf = [&, this](const uint& idx) -> void {};
-        auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void { };
-        m_hostBIH2D->TestPrimitive(m_params.mousePosView, onPointIntersectLeaf, onPointIntersectInner);
+        const auto& meta = image->GetMetadata();
+        blockSize = dim3(16, 16, 1);
+        gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
+    }
 
-        const vec2 o = m_params.rayOriginView, d = normalize(m_params.mousePosView);
-        auto onRayIntersectLeaf = [&, this](const uint& idx, float& tNearest) -> void 
-        {
-            float tPrim = (*m_hostLineSegments)[idx].TestRay(o, d);
-            if (tPrim < tNearest)
-            {
-                tNearest = tPrim;
-            }
-        };
-        auto onRayIntersectInner = [&, this](const BBox2f& bBox, const vec2& t, const bool&) -> void {};        
-        m_hostBIH2D->TestRay(o, d, onRayIntersectLeaf, onRayIntersectInner);*/
-        
-        const auto& meta = hostOutputImage->GetMetadata();
-        dim3 blockSize(16, 16, 1);
-        dim3 gridSize((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);    
+    __host__ void Host::Overlay::Render()
+    {
+        dim3 blockSize, gridSize;
+        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
-        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData, hostOutputImage->GetDeviceInstance());
+        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData);
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::GI2DOverlay::SetParams(const GI2DOverlayParams& newParams)
+    __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage)
+    {        
+        dim3 blockSize, gridSize;
+        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
+
+        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData, hostOutputImage->GetDeviceInstance());
+        IsOk(cudaDeviceSynchronize());
+    }
+
+    __host__ void Host::Overlay::SetParams(const OverlayParams& newParams)
     {
-        m_params = newParams;
+        m_params.view = newParams.view;
+        m_params.sceneBounds = newParams.sceneBounds;
 
-        //Log::Warning("%s", vec2(m_params.viewMatrix.i02, m_params.viewMatrix.i12).format());
-
-        const float logScale = std::log10(m_params.viewScale);
+        const float logScale = std::log10(m_params.view.scale);
         constexpr float kGridScale = 0.05f;
 
         m_params.grid.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
         m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
-        m_params.dPdXY = length(vec2(m_params.viewMatrix.i00, m_params.viewMatrix.i10));
         m_params.selection.lassoBBox.Rectify();
         m_params.selection.selectedBBox.Rectify();
 
-        if (m_hostBIH2D->IsConstructed())
+        /*if (m_hostBIH2D->IsConstructed())
         {
             const Vector<LineSegment>& segments = *m_hostLineSegments;
             auto onIntersectLeaf = [&, this](const uint idx)
@@ -221,7 +238,7 @@ namespace Cuda
             };
 
             //m_hostBIH2D->TestPrimitive(m_params.mousePosView, onIntersectLeaf);
-        }
+        }*/
 
         SynchroniseObjects(cu_deviceData, m_params);
     }

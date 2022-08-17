@@ -615,6 +615,12 @@
     <ClInclude Include="src\generic\StdUtils.h">
       <Filter>generic</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\CudaGI2DPathTracer.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\Semaphore.h">
+      <Filter>generic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -867,6 +873,9 @@
     </CudaCompile>
     <CudaCompile Include="src\renderers\gi2d\GI2D.cu">
       <Filter>renderers\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\CudaGI2DPathTracer.cu">
+      <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

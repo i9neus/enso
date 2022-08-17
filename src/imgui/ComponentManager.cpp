@@ -99,6 +99,19 @@ namespace Gui
 
         if (m_showConsole) { ConstructConsole(); }
 
+        ImGui::Begin("Debug");
+        for (int i = 0; i < 2; ++i)
+        {
+            switch (m_rendererManager->diag[i])
+            {
+            case 0: ImGui::Text("0000"); break;
+            case 1: ImGui::Text("11111111"); break;
+            case 2: ImGui::Text("222222222222"); break;
+            case 3: ImGui::Text("3333333333333333"); break;
+            }
+        }
+        ImGui::End();
+
         // Menu Bar
         if (ImGui::BeginMainMenuBar())
         {

@@ -9,7 +9,9 @@
 #include "../CudaImage.cuh"
 #include "../CudaVector.cuh"
 
-namespace Cuda
+using namespace Cuda;
+
+namespace GI2D
 {
     #define kNear 0
     #define kFar 1
@@ -100,7 +102,7 @@ namespace Cuda
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
-        Device::Vector<NodeDataType>*  nodes = nullptr;
+        Cuda::Device::Vector<NodeDataType>*  nodes = nullptr;
         uint                        numPrims = 0;
     };
 
@@ -515,7 +517,7 @@ namespace Cuda
 
     namespace Device
     {
-        class BIH2DAsset : public BIH2DFull, public Device::Asset
+        class BIH2DAsset : public BIH2DFull, public Cuda::Device::Asset
         {
         public:
             __device__ BIH2DAsset() {}
@@ -544,14 +546,14 @@ namespace Cuda
 
         private:
             BIH2DFull&                                  m_bih;
-            Host::Vector<BIH2DFullNode>&                m_hostNodes;
+            Cuda::Host::Vector<BIH2DFullNode>&          m_hostNodes;
             std::vector<uint>&                          m_primitiveIdxs;
             std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
             BIH2DStats&                                 m_stats;
             const uint                                  m_minBuildablePrims;
         };
         
-        class BIH2DAsset : public BIH2DFull, public Host::Asset
+        class BIH2DAsset : public BIH2DFull, public Cuda::Host::Asset
         {
         public:            
 
@@ -567,7 +569,7 @@ namespace Cuda
             __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
             __host__ void                           Synchronise();
             __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
-            __host__ const Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
+            __host__ const Cuda::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
 
             std::function<void(const char*)> m_debugFunctor = nullptr;
 
@@ -575,7 +577,7 @@ namespace Cuda
             __host__ void                           CheckTreeNodes() const;
 
         private:
-            AssetHandle<Host::Vector<BIH2DFullNode>> m_hostNodes;
+            AssetHandle<Cuda::Host::Vector<BIH2DFullNode>> m_hostNodes;
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DStats                              m_stats;
             BIH2DParams<BIH2DFullNode>              m_params;

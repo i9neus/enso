@@ -1,6 +1,7 @@
 #pragma once
 
 #include "generic/StdIncludes.h"
+#include "generic/Semaphore.h"
 #include "CudaObjectManager.h"
 #include "UIStateGraph.h"
 
@@ -19,6 +20,14 @@ enum RenderManagerMouseButtons : int
     kMouseRButton = 2,
     kMouseMButton = 4,
     kMouseXButton = 8
+};
+
+enum RenderManagerSemaphore : uint
+{
+    kRenderManagerCompInProgress = 0,
+    kRenderManagerCompFinished = 1,
+    kRenderManagerD3DBlitInProgress = 2,
+    kRenderManagerD3DBlitFinished = 3
 };
 
 class RendererInterface
@@ -41,6 +50,8 @@ public:
    
     virtual std::string GetRendererName() const = 0;
     virtual const std::string& GetRendererDescription() const { return ""; }
+    
+    Semaphore& GetRenderSemaphore() { return m_renderSemaphore; }
 
     void SetCudaObjects(Cuda::AssetHandle<Cuda::Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
 
@@ -116,6 +127,7 @@ protected:
     std::mutex                                      m_resourceMutex;
 
     std::atomic<uint>                               m_dirtyFlags;
+    Semaphore                                       m_renderSemaphore;
 
     UIStateGraph                                    m_uiGraph;
 private:

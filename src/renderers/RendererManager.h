@@ -22,6 +22,8 @@ public:
     void                                    UnloadRenderer();
     void						            UpdateD3DOutputTexture(UINT64& currentFenceValue);
 
+    unsigned int diag[2];
+
 private:
     template<typename HostClass>
     void AddInstantiator(const std::string& id)

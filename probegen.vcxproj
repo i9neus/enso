@@ -114,6 +114,7 @@
     <ClInclude Include="src\generic\Log.h" />
     <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
+    <ClInclude Include="src\generic\Semaphore.h" />
     <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StdUtils.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="src\kernels\CudaRay.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaBIH2D.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh" />
+    <ClInclude Include="src\kernels\gi2d\CudaGI2DPathTracer.cuh" />
     <ClInclude Include="src\kernels\gi2d\CudaPrimitive2D.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
@@ -310,6 +312,7 @@
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu" />
     <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu" />
     <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu" />
+    <CudaCompile Include="src\kernels\gi2d\CudaGI2DPathTracer.cu" />
     <CudaCompile Include="src\kernels\gi2d\CudaPrimitive2D.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />

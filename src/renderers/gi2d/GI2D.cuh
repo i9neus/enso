@@ -42,11 +42,11 @@ enum GI2DAddPath : int
     kGI2DAddPathFinished
 };
 
-class GI2D : public RendererInterface
+class GI2DRenderer : public RendererInterface
 {
 public:
-    GI2D(); 
-    virtual ~GI2D();
+    GI2DRenderer();
+    virtual ~GI2DRenderer();
 
     virtual void OnInitialise() override final;
     virtual void OnMouseMove() override final;
@@ -86,8 +86,6 @@ private:
     CudaObjects&                                m_objects;
     JobManager                                  m_jobManager;
 
-    Cuda::vec2                                  m_mousePosView;
-
     struct EditMode
     {
         uint                                    type;
@@ -109,8 +107,8 @@ private:
         float                                   rotAnchor;
         float                                   scaleAnchor;
 
-        Cuda::vec2                              mousePosView;
-        //Cuda::mat3                              matrix;               <------- Using OverlayParams.viewMatrix instead
+        Cuda::vec2                              mousePos;
+        Cuda::mat3                              matrix;               
     }
     m_view;
 

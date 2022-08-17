@@ -114,7 +114,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="suites\CudaVectorTestsImpl.cu">
       <Filter>suites</Filter>
     </CudaCompile>
@@ -152,6 +151,9 @@
       <Filter>dependencies\kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\math\CudaTransform.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
       <Filter>dependencies\kernels</Filter>
     </CudaCompile>
   </ItemGroup>

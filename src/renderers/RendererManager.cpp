@@ -4,7 +4,7 @@
 
 RendererManager::RendererManager()
 {
-    AddInstantiator<GI2D>("2dgi");
+    AddInstantiator<GI2DRenderer>("2dgi");
 }
 
 void RendererManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -38,7 +38,23 @@ std::vector<RendererComponentInfo> RendererManager::GetRendererList() const
 
 void RendererManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
 {
-    CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage);
+    diag[0] = (unsigned int)(m_activeRenderer->GetRenderSemaphore());
+    
+    if (m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
+    {
+        Timer timer;
+        CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, true);
+        m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished, true);        
+        //Log::System("Blitted");       
+    }
+    else
+    {       
+        Timer timer;
+        CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, false);
+        //Log::Warning("Not blitted");
+    }
+
+    diag[1] = (unsigned int)(m_activeRenderer->GetRenderSemaphore());
 }
 
 /*std::shared_ptr<RendererInterface> RendererManager::GetRenderer()
