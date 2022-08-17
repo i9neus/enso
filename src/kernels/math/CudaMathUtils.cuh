@@ -33,8 +33,7 @@ namespace Cuda
 	__host__ __device__ __forceinline__ void	swap(float& a, float& b)					{ float s = a; a = b; b = s; }
 	__host__ __device__ __forceinline__ float	max3(const float& a, const float& b, const float& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
 	__host__ __device__ __forceinline__ float	min3(const float& a, const float& b, const float& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
-	template<typename T> __host__ __device__ __forceinline__ T mix(const T& a, const T& b, const float& v) { return a * (1 - v) + b * v; }
-	template<typename T> __host__ __device__ __forceinline__ T cwiseMix(const T& a, const T& b, const T& v) { return a * (T(1) - v) + b * v; }
+	template<typename A, typename B, typename V> __host__ __device__ __forceinline__ A mix(const A& a, const B& b, const V& v) { return a * (V(1) - v) + b * v; }
 	template<typename T> __host__ __forceinline__ void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 
 	__host__ __device__ __forceinline__ float SignedLog(const float& t)						{ return math::log(1.0f + fabs(t)) * copysignf(1.0f, t); }
