@@ -18,22 +18,7 @@ namespace Cuda
 }
 
 namespace GI2D
-{    
-    struct ViewTransform
-    {
-        __host__ __device__ ViewTransform();
-        __host__ __device__ ViewTransform(const mat3& mat, const vec2& tra, const float& rot, const float& sca, const vec2& mv, const float& dp) :
-            matrix(mat), trans(tra), rotate(rot), scale(sca), mouseView(mv), dPdXY(dp) {}
-
-        mat3 matrix;
-        vec2 trans;
-        float rotate;
-        float scale;
-
-        vec2 mouseView;
-        float dPdXY;
-    };
-    
+{   
     enum GI2DPrimitiveFlags : int
     {
         k2DPrimitiveSelected = 1
@@ -43,9 +28,10 @@ namespace GI2D
     {
     protected:
         __host__ __device__ Primitive2D() noexcept : m_flags(0) {}
-        __host__ __device__ Primitive2D(const uchar& f) noexcept : m_flags(f) {}
+        __host__ __device__ Primitive2D(const uchar& f, const vec3& c) noexcept : m_flags(f), m_colour(c) {}
 
         uchar m_flags;
+        vec3 m_colour;
 
     public:
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const = 0;
@@ -61,6 +47,7 @@ namespace GI2D
             if (set) { m_flags |= flags; }
             else     { m_flags &= ~flags; }
         }
+        __host__ __device__ __forceinline__ const vec3&     GetColour() const { return m_colour; }
         //__host__ __device__ __forceinline__ void            UnsetFlags(const uchar flags) { m_flags &= ~flags; }
     };
     
@@ -71,8 +58,8 @@ namespace GI2D
         vec2 m_dv;
     public:
         __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
-        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags) noexcept :
-            Primitive2D(flags), m_v{ v0, v1 }, m_dv(v1 - v0) {}
+        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags, const vec3& col) noexcept :
+            Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
 
         __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;

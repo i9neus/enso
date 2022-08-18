@@ -639,6 +639,9 @@
     <ClInclude Include="src\kernels\gi2d\Curve.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\Transform2D.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -896,6 +899,9 @@
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\BIH2DAsset.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\Curve.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>

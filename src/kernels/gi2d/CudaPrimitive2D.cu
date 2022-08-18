@@ -89,7 +89,7 @@ namespace GI2D
             const float size = 0.5f * mix(sizeRange[0], sizeRange[1], std::pow(realRng(mt), 2.0f));
             const vec2 m_dv = vec2(std::cos(theta), std::sin(theta)) * size;
 
-            segments[segIdx] = LineSegment(p + m_dv, p - m_dv, 0);
+            segments[segIdx] = LineSegment(p + m_dv, p - m_dv, 0, kOne);
         }
     }
 }

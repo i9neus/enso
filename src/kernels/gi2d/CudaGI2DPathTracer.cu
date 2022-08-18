@@ -63,6 +63,7 @@ namespace GI2D
             float theta = rng.Rand<0>() * kTwoPi;
             Ray2D ray(xyView, vec2(cos(theta), sin(theta)));
             HitCtx2D hit;
+            int hitIdx = 0;
 
             auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tNearest) -> float
             {
@@ -73,15 +74,16 @@ namespace GI2D
                         if (hit.tFar < tNearest)
                         {
                             tNearest = hit.tFar;
+                            hitIdx = idx;
                         }
                     }
                 }
             };
-            bih.TestRay(ray.o, ray.d, onIntersect);
+            bih.TestRay(ray, onIntersect);
 
             if (hit.tFar != kFltMax)
             {
-                L += kOne;
+                L += segments[hitIdx].GetColour();
             }
         }
 

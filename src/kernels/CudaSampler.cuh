@@ -5,21 +5,21 @@
 
 namespace Cuda
 {    
-    template<int Idx> __device__ __forceinline__ float GetHaltonCRPrime() { return 0.0f; }
-    template<> __device__ __forceinline__ float GetHaltonCRPrime<0>() { return 1.0f; }
-    template<> __device__ __forceinline__ float GetHaltonCRPrime<1>() { return 2.0f; }
-    template<> __device__ __forceinline__ float GetHaltonCRPrime<2>() { return 3.0f; }
-    template<> __device__ __forceinline__ float GetHaltonCRPrime<3>() { return 5.0f; }
+    template<int Idx> __host__ __device__ __forceinline__ float GetHaltonCRPrime() { return 0.0f; }
+    template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<0>() { return 1.0f; }
+    template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<1>() { return 2.0f; }
+    template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<2>() { return 3.0f; }
+    template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<3>() { return 5.0f; }
     
     template<int Base>
-    __device__ __forceinline__ float HaltonBase(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase(uint seed)
     {
         return 0;
     }
 
     // Samples the radix-2 Halton sequence from seed value, i
     template<>
-    __device__ __forceinline__ float HaltonBase<0>(uint i)
+    __host__ __device__ __forceinline__ float HaltonBase<0>(uint i)
     {
         i = ((i & 0xffffu) << 16u) | (i >> 16u);
         i = ((i & 0x00ff00ffu) << 8u) | ((i & 0xff00ff00u) >> 8u);
@@ -30,7 +30,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<2>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<2>(uint seed)
     {
         uint accum = 0u;
         accum += 1162261467u * (seed % 3u); seed /= 3u;
@@ -56,7 +56,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<1>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<1>(uint seed)
     {
         uint accum = 0u;
         accum += 244140625u * (seed % 5u); seed /= 5u;
@@ -75,7 +75,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<3>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<3>(uint seed)
     {
         uint accum = 0u;
         accum += 282475249u * (seed % 7u); seed /= 7u;
@@ -92,7 +92,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<4>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<4>(uint seed)
     {
         uint accum = 0u;
         accum += 214358881u * (seed % 11u); seed /= 11u;
@@ -107,7 +107,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<5>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<5>(uint seed)
     {
         uint accum = 0u;
         accum += 62748517u * (seed % 13u); seed /= 13u;
@@ -121,7 +121,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<6>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<6>(uint seed)
     {
         uint accum = 0u;
         accum += 24137569u * (seed % 17u); seed /= 17u;
@@ -134,7 +134,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<7>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<7>(uint seed)
     {
         uint accum = 0u;
         accum += 47045881u * (seed % 19u); seed /= 19u;
@@ -147,7 +147,7 @@ namespace Cuda
     }
 
     template<>
-    __device__ __forceinline__ float HaltonBase<8>(uint seed)
+    __host__ __device__ __forceinline__ float HaltonBase<8>(uint seed)
     {
         uint accum = 0u;
         accum += 148035889u * (seed % 23u); seed /= 23u;
@@ -160,20 +160,20 @@ namespace Cuda
     }
 
     template<int Idx, int B0>
-    __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
+    __host__ __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
     {
         data[Idx] = fmodf(HaltonBase<B0>(seed) + GetHaltonCRPrime<B0>() * float(seed) / float(0xffffffffu), 1.0f);
     }
 
     template<int Idx, int B0, int B1, int... Pack>
-    __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
+    __host__ __device__  __forceinline__  void HaltonImpl(const uint seed, float* data)
     {
         data[Idx] = fmodf(HaltonBase<B0>(seed) + GetHaltonCRPrime<B0>() * float(seed) / float(0xffffffffu), 1.0f);
         HaltonImpl<Idx + 1, B1, Pack...>(seed, data);
     }
 
     template<typename T, int... Pack>
-    __device__  __forceinline__ T Halton(const uint seed)
+    __host__ __device__  __forceinline__ T Halton(const uint seed)
     {
         T v;
         HaltonImpl<0, Pack...>(seed, v.data);
@@ -181,7 +181,7 @@ namespace Cuda
     } 
 
     template<int Base>
-    __device__  __forceinline__ float Halton(const uint seed)
+    __host__ __device__  __forceinline__ float Halton(const uint seed)
     {
         return fmodf(HaltonBase<Base>(seed) + GetHaltonCRPrime<Base>() * float(seed) / float(0xffffffffu), 1.0f);
     }
@@ -194,9 +194,9 @@ namespace Cuda
         uvec4   m_state;
 
     public:
-        __device__ PseudoRNG() {}
-        __device__ PseudoRNG(const uint& seed) { Initialise(seed); }
-        __device__ PseudoRNG(const CompressedRay& ray) 
+        __host__ __device__ PseudoRNG() {}
+        __host__ __device__ PseudoRNG(const uint& seed) { Initialise(seed); }
+        __host__ __device__ PseudoRNG(const CompressedRay& ray) 
         { 
             Initialise(HashOf(uint(ray.sampleIdx), 
                               uint(ray.depth) + 9871251u, 
@@ -204,7 +204,7 @@ namespace Cuda
         }        
 
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
-        __device__  __forceinline__ void Advance()
+        __host__ __device__  __forceinline__ void Advance()
         {
             m_state = m_state * 1664525u + 1013904223u;
 
@@ -222,54 +222,54 @@ namespace Cuda
         }
 
         // Seed the PCG hash function with the current frame multipled by a prime
-        __device__  __forceinline__ void Initialise(const uint& seed)
+        __host__ __device__  __forceinline__ void Initialise(const uint& seed)
         {
             m_state = uvec4(seed * 20219, seed * 7243, seed * 12547, seed * 28573);
         }
 
         // Generates a 4-tuple of canonical random numbers in the range [0, 1]
-        __device__  __forceinline__ vec4 Rand4()
+        __host__ __device__  __forceinline__ vec4 Rand4()
         {
             Advance();
             return kPCGRandBias * vec4(m_state) / float(0xffffffffu);
         }
 
         template<int B0, int B1, int B2, int B3>
-        __device__ __forceinline__ vec4 Rand() { return Rand4(); }
+        __host__ __device__ __forceinline__ vec4 Rand() { return Rand4(); }
         template<int B0, int B1, int B2>
-        __device__ __forceinline__ vec3 Rand() { return Rand4().xyz; }
+        __host__ __device__ __forceinline__ vec3 Rand() { return Rand4().xyz; }
         template<int B0, int B1>
-        __device__ __forceinline__ vec2 Rand() { return Rand4().xy; }
+        __host__ __device__ __forceinline__ vec2 Rand() { return Rand4().xy; }
         template<int B0>
-        __device__ __forceinline__ float Rand() { return Rand4().x; }
+        __host__ __device__ __forceinline__ float Rand() { return Rand4().x; }
     };
 
     class QuasiRNG
     {
     public:
-        __device__ QuasiRNG(const uint seed) : haltonSeed(seed) {}
-        __device__ QuasiRNG(const CompressedRay& ray) : 
+        __host__ __device__ QuasiRNG(const uint seed) : haltonSeed(seed) {}
+        __host__ __device__ QuasiRNG(const CompressedRay& ray) : 
             haltonSeed(HashOf(uint(ray.sampleIdx),
                         uint(ray.depth) + 9871251u,
                         ray.accumIdx)) {}    
 
         template<int B0, int B1, int B2, int B3>
-        __device__ __forceinline__ vec4 Rand() const
+        __host__ __device__ __forceinline__ vec4 Rand() const
         {
             return Halton<vec4, B0, B1, B2, B3>(haltonSeed);
         }
         template<int B0, int B1, int B2>
-        __device__ __forceinline__ vec3 Rand() const
+        __host__ __device__ __forceinline__ vec3 Rand() const
         {
             return Halton<vec3, B0, B1, B2>(haltonSeed);
         }
         template<int B0, int B1>
-        __device__ __forceinline__ vec2 Rand() const
+        __host__ __device__ __forceinline__ vec2 Rand() const
         {
             return Halton<vec2, B0, B1>(haltonSeed);
         }
         template<int B0>
-        __device__ __forceinline__ float Rand() const
+        __host__ __device__ __forceinline__ float Rand() const
         {
             return HaltonBase<B0>(haltonSeed);
         }

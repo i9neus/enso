@@ -3,6 +3,7 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/CudaGI2DOverlay.cuh"
 #include "kernels/gi2d/CudaGI2DPathTracer.cuh"
+#include "kernels/math/CudaColourUtils.cuh"
 
 using namespace Cuda;
 using namespace GI2D;
@@ -293,11 +294,13 @@ uint GI2DRenderer::OnCreatePath(const uint& sourceStateIdx, const uint& targetSt
     }
     else if (stateID == "kCreatePathAppend")
     {
+        const vec3 colour = Hue(PseudoRNG(HashOf(m_objects.hostLineSegments->Size())).Rand<0>());
+        
         if (m_newPath.numSegments == 0)
         {
             // Create a zero-length segment that will be manipulated later
             std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostLineSegments->EmplaceBack(m_view.mousePos, m_view.mousePos, 0);
+            m_objects.hostLineSegments->EmplaceBack(m_view.mousePos, m_view.mousePos, 0, colour);
             m_newPath.numSegments = 1;
             SetDirtyFlags(kGI2DDirtyGeometry);
         }
@@ -305,7 +308,7 @@ uint GI2DRenderer::OnCreatePath(const uint& sourceStateIdx, const uint& targetSt
         {
             // Any more and we simply reuse the last vertex on the path as the start of the next segment
             std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostLineSegments->EmplaceBack(m_objects.hostLineSegments->Back()[1], m_view.mousePos, 0);
+            m_objects.hostLineSegments->EmplaceBack(m_objects.hostLineSegments->Back()[1], m_view.mousePos, 0, colour);
             m_newPath.numSegments++;
             SetDirtyFlags(kGI2DDirtyGeometry);
         }
