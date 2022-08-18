@@ -58,7 +58,7 @@ struct UIStateTransition
     uint                        sourceStateIdx;
     uint                        targetStateIdx;
 
-    std::function<std::string(const uint&, const uint&)> getTargetState;
+    std::function<std::string(const uint&)> getTargetState;
 
     inline const bool IsNonDeterministic() const { return getTargetState != nullptr; }
     inline const bool HasDeterministicTarget() const { return targetStateIdx != kInvalid; }
@@ -188,7 +188,7 @@ public:
     {
         DeclareTransitionImpl(sourceState, "", keyTrigger, mouseTrigger, triggerFlags, false);
 
-        m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1, std::placeholders::_2);
+        m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
     }
 
     inline void DeclareAutoTransition(const std::string& sourceStateID, const std::string& targetStateID)
@@ -202,6 +202,9 @@ public:
         uint sourceStateIdx = m_currentState;
         if (m_uiStateList[m_currentState].onExitState)
         {
+            // Forbid allowing exit functors to change the graph state (for now)
+            AssertMsg(m_currentState == sourceStateIdx, "Illegal opereation: exit functor '%s' manually changed the graph state.", m_uiStateList[m_currentState].id.c_str());
+            
             const uint result = m_uiStateList[m_currentState].onExitState(sourceStateIdx, UIState::kInvalid);
             AssertMsg(result != kUIStateError, "State transition error.");
             if (result == kUIStateRejected)
@@ -214,7 +217,7 @@ public:
         // If the transition lambda attached then it's non-deterministic. Call the lambda to determine what state we're migrating to
         if (transition.IsNonDeterministic())
         {
-            const std::string newStateID = transition.getTargetState(sourceStateIdx, UIState::kInvalid);
+            const std::string newStateID = transition.getTargetState(sourceStateIdx);
             AssertMsgFmt(!newStateID.empty(),
                 "Error: non-deterministic transition from '%s' failed: state is empty.", m_uiStateList[m_currentState].id.c_str());
 
@@ -233,15 +236,26 @@ public:
         uint targetResult = kUIStateOkay;
         if (m_uiStateList[m_currentState].onEnterState)
         {
-            const uint result = m_uiStateList[m_currentState].onEnterState(sourceStateIdx, m_currentState);
-            AssertMsg(result != kUIStateError, "State transition error.");
-
-            if (result == kUIStateRejected)
+            // Allow the target state entry functor to change the state. Keep cycling until 
+            uint targetState = UIState::kInvalid;
+            constexpr int kMaxTransitions = 10;
+            int numTransitions = 0;
+            do
             {
-                Log::Warning("Warning: failed to enter state '%s': transition was rejected.",
-                    transition.IsNonDeterministic() ? std::string("[UNKNOWN]") : m_uiStateList[transition.targetStateIdx].id);
-                return true;
+                targetState = m_currentState;
+                const uint result = m_uiStateList[m_currentState].onEnterState(sourceStateIdx, m_currentState);
+                AssertMsg(result != kUIStateError, "State transition error.");
+
+                if (result == kUIStateRejected)
+                {
+                    Log::Warning("Warning: failed to enter state '%s': transition was rejected.",
+                        transition.IsNonDeterministic() ? std::string("[UNKNOWN]") : m_uiStateList[transition.targetStateIdx].id);
+                    return true;
+                }
             }
+            while (m_currentState != targetState && ++numTransitions < kMaxTransitions);
+
+            AssertMsg(numTransitions < kMaxTransitions, "State exceeded maximum allowed number of transitions. Possible cycle detected.");
         }
 
         Log::Success("State changed: %s -> %s", m_uiStateList[sourceStateIdx].id, m_uiStateList[m_currentState].id);

@@ -22,9 +22,9 @@ enum GI2DDirtyFlags : uint
 {
     kGI2DClean = 0,
     kGI2DDirtyParams = 1,
-    kGI2DDirtyLineSegments = 2,
+    kGI2DDirtyPrimitiveAttributes = 2,
     kGI2DDirtyBIH = 4,
-    kGI2DDirtyGeometry = kGI2DDirtyLineSegments | kGI2DDirtyBIH,
+    kGI2DDirtyGeometry = kGI2DDirtyBIH,
 
     kGI2DDirtyAll = 0xffffffff
 };
@@ -77,7 +77,7 @@ private:
     uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx);
     uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx);
 
-    std::string             DecideOnClickState(const uint& sourceStateIdx, const uint& targetStateIdx);
+    std::string             DecideOnClickState(const uint& sourceStateIdx);
 
 private:
     enum JobIDs : uint { kJobDraw };
@@ -108,15 +108,17 @@ private:
         float                                   scaleAnchor;
 
         Cuda::vec2                              mousePos;
-        Cuda::mat3                              matrix;               
+        Cuda::mat3                              matrix;   
+        float                                   dPdXY;
     }
     m_view;
 
     struct
     {
         uint                                    pathStartIdx;
-        uint                                    numVertices;
+        uint                                    numSegments;
         Cuda::vec2                              startPos;
+        bool                                    isLassoing;
     } 
     m_newPath;
 

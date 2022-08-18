@@ -79,24 +79,27 @@ namespace Cuda
             return max(lower.x, other.lower.x) < min(upper.x, other.upper.x) && max(lower.y, other.lower.y) < min(upper.y, other.upper.y);
         }
 
-        __host__ __device__ __forceinline__ void Grow(const ScalarType & ammount)
+        __host__ __device__ __forceinline__ BBox2& Grow(const ScalarType & ammount)
         {
             lower.x -= ammount; lower.y -= ammount;
             upper.x += ammount; upper.y += ammount;
+            return *this;
         }
 
         // Grows the bounding box by a vector accmount
-        __host__ __device__ __forceinline__ void Grow(const VecType & ammount)
+        __host__ __device__ __forceinline__ BBox2& Grow(const VecType & ammount)
         {
             lower.x -= ammount.x; lower.y -= ammount.y;
             upper.x += ammount.x; upper.y += ammount.y;
+            return *this;
         }
 
         // Checked to see whether lower < upper and inverts them if not
-        __host__ __device__ __forceinline__ void Rectify()
+        __host__ __device__ __forceinline__ BBox2& Rectify()
         {
             if (lower.x > upper.x) { swap(lower.x, upper.x); }
             if (lower.y > upper.y) { swap(lower.y, upper.y); }      
+            return *this;
         }
 
         __host__ __device__ __forceinline__ BBox2& operator*=(const ScalarType& scale)
@@ -108,16 +111,54 @@ namespace Cuda
             return *this;
         }
 
+        // Grows the bounding box by a vector accmount
+        __host__ __device__ __forceinline__ BBox2& Scale(const float& ammount)
+        {
+            return this->operator*=(ammount);
+        }
+
+        __host__ __device__ __forceinline__ BBox2& operator+=(const VecType& delta)
+        {
+            lower += delta; upper += delta;
+            return *this;
+        }
+
+        __host__ __device__ __forceinline__ BBox2& operator-=(const VecType& delta)
+        {
+            lower -= delta; upper -= delta;
+            return *this;
+        }
+
+        // Union operator
+        __host__ __device__ __forceinline__ BBox2& operator|=(const BBox2& other)
+        {
+            *this = BBox(min(lower.x, other.lower.x), min(lower.y, other.lower.y), max(upper.x, other.upper.x), max(upper.y, other.upper.y));
+            return *this;
+        }
+         
+        // Intersection operator
+        __host__ __device__ __forceinline__ BBox2& operator&=(const BBox2& other)
+        {
+            *this = BBox2(max(lower.x, other.lower.x), max(lower.y, other.lower.y), min(upper.x, other.upper.x), min(upper.y, other.upper.y));
+            return *this;
+        }
+
         __host__ std::string& Format() const
         {
             return tfm::format("{%s, %s}", lower.format(), upper.format());
+        }
+
+        __host__ __device__ __forceinline__ void Echo(const bool newLine = false) const
+        {
+            printf("{{%f, %f}, {%f, %f}}", lower.x, lower.y, upper.x, upper.y);
+            if (newLine) { printf("\n"); }
         }
 
         __host__ __device__ __forceinline__ bool PointOnPerimiter(const vec2& p, float thickness)
         {
             thickness *= 0.5f;
             return (p.x >= lower.x - thickness && p.y >= lower.y - thickness && p.x <= upper.x + thickness && p.y <= upper.y + thickness) &&
-                (p.x <= lower.x + thickness || p.y <= lower.y + thickness || p.x >= upper.x - thickness || p.y >= upper.y - thickness);
+                   (p.x <= lower.x + thickness || p.y <= lower.y + thickness || p.x >= upper.x - thickness || p.y >= upper.y - thickness);
         }
 
     public:
@@ -167,10 +208,28 @@ namespace Cuda
     }
 
     template<typename T>
+    __host__ __device__ __forceinline__ BBox2<T> operator+(const BBox2<T>& lhs, const typename BBox2<T>::VecType& rhs)
+    {
+        return BBox2<T>(lhs.lower + rhs, rhs.upper + rhs);
+    }
+
+    template<typename T>
+    __host__ __device__ __forceinline__ BBox2<T> operator-(const BBox2<T>& lhs, const typename BBox2<T>::VecType& rhs)
+    {
+        return BBox2<T>(lhs.lower - rhs, lhs.upper - rhs);
+    }
+
+    template<typename T>
     __host__ __device__ __forceinline__ BBox2<T>  operator&(const BBox2<T>& a, const BBox2<T>& b)
     {
         return Intersection(a, b);
     }   
+
+    template<typename T>
+    __host__ __device__ __forceinline__ BBox2<T>  operator|(const BBox2<T>& a, const BBox2<T>& b)
+    {
+        return Union(a, b);
+    }
 
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Grow(const BBox2<T>& bBox, const typename BBox2<T>::ScalarType& ammount)

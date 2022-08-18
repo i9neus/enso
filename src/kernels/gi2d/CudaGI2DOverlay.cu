@@ -81,7 +81,7 @@ namespace GI2D
         // Draw the grid
         if (!m_params.sceneBounds.Contains(xyView)) 
         { 
-            L = vec4(0.0f);  
+            L = vec4(0.0f);
         }
         else if (m_params.grid.show)
         {
@@ -95,7 +95,7 @@ namespace GI2D
             { 
                 L = Blend(L, kOne, 0.5 * m_params.grid.lineAlpha);
             }
-        }
+        }      
 
         if (m_objects.bih && m_objects.lineSegments)
         {
@@ -162,11 +162,10 @@ namespace GI2D
             }*/
         }
 
-        // Draw the selection box
-        if (m_params.selection.isLassoing)
-        {
-            if (PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.view.dPdXY * 1.)) { L = vec4(kOne, 1.0f); }
-        }
+        // Draw the lasso 
+        if (m_params.selection.isLassoing && PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.view.dPdXY * 2.)) { L = vec4(kRed, 1.0f); }
+
+        if (m_params.selection.numSelected > 0. && PointOnPerimiter(m_params.selection.selectedBBox, xyView, m_params.view.dPdXY * 2.)) { L = vec4(kGreen, 1.0f); }
 
         m_objects.accumBuffer->At(xyScreen) = L;
     }
@@ -234,6 +233,7 @@ namespace GI2D
     {
         m_params.view = newParams.view;
         m_params.sceneBounds = newParams.sceneBounds;
+        m_params.selection = newParams.selection;
 
         const float logScale = std::log10(m_params.view.scale);
         constexpr float kGridScale = 0.05f;

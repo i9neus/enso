@@ -52,6 +52,28 @@ namespace GI2D
         //return (length2((o + d * t - (v + m_dv * 0.5)) / (m_dv * 0.5)) > 1.0f) ? kFltMax : t;
     }
 
+    __host__ __device__ bool LineSegment::Intersects(const BBox2f& bBox) const
+    {
+        if (bBox.Contains(m_v[0]) || bBox.Contains(m_v[1])) { return true; }
+        
+        // Ray-box intersection
+        vec2 tNearPlane, tFarPlane;
+        for (int dim = 0; dim < 2; dim++)
+        {
+            if (fabs(m_dv[dim]) > 1e-10f)
+            {
+                float t0 = (bBox.upper[dim] - m_v[0][dim]) / m_dv[dim];
+                float t1 = (bBox.lower[dim] - m_v[0][dim]) / m_dv[dim];
+                if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
+                else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
+            }
+        }
+
+        const float t0 = cwiseMax(tNearPlane);
+        const float t1 = cwiseMin(tFarPlane);
+        return t0 < t1 && t0 >= 0.f && t0 <= 1.f;        
+    }
+
     __host__ void GenerateRandomLineSegments(Cuda::Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed)
     {
         std::mt19937 mt(seed);
