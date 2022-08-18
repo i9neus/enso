@@ -627,6 +627,18 @@
     <ClInclude Include="src\kernels\gi2d\Ray2D.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\BIH2DBuilder.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\BIH2DNode.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\BIH2DAsset.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\Curve.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -868,9 +880,6 @@
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaBIH2D.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
@@ -882,6 +891,12 @@
     </CudaCompile>
     <CudaCompile Include="src\renderers\gi2d\GI2DRenderer.cu">
       <Filter>renderers\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\BIH2DBuilder.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\BIH2DAsset.cu">
+      <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

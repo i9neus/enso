@@ -1,44 +1,12 @@
-#include "CudaBIH2D.cuh"
+#include "BIH2DBuilder.cuh"
 
 namespace GI2D
 {
-    using namespace Cuda;
-    
-    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
-    {
-        assert(params.nodes);
-        m_nodes = params.nodes->Data();
-        m_numNodes = params.nodes->Size();
-        m_numPrims = params.numPrims;
-        m_treeBBox = params.bBox;
-        m_isConstructed = params.isConstructed;
-        m_testAsList = params.testAsList;
-    }
-    
-    __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id) : 
-        Asset(id),
-        cu_deviceInstance(nullptr)
-    {
-        cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
-
-        m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
-    }
-
-    __host__ Host::BIH2DAsset::~BIH2DAsset()
-    {
-        OnDestroyAsset();
-    }
-
-    void Host::BIH2DAsset::OnDestroyAsset()
-    {
-        m_hostNodes.DestroyAsset();
-
-        DestroyOnDevice(GetAssetID(), cu_deviceInstance);
-    }
-
-    __host__ Host::BIH2DBuilder::BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
+    template<typename NodeType>
+    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Cuda::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs, 
+                                                  const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
         m_bih(bih),
-        m_hostNodes(*bih.m_hostNodes),
+        m_hostNodes(hostNodes),
         m_primitiveIdxs(primitiveIdxs),
         m_getPrimitiveBBox(functor),
         m_stats(bih.m_stats),
@@ -46,8 +14,8 @@ namespace GI2D
     {
     }
 
-    //template<typename NodeContainer>
-    __host__ void Host::BIH2DBuilder::Build()
+    template<typename NodeType>
+    __host__ void BIH2DBuilder<NodeType>::Build()
     {
         Timer timer;
         AssertMsg(m_getPrimitiveBBox, "BIH builder does not have a valid bounding box functor.");
@@ -103,7 +71,8 @@ namespace GI2D
     }
 
     //template<typename NodeContainer>
-    __host__ void Host::BIH2DBuilder::BuildPartition(const int i0, const int i1, const uint thisIdx, const uchar depth, const BBox2f& parentBBox, const BBox2f& centroidBBox)
+    template<typename NodeType>
+    __host__ void BIH2DBuilder<NodeType>::BuildPartition(const int i0, const int i1, const uint thisIdx, const uchar depth, const BBox2f& parentBBox, const BBox2f& centroidBBox)
     {    
         // Sanity checks
         Assert(depth < 16);
@@ -205,65 +174,5 @@ namespace GI2D
         // Build the child nodes
         BuildPartition(i0, j, leftIdx, depth + 1, leftBBox, leftCentroidBBox);
         BuildPartition(j, i1, rightIdx, depth + 1, rightBBox, rightCentroidBBox);
-    }
-
-    __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)
-    {
-        Assert(m_hostNodes);
-        //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
-
-        // Resize and reset pointers
-        BIH2DBuilder builder(*this, m_primitiveIdxs, 5, functor);
-        builder.m_debugFunctor = m_debugFunctor;
-        builder.Build();
-
-        //CheckTreeNodes();
-
-        // Synchronise the node data to the device
-        m_hostNodes->Synchronise(kVectorSyncUpload);
-        m_params.isConstructed = m_isConstructed;
-        m_params.testAsList = m_testAsList;
-        m_params.bBox = m_treeBBox;
-        m_params.nodes = m_hostNodes->GetDeviceInstance();
-        m_params.numPrims = uint(m_primitiveIdxs.size());
-
-        Cuda::Synchronise(cu_deviceInstance, m_params);
-    }
-
-    __host__ void Host::BIH2DAsset::Synchronise()
-    {
-        //const BIH2DParams params = {m_isConstructed, m_treeBBox, m_hostNodes->GetDeviceInstance() };
-        //Cuda::Synchronise(cu_deviceInstance, params);
-    } 
-
-    __host__ void Host::BIH2DAsset::CheckTreeNodes() const
-    {
-        for (int nodeIdx = 0; nodeIdx < m_hostNodes->Size(); ++nodeIdx)
-        {
-            const BIH2DFullNode& node = (*m_hostNodes)[nodeIdx];
-            if (node.IsLeaf())
-            {
-            }
-            else
-            {
-                for (int planeIdx = 0; planeIdx < 2; ++planeIdx)
-                {
-                    const float plane = node.data.planes[planeIdx];
-                    if (!std::isfinite(plane))
-                    {
-                        Log::Error("Plane %i at node %i is non-finite: %f", planeIdx, nodeIdx, plane);
-                    }
-                    if (!std::isnormal(plane))
-                    {
-                        Log::Error("Plane %i at node %i is denormalised: %f", planeIdx, nodeIdx, plane);
-                    }
-                    const uchar axis = node.GetAxis();
-                    if (plane < m_treeBBox.lower[axis] || plane > m_treeBBox.upper[axis])
-                    {
-                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_treeBBox.lower[axis], m_treeBBox.upper[axis]);
-                    }
-                }
-            }
-        }
     }
 }

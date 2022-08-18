@@ -1,13 +1,7 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
-#include "kernels/math/bbox/CudaBBox2.cuh"
-#include <map>
-
-#include "../CudaAsset.cuh"
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
-#include "../CudaVector.cuh"
+#include "BIH2DNode.cuh"
+#include "Ray2D.cuh"
 
 using namespace Cuda;
 
@@ -15,86 +9,8 @@ namespace GI2D
 {
     #define kNear 0
     #define kFar 1
-    
-    enum BIHFlags : unsigned char
-    {
-        kBIHX = 0,
-        kBIHY = 1,
-        kBIHLeaf = 2
-    };
 
-    struct BIH2DNodeDataFull
-    {
-        float        planes[2];
-        uint         primIdxs[2];
-    };
-
-    struct BIH2DNodeDataCompact
-    {
-        union
-        {
-            float        planes[2];
-            uint         primIdxs[2];
-        };
-    };
-
-    template<typename NodeDataType>
-    struct BIH2DNodeBase
-    {
-    public:
-        enum _attrs : uint { kLeft = 0, kRight = 1, kInvalidLeaf = 0xffffffff };
-        
-        __host__ __device__ BIH2DNodeBase() = default;
-
-        __host__ __device__ __forceinline__ uchar GetAxis() const { return uchar(flags & uint(3)); }
-        __host__ __device__ __forceinline__ uint GetPrimStartIdx() const { return data.primIdxs[0]; }
-        __host__ __device__ __forceinline__ uint GetPrimEndIdx() const { return data.primIdxs[1]; }
-        __host__ __device__ __forceinline__ uint GetChildIndex() const { return flags >> 2; }
-        __host__ __device__ __forceinline__ bool IsValidLeaf() const { return data.primIdxs[0] != kInvalidLeaf; }
-        __host__ __device__ __forceinline__ bool IsLeaf() const { return uchar(flags & uint(3)) == kBIHLeaf; }
-
-        __host__ __device__ __forceinline__ BBox2f GetLeftBBox(BBox2f parentBBox) const
-        {
-            parentBBox.upper[flags & 3u] = data.planes[BIH2DNodeBase::kLeft];
-            return parentBBox;
-        }
-
-        __host__ __device__ __forceinline__ BBox2f GetRightBBox(BBox2f parentBBox) const
-        {
-            parentBBox.lower[flags & 3u] = data.planes[BIH2DNodeBase::kRight];
-            return parentBBox;
-        }
-        
-        __host__ __device__ __forceinline__ void MakeInner(const uint& i, const uint& split, const float& left, const float& right,
-                                                           const uint& primIdxStart, const uint& primIdxEnd)
-        { 
-            assert(i < ~uint(3));
-            flags = (i << 2) | (split & uint(3));
-            data.planes[BIH2DNodeBase::kLeft] = left;
-            data.planes[BIH2DNodeBase::kRight] = right;
-
-            // If we're using full nodes in this tree, include the start and end indices in the inner node
-            if (std::is_same<NodeDataType, BIH2DNodeDataFull>::value)
-            {
-                data.primIdxs[0] = primIdxStart;
-                data.primIdxs[1] = primIdxEnd;
-            }
-        }
-
-        __host__ __device__ __forceinline__ void MakeLeaf(const uint& idxStart, const uint& idxEnd)
-        {
-            flags = kBIHLeaf;
-            data.primIdxs[0] = idxStart;
-            data.primIdxs[1] = idxEnd;
-        }
-
-    public:
-        uint         flags;
-        NodeDataType data;
-    };
-
-    using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
-    using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
+    template<typename NodeType> class BIH2DBuilder;
 
     template<typename NodeDataType>
     struct BIH2DParams
@@ -102,7 +18,7 @@ namespace GI2D
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
-        Cuda::Device::Vector<NodeDataType>*  nodes = nullptr;
+        Cuda::Device::Vector<NodeDataType>* nodes = nullptr;
         uint                        numPrims = 0;
     };
 
@@ -114,9 +30,7 @@ namespace GI2D
         uint numLeafNodes = 0;
     };
 
-    #define kBIH2DStackSize 10
-
-    using BIH2DNearFar = vec2;
+#define kBIH2DStackSize 10
 
     struct BIH2DPrimitiveStackElement
     {
@@ -124,13 +38,12 @@ namespace GI2D
         uint        nodeIdx;
         uchar       depth;
     };
-
+    
+    using BIH2DNearFar = vec2;
     struct BIH2DRayStackElement : public BIH2DPrimitiveStackElement
     {
         BIH2DNearFar t;
     };
-
-    namespace Host { class BIH2DBuilder; }
 
     template<typename TNodeType>
     class BIH2D
@@ -138,10 +51,9 @@ namespace GI2D
         enum _attrs : uint { kMinPrimsInTree = 5 };
 
     public:
-
         using NodeType = TNodeType;
 
-        friend class Host::BIH2DBuilder;
+        template<typename T> friend class BIH2DBuilder;
 
         __host__ __device__ BIH2D() :
             m_treeBBox(vec2(0.f), vec2(0.f)),
@@ -346,7 +258,7 @@ namespace GI2D
         }
 
         template<uint kPlaneIdx0>
-        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const vec2& o, const vec2& d, NodeType*& const node, const uchar& axis,
+        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const RayBasic2D& ray, NodeType*& const node, const uchar& axis,
                                                                       BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
         {
             constexpr uint kPlaneIdx1 = (kPlaneIdx0 + 1) & 1;
@@ -354,10 +266,10 @@ namespace GI2D
             constexpr float kPlane1Sign = 1.0f - kPlaneIdx1 * 2.0f;
 
             // Nearest box hit?                
-            const float tPlane0 = (node->data.planes[kPlaneIdx0] - o[axis]) / d[axis];
-            const float tPlane1 = (node->data.planes[kPlaneIdx1] - o[axis]) / d[axis];
-            const uchar hitFlags0 = uchar((o[axis] + d[axis] * t[kNear] - node->data.planes[kPlaneIdx0]) * kPlane0Sign < 0.0f) | (uchar(tPlane0 > t[kNear] && tPlane0 < t[kFar]) << 1);
-            const uchar hitFlags1 = uchar((o[axis] + d[axis] * t[kNear] - node->data.planes[kPlaneIdx1]) * kPlane0Sign > 0.0f) | (uchar(tPlane1 > t[kNear] && tPlane1 < t[kFar]) << 1);
+            const float tPlane0 = (node->data.planes[kPlaneIdx0] - ray.o[axis]) / ray.d[axis];
+            const float tPlane1 = (node->data.planes[kPlaneIdx1] - ray.o[axis]) / ray.d[axis];
+            const uchar hitFlags0 = uchar((ray.o[axis] + ray.d[axis] * t[kNear] - node->data.planes[kPlaneIdx0]) * kPlane0Sign < 0.0f) | (uchar(tPlane0 > t[kNear] && tPlane0 < t[kFar]) << 1);
+            const uchar hitFlags1 = uchar((ray.o[axis] + ray.d[axis] * t[kNear] - node->data.planes[kPlaneIdx1]) * kPlane0Sign > 0.0f) | (uchar(tPlane1 > t[kNear] && tPlane1 < t[kFar]) << 1);
             if (hitFlags0)
             {
                 if (hitFlags1/* && stackIdx < kBIH2DStackSize*/)
@@ -406,12 +318,12 @@ namespace GI2D
         }
 
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
-        __host__ __device__ void TestRay(const vec2& o, const vec2& d, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
+        __host__ __device__ void TestRay(const RayBasic2D& ray, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
         {
             if (!m_isConstructed) { return; }
 
             BIH2DNearFar t;
-            if (!TestRayBBox(o, d, m_treeBBox, t)) { return; }
+            if (!TestRayBBox(ray, m_treeBBox, t)) { return; }
 
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all as a list
             float tNearest = t[kFar];
@@ -462,14 +374,14 @@ namespace GI2D
                     OnRayIntersectInner(bBox, t, false, onIntersectInner);
 
                     // Left-hand node is likely closer, so traverse that one first
-                    if (o[axis] < node->data.planes[NodeType::kLeft])
+                    if (ray.o[axis] < node->data.planes[NodeType::kLeft])
                     {
-                        RayTraverseInnerNode<0>(o, d, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<0>(ray, node, axis, t, bBox, stack, stackIdx);
                     }
                     // ...otherwise traverse right-hand node first
                     else
                     {
-                        RayTraverseInnerNode<1>(o, d, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<1>(ray, node, axis, t, bBox, stack, stackIdx);
                     } 
                 }
 
@@ -482,15 +394,15 @@ namespace GI2D
         __host__ __device__ __forceinline__ const NodeType*     GetNodes() const { return m_nodes; }
 
     protected:
-        __host__ __device__ __forceinline__ bool TestRayBBox(const vec2& o, const vec2& d, const BBox2f& bBox, BIH2DNearFar& t) const
+        __host__ __device__ __forceinline__ bool TestRayBBox(const RayBasic2D& ray, const BBox2f& bBox, BIH2DNearFar& t) const
         {
             vec2 tNearPlane, tFarPlane;
             for (int dim = 0; dim < 2; dim++)
             {
-                if (fabs(d[dim]) > 1e-10f)
+                if (fabs(ray.d[dim]) > 1e-10f)
                 {
-                    float t0 = (bBox.upper[dim] - o[dim]) / d[dim];
-                    float t1 = (bBox.lower[dim] - o[dim]) / d[dim];
+                    float t0 = (bBox.upper[dim] - ray.o[dim]) / ray.d[dim];
+                    float t1 = (bBox.lower[dim] - ray.o[dim]) / ray.d[dim];
                     if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
                     else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
                 }
@@ -509,83 +421,14 @@ namespace GI2D
 
         bool                        m_isConstructed;
         bool                        m_testAsList;
+
+        BIH2DStats                  m_stats;
     };   
 
-    using BIH2DFull = BIH2D<BIH2DFullNode>;
-    using BIH2DCompact = BIH2D<BIH2DCompactNode>;
+    //using BIH2DFull = BIH2D<BIH2DFullNode>;
+    //using BIH2DCompact = BIH2D<BIH2DCompactNode>;
 
     //template BIH2DBuilder<Host::Vector<BIH2DNode>>;
-
-    namespace Device
-    {
-        class BIH2DAsset : public BIH2DFull, public Cuda::Device::Asset
-        {
-        public:
-            __device__ BIH2DAsset() {}
-
-            __device__ void Synchronise(const BIH2DParams<BIH2DFullNode>& params);
-        };
-    }
-
-    namespace Host
-    {
-        class BIH2DAsset;
-        
-        //template<typename NodeContainer>
-        class BIH2DBuilder
-        {
-        public:
-            __host__ BIH2DBuilder(Host::BIH2DAsset& bih, std::vector<uint>& primitiveIdxs, const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
-
-            __host__ void Build();
-
-            std::function<void(const char*)> m_debugFunctor = nullptr;
-
-
-        protected:
-            __host__ void BuildPartition(const int i0, const int i1, const uint thisIdx, const uchar depth, const BBox2f& parentBBox, const BBox2f& centroidBBox);
-
-        private:
-            BIH2DFull&                                  m_bih;
-            Cuda::Host::Vector<BIH2DFullNode>&          m_hostNodes;
-            std::vector<uint>&                          m_primitiveIdxs;
-            std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
-            BIH2DStats&                                 m_stats;
-            const uint                                  m_minBuildablePrims;
-        };
-        
-        class BIH2DAsset : public BIH2DFull, public Cuda::Host::Asset
-        {
-        public:            
-
-            /*template<typename T> */friend class BIH2DBuilder;
-            
-            __host__ BIH2DAsset(const std::string& id);
-            __host__ virtual ~BIH2DAsset();
-
-            __host__ virtual void                   OnDestroyAsset() override final;
-
-            __host__ inline std::vector<uint>&      GetPrimitiveIndices() { return m_primitiveIdxs; }
-            __host__ void                           Build(std::function<BBox2f(uint)>& functor);
-            __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
-            __host__ void                           Synchronise();
-            __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
-            __host__ const Cuda::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
-
-            std::function<void(const char*)> m_debugFunctor = nullptr;
-
-        private:
-            __host__ void                           CheckTreeNodes() const;
-
-        private:
-            AssetHandle<Cuda::Host::Vector<BIH2DFullNode>> m_hostNodes;
-            std::vector<uint>                       m_primitiveIdxs;
-            BIH2DStats                              m_stats;
-            BIH2DParams<BIH2DFullNode>              m_params;
-
-            Device::BIH2DAsset*                     cu_deviceInstance;
-        };    
-    }
 
     #undef kNear
     #undef kFar

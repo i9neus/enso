@@ -53,7 +53,7 @@ namespace GI2D
         if (!m_params.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
 
         assert(m_objects.bih);
-        const BIH2DFull& bih = *m_objects.bih;
+        const auto& bih = *m_objects.bih;
         const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));

@@ -5,7 +5,7 @@
 #include "../CudaImage.cuh"
 #include "../CudaVector.cuh"
 
-#include "CudaBIH2D.cuh"
+#include "BIH2DAsset.cuh"
 #include "CudaPrimitive2D.cuh"
 
 using namespace Cuda;
