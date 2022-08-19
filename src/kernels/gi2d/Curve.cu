@@ -19,7 +19,7 @@ namespace GI2D
         const RayBasic2D localRay = ToObjectSpace(ray); 
         const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
 
-        auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tFarChild) -> float
+        auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tFarChild) -> void
         {
             for (uint idx = startIdx; idx < endIdx; ++idx)
             {
@@ -35,6 +35,7 @@ namespace GI2D
         m_objects.bih->TestRay(ray, onIntersect);
 
         tFarParent = min(tFarParent, hit.tFar);
+        return 0;
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
@@ -110,6 +111,8 @@ namespace GI2D
         {
             AssertMsg(false, "Invalid state");
         }
+
+        return 0;
     }
 
     __host__ uint Host::Curve::OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx)

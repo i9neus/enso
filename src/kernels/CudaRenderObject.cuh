@@ -76,6 +76,7 @@ namespace Cuda
             __host__ virtual void           OnPostRenderPass() {}
             __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) {}
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
+            __host__ virtual void           Synchronise() {}
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
             __host__ void SetRenderObjectFlags(const uint flags, const bool set = true)
@@ -110,7 +111,7 @@ namespace Cuda
 
         protected:
             __host__ RenderObject(const std::string& id) : Asset(id), m_renderObjectFlags(0) {}
-            __host__ virtual ~RenderObject() = default; 
+            __host__ virtual ~RenderObject() {}
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)

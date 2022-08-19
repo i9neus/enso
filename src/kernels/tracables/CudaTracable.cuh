@@ -69,7 +69,7 @@ namespace Cuda
             {
                 Host::RenderObject::UpdateDAGPath(node);
             }
-            __host__ virtual ~Tracable() = default;
+            __host__ virtual ~Tracable() {};
             
             AssetHandle<Host::Material> m_materialAsset;
             std::string                 m_materialId;

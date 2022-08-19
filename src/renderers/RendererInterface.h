@@ -49,7 +49,7 @@ public:
     void SetClientSize(const int width, const int height);
    
     virtual std::string GetRendererName() const = 0;
-    virtual const std::string& GetRendererDescription() const { return ""; }
+    virtual const std::string& GetRendererDescription() const { static std::string defaultDesc;  return defaultDesc; }
     
     Semaphore& GetRenderSemaphore() { return m_renderSemaphore; }
 

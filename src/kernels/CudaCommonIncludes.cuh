@@ -45,7 +45,7 @@ __host__ inline void CudaHostAssert(T result, char const* const func, const char
 	if (result != 0)
 	{
 		AssertMsgFmt(false,
-			"CUDA returned error code=%d(%s) \"%s\" \n",
+			"(file %s, line %d) CUDA returned error code=%d(%s) \"%s\" \n",
 			file, line, (unsigned int)result, _cudaGetErrorEnum(result), func);
 	}
 }
@@ -116,7 +116,7 @@ namespace Cuda
 	}
 
 	template<typename ObjectType, typename... Pack>
-	__global__ inline void KernelCreateDeviceInstance(ObjectType** newInstance, Pack... args)
+	__global__ void KernelCreateDeviceInstance(ObjectType** newInstance, Pack... args)
 	{
 		assert(newInstance);
 		assert(!*newInstance);
@@ -243,7 +243,7 @@ namespace Cuda
 	// Defines a generic kernel function that invokes the method in the referenced class
 #define DEFINE_KERNEL_PASSTHROUGH_ARGS(FunctionName) \
         template<typename ObjectType, typename... Pack>\
-        __global__ inline void Kernel##FunctionName(ObjectType* object, Pack... pack) \
+        __global__ void Kernel##FunctionName(ObjectType* object, Pack... pack) \
         { \
             assert(object); \
             object->FunctionName(pack...); \
@@ -251,7 +251,7 @@ namespace Cuda
 
 #define DEFINE_KERNEL_PASSTHROUGH(FunctionName) \
         template<typename ObjectType>\
-        __global__ inline void Kernel##FunctionName(ObjectType* object) \
+        __global__ void Kernel##FunctionName(ObjectType* object) \
         { \
             assert(object); \
             object->FunctionName(); \

@@ -26,7 +26,7 @@ namespace Cuda
 		};
 
 		__host__ __device__ __forceinline__ __mat3() {}
-		__host__ __device__ __forceinline__ __mat3(const __mat3&) = default;
+		//__host__ __device__ __forceinline__ __mat3(const __mat3&) = default; // NOTE: Commented out to suppress nvcc compiler warnings
 		__host__ __device__ __forceinline__ __mat3(const VecType& x_, const VecType& y_, const VecType& z_) : x(x_), y(y_), z(z_) {}
 		__host__ __device__ __forceinline__ __mat3(const float& i00_, const float& i01_, const float& i02_, 
 											       const float& i10_, const float& i11_, const float& i12_, 

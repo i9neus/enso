@@ -14,8 +14,8 @@ namespace Cuda
         __host__ __device__ BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
         __host__ __device__ BBox2(const BBox2&) = default;
         __host__ __device__ BBox2(BBox2&&) = default;
-        __host__ __device__ BBox2& operator=(const BBox2&) = default;
-        __host__ __device__ ~BBox2() = default;
+        __host__ __device__ BBox2& operator=(const BBox2&) = default;  // NOTE: Commented out to suppress nvcc compiler warnings
+        __host__ __device__ ~BBox2() {};
 
         __host__ __device__ __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
         __host__ __device__ __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}

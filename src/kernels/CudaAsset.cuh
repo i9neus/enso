@@ -34,7 +34,7 @@ namespace Cuda
         __host__ __device__ NullParams() {}
 
         __host__ void ToJson(Json::Node&) const {}
-        __host__ uint FromJson(const Json::Node&, const uint) {}
+        __host__ uint FromJson(const Json::Node&, const uint) { return 0u; }
 
         bool operator==(const NullParams&) const { return true; }
     };
@@ -68,7 +68,7 @@ namespace Cuda
             __host__ const inline std::string& GetParentAssetID() const { return m_parentAssetId; }
             __host__ void SetParentAssetID(const std::string& parentId) { m_parentAssetId = parentId; }
             __host__ void SetHostStream(cudaStream_t & hostStream) { m_hostStream = hostStream; }
-            __host__ virtual void Synchronise() {}
+            //__host__ virtual void Synchronise() {}
         };
     }
 

@@ -70,7 +70,7 @@ namespace Cuda
     }    
 
     template<typename T, typename... Pack>
-    __global__ inline void KernelCreateDeviceInstance2(T** newInstance, Pack... args)
+    __global__ void KernelCreateDeviceInstance2(T** newInstance, Pack... args)
     {
         assert(newInstance);
         assert(!*newInstance);

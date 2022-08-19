@@ -41,7 +41,7 @@ namespace GI2D
     public:
         enum _attrs : uint { kLeft = 0, kRight = 1, kInvalidLeaf = 0xffffffff };
 
-        __host__ __device__ BIH2DNodeBase() = default;
+        __host__ __device__ BIH2DNodeBase() {}
 
         __host__ __device__ __forceinline__ uchar GetAxis() const { return uchar(flags & uint(3)); }
         __host__ __device__ __forceinline__ uint GetPrimStartIdx() const { return data.primIdxs[0]; }

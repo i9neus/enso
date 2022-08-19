@@ -28,7 +28,7 @@ namespace Cuda
 	public:
 		vec3 o, d;
 
-		__device__ RayBasic() = default;
+		__device__ RayBasic() {}
 		__device__ RayBasic(const vec3& o_, const vec3& d_) : o(o_), d(d_) {}
 		__device__ inline vec3 PointAt(const float& t) const { return o + d * t; }		
 	};

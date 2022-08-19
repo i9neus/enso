@@ -203,7 +203,7 @@ public:
         if (m_uiStateList[m_currentState].onExitState)
         {
             // Forbid allowing exit functors to change the graph state (for now)
-            AssertMsg(m_currentState == sourceStateIdx, "Illegal opereation: exit functor '%s' manually changed the graph state.", m_uiStateList[m_currentState].id.c_str());
+            AssertMsgFmt(m_currentState == sourceStateIdx, "Illegal opereation: exit functor '%s' manually changed the graph state.", m_uiStateList[m_currentState].id.c_str());
             
             const uint result = m_uiStateList[m_currentState].onExitState(sourceStateIdx, UIState::kInvalid);
             AssertMsg(result != kUIStateError, "State transition error.");
@@ -233,7 +233,6 @@ public:
         }
 
         // If the target (now the current) state has a lambda, call it now.
-        uint targetResult = kUIStateOkay;
         if (m_uiStateList[m_currentState].onEnterState)
         {
             // Allow the target state entry functor to change the state. Keep cycling until 
@@ -293,7 +292,7 @@ public:
         std::vector<const UIState*> orphanedStates;
         for (const auto& state : m_uiStateList)
         {
-            if (state.exitTransitionIdx < 0 && state.entryTransitionIdx < 0) { orphanedStates.push_back(&state); }
+            if (state.exitTransitionIdx == UIState::kInvalid && state.entryTransitionIdx == UIState::kInvalid) { orphanedStates.push_back(&state); }
             else if (state.exitTransitionIdx < 0) { acyclicStates.push_back(&state); }            
         }
         

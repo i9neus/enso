@@ -258,12 +258,12 @@ namespace GI2D
         }
 
         template<uint kPlaneIdx0>
-        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const RayBasic2D& ray, NodeType*& const node, const uchar& axis,
+        __host__ __device__ __forceinline__ void RayTraverseInnerNode(const RayBasic2D& ray, NodeType*& node, const uchar& axis,
                                                                       BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
         {
             constexpr uint kPlaneIdx1 = (kPlaneIdx0 + 1) & 1;
             constexpr float kPlane0Sign = 1.0f - kPlaneIdx0 * 2.0f;
-            constexpr float kPlane1Sign = 1.0f - kPlaneIdx1 * 2.0f;
+            //constexpr float kPlane1Sign = 1.0f - kPlaneIdx1 * 2.0f;
 
             // Nearest box hit?                
             const float tPlane0 = (node->data.planes[kPlaneIdx0] - ray.o[axis]) / ray.d[axis];
@@ -338,7 +338,7 @@ namespace GI2D
             BBox2f bBox = m_treeBBox;
             NodeType* node = &m_nodes[0];
             int stackIdx = -1;
-            uchar depth = 0;
+            //uchar depth = 0;
 
             assert(node);
 

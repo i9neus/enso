@@ -44,7 +44,7 @@ public:
 
     inline float operator()() const
     {
-        return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count();
+        return float(std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - m_startTime).count());
     }
 
     inline float Get() const 

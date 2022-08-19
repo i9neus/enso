@@ -19,7 +19,7 @@ namespace Cuda
 		public:
 			__device__ Image(const uint width, const uint height, T* data) :
 				m_width(width), m_height(height), cu_data(data), m_accessSignal(kImageUnlocked) {}
-			__device__ ~Image() = default;
+			//__device__ ~Image() = default; // NOTE: Commented out to suppress nvcc compiler warnings
 
 			__host__ __device__ __forceinline__ unsigned int GetArea() const { return m_width * m_height; }
 			__host__ __device__ __forceinline__ unsigned int GetMemorySize() const { return m_width * m_height * sizeof(T); }

@@ -114,7 +114,7 @@ namespace Cuda
 
 			__host__ size_t Size() const { return m_assetMap.size(); }
 
-			__host__ virtual void Synchronise() override final
+			__host__ void Synchronise()
 			{
 				// Clean up first
 				GuardedFreeDeviceArray(GetAssetID(), m_assetMap.size(), &m_deviceObjects.cu_data);

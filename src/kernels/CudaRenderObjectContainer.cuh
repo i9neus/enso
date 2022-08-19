@@ -89,7 +89,7 @@ namespace Cuda
 
         __host__ void Bind();
         __host__ void Finalise() const;
-        __host__ virtual void Synchronise() override final;
+        __host__ void Synchronise();
 
         __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
         __host__ size_t Size() const { return m_objectMap.size(); }
