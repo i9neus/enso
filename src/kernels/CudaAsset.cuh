@@ -49,7 +49,7 @@ namespace Cuda
         class Asset
         {
         private:
-            std::string             m_assetId;
+            const std::string       m_assetId;
             std::string             m_parentAssetId;
 
         protected:

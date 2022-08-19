@@ -22,6 +22,7 @@ namespace Cuda
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
         m_objectMap[newObject->GetAssetID()] = newObject;
+        m_objectVector.emplace_back(newObject.GetWeakHandle());
 
         if (newObject->HasDAGPath())
         {
@@ -39,6 +40,41 @@ namespace Cuda
             Log::Error("Error: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
             return;
         }
+    }
+
+    __host__ void RenderObjectContainer::Erase(const uint objectIdx)
+    {
+        AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
+        AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
+
+        AssetHandle<Host::RenderObject> obj(m_objectVector[objectIdx]);
+        Assert(obj);
+
+        // Erase the object from the DAG map
+        if (obj->HasDAGPath())
+        {
+            const auto& dag = obj->GetDAGPath();
+            m_objectMap.erase(dag);
+        }
+
+        // Erase the object from the main asset map
+        const auto& id = obj->GetAssetID();
+        AssertMsgFmt(m_objectMap.erase(id), "Internal error: object map and object list have gone out of sync with object '%s'", id.c_str());
+
+        // Erase the object from the indexed list
+        m_objectVector[objectIdx] = m_objectVector.back();
+        m_objectVector.pop_back();
+
+        // Destroy the asset
+        obj.DestroyAsset();
+    } 
+
+    __host__ AssetHandle<Host::RenderObject> RenderObjectContainer::operator[](const uint objectIdx)
+    {
+        AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
+        AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
+
+        return AssetHandle<Host::RenderObject>(m_objectVector[objectIdx]);
     }
 
     __host__ void RenderObjectContainer::Bind()

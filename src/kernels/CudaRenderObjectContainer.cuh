@@ -2,7 +2,7 @@
 
 #include "math/CudaMath.cuh"
 #include "CudaAsset.cuh"
-#include <map>
+#include <unordered_map>
 #include "CudaRenderObject.cuh"
 
 namespace Cuda
@@ -12,12 +12,14 @@ namespace Cuda
     class RenderObjectContainer : public Host::Asset
     {
         // FIXME: Weak pointers need to replaced with an integrated strong/weak asset handle
-        using RenderObjectMap = std::map<std::string, AssetHandle<Host::RenderObject>>;
-        using WeakRenderObjectMap = std::map<std::string, WeakAssetHandle<Host::RenderObject>>;
+        using RenderObjectMap = std::unordered_map<std::string, AssetHandle<Host::RenderObject>>;
+        using WeakRenderObjectMap = std::unordered_map<std::string, WeakAssetHandle<Host::RenderObject>>;
+        using WeakRenderObjectArray = std::vector< WeakAssetHandle<Host::RenderObject>>;
 
     private:
-        RenderObjectMap       m_objectMap;
-        WeakRenderObjectMap   m_dagMap;
+        RenderObjectMap                         m_objectMap;
+        WeakRenderObjectMap                     m_dagMap;        
+        WeakRenderObjectArray                   m_objectVector;
 
     public:
         template<typename ItType, bool IsConst>
@@ -42,6 +44,8 @@ namespace Cuda
         __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
         __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;
+
+        __host__ AssetHandle<Host::RenderObject> operator[](const uint idx);
 
         __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
         __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }
@@ -95,5 +99,25 @@ namespace Cuda
         __host__ size_t Size() const { return m_objectMap.size(); }
 
         __host__ void Emplace(AssetHandle<Host::RenderObject>& newObject);
+        __host__ void Erase(const uint objectIdx);
+
+        template<typename DowncastType, typename DeleteFunctor>
+        __host__ void Erase(DeleteFunctor& canDelete)
+        {
+            for (int idx = 0; idx < m_objectVector.size(); ++idx)
+            {
+                // Try downcasting the objeect to the specified type.
+                Assert(!m_objectVector[idx].expired());
+                AssetHandle<DowncastType> object = AssetHandle<Host::RenderObject>(m_objectVector[idx]).DynamicCast<DowncastType>();
+                if (!object) { continue; }
+
+                // Call the functor to see whether it can be deleted
+                if (canDelete(object))
+                {
+                    Erase(idx);
+                    idx--; // This element needs to be checked again in case the moved element also needs to be scheduled for deletion
+                }
+            }
+        }
     };
 }
