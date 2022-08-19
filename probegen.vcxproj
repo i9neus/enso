@@ -214,6 +214,7 @@
     <ClInclude Include="src\kernels\gi2d\Tracable.cuh" />
     <ClInclude Include="src\kernels\gi2d\Transform2D.cuh" />
     <ClInclude Include="src\kernels\gi2d\UICtx.cuh" />
+    <ClInclude Include="src\kernels\gi2d\UILayer.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeIO.cuh" />
     <ClInclude Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />

@@ -14,10 +14,6 @@ namespace GI2D
         grid.majorLineSpacing = 1.0f;
 
         selection.isLassoing = false;
-
-        mousePosView = vec2(0.f);
-        rayOriginView = vec2(0.f);
-        sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
     }
 
     __device__ Device::Overlay::Overlay(const OverlayParams& params, const Objects& objects) :
@@ -79,7 +75,7 @@ namespace GI2D
         vec4 L(0.0f);
 
         // Draw the grid
-        if (!m_params.sceneBounds.Contains(xyView)) 
+        if (!m_params.view.sceneBounds.Contains(xyView)) 
         { 
             L = vec4(0.0f);
         }
@@ -173,10 +169,9 @@ namespace GI2D
 
     Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<LineSegment>>& lineSegments,
                                    const uint width, const uint height, cudaStream_t renderStream) :
-        Asset(id),
+        UILayer(id),
         m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments),
-        m_isDirty(true)
+        m_hostLineSegments(lineSegments)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
@@ -199,14 +194,6 @@ namespace GI2D
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    template<typename T>
-    __host__ void KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize)
-    {
-        const auto& meta = image->GetMetadata();
-        blockSize = dim3(16, 16, 1);
-        gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
-    }
-
     __host__ void Host::Overlay::Render()
     {
         if (!m_isDirty) { return; }
@@ -220,7 +207,7 @@ namespace GI2D
         m_isDirty = false;
     }
 
-    __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage)
+    __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
     {        
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
@@ -229,23 +216,23 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::Overlay::SetParams(const OverlayParams& newParams)
+    __host__ void Host::Overlay::Synchronise()
     {
-        m_params.view = newParams.view;
-        m_params.sceneBounds = newParams.sceneBounds;
-        m_params.selection = newParams.selection;
+        if (!m_isDirty) { return; }        
 
+        m_params.view = m_viewCtx.transform;
+         
+        // Calculate some values for the guide grid
         const float logScale = std::log10(m_params.view.scale);
         constexpr float kGridScale = 0.05f;
-
         m_params.grid.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
         m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
+        m_params.grid.show = true;
         m_params.selection.lassoBBox.Rectify();
         m_params.selection.selectedBBox.Rectify();
 
+        // Upload to the device
         SynchroniseObjects(cu_deviceData, m_params);
-
-        m_isDirty = true;
     }
 }

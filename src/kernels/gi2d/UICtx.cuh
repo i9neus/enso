@@ -2,6 +2,7 @@
 
 #include "../CudaSampler.cuh"
 #include "generic/Hash.h"
+#include "Transform2D.cuh"
 
 using namespace Cuda;
 
@@ -23,11 +24,8 @@ namespace GI2D
 
     struct UIViewCtx
     {
-        Cuda::vec2              trans;
-        float                   scale;
-        float                   rotate;
-        float                   zoomSpeed;
-
+        ViewTransform2D         transform;
+     
         Cuda::vec2              dragAnchor;
         Cuda::vec2              rotAxis;
         Cuda::vec2              transAnchor;
@@ -35,7 +33,6 @@ namespace GI2D
         float                   scaleAnchor;
 
         Cuda::vec2              mousePos;
-        Cuda::mat3              matrix;
-        float                   dPdXY;
+        float                   zoomSpeed;
     };
 }

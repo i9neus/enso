@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../CudaAsset.cuh"
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
-#include "../CudaVector.cuh"
+#include "UILayer.cuh"
 
 #include "BIH2DAsset.cuh"
 #include "CudaPrimitive2D.cuh"
@@ -60,18 +57,18 @@ namespace GI2D
 
     namespace Host
     {
-        class PathTracer : public Cuda::Host::Asset
+        class PathTracer : public UILayer
         {
         public:
             PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>>& lineSegments, 
                        const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
             virtual ~PathTracer();
            
-            __host__ void Render();
-            __host__ void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage);
+            __host__ virtual void Render() override final;
+            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
+
             __host__ void OnDestroyAsset();
-            __host__ void SetParams(const GI2D::PathTracerParams& newParams);
-            __host__ void SetDirty() { m_isDirty = true; }
+            __host__ virtual void Synchronise() override final;
 
         private:
             PathTracerParams                        m_params;
@@ -82,8 +79,6 @@ namespace GI2D
             AssetHandle<Cuda::Host::Vector<LineSegment>>      m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;      
-
-            bool                                    m_isDirty;
         };
     }
 }

@@ -9,7 +9,7 @@ namespace GI2D
     struct OverlayParams;  
     struct PathTracerParams; 
     struct ViewTransform2D;
-    class LineSegment;
+    class LineSegment; 
 
     namespace Device
     {
@@ -76,8 +76,6 @@ private:
     void                    OnViewChange();
 
     void                    RebuildBIH();
-
-    Cuda::mat3              ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
 
     uint                    OnMoveTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
     uint                    OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx);

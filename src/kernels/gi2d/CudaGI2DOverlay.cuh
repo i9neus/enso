@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../CudaAsset.cuh"
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
-#include "../CudaVector.cuh"
+#include "UILayer.cuh"
 
 #include "BIH2DAsset.cuh"
 #include "CudaPrimitive2D.cuh"
@@ -18,7 +15,6 @@ namespace GI2D
         __host__ __device__ OverlayParams();
 
         ViewTransform2D view;
-        BBox2f sceneBounds;
 
         int selectedSegmentIdx;
         vec2 mousePosView;
@@ -72,18 +68,18 @@ namespace GI2D
 
     namespace Host
     {
-        class Overlay : public Cuda::Host::Asset
+        class Overlay : public UILayer
         {
         public:
             Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<LineSegment>>& lineSegments,
                         const uint width, const uint height, cudaStream_t renderStream);
             virtual ~Overlay();
 
-            __host__ void Render();
-            __host__ void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage);
+            __host__ virtual void Render() override final;
+            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final; 
+            __host__ virtual void Synchronise() override final;
+
             __host__ void OnDestroyAsset();
-            __host__ void SetParams(const OverlayParams& newParams);
-            __host__ void SetDirty() { m_isDirty = true; }
 
         private:
             OverlayParams                               m_params;
@@ -94,7 +90,6 @@ namespace GI2D
             AssetHandle<Cuda::Host::Vector<LineSegment>>  m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
-            bool                                        m_isDirty;
         };
     }
 }

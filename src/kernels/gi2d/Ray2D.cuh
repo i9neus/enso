@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../CudaSampler.cuh"
+#include "../math/CudaMath.cuh"
 
 using namespace Cuda;
 

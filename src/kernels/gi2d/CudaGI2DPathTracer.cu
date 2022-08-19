@@ -120,10 +120,9 @@ namespace GI2D
 
     Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>>& lineSegments, 
                                          const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
-        Asset(id),
+        UILayer(id),
         m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments),
-        m_isDirty(true)
+        m_hostLineSegments(lineSegments)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
@@ -150,14 +149,6 @@ namespace GI2D
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    template<typename T>
-    __host__ void KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize)
-    {
-        const auto& meta = image->GetMetadata();
-        blockSize = dim3(16, 16, 1);
-        gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
-    }
-
     __host__ void Host::PathTracer::Render()
     {
         if (m_isDirty)
@@ -173,7 +164,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::PathTracer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage)
+    __host__ void Host::PathTracer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(hostOutputImage, blockSize, gridSize);
@@ -181,18 +172,14 @@ namespace GI2D
         KernelComposite << < gridSize, blockSize, 0 >> > (cu_deviceData, hostOutputImage->GetDeviceInstance());
         IsOk(cudaDeviceSynchronize());
     }
-
-    __host__ void Host::PathTracer::SetParams(const PathTracerParams& newParams)
+    
+    __host__ void Host::PathTracer::Synchronise()
     {
-        if (m_params.view.matrix != newParams.view.matrix)
-        {
-            m_params.view = newParams.view;
-            m_isDirty = true;
-        }
-
-        m_params.sceneBounds = newParams.sceneBounds;
-        m_params.frameIdx = newParams.frameIdx;
+        if (!m_isDirty) { return; }
+        
+        m_params.view = m_viewCtx.transform;
 
         SynchroniseObjects(cu_deviceData, m_params);
+        m_isDirty = false;        
     }
 }

@@ -90,12 +90,10 @@ void GI2DRenderer::RebuildBIH()
 
 void GI2DRenderer::OnInitialise()
 {
-    m_viewCtx.trans = vec2(0.f);
-    m_viewCtx.scale = 1.0f;
-    m_viewCtx.rotate = 0.0;
-    m_viewCtx.matrix = ConstructViewMatrix(m_viewCtx.trans, m_viewCtx.rotate, m_viewCtx.scale) * m_clientToNormMatrix;
-    m_viewCtx.dPdXY = length(vec2(m_viewCtx.matrix.i00, m_viewCtx.matrix.i10));
+    m_viewCtx.transform = ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);   
+    m_viewCtx.transform.dPdXY = length(vec2(m_viewCtx.transform.matrix.i00, m_viewCtx.transform.matrix.i10));
     m_viewCtx.zoomSpeed = 10.0f;
+    m_viewCtx.transform.sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
 
     //m_primitiveContainer.Create(m_renderStream);
 
@@ -383,39 +381,30 @@ void GI2DRenderer::OnRender()
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        //Log::Warning("Dirty: %i", m_dirtyFlags);
-
-        /*if (m_dirtyFlags & kGI2DDirtyParams)
+        if (m_dirtyFlags & kGI2DDirtyParams)
         {
-            m_objects.overlayParams.mousePosView = m_viewCtx.mousePos;
-            m_objects.viewTransform = GI2D::ViewTransform(m_viewCtx.matrix, m_viewCtx.trans, m_viewCtx.rotate, m_viewCtx.scale, m_viewCtx.mousePos, m_viewCtx.dPdXY);
-
-            m_objects.overlayParams.view = m_objects.pathTracerParams.view = m_objects.viewTransform;
-            m_objects.overlayParams.sceneBounds = m_objects.pathTracerParams.sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
-            m_objects.pathTracerParams.frameIdx = m_frameIdx;
-
-            m_objects.overlayRenderer->SetParams(m_objects.overlayParams);
-            m_objects.pathTracer->SetParams(m_objects.pathTracerParams);
+            m_overlayRenderer->SetViewCtx(m_viewCtx);
+            m_pathTracer->SetViewCtx(m_viewCtx);
         }
 
         if (m_dirtyFlags & kGI2DDirtyBIH)
         {
-            RebuildBIH();
+            //RebuildBIH();
         }
         else if (m_dirtyFlags & kGI2DDirtyPrimitiveAttributes)
         {
-            m_objects.hostTracables->Synchronise(kVectorSyncUpload);
+            //m_objects.hostTracables->Synchronise(kVectorSyncUpload);
         }
 
-        m_objects.pathTracer->SetDirty();
-        m_objects.overlayRenderer->SetDirty();*/
+        m_pathTracer->Synchronise();
+        m_overlayRenderer->Synchronise();
 
         ClearDirtyFlags(kGI2DDirtyAll);
     }
 
     // Render the pass
     //m_objects.pathTracer->Render();
-    //m_objects.overlayRenderer->Render();
+    m_overlayRenderer->Render();
 
     // If a blit is in progress, skip the composite step entirely.
     // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
@@ -441,22 +430,10 @@ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
     {
         m_viewCtx.dragAnchor = vec2(m_mouse.pos);
         m_viewCtx.rotAxis = normalize(m_viewCtx.dragAnchor - vec2(m_clientWidth, m_clientHeight) * 0.5f);
-        m_viewCtx.transAnchor = m_viewCtx.trans;
-        m_viewCtx.scaleAnchor = m_viewCtx.scale;
-        m_viewCtx.rotAnchor = m_viewCtx.rotate;
+        m_viewCtx.transAnchor = m_viewCtx.transform.trans;
+        m_viewCtx.scaleAnchor = m_viewCtx.transform.scale;
+        m_viewCtx.rotAnchor = m_viewCtx.transform.rotate;
     }
-}
-
-mat3 GI2DRenderer::ConstructViewMatrix(const vec2& trans, const float rotate, const float scale) const
-{
-    const float sinTheta = std::sin(rotate);
-    const float cosTheta = std::cos(rotate);
-    mat3 m = mat3::Indentity();
-    m.i00 = scale * cosTheta; m.i01 = scale * sinTheta;
-    m.i10 = scale * sinTheta; m.i11 = scale * -cosTheta;
-    m.i02 = trans.x;
-    m.i12 = trans.y;
-    return m;
 }
 
 void GI2DRenderer::OnMouseMove()
@@ -469,39 +446,41 @@ void GI2DRenderer::OnMouseMove()
 
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        m_viewCtx.mousePos = m_viewCtx.matrix * vec2(m_mouse.pos);
+        m_viewCtx.mousePos = m_viewCtx.transform.matrix * vec2(m_mouse.pos);
     }
 }
 
 void GI2DRenderer::OnViewChange()
 {
+    auto& transform = m_viewCtx.transform;
+    
     // Zooming?
     if (IsKeyDown(VK_CONTROL))
     {
         float logScaleAnchor = std::log2(::math::max(1e-10f, m_viewCtx.scaleAnchor));
         logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
-        m_viewCtx.scale = std::pow(2.0, logScaleAnchor);
+        transform.scale = std::pow(2.0, logScaleAnchor);
 
-        //Log::Write("Scale: %f", m_viewCtx.scale);
+        //Log::Write("Scale: %f", transform.scale);
     }
     // Rotating?
     else if (IsKeyDown(VK_SHIFT))
     {
         const vec2 delta = normalize(vec2(m_mouse.pos) - vec2(m_clientWidth, m_clientHeight) * 0.5f);
         const float theta = std::acos(dot(delta, m_viewCtx.rotAxis)) * (float(dot(delta, vec2(m_viewCtx.rotAxis.y, -m_viewCtx.rotAxis.x)) < 0.0f) * 2.0 - 1.0f);
-        m_viewCtx.rotate = m_viewCtx.rotAnchor + theta;
+        transform.rotate = m_viewCtx.rotAnchor + theta;
 
-        if (std::abs(std::fmod(m_viewCtx.rotate, kHalfPi)) < 0.05f) { m_viewCtx.rotate = std::round(m_viewCtx.rotate / kHalfPi) * kHalfPi; }
+        if (std::abs(std::fmod(transform.rotate, kHalfPi)) < 0.05f) { transform.rotate = std::round(transform.rotate / kHalfPi) * kHalfPi; }
 
-        //Log::Write("Theta: %f", m_viewCtx.rotate);
+        //Log::Write("Theta: %f", transform.rotate);
     }
     // Translating
     else
     {
         // Update the transformation
-        m_viewCtx.matrix = ConstructViewMatrix(m_viewCtx.transAnchor, m_viewCtx.rotate, m_viewCtx.scale) * m_clientToNormMatrix;
-        const vec2 dragDelta = (m_viewCtx.matrix * vec2(m_viewCtx.dragAnchor)) - (m_viewCtx.matrix * vec2(m_mouse.pos));
-        m_viewCtx.trans = m_viewCtx.transAnchor + dragDelta;
+        const mat3 newMat = ConstructViewMatrix(m_viewCtx.transAnchor, transform.rotate, transform.scale) * m_clientToNormMatrix;
+        const vec2 dragDelta = (newMat * vec2(m_viewCtx.dragAnchor)) - (newMat * vec2(m_mouse.pos));
+        transform.trans = m_viewCtx.transAnchor + dragDelta;
 
         //Log::Write("Trans: %s", m_viewCtx.trans.format());
     }
@@ -509,8 +488,7 @@ void GI2DRenderer::OnViewChange()
     // Update the parameters in the overlay renderer
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        m_viewCtx.matrix = ConstructViewMatrix(m_viewCtx.trans, m_viewCtx.rotate, m_viewCtx.scale) * m_clientToNormMatrix;
-        m_viewCtx.dPdXY = length(vec2(m_viewCtx.matrix.i00, m_viewCtx.matrix.i10));
+        transform.SetViewMatrix(ConstructViewMatrix(transform.trans, transform.rotate, transform.scale) * m_clientToNormMatrix);
 
         // Mark the scene as dirty
         SetDirtyFlags(kGI2DDirtyParams);
