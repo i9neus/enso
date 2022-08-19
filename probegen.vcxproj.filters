@@ -642,6 +642,12 @@
     <ClInclude Include="src\kernels\gi2d\Transform2D.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\UICtx.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\Tracable.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

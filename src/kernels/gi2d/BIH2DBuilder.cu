@@ -63,7 +63,7 @@ namespace GI2D
         m_bih.m_numPrims = m_primitiveIdxs.size();
         m_bih.m_isConstructed = true;
         
-        m_stats.buildTime = timer.Get() * 1e-3f;
+        m_stats.buildTime = timer.Get() * 1e3f;
         Log::Write("Constructed BIH in %.1fms", m_stats.buildTime);
         Log::Write("  - Max depth: %i", m_stats.maxDepth);
         Log::Write("  - Inner nodes: %i", m_stats.numInnerNodes);

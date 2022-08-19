@@ -7,6 +7,7 @@
 
 #include "BIH2DAsset.cuh"
 #include "CudaPrimitive2D.cuh"
+#include "Curve.cuh"
 
 using namespace Cuda;
 
@@ -16,7 +17,7 @@ namespace GI2D
     {
         __host__ __device__ OverlayParams();
 
-        ViewTransform view;
+        ViewTransform2D view;
         BBox2f sceneBounds;
 
         int selectedSegmentIdx;
@@ -89,8 +90,8 @@ namespace GI2D
             Device::Overlay::Objects                    m_objects;
             Device::Overlay*                            cu_deviceData = nullptr;
 
-            AssetHandle<Host::BIH2DAsset>               m_hostBIH2D;
-            AssetHandle<Cuda::Host::Vector<LineSegment>> m_hostLineSegments;
+            AssetHandle<Host::BIH2DAsset>                 m_hostBIH2D;
+            AssetHandle<Cuda::Host::Vector<LineSegment>>  m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
             bool                                        m_isDirty;

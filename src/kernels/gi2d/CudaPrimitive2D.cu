@@ -6,17 +6,7 @@
 using namespace Cuda;
 
 namespace GI2D
-{
-    __host__ __device__ ViewTransform::ViewTransform()
-    {
-        matrix = mat3::Indentity();
-        scale = 1.f;
-        rotate = 0.f;
-        trans = vec2(0.f);
-        mouseView = 0.0f;
-        dPdXY = 1.0 / 1024.f;
-    }
-    
+{    
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
        return m_v[0] + Cuda::saturate((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;

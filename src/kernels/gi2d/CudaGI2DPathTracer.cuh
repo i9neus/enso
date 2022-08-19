@@ -7,6 +7,7 @@
 
 #include "BIH2DAsset.cuh"
 #include "CudaPrimitive2D.cuh"
+#include "Transform2D.cuh"
 
 using namespace Cuda;
 
@@ -16,7 +17,7 @@ namespace GI2D
     {
         __host__ __device__ PathTracerParams();
 
-        GI2D::ViewTransform view;        
+        ViewTransform2D view;
         BBox2f sceneBounds;
 
         struct
@@ -73,16 +74,16 @@ namespace GI2D
             __host__ void SetDirty() { m_isDirty = true; }
 
         private:
-            PathTracerParams               m_params;
-            GI2D::Device::PathTracer::Objects    m_objects;
-            GI2D::Device::PathTracer*            cu_deviceData = nullptr;
+            PathTracerParams                        m_params;
+            GI2D::Device::PathTracer::Objects       m_objects;
+            GI2D::Device::PathTracer*               cu_deviceData = nullptr;
 
             AssetHandle<GI2D::Host::BIH2DAsset>               m_hostBIH2D;
             AssetHandle<Cuda::Host::Vector<LineSegment>>      m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;      
 
-            bool                            m_isDirty;
+            bool                                    m_isDirty;
         };
     }
 }

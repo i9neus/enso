@@ -57,10 +57,12 @@ namespace GI2D
         const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
+        //rng.Initialise(HashOf(uint(accum.w)));
 
         for (int depth = 0; depth < 1; ++depth)
         {
             float theta = rng.Rand<0>() * kTwoPi;
+            //const float theta = kTwoPi * (accum.w + rng.Rand<0>()) / 100.0f;
             Ray2D ray(xyView, vec2(cos(theta), sin(theta)));
             HitCtx2D hit;
             int hitIdx = 0;
@@ -104,7 +106,7 @@ namespace GI2D
 
         if (!m_params.sceneBounds.Contains(xyView)) 
         { 
-            deviceOutputImage->At(xyScreen) = vec4(0.2f, 0.2f, 0.2f, 1.0f);
+            deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return; 
         }
 

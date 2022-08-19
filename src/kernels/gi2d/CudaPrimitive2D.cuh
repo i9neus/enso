@@ -12,6 +12,17 @@
 
 using namespace Cuda;
 
+enum GI2DDirtyFlags : uint
+{
+    kGI2DClean = 0,
+    kGI2DDirtyParams = 1,
+    kGI2DDirtyPrimitiveAttributes = 2,
+    kGI2DDirtyBIH = 4,
+    kGI2DDirtyGeometry = kGI2DDirtyBIH,
+
+    kGI2DDirtyAll = 0xffffffff
+};
+
 namespace Cuda
 {
     namespace Host { template<typename T> class Vector; }

@@ -2,32 +2,40 @@
 
 #include "../RendererInterface.h"
 #include "generic/Job.h"
+#include "kernels/gi2d/UICtx.cuh"
 
-namespace Cuda
+namespace GI2D
 {
-    struct GI2DOverlayParams; 
-    struct LineSegment;
-    class Asset;
+    struct OverlayParams;  
+    struct PathTracerParams; 
+    struct ViewTransform2D;
+    class LineSegment;
+
+    namespace Device
+    {
+        class Tracable;
+    }
+
     namespace Host
     {
         class BIH2DAsset;
-        class GI2DOverlay;
+        class Overlay;   
+        class PathTracer; 
+        class Tracable;
+    }
+}
+
+namespace Cuda
+{
+    class Asset;
+    class RenderObjectContainer;
+    namespace Host
+    {
         template<typename T> class Vector;
     }
 }
 
 struct CudaObjects;
-
-enum GI2DDirtyFlags : uint
-{
-    kGI2DClean = 0,
-    kGI2DDirtyParams = 1,
-    kGI2DDirtyPrimitiveAttributes = 2,
-    kGI2DDirtyBIH = 4,
-    kGI2DDirtyGeometry = kGI2DDirtyBIH,
-
-    kGI2DDirtyAll = 0xffffffff
-};
 
 enum GI2DEditMode : int
 {
@@ -71,9 +79,9 @@ private:
 
     Cuda::mat3              ConstructViewMatrix(const Cuda::vec2& trans, const float rotate, const float scale) const;
 
-    uint                    OnMovePath(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnCreatePath(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnSelectPath(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnMoveTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnSelectTracables(const uint& sourceStateIdx, const uint& targetStateIdx);
     uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx);
     uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx);
 
@@ -82,49 +90,27 @@ private:
 private:
     enum JobIDs : uint { kJobDraw };
 
-    std::unique_ptr<CudaObjects>                m_objectsPtr;
-    CudaObjects&                                m_objects;
     JobManager                                  m_jobManager;
 
-    struct EditMode
-    {
-        uint                                    type;
-        uint                                    stage;
-    };
-    EditMode                                    m_uiEditMode;
-    EditMode                                    m_rendererEditMode;
+    AssetHandle<GI2D::Host::Overlay>            m_overlayRenderer;
+    AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
 
-    struct
-    {
-        Cuda::vec2                              trans;
-        float                                   scale;
-        float                                   rotate;
-        float                                   zoomSpeed;
+    std::unique_ptr<GI2D::OverlayParams>        m_overlayParams;
+    std::unique_ptr<GI2D::PathTracerParams>     m_pathTracerParams;
+    AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
+    AssetHandle<GI2D::Host::BIH2DAsset>         m_newObjctBIH;
+    AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>> m_hostTracables;
 
-        Cuda::vec2                              dragAnchor;
-        Cuda::vec2                              rotAxis;
-        Cuda::vec2                              transAnchor;
-        float                                   rotAnchor;
-        float                                   scaleAnchor;
+    std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;
 
-        Cuda::vec2                              mousePos;
-        Cuda::mat3                              matrix;   
-        float                                   dPdXY;
-    }
-    m_view;
+    Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
-    struct
-    {
-        uint                                    pathStartIdx;
-        uint                                    numSegments;
-        Cuda::vec2                              startPos;
-        bool                                    isLassoing;
-    } 
-    m_newPath;
+    GI2D::UIViewCtx                             m_viewCtx;
+    GI2D::UISelectionCtx                        m_selectCtx;
 
     struct
     {
         Cuda::vec2                              dragAnchor;
     }
-    m_movePath;
+    m_moveTracable;
 };

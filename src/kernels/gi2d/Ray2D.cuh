@@ -36,19 +36,4 @@ namespace GI2D
         float		kickoff;
         float       tFar;
     };
-
-    struct ViewTransform
-    {
-        __host__ __device__ ViewTransform();
-        __host__ __device__ ViewTransform(const mat3& mat, const vec2& tra, const float& rot, const float& sca, const vec2& mv, const float& dp) :
-            matrix(mat), trans(tra), rotate(rot), scale(sca), mouseView(mv), dPdXY(dp) {}
-
-        mat3 matrix;
-        vec2 trans;
-        float rotate;
-        float scale;
-
-        vec2 mouseView;
-        float dPdXY;
-    };
 }
