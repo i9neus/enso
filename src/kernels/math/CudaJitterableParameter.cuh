@@ -84,7 +84,7 @@ namespace Cuda
         }
 
         __device__ __host__ __forceinline__ const uint& operator()(void) const { return eval; }
-        __device__ __host__ __forceinline__ const bool operator()(const uint bit) const { return bool((eval >> bit) & 1); }
+        __device__ __host__ __forceinline__ bool operator()(const uint bit) const { return bool((eval >> bit) & 1); }
 
         __host__ uint FromJson(const std::string& id, const ::Json::Node& json, const uint flags);
         __host__ void ToJson(const std::string& id, ::Json::Node& json) const;

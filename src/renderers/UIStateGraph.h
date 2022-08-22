@@ -293,7 +293,7 @@ public:
         for (const auto& state : m_uiStateList)
         {
             if (state.exitTransitionIdx == UIState::kInvalid && state.entryTransitionIdx == UIState::kInvalid) { orphanedStates.push_back(&state); }
-            else if (state.exitTransitionIdx < 0) { acyclicStates.push_back(&state); }            
+            else if (state.exitTransitionIdx == UIState::kInvalid) { acyclicStates.push_back(&state); }
         }
         
         Log::Indent indent("Built UI graph:");

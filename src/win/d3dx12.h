@@ -2231,7 +2231,7 @@ inline HRESULT D3DX12SerializeVersionedRootSignature(
             {
                 for (UINT n = 0; n < desc_1_1.NumParameters; n++)
                 {
-                    __analysis_assume(ParametersSize == sizeof(D3D12_ROOT_PARAMETER) * desc_1_1.NumParameters);
+                    //__analysis_assume(ParametersSize == sizeof(D3D12_ROOT_PARAMETER) * desc_1_1.NumParameters);
                     pParameters_1_0[n].ParameterType = desc_1_1.pParameters[n].ParameterType;
                     pParameters_1_0[n].ShaderVisibility = desc_1_1.pParameters[n].ShaderVisibility;
 

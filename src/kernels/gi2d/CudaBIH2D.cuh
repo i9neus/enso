@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BIH2DNode.cuh"
-#include "Ray2D.cuh"
+#include "GenericIntersector.cuh"
 
 using namespace Cuda;
 
@@ -91,7 +91,8 @@ namespace GI2D
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all sequentially
             if (m_testAsList)
             {
-                onIntersectLeaf(0, m_numPrims);
+                const uint idxRange[2] = { 0, m_numPrims };
+                onIntersectLeaf(idxRange);
                 return;
             }
 
@@ -122,7 +123,7 @@ namespace GI2D
                     OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimStartIdx(), node->GetPrimEndIdx());
+                        onIntersectLeaf(node->primsIdxs);
                     }                    
                     node = nullptr;
                 }
@@ -176,7 +177,8 @@ namespace GI2D
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all sequentially
             if (m_testAsList)
             {
-                onIntersectLeaf(0, m_numPrims, false);
+                const uint idxRange[2] = { 0, m_numPrims };
+                onIntersectLeaf(idxRange, false);
                 return;
             }
 
@@ -207,7 +209,7 @@ namespace GI2D
                     OnPrimitiveIntersectInner(nodeBBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimStartIdx(), node->GetPrimEndIdx(), false);
+                        onIntersectLeaf(node->primIdxs, false);
                     }
                     node = nullptr;
                 }
@@ -219,7 +221,7 @@ namespace GI2D
                     // If the entire node is contained within p, don't traverse the tree any further. Instead, just invoke the functor for all primitives contained by the node
                     if (p.Contains(nodeBBox))
                     {
-                        onIntersectLeaf(node->GetPrimStartIdx(), node->GetPrimEndIdx(), true);
+                        onIntersectLeaf(node->primIdxs, true);
                         node = nullptr;
                     }
                     else
@@ -323,13 +325,14 @@ namespace GI2D
             if (!m_isConstructed) { return; }
 
             BIH2DNearFar t;
-            if (!TestRayBBox(ray, m_treeBBox, t)) { return; }
+            if (!IntersectRayBBox(ray, m_treeBBox, t)) { return; }
 
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all as a list
             float tNearest = t[kFar];
             if (m_testAsList)
             {
-                onIntersectLeaf(0, m_numPrims, tNearest);                
+                const uint primsIdxs[2] = { 0, m_numPrims };
+                onIntersectLeaf(primsIdxs, tNearest);
                 return;
             }
 
@@ -364,7 +367,7 @@ namespace GI2D
                     OnRayIntersectInner(bBox, t, true, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimStartIdx(), node->GetPrimEndIdx(), tNearest);
+                        onIntersectLeaf(node->primsIdxs, tNearest);
                     }
                     node = nullptr;
                 }
@@ -392,26 +395,6 @@ namespace GI2D
 
         __host__ __device__ __forceinline__ const BBox2f&       GetBBox() const { return m_treeBBox; }
         __host__ __device__ __forceinline__ const NodeType*     GetNodes() const { return m_nodes; }
-
-    protected:
-        __host__ __device__ __forceinline__ bool TestRayBBox(const RayBasic2D& ray, const BBox2f& bBox, BIH2DNearFar& t) const
-        {
-            vec2 tNearPlane, tFarPlane;
-            for (int dim = 0; dim < 2; dim++)
-            {
-                if (fabs(ray.d[dim]) > 1e-10f)
-                {
-                    float t0 = (bBox.upper[dim] - ray.o[dim]) / ray.d[dim];
-                    float t1 = (bBox.lower[dim] - ray.o[dim]) / ray.d[dim];
-                    if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
-                    else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
-                }
-            }
-
-            t[0] = max(0.f, cwiseMax(tNearPlane));
-            t[1] = cwiseMin(tFarPlane);
-            return t[0] < t[1];
-        }
 
     protected:
         NodeType*                   m_nodes;

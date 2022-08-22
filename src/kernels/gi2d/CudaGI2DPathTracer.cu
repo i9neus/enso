@@ -54,12 +54,12 @@ namespace GI2D
 
         assert(m_objects.bih);
         const auto& bih = *m_objects.bih;
-        const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
+        const Cuda::Device::Vector<Tracable*>& tracables = *m_objects.tracables;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
         //rng.Initialise(HashOf(uint(accum.w)));
 
-        for (int depth = 0; depth < 1; ++depth)
+        /*for (int depth = 0; depth < 1; ++depth)
         {
             float theta = rng.Rand<0>() * kTwoPi;
             //const float theta = kTwoPi * (accum.w + rng.Rand<0>()) / 100.0f;
@@ -87,7 +87,7 @@ namespace GI2D
             {
                 L += segments[hitIdx].GetColour();
             }
-        }
+        }*/
 
         accum.xyz += L;
         accum.w += 1.0f;
@@ -118,17 +118,15 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>>& lineSegments, 
-                                         const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
-        UILayer(id),
-        m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments)
+    Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
+                                 const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
+        UILayer(id, bih, tracables)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_objects.bih = m_hostBIH2D->GetDeviceInstance();
-        m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_objects.bih = m_hostBIH->GetDeviceInstance();
+        m_objects.tracables = m_hostTracables->GetDeviceInstance();
         m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_params.accum.width = width;

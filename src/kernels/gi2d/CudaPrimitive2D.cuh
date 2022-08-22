@@ -12,17 +12,6 @@
 
 using namespace Cuda;
 
-enum GI2DDirtyFlags : uint
-{
-    kGI2DClean = 0,
-    kGI2DDirtyParams = 1,
-    kGI2DDirtyPrimitiveAttributes = 2,
-    kGI2DDirtyBIH = 4,
-    kGI2DDirtyGeometry = kGI2DDirtyBIH,
-
-    kGI2DDirtyAll = 0xffffffff
-};
-
 namespace Cuda
 {
     namespace Host { template<typename T> class Vector; }
@@ -48,7 +37,7 @@ namespace GI2D
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const = 0;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const = 0;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const = 0;
-        __host__ __device__ virtual bool                    TestRay(const Ray2D& ray, HitCtx2D& hit) const = 0;
+        __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const = 0;
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const = 0;
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const = 0;
 
@@ -75,7 +64,7 @@ namespace GI2D
         __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual bool                    TestRay(const Ray2D& ray, HitCtx2D& hit) const override final;
+        __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const override final;
 
         __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }

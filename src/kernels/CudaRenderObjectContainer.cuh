@@ -4,6 +4,7 @@
 #include "CudaAsset.cuh"
 #include <unordered_map>
 #include "CudaRenderObject.cuh"
+//#include "CudaVector.cuh"
 
 namespace Cuda
 {    
@@ -14,12 +15,16 @@ namespace Cuda
         // FIXME: Weak pointers need to replaced with an integrated strong/weak asset handle
         using RenderObjectMap = std::unordered_map<std::string, AssetHandle<Host::RenderObject>>;
         using WeakRenderObjectMap = std::unordered_map<std::string, WeakAssetHandle<Host::RenderObject>>;
+        
         using WeakRenderObjectArray = std::vector< WeakAssetHandle<Host::RenderObject>>;
 
     private:
         RenderObjectMap                         m_objectMap;
         WeakRenderObjectMap                     m_dagMap;        
         WeakRenderObjectArray                   m_objectVector;
+        std::unordered_map<std::string, uint>   m_idToIdxMap;
+
+        uint                                    m_uniqueIdx;
 
     public:
         template<typename ItType, bool IsConst>
@@ -40,7 +45,7 @@ namespace Cuda
         using Iterator = __Iterator<RenderObjectMap::iterator, false>;
         using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
 
-        __host__ RenderObjectContainer(const std::string& id) : Asset(id) {}
+        __host__ RenderObjectContainer(const std::string& id) : Asset(id), m_uniqueIdx(0){}
         __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
         __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;
@@ -65,40 +70,63 @@ namespace Cuda
             return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : AssetHandle<Host::RenderObject>(it->second);
         }
 
-        template<typename T>
-        __host__ std::vector<AssetHandle<T>> FindAllOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr, const bool findFirst = false) const
+        template<typename DowncastType, typename OpFunctor>
+        __host__ void ForEachOfType(OpFunctor functor) const
         {
-            std::vector<AssetHandle<T>> assets;
             for (auto object : m_objectMap)
             {
-                auto downcast = object.second.DynamicCast<T>();
+                auto downcast = object.second.DynamicCast<DowncastType>();
                 if (downcast)
                 {
-                    if (!comparator || comparator(downcast))
-                    {
-                        assets.push_back(downcast);
-                        if (findFirst) { break; }
-                    }
+                    if (!functor(downcast)) { return; }
                 }
             }
-            return assets;
         }
 
-        template<typename T>
-        __host__ AssetHandle<T> FindFirstOfType(std::function<bool(const AssetHandle<T>&)> comparator = nullptr) const
+        template<typename OpFunctor>
+        __host__ void ForEach(OpFunctor functor) const
         {
-            auto handles = FindAllOfType<T>(comparator, true);
+            for (auto object : m_objectMap) 
+            { 
+                if (!functor(object.second)) { return; }
+            }
+        }
+
+        template<typename DowncastType>
+        __host__ std::vector<AssetHandle<DowncastType>> FindAllOfType(std::function<bool(const AssetHandle<DowncastType>&)> comparator = nullptr, const bool findFirst = false) const
+        {
+            std::vector<AssetHandle<DowncastType>> assets;
+            ForEachOfType<DowncastType>([&](AssetHandle<DowncastType>& asset) -> bool
+                {
+                    if (!comparator || comparator(asset))
+                    {
+                        assets.push_back(asset);
+                        if (findFirst) { return false; }
+                    }
+                    return true;
+                });
+            return std::move(assets);          
+        }
+
+        template<typename DowncastType>
+        __host__ AssetHandle<DowncastType> FindFirstOfType(std::function<bool(const AssetHandle<DowncastType>&)> comparator = nullptr) const
+        {
+            auto handles = FindAllOfType<DowncastType>(comparator, true);
             return handles.empty() ? nullptr : handles.front();
         }
 
         __host__ void Bind();
         __host__ void Finalise() const;
         __host__ void Synchronise();
+        __host__ uint GetUniqueIndex() { return m_uniqueIdx; }
 
         __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
         __host__ size_t Size() const { return m_objectMap.size(); }
 
-        __host__ void Emplace(AssetHandle<Host::RenderObject>& newObject);
+        __host__ void Emplace(AssetHandle<Host::RenderObject>& newObject, const bool requireDAGPath = true);
+
+        __host__ void Erase(const Host::RenderObject& obj);
+        __host__ void Erase(const std::string& id);
         __host__ void Erase(const uint objectIdx);
 
         template<typename DowncastType, typename DeleteFunctor>

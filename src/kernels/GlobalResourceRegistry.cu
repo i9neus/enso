@@ -1,5 +1,4 @@
 #include "GlobalResourceRegistry.cuh"
-#include "CudaAsset.cuh"
 #include "generic/Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include <map>
@@ -12,22 +11,20 @@ namespace Cuda
         return singleton;
     }
 
-    void GlobalResourceRegistry::RegisterAsset(std::shared_ptr<Host::Asset> object)
+    void GlobalResourceRegistry::RegisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId)
     {
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
-        const std::string& assetId = object->GetAssetID();
-        AssertMsgFmt(m_assetMap.find(assetId) == m_assetMap.end(), "Object '%s' is already in asset registry!", object->GetAssetID().c_str());
+        AssertMsgFmt(m_assetMap.find(assetId) == m_assetMap.end(), "Object '%s' is already in asset registry!", assetId.c_str());
 
-        m_assetMap.emplace(assetId, std::weak_ptr <Host::Asset>(object));
+        m_assetMap.emplace(assetId, object);
         Log::Debug("Registered asset '%s'.\n", assetId.c_str());
     }
 
-    void GlobalResourceRegistry::DeregisterAsset(std::shared_ptr<Host::Asset> object)
+    void GlobalResourceRegistry::DeregisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId)
     {
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
-        const std::string& assetId = object->GetAssetID();
         if (m_assetMap.find(assetId) == m_assetMap.end())
         {
             Log::Error("ERROR: Deregister asset: object '%s' does not exist in the registry!", assetId);

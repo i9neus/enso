@@ -4,46 +4,59 @@
 using namespace Cuda;
 
 namespace GI2D
-{
-    __device__ Device::Curve::Curve()
+{    
+    /*__host__ __device__ bool CurveInterface::IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFarParent) const
     {
-    }
-    
-    __device__ void Device::Curve::Synchronise(const Objects& objects)
-    {
-        m_objects = objects;
-    }
+        vec2 tNearFar;
+        if (!IntersectRayBBox(ray, m_tracableBBox, tNearFar) || tNearFar[0] > tFarParent) { return false; }
+        
+        const RayBasic2D localRay = ToObjectSpace(ray);
 
-    __device__ bool Device::Curve::Intersect(Ray2D& ray, HitCtx2D& hit, float& tFarParent) const
-    {
-        const RayBasic2D localRay = ToObjectSpace(ray); 
-        const Cuda::Device::Vector<LineSegment>& segments = *m_objects.lineSegments;
-
-        auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tFarChild) -> void
+        auto onIntersect = [&](const uint* startEndIdx, float& tFarChild)
         {
-            for (uint idx = startIdx; idx < endIdx; ++idx)
+            for (int primIdx = startEndIdx[0]; primIdx < startEndIdx[1]; ++primIdx)
             {
-                if (segments[idx].TestRay(ray, hit))
+                if ((*m_lineSegments)[primIdx].IntersectRay(ray, hit) && hit.tFar < tFarChild && hit.tFar < tFarParent)
                 {
-                    if (hit.tFar < tFarChild && hit.tFar < tFarParent)
-                    {
-                        tFarChild = hit.tFar;
-                    }
+                    tFarChild = hit.tFar;
                 }
             }
         };
-        m_objects.bih->TestRay(ray, onIntersect);
+        m_bih->TestRay(ray, onIntersect);
 
         tFarParent = min(tFarParent, hit.tFar);
         return 0;
+    }
+
+    __host__ __device__ bool CurveInterface::InteresectPoint(const vec2& p, const float& thickness) const
+    {
+    }
+
+    __host__ __device__ bool CurveInterface::IntersectBBox(const BBox2f& bBox) const
+    {
+        return bBox.Intersects(m_tracableBBox);
+    }
+
+    __host__ __device__ vec2 CurveInterface::PerpendicularPoint(const vec2& p) const 
+    {
+    }
+
+    __host__ __device__ float CurveInterface::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
+    {
+    }*/
+    
+    __device__ void Device::Curve::Synchronise(const Objects& objects)
+    {
+        m_bih = objects.bih;
+        m_lineSegments = objects.lineSegments;
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
         Tracable(id),
         cu_deviceInstance(nullptr)
     {
-        m_hostBIH = CreateChildAsset<Host::BIH2DAsset>(tfm::format("%s_bih", id), this);
-        m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>(tfm::format("%s_lineSegments", id), this, kVectorHostAlloc, nullptr);
+        m_hostBIH = CreateChildAsset<Host::BIH2DAsset>(tfm::format("%s_bih", id));
+        m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>(tfm::format("%s_lineSegments", id), kVectorHostAlloc, nullptr);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>(GetAssetID());
 
@@ -71,13 +84,13 @@ namespace GI2D
         SynchroniseObjects(cu_deviceInstance, m_deviceData);
     }
 
-    __host__ uint Host::Curve::OnCreate(const std::string& stateID, const vec2& mousePos)
+    __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         if (stateID == "kCreatePathHover")
         {
             if (!m_hostLineSegments->IsEmpty())
             {
-                m_hostLineSegments->Back().Set(1, mousePos);
+                m_hostLineSegments->Back().Set(1, viewCtx.mousePos);
                 return kGI2DDirtyGeometry;
             }
         }
@@ -88,13 +101,13 @@ namespace GI2D
             if (m_hostLineSegments->IsEmpty())
             {
                 // Create a zero-length segment that will be manipulated later
-                m_hostLineSegments->EmplaceBack(mousePos, mousePos, 0, colour);
+                m_hostLineSegments->EmplaceBack(viewCtx.mousePos, viewCtx.mousePos, 0, colour);
                 return kGI2DDirtyGeometry;
             }
             else
             {
                 // Any more and we simply reuse the last vertex on the path as the start of the next segment
-                m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], mousePos, 0, colour);
+                m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], viewCtx.mousePos, 0, colour);
                 return kGI2DDirtyGeometry;
             }
         }
@@ -115,9 +128,36 @@ namespace GI2D
         return 0;
     }
 
-    __host__ uint Host::Curve::OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx)
+    __host__ bool Host::Curve::IsEmpty() const
     {
-        /*if (stateID == "kSelectPathDragging")        
+        return false;
+    }
+
+    __host__ void Host::Curve::Rebuild()
+    {
+        //Cuda::Host::Vector<GI2D::Host::Tracable>& tracables = *m;
+        auto& segments = *m_hostLineSegments;
+        segments.Synchronise(kVectorSyncUpload);
+
+        // Create a segment list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
+        primIdxs.resize(segments.Size());
+        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
+        {
+            return Grow(segments[idx].GetBoundingBox(), 0.001f);
+        };
+        m_hostBIH->Build(getPrimitiveBBox);
+
+    //SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);
+    }
+
+    /*__host__ uint Host::Curve::OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx)
+    {
+        if (stateID == "kSelectPathDragging")        
         {
             const bool wasLassoing = selectCtx.isLassoing;
 
@@ -178,7 +218,7 @@ namespace GI2D
                 }
             }
 
-            Log::Success("Selecting!");*/
+            Log::Success("Selecting!");
         return 0;
-    }
+    }*/
 }

@@ -222,7 +222,7 @@ namespace Cuda
 	}
 
 	template<typename ObjectType>
-	__global__ inline void KernelDestroyDeviceInstance(ObjectType* cu_instance)
+	__global__ void KernelDestroyDeviceInstance(ObjectType* cu_instance)
 	{
 		if (cu_instance != nullptr) { delete cu_instance; }
 	}

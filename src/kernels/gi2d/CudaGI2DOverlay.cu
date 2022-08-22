@@ -1,6 +1,8 @@
 #include "CudaGI2DOverlay.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
+#include "Tracable.cuh"
+#include "kernels/CudaAssetContainer.cuh"
 
 using namespace Cuda;
 
@@ -93,59 +95,29 @@ namespace GI2D
             }
         }      
 
-        if (m_objects.bih && m_objects.lineSegments)
+        if (m_objects.bih && m_objects.tracables)
         {
-            const Cuda::Device::Vector<LineSegment>& segments = *(m_objects.lineSegments);
-
-            /*LineSegment ray(m_params.rayOriginView, normalize(m_params.mousePosView));
-            const float line = ray.Evaluate(xyView, 0.001f, m_params.dPdXY);
-            if (line > 0.f)
+            const Cuda::Device::Vector<Tracable*>& tracables = *(m_objects.tracables);
+      
+            /*auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
-                L = mix(L, vec3(1.0f, 0.8f, 0.05f), line);
-            }
-
-            const Vector<LineSegment>& segments = *(m_objects.lineSegments);
-            int hitSegment = -1;
-            auto onRayIntersectLeaf = [&, this](const uint& idx, float& tNearest) -> void
-            {
-                //if (segments[idx].GetBoundingBox().Contains(xyView)) { L = mix(L, kRed, 0.2f); }
-                if (PointOnPerimiter(segments[idx].GetBoundingBox(), xyView, m_params.dPdXY * 2.)) { L = kOne; }
-                float tPrim = segments[idx].TestRay(ray.v, ray.dv);
-                if (tPrim != kFltMax && tPrim < tNearest)
+                for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    tNearest = tPrim;
-                    hitSegment = idx;
-                }
-            };
-            auto onRayIntersectInner = [&, this](const BBox2f& bBox, const vec2& t, const bool isLeaf) -> void
-            {
-                if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.)) { L = kRed; }
-                else if (isLeaf && bBox.Contains(xyView)) { L = mix(L, kRed, 0.2f); }
-
-                if (length2(ray.v + ray.dv * t[0] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kYellow;
-                if (length2(ray.v + ray.dv * t[1] - xyView) < sqr(m_params.dPdXY * 5.0)) L = kBlue;
-            };
-            m_objects.bih->TestRay(ray.v, ray.dv, onRayIntersectLeaf, onRayIntersectInner);*/
-
-            auto onPointIntersectLeaf = [&, this](const uint& idxStart, const uint& idxEnd) -> void
-            {
-                for (int idx = idxStart; idx < idxEnd; ++idx)
-                {
-                    const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.view.dPdXY);
+                    const float line = tracables[idx]->Evaluate(xyView, 0.001f, m_params.view.dPdXY);
                     if (line > 0.f)
                     {
                         L = Blend(L, segments[idx].IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                         //L += kRed;
                     }
                 }
-            };
+            };*/
             /*auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void
             {
                 //bBox.Grow(m_params.dPdXY * depth * -5.0f);
                 //if (bBox.Contains(xyView)) { L = mix(L, Hue(depth / 5.0f), 0.3f); }
                 //if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.0)) { L = kOne; }
             };*/
-            m_objects.bih->TestPoint(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
+            //m_objects.bih->TestPoint(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
 
             /*for (int idx = 0; idx < segments.Size(); ++idx)
             {
@@ -167,17 +139,15 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<LineSegment>>& lineSegments,
+    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
                                    const uint width, const uint height, cudaStream_t renderStream) :
-        UILayer(id),
-        m_hostBIH2D(bih),
-        m_hostLineSegments(lineSegments)
-    {
+        UILayer(id, bih, tracables)
+    {        
         // Create some Cuda objects
         m_hostAccumBuffer = CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
 
-        m_objects.bih = m_hostBIH2D->GetDeviceInstance();
-        m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_objects.bih = m_hostBIH->GetDeviceInstance();
+        m_objects.tracables = m_hostTracables->GetDeviceInstance();
         m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         cu_deviceData = InstantiateOnDevice<Device::Overlay>(GetAssetID(), m_params, m_objects); 

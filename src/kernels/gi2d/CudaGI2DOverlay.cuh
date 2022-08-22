@@ -8,6 +8,11 @@
 
 using namespace Cuda;
 
+namespace Cuda
+{
+    //namespace Host { template<typename T> class AssetContainer; }
+}
+
 namespace GI2D
 {         
     struct OverlayParams
@@ -47,7 +52,7 @@ namespace GI2D
         public:
             struct Objects
             {
-                Cuda::Device::Vector<LineSegment>* lineSegments = nullptr;
+                Cuda::Device::Vector<Device::Tracable*>* tracables = nullptr;
                 Device::BIH2DAsset* bih = nullptr;
                 Cuda::Device::ImageRGBW* accumBuffer = nullptr;
             };
@@ -71,8 +76,9 @@ namespace GI2D
         class Overlay : public UILayer
         {
         public:
-            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<LineSegment>>& lineSegments,
-                        const uint width, const uint height, cudaStream_t renderStream);
+            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
+                    const uint width, const uint height, cudaStream_t renderStream);
+
             virtual ~Overlay();
 
             __host__ virtual void Render() override final;
@@ -85,9 +91,6 @@ namespace GI2D
             OverlayParams                               m_params;
             Device::Overlay::Objects                    m_objects;
             Device::Overlay*                            cu_deviceData = nullptr;
-
-            AssetHandle<Host::BIH2DAsset>                 m_hostBIH2D;
-            AssetHandle<Cuda::Host::Vector<LineSegment>>  m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
         };

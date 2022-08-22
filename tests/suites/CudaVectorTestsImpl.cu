@@ -86,8 +86,8 @@ namespace Tests
 
 	}
 
-	template<typename ElementType, typename HostType, typename DeviceType>
-	__global__ void KernelSquareValues(Device::VectorBase<ElementType, HostType, DeviceType>* cu_vector)
+	template<typename Type>
+	__global__ void KernelSquareValues(Device::Vector<Type>* cu_vector)
 	{
 		if (kKernelIdx < cu_vector->Size())
 		{

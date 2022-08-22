@@ -17,13 +17,19 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectContainer::Emplace(AssetHandle<Host::RenderObject>& newObject)
+    __host__ void RenderObjectContainer::Emplace(AssetHandle<Host::RenderObject>& newObject, const bool requireDAGPath)
     {
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
+        // Store a strong reference to the object in the object map
         m_objectMap[newObject->GetAssetID()] = newObject;
+        // Store a weak indexable reference in the object vector
         m_objectVector.emplace_back(newObject.GetWeakHandle());
+        // Link the ID with the vector index
+        m_idToIdxMap[newObject->GetAssetID()] = m_objectVector.size() - 1;
+        ++m_uniqueIdx;
 
+        // If the object has a DAG path, add it to the map alongside its weak reference
         if (newObject->HasDAGPath())
         {
             if (m_dagMap.find(newObject->GetDAGPath()) == m_dagMap.end())
@@ -35,11 +41,24 @@ namespace Cuda
                 Log::Error("Internal error: object '%s' has the same DAG path (%s) as another object.\n", newObject->GetAssetID(), newObject->GetDAGPath());
             }
         }
-        else if (!newObject->IsChildObject())
+        // Child objects don't need to have DAG paths because they aren't user-referenceable
+        else if (requireDAGPath && !newObject->IsChildObject())
         {
             Log::Error("Error: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
             return;
         }
+    }
+
+    __host__ void RenderObjectContainer::Erase(const Host::RenderObject& obj)
+    {
+        Erase(obj.GetAssetID());
+    }
+
+    __host__ void RenderObjectContainer::Erase(const std::string& id)
+    {
+        auto it = m_idToIdxMap.find(id);
+        AssertMsgFmt(it != m_idToIdxMap.end(), "Invalid asset ID '%s'", id.c_str());
+        Erase(it->second);
     }
 
     __host__ void RenderObjectContainer::Erase(const uint objectIdx)

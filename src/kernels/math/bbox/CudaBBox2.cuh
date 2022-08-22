@@ -13,8 +13,8 @@ namespace Cuda
 
         __host__ __device__ BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
         __host__ __device__ BBox2(const BBox2&) = default;
-        __host__ __device__ BBox2(BBox2&&) = default;
-        __host__ __device__ BBox2& operator=(const BBox2&) = default;  // NOTE: Commented out to suppress nvcc compiler warnings
+        //__host__ __device__ BBox2(BBox2&&) = default;
+        //__host__ __device__ BBox2& operator=(const BBox2&) = default;  // NOTE: Commented out to suppress nvcc compiler warnings
         __host__ __device__ ~BBox2() {};
 
         __host__ __device__ __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
@@ -143,7 +143,7 @@ namespace Cuda
             return *this;
         }
 
-        __host__ std::string& Format() const
+        __host__ std::string Format() const
         {
             return tfm::format("{%s, %s}", lower.format(), upper.format());
         }

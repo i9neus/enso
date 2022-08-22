@@ -39,7 +39,7 @@ namespace GI2D
             SetViewMatrix(mat);
         }
 
-        __host__ void SetViewMatrix(const mat3& mat)
+        __host__ __device__ void SetViewMatrix(const mat3& mat)
         {
             matrix = mat;
             dPdXY = length(vec2(matrix.i00, matrix.i10));

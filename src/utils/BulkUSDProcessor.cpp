@@ -195,7 +195,7 @@ void BulkConvertUSDProbeGrds()
 		}
 	}
 
-	Log::NL;
+	Log::NL();
 	Log::Write("Finished processing %i grids: %i exported, %i skipped, %i errors", totalGrids, validGrids, totalGrids - validGrids, errors);
 
 	//std::vector<Cuda::vec3> gridData;

@@ -3,7 +3,7 @@
 #include "UILayer.cuh"
 
 #include "BIH2DAsset.cuh"
-#include "CudaPrimitive2D.cuh"
+#include "Tracable.cuh"
 #include "Transform2D.cuh"
 
 using namespace Cuda;
@@ -36,7 +36,7 @@ namespace GI2D
         public:
             struct Objects
             {
-                Cuda::Device::Vector<LineSegment>* lineSegments = nullptr;
+                Cuda::Device::Vector<Tracable*>* tracables = nullptr;
                 GI2D::Device::BIH2DAsset* bih = nullptr;
                 Cuda::Device::ImageRGBW* accumBuffer = nullptr;
             };
@@ -60,7 +60,7 @@ namespace GI2D
         class PathTracer : public UILayer
         {
         public:
-            PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>>& lineSegments, 
+            PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables, 
                        const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
             virtual ~PathTracer();
            
@@ -74,9 +74,6 @@ namespace GI2D
             PathTracerParams                        m_params;
             GI2D::Device::PathTracer::Objects       m_objects;
             GI2D::Device::PathTracer*               cu_deviceData = nullptr;
-
-            AssetHandle<GI2D::Host::BIH2DAsset>               m_hostBIH2D;
-            AssetHandle<Cuda::Host::Vector<LineSegment>>      m_hostLineSegments;
 
             AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;      
         };

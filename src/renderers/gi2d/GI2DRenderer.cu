@@ -5,11 +5,16 @@
 #include "kernels/gi2d/CudaGI2DPathTracer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/gi2d/Curve.cuh"
+#include "kernels/CudaRenderObjectContainer.cuh"
+#include "kernels/CudaVector.cuh"
+#include "kernels/gi2d/Tracable.cuh"
+#include "kernels/gi2d/Curve.cuh"
 
 using namespace Cuda;
 using namespace GI2D;
 
-GI2DRenderer::GI2DRenderer()
+GI2DRenderer::GI2DRenderer() : 
+    m_viewCtx(m_resourceMutex)
 {
     m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
@@ -66,44 +71,75 @@ std::shared_ptr<RendererInterface> GI2DRenderer::Instantiate()
     return std::make_shared<GI2DRenderer>();
 }
 
-void GI2DRenderer::RebuildBIH()
-{
-    // Synchronise the segments
-    /*Cuda::Host::Vector<GI2D::Host::Tracable>& tracables = *m_objects.hostTracables;
-    segments.Synchronise(kVectorSyncUpload);
-
-    // Create a segment list ready for building
-    // TODO: It's probably faster if we build on the already-sorted index list
-    auto& primIdxs = m_objects.sceneBIH->GetPrimitiveIndices();
-    primIdxs.resize(segments.Size());
-    for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-    // Construct the BIH
-    std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
-    {
-        return Grow(segments[idx].GetBoundingBox(), 0.001f);
-    };
-    m_objects.sceneBIH->Build(getPrimitiveBBox);*/
-
-    //SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);
-}
-
 void GI2DRenderer::OnInitialise()
 {
-    m_viewCtx.transform = ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);   
+    m_viewCtx.transform = GI2D::ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);
     m_viewCtx.transform.dPdXY = length(vec2(m_viewCtx.transform.matrix.i00, m_viewCtx.transform.matrix.i10));
     m_viewCtx.zoomSpeed = 10.0f;
     m_viewCtx.transform.sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
 
     //m_primitiveContainer.Create(m_renderStream);
+     
+    m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>("id_renderObjects");
 
-    m_hostTracables = CreateAsset<Cuda::Host::Vector<GI2D::LineSegment>>("id_tracables", kVectorHostAlloc, m_renderStream);
+    m_hostTracables = CreateAsset<Cuda::Host::AssetVector<GI2D::Host::Tracable>>("id_tracables", kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>("id_gi2DBIH");
 
     m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>("id_gi2DOverlay", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, m_renderStream);
     m_pathTracer = CreateAsset<GI2D::Host::PathTracer>("id_gi2DPathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
+}
+
+void GI2DRenderer::Rebuild()
+{
+    if (m_dirtyFlags & kGI2DDirtyGeometry)
+    {
+        // Rebuild and synchronise any tracables that were dirtied since the last iteration
+        m_hostTracables->Clear();
+        m_renderObjects->ForEachOfType<GI2D::Host::Tracable>([this](AssetHandle<GI2D::Host::Tracable>& tracable) -> bool
+            {
+                if (tracable->GetDirtyFlags() & kGI2DDirtyGeometry)
+                {
+                    tracable->Rebuild();
+                }
+                m_hostTracables->EmplaceBack(tracable);
+                return true;
+            });
+
+        // Cache the object bounding boxes
+        /*m_tracableBBoxes.reserve(m_hostTracables->Size());
+        for (auto& tracable : *m_hostTracables)
+        {
+            m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
+        }*/
+
+        // Create a tracable list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = m_sceneBIH->GetPrimitiveIndices();
+        primIdxs.resize(m_hostTracables->Size());
+        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [this](const uint& idx) -> BBox2f
+        {
+            return Grow((*m_hostTracables)[idx]->GetBoundingBox(), 0.001f);
+        };
+        m_sceneBIH->Build(getPrimitiveBBox);
+
+        ClearDirtyFlags(m_dirtyFlags);
+    }
+
+    if (m_dirtyFlags & kGI2DDirtyView)
+    {
+        m_overlayRenderer->SetViewCtx(m_viewCtx);
+        m_pathTracer->SetViewCtx(m_viewCtx);
+    }
+
+    m_pathTracer->Synchronise();
+    m_overlayRenderer->Synchronise();
+
+    ClearDirtyFlags(kGI2DDirtyAll);
 }
 
 void GI2DRenderer::OnDestroy()
@@ -317,57 +353,30 @@ uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& tar
 
 uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
-    /*const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
+    const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kCreatePathOpen")
     {
-        // Record the index of the starting segment on the path 
-        m_newPath.pathStartIdx = m_objects.hostTracables->Size() - 1;
-        m_newPath.numSegments = 0;
-    }
-    else if (stateID == "kCreatePathHover")
-    {
-        if (m_newPath.numSegments > 0)
-        {
-            std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostTracables->Back().Set(1, m_viewCtx.mousePos);
-            SetDirtyFlags(kGI2DDirtyGeometry);
-        }
-    }
-    else if (stateID == "kCreatePathAppend")
-    {
-        const vec3 colour = Hue(PseudoRNG(HashOf(m_objects.hostTracables->Size())).Rand<0>());
-
-        if (m_newPath.numSegments == 0)
-        {
-            // Create a zero-length segment that will be manipulated later
-            std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostTracables->EmplaceBack(m_viewCtx.mousePos, m_viewCtx.mousePos, 0, colour);
-            m_newPath.numSegments = 1;
-            SetDirtyFlags(kGI2DDirtyGeometry);
-        }
-        else if (m_newPath.numSegments > 0)
-        {
-            // Any more and we simply reuse the last vertex on the path as the start of the next segment
-            std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostTracables->EmplaceBack(m_objects.hostTracables->Back()[1], m_viewCtx.mousePos, 0, colour);
-            m_newPath.numSegments++;
-            SetDirtyFlags(kGI2DDirtyGeometry);
-        }
+        //Create a new tracable and add it to the list of render objects
+        m_createObject.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
+        m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(m_createObject.newObject), false);
     }
     else if (stateID == "kCreatePathClose")
     {
-        // Delete the floating segment when closing the path
-        if (m_newPath.numSegments > 0)
+        Assert(m_createObject.newObject);
+        SetDirtyFlags(m_createObject.newObject->OnCreate(stateID, m_viewCtx));
+        
+        // If the new object is empty, delete it
+        if (m_createObject.newObject->IsEmpty())
         {
-            std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_objects.hostTracables->PopBack();
+            m_renderObjects->Erase(m_createObject.newObject->GetAssetID());
             SetDirtyFlags(kGI2DDirtyGeometry);
         }
+
+        return kUIStateOkay;
     }
-    else
-    {
-        return kUIStateError;
-    }*/
+     
+    // Invoke the event handler of the new object
+    SetDirtyFlags(m_createObject.newObject->OnCreate(stateID, m_viewCtx));
 
     return kUIStateOkay;
 }
@@ -379,27 +388,18 @@ void GI2DRenderer::OnRender()
 
     if (m_dirtyFlags)
     {
-        std::lock_guard <std::mutex> lock(m_resourceMutex);
+        std::lock_guard<std::mutex> lock(m_resourceMutex);
 
-        if (m_dirtyFlags & kGI2DDirtyParams)
+        if (m_dirtyFlags & kGI2DDirtyView)
         {
             m_overlayRenderer->SetViewCtx(m_viewCtx);
             m_pathTracer->SetViewCtx(m_viewCtx);
         }
 
-        if (m_dirtyFlags & kGI2DDirtyBIH)
-        {
-            //RebuildBIH();
-        }
-        else if (m_dirtyFlags & kGI2DDirtyPrimitiveAttributes)
-        {
-            //m_objects.hostTracables->Synchronise(kVectorSyncUpload);
-        }
-
-        m_pathTracer->Synchronise();
+        //m_pathTracer->Synchronise();
         m_overlayRenderer->Synchronise();
 
-        ClearDirtyFlags(kGI2DDirtyAll);
+        //Rebuild();
     }
 
     // Render the pass
@@ -491,7 +491,7 @@ void GI2DRenderer::OnViewChange()
         transform.SetViewMatrix(ConstructViewMatrix(transform.trans, transform.rotate, transform.scale) * m_clientToNormMatrix);
 
         // Mark the scene as dirty
-        SetDirtyFlags(kGI2DDirtyParams);
+        SetDirtyFlags(kGI2DDirtyView);
     }
 }
 

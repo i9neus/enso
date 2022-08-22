@@ -24,6 +24,9 @@ namespace GI2D
 
     struct UIViewCtx
     {
+        UIViewCtx() : resourceMutex(nullptr) {}
+        UIViewCtx(std::mutex& mute) : resourceMutex(&mute) {}
+
         ViewTransform2D         transform;
      
         Cuda::vec2              dragAnchor;
@@ -34,5 +37,7 @@ namespace GI2D
 
         Cuda::vec2              mousePos;
         float                   zoomSpeed;
+
+        std::mutex*             resourceMutex;
     };
 }

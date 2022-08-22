@@ -5,13 +5,27 @@
 
 namespace Cuda
 {
+	// Substitute for std::is_base_of where base class is templatised
+	// https://stackoverflow.com/questions/34672441/stdis-base-of-for-template-classes
+	template < template <typename...> class base, typename derived>
+	struct is_base_of_template_impl
+	{
+		template<typename... Ts>
+		static constexpr std::true_type  test(const base<Ts...>*);
+		static constexpr std::false_type test(...);
+		using type = decltype(test(std::declval<derived*>()));
+	};
+
+	template < template <typename...> class base, typename derived>
+	using is_base_of_template = typename is_base_of_template_impl<base, derived>::type;
+	
 	//enum class AccessSignal : uint { kUnlocked, kReadLocked, kWriteLocked };
 
 	enum CudaVectorFlags : uint
 	{
 		kVectorUnifiedMemory = 1,
 		kVectorHostAlloc = 2,
-		kVectorSyncDeviceAlloc = 4,
+		kVectorPersistentSyncData = 4,
 		kVectorSyncUpload = 8,
 		kVectorSyncDownload = 16
 	};
@@ -19,8 +33,7 @@ namespace Cuda
 	namespace Host
 	{
 		// Forward declare some things we'll need for friendship and tagging
-		template<typename ElementType, typename HostType, typename DeviceType> class VectorBase;
-		template<typename ElementType> class Vector;
+		//template<typename T, typename S> class Vector;
 	}
 
 	struct VectorParams
@@ -30,121 +43,147 @@ namespace Cuda
 		uint flags = 0;
 	};
 
+	template<typename Type>
+	class VectorInterface
+	{
+	public:
+		__host__ __device__ VectorInterface() :
+			m_localData(nullptr) {}
+		__host__ __device__ ~VectorInterface() {}
+
+		__device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
+		__device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
+		__device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
+		__device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
+
+		__device__ Type* Data() { return m_localData; }
+		__device__ Type& operator[](const uint idx) { return m_localData[idx]; }
+		__device__ const Type& operator[](const uint idx) const { return m_localData[idx]; }
+		
+	protected:
+		Type*			m_localData;
+		VectorParams	m_localParams;
+	};
+
 	namespace Device
 	{
-		template<typename ElementType, typename HostType, typename DeviceType>
-		class VectorBase : public Device::Asset, public AssetTags<HostType, DeviceType>
+		template<typename Type>
+		class Vector : public VectorInterface<Type>,
+					   public Device::Asset
 		{	
 		public:
-			__device__ VectorBase() :
-				cu_data(nullptr) {}
-			__device__ ~VectorBase() {}
+			__device__ Vector() {}
+			__device__ ~Vector() {}
 
-			__device__ __forceinline__ unsigned int								Size() const { return m_params.size; }
-			__device__ __forceinline__ unsigned int								Capacity() const { return m_params.capacity; }
-			__device__ __forceinline__ bool										IsEmpty() const { return m_params.size == 0; }
-			__device__ __forceinline__ unsigned int								MemorySize() const { return m_params.size * sizeof(T); }
-
-			__device__ ElementType* Data()										{ return cu_data; }
-			__device__ ElementType& operator[](const uint idx)					{ return cu_data[idx]; }
-			__device__ const ElementType& operator[](const uint idx) const		{ return cu_data[idx]; }
-
-			__device__ void Synchronise(ElementType* data, const VectorParams& params)
+			__device__ void Synchronise(Type* data, const VectorParams& params)
 			{
-				cu_data = data;
-				m_params = params;
+				m_localData = data;
+				m_localParams = params;
 			}
-
-		protected:
-			ElementType*		cu_data;
-			VectorParams		m_params;
-		};
-
-		// Wrapper class that hides the messy template parameterisation
-		template<typename ElementType>
-		class Vector : public Device::VectorBase<ElementType, Host::Vector<ElementType>, Device::Vector<ElementType>>
-		{
-		public:
-			__host__ __device__ Vector() : VectorBase<ElementType, Host::Vector<ElementType>, Device::Vector<ElementType>>() {}
 		};
 	}
 
 	namespace Host
 	{
-		template<typename ElementType, typename HostType, typename DeviceType>
-		class VectorBase : public Host::Asset, public AssetTags<HostType, DeviceType>
+		template<typename HostType, typename DeviceType>
+		class VectorBase : public VectorInterface<HostType>, 
+						   public Host::Asset
 		{
 		protected:
-			DeviceType*			cu_deviceInstance;
+			Device::Vector<DeviceType>* cu_deviceInstance;
 
-			ElementType*		m_hostData;
-			ElementType*		cu_deviceData;
+			DeviceType*					cu_deviceData;
+			VectorParams				m_deviceParams;
 
-			VectorParams		m_hostParams;
-			VectorParams		m_deviceParams;
-
-			cudaStream_t		m_hostStream;
 		public:
-			
+
 			template<typename Type>
 			struct IteratorBase
 			{
-				IteratorBase(const uint idx, ElementType* data) : m_idx(idx), m_data(data) {}
+				IteratorBase(const uint idx, HostType* data) : m_idx(idx), m_data(data) {}
 
 				IteratorBase& operator++() { ++m_idx; return *this; }
 				bool operator!=(const IteratorBase& other) const { return m_idx != other.m_idx; }
 
-				ElementType& operator*() { return m_data[m_idx]; }
-				ElementType& operator*() const { return m_data[m_idx]; }
-				ElementType* operator->() { return &m_data[m_idx]; }
-				ElementType* operator->() const { return &m_data[m_idx]; }
+				HostType& operator*() { return m_data[m_idx]; }
+				HostType& operator*() const { return m_data[m_idx]; }
+				HostType* operator->() { return &m_data[m_idx]; }
+				HostType* operator->() const { return &m_data[m_idx]; }
 
-			private:	
-				ElementType*	m_data;
-				uint			m_idx;
+			private:
+				HostType* m_data;
+				uint		m_idx;
 			};
 
-			using Iterator = IteratorBase<ElementType>;
-			using ConstIterator = IteratorBase<const ElementType>;
+			using Iterator = IteratorBase<HostType>;
+			using ConstIterator = IteratorBase<const HostType>;
 
 			/*struct Iterator : IteratorBase<Iterator>
 			{
-				ElementType& operator*() { return m_data[m_idx]; }
-				Iterator(const uint idx, ElementType* data) : IteratorBase<Iterator>(idx, data) {}
+				HostType& operator*() { return m_data[m_idx]; }
+				Iterator(const uint idx, HostType* data) : IteratorBase<Iterator>(idx, data) {}
 			};
 			struct ConstIterator : IteratorBase<ConstIterator>
 			{
-				const ElementType& operator*() const { return m_data[m_idx]; }
-				ConstIterator(const uint idx, ElementType* data) : IteratorBase<ConstIterator>(idx, data) {}
+				const HostType& operator*() const { return m_data[m_idx]; }
+				ConstIterator(const uint idx, HostType* data) : IteratorBase<ConstIterator>(idx, data) {}
 			};*/
 
 		public:
 			__host__ VectorBase(const std::string& id, const uint flags, cudaStream_t hostStream) :
 				Asset(id),
 				cu_deviceInstance(nullptr),
-				cu_deviceData(nullptr),
-				m_hostData(nullptr)
+				cu_deviceData(nullptr)
 			{
 				m_hostStream = hostStream;
-				m_hostParams.flags = flags;
+				m_localParams.flags = flags;
 
-				AssertMsg(!((m_hostParams.flags & kVectorUnifiedMemory) && !(m_hostParams.flags & kVectorHostAlloc)),
+				AssertMsg(!((m_localParams.flags & kVectorUnifiedMemory) && !(m_localParams.flags & kVectorHostAlloc)),
 					"Must specify kVectorHostAlloc when using kVectorUnifiedMemory.");
 
+				//AssertMsg(std::is_same<HostType, DeviceType>::value || !(m_localParams.flags & kVectorUnifiedMemory),
+				//	"kVectorUnifiedMemory can only be used when host and device types are the same.");
+
 				// Create a device instance
-				cu_deviceInstance = InstantiateOnDevice<DeviceType>(id);
+				//cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>(id);
 			}
 
 			__host__ VectorBase(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) :
-				Host::VectorBase<ElementType, HostType, DeviceType>(id, flags, hostStream)
+				VectorBase(id, flags, hostStream)
 			{
 				// Allocate and sync the memory
 				ResizeImpl(size, true, false);
 			}
 
-			__host__  virtual ~VectorBase()
+			__host__ __inline__ VectorBase(const VectorBase& other) { operator=(other); }
+			__host__ __inline__ VectorBase(VectorBase&& other) { operator=(other); }
+
+			__host__  ~VectorBase()
 			{
 				OnDestroyAsset();
+			}
+
+			__host__ __inline__ VectorBase& operator=(const std::vector<HostType>& rhs)
+			{	
+				CopyImpl(rhs.data(), rhs.size());	
+				return *this;
+			}
+
+			__host__ __inline__ VectorBase& operator=(const VectorBase& rhs)
+			{
+				CopyImpl(rhs.m_localData, rhs.Size());
+				return *this;
+			}
+
+			__host__ VectorBase& operator=(VectorBase&& rhs)
+			{
+				m_localParams = rhs.m_localParams;
+				m_deviceParams = rhs.m_deviceParams;
+				m_localData = rhs.m_localData;
+				cu_deviceData = rhs.cu_deviceData;
+				m_hostStream = rhs.m_hostStream;
+
+				rhs.Invalidate();				
 			}
 
 			__host__  virtual void OnDestroyAsset() override final
@@ -152,90 +191,101 @@ namespace Cuda
 				DestroyOnDevice(GetAssetID(), cu_deviceInstance);
 				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
 
-				if (m_hostData && !(m_hostParams.flags & kVectorUnifiedMemory))
+				if (m_localData && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					delete[] m_hostData;
-					m_hostData = nullptr;
+					delete[] m_localData;
+					m_localData = nullptr;
 				}
 			}
 
 			__host__ inline void Prepare()
 			{
 				// FIXME: On Windows, CUDA requires that cudaDeviceSynchronize() is called after kernels access shared memory. 
-				if (m_hostParams.flags & kVectorUnifiedMemory)
+				if (m_localParams.flags & kVectorUnifiedMemory)
 				{
 					IsOk(cudaDeviceSynchronize());
 				}
 			}
 
-			__host__ inline Iterator		begin() { return Iterator(0, m_hostData);  }
-			__host__ inline Iterator		end() { return Iterator(m_hostParams.size, m_hostData); }
-			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_hostData); }
-			__host__ inline ConstIterator	end() const { return ConstIterator(m_hostParams.size, m_hostData); }
+			// Make container compatible with range-based loops
+			__host__ inline Iterator		begin() { return Iterator(0, m_localData); }
+			__host__ inline Iterator		end() { return Iterator(m_localParams.size, m_localData); }
+			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
+			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline DeviceType*		GetDeviceInstance() const { return cu_deviceInstance; }
-			__host__ inline ElementType*	GetHostData()
-			{
-				AssertMsgFmt(m_hostParams.flags & kVectorHostAlloc, "Vector '%s' does not have host allocation.", GetAssetID().c_str());
-				return m_hostData;
+			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance() const 
+			{ 
+				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
+				if (cu_deviceInstance == nullptr)
+				{
+					InstantiateOnDevice<Device::Vector<DeviceType>>(GetAssetID());
+				}
+
+				return cu_deviceInstance; 
 			}
 
-			__host__ inline uint			Size() const { return m_hostParams.size; }
-			__host__ inline uint			Capacity() const { return m_hostParams.capacity; }
-			__host__ inline bool			IsEmpty() const { return m_hostParams.size == 0; }
+			__host__ inline HostType* GetHostData()
+			{
+				AssertMsgFmt(m_localParams.flags & kVectorHostAlloc, "Vector '%s' does not have host allocation.", GetAssetID().c_str());
+				return m_localData;
+			}
 
-			__host__ inline const ElementType& operator[](const uint idx) const
+			__host__ inline uint			Size() const { return m_localParams.size; }
+			__host__ inline uint			Capacity() const { return m_localParams.capacity; }
+			__host__ inline bool			IsEmpty() const { return m_localParams.size == 0; }
+
+			__host__ inline const HostType& operator[](const uint idx) const
 			{
 				return const_cast<VectorBase*>(this)->operator[](idx);
 			}
 
-			__host__ ElementType& operator[](const uint idx)
+			__host__ HostType& operator[](const uint idx)
 			{
-				AssertMsgFmt(m_hostParams.flags & kVectorHostAlloc, "Vector '%s': trying to use [] on array that does not have host allocation.", GetAssetID().c_str());
-				Assert(idx < m_hostParams.size);
+				AssertMsgFmt(m_localParams.flags & kVectorHostAlloc, "Vector '%s': trying to use [] on array that does not have host allocation.", GetAssetID().c_str());
+				Assert(idx < m_localParams.size);
 
-				return m_hostData[idx];
+				return m_localData[idx];
 			}
 
 			// ---------------------------------------------------------------------------------------------------------------------------------------------	
-			
-			__host__ inline void Reserve(const uint newCapacity)	{ ReserveImpl(newCapacity, m_hostParams.flags & kVectorSyncDeviceAlloc, true);	}
-			__host__ inline void Resize(const uint newSize)			{ ResizeImpl(newSize, m_hostParams.flags & kVectorSyncDeviceAlloc, true); }
 
-			__host__ inline void Grow(const uint inc)				{ ResizeImpl(m_hostParams.size + inc, m_hostParams.flags & kVectorSyncDeviceAlloc, true); }
-			__host__ inline void Shrink(const uint dec)				{ ResizeImpl(m_hostParams.size - dec, m_hostParams.flags & kVectorSyncDeviceAlloc, true); }
+			__host__ inline void Reserve(const uint newCapacity) { ReserveImpl(newCapacity, false, true); }
+			__host__ inline void Resize(const uint newSize) { ResizeImpl(newSize, false, true); }
 
-			__host__ void PushBack(const ElementType& element)
+			__host__ inline void Grow(const uint inc) { ResizeImpl(m_localParams.size + inc, false, true); }
+			__host__ inline void Shrink(const uint dec) { ResizeImpl(m_localParams.size - dec, false, true); }
+
+			__host__ void PushBack(const HostType& element)
 			{
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling PushBack() on a Vector that does not have host allocation.");
-				Resize(m_hostParams.size + 1);
-				m_hostData[m_hostParams.size - 1] = element;
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling PushBack() on a Vector that does not have host allocation.");
+				Resize(m_localParams.size + 1);
+				m_localData[m_localParams.size - 1] = element;
 			}
 
 			template<typename... Pack>
 			__host__ void EmplaceBack(Pack... pack)
 			{
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling EmplaceBack() on a Vector that does not have host allocation.");
-				Resize(m_hostParams.size + 1);
-				m_hostData[m_hostParams.size - 1] = ElementType(pack...);
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling EmplaceBack() on a Vector that does not have host allocation.");
+				Resize(m_localParams.size + 1);
+				m_localData[m_localParams.size - 1] = HostType(pack...);
 			}
 
 			__host__ void PopBack()
 			{
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling PopBack() on a Vector that does not have host allocation.");
-				Resize(m_hostParams.size - 1);
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling PopBack() on a Vector that does not have host allocation.");
+				Resize(m_localParams.size - 1);
 			}
 
-			__host__ inline ElementType& Back()
+			__host__ inline HostType& Back()
 			{
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling Back() on a Vector that does not have host allocation.");
-				return m_hostData[m_hostParams.size - 1];
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling Back() on a Vector that does not have host allocation.");
+				return m_localData[m_localParams.size - 1];
 			}
 
-			__host__ inline ElementType& Front()
+			__host__ inline HostType& Front()
 			{
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling Front() on a Vector that does not have host allocation.");
-				return m_hostData[0];
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling Front() on a Vector that does not have host allocation.");
+				return m_localData[0];
 			}
 
 			__host__ inline void Clear()
@@ -243,51 +293,21 @@ namespace Cuda
 				Resize(0);
 			}
 
-			// Transfers the contents of the buffers between the host and device 
-			__host__ void Synchronise(const uint syncFlags)
-			{
-				AssertMsg(!(m_hostParams.flags & kVectorUnifiedMemory), "Calling Upload() on a Vector with kVectorUnifiedMemory flag set.");
-				AssertMsg(m_hostParams.flags & kVectorHostAlloc, "Calling Upload() on a Vector that does not have host allocation.");
-				AssertMsg(syncFlags & (kVectorSyncUpload | kVectorSyncDownload), "Invalid syncronisation flags.");
-
-				if (syncFlags == kVectorSyncUpload)
-				{
-					// Make sure the device data matches the host size
-					if (m_hostParams.size != m_deviceParams.size)
-					{
-						ResizeImpl(m_hostParams.size, true, false);
-					}
-					
-					if (cu_deviceData)
-					{
-						IsOk(cudaMemcpy(cu_deviceData, m_hostData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyHostToDevice));
-						Cuda::Synchronise(cu_deviceInstance, cu_deviceData, m_deviceParams);
-					}
-				}
-				else
-				{
-					if (cu_deviceData)
-					{
-						IsOk(cudaMemcpy(m_hostData, cu_deviceData, sizeof(ElementType) * m_hostParams.size, cudaMemcpyDeviceToHost));
-					}
-				}
-			}
-
 			// Erases the contents of the vector with the specified value
-			__host__ void Fill(const ElementType& value)
+			__host__ void Fill(const HostType& value)
 			{
-				Assert(cu_deviceInstance);
+				/*Assert(cu_deviceInstance);
 
 				constexpr int blockSize = 16 * 16;
-				int gridSize = (m_deviceParams.size + (m_blockSize - 1)) / (m_blockSize);
-				KernelFill << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, value);
+				int gridSize = (m_deviceParams.size + (blockSize - 1)) / (blockSize);
+				KernelFill << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, value);*/
 
 				// If the vector has host allocation, reset that too
-				if (m_hostParams.flags & kVectorHostAlloc && !(m_hostParams.flags & kVectorUnifiedMemory))
+				if (m_localParams.flags & kVectorHostAlloc && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					for (int idx = 0; idx < m_hostParams.size; ++idx)
+					for (int idx = 0; idx < m_localParams.size; ++idx)
 					{
-						m_hostData[idx] = value;
+						m_localData[idx] = value;
 					}
 				}
 
@@ -297,112 +317,217 @@ namespace Cuda
 			// Zeroes the contents of the vector
 			__host__ void Wipe()
 			{
-				Assert(cu_deviceInstance);
-
-				IsOk(cudaMemset(m_hostData, 0, sizeof(ElementType) * m_hostParams.size));
-				IsOk(cudaStreamSynchronize(m_hostStream));
+				/*Assert(cu_deviceInstance);
+				IsOk(cudaMemset(m_localData, 0, sizeof(HostType) * m_localParams.size));
+				IsOk(cudaStreamSynchronize(m_hostStream));*/
 
 				// If the vector has host allocation, reset that too
-				if (m_hostParams.flags & kVectorHostAlloc && !(m_hostParams.flags & kVectorUnifiedMemory))
+				if (m_localParams.flags & kVectorHostAlloc && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					std::memset(m_hostData, 0, sizeof(ElementType) * m_hostParams.size);
+					std::memset(m_localData, 0, sizeof(HostType) * m_localParams.size);
 				}
 			}
 
-		private:
+		protected:
+			__host__ void CopyImpl(HostType* data, const uint newSize)
+			{
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Must specify kVectorHostAlloc to use operator=");
+
+				Resize(newSize);
+				
+				if (std::is_trivially_copyable<HostType>::value)
+				{
+					std::memcpy(m_localData, data, sizeof(HostType) * m_localParams.size);
+				}
+				else
+				{
+					for (int idx = 0; idx < m_localParams.size; ++idx)
+					{
+						data[idx] = data[idx];
+					}
+				}
+			}
+
+			__host__ void Invalidate()
+			{
+				m_localParams.size = 0;
+				m_localParams.capacity = 0;
+				m_localData = nullptr;
+				cu_deviceData = nullptr;
+			}
+
+			template<bool CopyPtr>
+			__host__ __inline__ void CopyDeviceToHostPtr() {}			
+
+			template<>
+			__host__ __inline__ void CopyDeviceToHostPtr<true>()
+			{
+				m_localData = cu_deviceData;
+			}
+
 			__host__ void ReserveImpl(const uint newCapacity, const bool deviceAlloc, const bool deviceCopy)
-			{			
+			{
 				// If the device is being explicitly synced or we're using unified memory, realloc the device memory 
-				if (newCapacity > m_deviceParams.capacity && (deviceAlloc || (m_hostParams.flags & kVectorUnifiedMemory)))
+				if (newCapacity > m_deviceParams.capacity && (deviceAlloc || (m_localParams.flags & kVectorUnifiedMemory)))
 				{
 					// Don't adjust capacity if it means reducing the size of the array
 					Assert(newCapacity >= m_deviceParams.size);
-					
+
 					// Allocate a new block of memory
-					ElementType* newDeviceData = nullptr;
-					GuardedAllocDeviceArray(GetAssetID(), newCapacity, &newDeviceData, (m_hostParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
+					DeviceType* newDeviceData = nullptr;
+					GuardedAllocDeviceArray(GetAssetID(), newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
 
 					// If we're syncing from host to device, don't copy the data from the old device buffer because it'll just get overwritten anyway
 					if (cu_deviceData)
 					{
-						if (deviceCopy || (m_hostParams.flags & kVectorUnifiedMemory))
+						if (deviceCopy || (m_localParams.flags & kVectorUnifiedMemory))
 						{
-							IsOk(cudaMemcpy(newDeviceData, cu_deviceData, m_hostParams.size * sizeof(ElementType), cudaMemcpyDeviceToDevice));
+							IsOk(cudaMemcpy(newDeviceData, cu_deviceData, m_localParams.size * sizeof(DeviceType), cudaMemcpyDeviceToDevice));
 						}
 
 						// Deallocate the old memory
-						GuardedFreeDeviceArray(GetAssetID(), m_hostParams.capacity, &cu_deviceData);
+						GuardedFreeDeviceArray(GetAssetID(), m_localParams.capacity, &cu_deviceData);
 					}
 
 					m_deviceParams.capacity = newCapacity;
 					cu_deviceData = newDeviceData;
 
-					Log::System("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
+					Log::System("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
 				}
 
 				// Unified memory is accessible on both host and and device so just copy the pointer
-				if (m_hostParams.flags & kVectorUnifiedMemory)
-				{					
-					m_hostData = cu_deviceData;
-					m_hostParams.capacity = newCapacity;
+				if (m_localParams.flags & kVectorUnifiedMemory)
+				{
+					CopyDeviceToHostPtr<std::is_same<HostType, DeviceType>::value>();
+					m_localParams.capacity = newCapacity;
 				}
+
 				// Otherwise, reallocate the host data
-				else if (m_hostParams.flags & kVectorHostAlloc && newCapacity > m_hostParams.capacity)
+				else if (m_localParams.flags & kVectorHostAlloc && newCapacity > m_localParams.capacity)
 				{
 					// Don't adjust capacity if it means reducing the size of the array
-					Assert(newCapacity >= m_hostParams.size);
-					
-					ElementType* newHostData = new ElementType[newCapacity];
-					if (m_hostData)
+					Assert(newCapacity >= m_localParams.size);
+
+					HostType* newHostData = new HostType[newCapacity];
+					if (m_localData)
 					{
-						std::memcpy(newHostData, m_hostData, m_hostParams.size * sizeof(ElementType));
+						std::memcpy(newHostData, m_localData, m_localParams.size * sizeof(HostType));
 					}
 
-					delete[] m_hostData;
-					m_hostData = newHostData;
-					m_hostParams.capacity = newCapacity;
+					delete[] m_localData;
+					m_localData = newHostData;
+					m_localParams.capacity = newCapacity;
 
-					Log::System("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.capacity);
+					Log::System("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
 				}
 			}
 
 			__host__ void ResizeImpl(const uint newSize, const bool deviceAlloc, const bool deviceCopy)
 			{
 				// Don't resize if nothing has changed
-				if (m_hostParams.size == newSize && (!deviceAlloc || m_deviceParams.size == newSize)) { return; }
+				if (m_localParams.size == newSize && (!deviceAlloc || m_deviceParams.size == newSize)) { return; }
 
 				// TODO: Currently we don't reduce the capacity of vectors whose sizes are reduced. Should we?
-				if (newSize > m_hostParams.capacity || (deviceAlloc && newSize > m_deviceParams.capacity))
+				if (newSize > m_localParams.capacity || (deviceAlloc && newSize > m_deviceParams.capacity))
 				{
 					// Mimic std::vector by growing the capacity in powers of 1.5
 					const int newCapacity = max(newSize, uint(std::pow(1.5f, std::ceil(std::log(float(newSize)) / std::log(1.5f)))));
 					ReserveImpl(newCapacity, deviceAlloc, deviceCopy);
 				}
 
-				m_hostParams.size = newSize;
-				if (deviceAlloc || (m_hostParams.flags & kVectorUnifiedMemory))
+				m_localParams.size = newSize;
+				if (deviceAlloc || (m_localParams.flags & kVectorUnifiedMemory))
 				{
 					m_deviceParams.size = newSize;
 				}
 
-				//Log::System("Size of vector '%s' changed to %i.", GetAssetID().c_str(), m_hostParams.size);
+				//Log::System("Size of vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.size);
 			}
 		};
 
-		// Wrapper class that hides the messy template parameterisation
-		template<typename ElementType>
-		class Vector : public Host::VectorBase < ElementType, Host::Vector<ElementType>, Device::Vector<ElementType>>
+		// Generic vector where both types are the same
+		template<typename CommonType>
+		class Vector : public VectorBase<CommonType, CommonType>
 		{
-			using Super = VectorBase < ElementType, Host::Vector<ElementType>, Device::Vector<ElementType>>;
 		public:
-			__host__ Vector(const std::string& id, const uint flags, cudaStream_t hostStream) : Super(id, flags, hostStream) {}
-			__host__ Vector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : Super(id, size, flags, hostStream) {}
-			__host__ virtual ~Vector() { OnDestroyAsset(); }
-		};
-	}	
+			__host__ Vector(const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(Asset::MakeTemporaryID(), flags, hostStream) {}
+			__host__ Vector(const std::string& id, const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(id, flags, hostStream) {}
+			__host__ Vector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(id, size, flags, hostStream) {}
+			__host__ ~Vector() {};
 
-	template<typename ElementType, typename HostType, typename DeviceType>
-	__global__ void KernelFill(Device::VectorBase<ElementType, HostType, DeviceType>* cu_vector, const ElementType value)
+			// Transfers the contents of the buffers between the host and device 
+			__host__ void Synchronise(const uint syncFlags)
+			{
+				AssertMsg(!(m_localParams.flags & kVectorUnifiedMemory), "Calling Upload() on a Vector with kVectorUnifiedMemory flag set.");
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Trying to synchronise a Vector that does not have host allocation.");
+				AssertMsg(syncFlags & (kVectorSyncUpload | kVectorSyncDownload), "Invalid syncronisation flags.");
+
+				if (syncFlags == kVectorSyncUpload)
+				{
+					// Make sure the device data matches the host size
+					if (m_localParams.size != m_deviceParams.size)
+					{
+						ResizeImpl(m_localParams.size, true, false);
+					}
+
+					if (cu_deviceData)
+					{
+						IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
+						Cuda::Synchronise(GetDeviceInstance(), cu_deviceData, m_deviceParams);
+					}
+				}
+				else
+				{
+					if (cu_deviceData)
+					{
+						IsOk(cudaMemcpy(m_localData, cu_deviceData, sizeof(CommonType) * m_localParams.size, cudaMemcpyDeviceToHost));
+					}
+				}
+			}
+		};
+
+		// Requires that HostType inherit AssetTags
+		template<typename HostType>
+		class AssetVector : public VectorBase<AssetHandle<typename HostType>, typename HostType::DeviceVariant*>
+		{
+		public:
+			using DeviceType = typename HostType::DeviceVariant*;
+
+		private:
+			DeviceType*		m_deviceSyncData;
+
+		public:
+			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, flags, hostStream)
+			{
+				//static_assert(is_base_of_template<AssetTags, HostType>, "AssetVector type must inherit AssetTags");
+			}
+			__host__ AssetVector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, size, flags, hostStream) {}
+
+			__host__ void Synchronise(const uint syncFlags)
+			{
+				AssertMsg(syncFlags == kVectorSyncUpload, "Mapped vectors only supports uploading for now.");
+				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Trying to synchronise a Vector that does not have host allocation.");
+
+				// Allocate some temporary storage
+				m_deviceSyncData = new DeviceType[m_localParams.size];
+				Assert(m_deviceSyncData);
+
+				// Convert between the host and device datatypes
+				for (int idx = 0; idx < m_localParams.size; ++idx)
+				{
+					//m_deviceSyncData[idx] = convertFunctor(m_localData[idx]);
+					m_deviceSyncData[idx] = m_localData[idx]->GetDeviceInstance();
+				}
+
+				// Copy to the device
+				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(HostType) * m_localParams.size, cudaMemcpyHostToDevice));
+				delete[] m_deviceSyncData;
+			}
+		};
+	}
+
+	template<typename DeviceType>
+	__global__ void KernelFill(Device::Vector<DeviceType>* cu_vector, const DeviceType value)
 	{
 		if (kKernelIdx < cu_vector->Size())
 		{

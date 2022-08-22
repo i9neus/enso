@@ -7,6 +7,8 @@
 #include "../CudaImage.cuh"
 #include "../CudaVector.cuh"
 
+#include "Tracable.cuh"
+
 using namespace Cuda;
 
 namespace GI2D
@@ -16,7 +18,13 @@ namespace GI2D
         class UILayer : public Cuda::Host::Asset
         {
         public:
-            UILayer(const std::string& id) : Asset(id) {}
+            UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables) :
+                Asset(id),
+                m_hostBIH(bih),
+                m_hostTracables(tracables)
+            {
+            }
+
             virtual ~UILayer() = default;
 
             __host__ virtual void   Render() = 0;
@@ -37,6 +45,9 @@ namespace GI2D
 
         protected:
             UIViewCtx   m_viewCtx;
+             
+            AssetHandle<GI2D::Host::BIH2DAsset>                         m_hostBIH;
+            AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>   m_hostTracables;
 
             bool        m_isDirty;
         };

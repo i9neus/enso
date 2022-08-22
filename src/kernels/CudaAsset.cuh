@@ -54,7 +54,7 @@ namespace Cuda
             std::string             m_parentAssetId;
 
         public:
-            __host__ virtual ~Asset() = default;
+            __host__ virtual ~Asset() {}
 
             __host__ virtual uint               FromJson(const ::Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual AssetType          GetAssetType() const { return AssetType::kUnknown; }
@@ -103,9 +103,9 @@ namespace Cuda
         explicit AssetHandle(std::shared_ptr<AssetType>& ptr) : m_ptr(ptr) {}
 
     public:
-        __host__ AssetHandle() = default;
+        __host__ AssetHandle() {}
         __host__ AssetHandle(const std::nullptr_t&) {}
-        __host__ ~AssetHandle() = default;
+        __host__ ~AssetHandle() {}
 
         template<typename OtherType>
         __host__ AssetHandle(AssetHandle<OtherType>& other)
@@ -189,10 +189,10 @@ namespace Cuda
 
             // Notify the asset that it's about to be destroyed, then deregister and delete the host object.
             m_ptr->OnDestroyAsset();
-            GlobalResourceRegistry::Get().DeregisterAsset(m_ptr);
+            GlobalResourceRegistry::Get().DeregisterAsset(m_ptr, assetId);
             m_ptr.reset();
 
-            Log::Debug("Destroyed '%s'.\n", assetId.c_str());
+            Log::Debug("Destroyed '%s'.\n", assetId);
             return true;
         }
     };
@@ -201,12 +201,15 @@ namespace Cuda
     __host__ inline AssetHandle<AssetType> Host::Asset::CreateChildAsset(const std::string& newId, Args... args)
     {
         static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+
+        auto& registry = GlobalResourceRegistry::Get();
+        AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
         
         AssetHandle<AssetType> newAsset;
         newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
         newAsset->m_parentAssetId = GetAssetID();
 
-        GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
+        registry.RegisterAsset(newAsset.m_ptr, newId);
         return newAsset;
     }
 
@@ -214,11 +217,14 @@ namespace Cuda
     __host__ inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
     {
         static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+
+        auto& registry = GlobalResourceRegistry::Get();
+        AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
         
         AssetHandle<AssetType> newAsset;
         newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
 
-        GlobalResourceRegistry::Get().RegisterAsset(newAsset.m_ptr);
+        registry.RegisterAsset(newAsset.m_ptr, newId);
         return newAsset;
     }
 }

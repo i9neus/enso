@@ -3,6 +3,7 @@
 #include "../RendererInterface.h"
 #include "generic/Job.h"
 #include "kernels/gi2d/UICtx.cuh"
+#include "kernels/CudaVector.cuh"
 
 namespace GI2D
 {
@@ -19,6 +20,7 @@ namespace GI2D
     namespace Host
     {
         class BIH2DAsset;
+        class Tracable;
         class Overlay;   
         class PathTracer; 
         class Tracable;
@@ -31,7 +33,8 @@ namespace Cuda
     class RenderObjectContainer;
     namespace Host
     {
-        template<typename T> class Vector;
+        class RenderObject;
+        //template<typename T> class Vector;
     }
 }
 
@@ -75,7 +78,7 @@ private:
     //virtual void          OnPostRender() override final;
     void                    OnViewChange();
 
-    void                    RebuildBIH();
+    void                    Rebuild();
 
     uint                    OnMoveTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
     uint                    OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
@@ -96,8 +99,8 @@ private:
     std::unique_ptr<GI2D::OverlayParams>        m_overlayParams;
     std::unique_ptr<GI2D::PathTracerParams>     m_pathTracerParams;
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
-    AssetHandle<GI2D::Host::BIH2DAsset>         m_newObjctBIH;
-    AssetHandle<Cuda::Host::Vector<GI2D::LineSegment>> m_hostTracables;
+    AssetHandle<Cuda::Host::AssetVector<GI2D::Host::Tracable>> m_hostTracables;
+    std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
 
     std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;
 
@@ -105,6 +108,12 @@ private:
 
     GI2D::UIViewCtx                             m_viewCtx;
     GI2D::UISelectionCtx                        m_selectCtx;
+
+    struct
+    {
+        AssetHandle<GI2D::Host::Tracable>   newObject;
+    } 
+    m_createObject;
 
     struct
     {
