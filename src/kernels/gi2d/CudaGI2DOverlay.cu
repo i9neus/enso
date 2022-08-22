@@ -174,7 +174,7 @@ namespace GI2D
         m_hostLineSegments(lineSegments)
     {
         // Create some Cuda objects
-        m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
+        m_hostAccumBuffer = CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
 
         m_objects.bih = m_hostBIH2D->GetDeviceInstance();
         m_objects.lineSegments = m_hostLineSegments->GetDeviceInstance();

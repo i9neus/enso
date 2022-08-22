@@ -618,12 +618,12 @@ namespace Cuda
         node.GetValue("gridFilteredIndirectHalfID", m_filteredGridIDs[3], Json::kNotBlank);
 
         // Create reduction and adaptive sampling buffers
-        m_hostReduceBuffer = CreateChildAsset<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), this, kAccumBufferSize, m_hostStream);
-        m_hostIndirectionBuffer = CreateChildAsset<Host::Array<uint>>(tfm::format("%s_indirectionBuffer", id), this, kAccumBufferSize, m_hostStream);
-        m_hostLightProbeErrorGrids[0] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids0", id), this, kAccumBufferSize, m_hostStream);
-        m_hostLightProbeErrorGrids[1] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids1", id), this, kAccumBufferSize, m_hostStream);
-        m_hostConvergenceGrid = CreateChildAsset<Host::Array<uchar>>(tfm::format("%s_adaptiveSamplingGrid", id), this, kAccumBufferSize, m_hostStream);
-        m_hostSampleBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_sampleBuffer", id), this, 0, m_hostStream);
+        m_hostReduceBuffer = CreateChildAsset<Host::Array<vec4>>(tfm::format("%s_probeReduceBuffer", id), kAccumBufferSize, m_hostStream);
+        m_hostIndirectionBuffer = CreateChildAsset<Host::Array<uint>>(tfm::format("%s_indirectionBuffer", id), kAccumBufferSize, m_hostStream);
+        m_hostLightProbeErrorGrids[0] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids0", id), kAccumBufferSize, m_hostStream);
+        m_hostLightProbeErrorGrids[1] = CreateChildAsset<Host::Array<vec2>>(tfm::format("%s_probeErrorGrids1", id), kAccumBufferSize, m_hostStream);
+        m_hostConvergenceGrid = CreateChildAsset<Host::Array<uchar>>(tfm::format("%s_adaptiveSamplingGrid", id), kAccumBufferSize, m_hostStream);
+        m_hostSampleBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_sampleBuffer", id), 0, m_hostStream);
 
         // Instantiate the camera object on the device
         cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>(id);
@@ -634,12 +634,12 @@ namespace Cuda
             // Don't create grids that don't have IDs
             Assert(!m_gridIDs[idx].empty());
 
-            m_hostAccumBuffers[idx] = CreateChildAsset<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer%i", id, idx), this, kAccumBufferSize, m_hostStream);
+            m_hostAccumBuffers[idx] = CreateChildAsset<Host::Array<vec4>>(tfm::format("%s_probeAccumBuffer%i", id, idx), kAccumBufferSize, m_hostStream);
             m_hostAccumBuffers[idx]->Clear(vec4(0.0f));
             m_deviceObjects.cu_accumBuffers[idx] = m_hostAccumBuffers[idx]->GetDeviceInstance();
 
             // Create the probe grid objects and attach external buffers to them
-            m_hostLightProbeGrids[idx] = CreateChildAsset<Host::LightProbeGrid>(m_gridIDs[idx], this);
+            m_hostLightProbeGrids[idx] = CreateChildAsset<Host::LightProbeGrid>(m_gridIDs[idx]);
             m_hostLightProbeGrids[idx]->SetExternalBuffers(m_hostConvergenceGrid, m_hostLightProbeErrorGrids[0], m_hostMeanI);
 
             // Update the device pointers. Adaptive sampling grids might be updated again during the binding stage. 

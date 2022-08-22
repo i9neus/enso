@@ -546,8 +546,8 @@ namespace Cuda
 		m_isDirty(true),
 		m_isInitialised(true)
 	{
-		m_hostTracables = CreateChildAsset<Host::AssetContainer<Host::Tracable>>(tfm::format("%s_tracablesContainer", id), this);
-		m_hostLights = CreateChildAsset<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id), this);
+		m_hostTracables = CreateChildAsset<Host::AssetContainer<Host::Tracable>>(tfm::format("%s_tracablesContainer", id));
+		m_hostLights = CreateChildAsset<Host::AssetContainer<Host::Light>>(tfm::format("%s_lightsContainer", id));
 
 		cu_deviceData = InstantiateOnDevice<Device::WavefrontTracer>(id);
 

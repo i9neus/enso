@@ -21,7 +21,7 @@ namespace GI2D
     {
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
 
-        m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), this, kVectorHostAlloc, m_hostStream);
+        m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc, m_hostStream);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()

@@ -36,7 +36,7 @@ namespace Cuda
         AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
 
         // Create some objects
-        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
+        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID);
 
         // Initialise the grid2grid model
         m_onnxEvaluator.Initialise(m_modelPath);

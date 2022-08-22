@@ -297,7 +297,7 @@ namespace Cuda
         m_frameIdx(0)
     {
         // Create the accumulation buffer
-        m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), this, 512, 512, m_hostStream);
+        m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>(tfm::format("%s_perspAccumBuffer", id), 512, 512, m_hostStream);
         m_hostAccumBuffer->Clear(vec4(0.0f));
         
         // Instantiate the camera object on the device

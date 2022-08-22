@@ -67,14 +67,14 @@ namespace Cuda
         AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputHalfGridID), "Error: an asset with ID '%s' already exists'.", m_outputHalfGridID.c_str());
 
         // Create some objects
-        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
-        m_hostReduceBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_reduceBuffer", id), this, m_hostStream);
+        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID);
+        m_hostReduceBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_reduceBuffer", id), m_hostStream);
         m_hostReduceBuffer->Resize(1024 * 1024);// FIXME: Static size; needs to be dynamic. 
 
         if (!m_outputHalfGridID.empty())
         {
-            m_hostOutputHalfGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputHalfGridID, this);
-            m_hostHalfReduceBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_halfReduceBuffer", id), this, m_hostStream);
+            m_hostOutputHalfGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputHalfGridID);
+            m_hostHalfReduceBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_halfReduceBuffer", id), m_hostStream);
             m_hostHalfReduceBuffer->Resize(1024 * 1024);
         }       
     }

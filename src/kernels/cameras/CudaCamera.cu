@@ -74,12 +74,12 @@ namespace Cuda
         m_frameIdx(0)
     {
         // Create the packed ray buffer
-        m_hostCompressedRayBuffer = CreateChildAsset<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), this, rayBufferSize, m_hostStream);
+        m_hostCompressedRayBuffer = CreateChildAsset<Host::CompressedRayBuffer>(tfm::format("%s_compressedRayBuffer", id), rayBufferSize, m_hostStream);
         m_hostCompressedRayBuffer->Clear(CompressedRay());
 
         // Create the occupancy buffer and render stats
-        m_hostBlockRayOccupancy = CreateChildAsset<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), this, rayBufferSize / 32, m_hostStream);
-        m_hostRenderStats = CreateChildAsset< Host::ManagedObject<Device::RenderState::Stats>>(tfm::format("%s_renderStats", id), this);
+        m_hostBlockRayOccupancy = CreateChildAsset<Host::Array<uint>>(tfm::format("%s_blockRayOccupancy", id), rayBufferSize / 32, m_hostStream);
+        m_hostRenderStats = CreateChildAsset< Host::ManagedObject<Device::RenderState::Stats>>(tfm::format("%s_renderStats", id));
 
         // Set the DAG path       
         Host::RenderObject::UpdateDAGPath(node);

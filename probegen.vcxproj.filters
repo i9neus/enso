@@ -651,6 +651,9 @@
     <ClInclude Include="src\kernels\gi2d\UILayer.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\GlobalResourceRegistry.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -912,6 +915,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\Curve.cu">
       <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\GlobalResourceRegistry.cu">
+      <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

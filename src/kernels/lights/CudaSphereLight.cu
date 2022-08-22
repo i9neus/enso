@@ -150,11 +150,11 @@ namespace Cuda
         cu_deviceData(nullptr)
     {
         // Instantiate the emitter material
-        m_lightMaterialAsset = CreateChildAsset<Host::EmitterMaterial>(id + "_material", this, kRenderObjectIsChild);
+        m_lightMaterialAsset = CreateChildAsset<Host::EmitterMaterial>(id + "_material", kRenderObjectIsChild);
         Assert(m_lightMaterialAsset);
 
         // Instantiate the sphere tracable
-        m_lightSphereAsset = CreateChildAsset<Host::Sphere>(id + "_planeTracable", this, kRenderObjectIsChild);
+        m_lightSphereAsset = CreateChildAsset<Host::Sphere>(id + "_planeTracable", kRenderObjectIsChild);
         Assert(m_lightSphereAsset);
         m_lightSphereAsset->SetBoundMaterialID(id + "_material");
 

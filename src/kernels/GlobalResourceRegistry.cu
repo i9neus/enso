@@ -1,3 +1,4 @@
+#include "GlobalResourceRegistry.cuh"
 #include "CudaAsset.cuh"
 #include "generic/Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
@@ -45,13 +46,13 @@ namespace Cuda
     void GlobalResourceRegistry::RegisterDeviceMemory(const std::string& assetId, const int64_t bytes)
     {
         Assert(bytes >= 0);
-        if (bytes == 0) 
-        { 
+        if (bytes == 0)
+        {
             Log::System("WARNING: Asset '%s' registered an allocation for zero bytes.", assetId);
-            return; 
+            return;
         }
-        
-        std::lock_guard<std::mutex> mutexLock(m_mutex);        
+
+        std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto& entry = m_deviceMemoryMap[assetId];
         entry.currentBytes += bytes;
@@ -65,11 +66,11 @@ namespace Cuda
     {
         Assert(bytes >= 0);
         if (bytes == 0) { return; }
-        
+
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto it = m_deviceMemoryMap.find(assetId);
-        AssertMsgFmt(it != m_deviceMemoryMap.end() && int64_t(it->second.currentBytes) - int64_t(bytes) >= 0ll, 
+        AssertMsgFmt(it != m_deviceMemoryMap.end() && int64_t(it->second.currentBytes) - int64_t(bytes) >= 0ll,
             "Asset '%s' is trying to deallocate more memory than it originally allocated.", assetId.c_str());
 
         // Decrement the allocated bytes and clean up the entry if necessary. 
@@ -126,11 +127,4 @@ namespace Cuda
     {
         return m_assetMap.find(assetId) != m_assetMap.end();
     }
-
-    __host__ std::string Host::Asset::MakeTemporaryID()
-    {
-        static uint temporaryIdx = 0;
-        return tfm::format("tempAsset_%x", HashOf(temporaryIdx++));
-    }
 }
-

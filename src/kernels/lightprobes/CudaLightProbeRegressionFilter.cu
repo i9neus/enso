@@ -74,13 +74,13 @@ namespace Cuda
         AssertMsgFmt(!GlobalResourceRegistry::Get().Exists(m_outputGridID), "Error: an asset with ID '%s' already exists'.", m_outputGridID.c_str());
 
         // Create the output grid
-        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID, this);
+        m_hostOutputGrid = CreateChildAsset<Host::LightProbeGrid>(m_outputGridID);
 
         // Create the buffers used by the regressor
-        m_hostC = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_C", id), this, m_hostStream);
-        m_hostD = CreateChildAsset<Host::Array<float>>(tfm::format("%s_D", id), this, m_hostStream);
-        m_hostdLdC = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_dLdC", id), this, m_hostStream);
-        m_hostW = CreateChildAsset<Host::Array<float>>(tfm::format("%s_regressionWeights", id), this, m_hostStream);
+        m_hostC = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_C", id), m_hostStream);
+        m_hostD = CreateChildAsset<Host::Array<float>>(tfm::format("%s_D", id), m_hostStream);
+        m_hostdLdC = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_dLdC", id), m_hostStream);
+        m_hostW = CreateChildAsset<Host::Array<float>>(tfm::format("%s_regressionWeights", id), m_hostStream);
 
         // TODO: Make weight map dynamic
         m_hostW->Resize(1024 * 1024);
