@@ -15,6 +15,8 @@ namespace Cuda
 
 namespace GI2D
 {         
+    class TracableInterface;
+    
     struct OverlayParams
     {
         __host__ __device__ OverlayParams();
@@ -52,7 +54,7 @@ namespace GI2D
         public:
             struct Objects
             {
-                Cuda::Device::Vector<Device::Tracable*>* tracables = nullptr;
+                Cuda::Device::Vector<TracableInterface*>* tracables = nullptr;
                 Device::BIH2DAsset* bih = nullptr;
                 Cuda::Device::ImageRGBW* accumBuffer = nullptr;
             };

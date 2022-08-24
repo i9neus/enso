@@ -2,10 +2,9 @@
 
 #include "UICtx.cuh"
 
-#include "../CudaAsset.cuh"
+#include "Common.cuh"
 #include "../CudaManagedObject.cuh"
 #include "../CudaImage.cuh"
-#include "../CudaVector.cuh"
 
 #include "Tracable.cuh"
 
@@ -31,8 +30,15 @@ namespace GI2D
             __host__ virtual void   Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const = 0;
             __host__ virtual void   Synchronise() = 0;
 
-            __host__ void           SetViewCtx(const UIViewCtx& ctx) { m_viewCtx = ctx; m_isDirty = true; }
-            __host__ void           SetDirty() { m_isDirty = true; }
+            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& ctx)
+            { 
+                m_viewCtx = ctx;  
+                m_dirtyFlags = dirtyFlags;
+
+                Synchronise();
+            }
+
+            __host__ void           SetDirtyFlags(const uint flags) { m_dirtyFlags |= flags; }
 
         protected:
             template<typename T>
@@ -46,10 +52,10 @@ namespace GI2D
         protected:
             UIViewCtx   m_viewCtx;
              
-            AssetHandle<GI2D::Host::BIH2DAsset>                         m_hostBIH;
-            AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>   m_hostTracables;
+            AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
+            AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>    m_hostTracables;
 
-            bool        m_isDirty;
+            uint                                                    m_dirtyFlags;
         };
     }
 }

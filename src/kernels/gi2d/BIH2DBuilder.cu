@@ -15,7 +15,7 @@ namespace GI2D
     }
 
     template<typename NodeType>
-    __host__ void BIH2DBuilder<NodeType>::Build()
+    __host__ void BIH2DBuilder<NodeType>::Build(const bool printStats)
     {
         Timer timer;
         AssertMsg(m_getPrimitiveBBox, "BIH builder does not have a valid bounding box functor.");
@@ -63,11 +63,14 @@ namespace GI2D
         m_bih.m_numPrims = m_primitiveIdxs.size();
         m_bih.m_isConstructed = true;
         
-        m_stats.buildTime = timer.Get() * 1e3f;
-        Log::Write("Constructed BIH in %.1fms", m_stats.buildTime);
-        Log::Write("  - Max depth: %i", m_stats.maxDepth);
-        Log::Write("  - Inner nodes: %i", m_stats.numInnerNodes);
-        Log::Write("  - Leaf nodes: %i", m_stats.numLeafNodes);
+        if (printStats)
+        {
+            m_stats.buildTime = timer.Get() * 1e3f;
+            Log::Write("Constructed BIH in %.1fms", m_stats.buildTime);
+            Log::Write("  - Max depth: %i", m_stats.maxDepth);
+            Log::Write("  - Inner nodes: %i", m_stats.numInnerNodes);
+            Log::Write("  - Leaf nodes: %i", m_stats.numLeafNodes);
+        }
     }
 
     //template<typename NodeContainer>

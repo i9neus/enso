@@ -257,7 +257,7 @@ public:
             AssertMsg(numTransitions < kMaxTransitions, "State exceeded maximum allowed number of transitions. Possible cycle detected.");
         }
 
-        Log::Success("State changed: %s -> %s", m_uiStateList[sourceStateIdx].id, m_uiStateList[m_currentState].id);
+        //Log::Success("State changed: %s -> %s", m_uiStateList[sourceStateIdx].id, m_uiStateList[m_currentState].id);
         return true;
     }
 

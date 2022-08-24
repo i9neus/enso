@@ -13,7 +13,7 @@ namespace GI2D
         __host__ BIH2DBuilder(BIH2D<NodeType>& bih, Cuda::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
                              const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
 
-        __host__ void Build();
+        __host__ void Build(const bool printStats = false);
 
         std::function<void(const char*)> m_debugFunctor = nullptr;
 

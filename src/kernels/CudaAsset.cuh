@@ -202,14 +202,17 @@ namespace Cuda
     {
         static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
 
+        // Concatenate new asset ID with its parent ID 
+        const std::string& concatId = GetAssetID() + "/" + newId;
+        
         auto& registry = GlobalResourceRegistry::Get();
-        AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
+        AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());
         
         AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
+        newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
         newAsset->m_parentAssetId = GetAssetID();
 
-        registry.RegisterAsset(newAsset.m_ptr, newId);
+        registry.RegisterAsset(newAsset.m_ptr, concatId);
         return newAsset;
     }
 

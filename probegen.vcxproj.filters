@@ -657,6 +657,9 @@
     <ClInclude Include="src\kernels\gi2d\GenericIntersector.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\Common.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

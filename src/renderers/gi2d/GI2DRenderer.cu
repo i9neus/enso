@@ -80,19 +80,21 @@ void GI2DRenderer::OnInitialise()
 
     //m_primitiveContainer.Create(m_renderStream);
      
-    m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>("id_renderObjects");
+    m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
 
-    m_hostTracables = CreateAsset<Cuda::Host::AssetVector<GI2D::Host::Tracable>>("id_tracables", kVectorHostAlloc, m_renderStream);
-    m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>("id_gi2DBIH");
+    m_hostTracables = CreateAsset<Cuda::Host::AssetVector<GI2D::Host::Tracable>>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
+    m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>("id_gi2DOverlay", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, m_renderStream);
-    m_pathTracer = CreateAsset<GI2D::Host::PathTracer>("id_gi2DPathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, m_renderStream);
+    m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
 }
 
 void GI2DRenderer::Rebuild()
 {
+    std::lock_guard<std::mutex> lock(m_resourceMutex);
+    
     if (m_dirtyFlags & kGI2DDirtyGeometry)
     {
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
@@ -106,6 +108,7 @@ void GI2DRenderer::Rebuild()
                 m_hostTracables->EmplaceBack(tracable);
                 return true;
             });
+        m_hostTracables->Synchronise(kVectorSyncUpload);
 
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_hostTracables->Size());
@@ -126,18 +129,12 @@ void GI2DRenderer::Rebuild()
             return Grow((*m_hostTracables)[idx]->GetBoundingBox(), 0.001f);
         };
         m_sceneBIH->Build(getPrimitiveBBox);
-
-        ClearDirtyFlags(m_dirtyFlags);
+        Log::Write("Rebuilt scene BIH: %s", m_sceneBIH->GetBoundingBox().Format());
     }
 
-    if (m_dirtyFlags & kGI2DDirtyView)
-    {
-        m_overlayRenderer->SetViewCtx(m_viewCtx);
-        m_pathTracer->SetViewCtx(m_viewCtx);
-    }
-
-    m_pathTracer->Synchronise();
-    m_overlayRenderer->Synchronise();
+    // View has changed
+    m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx);
+    m_pathTracer->Rebuild(m_dirtyFlags, m_viewCtx); 
 
     ClearDirtyFlags(kGI2DDirtyAll);
 }
@@ -154,7 +151,7 @@ void GI2DRenderer::OnDestroy()
 
 uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
-    Log::Success("Back home!");
+    //Log::Success("Back home!");
     return kUIStateOkay;
 }
 
@@ -353,30 +350,44 @@ uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& tar
 
 uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
+    std::lock_guard <std::mutex> lock(m_resourceMutex);
+    
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kCreatePathOpen")
     {
+        AssetHandle< GI2D::Host::Curve> tempAsset = CreateAsset<GI2D::Host::Curve>(tfm::format("tempcurve%i", m_renderObjects->GetUniqueIndex()));
+        tempAsset->GetDeviceInstance();
+        tempAsset.DestroyAsset();
+        
         //Create a new tracable and add it to the list of render objects
         m_createObject.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
         m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(m_createObject.newObject), false);
+
+        m_createObject.newObject->GetDeviceInstance();
+
+        Log::Error("Create: 0x%x", m_createObject.newObject.get());
+
+        m_createObject.newObject->OnCreate(stateID, m_viewCtx);         
     }
-    else if (stateID == "kCreatePathClose")
+
+    // Invoke the event handler of the new object
+    SetDirtyFlags(m_createObject.newObject->OnCreate(stateID, m_viewCtx));
+
+    if (stateID == "kCreatePathClose")
     {
         Assert(m_createObject.newObject);
-        SetDirtyFlags(m_createObject.newObject->OnCreate(stateID, m_viewCtx));
         
-        // If the new object is empty, delete it
-        if (m_createObject.newObject->IsEmpty())
+        // If the new object can't be finalised, delete it
+        if (!m_createObject.newObject->Finalise())
         {
             m_renderObjects->Erase(m_createObject.newObject->GetAssetID());
             SetDirtyFlags(kGI2DDirtyGeometry);
+
+            Log::Success("Destroyed unfinalised tracable '%s'", m_createObject.newObject->GetAssetID());
         }
 
         return kUIStateOkay;
-    }
-     
-    // Invoke the event handler of the new object
-    SetDirtyFlags(m_createObject.newObject->OnCreate(stateID, m_viewCtx));
+    }    
 
     return kUIStateOkay;
 }
@@ -388,18 +399,7 @@ void GI2DRenderer::OnRender()
 
     if (m_dirtyFlags)
     {
-        std::lock_guard<std::mutex> lock(m_resourceMutex);
-
-        if (m_dirtyFlags & kGI2DDirtyView)
-        {
-            m_overlayRenderer->SetViewCtx(m_viewCtx);
-            m_pathTracer->SetViewCtx(m_viewCtx);
-        }
-
-        //m_pathTracer->Synchronise();
-        m_overlayRenderer->Synchronise();
-
-        //Rebuild();
+        Rebuild();
     }
 
     // Render the pass

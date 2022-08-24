@@ -15,12 +15,13 @@ namespace GI2D
     public:
         __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr) {}
 
-        /*__host__ __device__ virtual bool     IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
-        __host__ __device__ virtual bool     InteresectPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual bool     IntersectBBox(const BBox2f& bBox) const override final;
+        /*__host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
+        __host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
+        __host__ __device__ virtual bool    IntersectBBox(const BBox2f& bBox) const override final;
 
-        __host__ __device__ virtual vec2     PerpendicularPoint(const vec2& p) const override final;
-        __host__ __device__ virtual float    Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;*/
+        __host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;*/
+
+        __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const override final;
 
     protected:
         BIH2D<BIH2DFullNode>*               m_bih;
@@ -64,6 +65,14 @@ namespace GI2D
             __host__ virtual uint       OnMove(const std::string& stateID) override final { return 0; }
             __host__ virtual bool       IsEmpty() const override final;
             __host__ virtual void       Rebuild() override final;
+            __host__ virtual bool       Finalise() override final;
+
+            __host__ virtual TracableInterface* GetDeviceInstance() const override final 
+            { 
+                // NOTE: This cast is necessary because without it the host tries to reference the vtable of cu_deviceInstance and triggers a segfault.
+                return reinterpret_cast<TracableInterface*>(cu_deviceInstance);
+            }
+
         private:
 
 

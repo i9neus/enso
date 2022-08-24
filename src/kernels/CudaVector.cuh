@@ -51,14 +51,14 @@ namespace Cuda
 			m_localData(nullptr) {}
 		__host__ __device__ ~VectorInterface() {}
 
-		__device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
-		__device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
-		__device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
-		__device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
+		__host__ __device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
+		__host__ __device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
+		__host__ __device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
+		__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
 
-		__device__ Type* Data() { return m_localData; }
-		__device__ Type& operator[](const uint idx) { return m_localData[idx]; }
-		__device__ const Type& operator[](const uint idx) const { return m_localData[idx]; }
+		__host__ __device__ Type* Data() { return m_localData; }
+		__host__ __device__ Type& operator[](const uint idx) { return m_localData[idx]; }
+		__host__ __device__ const Type& operator[](const uint idx) const { return m_localData[idx]; }
 		
 	protected:
 		Type*			m_localData;
@@ -213,12 +213,12 @@ namespace Cuda
 			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
 			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance() const 
+			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance() 
 			{ 
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
 				{
-					InstantiateOnDevice<Device::Vector<DeviceType>>(GetAssetID());
+					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>(GetAssetID());
 				}
 
 				return cu_deviceInstance; 
@@ -508,6 +508,14 @@ namespace Cuda
 				AssertMsg(syncFlags == kVectorSyncUpload, "Mapped vectors only supports uploading for now.");
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Trying to synchronise a Vector that does not have host allocation.");
 
+				// Make sure the device data matches the host size
+				if (m_localParams.size != m_deviceParams.size)
+				{
+					ResizeImpl(m_localParams.size, true, false);
+				}
+
+				if (!cu_deviceData) { return; }
+
 				// Allocate some temporary storage
 				m_deviceSyncData = new DeviceType[m_localParams.size];
 				Assert(m_deviceSyncData);
@@ -520,7 +528,7 @@ namespace Cuda
 				}
 
 				// Copy to the device
-				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(HostType) * m_localParams.size, cudaMemcpyHostToDevice));
+				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(DeviceType) * m_localParams.size, cudaMemcpyHostToDevice));
 				delete[] m_deviceSyncData;
 			}
 		};

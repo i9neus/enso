@@ -15,9 +15,10 @@ namespace GI2D
         m_testAsList = params.testAsList;
     }
 
-    __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id) :
+    __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id, const uint& minBuildablePrims) :
         Asset(id),
-        cu_deviceInstance(nullptr)
+        cu_deviceInstance(nullptr),
+        m_minBuildablePrims(minBuildablePrims)
     {
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
 
@@ -42,7 +43,7 @@ namespace GI2D
         //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
 
         // Resize and reset pointers
-        BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, m_primitiveIdxs, 5, functor);
+        BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, m_primitiveIdxs, m_minBuildablePrims, functor);
         builder.m_debugFunctor = m_debugFunctor;
         builder.Build();
 

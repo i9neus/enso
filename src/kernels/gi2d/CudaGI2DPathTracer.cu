@@ -54,7 +54,7 @@ namespace GI2D
 
         assert(m_objects.bih);
         const auto& bih = *m_objects.bih;
-        const Cuda::Device::Vector<Tracable*>& tracables = *m_objects.tracables;
+        const Cuda::Device::Vector<TracableInterface*>& tracables = *m_objects.tracables;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
         //rng.Initialise(HashOf(uint(accum.w)));
@@ -149,10 +149,10 @@ namespace GI2D
 
     __host__ void Host::PathTracer::Render()
     {
-        if (m_isDirty)
+        if (m_dirtyFlags)
         {
             m_hostAccumBuffer->Clear(vec4(0.0f));
-            m_isDirty = false;
+            m_dirtyFlags = 0;
         }
 
         dim3 blockSize, gridSize;
@@ -173,11 +173,11 @@ namespace GI2D
     
     __host__ void Host::PathTracer::Synchronise()
     {
-        if (!m_isDirty) { return; }
+        if (!m_dirtyFlags) { return; }
         
         m_params.view = m_viewCtx.transform;
 
         SynchroniseObjects(cu_deviceData, m_params);
-        m_isDirty = false;        
+        m_dirtyFlags = false;
     }
 }

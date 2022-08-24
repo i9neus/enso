@@ -1,10 +1,8 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
-#include "kernels/math/bbox/CudaBBox2.cuh"
-#include <map>
+#include "Common.cuh"
 
-#include "../CudaAsset.cuh"
+#include "generic/StdIncludes.h"
 #include "../CudaManagedObject.cuh"
 #include "../CudaImage.cuh"
 

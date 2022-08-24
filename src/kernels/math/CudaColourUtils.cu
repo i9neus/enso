@@ -107,4 +107,22 @@ namespace Cuda
                     xyy.z, 
                     (1.0f - xyy.x - xyy.y) * xyy.z / xyy.y);
     }
+
+    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec3& upperRgb, const float& upperAlpha)
+    {
+        // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
+        lowerRgba = mix(lowerRgba, vec4(upperRgb, 1.0f), upperAlpha);
+        lowerRgba.xyz /= max(1e-10f, lowerRgba.w);
+
+        return lowerRgba;
+    }
+
+    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec4& upperRgba)
+    {
+        // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
+        lowerRgba = mix(lowerRgba, vec4(upperRgba.xyz, 1.0f), upperRgba.w);
+        lowerRgba.xyz /= max(1e-10f, lowerRgba.w);
+
+        return lowerRgba;
+    }
 }

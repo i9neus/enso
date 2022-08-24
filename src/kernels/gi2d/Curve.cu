@@ -39,11 +39,26 @@ namespace GI2D
 
     __host__ __device__ vec2 CurveInterface::PerpendicularPoint(const vec2& p) const 
     {
-    }
-
-    __host__ __device__ float CurveInterface::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
-    {
     }*/
+
+    __host__ __device__ vec4 CurveInterface::EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const
+    {
+        vec4 L(0.0f);        
+        m_bih->TestPoint(p, [&, this](const uint* idxRange)
+            {
+                for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
+                {
+                    const auto& segment = (*m_lineSegments)[idx];
+                    const float line = segment.Evaluate(p, 0.001f, viewCtx.dPdXY);
+                    if (line > 0.f)
+                    {
+                        L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                    }
+                }
+            });
+
+        return L;
+    }
     
     __device__ void Device::Curve::Synchronise(const Objects& objects)
     {
@@ -55,8 +70,10 @@ namespace GI2D
         Tracable(id),
         cu_deviceInstance(nullptr)
     {
-        m_hostBIH = CreateChildAsset<Host::BIH2DAsset>(tfm::format("%s_bih", id));
-        m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>(tfm::format("%s_lineSegments", id), kVectorHostAlloc, nullptr);
+        constexpr uint kMinTreePrims = 3;
+        
+        m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
+        m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>(GetAssetID());
 
@@ -86,12 +103,16 @@ namespace GI2D
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        if (stateID == "kCreatePathHover")
+        if (stateID == "kCreatePathOpen")
+        {
+            Log::Success("Opened path %s", GetAssetID());
+        }
+        else if (stateID == "kCreatePathHover")
         {
             if (!m_hostLineSegments->IsEmpty())
             {
                 m_hostLineSegments->Back().Set(1, viewCtx.mousePos);
-                return kGI2DDirtyGeometry;
+                SetDirtyFlags(kGI2DDirtyGeometry);
             }
         }
         else if (stateID == "kCreatePathAppend")
@@ -102,13 +123,13 @@ namespace GI2D
             {
                 // Create a zero-length segment that will be manipulated later
                 m_hostLineSegments->EmplaceBack(viewCtx.mousePos, viewCtx.mousePos, 0, colour);
-                return kGI2DDirtyGeometry;
+                SetDirtyFlags(kGI2DDirtyGeometry);
             }
             else
             {
                 // Any more and we simply reuse the last vertex on the path as the start of the next segment
                 m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], viewCtx.mousePos, 0, colour);
-                return kGI2DDirtyGeometry;
+                SetDirtyFlags(kGI2DDirtyGeometry);
             }
         }
         else if (stateID == "kCreatePathClose")
@@ -117,25 +138,35 @@ namespace GI2D
             if (!m_hostLineSegments->IsEmpty())
             {
                 m_hostLineSegments->PopBack();
-                return kGI2DDirtyGeometry;
             }
+
+            Log::Warning("Closed path %s", GetAssetID());
+            SetDirtyFlags(kGI2DDirtyGeometry);
         }
         else
         {
             AssertMsg(false, "Invalid state");
         }
 
-        return 0;
+        return m_dirtyFlags;
     }
 
     __host__ bool Host::Curve::IsEmpty() const
     {
-        return false;
+        return m_hostLineSegments->IsEmpty();
+    }
+
+    __host__ bool Host::Curve::Finalise()
+    {
+        m_isFinalised = true;
+        return !m_hostLineSegments->IsEmpty();
     }
 
     __host__ void Host::Curve::Rebuild()
     {
-        //Cuda::Host::Vector<GI2D::Host::Tracable>& tracables = *m;
+        if (!(m_dirtyFlags & kGI2DDirtyGeometry)) { return; }
+        
+        // Sync the line segments
         auto& segments = *m_hostLineSegments;
         segments.Synchronise(kVectorSyncUpload);
 
@@ -151,6 +182,13 @@ namespace GI2D
             return Grow(segments[idx].GetBoundingBox(), 0.001f);
         };
         m_hostBIH->Build(getPrimitiveBBox);
+
+        // Update the tracable bounding box 
+        m_tracableBBox = m_hostBIH->GetBoundingBox();
+
+        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), m_tracableBBox.Format());
+
+        ClearDirtyFlags(kGI2DDirtyAll);
 
     //SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);
     }

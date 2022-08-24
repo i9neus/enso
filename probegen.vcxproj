@@ -181,6 +181,7 @@
     </ClInclude>
     <ClInclude Include="src\io\ImageIO.h" />
     <ClInclude Include="src\io\USDIO.h" />
+    <ClInclude Include="src\kernels\gi2d\Common.cuh" />
     <ClInclude Include="src\kernels\gi2d\GenericIntersector.cuh" />
     <ClInclude Include="src\kernels\GlobalResourceRegistry.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />

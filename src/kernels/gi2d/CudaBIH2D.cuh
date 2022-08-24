@@ -123,7 +123,7 @@ namespace GI2D
                     OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->primsIdxs);
+                        onIntersectLeaf(node->GetPrimIdxs());
                     }                    
                     node = nullptr;
                 }
@@ -209,7 +209,7 @@ namespace GI2D
                     OnPrimitiveIntersectInner(nodeBBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->primIdxs, false);
+                        onIntersectLeaf(node->GetPrimIdxs(), false);
                     }
                     node = nullptr;
                 }
@@ -221,7 +221,7 @@ namespace GI2D
                     // If the entire node is contained within p, don't traverse the tree any further. Instead, just invoke the functor for all primitives contained by the node
                     if (p.Contains(nodeBBox))
                     {
-                        onIntersectLeaf(node->primIdxs, true);
+                        onIntersectLeaf(node->GetPrimIdxs(), true);
                         node = nullptr;
                     }
                     else
@@ -393,8 +393,9 @@ namespace GI2D
             while (stackIdx >= 0 || node != nullptr);
         }
 
-        __host__ __device__ __forceinline__ const BBox2f&       GetBBox() const { return m_treeBBox; }
+        __host__ __device__ __forceinline__ const BBox2f&       GetBoundingBox() const { return m_treeBBox; }
         __host__ __device__ __forceinline__ const NodeType*     GetNodes() const { return m_nodes; }
+        __host__ __device__ __forceinline__ uint                GetNumPrimitives() const { return m_numPrims; }
 
     protected:
         NodeType*                   m_nodes;

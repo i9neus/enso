@@ -32,6 +32,8 @@ namespace GI2D
     __device__ void Device::Overlay::Synchronise(const Objects& objects)
     {
         m_objects = objects;
+
+        assert(objects.bih->GetNumPrimitives() == objects.tracables->Size());
     }
 
     __host__ __device__ __forceinline__ bool PointOnPerimiter(const BBox2f& bBox, const vec2& p, float thickness)
@@ -39,13 +41,6 @@ namespace GI2D
         thickness *= 0.5f;
         return (p.x >= bBox.lower.x - thickness && p.y >= bBox.lower.y - thickness && p.x <= bBox.upper.x + thickness && p.y <= bBox.upper.y + thickness) &&
             (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
-    }
-
-    __device__ __forceinline__ vec4 Blend(vec4 lowerRgba, const vec3 upperRgba, const float& upperAlpha)
-    {
-        lowerRgba.xyz = lowerRgba.xyz * (1.0f - upperAlpha) + upperRgba * upperAlpha;
-        lowerRgba.w = mix(lowerRgba.w, 1.0, upperAlpha);
-        return lowerRgba;
     }
 
     __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
@@ -93,31 +88,21 @@ namespace GI2D
             { 
                 L = Blend(L, kOne, 0.5 * m_params.grid.lineAlpha);
             }
-        }      
+        }  
 
         if (m_objects.bih && m_objects.tracables)
         {
-            const Cuda::Device::Vector<Tracable*>& tracables = *(m_objects.tracables);
+            const Cuda::Device::Vector<TracableInterface*>& tracables = *(m_objects.tracables);
       
-            /*auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
+            auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
+                if (kKernelIdx == 0) printf("%i -> %i\n", idxRange[0], idxRange[1]);
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    const float line = tracables[idx]->Evaluate(xyView, 0.001f, m_params.view.dPdXY);
-                    if (line > 0.f)
-                    {
-                        L = Blend(L, segments[idx].IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                        //L += kRed;
-                    }
+                    //L = Blend(L, tracables[idx]->EvaluateOverlay(xyView, m_params.view));                   
                 }
-            };*/
-            /*auto onPointIntersectInner = [&, this](BBox2f bBox, const uchar& depth) -> void
-            {
-                //bBox.Grow(m_params.dPdXY * depth * -5.0f);
-                //if (bBox.Contains(xyView)) { L = mix(L, Hue(depth / 5.0f), 0.3f); }
-                //if (PointOnPerimiter(bBox, xyView, m_params.dPdXY * 2.0)) { L = kOne; }
-            };*/
-            //m_objects.bih->TestPoint(xyView, onPointIntersectLeaf/*, onPointIntersectInner*/);
+            };          
+            m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
 
             /*for (int idx = 0; idx < segments.Size(); ++idx)
             {
@@ -128,6 +113,11 @@ namespace GI2D
                     L += kBlue;
                 }
             }*/
+
+            if (m_objects.bih->GetBoundingBox().PointOnPerimiter(xyView, m_params.view.dPdXY * 2.f))
+            {
+                L = vec4(kOne, 1.0f);
+            }
         }
 
         // Draw the lasso 
@@ -166,7 +156,7 @@ namespace GI2D
 
     __host__ void Host::Overlay::Render()
     {
-        if (!m_isDirty) { return; }
+        if (!m_dirtyFlags) { return; }
         
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
@@ -174,7 +164,7 @@ namespace GI2D
         KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData);
         IsOk(cudaDeviceSynchronize());
 
-        m_isDirty = false;
+        m_dirtyFlags = 0;
     }
 
     __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
@@ -188,7 +178,7 @@ namespace GI2D
 
     __host__ void Host::Overlay::Synchronise()
     {
-        if (!m_isDirty) { return; }        
+        if (!m_dirtyFlags) { return; }
 
         m_params.view = m_viewCtx.transform;
          

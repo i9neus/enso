@@ -36,7 +36,7 @@ namespace GI2D
         public:
             struct Objects
             {
-                Cuda::Device::Vector<Tracable*>* tracables = nullptr;
+                Cuda::Device::Vector<GI2D::TracableInterface*>* tracables = nullptr;
                 GI2D::Device::BIH2DAsset* bih = nullptr;
                 Cuda::Device::ImageRGBW* accumBuffer = nullptr;
             };

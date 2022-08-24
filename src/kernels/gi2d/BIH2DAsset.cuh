@@ -27,7 +27,7 @@ namespace GI2D
             using NodeType = BIH2DFullNode;
             using SubclassType = BIH2D<NodeType>;
         public:            
-            __host__ BIH2DAsset(const std::string& id);
+            __host__ BIH2DAsset(const std::string& id, const uint& minBuildablePrims);
             __host__ virtual ~BIH2DAsset();
 
             __host__ virtual void                   OnDestroyAsset() override final;
@@ -48,6 +48,7 @@ namespace GI2D
             AssetHandle<Cuda::Host::Vector<BIH2DFullNode>> m_hostNodes;
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DParams<BIH2DFullNode>              m_params;
+            const uint                              m_minBuildablePrims;
 
             Device::BIH2DAsset*                     cu_deviceInstance;
         };    

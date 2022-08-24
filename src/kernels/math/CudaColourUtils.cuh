@@ -30,4 +30,7 @@ namespace Cuda
     __host__ __device__ vec3 RGBToHSV(const vec3& rgb);
 
     __host__ __device__ vec3 Heatmap(float phi);
+
+    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec4& upperRgba);
+    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec3& upperRgb, const float& upperAlpha);
 }

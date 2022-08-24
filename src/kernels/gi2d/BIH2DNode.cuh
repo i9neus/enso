@@ -44,8 +44,7 @@ namespace GI2D
         __host__ __device__ BIH2DNodeBase() {}
 
         __host__ __device__ __forceinline__ uchar GetAxis() const { return uchar(flags & uint(3)); }
-        __host__ __device__ __forceinline__ uint GetPrimStartIdx() const { return data.primIdxs[0]; }
-        __host__ __device__ __forceinline__ uint GetPrimEndIdx() const { return data.primIdxs[1]; }
+        __host__ __device__ __forceinline__ const uint* GetPrimIdxs() const { return data.primIdxs; }
         __host__ __device__ __forceinline__ uint GetChildIndex() const { return flags >> 2; }
         __host__ __device__ __forceinline__ bool IsValidLeaf() const { return data.primIdxs[0] != kInvalidLeaf; }
         __host__ __device__ __forceinline__ bool IsLeaf() const { return uchar(flags & uint(3)) == kBIHLeaf; }

@@ -154,7 +154,7 @@ namespace Cuda
             if (newLine) { printf("\n"); }
         }
 
-        __host__ __device__ __forceinline__ bool PointOnPerimiter(const vec2& p, float thickness)
+        __host__ __device__ __forceinline__ bool PointOnPerimiter(const vec2& p, float thickness) const
         {
             thickness *= 0.5f;
             return (p.x >= lower.x - thickness && p.y >= lower.y - thickness && p.x <= upper.x + thickness && p.y <= upper.y + thickness) &&
