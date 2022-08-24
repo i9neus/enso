@@ -129,7 +129,7 @@ void GI2DRenderer::Rebuild()
             return Grow((*m_hostTracables)[idx]->GetBoundingBox(), 0.001f);
         };
         m_sceneBIH->Build(getPrimitiveBBox);
-        Log::Write("Rebuilt scene BIH: %s", m_sceneBIH->GetBoundingBox().Format());
+        //Log::Write("Rebuilt scene BIH: %s", m_sceneBIH->GetBoundingBox().Format());
     }
 
     // View has changed
@@ -354,20 +354,12 @@ uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targ
     
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kCreatePathOpen")
-    {
-        AssetHandle< GI2D::Host::Curve> tempAsset = CreateAsset<GI2D::Host::Curve>(tfm::format("tempcurve%i", m_renderObjects->GetUniqueIndex()));
-        tempAsset->GetDeviceInstance();
-        tempAsset.DestroyAsset();
-        
+    {        
         //Create a new tracable and add it to the list of render objects
         m_createObject.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
         m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(m_createObject.newObject), false);
 
-        m_createObject.newObject->GetDeviceInstance();
-
-        Log::Error("Create: 0x%x", m_createObject.newObject.get());
-
-        m_createObject.newObject->OnCreate(stateID, m_viewCtx);         
+        m_createObject.newObject->OnCreate(stateID, m_viewCtx);   
     }
 
     // Invoke the event handler of the new object

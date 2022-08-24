@@ -1,3 +1,5 @@
+#define CUDA_DEVICE_GLOBAL_ASSERTS
+
 #include "CudaGI2DOverlay.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
@@ -50,8 +52,7 @@ namespace GI2D
         if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
         {
             vec4& target = deviceOutputImage->At(xyScreen);
-            const vec4& source = m_objects.accumBuffer->At(xyScreen);
-            target = Blend(target, source.xyz, source.w);
+            target = Blend(target, m_objects.accumBuffer->At(xyScreen));
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
@@ -69,7 +70,7 @@ namespace GI2D
         //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
         //return;
 
-        vec4 L(0.0f);
+        vec4 L(0.0f, 0.0f, 0.0f, 1.0f);
 
         // Draw the grid
         if (!m_params.view.sceneBounds.Contains(xyView)) 
@@ -91,15 +92,18 @@ namespace GI2D
         }  
 
         if (m_objects.bih && m_objects.tracables)
-        {
+        {            
             const Cuda::Device::Vector<TracableInterface*>& tracables = *(m_objects.tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
-                if (kKernelIdx == 0) printf("%i -> %i\n", idxRange[0], idxRange[1]);
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    //L = Blend(L, tracables[idx]->EvaluateOverlay(xyView, m_params.view));                   
+                    assert(idx < tracables.Size());
+                    assert(tracables[idx]);
+
+                    const auto& tracable = *tracables[idx];
+                    L = Blend(L, tracable.EvaluateOverlay(xyView, m_params.view));
                 }
             };          
             m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);

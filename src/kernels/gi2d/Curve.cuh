@@ -8,6 +8,7 @@ namespace GI2D
 {
     struct CurveParams
     {
+        TracableParams tracable;
     };
 
     class CurveInterface : virtual public TracableInterface
@@ -21,11 +22,13 @@ namespace GI2D
 
         __host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;*/
 
-        __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const override final;
+        __device__ virtual vec4             EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const override final;
 
     protected:
         BIH2D<BIH2DFullNode>*               m_bih;
         VectorInterface<LineSegment>*       m_lineSegments;
+
+        CurveParams                         m_curveParams;
     };
 
     namespace Device
@@ -43,6 +46,7 @@ namespace GI2D
             __device__ Curve() {}
 
             __device__ void             Synchronise(const Objects& objects);
+            __device__ void             Synchronise(const CurveParams& params);
         };
     }
 
@@ -69,8 +73,7 @@ namespace GI2D
 
             __host__ virtual TracableInterface* GetDeviceInstance() const override final 
             { 
-                // NOTE: This cast is necessary because without it the host tries to reference the vtable of cu_deviceInstance and triggers a segfault.
-                return reinterpret_cast<TracableInterface*>(cu_deviceInstance);
+                return cu_deviceTracableInterface;
             }
 
         private:
@@ -78,6 +81,7 @@ namespace GI2D
 
         private:
             Device::Curve*                                  cu_deviceInstance;
+            TracableInterface*                              cu_deviceTracableInterface;
             Device::Curve::Objects                          m_deviceData;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;

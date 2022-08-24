@@ -57,8 +57,16 @@ namespace Cuda
 		__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
 
 		__host__ __device__ Type* Data() { return m_localData; }
-		__host__ __device__ Type& operator[](const uint idx) { return m_localData[idx]; }
-		__host__ __device__ const Type& operator[](const uint idx) const { return m_localData[idx]; }
+		__host__ __device__ Type& operator[](const uint idx) 
+		{ 
+			assert(idx < m_localParams.size);
+			return m_localData[idx]; 
+		}
+		__host__ __device__ const Type& operator[](const uint idx) const 
+		{ 
+			assert(idx < m_localParams.size);
+			return m_localData[idx]; 
+		}
 		
 	protected:
 		Type*			m_localData;
@@ -138,6 +146,9 @@ namespace Cuda
 				m_hostStream = hostStream;
 				m_localParams.flags = flags;
 
+				static_assert(std::is_trivial<HostType>::value || std::is_move_assignable<HostType>::value,
+					"HostType is neither trivial not move-assignable");
+
 				AssertMsg(!((m_localParams.flags & kVectorUnifiedMemory) && !(m_localParams.flags & kVectorHostAlloc)),
 					"Must specify kVectorHostAlloc when using kVectorUnifiedMemory.");
 
@@ -193,7 +204,7 @@ namespace Cuda
 
 				if (m_localData && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					delete[] m_localData;
+					std::free(m_localData);
 					m_localData = nullptr;
 				}
 			}
@@ -408,13 +419,29 @@ namespace Cuda
 					// Don't adjust capacity if it means reducing the size of the array
 					Assert(newCapacity >= m_localParams.size);
 
-					HostType* newHostData = new HostType[newCapacity];
-					if (m_localData)
+					HostType* newHostData; 
+					if (std::is_trivial<HostType>::value)
 					{
-						std::memcpy(newHostData, m_localData, m_localParams.size * sizeof(HostType));
+						newHostData = static_cast<HostType*>(std::malloc(sizeof(HostType) * newCapacity));
+						if (m_localData)
+						{
+							std::memcpy(newHostData, m_localData, m_localParams.size * sizeof(HostType));
+						}
+						std::free(m_localData);
+					}
+					else
+					{						
+						newHostData = new HostType[newCapacity];
+						if (m_localData)
+						{
+							for (int idx = 0; idx < m_localParams.size; ++idx)
+							{
+								newHostData[idx] = std::move(m_localData[idx]);
+							}
+							delete[] m_localData;
+						}
 					}
 
-					delete[] m_localData;
 					m_localData = newHostData;
 					m_localParams.capacity = newCapacity;
 
@@ -530,6 +557,9 @@ namespace Cuda
 				// Copy to the device
 				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(DeviceType) * m_localParams.size, cudaMemcpyHostToDevice));
 				delete[] m_deviceSyncData;
+
+				// Synchronise the device data pointers and the params
+				Cuda::Synchronise(GetDeviceInstance(), cu_deviceData, m_deviceParams);
 			}
 		};
 	}

@@ -115,8 +115,8 @@ namespace Cuda
 		IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(ObjectType) * numElements, cudaMemcpyHostToDevice));
 	}
 
-	template<typename ObjectType, typename... Pack>
-	__global__ void KernelCreateDeviceInstance(ObjectType** newInstance, Pack... args)
+	template<typename ObjectType, typename UpcastType, typename... Pack>
+	__global__ void KernelCreateDeviceInstance(UpcastType** newInstance, Pack... args)
 	{
 		assert(newInstance);
 		assert(!*newInstance);
@@ -126,14 +126,14 @@ namespace Cuda
 		assert(*newInstance);
 	}
 
-	template<typename ObjectType, typename... Pack>
+	template<typename ObjectType, typename UpcastType = ObjectType, typename... Pack>
 	__host__ inline ObjectType* InstantiateOnDevice(const std::string& assetId, Pack... args)
 	{
 		ObjectType** cu_tempBuffer;
 		IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
 		IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
 
-		KernelCreateDeviceInstance << <1, 1 >> > (cu_tempBuffer, args...);
+		KernelCreateDeviceInstance<ObjectType, UpcastType> << <1, 1 >> > (cu_tempBuffer, args...);
 		IsOk(cudaDeviceSynchronize());
 
 		ObjectType* cu_data = nullptr;
@@ -161,6 +161,39 @@ namespace Cuda
 		IsOk(cudaFree(cu_params));		
 		return cu_data;
 	}	
+
+	template<typename ObjectType, typename CastType>
+	__global__ void KernelStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
+	{
+		assert(inputPtr);
+		assert(outputPtr);
+		assert(*inputPtr);
+
+		*outputPtr = static_cast<CastType*>(*inputPtr);
+	}
+
+	template<typename CastType, typename ObjectType>
+	__host__ inline CastType* StaticCastOnDevice(ObjectType* object)
+	{
+		static_assert(std::is_convertible<ObjectType*, CastType*>::value, "Can't statically cast between these inputs.");
+
+		ObjectType** cu_inputPtr;
+		IsOk(cudaMalloc((void***)&cu_inputPtr, sizeof(ObjectType*)));
+		IsOk(cudaMemcpy(cu_inputPtr, &object, sizeof(ObjectType*), cudaMemcpyHostToDevice));
+		CastType** cu_outputPtr;
+		IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
+		IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
+
+		KernelStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
+		IsOk(cudaDeviceSynchronize());
+
+		CastType* outputPtr = nullptr;
+		IsOk(cudaMemcpy(&outputPtr, cu_outputPtr, sizeof(CastType*), cudaMemcpyDeviceToHost));
+		IsOk(cudaFree(cu_inputPtr));
+		IsOk(cudaFree(cu_outputPtr));
+
+		return outputPtr;
+	}
 
 	template<typename ObjectType>
 	__host__ bool IsParameterStandardType(const ObjectType t)

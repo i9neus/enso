@@ -41,9 +41,19 @@ namespace GI2D
     {
     }*/
 
-    __host__ __device__ vec4 CurveInterface::EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const
+    __device__ vec4 CurveInterface::EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const
     {
         vec4 L(0.0f);        
+
+        if (m_tracableParams.objectBBox.Contains(p))
+        {
+            L = vec4(kRed, 1.0f);
+        }
+
+        //if(kKernelIdx == 0) 
+        //    printf("************************ 0x%x {{%f, %f}, {%f, %f}}\n", this, m_tracableParams.objectBBox.lower.x, m_tracableParams.objectBBox.lower.y,
+        //        m_tracableParams.objectBBox.upper.x, m_tracableParams.objectBBox.upper.y);
+
         m_bih->TestPoint(p, [&, this](const uint* idxRange)
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
@@ -56,7 +66,7 @@ namespace GI2D
                     }
                 }
             });
-
+       
         return L;
     }
     
@@ -64,6 +74,15 @@ namespace GI2D
     {
         m_bih = objects.bih;
         m_lineSegments = objects.lineSegments;
+    }
+
+    __device__ void Device::Curve::Synchronise(const CurveParams& params)
+    {
+        TracableInterface::Synchronise(params.tracable);
+        m_curveParams = params;
+
+        //printf("************************ 0x%x {{%f, %f}, {%f, %f}}\n", this, m_tracableParams.objectBBox.lower.x, m_tracableParams.objectBBox.lower.y,
+        //    m_tracableParams.objectBBox.upper.x, m_tracableParams.objectBBox.upper.y);
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
@@ -76,10 +95,13 @@ namespace GI2D
         m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>(GetAssetID());
+        cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
 
         m_deviceData.bih = m_hostBIH->GetDeviceInstance();
         m_deviceData.lineSegments = m_hostLineSegments->GetDeviceInstance();
 
+        SynchroniseObjects(cu_deviceInstance, m_deviceData); 
+        
         Synchronise();
     }
 
@@ -98,7 +120,9 @@ namespace GI2D
 
     __host__ void Host::Curve::Synchronise()
     {
-        SynchroniseObjects(cu_deviceInstance, m_deviceData);
+        m_curveParams.tracable = m_tracableParams;
+
+        SynchroniseObjects(cu_deviceInstance, m_curveParams);
     }
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
@@ -184,10 +208,11 @@ namespace GI2D
         m_hostBIH->Build(getPrimitiveBBox);
 
         // Update the tracable bounding box 
-        m_tracableBBox = m_hostBIH->GetBoundingBox();
+        m_tracableParams.objectBBox = m_hostBIH->GetBoundingBox();
 
-        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), m_tracableBBox.Format());
+        Synchronise();
 
+        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetBoundingBox().Format());
         ClearDirtyFlags(kGI2DDirtyAll);
 
     //SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);

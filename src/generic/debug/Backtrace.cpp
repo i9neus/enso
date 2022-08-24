@@ -170,7 +170,7 @@ namespace StackBacktrace
 
         std::lock_guard<std::mutex> lock(cacheMutex);
         cachedBacktrace.clear();
-        for (int i = 0; i < stack.size() - 1; ++i)
+        for (int i = 0; i < int(stack.size()) - 1; ++i)
         {
             const auto& frame = stack[i + 1];
             cachedBacktrace.push_back(tfm::format("%i: 0x%x: %s in %s (%i)\n", i, frame.address, frame.name, frame.file, frame.line));

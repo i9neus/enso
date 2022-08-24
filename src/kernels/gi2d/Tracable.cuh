@@ -13,6 +13,12 @@ using namespace Cuda;
 
 namespace GI2D
 {
+    struct TracableParams
+    {
+        BBox2f                      objectBBox;
+        BidirectionalTransform2D    transform;
+    };
+    
     // This class provides an interface for querying the tracable via geometric operations
     class TracableInterface
     {
@@ -22,9 +28,10 @@ namespace GI2D
         __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const { return false; }
 
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }*/
-        __host__ __device__ virtual vec4                    EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const { return vec4(0.0f); }
+        __device__ virtual vec4                             EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const { return vec4(0.0f); }
 
-        __host__ __device__ virtual const BBox2f&           GetBoundingBox() const { return m_tracableBBox; }
+        __host__ __device__ const BBox2f&                   GetBoundingBox() const { return m_tracableParams.objectBBox; };
+        __device__ void                                     Synchronise(const TracableParams& params) { m_tracableParams = params; }
 
     protected:
         __host__ __device__ TracableInterface() {};
@@ -32,16 +39,15 @@ namespace GI2D
         __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
         {
             RayBasic2D obj;
-            obj.o = world.o - m_transform.trans;
+            obj.o = world.o - m_tracableParams.transform.trans;
             obj.d = world.d + obj.o;
-            obj.o = m_transform.fwd * obj.o;
-            obj.d = (m_transform.fwd * obj.d) - obj.o;
+            obj.o = m_tracableParams.transform.fwd * obj.o;
+            obj.d = (m_tracableParams.transform.fwd * obj.d) - obj.o;
             return obj;
         }
 
     protected:
-        BBox2f                      m_tracableBBox;
-        BidirectionalTransform2D    m_transform;
+        TracableParams m_tracableParams;
     };
     
     namespace Device
