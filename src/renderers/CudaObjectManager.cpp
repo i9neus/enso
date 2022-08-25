@@ -165,15 +165,16 @@ void CudaObjectManager::UpdateD3DOutputTexture(UINT64& currentFenceValue, Cuda::
 	}
 
 	// Only emplace another copy call if the previous one has successfully executed
-	if (cudaEventQuery(m_renderEvent) == cudaSuccess)
+	// FIXME: Event management is totally broken here. Does this event querying need to be removed or replaced?
+	//if (cudaEventQuery(m_renderEvent) == cudaSuccess)
 	{
 		Assert(compositeImage);
 		if (doRedraw)
 		{
 			compositeImage->CopyImageToD3DTexture(m_clientWidth, m_clientHeight, m_cuSurface, nullptr);
+			IsOk(cudaDeviceSynchronize());
 		}
-		IsOk(cudaDeviceSynchronize());
-		IsOk(cudaEventRecord(m_renderEvent, nullptr));
+		//IsOk(cudaEventRecord(m_renderEvent, nullptr));
 	}
 	//IsOk(cudaStreamSynchronize(m_D3DStream));
 

@@ -204,7 +204,14 @@ namespace Cuda
 
 				if (m_localData && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					std::free(m_localData);
+					if (std::is_trivial<HostType>::value)
+					{
+						std::free(m_localData);
+					}
+					else
+					{
+						delete[] m_localData;
+					}
 					m_localData = nullptr;
 				}
 			}

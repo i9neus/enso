@@ -13,22 +13,25 @@ namespace GI2D
 
     class CurveInterface : virtual public TracableInterface
     {
+        using Super = TracableInterface;
     public:
-        __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr) {}
+        __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr)
+        {
+            printf("CurveInterface ctor\n");
+        }
 
-        /*__host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
-        __host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual bool    IntersectBBox(const BBox2f& bBox) const override final;
+        //__host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
+        //__host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
+        //__host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;
 
-        __host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;*/
-
-        __device__ virtual vec4             EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const override final;
+    protected:
+        __device__ virtual vec4             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
 
     protected:
         BIH2D<BIH2DFullNode>*               m_bih;
         VectorInterface<LineSegment>*       m_lineSegments;
 
-        CurveParams                         m_curveParams;
+        CurveParams                         m_params;
     };
 
     namespace Device
@@ -43,7 +46,10 @@ namespace GI2D
             };
 
         public:
-            __device__ Curve() {}
+            __device__ Curve() 
+            { 
+                printf("Device::Curve ctor\n");
+            }
 
             __device__ void             Synchronise(const Objects& objects);
             __device__ void             Synchronise(const CurveParams& params);
@@ -61,14 +67,12 @@ namespace GI2D
             __host__ virtual ~Curve();
 
             __host__ virtual void       OnDestroyAsset() override final;
-            __host__ void               Synchronise();
+            __host__ void               SynchroniseParams();
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
-            __host__ virtual uint       OnSelect() override final { return 0; }
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
-            __host__ virtual uint       OnMove(const std::string& stateID) override final { return 0; }
             __host__ virtual bool       IsEmpty() const override final;
-            __host__ virtual void       Rebuild() override final;
+            __host__ virtual void       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       Finalise() override final;
 
             __host__ virtual TracableInterface* GetDeviceInstance() const override final 

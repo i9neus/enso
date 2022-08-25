@@ -21,30 +21,9 @@ namespace GI2D
     {
         __host__ __device__ OverlayParams();
 
-        ViewTransform2D view;
-
-        int selectedSegmentIdx;
-        vec2 mousePosView;
-        vec2 rayOriginView;
-
-        struct
-        {
-            bool show;
-            float majorLineSpacing;
-            float minorLineSpacing;
-            float lineAlpha;
-        } 
-        grid;
-
-        struct
-        {
-            vec2 mouse0, mouse1;
-            BBox2f lassoBBox;
-            BBox2f selectedBBox;
-            bool isLassoing;
-            uint numSelected;
-        }
-        selection;
+        UIViewCtx           viewCtx;
+        UIGridCtx           gridCtx;
+        UISelectionCtx      selectionCtx;
     };
 
     namespace Device

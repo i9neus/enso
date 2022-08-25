@@ -11,14 +11,16 @@ namespace Cuda
         using ScalarType = typename T::kType;
         using VecType = T;
 
-        __host__ __device__ BBox2() noexcept : lower(ScalarType(0)), upper(ScalarType(0)) {}
-        __host__ __device__ BBox2(const BBox2&) = default;
+        // NOTE: Commented out to suppress nvcc compiler warnings
+        __host__ __device__  BBox2() noexcept {}
+        //__host__ __device__ BBox2(const BBox2&) = default;
         //__host__ __device__ BBox2(BBox2&&) = default;
-        //__host__ __device__ BBox2& operator=(const BBox2&) = default;  // NOTE: Commented out to suppress nvcc compiler warnings
-        __host__ __device__ ~BBox2() {};
+        //__host__ __device__ BBox2& operator=(const BBox2&) = default;  
+        //__host__ __device__ ~BBox2() {};
 
-        __host__ __device__ __forceinline__ BBox2(const VecType & l, const VecType & u) noexcept : lower(l), upper(u) {}
-        __host__ __device__ __forceinline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
+        __host__ __device__ __inline__ BBox2(const VecType& v) noexcept : lower(v), upper(v) {}
+        __host__ __device__ __inline__ BBox2(const VecType& l, const VecType& u) noexcept : lower(l), upper(u) {}
+        __host__ __device__ __inline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
 
         template<typename OtherType>  
         __host__ __device__ __forceinline__  BBox2(const BBox2<OtherType>& other) :
@@ -31,7 +33,7 @@ namespace Cuda
 
         __host__ __device__ __forceinline__ bool HasZeroArea() const { return upper.x == lower.x || upper.y == lower.y; }
         __host__ __device__ __forceinline__ bool HasPositiveArea() const { return upper.x > lower.x && upper.y > lower.y; }
-        __host__ __device__ __forceinline__ bool HasValidArea() const { return upper.x >= lower.x && upper.y >= lower.y; }
+        __host__ __device__ __forceinline__ bool IsValid() const { return upper.x >= lower.x && upper.y >= lower.y; }
         __host__ __device__ __forceinline__ bool IsInfinite() const { return upper.x == kFltMax || lower.x == -kFltMax || upper.y == kFltMax || lower.y == -kFltMax; }
         __host__ __device__ __forceinline__ ScalarType Area() const { return (upper.x - lower.x) * (upper.y - lower.y); }
         __host__ __device__ __forceinline__ ScalarType Width() const { return upper.x - lower.x; }
@@ -210,7 +212,7 @@ namespace Cuda
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> operator+(const BBox2<T>& lhs, const typename BBox2<T>::VecType& rhs)
     {
-        return BBox2<T>(lhs.lower + rhs, rhs.upper + rhs);
+        return BBox2<T>(lhs.lower + rhs, lhs.upper + rhs);
     }
 
     template<typename T>

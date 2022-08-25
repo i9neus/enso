@@ -329,6 +329,7 @@
     <CudaCompile Include="src\kernels\gi2d\CudaGI2DPathTracer.cu" />
     <CudaCompile Include="src\kernels\gi2d\CudaPrimitive2D.cu" />
     <CudaCompile Include="src\kernels\gi2d\Curve.cu" />
+    <CudaCompile Include="src\kernels\gi2d\Tracable.cu" />
     <CudaCompile Include="src\kernels\GlobalResourceRegistry.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />
@@ -369,6 +370,9 @@
   <ItemGroup>
     <None Include="bin\win64\Release\config.json" />
     <None Include="scenes\template.usda" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\BugChecklist.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{997E0757-EA74-4A4E-A0FC-47D8C8831A15}</ProjectGuid>

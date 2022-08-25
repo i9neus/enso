@@ -29,13 +29,13 @@ namespace GI2D
             for (const auto idx : m_primitiveIdxs)
             {
                 const BBox2f primBBox = m_getPrimitiveBBox(idx);
-                AssertMsgFmt(primBBox.HasValidArea(),
+                AssertMsgFmt(primBBox.IsValid(),
                     "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
                 m_bih.m_treeBBox = Union(m_bih.m_treeBBox, primBBox);
                 centroidBBox = Union(centroidBBox, primBBox.Centroid());
             }
 
-            AssertMsgFmt(m_bih.m_treeBBox.HasValidArea() && !m_bih.m_treeBBox.IsInfinite(),
+            AssertMsgFmt(m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite(),
                 "BIH bounding box is invalid: %s", m_bih.m_treeBBox.Format().c_str());
         }
 

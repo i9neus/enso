@@ -30,9 +30,10 @@ namespace GI2D
             __host__ virtual void   Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const = 0;
             __host__ virtual void   Synchronise() = 0;
 
-            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& ctx)
+            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
             { 
-                m_viewCtx = ctx;  
+                m_viewCtx = viewCtx;  
+                m_selectionCtx = selectionCtx;
                 m_dirtyFlags = dirtyFlags;
 
                 Synchronise();
@@ -50,7 +51,8 @@ namespace GI2D
             }
 
         protected:
-            UIViewCtx   m_viewCtx;
+            UIViewCtx                                               m_viewCtx;
+            UISelectionCtx                                          m_selectionCtx;
              
             AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
             AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>    m_hostTracables;

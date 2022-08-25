@@ -86,8 +86,11 @@ protected:
     }   
     #undef IsDownImpl
 
-    inline void SetDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags | code; }
-    inline void ClearDirtyFlags(const uint code) { m_dirtyFlags = m_dirtyFlags & ~code; }
+    inline void SetDirtyFlags(const uint code, bool isSet = true) 
+    { 
+        if (isSet) { m_dirtyFlags |= code; }
+        else       { m_dirtyFlags &= ~code; }
+    }
 
 private:
     void RunThread();

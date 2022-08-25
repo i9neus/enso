@@ -30,36 +30,23 @@ namespace GI2D
 
     __host__ __device__ bool CurveInterface::InteresectPoint(const vec2& p, const float& thickness) const
     {
-    }
+    }*/
 
-    __host__ __device__ bool CurveInterface::IntersectBBox(const BBox2f& bBox) const
-    {
-        return bBox.Intersects(m_tracableBBox);
-    }
-
-    __host__ __device__ vec2 CurveInterface::PerpendicularPoint(const vec2& p) const 
+    /*__host__ __device__ vec2 CurveInterface::PerpendicularPoint(const vec2& p) const 
     {
     }*/
 
-    __device__ vec4 CurveInterface::EvaluateOverlay(const vec2& p, const ViewTransform2D& viewCtx) const
+    __device__ vec4 CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        vec4 L(0.0f);        
+        vec4 L(0.0f);
+        const vec2 pLocal = pWorld - m_params.tracable.transform.trans;
 
-        if (m_tracableParams.objectBBox.Contains(p))
-        {
-            L = vec4(kRed, 1.0f);
-        }
-
-        //if(kKernelIdx == 0) 
-        //    printf("************************ 0x%x {{%f, %f}, {%f, %f}}\n", this, m_tracableParams.objectBBox.lower.x, m_tracableParams.objectBBox.lower.y,
-        //        m_tracableParams.objectBBox.upper.x, m_tracableParams.objectBBox.upper.y);
-
-        m_bih->TestPoint(p, [&, this](const uint* idxRange)
+        m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
                     const auto& segment = (*m_lineSegments)[idx];
-                    const float line = segment.Evaluate(p, 0.001f, viewCtx.dPdXY);
+                    const float line = segment.Evaluate(pLocal, 0.001f, viewCtx.dPdXY);
                     if (line > 0.f)
                     {
                         L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
@@ -78,17 +65,16 @@ namespace GI2D
 
     __device__ void Device::Curve::Synchronise(const CurveParams& params)
     {
-        TracableInterface::Synchronise(params.tracable);
-        m_curveParams = params;
-
-        //printf("************************ 0x%x {{%f, %f}, {%f, %f}}\n", this, m_tracableParams.objectBBox.lower.x, m_tracableParams.objectBBox.lower.y,
-        //    m_tracableParams.objectBBox.upper.x, m_tracableParams.objectBBox.upper.y);
+        Super::Synchronise(params.tracable);
+        m_params = params;
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
         Tracable(id),
         cu_deviceInstance(nullptr)
     {
+        Log::Warning("Constructed Host::Curve");
+        
         constexpr uint kMinTreePrims = 3;
         
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
@@ -102,7 +88,7 @@ namespace GI2D
 
         SynchroniseObjects(cu_deviceInstance, m_deviceData); 
         
-        Synchronise();
+        SynchroniseParams();
     }
 
     __host__ Host::Curve::~Curve()
@@ -118,45 +104,48 @@ namespace GI2D
         m_hostLineSegments.DestroyAsset();
     }
 
-    __host__ void Host::Curve::Synchronise()
+    __host__ void Host::Curve::SynchroniseParams()
     {
-        m_curveParams.tracable = m_tracableParams;
+        m_params.tracable = Super::m_params;
 
-        SynchroniseObjects(cu_deviceInstance, m_curveParams);
+        SynchroniseObjects(cu_deviceInstance, m_params);
     }
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        if (stateID == "kCreatePathOpen")
+        const vec2 mousePosLocal = viewCtx.mousePos - Super::m_params.transform.trans;
+        if (stateID == "kCreateTracableOpen")
         {
+            Super::m_params.transform.trans = viewCtx.mousePos;
+           
             Log::Success("Opened path %s", GetAssetID());
         }
-        else if (stateID == "kCreatePathHover")
+        else if (stateID == "kCreateTracableHover")
         {
             if (!m_hostLineSegments->IsEmpty())
             {
-                m_hostLineSegments->Back().Set(1, viewCtx.mousePos);
-                SetDirtyFlags(kGI2DDirtyGeometry);
+                m_hostLineSegments->Back().Set(1, mousePosLocal);
+                SetDirtyFlags(kGI2DDirtyBVH);
             }
         }
-        else if (stateID == "kCreatePathAppend")
+        else if (stateID == "kCreateTracableAppend")
         {
             const vec3 colour = Hue(PseudoRNG(HashOf(m_hostLineSegments->Size())).Rand<0>());
 
             if (m_hostLineSegments->IsEmpty())
             {
                 // Create a zero-length segment that will be manipulated later
-                m_hostLineSegments->EmplaceBack(viewCtx.mousePos, viewCtx.mousePos, 0, colour);
-                SetDirtyFlags(kGI2DDirtyGeometry);
+                m_hostLineSegments->EmplaceBack(mousePosLocal, mousePosLocal, 0, colour);
             }
             else
             {
                 // Any more and we simply reuse the last vertex on the path as the start of the next segment
-                m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], viewCtx.mousePos, 0, colour);
-                SetDirtyFlags(kGI2DDirtyGeometry);
+                m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], mousePosLocal, 0, colour);
             }
+
+            SetDirtyFlags(kGI2DDirtyBVH);
         }
-        else if (stateID == "kCreatePathClose")
+        else if (stateID == "kCreateTracableClose")
         {
             // Delete the floating segment when closing the path
             if (!m_hostLineSegments->IsEmpty())
@@ -165,7 +154,7 @@ namespace GI2D
             }
 
             Log::Warning("Closed path %s", GetAssetID());
-            SetDirtyFlags(kGI2DDirtyGeometry);
+            SetDirtyFlags(kGI2DDirtyBVH);
         }
         else
         {
@@ -186,102 +175,44 @@ namespace GI2D
         return !m_hostLineSegments->IsEmpty();
     }
 
-    __host__ void Host::Curve::Rebuild()
+    __host__ void Host::Curve::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
     {
-        if (!(m_dirtyFlags & kGI2DDirtyGeometry)) { return; }
+        if (!m_dirtyFlags) { return; }
+
+        bool resyncParams = false;
         
-        // Sync the line segments
-        auto& segments = *m_hostLineSegments;
-        segments.Synchronise(kVectorSyncUpload);
-
-        // Create a segment list ready for building
-        // TODO: It's probably faster if we build on the already-sorted index list
-        auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
-        primIdxs.resize(segments.Size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-        // Construct the BIH
-        std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
+        // If the geometry has changed, rebuild the BIH
+        if (m_dirtyFlags & kGI2DDirtyBVH)
         {
-            return Grow(segments[idx].GetBoundingBox(), 0.001f);
-        };
-        m_hostBIH->Build(getPrimitiveBBox);
+            // Sync the line segments
+            auto& segments = *m_hostLineSegments;
+            segments.Synchronise(kVectorSyncUpload);
 
-        // Update the tracable bounding box 
-        m_tracableParams.objectBBox = m_hostBIH->GetBoundingBox();
+            // Create a segment list ready for building
+            // TODO: It's probably faster if we build on the already-sorted index list
+            auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
+            primIdxs.resize(segments.Size());
+            for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
 
-        Synchronise();
+            // Construct the BIH
+            std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
+            {
+                return Grow(segments[idx].GetBoundingBox(), 0.001f);
+            };
+            m_hostBIH->Build(getPrimitiveBBox);
 
-        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetBoundingBox().Format());
-        ClearDirtyFlags(kGI2DDirtyAll);
+            // Update the tracable bounding boxes
+            Super::m_params.objectBBox = m_hostBIH->GetBoundingBox();
+            Super::m_params.worldBBox = Super::m_params.objectBBox + Super::m_params.transform.trans;
+            Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format());
 
-    //SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);
+            resyncParams = true;
+        }
+
+        if (m_dirtyFlags & kGI2DDirtyTransforms) { resyncParams = true; }
+
+        if (resyncParams) { SynchroniseParams(); }
+
+        ClearDirtyFlags();
     }
-
-    /*__host__ uint Host::Curve::OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx)
-    {
-        if (stateID == "kSelectPathDragging")        
-        {
-            const bool wasLassoing = selectCtx.isLassoing;
-
-            if (!selectCtx.isLassoing)
-            {
-                // Deselect all the path segments
-                for (auto& segment : *m_hostLineSegments) { segment.SetFlags(k2DPrimitiveSelected, false); }
-
-                selectCtx.lassoBBox = BBox2f(mousePos, mousePos);
-                selectCtx.isLassoing = true;
-                m_numSelected = 0;
-
-                return kGI2DDirtyPrimitiveAttributes;
-            }
-
-            selectCtx.lassoBBox = Grow(Rectify(selectCtx.mouseBBox), viewCtx.dPdXY * 2.);
-            selectCtx.selectedBBox = BBox2f::MakeInvalid();
-
-            //std::lock_guard <std::mutex> lock(m_resourceMutex);
-            if (m_hostBIH->IsConstructed())
-            {
-                const uint lastNumSelected = m_numSelected;
-
-                auto onIntersectPrim = [this](const uint& startIdx, const uint& endIdx, const bool isInnerNode)
-                {
-                    // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
-                    if (isInnerNode)
-                    {
-                        for (int idx = startIdx; idx < endIdx; ++idx) { (*m_hostLineSegments)[idx].SetFlags(k2DPrimitiveSelected, true); }
-                        m_numSelected += endIdx - startIdx;
-                    }
-                    else
-                    {
-                        for (int idx = startIdx; idx < endIdx; ++idx)
-                        {
-                            const bool isCaptured = lineSegments[idx].Intersects(selection.lassoBBox);
-                            if (isCaptured)
-                            {
-                                selection.selectedBBox = Union(selection.selectedBBox, lineSegments[idx].GetBoundingBox());
-                                ++selection.numSelected;
-                            }
-                            lineSegments[idx].SetFlags(k2DPrimitiveSelected, isCaptured);
-                        }
-                    }
-                };
-                m_objects.sceneBIH->TestBBox(selection.lassoBBox, onIntersectPrim);
-
-                // Only if the number of selected primitives has changed
-                if (lastNumSelected != selection.numSelected)
-                {
-                    if (selection.numSelected > 0 && !wasLassoing)
-                    {
-                        selection.isLassoing = false;
-                        m_uiGraph.SetState("kMovePathBegin");
-                    }
-
-                    SetDirtyFlags(kGI2DDirtyPrimitiveAttributes);
-                }
-            }
-
-            Log::Success("Selecting!");
-        return 0;
-    }*/
 }

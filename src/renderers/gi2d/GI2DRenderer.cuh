@@ -87,6 +87,7 @@ private:
     uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx);
 
     std::string             DecideOnClickState(const uint& sourceStateIdx);
+    void                    DeselectAll();
 
 private:
     enum JobIDs : uint { kJobDraw };
@@ -106,18 +107,19 @@ private:
 
     Cuda::AssetHandle<Cuda::RenderObjectContainer> m_renderObjects;
 
+    GI2D::UIGridCtx                             m_gridCtx;
     GI2D::UIViewCtx                             m_viewCtx;
-    GI2D::UISelectionCtx                        m_selectCtx;
+    GI2D::UISelectionCtx                        m_selectionCtx;
 
     struct
     {
         AssetHandle<GI2D::Host::Tracable>   newObject;
     } 
-    m_createObject;
+    m_onCreate;
 
     struct
     {
         Cuda::vec2                              dragAnchor;
     }
-    m_moveTracable;
+    m_onMove;
 };

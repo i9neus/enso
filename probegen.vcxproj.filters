@@ -776,6 +776,9 @@
     <Filter Include="renderers\probegen">
       <UniqueIdentifier>{4f03bd4e-7804-4afe-9dd9-283a8042b17b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{81600cc4-2777-4121-a577-011dd391a071}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\kernels\CudaWavefrontTracer.cu">
@@ -925,6 +928,9 @@
     <CudaCompile Include="src\kernels\GlobalResourceRegistry.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\Tracable.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -934,5 +940,10 @@
     <None Include="scenes\template.usda">
       <Filter>scenes</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\BugChecklist.txt">
+      <Filter>docs</Filter>
+    </Text>
   </ItemGroup>
 </Project>

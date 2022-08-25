@@ -13,21 +13,37 @@ namespace Cuda
 
 namespace GI2D
 {
+    struct UIGridCtx
+    {
+        bool                    show;
+        float                   majorLineSpacing;
+        float                   minorLineSpacing;
+        float                   lineAlpha;
+    };
+    
     struct UISelectionCtx
     {
         BBox2f                  mouseBBox;
         BBox2f                  lassoBBox;
         BBox2f                  selectedBBox;
-        bool                    isLassoing;
-        uint                    numSelected;
+        bool                    isLassoing = false;
+        uint                    numSelected = 0;
+        uint                    selectedIdx = 0xffffffff;
     };
 
     struct UIViewCtx
     {
-        UIViewCtx() : resourceMutex(nullptr) {}
-        UIViewCtx(std::mutex& mute) : resourceMutex(&mute) {}
+        __host__ __device__ UIViewCtx() {  }
+
+        __host__ __device__ void Prepare()
+        {
+            dPdXY = length(vec2(transform.matrix.i00, transform.matrix.i10));
+        }
 
         ViewTransform2D         transform;
+
+        BBox2f                  sceneBounds;
+        float                   dPdXY;
      
         Cuda::vec2              dragAnchor;
         Cuda::vec2              rotAxis;
@@ -37,7 +53,5 @@ namespace GI2D
 
         Cuda::vec2              mousePos;
         float                   zoomSpeed;
-
-        std::mutex*             resourceMutex;
     };
 }

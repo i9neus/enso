@@ -34,24 +34,12 @@ namespace GI2D
         }
 
         __host__ __device__ ViewTransform2D(const mat3& mat, const vec2& tra, const float& rot, const float& sca) :
-            trans(tra), rotate(rot), scale(sca) 
-        {
-            SetViewMatrix(mat);
-        }
-
-        __host__ __device__ void SetViewMatrix(const mat3& mat)
-        {
-            matrix = mat;
-            dPdXY = length(vec2(matrix.i00, matrix.i10));
-        }
+            matrix(mat), trans(tra), rotate(rot), scale(sca) {}
 
         mat3 matrix;
         vec2 trans;
         float rotate;
         float scale;
-
-        BBox2f sceneBounds;
-        float dPdXY;
     }; 
 
     __host__ __inline__ mat3 ConstructViewMatrix(const vec2& trans, const float rotate, const float scale)

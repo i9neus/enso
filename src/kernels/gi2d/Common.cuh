@@ -16,13 +16,26 @@ namespace GI2D
 
         // Primitive attributes that don't affect the hierarchy like material properteis
         kGI2DDirtyPrimitiveAttributes = 4,
+        
+        // Changes to an object transform
+        kGI2DDirtyTransforms = 8,
 
         // Changes to geometry that require a complete rebuild of the hierarchy
-        kGI2DDirtyGeometry = 8,
+        kGI2DDirtyBVH = 16,
 
         // Changes to the number of scene objects
-        kGI2DDirtySceneObjectCount = 16,
+        kGI2DDirtySceneObjectCount = 32,
 
         kGI2DDirtyAll = 0xffffffff
     };
+
+    template<typename FlagType>
+    __host__ __inline__ bool SetGenericFlags(FlagType& data, const FlagType& newFlags, const bool isSet)
+    {
+        const FlagType prevData = data;
+        if (isSet) { data |= newFlags; }
+        else { data &= ~newFlags; }
+
+        return prevData != data;
+    }
 }

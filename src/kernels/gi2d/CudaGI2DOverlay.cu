@@ -12,12 +12,12 @@ namespace GI2D
 {    
     __host__ __device__ OverlayParams::OverlayParams()
     {
-        grid.show = true;
-        grid.lineAlpha = 0.0;
-        grid.majorLineSpacing = 1.0f;
-        grid.majorLineSpacing = 1.0f;
+        gridCtx.show = true;
+        gridCtx.lineAlpha = 0.0;
+        gridCtx.majorLineSpacing = 1.0f;
+        gridCtx.majorLineSpacing = 1.0f;
 
-        selection.isLassoing = false;
+        selectionCtx.isLassoing = false;
     }
 
     __device__ Device::Overlay::Overlay(const OverlayParams& params, const Objects& objects) :
@@ -36,13 +36,6 @@ namespace GI2D
         m_objects = objects;
 
         assert(objects.bih->GetNumPrimitives() == objects.tracables->Size());
-    }
-
-    __host__ __device__ __forceinline__ bool PointOnPerimiter(const BBox2f& bBox, const vec2& p, float thickness)
-    {
-        thickness *= 0.5f;
-        return (p.x >= bBox.lower.x - thickness && p.y >= bBox.lower.y - thickness && p.x <= bBox.upper.x + thickness && p.y <= bBox.upper.y + thickness) &&
-            (p.x <= bBox.lower.x + thickness || p.y <= bBox.lower.y + thickness || p.x >= bBox.upper.x - thickness || p.y >= bBox.upper.y - thickness);
     }
 
     __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
@@ -65,29 +58,29 @@ namespace GI2D
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.view.matrix * vec2(xyScreen);
+        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
         //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
         //return;
 
         vec4 L(0.0f, 0.0f, 0.0f, 1.0f);
 
-        // Draw the grid
-        if (!m_params.view.sceneBounds.Contains(xyView)) 
+        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
         { 
             L = vec4(0.0f);
         }
-        else if (m_params.grid.show)
+        else if (m_params.gridCtx.show)
         {
-            vec2 xyGrid = fract(xyView / vec2(m_params.grid.majorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < m_params.view.dPdXY / m_params.grid.majorLineSpacing * mix(1.0f, 3.0f, m_params.grid.lineAlpha)) 
+            // Draw the grid
+            vec2 xyGrid = fract(xyView / vec2(m_params.gridCtx.majorLineSpacing)) * sign(xyView);
+            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.majorLineSpacing * mix(1.0f, 3.0f, m_params.gridCtx.lineAlpha)) 
             { 
-                L = Blend(L, kOne, 0.5 * (1 - m_params.grid.lineAlpha));
+                L = Blend(L, kOne, 0.5 * (1 - m_params.gridCtx.lineAlpha));
             }
-            xyGrid = fract(xyView / vec2(m_params.grid.minorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < m_params.view.dPdXY / m_params.grid.minorLineSpacing * 1.5f)
+            xyGrid = fract(xyView / vec2(m_params.gridCtx.minorLineSpacing)) * sign(xyView);
+            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.minorLineSpacing * 1.5f)
             { 
-                L = Blend(L, kOne, 0.5 * m_params.grid.lineAlpha);
+                L = Blend(L, kOne, 0.5 * m_params.gridCtx.lineAlpha);
             }
         }  
 
@@ -103,7 +96,9 @@ namespace GI2D
                     assert(tracables[idx]);
 
                     const auto& tracable = *tracables[idx];
-                    L = Blend(L, tracable.EvaluateOverlay(xyView, m_params.view));
+                    L = Blend(L, tracable.EvaluateOverlay(xyView, m_params.viewCtx));
+
+                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_params.viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
                 }
             };          
             m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
@@ -117,17 +112,13 @@ namespace GI2D
                     L += kBlue;
                 }
             }*/
-
-            if (m_objects.bih->GetBoundingBox().PointOnPerimiter(xyView, m_params.view.dPdXY * 2.f))
-            {
-                L = vec4(kOne, 1.0f);
-            }
         }
 
         // Draw the lasso 
-        if (m_params.selection.isLassoing && PointOnPerimiter(m_params.selection.lassoBBox, xyView, m_params.view.dPdXY * 2.)) { L = vec4(kRed, 1.0f); }
+        if (m_params.selectionCtx.isLassoing && m_params.selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
 
-        if (m_params.selection.numSelected > 0. && PointOnPerimiter(m_params.selection.selectedBBox, xyView, m_params.view.dPdXY * 2.)) { L = vec4(kGreen, 1.0f); }
+        // Draw the selected object's bounding box
+        if (m_params.selectionCtx.numSelected > 0. && m_params.selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
 
         m_objects.accumBuffer->At(xyScreen) = L;
     }
@@ -184,17 +175,18 @@ namespace GI2D
     {
         if (!m_dirtyFlags) { return; }
 
-        m_params.view = m_viewCtx.transform;
+        m_params.viewCtx = m_viewCtx;
+        m_params.selectionCtx = m_selectionCtx;
          
         // Calculate some values for the guide grid
-        const float logScale = std::log10(m_params.view.scale);
+        const float logScale = std::log10(m_params.viewCtx.transform.scale);
         constexpr float kGridScale = 0.05f;
-        m_params.grid.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
-        m_params.grid.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
-        m_params.grid.lineAlpha = 1 - (logScale - std::floor(logScale));
-        m_params.grid.show = true;
-        m_params.selection.lassoBBox.Rectify();
-        m_params.selection.selectedBBox.Rectify();
+        m_params.gridCtx.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
+        m_params.gridCtx.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
+        m_params.gridCtx.lineAlpha = 1 - (logScale - std::floor(logScale));
+        m_params.gridCtx.show = true;
+        m_params.selectionCtx.lassoBBox.Rectify();
+        m_params.selectionCtx.selectedBBox.Rectify();
 
         // Upload to the device
         SynchroniseObjects(cu_deviceData, m_params);
