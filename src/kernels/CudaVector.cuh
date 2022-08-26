@@ -199,21 +199,34 @@ namespace Cuda
 
 			__host__  virtual void OnDestroyAsset() override final
 			{
-				DestroyOnDevice(GetAssetID(), cu_deviceInstance);
-				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
+				Log::Error("Destroying %s", GetAssetID());
 
-				if (m_localData && !(m_localParams.flags & kVectorUnifiedMemory))
+				// Clean up device memory
+				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
+				m_deviceParams.size = 0;
+				m_deviceParams.capacity = 0;
+
+				Assert(!m_localData || m_localParams.capacity); // Sanity check
+				
+				// Clean up host memory (if not unified)
+				if (m_localData && m_localParams.flags & kVectorHostAlloc && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
-					if (std::is_trivial<HostType>::value)
+					if (!std::is_trivial<HostType>::value)
 					{
-						std::free(m_localData);
+						for (int idx = 0; idx < m_localParams.size; ++idx)
+						{
+							m_localData[idx].~HostType(); // In-place dtor
+						}
 					}
-					else
-					{
-						delete[] m_localData;
-					}
+
+					std::free(m_localData);
 					m_localData = nullptr;
+					m_localParams.size = 0;
+					m_localParams.capacity = 0;
 				}
+
+				// Destroy the device instance
+				DestroyOnDevice(GetAssetID(), cu_deviceInstance);				
 			}
 
 			__host__ inline void Prepare()
@@ -285,7 +298,7 @@ namespace Cuda
 			{
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Calling EmplaceBack() on a Vector that does not have host allocation.");
 				Resize(m_localParams.size + 1);
-				m_localData[m_localParams.size - 1] = HostType(pack...);
+				new (&m_localData[m_localParams.size - 1]) HostType(pack...);
 			}
 
 			__host__ void PopBack()
@@ -404,13 +417,13 @@ namespace Cuda
 						}
 
 						// Deallocate the old memory
-						GuardedFreeDeviceArray(GetAssetID(), m_localParams.capacity, &cu_deviceData);
+						GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
 					}
 
 					m_deviceParams.capacity = newCapacity;
 					cu_deviceData = newDeviceData;
 
-					Log::System("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
+					//Log::System("Capacity of device vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
 				}
 
 				// Unified memory is accessible on both host and and device so just copy the pointer
@@ -426,33 +439,32 @@ namespace Cuda
 					// Don't adjust capacity if it means reducing the size of the array
 					Assert(newCapacity >= m_localParams.size);
 
-					HostType* newHostData; 
-					if (std::is_trivial<HostType>::value)
+					HostType* newHostData = static_cast<HostType*>(std::malloc(sizeof(HostType) * newCapacity));
+					if (m_localData)
 					{
-						newHostData = static_cast<HostType*>(std::malloc(sizeof(HostType) * newCapacity));
-						if (m_localData)
+						if (std::is_trivial<HostType>::value)
 						{
+							// Trivial types mean we can do a straight copy
 							std::memcpy(newHostData, m_localData, m_localParams.size * sizeof(HostType));
 						}
-						std::free(m_localData);
-					}
-					else
-					{						
-						newHostData = new HostType[newCapacity];
-						if (m_localData)
+						else
 						{
+							// Default-initialise and move the contents of the vector into its new buffer
 							for (int idx = 0; idx < m_localParams.size; ++idx)
 							{
+								new (&newHostData[idx]) HostType();
 								newHostData[idx] = std::move(m_localData[idx]);
 							}
-							delete[] m_localData;
 						}
+						// Deallocate the old buffer
+						std::free(m_localData);
 					}
 
+					// Update the pointers and the capacity
 					m_localData = newHostData;
 					m_localParams.capacity = newCapacity;
 
-					Log::System("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
+					//Log::System("Capacity of host vector '%s' changed to %i.", GetAssetID().c_str(), m_localParams.capacity);
 				}
 			}
 
@@ -467,6 +479,19 @@ namespace Cuda
 					// Mimic std::vector by growing the capacity in powers of 1.5
 					const int newCapacity = max(newSize, uint(std::pow(1.5f, std::ceil(std::log(float(newSize)) / std::log(1.5f)))));
 					ReserveImpl(newCapacity, deviceAlloc, deviceCopy);
+				}
+
+				// For non-trivial types, make sure objects are properly constructed and destructed
+				if (!std::is_trivial<HostType>::value && m_localParams.flags & kVectorHostAlloc)
+				{
+					for (int idx = newSize; idx < m_localParams.size; ++idx)
+					{
+						m_localData[idx].~HostType(); // In-place dtor
+					}
+					for (int idx = m_localParams.size; idx < newSize; ++idx)
+					{
+						new (&m_localData[idx]) HostType(); // In-place ctor
+					}
 				}
 
 				m_localParams.size = newSize;
@@ -534,6 +559,7 @@ namespace Cuda
 			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, flags, hostStream)
 			{
 				//static_assert(is_base_of_template<AssetTags, HostType>, "AssetVector type must inherit AssetTags");
+				static_assert(std::is_trivial<DeviceType>::value, "Sanity check failed. Device type is non-trivial.");
 			}
 			__host__ AssetVector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, size, flags, hostStream) {}
 

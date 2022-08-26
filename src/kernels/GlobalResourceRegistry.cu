@@ -40,10 +40,10 @@ namespace Cuda
         m_assetMap.erase(assetId);
     }
 
-    void GlobalResourceRegistry::RegisterDeviceMemory(const std::string& assetId, const int64_t bytes)
+    void GlobalResourceRegistry::RegisterDeviceMemory(const std::string& assetId, const int64_t newBytes)
     {
-        Assert(bytes >= 0);
-        if (bytes == 0)
+        Assert(newBytes >= 0);
+        if (newBytes == 0)
         {
             Log::System("WARNING: Asset '%s' registered an allocation for zero bytes.", assetId);
             return;
@@ -52,28 +52,32 @@ namespace Cuda
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto& entry = m_deviceMemoryMap[assetId];
-        entry.currentBytes += bytes;
+        entry.currentBytes += newBytes;
         entry.peakBytes = std::max(entry.peakBytes, entry.currentBytes);
-        entry.deltaBytes = bytes;
+        entry.deltaBytes = newBytes;
 
-        Log::System("Device alloc: %s allocated %i bytes (%i total).", assetId, bytes, int64_t(entry.currentBytes));
+        Log::System("*** DEVICE ALLOC *** : %s -> %i bytes (%i in total)", assetId, newBytes, int64_t(entry.currentBytes));
     }
 
-    void GlobalResourceRegistry::DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes)
+    void GlobalResourceRegistry::DeregisterDeviceMemory(const std::string& assetId, const int64_t delBytes)
     {
-        Assert(bytes >= 0);
-        if (bytes == 0) { return; }
+        Assert(delBytes >= 0);
+        if (delBytes == 0) { return; }
 
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto it = m_deviceMemoryMap.find(assetId);
-        AssertMsgFmt(it != m_deviceMemoryMap.end() && int64_t(it->second.currentBytes) - int64_t(bytes) >= 0ll,
+        AssertMsgFmt(it != m_deviceMemoryMap.end(), "Asset '%s' is not in the registry", assetId.c_str());
+        auto& stats = it->second;
+
+        Log::System("*** DEVICE FREE *** : %s -> %i (%i bytes remaining)", assetId, delBytes, int64_t(stats.currentBytes) - delBytes);
+        
+        AssertMsgFmt(int64_t(stats.currentBytes) - delBytes >= 0,
             "Asset '%s' is trying to deallocate more memory than it originally allocated.", assetId.c_str());
 
         // Decrement the allocated bytes and clean up the entry if necessary. 
-        auto& stats = it->second;
-        stats.currentBytes -= bytes;
-        stats.deltaBytes = -bytes;
+        stats.currentBytes -= delBytes;
+        stats.deltaBytes = -delBytes;
         if (stats.currentBytes == 0) { m_deviceMemoryMap.erase(it); }
     }
 
