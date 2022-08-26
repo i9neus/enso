@@ -57,13 +57,13 @@ namespace Cuda
         Material(id, node),
         cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::CornellMaterial>(id);
+        cu_deviceData = InstantiateOnDevice<Device::CornellMaterial>();
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::CornellMaterial::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::CornellMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)

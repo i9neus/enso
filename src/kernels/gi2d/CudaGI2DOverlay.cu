@@ -135,7 +135,7 @@ namespace GI2D
         m_objects.tracables = m_hostTracables->GetDeviceInstance();
         m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        cu_deviceData = InstantiateOnDevice<Device::Overlay>(GetAssetID(), m_params, m_objects); 
+        cu_deviceData = InstantiateOnDevice<Device::Overlay>(m_params, m_objects); 
     }
 
     Host::Overlay::~Overlay()
@@ -145,7 +145,7 @@ namespace GI2D
 
     __host__ void Host::Overlay::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
         m_hostAccumBuffer.DestroyAsset();
     }
 

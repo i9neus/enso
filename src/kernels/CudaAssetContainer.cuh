@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CudaCommonIncludes.cuh"
+#include "AssetAllocator.cuh"
 #include <map>
 #include <vector>
 
@@ -54,7 +55,7 @@ namespace Cuda
 		
 		template<typename ElementType>
 		class AssetContainer<ElementType, typename std::enable_if<std::is_base_of<Host::Asset, ElementType>::value>::type> :
-			public Host::Asset, 
+			public Host::AssetAllocator, 
 			public AssetTags<Host::AssetContainer<typename ElementType::HostVariant>, Device::AssetContainer<typename ElementType::DeviceVariant>>
 		{
 			using SortFunctor = std::function<bool(const AssetHandle<ElementType>&, AssetHandle<ElementType>&)>;
@@ -81,9 +82,9 @@ namespace Cuda
 			SortFunctor											m_sortFunctor;
 
 		public:
-			__host__ AssetContainer(const std::string& id) : Asset(id), cu_deviceData(nullptr) 
+			__host__ AssetContainer(const std::string& id) : AssetAllocator(id), cu_deviceData(nullptr) 
 			{
-				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>(id);
+				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
 			}
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
@@ -117,7 +118,7 @@ namespace Cuda
 			__host__ void Synchronise()
 			{
 				// Clean up first
-				GuardedFreeDeviceArray(GetAssetID(), m_assetMap.size(), &m_deviceObjects.cu_data);
+				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 
 				if (!m_assetMap.empty())
 				{
@@ -152,7 +153,7 @@ namespace Cuda
 					}
 
 					// Upload the array of device pointers
-					GuardedAllocAndCopyToDeviceArray(GetAssetID(), &m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
+					GuardedAllocAndCopyToDeviceArray(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
 					m_deviceObjects.numElements = m_assetMap.size();
 				}
 				else
@@ -167,8 +168,8 @@ namespace Cuda
 
 			__host__ void Destroy()
 			{
-				DestroyOnDevice(GetAssetID(), cu_deviceData);
-				GuardedFreeDeviceArray(GetAssetID(), m_assetMap.size(), &m_deviceObjects.cu_data);
+				DestroyOnDevice(cu_deviceData);
+				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 			}
 
 			__host__ virtual void OnDestroyAsset() override final

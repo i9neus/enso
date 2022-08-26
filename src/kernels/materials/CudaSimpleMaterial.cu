@@ -70,14 +70,14 @@ namespace Cuda
         Material(id, node),
         cu_deviceData(nullptr)
     {       
-        cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>(id);
+        cu_deviceData = InstantiateOnDevice<Device::SimpleMaterial>();
 
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::SimpleMaterial::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::SimpleMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)

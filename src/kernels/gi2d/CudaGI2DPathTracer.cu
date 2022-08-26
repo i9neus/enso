@@ -133,7 +133,7 @@ namespace GI2D
         m_params.accum.height = height;
         m_params.accum.downsample = downsample;
 
-        cu_deviceData = InstantiateOnDevice<Device::PathTracer>(GetAssetID(), m_params, m_objects);
+        cu_deviceData = InstantiateOnDevice<Device::PathTracer>(m_params, m_objects);
     }
 
     Host::PathTracer::~PathTracer()
@@ -143,7 +143,7 @@ namespace GI2D
 
     __host__ void Host::PathTracer::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
         m_hostAccumBuffer.DestroyAsset();
     }
 

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
+#include "AssetAllocator.cuh"
 
 //#define CudaImageBoundCheck
 
@@ -106,7 +107,7 @@ namespace Cuda
 	namespace Host
 	{
 		template<typename T>
-		class Image : public Host::Asset, public AssetTags<Host::Image<T>, Device::Image<T>>
+		class Image : public Host::AssetAllocator, public AssetTags<Host::Image<T>, Device::Image<T>>
 		{
 		protected:
 			Device::Image<T>* cu_deviceData;

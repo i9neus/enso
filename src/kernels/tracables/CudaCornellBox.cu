@@ -82,14 +82,14 @@ namespace Cuda
     // Constructor for user instantiations
     __host__  Host::CornellBox::CornellBox(const std::string& id, const ::Json::Node& node) : Tracable(id)
     {
-        cu_deviceData = InstantiateOnDevice<Device::CornellBox>(id);
+        cu_deviceData = InstantiateOnDevice<Device::CornellBox>();
 
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::CornellBox::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::CornellBox::FromJson(const ::Json::Node& node, const uint flags)

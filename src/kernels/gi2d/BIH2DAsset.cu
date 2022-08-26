@@ -16,11 +16,11 @@ namespace GI2D
     }
 
     __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id, const uint& minBuildablePrims) :
-        Asset(id),
+        AssetAllocator(id),
         cu_deviceInstance(nullptr),
         m_minBuildablePrims(minBuildablePrims)
     {
-        cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>(GetAssetID());
+        cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>();
 
         m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc, m_hostStream);
     }
@@ -34,7 +34,7 @@ namespace GI2D
     {
         m_hostNodes.DestroyAsset();
 
-        DestroyOnDevice(GetAssetID(), cu_deviceInstance);
+        DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)
@@ -57,7 +57,7 @@ namespace GI2D
         m_params.nodes = m_hostNodes->GetDeviceInstance();
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
-        Cuda::Synchronise(cu_deviceInstance, m_params);
+        SynchroniseObjects(cu_deviceInstance, m_params);
     }
 
     __host__ void Host::BIH2DAsset::Synchronise()

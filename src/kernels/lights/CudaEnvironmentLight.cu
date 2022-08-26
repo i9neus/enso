@@ -66,13 +66,13 @@ namespace Cuda
         Host::Light(id, jsonNode),
         cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>(id);
+        cu_deviceData = InstantiateOnDevice<Device::EnvironmentLight>();
         FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::EnvironmentLight::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::EnvironmentLight::FromJson(const ::Json::Node& parentNode, const uint flags)

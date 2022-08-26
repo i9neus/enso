@@ -84,14 +84,14 @@ namespace Cuda
     __host__  Host::Box::Box(const std::string& id, const ::Json::Node& node) : 
         Tracable(id)
     {
-        cu_deviceData = InstantiateOnDevice<Device::Box>(id);
+        cu_deviceData = InstantiateOnDevice<Device::Box>();
 
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::Box::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::Box::FromJson(const ::Json::Node& node, const uint flags)

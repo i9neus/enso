@@ -150,13 +150,13 @@ namespace Cuda
         m_lightPlaneAsset->SetBoundMaterialID(id + "_material");
 
         // Finally, instantitate the light itself 
-        cu_deviceData = InstantiateOnDevice<Device::QuadLight>(id);
+        cu_deviceData = InstantiateOnDevice<Device::QuadLight>();
         FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::QuadLight::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::QuadLight::FromJson(const ::Json::Node& node, const uint flags)

@@ -604,12 +604,12 @@ namespace Cuda
         m_shLaplacianData = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_probeGridSHLaplacianData", id), m_hostStream);
         m_validityData = CreateChildAsset<Host::Array<uchar>>(tfm::format("%s_probeGridValidityData", id), m_hostStream);
 
-        cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>(id);
+        cu_deviceData = InstantiateOnDevice<Device::LightProbeGrid>();
 
         m_deviceObjects.cu_shData = m_shData->GetDeviceInstance();
         m_deviceObjects.cu_shLaplacianData = m_shLaplacianData->GetDeviceInstance();
         m_deviceObjects.cu_validityData = m_validityData->GetDeviceInstance();
-        Cuda::SynchroniseObjects(cu_deviceData, m_deviceObjects);
+        SynchroniseObjects(cu_deviceData, m_deviceObjects);
 
         Prepare();
     }
@@ -625,7 +625,7 @@ namespace Cuda
         m_shLaplacianData.DestroyAsset();
         m_validityData.DestroyAsset();
 
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __global__ void KernelPrepareValidityGrid(Device::LightProbeGrid* cu_grid)
@@ -666,14 +666,14 @@ namespace Cuda
             Log::Debug("Resized to %i\n", m_shData->Size());
         }
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::LightProbeGrid::Replace(const LightProbeGrid& other)
     {
         // We assume that the other object's parameter structure is fully initialised
         m_params = other.GetParams();
-        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+        SynchroniseObjects(cu_deviceData, m_params);
         
         m_shData->Replace(*(other.m_shData));
         m_shLaplacianData->Replace(*(other.m_shLaplacianData));
@@ -735,7 +735,7 @@ namespace Cuda
         m_deviceObjects.cu_errorData = m_errorData->GetDeviceInstance();
         m_deviceObjects.cu_meanI = m_hostMeanI->GetDeviceInstance();
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_deviceObjects);
+        SynchroniseObjects(cu_deviceData, m_deviceObjects);
     }
 
     __host__ bool Host::LightProbeGrid::IsValid() const
@@ -820,7 +820,7 @@ namespace Cuda
         m_params.clipRegion[0] = clamp(region[0], ivec3(0), m_params.gridDensity);
         m_params.clipRegion[1] = clamp(region[1], ivec3(0), m_params.gridDensity);
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 
     __host__ void Host::LightProbeGrid::PopClipRegion()
@@ -831,6 +831,6 @@ namespace Cuda
         m_params.clipRegion[1] = m_clipRegionStack.back().second;
         m_clipRegionStack.pop_back();
 
-        Cuda::SynchroniseObjects(cu_deviceData, m_params);
+        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

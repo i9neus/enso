@@ -46,9 +46,13 @@ namespace Cuda
     }
     
     namespace Host
-    {
+    {        
+        class AssetAllocator;
+
         class Asset
         {
+            friend class AssetAllocator;
+
         private:
             const std::string       m_assetId;
             std::string             m_parentAssetId;
@@ -70,12 +74,14 @@ namespace Cuda
         protected:
             cudaStream_t            m_hostStream;
             template<typename AssetType> friend class AssetHandle;
-
-            __host__ Asset(const std::string& id) : m_assetId(id), m_hostStream(0) {  }
+            
             __host__ virtual void OnDestroyAsset() = 0;
 
             template<typename AssetType, typename... Args>
             __host__ inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, Args... args);
+
+        private:
+            __host__ Asset(const std::string& id) : m_assetId(id), m_hostStream(0) {  }
         };
     }
 

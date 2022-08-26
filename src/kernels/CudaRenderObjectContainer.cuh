@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
-#include "CudaAsset.cuh"
+#include "AssetAllocator.cuh"
 #include <unordered_map>
 #include "CudaRenderObject.cuh"
 //#include "CudaVector.cuh"
@@ -10,7 +10,7 @@ namespace Cuda
 {    
     enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
     
-    class RenderObjectContainer : public Host::Asset
+    class RenderObjectContainer : public Host::AssetAllocator
     {
         // FIXME: Weak pointers need to replaced with an integrated strong/weak asset handle
         using RenderObjectMap = std::unordered_map<std::string, AssetHandle<Host::RenderObject>>;
@@ -45,7 +45,7 @@ namespace Cuda
         using Iterator = __Iterator<RenderObjectMap::iterator, false>;
         using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
 
-        __host__ RenderObjectContainer(const std::string& id) : Asset(id), m_uniqueIdx(0){}
+        __host__ RenderObjectContainer(const std::string& id) : AssetAllocator(id), m_uniqueIdx(0){}
         __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
         __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;

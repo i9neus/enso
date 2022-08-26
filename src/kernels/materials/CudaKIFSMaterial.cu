@@ -60,13 +60,13 @@ namespace Cuda
         Material(id, node),
         cu_deviceData(nullptr)
     {        
-        cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>(id);
+        cu_deviceData = InstantiateOnDevice<Device::KIFSMaterial>();
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::KIFSMaterial::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::KIFSMaterial::FromJson(const ::Json::Node& parentNode, const uint flags)

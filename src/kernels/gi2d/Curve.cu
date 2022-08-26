@@ -80,7 +80,7 @@ namespace GI2D
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
         m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
         
-        cu_deviceInstance = InstantiateOnDevice<Device::Curve>(GetAssetID());
+        cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
         cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
 
         m_deviceData.bih = m_hostBIH->GetDeviceInstance();
@@ -99,7 +99,7 @@ namespace GI2D
 
     __host__ void Host::Curve::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceInstance);
+        DestroyOnDevice(cu_deviceInstance);
 
         m_hostBIH.DestroyAsset();
         m_hostLineSegments.DestroyAsset();

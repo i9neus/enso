@@ -626,7 +626,7 @@ namespace Cuda
         m_hostSampleBuffer = CreateChildAsset<Host::Array<vec3>>(tfm::format("%s_sampleBuffer", id), 0, m_hostStream);
 
         // Instantiate the camera object on the device
-        cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>(id);
+        cu_deviceData = InstantiateOnDevice<Device::LightProbeCamera>();
 
         // Create the accumulation buffers and probe grids
         for (int idx = 0; idx < m_hostAccumBuffers.size(); ++idx)
@@ -684,7 +684,7 @@ namespace Cuda
         m_hostConvergenceGrid.DestroyAsset();
         m_hostSampleBuffer.DestroyAsset();
 
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ std::vector<AssetHandle<Host::RenderObject>> Host::LightProbeCamera::GetChildObjectHandles()

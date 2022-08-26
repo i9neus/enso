@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
-#include "CudaAsset.cuh"
+#include "AssetAllocator.cuh"
 
 #include <map>
 #include <unordered_set>
@@ -56,7 +56,7 @@ namespace Cuda
 
     namespace Host
     {        
-        class RenderObject : public Host::Asset
+        class RenderObject : public Host::AssetAllocator
         {
         public:            
             __host__ virtual void                                           Bind(RenderObjectContainer& objectContainer) {}
@@ -110,7 +110,7 @@ namespace Cuda
             __host__ void  Unlisten(const RenderObject& owner, const std::string& eventID);
 
         protected:
-            __host__ RenderObject(const std::string& id) : Asset(id), m_renderObjectFlags(0) {}
+            __host__ RenderObject(const std::string& id) : AssetAllocator(id), m_renderObjectFlags(0) {}
             __host__ virtual ~RenderObject() {}
 
             template<typename ThisType, typename BindType>

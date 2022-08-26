@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
+#include "AssetAllocator.cuh"
 
 namespace Cuda
 {
@@ -66,7 +67,7 @@ namespace Cuda
 	namespace Host
 	{
 		template<typename ElementType, typename HostType, typename DeviceType>
-		class ManagedArray : public Host::Asset, public AssetTags<HostType, DeviceType>
+		class ManagedArray : public Host::AssetAllocator, public AssetTags<HostType, DeviceType>
 		{
 		protected:
 			DeviceType* cu_deviceData;
@@ -132,7 +133,7 @@ namespace Cuda
 
 	template<typename ElementType, typename HostType, typename DeviceType>
 	__host__ Host::ManagedArray<ElementType, HostType, DeviceType>::ManagedArray(const std::string& assetId, cudaStream_t hostStream) :
-		Asset(assetId),
+		AssetAllocator(assetId),
 		cu_deviceData(nullptr)
 	{
 		// Prepare the host data
@@ -143,7 +144,7 @@ namespace Cuda
 		m_blockSize = 16 * 16;
 
 		// Create a device instance
-		cu_deviceData = InstantiateOnDevice<DeviceType>(assetId);
+		cu_deviceData = InstantiateOnDevice<DeviceType>();
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>
@@ -161,11 +162,11 @@ namespace Cuda
 	{
 		if (m_hostData.m_size == newSize) { return; }
 
-		GuardedFreeDeviceArray(GetAssetID(), m_hostData.m_size, &m_hostData.cu_data);
-		GuardedAllocDeviceArray(GetAssetID(), newSize, &m_hostData.cu_data);
+		GuardedFreeDeviceArray(m_hostData.m_size, &m_hostData.cu_data);
+		GuardedAllocDeviceArray(newSize, &m_hostData.cu_data);
 		m_hostData.m_size = newSize;
 
-		Cuda::Synchronise(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize);
+		SynchroniseTrivialParams(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, newSize);
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>
@@ -197,8 +198,8 @@ namespace Cuda
 
 		std::swap(m_hostData.cu_data, other.m_hostData.cu_data);
 
-		Cuda::Synchronise(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, m_hostData.m_size);
-		Cuda::Synchronise(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(other.cu_deviceData), other.m_hostData.cu_data, other.m_hostData.m_size);
+		SynchroniseTrivialParams(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(cu_deviceData), m_hostData.cu_data, m_hostData.m_size);
+		SynchroniseTrivialParams(static_cast<Device::ManagedArray<ElementType, HostType, DeviceType>*>(other.cu_deviceData), other.m_hostData.cu_data, other.m_hostData.m_size);
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>
@@ -249,8 +250,8 @@ namespace Cuda
 	template<typename ElementType, typename HostType, typename DeviceType>
 	__host__ void Host::ManagedArray<ElementType, HostType, DeviceType>::OnDestroyAsset()
 	{
-		DestroyOnDevice(GetAssetID(), cu_deviceData);
-		GuardedFreeDeviceArray(GetAssetID(), Size(), &m_hostData.cu_data);
+		DestroyOnDevice(cu_deviceData);
+		GuardedFreeDeviceArray(Size(), &m_hostData.cu_data);
 	}
 
 	template<typename ElementType, typename HostType, typename DeviceType>

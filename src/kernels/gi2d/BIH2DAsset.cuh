@@ -22,7 +22,7 @@ namespace GI2D
         //template<typename NodeContainer>
         
         
-        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Cuda::Host::Asset
+        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Cuda::Host::AssetAllocator
         {
             using NodeType = BIH2DFullNode;
             using SubclassType = BIH2D<NodeType>;

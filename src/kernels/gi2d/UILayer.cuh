@@ -14,11 +14,11 @@ namespace GI2D
 {
     namespace Host
     {
-        class UILayer : public Cuda::Host::Asset
+        class UILayer : public Cuda::Host::AssetAllocator
         {
         public:
             UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables) :
-                Asset(id),
+                AssetAllocator(id),
                 m_hostBIH(bih),
                 m_hostTracables(tracables)
             {

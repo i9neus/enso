@@ -58,7 +58,7 @@ namespace Cuda
      __host__  Host::Sphere::Sphere(const std::string& id, const uint flags) : 
          Tracable(id)
      {
-         cu_deviceData = InstantiateOnDevice<Device::Sphere>(id);
+         cu_deviceData = InstantiateOnDevice<Device::Sphere>();
          RenderObject::SetRenderObjectFlags(flags);
      }
 
@@ -66,7 +66,7 @@ namespace Cuda
     __host__  Host::Sphere::Sphere(const std::string& id, const ::Json::Node& node) :
         Tracable(id)
     {       
-        cu_deviceData = InstantiateOnDevice<Device::Sphere>(id);
+        cu_deviceData = InstantiateOnDevice<Device::Sphere>();
         FromJson(node, ::Json::kSilent);
     }
 
@@ -84,7 +84,7 @@ namespace Cuda
 
     __host__ void Host::Sphere::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ void Host::Sphere::UpdateParams(const BidirectionalTransform& transform)

@@ -66,7 +66,7 @@ namespace Cuda
         Host::BxDF(id, parentNode),
         cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>(id);
+        cu_deviceData = InstantiateOnDevice<Device::LambertBRDF>();
 
         FromJson(parentNode, ::Json::kSilent);
     }
@@ -75,7 +75,7 @@ namespace Cuda
     {
         m_hostLightProbeGrids[0] = nullptr;
         m_hostLightProbeGrids[1] = nullptr;
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::LambertBRDF::FromJson(const ::Json::Node& parentNode, const uint flags)
@@ -117,8 +117,8 @@ namespace Cuda
             }
         }
         
-        Cuda::SynchroniseObjects(cu_deviceData, m_params);
-        Cuda::SynchroniseObjects(cu_deviceData, m_hostData.m_objects);
+        SynchroniseObjects(cu_deviceData, m_params);
+        SynchroniseObjects(cu_deviceData, m_hostData.m_objects);
     }
 
     __host__ void Host::LambertBRDF::OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags)

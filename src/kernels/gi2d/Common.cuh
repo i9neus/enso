@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kernels/math/CudaMath.cuh"
+#include "../AssetAllocator.cuh"
 
 namespace GI2D
 {

@@ -301,7 +301,7 @@ namespace Cuda
         m_hostAccumBuffer->Clear(vec4(0.0f));
         
         // Instantiate the camera object on the device
-        cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>(id);
+        cu_deviceData = InstantiateOnDevice<Device::PerspectiveCamera>();
 
         FromJson(parentNode, ::Json::kSilent);
 
@@ -330,7 +330,7 @@ namespace Cuda
         
         m_hostAccumBuffer.DestroyAsset();
         
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::PerspectiveCamera::FromJson(const ::Json::Node& parentNode, const uint flags)

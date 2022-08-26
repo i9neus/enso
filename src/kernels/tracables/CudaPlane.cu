@@ -65,7 +65,7 @@ namespace Cuda
     __host__  Host::Plane::Plane(const std::string& id, const uint flags) :
         Tracable(id)
     {        
-        cu_deviceData = InstantiateOnDevice<Device::Plane>(id);
+        cu_deviceData = InstantiateOnDevice<Device::Plane>();
         RenderObject::SetRenderObjectFlags(flags);
     }
 
@@ -73,13 +73,13 @@ namespace Cuda
     __host__  Host::Plane::Plane(const std::string& id, const ::Json::Node& node) :
         Tracable(id)
     {
-        cu_deviceData = InstantiateOnDevice<Device::Plane>(id);
+        cu_deviceData = InstantiateOnDevice<Device::Plane>();
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::Plane::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::Plane::FromJson(const ::Json::Node& node, const uint flags)

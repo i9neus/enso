@@ -526,13 +526,13 @@ namespace Cuda
         Tracable(id),
         cu_deviceData(nullptr)
     {
-        cu_deviceData = InstantiateOnDevice<Device::KIFS>(id);
+        cu_deviceData = InstantiateOnDevice<Device::KIFS>();
         FromJson(node, ::Json::kSilent);
     }
 
     __host__ void Host::KIFS::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::KIFS::FromJson(const ::Json::Node& node, const uint flags)

@@ -1,7 +1,18 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
+#include "AssetAllocator.cuh"
 #include "CudaCommonIncludes.cuh"
+
+namespace 
+{
+	struct VectorParams
+	{
+		uint size;
+		uint capacity;
+		uint flags;
+	};
+}
 
 namespace Cuda
 {
@@ -36,19 +47,15 @@ namespace Cuda
 		//template<typename T, typename S> class Vector;
 	}
 
-	struct VectorParams
-	{
-		uint size = 0;
-		uint capacity = 0;
-		uint flags = 0;
-	};
-
 	template<typename Type>
 	class VectorInterface
 	{
 	public:
 		__host__ __device__ VectorInterface() :
-			m_localData(nullptr) {}
+			m_localData(nullptr) 
+		{
+			m_localParams.size = m_localParams.capacity = m_localParams.flags = 0;
+		}
 		__host__ __device__ ~VectorInterface() {}
 
 		__host__ __device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
@@ -95,7 +102,7 @@ namespace Cuda
 	{
 		template<typename HostType, typename DeviceType>
 		class VectorBase : public VectorInterface<HostType>, 
-						   public Host::Asset
+						   public Host::AssetAllocator
 		{
 		protected:
 			Device::Vector<DeviceType>* cu_deviceInstance;
@@ -139,12 +146,13 @@ namespace Cuda
 
 		public:
 			__host__ VectorBase(const std::string& id, const uint flags, cudaStream_t hostStream) :
-				Asset(id),
+				AssetAllocator(id),
 				cu_deviceInstance(nullptr),
 				cu_deviceData(nullptr)
 			{
 				m_hostStream = hostStream;
 				m_localParams.flags = flags;
+				m_deviceParams = VectorParams{ 0, 0, 0 };
 
 				static_assert(std::is_trivial<HostType>::value || std::is_move_assignable<HostType>::value,
 					"HostType is neither trivial not move-assignable");
@@ -202,7 +210,7 @@ namespace Cuda
 				Log::Error("Destroying %s", GetAssetID());
 
 				// Clean up device memory
-				GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
+				GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
 				m_deviceParams.size = 0;
 				m_deviceParams.capacity = 0;
 
@@ -226,7 +234,7 @@ namespace Cuda
 				}
 
 				// Destroy the device instance
-				DestroyOnDevice(GetAssetID(), cu_deviceInstance);				
+				DestroyOnDevice(cu_deviceInstance);				
 			}
 
 			__host__ inline void Prepare()
@@ -249,7 +257,7 @@ namespace Cuda
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
 				{
-					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>(GetAssetID());
+					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
 				}
 
 				return cu_deviceInstance; 
@@ -406,7 +414,7 @@ namespace Cuda
 
 					// Allocate a new block of memory
 					DeviceType* newDeviceData = nullptr;
-					GuardedAllocDeviceArray(GetAssetID(), newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
+					GuardedAllocDeviceArray(newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
 
 					// If we're syncing from host to device, don't copy the data from the old device buffer because it'll just get overwritten anyway
 					if (cu_deviceData)
@@ -417,7 +425,7 @@ namespace Cuda
 						}
 
 						// Deallocate the old memory
-						GuardedFreeDeviceArray(GetAssetID(), m_deviceParams.capacity, &cu_deviceData);
+						GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
 					}
 
 					m_deviceParams.capacity = newCapacity;
@@ -532,7 +540,7 @@ namespace Cuda
 					if (cu_deviceData)
 					{
 						IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
-						Cuda::Synchronise(GetDeviceInstance(), cu_deviceData, m_deviceParams);
+						SynchroniseTrivialParams(GetDeviceInstance(), cu_deviceData, m_deviceParams);
 					}
 				}
 				else
@@ -592,7 +600,7 @@ namespace Cuda
 				delete[] m_deviceSyncData;
 
 				// Synchronise the device data pointers and the params
-				Cuda::Synchronise(GetDeviceInstance(), cu_deviceData, m_deviceParams);
+				SynchroniseTrivialParams(GetDeviceInstance(), cu_deviceData, m_deviceParams);
 			}
 		};
 	}

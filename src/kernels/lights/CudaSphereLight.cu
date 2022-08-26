@@ -159,13 +159,13 @@ namespace Cuda
         m_lightSphereAsset->SetBoundMaterialID(id + "_material");
 
         // Finally, instantitate the light itself 
-        cu_deviceData = InstantiateOnDevice<Device::SphereLight>(id);
+        cu_deviceData = InstantiateOnDevice<Device::SphereLight>();
         FromJson(jsonNode, ::Json::kSilent);
     }
 
     __host__ void Host::SphereLight::OnDestroyAsset()
     {
-        DestroyOnDevice(GetAssetID(), cu_deviceData);
+        DestroyOnDevice(cu_deviceData);
     }
 
     __host__ uint Host::SphereLight::FromJson(const ::Json::Node& node, const uint flags)
