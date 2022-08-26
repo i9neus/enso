@@ -73,7 +73,7 @@ namespace GI2D
         Tracable(id),
         cu_deviceInstance(nullptr)
     {
-        Log::Warning("Constructed Host::Curve");
+        Log::Success("Host::Curve::Curve");
         
         constexpr uint kMinTreePrims = 3;
         
@@ -93,6 +93,7 @@ namespace GI2D
 
     __host__ Host::Curve::~Curve()
     {
+        Log::Error("Host::Curve::~Curve");
         OnDestroyAsset();
     }
 
@@ -204,7 +205,7 @@ namespace GI2D
             // Update the tracable bounding boxes
             Super::m_params.objectBBox = m_hostBIH->GetBoundingBox();
             Super::m_params.worldBBox = Super::m_params.objectBBox + Super::m_params.transform.trans;
-            Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format());
+            //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format());
 
             resyncParams = true;
         }

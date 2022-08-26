@@ -15,10 +15,7 @@ namespace GI2D
     {
         using Super = TracableInterface;
     public:
-        __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr)
-        {
-            printf("CurveInterface ctor\n");
-        }
+        __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr) {}
 
         //__host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
         //__host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
@@ -46,10 +43,7 @@ namespace GI2D
             };
 
         public:
-            __device__ Curve() 
-            { 
-                printf("Device::Curve ctor\n");
-            }
+            __device__ Curve() {}
 
             __device__ void             Synchronise(const Objects& objects);
             __device__ void             Synchronise(const CurveParams& params);

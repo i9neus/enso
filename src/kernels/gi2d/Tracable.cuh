@@ -20,10 +20,7 @@ namespace GI2D
     
     struct TracableParams
     {
-        __host__ __device__ TracableParams() 
-        { 
-            printf("TracableParams ctor\n"); 
-        }
+        __host__ __device__ TracableParams() {}
 
         BBox2f                      objectBBox;
         BBox2f                      worldBBox;
@@ -49,10 +46,7 @@ namespace GI2D
         __device__ void                                     Synchronise(const TracableParams& params);      
 
     protected:
-        __host__ __device__ TracableInterface() 
-        { 
-            printf("TracableInterface ctor\n"); 
-        }
+        __host__ __device__ TracableInterface() {}
 
         __device__ virtual vec4                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 

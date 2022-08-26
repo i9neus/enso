@@ -157,33 +157,35 @@ uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetSta
 
 uint GI2DRenderer::OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
-    /*if (m_objects.overlayParams.selection.numSelected != 0)
+    if (m_selectionCtx.numSelected == 0) { return kUIStateOkay; }
+    
+    std::lock_guard <std::mutex> lock(m_resourceMutex);
+
+    auto& tracables = *m_hostTracables;
+    int emptyIdx = -1;
+    int numDeleted = 0;
+    for (int primIdx = 0; primIdx < tracables.Size(); ++primIdx)
     {
-        std::lock_guard <std::mutex> lock(m_resourceMutex);
-        
-        auto& segments = *m_objects.hostTracables;
-        int emptyIdx = -1;
-        int numDeleted = 0;
-        for (int primIdx = 0; primIdx < segments.Size(); ++primIdx)
+        if (tracables[primIdx]->IsSelected())
         {
-            if (segments[primIdx].IsSelected())
-            {
-                ++numDeleted;
-                if (emptyIdx == -1) { emptyIdx = primIdx; }
-            }
-            else if (emptyIdx >= 0)
-            {
-                segments[emptyIdx++] = segments[primIdx];
-            }
+            // Erase the object from the container
+            m_renderObjects->Erase(tracables[primIdx]->GetAssetID());
+
+            ++numDeleted;
+            if (emptyIdx == -1) { emptyIdx = primIdx; }
         }
+        else if (emptyIdx >= 0)
+        {
+            tracables[emptyIdx++] = tracables[primIdx];
+        }
+    }
 
-        Assert(numDeleted <= segments.Size());
-        segments.Resize(segments.Size() - numDeleted);
-        Log::Error("Delete!");
+    Assert(numDeleted <= tracables.Size());
+    tracables.Resize(tracables.Size() - numDeleted);
+    Log::Error("Delete!");
 
-        m_objects.overlayParams.selection.numSelected = 0;
-        SetDirtyFlags(kGI2DDirtyBVH);
-    }*/
+    m_selectionCtx.numSelected = 0;
+    SetDirtyFlags(kGI2DDirtyBVH);    
     
     return kUIStateOkay;
 }
@@ -320,21 +322,21 @@ uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& tar
         }
 
         SetDirtyFlags(kGI2DDirtyUI);
-        Log::Success("Selecting!");
+        //Log::Success("Selecting!");
     }
     else if (stateID == "kSelectTracableEnd")
     {
         m_selectionCtx.isLassoing = false;
         SetDirtyFlags(kGI2DDirtyUI);
 
-        Log::Success("Finished!");
+        //Log::Success("Finished!");
     }
     else if (stateID == "kDeselectTracable")
     {
         for (auto& obj : *m_hostTracables) { obj->OnSelect(false); }
         SetDirtyFlags(kGI2DDirtyUI);
 
-        Log::Success("Finished!");
+        //Log::Success("Finished!");
     }
     else
     {
