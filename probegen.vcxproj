@@ -263,6 +263,7 @@
     <ClInclude Include="src\kernels\tracables\CudaSDF.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaSphere.cuh" />
     <ClInclude Include="src\kernels\tracables\CudaTracable.cuh" />
+    <ClInclude Include="src\kernels\Tuple.cuh" />
     <ClInclude Include="src\onnx\Grid2Grid.h" />
     <ClInclude Include="src\onnx\OnnxModel.h" />
     <ClInclude Include="src\onnx\FCNNProbeDenoiser.h" />
@@ -364,6 +365,7 @@
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaTracable.cu" />
     <CudaCompile Include="src\renderers\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="src\utils\CompileTest.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

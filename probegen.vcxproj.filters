@@ -663,6 +663,9 @@
     <ClInclude Include="src\kernels\AssetAllocator.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\Tuple.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -933,6 +936,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\Tracable.cu">
       <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\utils\CompileTest.cu">
+      <Filter>utils</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
