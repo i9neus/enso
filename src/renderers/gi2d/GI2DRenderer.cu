@@ -9,6 +9,7 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/Tracable.cuh"
 #include "kernels/gi2d/Curve.cuh"
+#include "kernels/Tuple.cuh"
 
 using namespace Cuda;
 using namespace GI2D;

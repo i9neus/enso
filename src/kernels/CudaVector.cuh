@@ -3,6 +3,7 @@
 #include "math/CudaMath.cuh"
 #include "AssetAllocator.cuh"
 #include "CudaCommonIncludes.cuh"
+#include "Tuple.cuh"
 
 namespace 
 {
@@ -90,10 +91,10 @@ namespace Cuda
 			__device__ Vector() {}
 			__device__ ~Vector() {}
 
-			__device__ void Synchronise(Type* data, const VectorParams& params)
+			__device__ void Synchronise(const Tuple<Type*, VectorParams>& tuple)
 			{
-				m_localData = data;
-				m_localParams = params;
+				m_localData = Get<1>(tuple);
+				m_localParams = Get<0>(tuple);
 			}
 		};
 	}
@@ -540,7 +541,7 @@ namespace Cuda
 					if (cu_deviceData)
 					{
 						IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
-						SynchroniseTrivialParams(GetDeviceInstance(), cu_deviceData, m_deviceParams);
+						SynchroniseObjects(GetDeviceInstance(), Tuple<CommonType*, VectorParams>(cu_deviceData, m_deviceParams));
 					}
 				}
 				else
@@ -600,7 +601,7 @@ namespace Cuda
 				delete[] m_deviceSyncData;
 
 				// Synchronise the device data pointers and the params
-				SynchroniseTrivialParams(GetDeviceInstance(), cu_deviceData, m_deviceParams);
+				SynchroniseObjects(GetDeviceInstance(), Tuple<DeviceType*, VectorParams>(cu_deviceData, m_deviceParams));
 			}
 		};
 	}

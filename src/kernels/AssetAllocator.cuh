@@ -61,6 +61,27 @@ namespace Cuda
         public:            
 			AssetAllocator(const std::string& id) : Asset(id) {}
 
+		private:
+			template<typename ObjectType> __host__ void AssertIsTransferrableType() const
+			{
+				//static_assert(std::is_standard_layout<ParamsType>::value, "Object must be standard layout type.");
+				static_assert(!std::is_polymorphic<ObjectType>::value, "Object cannot be a polymorphic type.");
+			}
+
+			template<typename ObjectType>
+			__host__ inline void AssertAllAreTrivialArguments(const ObjectType& t) const
+			{
+				static_assert(std::is_trivial<ObjectType>::value, "Cannot sychronise because at least one parameter type is non-trivial.");
+			}
+
+			template<typename ObjectType, typename... Pack>
+			__host__ inline void AssertAllAreTrivialArguments(const ObjectType& t, const Pack... pack) const
+			{
+				AssertAllAreTrivialArguments(t);
+				AssertAllAreTrivialArguments(pack...);
+			}
+
+
         protected:
 			template<typename ObjectType>
 			__host__ void GuardedFreeDeviceArray(const size_t numElements, ObjectType** deviceData) const
@@ -143,7 +164,7 @@ namespace Cuda
 			template<typename ObjectType, typename ParamsType, typename... Pack>
 			__host__ inline ObjectType* InstantiateOnDeviceWithParams(const ParamsType& params, Pack... args) const
 			{
-				static_assert(std::is_standard_layout<ParamsType>::value, "Parameter structure must be standard layout type.");
+				AssertIsTransferrableType<ParamsType>();
 
 				ParamsType* cu_params;
 				IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
@@ -178,25 +199,12 @@ namespace Cuda
 				return outputPtr;
 			}
 
-			template<typename ObjectType>
-			__host__ inline void AreAllTrivialArguments(const ObjectType& t) const 
-			{ 
-				static_assert(std::is_trivial<ObjectType>::value, "Cannot sychronise because at least one parameter type is non-trivial.");
-			}
-
-			template<typename ObjectType, typename... Pack>
-			__host__ inline void AreAllTrivialArguments(const ObjectType& t, const Pack... pack) const
-			{
-				AreAllTrivialArguments(t);
-				AreAllTrivialArguments(pack...);
-			}
-
 			template<typename ObjectType, typename... ParameterPack>
 			__host__ void SynchroniseTrivialParams(ObjectType* cu_object, ParameterPack... pack) const
 			{
 				Assert(cu_object);
 
-				AreAllTrivialArguments(pack...);
+				AssertAllAreTrivialArguments(pack...);
 
 				KernelSynchroniseTrivialParams << <1, 1 >> > (cu_object, pack...);
 				IsOk(cudaDeviceSynchronize());
@@ -205,8 +213,8 @@ namespace Cuda
 			template<typename ObjectType, typename ParamsType>
 			__host__ void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params) const
 			{
+				AssertIsTransferrableType<ParamsType>();				
 				Assert(cu_object);
-				AssertMsg(std::is_standard_layout<ParamsType>::value, "Object structure must be standard layout type.");
 
 				ParamsType* cu_params;
 				IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
