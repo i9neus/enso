@@ -19,7 +19,7 @@
 
 void CopyStringToVector(const std::string& str, std::vector<char>& vec)
 {
-    vec.resize(math::max(2048ull, str.length()));
+    vec.resize(max(2048ull, str.length()));
     std::memset(vec.data(), '\0', sizeof(char) * vec.size());
     std::memcpy(vec.data(), str.data(), sizeof(char) * str.length());
 }
@@ -424,8 +424,8 @@ void RenderObjectStateManager::ConstructBatchProcessorUI()
         ImGui::DragFloat2("Grid validity range", &m_gridValidityRange[0], 0.001f, 0.0f, 1.0f);
 
         ImGui::SliderInt2("KIFS interation range", &m_kifsIterationRange[0], 1, 10);
-        m_kifsIterationRange[0] = math::min(m_kifsIterationRange[0], m_kifsIterationRange[1]);
-        m_kifsIterationRange[1] = math::max(m_kifsIterationRange[0], m_kifsIterationRange[1]);
+        m_kifsIterationRange[0] = min(m_kifsIterationRange[0], m_kifsIterationRange[1]);
+        m_kifsIterationRange[1] = max(m_kifsIterationRange[0], m_kifsIterationRange[1]);
 
         ImGui::TreePop();
     }

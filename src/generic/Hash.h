@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "StdIncludes.h"
+#include <stdio.h>
+#include "Constants.h"
 
 // Constants for the Fowler-Noll-Vo hash function https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
 constexpr uint kFNVPrime = 0x01000193u;

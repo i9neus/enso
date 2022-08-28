@@ -201,7 +201,7 @@ namespace Cuda
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ float length(const __vec_swizzle<float, LS, 3, L0, L1, L2>& v)
     {
-        return math::sqrt(v.data[L0] * v.data[L0] + v.data[L1] * v.data[L1] + v.data[L2] * v.data[L2]);
+        return sqrtf(v.data[L0] * v.data[L0] + v.data[L1] * v.data[L1] + v.data[L2] * v.data[L2]);
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 3, L0, L1, L2> normalize(const __vec_swizzle<float, LS, 3, L0, L1, L2>& v)
@@ -221,27 +221,27 @@ namespace Cuda
     template<int LS, int L0, int L1, int L2, int RS, int R0, int R1, int R2>
     __host__ __device__ __forceinline__ vec3 pow(__vec_swizzle<float, LS, 3, L0, L1, L2>& a, const __vec_swizzle<float, RS, 3, R0, R1, R2>& b)
     {
-        return { math::pow(a.data[L0], b.data[R0]), math::pow(a.data[L1], b.data[R1]), math::pow(a.data[L2], b.data[R2]) };
+        return { powf(a.data[L0], b.data[R0]), powf(a.data[L1], b.data[R1]), powf(a.data[L2], b.data[R2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 exp(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { math::exp(a.data[L0]), math::exp(a.data[L1]), math::exp(a.data[L2]) };
+        return { expf(a.data[L0]), expf(a.data[L1]), expf(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { math::log(a.data[L0]), math::log(a.data[L1]), math::log(a.data[L2]) };
+        return { logf(a.data[L0]), logf(a.data[L1]), logf(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log10(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { math::log10(a.data[L0]), math::log10(a.data[L1]), math::log10(a.data[L2]) };
+        return { mag10f(a.data[L0]), mag10f(a.data[L1]), mag10f(a.data[L2]) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 log2(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)
     {
-        return { math::log2(a.data[L0]), math::log2(a.data[L1]), math::log2(a.data[L2]) };
+        return { mog2f(a.data[L0]), mog2f(a.data[L1]), mog2f(a.data[L2]) };
     }
 
     __host__ __device__ __forceinline__ vec3 clamp(const vec3& v, const vec3& a, const vec3& b) { return { clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z) }; }
@@ -266,8 +266,8 @@ namespace Cuda
         return (fabs(high) > fabs(low)) ? high : low;
     }
 
-    __host__ __device__ __forceinline__ vec3 max(const vec3& a, const vec3& b) { return vec3(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z)); }
-    __host__ __device__ __forceinline__ vec3 min(const vec3& a, const vec3& b) { return vec3(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z)); }
+    __host__ __device__ __forceinline__ vec3 max(const vec3& a, const vec3& b) { return vec3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z)); }
+    __host__ __device__ __forceinline__ vec3 min(const vec3& a, const vec3& b) { return vec3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z)); }
 
     // FIXME: Cuda intrinsics aren't working. Why is this?
     //__host__ __device__ __forceinline__ vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return { __saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }}

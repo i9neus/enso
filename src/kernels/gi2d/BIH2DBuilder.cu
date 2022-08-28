@@ -1,4 +1,5 @@
 #include "BIH2DBuilder.cuh"
+#include "generic/HighResolutionTimer.h"
 
 namespace GI2D
 {
@@ -17,7 +18,7 @@ namespace GI2D
     template<typename NodeType>
     __host__ void BIH2DBuilder<NodeType>::Build(const bool printStats)
     {
-        Timer timer;
+        HighResolutionTimer timer;
         AssertMsg(m_getPrimitiveBBox, "BIH builder does not have a valid bounding box functor.");
 
         // Find the global bounding box
@@ -136,8 +137,8 @@ namespace GI2D
             if (centroid[axis] < split)
             {
                 // Update the left partition position and the moment
-                leftBBox[1][axis] = max(leftBBox[1][axis], primBBox[1][axis]);
-                leftCentroidBBox[1][axis] = max(leftCentroidBBox[1][axis], centroid[axis]);
+                leftBBox[1][axis] = fmaxf(leftBBox[1][axis], primBBox[1][axis]);
+                leftCentroidBBox[1][axis] = fmaxf(leftCentroidBBox[1][axis], centroid[axis]);
                 // Swap the element into the left-hand partition
                 sw = m_primitiveIdxs[j]; m_primitiveIdxs[j] = m_primitiveIdxs[i]; m_primitiveIdxs[i] = sw;
                 // Increment the partition index
@@ -146,8 +147,8 @@ namespace GI2D
             else
             {
                 // Update the right partition position and centroid
-                rightBBox[0][axis] = min(rightBBox[0][axis], primBBox[0][axis]);
-                rightCentroidBBox[0][axis] = min(rightCentroidBBox[0][axis], centroid[axis]);
+                rightBBox[0][axis] = fminf(rightBBox[0][axis], primBBox[0][axis]);
+                rightCentroidBBox[0][axis] = fminf(rightCentroidBBox[0][axis], centroid[axis]);
             }
         }
 

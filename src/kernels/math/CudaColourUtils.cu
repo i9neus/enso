@@ -112,7 +112,7 @@ namespace Cuda
     {
         // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
         lowerRgba = mix(lowerRgba, vec4(upperRgb, 1.0f), upperAlpha);
-        lowerRgba.xyz /= max(1e-10f, lowerRgba.w);
+        lowerRgba.xyz /= fmaxf(1e-10f, lowerRgba.w);
 
         return lowerRgba;
     }
@@ -121,7 +121,7 @@ namespace Cuda
     {
         // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
         lowerRgba = mix(lowerRgba, vec4(upperRgba.xyz, 1.0f), upperRgba.w);
-        lowerRgba.xyz /= max(1e-10f, lowerRgba.w);
+        lowerRgba.xyz /= fmaxf(1e-10f, lowerRgba.w);
 
         return lowerRgba;
     }

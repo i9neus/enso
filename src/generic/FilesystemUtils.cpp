@@ -1,8 +1,14 @@
+#define NOMINMAX
+#include <Windows.h>
+
 #include "FilesystemUtils.h"
 #include "StringUtils.h"
 #include "Assert.h"
 
 #include <filesystem>
+#include <fstream>
+
+#include "generic/Log.h"
 
 namespace fs = std::filesystem;
 

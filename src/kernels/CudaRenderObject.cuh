@@ -5,6 +5,7 @@
 
 #include <map>
 #include <unordered_set>
+#include <functional>
 
 namespace Cuda
 {
@@ -65,7 +66,7 @@ namespace Cuda
             
             __host__ void                   UpdateDAGPath(const ::Json::Node& node);
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
-            __host__ const bool             HasDAGPath() const { return !m_dagPath.empty(); }
+            __host__ bool                   HasDAGPath() const { return !m_dagPath.empty(); }
 
             __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kRenderObjectIsChild; }
             __host__ static uint            GetInstanceFlags() { return 0; }

@@ -1,4 +1,8 @@
 #include "ProcessMemoryMonitor.h"
+
+#define NOMINMAX
+#include <Windows.h>
+
 #include <psapi.h>
 
 ProcessMemoryMonitor::ProcessMemoryMonitor() : 

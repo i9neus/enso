@@ -1,4 +1,5 @@
 #include "RendererManager.h"
+#include "generic/HighResolutionTimer.h"
 
 #include "gi2d/GI2DRenderer.cuh"
 
@@ -42,14 +43,14 @@ void RendererManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
     
     if (m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
     {
-        Timer timer;
+        HighResolutionTimer timer;
         CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, true);
-        m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished, true);        
+        m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished, true);
         //Log::System("Blitted");       
     }
     else
-    {       
-        Timer timer;
+    {
+        HighResolutionTimer timer;
         CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, false);
         //Log::Warning("Not blitted");
     }

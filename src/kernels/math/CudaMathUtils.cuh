@@ -36,9 +36,9 @@ namespace Cuda
 	template<typename A, typename B, typename V> __host__ __device__ __forceinline__ A mix(const A& a, const B& b, const V& v) { return a * (V(1) - v) + b * v; }
 	template<typename T> __host__ __forceinline__ void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 
-	__host__ __device__ __forceinline__ float SignedLog(const float& t)						{ return math::log(1.0f + fabs(t)) * copysignf(1.0f, t); }
-	__host__ __device__ __forceinline__ float SignedLog10(const float& t)					{ return math::log10(1.0f + fabs(t)) * copysignf(1.0f, t); }
-	__host__ __device__ __forceinline__ float SignedLog2(const float& t)					{ return math::log2(1.0f + fabs(t)) * copysignf(1.0f, t); }
+	__host__ __device__ __forceinline__ float SignedLog(const float& t)						{ return logf(1.0f + fabs(t)) * copysignf(1.0f, t); }
+	__host__ __device__ __forceinline__ float SignedLog10(const float& t)					{ return log10f(1.0f + fabs(t)) * copysignf(1.0f, t); }
+	__host__ __device__ __forceinline__ float SignedLog2(const float& t)					{ return log2f(1.0f + fabs(t)) * copysignf(1.0f, t); }
 
 	__host__ __device__ __forceinline__ float	Volume(const vec3& v)						{ return v.x * v.y * v.z; }
 	__host__ __device__ __forceinline__ int		Volume(const ivec3& v)						{ return v.x * v.y * v.z; }
@@ -47,7 +47,8 @@ namespace Cuda
 	__host__ __device__ __forceinline__ int		Area(const ivec2& v)						{ return v.x * v.y; }
 	__host__ __device__ __forceinline__ uint	Area(const uvec2& v)						{ return v.x * v.y; }
 
-	__host__ __device__ __forceinline__ vec2	MinMax(const vec2& v, const float& f)		{ return vec2(min(v.x, f), max(v.y, f)); }
+	__host__ __device__ __forceinline__
+	__host__ __device__ __forceinline__ vec2	MinMax(const vec2& v, const float& f)		{ return vec2(fminf(v.x, f), fmaxf(v.y, f)); }
 
 	__host__ __device__ __forceinline__ bool	IsPointInUnitBox(const vec3& v) 
 	{ 

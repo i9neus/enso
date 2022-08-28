@@ -78,7 +78,7 @@ namespace Cuda
 
         __host__ __device__ __forceinline__ bool Intersects(const BBox2& other) const
         {
-            return max(lower.x, other.lower.x) < min(upper.x, other.upper.x) && max(lower.y, other.lower.y) < min(upper.y, other.upper.y);
+            return fmaxf(lower.x, other.lower.x) < fminf(upper.x, other.upper.x) && fmaxf(lower.y, other.lower.y) < fminf(upper.y, other.upper.y);
         }
 
         __host__ __device__ __forceinline__ BBox2& Grow(const ScalarType & ammount)
@@ -134,14 +134,14 @@ namespace Cuda
         // Union operator
         __host__ __device__ __forceinline__ BBox2& operator|=(const BBox2& other)
         {
-            *this = BBox(min(lower.x, other.lower.x), min(lower.y, other.lower.y), max(upper.x, other.upper.x), max(upper.y, other.upper.y));
+            *this = BBox(fminf(lower.x, other.lower.x), fminf(lower.y, other.lower.y), fmaxf(upper.x, other.upper.x), fmaxf(upper.y, other.upper.y));
             return *this;
         }
          
         // Intersection operator
         __host__ __device__ __forceinline__ BBox2& operator&=(const BBox2& other)
         {
-            *this = BBox2(max(lower.x, other.lower.x), max(lower.y, other.lower.y), min(upper.x, other.upper.x), min(upper.y, other.upper.y));
+            *this = BBox2(fmaxf(lower.x, other.lower.x), fmaxf(lower.y, other.lower.y), fminf(upper.x, other.upper.x), fminf(upper.y, other.upper.y));
             return *this;
         }
 
@@ -182,19 +182,19 @@ namespace Cuda
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Union(const BBox2<T>& a, const BBox2<T>& b)
     {
-        return BBox2<T>(min(a.lower.x, b.lower.x), min(a.lower.y, b.lower.y), max(a.upper.x, b.upper.x), max(a.upper.y, b.upper.y));
+        return BBox2<T>(fminf(a.lower.x, b.lower.x), fminf(a.lower.y, b.lower.y), fmaxf(a.upper.x, b.upper.x), fmaxf(a.upper.y, b.upper.y));
     }
 
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Union(const BBox2<T>& a, const vec2& b)
     {
-        return BBox2<T>(min(a.lower.x, b.x), min(a.lower.y, b.y), max(a.upper.x, b.x), max(a.upper.y, b.y));
+        return BBox2<T>(fminf(a.lower.x, b.x), fminf(a.lower.y, b.y), fmaxf(a.upper.x, b.x), fmaxf(a.upper.y, b.y));
     }
 
     template<typename T>
     __host__ __device__ __forceinline__ BBox2<T> Intersection(const BBox2<T>& a, const BBox2<T>& b)
     {
-        return BBox2<T>(max(a.lower.x, b.lower.x), max(a.lower.y, b.lower.y), min(a.upper.x, b.upper.x), min(a.upper.y, b.upper.y));
+        return BBox2<T>(fmaxf(a.lower.x, b.lower.x), fmaxf(a.lower.y, b.lower.y), fminf(a.upper.x, b.upper.x), fminf(a.upper.y, b.upper.y));
     }
 
     template<typename T>

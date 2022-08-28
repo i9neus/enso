@@ -5,7 +5,6 @@
 #include "win/Win32Application.h"
 #include "thirdparty/nvidia/helper_cuda.h"
 #include "kernels/CudaCommonIncludes.cuh"
-#include "generic/Math.h"
 
 D3DContainer::D3DContainer(std::string name) :
 	m_clientWidth(0),
@@ -98,8 +97,8 @@ void D3DContainer::UpdateAssetDimensions()
 	m_scissorRect = CD3DX12_RECT(0, 0, LONG(m_clientWidth), LONG(m_clientHeight));
 
 	// Calcualate nearest power-of-two values for the texture
-	m_quadTexWidth = ::math::max(128u, ::math::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientWidth))))));
-	m_quadTexHeight = ::math::max(128u, ::math::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientHeight))))));
+	m_quadTexWidth = ::max(128u, ::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientWidth))))));
+	m_quadTexHeight = ::max(128u, ::min(4096u, 1u << UINT(std::ceil(std::log2(float(m_clientHeight))))));
 
 	Log::System("D3D quad texture: %i x %i", m_quadTexWidth, m_quadTexHeight);
 }

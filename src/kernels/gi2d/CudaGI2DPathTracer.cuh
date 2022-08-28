@@ -14,8 +14,7 @@ namespace GI2D
     {
         __host__ __device__ PathTracerParams();
 
-        ViewTransform2D view;
-        BBox2f sceneBounds;
+        UIViewCtx           viewCtx;
 
         struct
         {

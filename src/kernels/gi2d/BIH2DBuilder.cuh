@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CudaBIH2D.cuh"
+#include <functional>
+#include <vector>
 
 using namespace Cuda;
 

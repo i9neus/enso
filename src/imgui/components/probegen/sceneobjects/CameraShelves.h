@@ -1,7 +1,6 @@
 #pragma once
 
 #include "thirdparty/imgui/imgui.h"
-#include "generic/Math.h"
 
 #include "kernels/cameras/CudaPerspectiveCamera.cuh"
 #include "kernels/cameras/CudaLightProbeCamera.cuh"

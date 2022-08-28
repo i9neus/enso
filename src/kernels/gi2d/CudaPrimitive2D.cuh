@@ -2,7 +2,6 @@
 
 #include "Common.cuh"
 
-#include "generic/StdIncludes.h"
 #include "../CudaManagedObject.cuh"
 #include "../CudaImage.cuh"
 
@@ -35,7 +34,7 @@ namespace GI2D
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const = 0;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const = 0;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const = 0;
-        __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const = 0;
+        __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const = 0;
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const = 0;
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const = 0;
 
@@ -62,15 +61,15 @@ namespace GI2D
         __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
+        __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const override final;
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const override final;
 
         __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
         
         __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
-            return BBox2f(vec2(min(m_v[0].x, m_v[1].x), min(m_v[0].y, m_v[1].y)),
-                          vec2(max(m_v[0].x, m_v[1].x), max(m_v[0].y, m_v[1].y)));
+            return BBox2f(vec2(fminf(m_v[0].x, m_v[1].x), fminf(m_v[0].y, m_v[1].y)),
+                          vec2(fmaxf(m_v[0].x, m_v[1].x), fmaxf(m_v[0].y, m_v[1].y)));
         }
         
         __host__ __device__ void Set(const uint& idx, const vec2& v)

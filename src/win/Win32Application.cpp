@@ -11,8 +11,6 @@
 
 #include "Win32Application.h"
 
-#include "generic/StdIncludes.h"
-
 #include "D3DContainer.h"
 #include "Win32Application.h"
 
@@ -21,6 +19,7 @@
 #include "generic/GlobalStateAuthority.h"
 #include "generic/debug/ProcessMemoryMonitor.h"
 
+#define NOMINMAX
 #include <windows.h>
 #include <windowsx.h>
 

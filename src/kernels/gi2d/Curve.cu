@@ -5,30 +5,36 @@ using namespace Cuda;
 
 namespace GI2D
 {    
-    /*__host__ __device__ bool CurveInterface::IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFarParent) const
-    {
-        vec2 tNearFar;
-        if (!IntersectRayBBox(ray, m_tracableBBox, tNearFar) || tNearFar[0] > tFarParent) { return false; }
-        
-        const RayBasic2D localRay = ToObjectSpace(ray);
+    __host__ __device__ bool CurveInterface::IntersectRay(Ray2D& rayWorld, HitCtx2D& hitWorld) const
+    {        
+        RayRange2D range;
+        if (!IntersectRayBBox(rayWorld, m_params.tracable.worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
-        auto onIntersect = [&](const uint* startEndIdx, float& tFarChild)
+        const RayBasic2D& rayObject = ToObjectSpace(rayWorld);
+        HitCtx2D hitObject;
+
+        auto onIntersect = [&](const uint* startEndIdx, RayRange2D& rangeTree)
         {
             for (int primIdx = startEndIdx[0]; primIdx < startEndIdx[1]; ++primIdx)
             {
-                if ((*m_lineSegments)[primIdx].IntersectRay(ray, hit) && hit.tFar < tFarChild && hit.tFar < tFarParent)
+                if ((*m_lineSegments)[primIdx].IntersectRay(rayObject, hitObject) && hitObject.tFar < rangeTree.tFar && hitObject.tFar < hitWorld.tFar)
                 {
-                    tFarChild = hit.tFar;
+                    rangeTree.tFar = hitObject.tFar;
                 }
             }
         };
-        m_bih->TestRay(ray, onIntersect);
+        m_bih->TestRay(rayObject, range.tFar, onIntersect);
 
-        tFarParent = min(tFarParent, hit.tFar);
-        return 0;
+        if (hitObject.tFar < hitWorld.tFar)
+        {
+            hitWorld.tFar = hitObject.tFar;
+            return true;
+        }
+
+        return false;
     }
 
-    __host__ __device__ bool CurveInterface::InteresectPoint(const vec2& p, const float& thickness) const
+    /*__host__ __device__ bool CurveInterface::InteresectPoint(const vec2& p, const float& thickness) const
     {
     }*/
 

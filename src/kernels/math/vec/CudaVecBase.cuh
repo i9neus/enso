@@ -64,14 +64,14 @@ namespace Cuda
 	template<typename T> using Tvec3 = __vec_swizzle<T, 3, 3, 0, 1, 2>;
 	template<typename T> using Tvec2 = __vec_swizzle<T, 2, 2, 0, 1>;
 
-	template<typename T> __host__ __device__ __forceinline__ T max(const T& a, const T& b) { return (a > b) ? a : b; }
-	template<typename T> __host__ __device__ __forceinline__ T min(const T& a, const T& b) { return (a < b) ? a : b; }
+	//template<typename T> __host__ __device__ __forceinline__ T max(const T& a, const T& b) { return (a > b) ? a : b; }
+	//template<typename T> __host__ __device__ __forceinline__ T min(const T& a, const T& b) { return (a < b) ? a : b; }
 	__host__ __device__ __forceinline__ float clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
-	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return max(a, min(v, b)); }
+	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ __forceinline__ float fract(const float& v) noexcept { return fmodf(v, 1.0f); }
 	__host__ __device__ __forceinline__ float sign(const float& v) noexcept { return copysign(1.0f, v); }
 
-	namespace math
+	/*namespace math
 	{
 #define USE_CUDA_INTRINSICS
 
@@ -102,6 +102,5 @@ namespace Cuda
 			c = cosf(v);
 		}
 #endif
-	}
-
+	}*/
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
 #include "kernels/math/bbox/CudaBBox2.cuh"
 #include <map>
 

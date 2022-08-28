@@ -1,7 +1,8 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
 #include "kernels/math/CudaMath.cuh"
+#include <vector>
+#include <string>
 
 // Forward declare a bunch of structures used by ONNX runtime
 namespace Ort

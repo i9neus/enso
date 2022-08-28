@@ -1,7 +1,10 @@
 ﻿#pragma once
 
+#include "AssetAllocator.cuh"
 #include "math/CudaMath.cuh"
 #include <map>
+#include <string>
+#include <functional>
 
 namespace Json { class Node; }
 

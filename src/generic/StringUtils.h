@@ -1,6 +1,8 @@
 #pragma once
 
-#include "StdIncludes.h"
+#include <stdio.h>
+#include <string>
+#include "Assert.h"
 
 std::wstring Widen(const std::string& str);
 

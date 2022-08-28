@@ -208,7 +208,7 @@ namespace Cuda
 
         for (int i = 0; i < m_params.numIterations; i++)
         {
-            float f = float(i + 1) / float(max(1, m_params.numIterations));
+            float f = float(i + 1) / float(::max(1, m_params.numIterations));
             vec3 theta = (2.0f * kcd.xi[i] - 1.0f) * kPi * 10.0f * (rotateAlpha + rotateBeta * f);
             float iterScale = scaleAlpha * powf(2.0f, float(i) * scaleBeta);
 

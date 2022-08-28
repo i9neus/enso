@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../StdIncludes.h"
+#include <memory>
 
 struct _PROCESS_MEMORY_COUNTERS;
 

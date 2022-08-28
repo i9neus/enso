@@ -1,7 +1,6 @@
 #pragma once
 
 #include "thirdparty/imgui/imgui.h"
-#include "generic/Math.h"
 #include "generic/StdIncludes.h"
 #include "generic/JsonUtils.h"
 

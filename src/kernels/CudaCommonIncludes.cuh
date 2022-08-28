@@ -2,12 +2,27 @@
 
 #include <cuda_runtime.h>
 #include "cuda_fp16.h"
-
-#include "Assert.h"
-#include "CudaAsset.cuh"
-#include "generic/StdIncludes.h"
 #include "thirdparty/nvidia/helper_cuda.h"
+
 #include "generic/Constants.h"
+#include "generic/Assert.h"
+#include <type_traits>
+
+// Define any CUDA math functions that aren't defined in libraries like cmath
+#ifndef __CUDACC__
+#include <math.h>
+
+// Define host implementions of floating point min and max in the root namespace
+inline float fminf(float a, float b) { return a < b ? a : b; }
+inline float fmaxf(float a, float b) { return a > b ? a : b; }
+
+// Define implementations of min and max for integral types in the root namespace
+template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type> 
+inline T max(const T a, const T b) { return a > b ? a : b; }
+template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+inline T min(const T a, const T b) { return a < b ? a : b; }
+
+#endif
 
 //#define CUDA_DEVICE_GLOBAL_ASSERTS
 

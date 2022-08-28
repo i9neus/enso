@@ -3,9 +3,9 @@
 #include "thirdparty/rapidjson/document.h"
 #include "thirdparty/rapidjson/allocators.h"
 #include "thirdparty/rapidjson/error/en.h"
-#include "StdIncludes.h"
 #include "StringUtils.h"
 #include "Log.h"
+#include "Assert.h"
 #include <map>
 
 namespace Json

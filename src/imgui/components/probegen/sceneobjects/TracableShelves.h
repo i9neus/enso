@@ -1,7 +1,6 @@
 #pragma once
 
 #include "thirdparty/imgui/imgui.h"
-#include "generic/Math.h"
 
 #include "kernels/tracables/CudaSphere.cuh"
 #include "kernels/tracables/CudaPlane.cuh"

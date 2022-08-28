@@ -2,7 +2,7 @@
 
 namespace GI2D
 {
-    __host__ __device__ __forceinline__ bool IntersectRayBBox(const RayBasic2D& ray, const BBox2f& bBox, vec2& t)
+    __host__ __device__ __forceinline__ bool IntersectRayBBox(const RayBasic2D& ray, const BBox2f& bBox, RayRange2D& range)
     {
         vec2 tNearPlane, tFarPlane;
         for (int dim = 0; dim < 2; dim++)
@@ -16,8 +16,8 @@ namespace GI2D
             }
         }
 
-        t[0] = max(0.f, cwiseMax(tNearPlane));
-        t[1] = cwiseMin(tFarPlane);
-        return t[0] < t[1];
+        range.tNear = fmaxf(0.f, cwiseMax(tNearPlane));
+        range.tFar = cwiseMin(tFarPlane);
+        return range.tNear < range.tFar;
     }
 }

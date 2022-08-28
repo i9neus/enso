@@ -17,7 +17,7 @@ namespace GI2D
     public:
         __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr) {}
 
-        //__host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const override final;
+        __host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
         //__host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
         //__host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;
 

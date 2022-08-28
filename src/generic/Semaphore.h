@@ -1,9 +1,8 @@
 #pragma once
 
 #include <atomic>
-#include "thirdparty/tinyformat/tinyformat.h"
 #include "Assert.h"
-#include <stdexcept>
+#include <thread>
 
 class Semaphore
 {

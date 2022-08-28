@@ -1,6 +1,7 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
+#include <vector>
+#include <string>
 #include "kernels/math/CudaMath.cuh"
 
 namespace ImageIO

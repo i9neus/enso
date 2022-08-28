@@ -22,7 +22,7 @@ namespace GI2D
         return length2(p - PerpendicularPoint(p)) < sqr(thickness);
     }
 
-    __host__ __device__ bool LineSegment::IntersectRay(const Ray2D& ray, HitCtx2D& hit) const
+    __host__ __device__ bool LineSegment::IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const
     {
         // The intersection of the ray with the line
         vec2 n = vec2(m_dv.y, -m_dv.x);

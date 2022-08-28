@@ -137,7 +137,7 @@ namespace Cuda
                             (vec3(1e-10f) + sqr(nlmParams.K) * (varN + varM));
 
                         // Derive the weight from the distance
-                        weights[coeffIdx] += expf(-max(0.0f, cwiseMax(d2)));
+                        weights[coeffIdx] += expf(-fmaxf(0.0f, cwiseMax(d2)));
                     }
                     numValidWeights++;
                 }
@@ -148,9 +148,9 @@ namespace Cuda
         float maxWeight = kFltMax;
         for (int coeffIdx = 0; coeffIdx < gridData.coefficientsPerProbe - 1; ++coeffIdx)
         {
-            maxWeight = min(maxWeight, weights[coeffIdx]);
+            maxWeight = fminf(maxWeight, weights[coeffIdx]);
         }
-        return maxWeight / float(max(1, numValidWeights));
+        return maxWeight / float(fmaxf(1, numValidWeights));
     }
 
     __host__ std::vector<float> GenerateGaussianKernel1D(const int kernelSpan)

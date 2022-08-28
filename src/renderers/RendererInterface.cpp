@@ -84,7 +84,7 @@ void RendererInterface::RunThread()
 	{
 		while (m_threadSignal.load() == kRenderManagerRun)
 		{
-			Timer timer;
+			HighResolutionTimer timer;
 
 			// Notify that a render "tick" has begun
 			{
@@ -94,14 +94,14 @@ void RendererInterface::RunThread()
 
 			// Compute some stats on the framerate
 			m_frameIdx++;
-			m_lastFrameTime = timer();
+			m_lastFrameTime = timer.Get();
 			m_frameTimes[m_frameIdx % m_frameTimes.size()] = m_lastFrameTime;
 			m_meanFrameTime = 0.0f;
 			for (const auto& ft : m_frameTimes)
 			{
 				m_meanFrameTime += ft;
 			}
-			m_meanFrameTime /= ::math::min(m_frameIdx, int(m_frameTimes.size()));
+			m_meanFrameTime /= ::min(m_frameIdx, int(m_frameTimes.size()));
 		}
 	}
 	catch (const std::runtime_error& err)

@@ -16,12 +16,12 @@ void IMGUIWidget::ConstructJitteredTransform(Cuda::BidirectionalTransform& trans
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
 
     ImGui::PushID("pos");
-    ImGui::DragFloat3("Position", &transform.trans.p[0], math::max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
+    ImGui::DragFloat3("Position", &transform.trans.p[0], max(0.01f, cwiseMax(transform.trans.p) * 0.01f));
     HelpMarker("The base position of the transform.");
 
     if (isJitterable)
     {
-        ImGui::DragFloat3("+/-", &transform.trans.dpdt[0], math::max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
+        ImGui::DragFloat3("+/-", &transform.trans.dpdt[0], max(0.0001f, cwiseMax(transform.trans.dpdt) * 0.01f));
         HelpMarker("The relative range relative over which the transform position may be jittered.");
 
         ImGui::SliderFloat3("~", &transform.trans.t[0], 0.0f, 1.0f);
@@ -50,11 +50,11 @@ void IMGUIWidget::ConstructJitteredTransform(Cuda::BidirectionalTransform& trans
     ImGui::PushID("sca");
     if (isNonlinearScale)
     {
-        ImGui::DragFloat3("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+        ImGui::DragFloat3("Scale", &transform.scale.p[0], max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
     }
     else
     {
-        ImGui::DragFloat("Scale", &transform.scale.p[0], math::max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
+        ImGui::DragFloat("Scale", &transform.scale.p[0], max(0.01f, cwiseMax(transform.scale.p) * 0.01f));
     }
     HelpMarker("The base scale of the transform.");
 
@@ -62,11 +62,11 @@ void IMGUIWidget::ConstructJitteredTransform(Cuda::BidirectionalTransform& trans
     {
         if (isNonlinearScale)
         {
-            ImGui::DragFloat3(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+            ImGui::DragFloat3(" +/-", &transform.scale.dpdt[0], max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
         }
         else
         {
-            ImGui::DragFloat(" +/-", &transform.scale.dpdt[0], math::max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
+            ImGui::DragFloat(" +/-", &transform.scale.dpdt[0], max(0.0001f, cwiseMax(transform.scale.dpdt) * 0.01f));
 
         }
         HelpMarker("The relative range relative over which the transform scale may be jittered.");
@@ -274,7 +274,7 @@ void IMGUIJitteredParameterTable::Construct()
                     ImGui::DragFloat("+/-", &param.p, range.z * 0.01f, range.x, range.y, "%.6f"); SL;
                     ImGui::PopItemWidth();
                     ImGui::PushItemWidth(50);
-                    ImGui::DragFloat("~", &param.dpdt, math::max(0.01f * range.z, param.dpdt * range.z), range.x, range.y, "%.6f"); SL;
+                    ImGui::DragFloat("~", &param.dpdt, max(0.01f * range.z, param.dpdt * range.z), range.x, range.y, "%.6f"); SL;
                     ImGui::SliderFloat("", &param.t, 0.0f, 1.0f); SL;
                     ImGui::PopItemWidth();
 
@@ -372,7 +372,7 @@ IMGUIInputText::IMGUIInputText(const std::string& label, const std::string& cont
 
 IMGUIInputText& IMGUIInputText::operator=(const std::string& str)
 {
-    m_textData.resize(math::max(m_minSize, int(str.length())));
+    m_textData.resize(max(m_minSize, int(str.length())));
     std::memset(m_textData.data(), '\0', sizeof(char) * m_textData.size());
     std::memcpy(m_textData.data(), str.data(), sizeof(char) * str.length());
 

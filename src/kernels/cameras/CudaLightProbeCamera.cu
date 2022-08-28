@@ -148,7 +148,7 @@ namespace Cuda
 
         // Normalise and gamma correct
         const auto& texel = (*m_objects.cu_accumBuffers[idx])[accumPos.y * kAccumBufferWidth + accumPos.x];
-        const vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
+        const vec3 rgb = texel.xyz / fmaxf(1.0f, texel.w);
         deviceOutputImage->At(viewportPos) = vec4(rgb, 1.0f);
     }
 
@@ -386,7 +386,7 @@ namespace Cuda
             //const int coeffIdx = (kKernelIdx / m_params.bucketsPerCoefficient) % m_params.grid.coefficientsPerProbe;
             if (coeffIdx == m_params.grid.shCoefficientsPerProbe)
             {
-                const float norm = max(1.0f, texel.w);
+                const float norm = fmaxf(1.0f, texel.w);
 
                 texel[kProbeValidity] /= norm;                   // Probe validity
                 //texel.y = norm / max(1e-10f, texel.y);         // Harmonic mean distance
@@ -396,7 +396,7 @@ namespace Cuda
             }
             else
             {
-                texel /= max(1.0f, texel.w);
+                texel /= fmaxf(1.0f, texel.w);
             }
 
             cu_probeGrid->SetSHCoefficient(probeIdx, coeffIdx, texel.xyz);
@@ -445,8 +445,8 @@ namespace Cuda
                 }
 
                 // Estimate the peak irradiance over the unit sphere
-                float M = max(0.0f, L0Half * SH::Legendre(0) + length(L1Half) * SH::Legendre(1));
-                float N = max(0.0f, (L0 - L0Half) * SH::Legendre(0) + (length(L1) - length(L1Half)) * SH::Legendre(1));
+                float M = fmaxf(0.0f, L0Half * SH::Legendre(0) + length(L1Half) * SH::Legendre(1));
+                float N = fmaxf(0.0f, (L0 - L0Half) * SH::Legendre(0) + (length(L1) - length(L1Half)) * SH::Legendre(1));
 
                 // Gamma ramp
                 if (m_params.camera.adaptiveSamplingGamma != 1.0f)
@@ -456,7 +456,7 @@ namespace Cuda
                 }
 
                 // Update the peak irradiance and error over all channels
-                probe[passIdx] = max(probe[passIdx],
+                probe[passIdx] = fmaxf(probe[passIdx],
                     (passIdx == 0) ? ((M + N) * 0.5f) : (sqr(M - N) * 2.0f));
             }
         }
@@ -520,7 +520,7 @@ namespace Cuda
         {
             localI[kKernelIdx] += (*m_objects.cu_lightProbeErrorGrids[0])[idx];
         }
-        localI[kKernelIdx] /= max(1, endIdx - startIdx);
+        localI[kKernelIdx] /= fmaxf(1, endIdx - startIdx);
 
         __syncthreads();
 
@@ -536,7 +536,7 @@ namespace Cuda
             stats.error.MSE = I.y;
             if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
             {
-                stats.error.MSE /= max(kMinMSENorm, I.x);
+                stats.error.MSE /= fmaxf(kMinMSENorm, I.x);
             }
         }
 
@@ -551,7 +551,7 @@ namespace Cuda
             float sqrError = (*m_objects.cu_lightProbeErrorGrids[0])[i].y;
             if (m_params.camera.samplingMode == kCameraSamplingAdaptiveRelative)
             {
-                sqrError /= max(kMinMSENorm, sqr(I.x * 2.0f));
+                sqrError /= fmaxf(kMinMSENorm, sqr(I.x * 2.0f));
             }
 
             uchar convergenceFlags = 0;
@@ -845,7 +845,7 @@ namespace Cuda
         PrepareSampleBufffer(newParams);
 
         // Reduce the size of the grid if it exceeds the size of the accumulation buffer
-        const int maxNumProbes = min(kAccumBufferSize / newParams.grid.coefficientsPerProbe, kRayBufferNumBuckets);
+        const int maxNumProbes = fminf(kAccumBufferSize / newParams.grid.coefficientsPerProbe, kRayBufferNumBuckets);
         if (Volume(newParams.grid.gridDensity) > maxNumProbes)
         {
             const auto oldDensity = newParams.grid.gridDensity;
@@ -871,7 +871,7 @@ namespace Cuda
         // Number of light probes in the grid
         newParams.grid.numProbes = Volume(newParams.grid.gridDensity);
         // Number of SH parameter sets per probe, reduced later to get the final value 
-        newParams.subprobesPerProbe = min(kRayBufferNumBuckets / newParams.grid.numProbes,
+        newParams.subprobesPerProbe = fminf(kRayBufferNumBuckets / newParams.grid.numProbes,
             kAccumBufferSize / (newParams.grid.numProbes * newParams.grid.coefficientsPerProbe));
 
         // The minimum and maximum number of samples per bucket based on the number of buckets per coefficient

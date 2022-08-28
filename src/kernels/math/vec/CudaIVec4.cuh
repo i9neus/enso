@@ -343,7 +343,7 @@ namespace Cuda
     __host__ __device__ __forceinline__ Type cwiseMax(const __ivec4<Type>& v)
     {
         Type m = v[0];
-        for (int i = 1; i < 4; i++) { m = max(m, v[i]); }
+        for (int i = 1; i < 4; i++) { m = fmaxf(m, v[i]); }
         return m;
     }
 

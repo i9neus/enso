@@ -9,6 +9,7 @@
 #else
 
 #include "debug/Backtrace.h"
+#include "thirdparty/tinyformat/tinyformat.h"
 
 #ifdef DISABLE_BACKTRACE_ON_ASSERT
 #define _AssertCacheStackBacktrace

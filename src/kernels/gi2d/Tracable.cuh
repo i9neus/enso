@@ -33,7 +33,7 @@ namespace GI2D
     class TracableInterface
     {
     public:
-        //__host__ __device__ virtual bool                    IntersectRay(Ray2D& ray, HitCtx2D& hit, float& tFar) const { return false; }
+        __host__ __device__ virtual bool                    IntersectRay(Ray2D& ray, HitCtx2D& hit) const { return false; }
         //__host__ __device__ virtual bool                    InteresectPoint(const vec2& p, const float& thickness) const { return false; }
         __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const;
 
@@ -43,6 +43,8 @@ namespace GI2D
 
         __host__ __device__ const BBox2f&                   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
         __host__ __device__ const BBox2f&                   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
+        __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
+
         __device__ void                                     Synchronise(const TracableParams& params);      
 
     protected:

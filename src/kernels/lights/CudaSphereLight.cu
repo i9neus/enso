@@ -103,7 +103,7 @@ namespace Cuda
             return false;
         }
 
-        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / max(1e-10f, sqr(sampleDist));
+        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / fmaxf(1e-10f, sqr(sampleDist));
         pdfLight = 1.0f / solidAngle;
         extant = sampleDir;
         L = m_params.radiance * solidAngle;
@@ -132,7 +132,7 @@ namespace Cuda
         const float sampleDist = length(sampleDir);
         sampleDir /= sampleDist;        
 
-        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / max(1e-10f, sqr(sampleDist));
+        const float solidAngle = kPi * sqr(projectedDiscRadius) * dot(originDir, sampleDir) / fmaxf(1e-10f, sqr(sampleDist));
         pdfLight = 1.0f / solidAngle;
         L = m_params.radiance;
         return true;

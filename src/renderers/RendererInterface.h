@@ -1,9 +1,11 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
 #include "generic/Semaphore.h"
 #include "CudaObjectManager.h"
 #include "UIStateGraph.h"
+#include <mutex>
+#include <atomic>
+#include <thread>
 
 enum RenderManagerRenderState : int
 {

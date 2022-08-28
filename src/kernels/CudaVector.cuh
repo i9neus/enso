@@ -486,7 +486,7 @@ namespace Cuda
 				if (newSize > m_localParams.capacity || (deviceAlloc && newSize > m_deviceParams.capacity))
 				{
 					// Mimic std::vector by growing the capacity in powers of 1.5
-					const int newCapacity = max(newSize, uint(std::pow(1.5f, std::ceil(std::log(float(newSize)) / std::log(1.5f)))));
+					const int newCapacity = fmaxf(newSize, uint(std::pow(1.5f, std::ceil(std::log(float(newSize)) / std::log(1.5f)))));
 					ReserveImpl(newCapacity, deviceAlloc, deviceCopy);
 				}
 

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <generic/StdIncludes.h>
-#include <memory>
+#include "CudaCommonIncludes.cuh"
 #include "GlobalResourceRegistry.cuh"
+#include <memory>
+#include "generic/Log.h"
 
 namespace Json { class Node; }
 

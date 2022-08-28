@@ -354,6 +354,8 @@ namespace Cuda
         return object;
     }
 
+#include "kernels/CudaCommonIncludes.cuh"
+
     __device__ vec3 Device::LightProbeGrid::Evaluate(const HitCtx& hitCtx, const int maxSHOrder) const
     {
         assert(m_objects.cu_shData);
@@ -433,14 +435,14 @@ namespace Cuda
             const float sqrThreshold = sqr(m_params.camera.errorThreshold);
 
             constexpr float kHeapmapGain = 1.0f;
-            const float impulse = 2.0f / (1.0f + expf(-max(0.0f, sqrError - sqrThreshold))) - 1.0f;
+            const float impulse = 2.0f / (1.0f + expf(-fmaxf(0.0f, sqrError - sqrThreshold))) - 1.0f;
             return Heatmap(saturate(kHeapmapGain * sqrtf(impulse)));
         }
         break;
         default:
         {
             // Sum the SH coefficients
-            const int maxSHCoeff = min(m_params.shCoefficientsPerProbe, sqr(maxSHOrder + 1));
+            const int maxSHCoeff = ::min(m_params.shCoefficientsPerProbe, sqr(maxSHOrder + 1));
             for (int coeffIdx = 0; coeffIdx < maxSHCoeff; coeffIdx++)
             {
                 L += InterpolateCoefficient(*m_objects.cu_shData, gridPos, coeffIdx, m_params.coefficientsPerProbe, delta) * SH::Project(n, coeffIdx);
@@ -474,9 +476,9 @@ namespace Cuda
             for (int i = 0; i < 4; ++i)
             {
                 //coeffRange[i].x = -fabs(cwiseExtremum(aggregate.minMaxCoeffs[i]));
-                //coeffRange[i].y = 1.0f / (2.0 * -coeffRange[i].x);// max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+                //coeffRange[i].y = 1.0f / (2.0 * -coeffRange[i].x);// fmaxf(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
                 coeffRange[i].x = -10.0f;
-                coeffRange[i].y = 1.0f / 20.0f;// max(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
+                coeffRange[i].y = 1.0f / 20.0f;// fmaxf(1e-10f, aggregate.minMaxCoeffs[i].y - aggregate.minMaxCoeffs[i].x);
             }
         }
 
@@ -541,15 +543,15 @@ namespace Cuda
             {
                 const auto& coeff = At(i)[coeffIdx];
                 auto& minMax = ls.minMaxCoeffs[coeffIdx];
-                minMax.x = min(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
-                minMax.y = max(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
+                minMax.x = fminf(minMax.x, /*SignedLog*/(cwiseMin(coeff)));
+                minMax.y = fmaxf(minMax.y, /*SignedLog*/(cwiseMax(coeff)));
 
                 ls.meanSqrIntensity[coeffIdx] += cwiseMax(sqr(coeff));
             }
 
             // Accumulate probe states
             const auto& coeff = At(i)[m_params.coefficientsPerProbe - 1];
-            ls.minMaxSamples = vec2(min(ls.minMaxSamples.x, coeff.z), max(ls.minMaxSamples.y, coeff.z));
+            ls.minMaxSamples = vec2(fminf(ls.minMaxSamples.x, coeff.z), fmaxf(ls.minMaxSamples.y, coeff.z));
             ls.meanSamples += coeff.z;
             ls.meanValidity += coeff.x;
             ls.meanDistance += coeff.y;
@@ -574,11 +576,11 @@ namespace Cuda
             for (int i = 1; i < 256; i++)
             {
                 const auto& ls = localStats[i];
-                result.minMaxSamples = vec2(min(ls.minMaxSamples.x, result.minMaxSamples.x), max(ls.minMaxSamples.y, result.minMaxSamples.y));
+                result.minMaxSamples = vec2(fminf(ls.minMaxSamples.x, result.minMaxSamples.x), fmaxf(ls.minMaxSamples.y, result.minMaxSamples.y));
                 result.meanSamples += ls.meanSamples;
                 for (int j = 0; j < Device::LightProbeGrid::AggregateStatistics::kStatsNumCoeffs; ++j)
                 {
-                    result.minMaxCoeffs[j] = vec2(min(ls.minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), max(ls.minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
+                    result.minMaxCoeffs[j] = vec2(fminf(ls.minMaxCoeffs[j].x, result.minMaxCoeffs[j].x), fmaxf(ls.minMaxCoeffs[j].y, result.minMaxCoeffs[j].y));
                     result.meanSqrIntensity[j] += ls.meanSqrIntensity[j];
                 }
                 result.meanValidity += ls.meanValidity;

@@ -57,7 +57,7 @@ namespace Cuda
         if (numSubDivs > kMaxSubDivs)
         {
             Log::ErrorOnce("Exceeded the maximum number of iterations for a geodesic distribution. Clamping to %i.", kMaxSubDivs);
-            numSubDivs = min(numSubDivs, kMaxSubDivs);
+            numSubDivs = ::min(numSubDivs, kMaxSubDivs);
         }
 
         std::array<std::vector<Tri>, 2> listBuffers;

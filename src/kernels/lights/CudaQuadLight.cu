@@ -78,7 +78,7 @@ namespace Cuda
         float cosTheta = dot(originDir, hitCtx.hit.n);
         if (cosTheta < 0.0f && sqr(cosTheta) > sqr(m_boundingRadius)) { return 0.0f; }
 
-        return peakIrradiance * max(0.0f, -dot(originDir / sqrt(originDist2), m_lightNormal));
+        return peakIrradiance * fmaxf(0.0f, -dot(originDir / sqrt(originDist2), m_lightNormal));
     }
     
     __device__ bool Device::QuadLight::Sample(const Ray& incident, const HitCtx& hitCtx, RenderCtx& renderCtx, vec2 xi, vec3& extant, vec3& L, float& pdfLight) const
@@ -105,7 +105,7 @@ namespace Cuda
         if (cosPhi > 0.0f) { return false; }
 
         // Compute the projected solid angle of the light        
-        float solidAngle = -cosPhi * m_emitterArea / max(1e-10f, sqr(lightDist));
+        float solidAngle = -cosPhi * m_emitterArea / fmaxf(1e-10f, sqr(lightDist));
 
         // Compute the PDFs of the light
         pdfLight = 1.0f / solidAngle;

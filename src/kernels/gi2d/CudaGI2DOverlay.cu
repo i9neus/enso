@@ -42,10 +42,13 @@ namespace GI2D
     {
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
-        {
-            vec4& target = deviceOutputImage->At(xyScreen);
-            target = Blend(target, m_objects.accumBuffer->At(xyScreen));
+        if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && 
+            xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
+        {            
+            deviceOutputImage->Blend(xyScreen, m_objects.accumBuffer->At(xyScreen));
+            //vec4& target = deviceOutputImage->At(xyScreen);
+            //target = Blend(target, m_objects.accumBuffer->At(xyScreen));
+            //target.xyz += m_objects.accumBuffer->At(xyScreen).xyz;
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
@@ -63,7 +66,7 @@ namespace GI2D
         //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
         //return;
 
-        vec4 L(0.0f, 0.0f, 0.0f, 1.0f);
+        vec4 L(0.0f, 0.0f, 0.0f, 0.0f);
 
         if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
         { 
@@ -102,16 +105,6 @@ namespace GI2D
                 }
             };          
             m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
-
-            /*for (int idx = 0; idx < segments.Size(); ++idx)
-            {
-                const float line = segments[idx].Evaluate(xyView, 0.001f, m_params.dPdXY);
-                if (line > 0.f)
-                {
-                    //L = mix(L, (idx == m_params.selectedSegmentIdx || idx == hitSegment) ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                    L += kBlue;
-                }
-            }*/
         }
 
         // Draw the lasso 

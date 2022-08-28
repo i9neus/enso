@@ -1,12 +1,13 @@
 #pragma once
 
-#include "generic/StdIncludes.h"
 #include "generic/D3DIncludes.h"
 #include <cuda_runtime.h>
 #include "d3dx12.h"
 
 #include "renderers/RendererManager.h"
 #include "imgui/ComponentManager.h"
+
+#include <vector>
 
 using namespace DirectX;
 namespace DX = DirectX;

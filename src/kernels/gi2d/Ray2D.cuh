@@ -10,7 +10,19 @@ namespace Cuda
 }
 
 namespace GI2D
-{
+{   
+    struct RayRange2D
+    {
+        __host__ __device__ RayRange2D() : tNear(0.0f), tFar(kFltMax) {}
+        __host__ __device__ RayRange2D(const float& tn, const float& tf) : tNear(tn), tFar(tf) {}
+
+        __host__ __device__ __forceinline__ void ClipFar(const float& t) { tFar = fminf(tFar, t); }
+        __host__ __device__ __forceinline__ void ClipNear(const float& t) { tNear = fmaxf(tNear, t); }
+        
+        float tNear;
+        float tFar;
+    };
+    
     struct RayBasic2D
     {
         __host__ __device__ RayBasic2D() {}
@@ -29,7 +41,7 @@ namespace GI2D
 
     struct HitCtx2D
     {
-        __host__ __device__ HitCtx2D() : kickoff(0.f), tFar(kFltMax) {}
+        __host__ __device__ HitCtx2D(const float tf = kFltMax) : kickoff(0.f), tFar(tf) {}
 
         vec2        p;
         vec2        n;

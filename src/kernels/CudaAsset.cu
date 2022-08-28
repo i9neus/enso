@@ -1,7 +1,6 @@
 #include "CudaAsset.cuh"
 #include "generic/Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
-#include <map>
 
 namespace Cuda
 {    

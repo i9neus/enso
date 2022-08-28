@@ -11,15 +11,10 @@ namespace GI2D
 {        
     __host__ __device__ PathTracerParams::PathTracerParams()
     {
-        sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
-        isDirty = false;
-
         accum.width = 0;
         accum.height = 0;
         accum.downsample = 1;
         frameIdx = 0;
-
-        sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
     }
 
     __device__ Device::PathTracer::PathTracer(const PathTracerParams& params, const Objects& objects) :
@@ -45,12 +40,12 @@ namespace GI2D
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.view.matrix * vec2(xyScreen * m_params.accum.downsample);
+        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen * m_params.accum.downsample);
 
         vec4& accum = m_objects.accumBuffer->At(xyScreen);
         vec3 L(0.f);
 
-        if (!m_params.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
+        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
 
         assert(m_objects.bih);
         const auto& bih = *m_objects.bih;
@@ -59,7 +54,7 @@ namespace GI2D
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
         //rng.Initialise(HashOf(uint(accum.w)));
 
-        /*for (int depth = 0; depth < 1; ++depth)
+        for (int depth = 0; depth < 1; ++depth)
         {
             float theta = rng.Rand<0>() * kTwoPi;
             //const float theta = kTwoPi * (accum.w + rng.Rand<0>()) / 100.0f;
@@ -67,27 +62,27 @@ namespace GI2D
             HitCtx2D hit;
             int hitIdx = 0;
 
-            auto onIntersect = [&](const uint& startIdx, const uint& endIdx, float& tNearest) -> float
+            auto onIntersect = [&](const uint* primRange, RayRange2D& range) -> float
             {
-                for (uint idx = startIdx; idx < endIdx; ++idx)
+                for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
                 {
-                    if (segments[idx].TestRay(ray, hit))
+                    if (tracables[idx]->IntersectRay(ray, hit))
                     {
-                        if (hit.tFar < tNearest)
+                        if (hit.tFar < range.tFar)
                         {
-                            tNearest = hit.tFar;
+                            range.tFar = hit.tFar;
                             hitIdx = idx;
                         }
                     }
                 }
             };
-            bih.TestRay(ray, onIntersect);
+            bih.TestRay(ray, kFltMax, onIntersect);
 
             if (hit.tFar != kFltMax)
             {
-                L += segments[hitIdx].GetColour();
+                L += tracables[hitIdx]->GetColour();
             }
-        }*/
+        }
 
         accum.xyz += L;
         accum.w += 1.0f;
@@ -102,9 +97,9 @@ namespace GI2D
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.view.matrix * vec2(xyScreen);
+        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
-        if (!m_params.sceneBounds.Contains(xyView)) 
+        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
         { 
             deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return; 
@@ -112,9 +107,8 @@ namespace GI2D
 
         const vec2 uv = vec2(xyScreen) * vec2(m_objects.accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
         vec4 L = m_objects.accumBuffer->Lerp(uv);
-        L.xyz /= max(L.w, 1.0f);
 
-        deviceOutputImage->At(xyScreen) = vec4(L.xyz, 1.0f);
+        deviceOutputImage->At(xyScreen) = vec4(L.xyz / fmaxf(L.w, 1.0f), 1.0f);
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
@@ -175,9 +169,8 @@ namespace GI2D
     {
         if (!m_dirtyFlags) { return; }
         
-        m_params.view = m_viewCtx.transform;
+        m_params.viewCtx = m_viewCtx;
 
         SynchroniseObjects(cu_deviceData, m_params);
-        m_dirtyFlags = false;
     }
 }

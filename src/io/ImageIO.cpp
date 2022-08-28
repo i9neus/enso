@@ -1,4 +1,5 @@
 #include "ImageIO.h"
+#include "generic/Log.h"
 #include "generic/FilesystemUtils.h"
 
 #include "thirdparty/lodepng/lodepng.h"
@@ -26,7 +27,7 @@ namespace ImageIO
                 Cuda::vec4 pixel = rawData[inIdx];
 
                 // Normalise and saturate the pixel value
-                pixel.xyz /= Cuda::max(pixel.w, 1.0f);
+                pixel.xyz /= std::max(pixel.w, 1.0f);
                 pixel.xyz = Cuda::clamp(pixel.xyz, Cuda::kZero, Cuda::kOne);
                 pixel.xyz = Cuda::saturate(Cuda::pow(pixel.xyz * gain, Cuda::vec3(invGamma)));
 

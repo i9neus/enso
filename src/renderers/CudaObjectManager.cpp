@@ -106,8 +106,8 @@ void CudaObjectManager::LinkD3DOutputTexture(ComPtr<ID3D12Device>& d3dDevice, Co
 {
 	m_D3DTextureWidth = textureWidth;
 	m_D3DTextureHeight = textureHeight;
-	m_clientWidth = math::min(clientWidth, textureWidth);
-	m_clientHeight = math::min(clientHeight, textureHeight);
+	m_clientWidth = min(clientWidth, textureWidth);
+	m_clientHeight = min(clientHeight, textureHeight);
 
 	HANDLE sharedHandle;
 	WindowsSecurityAttributes windowsSecurityAttributes;

@@ -148,11 +148,11 @@
     <ClCompile Include="src\generic\Job.cpp">
       <Filter>generic</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\HighResolutionTimer.cpp">
+      <Filter>generic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\generic\StdIncludes.h">
-      <Filter>generic</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
@@ -164,9 +164,6 @@
     </ClInclude>
     <ClInclude Include="src\kernels\CudaImage.cuh">
       <Filter>kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="src\generic\Math.h">
-      <Filter>generic</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Constants.h">
       <Filter>generic</Filter>

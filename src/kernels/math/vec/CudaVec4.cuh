@@ -330,13 +330,13 @@ namespace Cuda
     __host__ __device__ __forceinline__ float cwiseMax(const vec4& v)
     {
         float m = v[0];
-        for (int i = 1; i < 4; i++) { m = fmax(m, v[i]); }
+        for (int i = 1; i < 4; i++) { m = fmaxf(m, v[i]); }
         return m;
     }
     __host__ __device__ __forceinline__ float cwiseMin(const vec4& v)
     {
         float m = v[0];
-        for (int i = 1; i < 4; i++) { m = fmin(m, v[i]); }
+        for (int i = 1; i < 4; i++) { m = fminf(m, v[i]); }
         return m;
     }
     __host__ __device__ __forceinline__ float cwiseExtremum(const vec4& v)
@@ -346,8 +346,8 @@ namespace Cuda
         return (fabs(high) > fabs(low)) ? high : low;
     }
 
-    __host__ __device__ __forceinline__ vec4 max(const vec4& a, const vec4& b) { return vec4(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w)); }
-    __host__ __device__ __forceinline__ vec4 min(const vec4& a, const vec4& b) { return vec4(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w)); }
+    __host__ __device__ __forceinline__ vec4 max(const vec4& a, const vec4& b) { return vec4(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z), fmaxf(a.w, b.w)); }
+    __host__ __device__ __forceinline__ vec4 min(const vec4& a, const vec4& b) { return vec4(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z), fminf(a.w, b.w)); }
 
     // FIXME: Cuda intrinsics aren't working. Why is this?
     //__host__ __device__ __forceinline__ vec3 saturate(const vec3& v, const vec3& a, const vec3& b)	{ return vec3(__saturatef(v.x), __saturatef(v.x), __saturatef(v.x)); }

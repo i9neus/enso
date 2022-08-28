@@ -1,5 +1,6 @@
 #include "SecurityAttributes.h"
 #include <aclapi.h>
+#include "generic/Assert.h"
 
 WindowsSecurityAttributes::WindowsSecurityAttributes()
 {

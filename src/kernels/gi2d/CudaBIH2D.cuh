@@ -39,10 +39,9 @@ namespace GI2D
         uchar       depth;
     };
     
-    using BIH2DNearFar = vec2;
     struct BIH2DRayStackElement : public BIH2DPrimitiveStackElement
     {
-        BIH2DNearFar t;
+        RayRange2D range;
     };
 
     template<typename TNodeType>
@@ -76,9 +75,9 @@ namespace GI2D
         __host__ __device__ __forceinline__ void OnPrimitiveIntersectInner(const BBox2f&, const uchar&, nullptr_t) const { }
 
         template<typename InnerLambda>
-        __host__ __device__ __forceinline__ void OnRayIntersectInner(const BBox2f& bBox, const BIH2DNearFar& t, const bool& isLeaf, InnerLambda onIntersectInner) const { onIntersectInner(bBox, t, isLeaf); }
+        __host__ __device__ __forceinline__ void OnRayIntersectInner(const BBox2f& bBox, const RayRange2D& t, const bool& isLeaf, InnerLambda onIntersectInner) const { onIntersectInner(bBox, t, isLeaf); }
         template<>
-        __host__ __device__ __forceinline__ void OnRayIntersectInner(const BBox2f&, const BIH2DNearFar& t, const bool&, nullptr_t) const { }
+        __host__ __device__ __forceinline__ void OnRayIntersectInner(const BBox2f&, const RayRange2D& t, const bool&, nullptr_t) const { }
 
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
         __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
@@ -261,7 +260,7 @@ namespace GI2D
 
         template<uint kPlaneIdx0>
         __host__ __device__ __forceinline__ void RayTraverseInnerNode(const RayBasic2D& ray, NodeType*& node, const uchar& axis,
-                                                                      BIH2DNearFar& t, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
+                                                                      RayRange2D& range, BBox2f& bBox, BIH2DRayStackElement* stack, int& stackIdx) const
         {
             constexpr uint kPlaneIdx1 = (kPlaneIdx0 + 1) & 1;
             constexpr float kPlane0Sign = 1.0f - kPlaneIdx0 * 2.0f;
@@ -270,8 +269,9 @@ namespace GI2D
             // Nearest box hit?                
             const float tPlane0 = (node->data.planes[kPlaneIdx0] - ray.o[axis]) / ray.d[axis];
             const float tPlane1 = (node->data.planes[kPlaneIdx1] - ray.o[axis]) / ray.d[axis];
-            const uchar hitFlags0 = uchar((ray.o[axis] + ray.d[axis] * t[kNear] - node->data.planes[kPlaneIdx0]) * kPlane0Sign < 0.0f) | (uchar(tPlane0 > t[kNear] && tPlane0 < t[kFar]) << 1);
-            const uchar hitFlags1 = uchar((ray.o[axis] + ray.d[axis] * t[kNear] - node->data.planes[kPlaneIdx1]) * kPlane0Sign > 0.0f) | (uchar(tPlane1 > t[kNear] && tPlane1 < t[kFar]) << 1);
+            const uchar hitFlags0 = uchar((ray.o[axis] + ray.d[axis] * range.tNear - node->data.planes[kPlaneIdx0]) * kPlane0Sign < 0.0f) | (uchar(tPlane0 > range.tNear && tPlane0 < range.tFar) << 1);
+            const uchar hitFlags1 = uchar((ray.o[axis] + ray.d[axis] * range.tNear - node->data.planes[kPlaneIdx1]) * kPlane0Sign > 0.0f) | (uchar(tPlane1 > range.tNear && tPlane1 < range.tFar) << 1);
+            
             if (hitFlags0)
             {
                 if (hitFlags1/* && stackIdx < kBIH2DStackSize*/)
@@ -282,12 +282,12 @@ namespace GI2D
                     element.bBox = bBox;
                     element.bBox[kPlaneIdx0][axis] = node->data.planes[kPlaneIdx1];
 
-                    element.t = t;
+                    element.range = range;
                     if (hitFlags1 & 1)
                     {
-                        if (tPlane1 > t[kNear]) { element.t[kFar] = min(element.t[kFar], tPlane1); }
+                        if (tPlane1 > range.tNear) { element.range.tFar = fminf(element.range.tFar, tPlane1); }
                     }
-                    else { element.t[kNear] = max(element.t[kNear], tPlane1); }
+                    else { element.range.tNear = fmaxf(element.range.tNear, tPlane1); }
                 }
 
                 bBox[kPlaneIdx1][axis] = node->data.planes[kPlaneIdx0];
@@ -296,9 +296,9 @@ namespace GI2D
                 // Update tNear or tFar depending on whether the ray origin lies inside the bounding box
                 if (hitFlags0 & 1)
                 {
-                    if (tPlane0 > t[kNear]) { t[kFar] = min(t[kFar], tPlane0); }
+                    if (tPlane0 > range.tNear) { range.tFar = fminf(range.tFar, tPlane0); }
                 }
-                else { t[kNear] = max(t[kNear], tPlane0); }
+                else { range.tNear = fmaxf(range.tNear, tPlane0); }
             }
             // Furthest box hit?
             else if (hitFlags1)
@@ -308,9 +308,9 @@ namespace GI2D
 
                 if (hitFlags1 & 1)
                 {
-                    if (tPlane1 > t[kNear]) { t[kFar] = min(t[kFar], tPlane1); }
+                    if (tPlane1 > range.tNear) { range.tFar = fminf(range.tFar, tPlane1); }
                 }
-                else { t[kNear] = max(t[kNear], tPlane1); }
+                else { range.tNear = fmaxf(range.tNear, tPlane1); }
             }
             // Nothing hit. 
             else
@@ -320,19 +320,22 @@ namespace GI2D
         }
 
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
-        __host__ __device__ void TestRay(const RayBasic2D& ray, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
+        __host__ __device__ void TestRay(const RayBasic2D& ray, const float tFar, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
         {
             if (!m_isConstructed) { return; }
 
-            BIH2DNearFar t;
-            if (!IntersectRayBBox(ray, m_treeBBox, t)) { return; }
+            // If the ray doesn't intersect the bounding box, or the nearest point of intersection is behind tFar, bail out
+            RayRange2D range;
+            if (!IntersectRayBBox(ray, m_treeBBox, range) || range.tNear >= tFar) { return; }
+
+            // Clip the range based on the input value of tFar
+            range.ClipFar(tFar);
 
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all as a list
-            float tNearest = t[kFar];
             if (m_testAsList)
             {
                 const uint primsIdxs[2] = { 0, m_numPrims };
-                onIntersectLeaf(primsIdxs, tNearest);
+                onIntersectLeaf(primsIdxs, range);
                 return;
             }
 
@@ -353,8 +356,8 @@ namespace GI2D
                     assert(stackIdx >= 0);
                     const BIH2DRayStackElement& element = stack[stackIdx--];
 
-                    if (tNearest < element.t[kNear]) { continue; }
-                    t = element.t;
+                    if (range.tFar < element.range.tNear) { continue; }
+                    range = element.range;
                     bBox = element.bBox;
                     node = &m_nodes[element.nodeIdx];
                     assert(node);
@@ -364,27 +367,27 @@ namespace GI2D
                 const uchar axis = node->GetAxis();
                 if (axis == kBIHLeaf)
                 {
-                    OnRayIntersectInner(bBox, t, true, onIntersectInner);
+                    OnRayIntersectInner(bBox, range, true, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->primsIdxs, tNearest);
+                        onIntersectLeaf(node->GetPrimIdxs(), range);
                     }
                     node = nullptr;
                 }
                 // ...or an inner node.
                 else
                 {
-                    OnRayIntersectInner(bBox, t, false, onIntersectInner);
+                    OnRayIntersectInner(bBox, range, false, onIntersectInner);
 
                     // Left-hand node is likely closer, so traverse that one first
                     if (ray.o[axis] < node->data.planes[NodeType::kLeft])
                     {
-                        RayTraverseInnerNode<0>(ray, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<0>(ray, node, axis, range, bBox, stack, stackIdx);
                     }
                     // ...otherwise traverse right-hand node first
                     else
                     {
-                        RayTraverseInnerNode<1>(ray, node, axis, t, bBox, stack, stackIdx);
+                        RayTraverseInnerNode<1>(ray, node, axis, range, bBox, stack, stackIdx);
                     } 
                 }
 

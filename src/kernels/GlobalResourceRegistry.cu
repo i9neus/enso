@@ -2,6 +2,8 @@
 #include "generic/Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include <map>
+#include "generic/Log.h"
+#include "generic/Assert.h"
 
 namespace Cuda
 {
@@ -53,7 +55,7 @@ namespace Cuda
 
         auto& entry = m_deviceMemoryMap[assetId];
         entry.currentBytes += newBytes;
-        entry.peakBytes = std::max(entry.peakBytes, entry.currentBytes);
+        entry.peakBytes = max(entry.peakBytes, entry.currentBytes);
         entry.deltaBytes = newBytes;
 
         Log::System("*** DEVICE ALLOC *** : %s -> %i bytes (%i in total)", assetId, newBytes, int64_t(entry.currentBytes));

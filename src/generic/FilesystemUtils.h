@@ -1,6 +1,7 @@
 #pragma once
 
-#include "StdIncludes.h"
+#include <string>
+#include <vector>
 
 // Ensures that the input path has a trailing slash at the end
 std::string SlashifyPath(const std::string& input);

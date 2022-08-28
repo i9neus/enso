@@ -1,8 +1,10 @@
 #pragma once
 
-#include <generic/StdIncludes.h>
 #include <memory>
-//#include "CudaAsset.cuh"
+#include <unordered_map>
+#include <string>
+#include <memory>
+#include <mutex>
 
 namespace Json { class Node; }
 

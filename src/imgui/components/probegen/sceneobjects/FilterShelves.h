@@ -1,7 +1,6 @@
 #pragma once
 
 #include "thirdparty/imgui/imgui.h"
-#include "generic/Math.h"
 
 #include "kernels/lightprobes/CudaLightProbeKernelFilter.cuh"
 #include "kernels/lightprobes/CudaLightProbeRegressionFilter.cuh"

@@ -1,7 +1,10 @@
 #pragma once
 
-#include "StdIncludes.h"
 #include "JsonUtils.h"
+#include <stdio.h>
+#include <unordered_map>
+#include <functional>
+#include <atomic>
 
 enum JobState : int
 {

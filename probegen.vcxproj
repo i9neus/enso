@@ -17,6 +17,7 @@
     <ClCompile Include="src\generic\debug\Backtrace.cpp" />
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
+    <ClCompile Include="src\generic\HighResolutionTimer.cpp" />
     <ClCompile Include="src\generic\Job.cpp" />
     <ClCompile Include="src\generic\JsonCommandQueue.cpp" />
     <ClCompile Include="src\generic\JsonUtils.cpp" />
@@ -112,10 +113,8 @@
     <ClInclude Include="src\generic\JsonCommandQueue.h" />
     <ClInclude Include="src\generic\JsonUtils.h" />
     <ClInclude Include="src\generic\Log.h" />
-    <ClInclude Include="src\generic\Math.h" />
     <ClInclude Include="src\generic\D3DIncludes.h" />
     <ClInclude Include="src\generic\Semaphore.h" />
-    <ClInclude Include="src\generic\StdIncludes.h" />
     <ClInclude Include="src\generic\StdUtils.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />

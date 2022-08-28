@@ -1,7 +1,7 @@
 #include "StringUtils.h"
 #include <cstdlib>
 #include <clocale>
-#include "generic/Math.h"
+#include <math.h>
 
 std::wstring Widen(const std::string& mbstr)
 {
@@ -32,7 +32,7 @@ void ClipTrailingWhitespace(std::string& input)
     int32_t endIdx = input.size() - 1;
     while (endIdx >= startIdx && std::isspace(input[endIdx])) { --endIdx; }
 
-    input = input.substr(startIdx, math::max(0, 1 + endIdx - startIdx));
+    input = input.substr(startIdx, std::max(0, 1 + endIdx - startIdx));
 }
 
 void MakeLowercase(std::string& input)

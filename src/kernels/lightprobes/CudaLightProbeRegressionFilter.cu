@@ -203,7 +203,7 @@ namespace Cuda
         m_objects->totalRegrCoeffs = m_objects->regrCoeffsPerProbe * gridData.numProbes;
 
         // Rather than store every weight for every probe, we do the regression step in batches to cap the memory needed
-        m_objects->probesPerBatch = min(gridData.numProbes, int(m_hostW->Size() / m_objects->regression.volume));
+        m_objects->probesPerBatch = std::min(gridData.numProbes, int(m_hostW->Size() / m_objects->regression.volume));
         Log::Debug("Probes per batch: %i", m_objects->probesPerBatch);
 
         // Resize the polynomial coefficient array as a power of two 
@@ -263,14 +263,14 @@ namespace Cuda
         // TODO: There's some redundancy here, but we can see to that later.
         for (int z = -radius, dIdx = 0; z <= radius; ++z)
         {
-            const float nz = z / float(max(1, radius));
+            const float nz = z / float(::max(1, radius));
             for (int y = -radius; y <= radius; ++y)
             {
-                const float ny = y / float(max(1, radius));
+                const float ny = y / float(::max(1, radius));
                 for (int x = -radius; x <= radius; ++x)
                 {
                     // Construct the monomial matrix
-                    const float nx = x / float(max(1, radius));
+                    const float nx = x / float(::max(1, radius));
                     float zExp = 1.0f;
                     for (int zt = 0, cIdx = 0; zt <= polynomialOrder; zt++)
                     {
@@ -441,8 +441,8 @@ namespace Cuda
                         continue;
                     }
                     p[pIdx] = gridData.cu_inputGrid->At(posK)[coeffIdx][channelIdx];
-                    maxP = max(maxP, p[pIdx]);
-                    minP = min(minP, p[pIdx]);
+                    maxP = fmaxf(maxP, p[pIdx]);
+                    minP = fminf(minP, p[pIdx]);
                     sumW += W[pIdx];
                 }
             }
@@ -453,7 +453,7 @@ namespace Cuda
         {
             if (p[pIdx] != -kFltMax)
             {
-                p[pIdx] = (p[pIdx] - minP) / max(1e-5f, maxP - minP);
+                p[pIdx] = (p[pIdx] - minP) / fmaxf(1e-5f, maxP - minP);
             }
         }
 
@@ -497,7 +497,7 @@ namespace Cuda
             for (int cIdx = 0; cIdx < objects.regression.numMonomials; ++cIdx)
             {
                 dLdC[cIdx][channelIdx] /= sumW;
-                C[cIdx][channelIdx] -= params.learningRate * dLdC[cIdx][channelIdx] / max(L2Loss, 1e-2f);
+                C[cIdx][channelIdx] -= params.learningRate * dLdC[cIdx][channelIdx] / fmaxf(L2Loss, 1e-2f);
             }
         }
 
@@ -542,7 +542,7 @@ namespace Cuda
         vec3 LSum(0.0f);
         vec3 lapSum(0.0f);
         int sumWeights = 0;
-        float radiusNorm = max(1, objects.regression.radius);
+        float radiusNorm = fmaxf(1, objects.regression.radius);
         for (int z = -objects.reconstruction.radius; z <= objects.reconstruction.radius; ++z)
         {
             const float nz = -z / radiusNorm;

@@ -100,7 +100,7 @@ namespace Cuda
         // Flip the weight back to positve
         texel.w = -texel.w;
         // Normalise
-        vec3 rgb = texel.xyz / fmax(1.0f, texel.w);
+        vec3 rgb = texel.xyz / fmaxf(1.0f, texel.w);
         // Apply exposure/gamma correction
         rgb = pow(rgb * m_displayExposure, vec3(1.0f / m_params.displayGamma));
 
@@ -235,8 +235,8 @@ namespace Cuda
         // but with a few minor additions it's possible to add custom shapes such as irises. We reuse some random numbers
         // but this doesn't really matter because the anti-aliasing kernel is so small that we won't notice the correlation 
         // FIXME: Do an automatic cast
-        vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / max(m_params.viewportDims.x, m_params.viewportDims.y) +
-            kCameraSensorSize * (vec2(viewportPos) - vec2(m_params.viewportDims) * 0.5) / float(max(m_params.viewportDims.x, m_params.viewportDims.y));
+        vec2 sensorPos = vec2(xi.x, xi.y) * kCameraSensorSize * kCameraAA / fmaxf(m_params.viewportDims.x, m_params.viewportDims.y) +
+            kCameraSensorSize * (vec2(viewportPos) - vec2(m_params.viewportDims) * 0.5) / float(fmaxf(m_params.viewportDims.x, m_params.viewportDims.y));
         vec2 focalPlanePos = vec2(sensorPos.x, sensorPos.y) * d2 / d1;
 
         vec2 lensPos;

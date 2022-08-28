@@ -28,7 +28,7 @@ namespace Cuda
             const float tFrontMin = cwiseMin(tFrontPlane);
             if (tBackMax > tFrontMin) { return kNoIntersect; }  // Ray didn't hit the box
 
-            return max(0.0f, tBackMax);
+            return fmaxf(0.0f, tBackMax);
         }
 
         __device__ __forceinline__ float RayPlane(const RayBasic& ray, const vec3& p, const vec3& n)

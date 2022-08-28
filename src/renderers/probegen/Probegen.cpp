@@ -561,7 +561,7 @@ void Probegen::Run()
 			{
 				m_meanFrameTime += ft;
 			}
-			m_meanFrameTime /= math::min(frameIdx, int(m_frameTimes.size()));
+			m_meanFrameTime /= min(frameIdx, int(m_frameTimes.size()));
 
 			GatherRenderObjectStatistics(); // Gather statistics from the render objects			
 		}

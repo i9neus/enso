@@ -1,6 +1,7 @@
 ﻿#include "CudaLightProbeKernelFilter.cuh"
 #include "../cameras/CudaLightProbeCamera.cuh"
 #include "../CudaManagedArray.cuh"
+#include "generic/HighResolutionTimer.h"
 
 #include "generic/JsonUtils.h"
 
@@ -168,7 +169,7 @@ namespace Cuda
         }
         else
         {
-            m_probeRange = min(uint(gridData.numProbes),
+            m_probeRange = std::min(uint(gridData.numProbes),
                                m_hostReduceBuffer->Size() / ((gridData.coefficientsPerProbe + 1) * m_objects->blocksPerProbe));
             m_gridSize = m_probeRange * m_objects->blocksPerProbe;
         }
@@ -478,7 +479,7 @@ namespace Cuda
 
         m_hostInputGrid->PushClipRegion(m_objects->params.clipRegion);
 
-        Timer timer;
+        HighResolutionTimer timer;
         for (int probeIdx = 0; probeIdx < m_objects->gridData.numProbes; probeIdx += m_probeRange)
         {
             KernelFilter << <m_gridSize, kBlockSize, 0, m_hostStream >> > (m_objects.GetDeviceInstance(), probeIdx);

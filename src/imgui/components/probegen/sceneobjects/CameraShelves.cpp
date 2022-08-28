@@ -18,10 +18,10 @@ void PerspectiveCameraShelf::Construct()
     ImGui::Checkbox("Realtime", &m_p.isRealtime);
     ToolTip("Realtime cameras are continually reset after every rendered frame instead of slowly converging over time.");
 
-    ImGui::DragFloat3("Position", &m_p.position[0], math::max(0.01f, cwiseMax(m_p.position) * 0.01f));
+    ImGui::DragFloat3("Position", &m_p.position[0], fmaxf(0.01f, cwiseMax(m_p.position) * 0.01f));
     HelpMarker("The position of the camera.");
 
-    ImGui::DragFloat3("Look at", &m_p.lookAt[0], math::max(0.01f, cwiseMax(m_p.lookAt) * 0.01f));
+    ImGui::DragFloat3("Look at", &m_p.lookAt[0], fmaxf(0.01f, cwiseMax(m_p.lookAt) * 0.01f));
     HelpMarker("The coordinate the camera is looking at.");
 
     ImGui::SliderFloat("F-number", &m_p.fStop, 0.0f, 1.0f);
@@ -55,7 +55,7 @@ void PerspectiveCameraShelf::Construct()
     ImGui::SliderInt("Min path depth", &m_p.camera.overrides.minDepth, -1, 20);
     HelpMarker("The minimum depth a ray has to travel before its contribution is accumulated.");
 
-    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, fmaxf(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
     HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");
 
     ConstructComboBox("Emulate light probe", { "None", "All", "Direct only", "Indirect only" }, m_p.lightProbeEmulation);
@@ -153,10 +153,10 @@ void LightProbeCameraShelf::Construct()
 
         if (m_p.camera.samplingMode != Cuda::kCameraSamplingFixed)
         {
-            ImGui::DragFloat("Noise treshold", &m_p.camera.errorThreshold, math::max(m_p.camera.errorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max(), "%.7f");
+            ImGui::DragFloat("Noise treshold", &m_p.camera.errorThreshold, fmaxf(m_p.camera.errorThreshold * 1e-4f, 1e-4f), 0.0f, std::numeric_limits<float>::max(), "%.7f");
             HelpMarker("The noise threshold below which sampling is terminated.");
 
-            ImGui::DragFloat("Adaptive sampling gamma", &m_p.camera.adaptiveSamplingGamma, math::max(m_p.camera.adaptiveSamplingGamma * 1e-3f, 1e-3f), 0.1f, 10.0f, "%.3f");
+            ImGui::DragFloat("Adaptive sampling gamma", &m_p.camera.adaptiveSamplingGamma, fmaxf(m_p.camera.adaptiveSamplingGamma * 1e-3f, 1e-3f), 0.1f, 10.0f, "%.3f");
             HelpMarker("Gamma correction factor applied to the adaptive sampling calculations.");
 
             ImGui::Checkbox("Use filtered error estimate", &m_p.camera.useFilteredError);
@@ -185,7 +185,7 @@ void LightProbeCameraShelf::Construct()
         ImGui::SliderInt("Min path depth", &m_p.camera.overrides.minDepth, -1, 20);
         HelpMarker("The minimum depth a ray has to travel before its contribution is accumulated.");
 
-        ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, math::max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
+        ImGui::DragFloat("Splat clamp", &m_p.camera.splatClamp, max(0.01f, m_p.camera.splatClamp * 0.01f), 0.0f, std::numeric_limits<float>::max());
         HelpMarker("Specifies the maximum value of a ray splat before it gets clipped. Setting this value too low will result in energy loss and bias.");
 
         ImGui::TreePop();

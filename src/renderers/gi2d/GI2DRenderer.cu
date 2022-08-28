@@ -1,5 +1,4 @@
 #include "GI2DRenderer.cuh"
-#include "generic/Math.h"
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/CudaGI2DOverlay.cuh"
 #include "kernels/gi2d/CudaGI2DPathTracer.cuh"
@@ -394,7 +393,7 @@ void GI2DRenderer::OnRender()
     }
 
     // Render the pass
-    //m_objects.pathTracer->Render();
+    m_pathTracer->Render();
     m_overlayRenderer->Render();
 
     // If a blit is in progress, skip the composite step entirely.
@@ -448,7 +447,7 @@ void GI2DRenderer::OnViewChange()
     // Zooming?
     if (IsKeyDown(VK_CONTROL))
     {
-        float logScaleAnchor = std::log2(::math::max(1e-10f, m_viewCtx.scaleAnchor));
+        float logScaleAnchor = std::log2(::max(1e-10f, m_viewCtx.scaleAnchor));
         logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
         transform.scale = std::pow(2.0, logScaleAnchor);
 

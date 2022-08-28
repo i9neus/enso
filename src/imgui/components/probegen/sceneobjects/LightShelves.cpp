@@ -88,7 +88,7 @@ void DistantLightShelf::Construct()
     m_colourPicker.Construct();
     m_intensity.Construct();
 
-    ImGui::DragFloat("Angle", &m_p.angle, math::max(0.01f, m_p.angle * 0.01f), 0.0f, std::numeric_limits<float>::max());
+    ImGui::DragFloat("Angle", &m_p.angle, max(0.01f, m_p.angle * 0.01f), 0.0f, std::numeric_limits<float>::max());
     HelpMarker("The projected solid angle of the light in degrees.");
 }
 

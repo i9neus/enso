@@ -64,19 +64,19 @@ void KIFSShelf::Construct()
     ImGui::DragInt("SDF Max Diffuse Iterations", &m_p.sdf.maxDiffuseIterations, 1, 1, 500);
     HelpMarker("The maximum number of iterations applied to diffuse rays.");
 
-    ImGui::DragFloat("SDF Cutoff Threshold", &m_p.sdf.cutoffThreshold, math::max(0.00001f, m_p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::DragFloat("SDF Cutoff Threshold", &m_p.sdf.cutoffThreshold, max(0.00001f, m_p.sdf.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     HelpMarker("The threshold below which the ray is deemed to have interected the SDF isosurface.");
 
-    ImGui::DragFloat("SDF Escape Threshold", &m_p.sdf.escapeThreshold, math::max(0.01f, m_p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
+    ImGui::DragFloat("SDF Escape Threshold", &m_p.sdf.escapeThreshold, max(0.01f, m_p.sdf.escapeThreshold * 0.01f), 0.0f, 5.0f);
     HelpMarker("The threshold at which a sample is deemed to have left the SDF's field of influence.");
 
-    ImGui::DragFloat("SDF Ray Increment", &m_p.sdf.rayIncrement, math::max(0.01f, m_p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
+    ImGui::DragFloat("SDF Ray Increment", &m_p.sdf.rayIncrement, max(0.01f, m_p.sdf.rayIncrement * 0.01f), 0.0f, 2.0f);
     HelpMarker("The increment multiplier applied at the marching step. Ideally, this value should be set to 1.");
 
-    ImGui::DragFloat("SDF Ray Kickoff", &m_p.sdf.rayKickoff, math::max(0.01f, m_p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("SDF Ray Kickoff", &m_p.sdf.rayKickoff, max(0.01f, m_p.sdf.rayKickoff * 0.01f), 0.0f, 1.0f);
     HelpMarker("The kickoff applied to child rays that are spawned from the surface of the SDF.");
 
-    ImGui::DragFloat("SDF Fail Threshold", &m_p.sdf.failThreshold, math::max(0.00001f, m_p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::DragFloat("SDF Fail Threshold", &m_p.sdf.failThreshold, max(0.00001f, m_p.sdf.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     HelpMarker("The threshold at which the value of the SDF invalidates the intersection. Raise this value to remove visible holes in the field.");
 }
 
@@ -131,16 +131,16 @@ void SDFShelf::Construct()
 
     if (m_p.primitiveType == Cuda::kSDFPrimitiveSphere)
     {
-        ImGui::DragFloat("Radius", &m_p.sphere.r, math::max(0.001f, m_p.sphere.r * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+        ImGui::DragFloat("Radius", &m_p.sphere.r, max(0.001f, m_p.sphere.r * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
     }
     else if (m_p.primitiveType == Cuda::kSDFPrimitiveTorus)
     {
-        ImGui::DragFloat("Radius 1", &m_p.torus.r1, math::max(0.001f, m_p.torus.r1 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
-        ImGui::DragFloat("Radius 2", &m_p.torus.r2, math::max(0.001f, m_p.torus.r2 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+        ImGui::DragFloat("Radius 1", &m_p.torus.r1, max(0.001f, m_p.torus.r1 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+        ImGui::DragFloat("Radius 2", &m_p.torus.r2, max(0.001f, m_p.torus.r2 * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
     }
     else if (m_p.primitiveType == Cuda::kSDFPrimitiveBox)
     {
-        ImGui::DragFloat("Size", &m_p.box.size, math::max(0.001f, m_p.box.size * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
+        ImGui::DragFloat("Size", &m_p.box.size, max(0.001f, m_p.box.size * 0.01f), 0.0f, std::numeric_limits<float>::max(), "%.4f");
     }
 
     ImGui::DragInt("Max Specular Interations", &m_p.maxSpecularIterations, 1, 1, 500);
@@ -149,19 +149,19 @@ void SDFShelf::Construct()
     ImGui::DragInt("Max Diffuse Iterations", &m_p.maxDiffuseIterations, 1, 1, 500);
     HelpMarker("The maximum number of iterations applied to diffuse rays.");
 
-    ImGui::DragFloat("Cutoff Threshold", &m_p.cutoffThreshold, math::max(0.00001f, m_p.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::DragFloat("Cutoff Threshold", &m_p.cutoffThreshold, max(0.00001f, m_p.cutoffThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     HelpMarker("The threshold below which the ray is deemed to have interected the isosurface.");
 
-    ImGui::DragFloat("Escape Threshold", &m_p.escapeThreshold, math::max(0.01f, m_p.escapeThreshold * 0.01f), 0.0f, 5.0f);
+    ImGui::DragFloat("Escape Threshold", &m_p.escapeThreshold, max(0.01f, m_p.escapeThreshold * 0.01f), 0.0f, 5.0f);
     HelpMarker("The threshold at which a sample is deemed to have left the SDF's field of influence.");
 
-    ImGui::DragFloat("Ray Increment", &m_p.rayIncrement, math::max(0.01f, m_p.rayIncrement * 0.01f), 0.0f, 2.0f);
+    ImGui::DragFloat("Ray Increment", &m_p.rayIncrement, max(0.01f, m_p.rayIncrement * 0.01f), 0.0f, 2.0f);
     HelpMarker("The increment multiplier applied at the marching step. Ideally, this value should be set to 1.");
 
-    ImGui::DragFloat("Ray Kickoff", &m_p.rayKickoff, math::max(0.01f, m_p.rayKickoff * 0.01f), 0.0f, 1.0f);
+    ImGui::DragFloat("Ray Kickoff", &m_p.rayKickoff, max(0.01f, m_p.rayKickoff * 0.01f), 0.0f, 1.0f);
     HelpMarker("The kickoff applied to child rays that are spawned from the surface of the SDF.");
 
-    ImGui::DragFloat("Fail Threshold", &m_p.failThreshold, math::max(0.00001f, m_p.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
+    ImGui::DragFloat("Fail Threshold", &m_p.failThreshold, max(0.00001f, m_p.failThreshold * 0.01f), 0.0f, 1.0f, "%.6f");
     HelpMarker("The threshold at which the value of the SDF invalidates the intersection. Raise this value to remove visible holes in the field.");
 }
 

@@ -3,7 +3,6 @@
 #include <filesystem>
 
 #include "generic/D3DIncludes.h"
-#include "generic/Math.h"
 #include <cuda_runtime.h>
 #include "generic/JsonUtils.h"
 #include "generic/FilesystemUtils.h"

@@ -181,7 +181,7 @@ namespace Cuda
 		if (rayWeight < xi) { return false; }
 
 		// ...and scale the survivors accordingly. We assume that outputWeight is already set and valid. 
-		outputWeight /= max(kRussianRouletteWeightClamp, rayWeight);
+		outputWeight /= fmaxf(kRussianRouletteWeightClamp, rayWeight);
 		// FIXME: Rescaling the random number isn't a great solution, but it'll do for now.
 		xi /= rayWeight;
 
@@ -254,7 +254,7 @@ namespace Cuda
 				if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
 					//if (renderCtx.emplacedRay.GetViewportPos().x < 256)
 				{
-					lightIdx = min(m_numLights - 1, int(split.y * m_numLights));
+					lightIdx = ::min(m_numLights - 1, int(split.y * m_numLights));
 					weightLight = m_numLights;
 				}
 				// Build a PMF based on a crude estiamte of the irradiance at the shading point. Expensive, but 

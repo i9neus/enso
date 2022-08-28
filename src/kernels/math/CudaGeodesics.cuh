@@ -1,4 +1,7 @@
 #include "CudaMath.cuh"
+#include "generic/Log.h"
+
+#include <vector>
 
 namespace Cuda
 {

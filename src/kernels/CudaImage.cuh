@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "math/CudaMath.cuh"
+#include "math/CudaColourUtils.cuh"
 #include "AssetAllocator.cuh"
 
 //#define CudaImageBoundCheck
@@ -29,10 +30,10 @@ namespace Cuda
 			__host__ __device__ __forceinline__ ivec2 Dimensions() const { return ivec2(m_width, m_height); }
 			__host__ __device__ __forceinline__ bool IsValid(const ivec2& xy) const { return xy.x >= 0 && xy.x < m_width&& xy.y >= 0 && xy.y < m_height; }
 
-			__device__ T* GetData() { return cu_data; }
-			__device__ unsigned int* AccessSignal() { return &m_accessSignal; }
+			__device__ __forceinline__ T* GetData() { return cu_data; }
+			__device__ __forceinline__ unsigned int* AccessSignal() { return &m_accessSignal; }
 
-			__device__ T& At(int x, int y)
+			__device__ __forceinline__ T& At(int x, int y)
 			{
 #ifdef CudaImageBoundCheck
 				if (x < 0 || x >= m_width || y < 0 || y >= m_height) { return nullptr; }
@@ -40,7 +41,7 @@ namespace Cuda
 				return cu_data[y * m_width + x];
 			}
 
-			__device__ T& At(const ivec2& xy)
+			__device__ __forceinline__ T& At(const ivec2& xy)
 			{
 #ifdef CudaImageBoundCheck
 				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
@@ -48,7 +49,16 @@ namespace Cuda
 				return cu_data[xy.y * m_width + xy.x];
 			}
 
-			__device__ T Lerp(const vec2& xy)
+			__device__ __forceinline__ typename std::enable_if<std::is_same<T, vec4>::value>::type Blend(const ivec2& xy, const vec4& rgba)
+			{
+#ifdef CudaImageBoundCheck
+				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
+#endif
+				auto& pixel = cu_data[xy.y * m_width + xy.x];
+				pixel = Cuda::Blend(pixel, rgba);
+			}
+
+			__device__ __inline__ T Lerp(const vec2& xy)
 			{
 				if (xy.x < 0. || xy.x >= m_width - 1 || xy.y < 0. || xy.y >= m_height - 1) { return T(0); }
 
