@@ -5,8 +5,7 @@
 
 #include <process.h>
 #include <iostream>
-#define NOMINMAX
-#include <Windows.h>
+#include "../WindowsHeaders.h"
 #include <dbghelp.h>
 #include <intrin.h>
 #include <vector>

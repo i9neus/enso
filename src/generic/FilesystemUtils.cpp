@@ -1,6 +1,4 @@
-#define NOMINMAX
-#include <Windows.h>
-
+#include "WindowsHeaders.h"
 #include "FilesystemUtils.h"
 #include "StringUtils.h"
 #include "Assert.h"

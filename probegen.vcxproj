@@ -118,6 +118,7 @@
     <ClInclude Include="src\generic\StdUtils.h" />
     <ClInclude Include="src\generic\StringUtils.h" />
     <ClInclude Include="src\generic\GlobalStateAuthority.h" />
+    <ClInclude Include="src\generic\WindowsHeaders.h" />
     <ClInclude Include="src\imgui\components\ComponentInterface.h" />
     <ClInclude Include="src\imgui\components\gi2d\GI2DUI.h" />
     <ClInclude Include="src\imgui\components\probegen\bakepermutor\BakePermutor.h">

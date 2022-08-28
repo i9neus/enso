@@ -18,10 +18,7 @@
 #include "generic/JsonUtils.h"
 #include "generic/GlobalStateAuthority.h"
 #include "generic/debug/ProcessMemoryMonitor.h"
-
-#define NOMINMAX
-#include <windows.h>
-#include <windowsx.h>
+#include "generic/WindowsHeaders.h"
 
 #include <d3d12.h>
 #include <dxgi1_4.h>

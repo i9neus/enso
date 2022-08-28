@@ -1,7 +1,6 @@
 #pragma once
 
-#define NOMINMAX
-#include <Windows.h>
+#include "generic/WindowsHeaders.h"
 
 class WindowsSecurityAttributes 
 {

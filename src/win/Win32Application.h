@@ -36,8 +36,7 @@ The MIT License (MIT)
 
 #pragma once
 
-#define NOMINMAX
-#include <windows.h>
+#include "generic/WindowsHeaders.h"
 
 class DX12CudaSample;
 class DXSample;
