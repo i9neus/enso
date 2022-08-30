@@ -3,7 +3,6 @@
 #include "CudaGI2DOverlay.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
-#include "Tracable.cuh"
 #include "kernels/CudaAssetContainer.cuh"
 
 using namespace Cuda;
@@ -87,6 +86,7 @@ namespace GI2D
             }
         }  
 
+        // Draw the tracables
         if (m_objects.bih && m_objects.tracables)
         {            
             const Cuda::Device::Vector<TracableInterface*>& tracables = *(m_objects.tracables);
@@ -105,6 +105,22 @@ namespace GI2D
                 }
             };          
             m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
+        }
+
+        // Draw the ray
+        if (m_params.isHit)
+        {
+            LineSegment raySegment(m_params.ray.o, m_params.hitPoint, 0, kOne);
+            const float line = raySegment.Evaluate(xyView, 0.001f, m_params.viewCtx.dPdXY);
+            if (line > 0.f)
+            {
+                L = Blend(L, kOne, line);
+            }
+
+            if (length(xyView - m_params.hitPoint) < m_params.viewCtx.dPdXY * 5.0f)
+            {
+                L = vec4(kRed, 1.0f);
+            }
         }
 
         // Draw the lasso 
@@ -164,6 +180,32 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
+    __host__ void Host::Overlay::TraceRay()
+    {
+        const auto& tracables = *m_hostTracables;
+        Ray2D ray(vec2(0.0f), normalize(m_viewCtx.mousePos));
+        HitCtx2D hit;
+        
+        auto onIntersect = [&](const uint* primRange, RayRange2D& range)
+        {
+            for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
+            {
+                if (tracables[idx]->IntersectRay(ray, hit))
+                {
+                    if (hit.tFar < range.tFar)
+                    {
+                        range.tFar = hit.tFar;
+                    }
+                }
+            }
+        };
+        m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
+
+        m_params.ray = ray;
+        m_params.isHit = (hit.tFar < kFltMax);
+        m_params.hitPoint = ray.PointAt(hit.tFar);        
+    }
+
     __host__ void Host::Overlay::Synchronise()
     {
         if (!m_dirtyFlags) { return; }
@@ -180,6 +222,8 @@ namespace GI2D
         m_params.gridCtx.show = true;
         m_params.selectionCtx.lassoBBox.Rectify();
         m_params.selectionCtx.selectedBBox.Rectify();
+
+        TraceRay();
 
         // Upload to the device
         SynchroniseObjects(cu_deviceData, m_params);

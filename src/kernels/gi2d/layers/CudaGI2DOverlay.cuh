@@ -2,9 +2,9 @@
 
 #include "UILayer.cuh"
 
-#include "BIH2DAsset.cuh"
-#include "CudaPrimitive2D.cuh"
-#include "Curve.cuh"
+#include "../BIH2DAsset.cuh"
+#include "../tracables/CudaPrimitive2D.cuh"
+#include "../tracables/Curve.cuh"
 
 using namespace Cuda;
 
@@ -24,6 +24,10 @@ namespace GI2D
         UIViewCtx           viewCtx;
         UIGridCtx           gridCtx;
         UISelectionCtx      selectionCtx;
+
+        RayBasic2D          ray;
+        vec2                hitPoint;
+        bool                isHit;
     };
 
     namespace Device
@@ -69,6 +73,8 @@ namespace GI2D
             __host__ void OnDestroyAsset();
 
         private:
+            __host__ void TraceRay();
+
             OverlayParams                               m_params;
             Device::Overlay::Objects                    m_objects;
             Device::Overlay*                            cu_deviceData = nullptr;

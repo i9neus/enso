@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Common.cuh"
+#include "../Common.cuh"
 
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
+#include "kernels/CudaManagedObject.cuh"
+#include "kernels/CudaImage.cuh"
 
-#include "Ray2D.cuh"
+#include "../Ray2D.cuh"
 
 using namespace Cuda;
 

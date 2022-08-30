@@ -585,17 +585,11 @@
     <ClInclude Include="src\generic\Job.h">
       <Filter>generic</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\CudaGI2DOverlay.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\CudaVector.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
     <ClInclude Include="src\imgui\ComponentManager.h">
       <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\CudaPrimitive2D.cuh">
-      <Filter>kernels\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Hash.h">
       <Filter>generic</Filter>
@@ -608,9 +602,6 @@
     </ClInclude>
     <ClInclude Include="src\generic\StdUtils.h">
       <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\CudaGI2DPathTracer.cuh">
-      <Filter>kernels\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="src\generic\Semaphore.h">
       <Filter>generic</Filter>
@@ -633,19 +624,10 @@
     <ClInclude Include="src\kernels\gi2d\BIH2DAsset.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\Curve.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\gi2d\Transform2D.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\gi2d\UICtx.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\Tracable.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\UILayer.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="src\kernels\GlobalResourceRegistry.cuh">
@@ -665,6 +647,27 @@
     </ClInclude>
     <ClInclude Include="src\generic\WindowsHeaders.h">
       <Filter>generic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\layers\CudaGI2DOverlay.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\layers\CudaGI2DPathTracer.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\layers\UILayer.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\layers\GI2DDualContourGenerator.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\CudaPrimitive2D.cuh">
+      <Filter>kernels\gi2d\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\Curve.cuh">
+      <Filter>kernels\gi2d\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\Tracable.cuh">
+      <Filter>kernels\gi2d\tracables</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -784,6 +787,12 @@
     </Filter>
     <Filter Include="docs">
       <UniqueIdentifier>{81600cc4-2777-4121-a577-011dd391a071}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\gi2d\layers">
+      <UniqueIdentifier>{15a6e7ee-adee-493f-b940-5ae0830f1456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\gi2d\tracables">
+      <UniqueIdentifier>{e6880f3f-5f05-4b46-8aa3-cd5b58c84b6c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -910,15 +919,6 @@
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
       <Filter>kernels\lightprobes</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaGI2DOverlay.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaPrimitive2D.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\CudaGI2DPathTracer.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\renderers\gi2d\GI2DRenderer.cu">
       <Filter>renderers\gi2d</Filter>
     </CudaCompile>
@@ -928,17 +928,29 @@
     <CudaCompile Include="src\kernels\gi2d\BIH2DAsset.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\Curve.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\GlobalResourceRegistry.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\Tracable.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\utils\CompileTest.cu">
       <Filter>utils</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\layers\CudaGI2DOverlay.cu">
+      <Filter>kernels\gi2d\layers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\layers\CudaGI2DPathTracer.cu">
+      <Filter>kernels\gi2d\layers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\layers\GI2DDualContourGenerator.cu">
+      <Filter>kernels\gi2d\layers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\tracables\CudaPrimitive2D.cu">
+      <Filter>kernels\gi2d\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\tracables\Curve.cu">
+      <Filter>kernels\gi2d\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\tracables\Tracable.cu">
+      <Filter>kernels\gi2d\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

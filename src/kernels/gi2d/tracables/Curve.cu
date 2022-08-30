@@ -7,10 +7,12 @@ namespace GI2D
 {    
     __host__ __device__ bool CurveInterface::IntersectRay(Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {        
+        assert(m_bih && m_lineSegments);
+        
         RayRange2D range;
         if (!IntersectRayBBox(rayWorld, m_params.tracable.worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
-        const RayBasic2D& rayObject = ToObjectSpace(rayWorld);
+        RayBasic2D& rayObject = ToObjectSpace(rayWorld);
         HitCtx2D hitObject;
 
         auto onIntersect = [&](const uint* startEndIdx, RayRange2D& rangeTree)
@@ -92,8 +94,11 @@ namespace GI2D
         m_deviceData.bih = m_hostBIH->GetDeviceInstance();
         m_deviceData.lineSegments = m_hostLineSegments->GetDeviceInstance();
 
-        SynchroniseObjects(cu_deviceInstance, m_deviceData); 
-        
+        // Set the host parameters so we can query the primitive on the host
+        m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
+        m_lineSegments = static_cast<Cuda::VectorInterface<GI2D::LineSegment>*>(m_hostLineSegments.get());
+
+        SynchroniseObjects(cu_deviceInstance, m_deviceData);
         SynchroniseParams();
     }
 
@@ -171,20 +176,21 @@ namespace GI2D
         return m_dirtyFlags;
     }
 
-    __host__ bool Host::Curve::IsEmpty() const
+    __host__ bool Host::Curve::IsConstructed() const
     {
-        return m_hostLineSegments->IsEmpty();
+        return !m_hostLineSegments->IsEmpty() && m_hostBIH->IsConstructed();
     }
 
     __host__ bool Host::Curve::Finalise()
     {
         m_isFinalised = true;
-        return !m_hostLineSegments->IsEmpty();
+
+        return IsConstructed();
     }
 
-    __host__ void Host::Curve::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::Curve::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
     {
-        if (!m_dirtyFlags) { return; }
+        if (!m_dirtyFlags) { return IsConstructed(); }
 
         bool resyncParams = false;
         
@@ -211,15 +217,21 @@ namespace GI2D
             // Update the tracable bounding boxes
             Super::m_params.objectBBox = m_hostBIH->GetBoundingBox();
             Super::m_params.worldBBox = Super::m_params.objectBBox + Super::m_params.transform.trans;
-            //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format());
+            //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
             resyncParams = true;
         }
 
-        if (m_dirtyFlags & kGI2DDirtyTransforms) { resyncParams = true; }
+        if (m_dirtyFlags & kGI2DDirtyTransforms) 
+        { 
+            PrepareTransforms();
+            resyncParams = true; 
+        }
 
         if (resyncParams) { SynchroniseParams(); }
 
         ClearDirtyFlags();
+
+        return IsConstructed();
     }
 }

@@ -53,6 +53,18 @@ namespace GI2D
         //m_handleInnerBBox = Grow(m_params.objectBBox, m_params.viewCtx.dPdXY * -5.0f);        
     }
 
+    __host__ Host::Tracable::Tracable(const std::string& id) : 
+        RenderObject(id), 
+        m_dirtyFlags(kGI2DDirtyAll), 
+        m_isFinalised(false) 
+    {
+    }
+
+    __host__ void Host::Tracable::PrepareTransforms()
+    {
+        
+    }
+
     __host__ uint Host::Tracable::OnSelect(const bool isSelected)
     {
         if (SetGenericFlags(m_params.attrFlags, uint(kTracableSelected), isSelected))

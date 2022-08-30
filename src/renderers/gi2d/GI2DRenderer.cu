@@ -1,13 +1,12 @@
 #include "GI2DRenderer.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/CudaGI2DOverlay.cuh"
-#include "kernels/gi2d/CudaGI2DPathTracer.cuh"
+#include "kernels/gi2d/layers/CudaGI2DOverlay.cuh"
+#include "kernels/gi2d/layers/CudaGI2DPathTracer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
-#include "kernels/gi2d/Curve.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/Tracable.cuh"
-#include "kernels/gi2d/Curve.cuh"
+#include "kernels/gi2d/tracables/Tracable.cuh"
+#include "kernels/gi2d/tracables/Curve.cuh"
 #include "kernels/Tuple.cuh"
 
 using namespace Cuda;

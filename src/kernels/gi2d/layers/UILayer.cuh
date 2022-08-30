@@ -1,12 +1,12 @@
 #pragma once
 
-#include "UICtx.cuh"
+#include "../UICtx.cuh"
 
-#include "Common.cuh"
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
+#include "../Common.cuh"
+#include "kernels/CudaManagedObject.cuh"
+#include "kernels/CudaImage.cuh"
 
-#include "Tracable.cuh"
+#include "../tracables/Tracable.cuh"
 
 using namespace Cuda;
 

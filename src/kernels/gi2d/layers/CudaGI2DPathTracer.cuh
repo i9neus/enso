@@ -2,9 +2,9 @@
 
 #include "UILayer.cuh"
 
-#include "BIH2DAsset.cuh"
-#include "Tracable.cuh"
-#include "Transform2D.cuh"
+#include "../BIH2DAsset.cuh"
+#include "../tracables/Tracable.cuh"
+#include "../Transform2D.cuh"
 
 using namespace Cuda;
 

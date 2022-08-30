@@ -2,8 +2,7 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 
-#include "Ray2D.cuh"
-#include "RenderCtx.cuh"
+#include "../RenderCtx.cuh"
 
 using namespace Cuda;
 

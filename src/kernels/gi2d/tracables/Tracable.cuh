@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Common.cuh"
+#include "../Common.cuh"
 
 #include "CudaPrimitive2D.cuh"
-#include "BIH2DAsset.cuh"
-#include "Transform2D.cuh"
-#include "UICtx.cuh"
+#include "../BIH2DAsset.cuh"
+#include "../Transform2D.cuh"
+#include "../UICtx.cuh"
 
-#include "../CudaRenderObject.cuh"
+#include "kernels/CudaRenderObject.cuh"
 
 using namespace Cuda;
 
@@ -56,12 +56,7 @@ namespace GI2D
 
         __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
         {
-            RayBasic2D obj;
-            obj.o = world.o - m_params.transform.trans;
-            obj.d = world.d + obj.o;
-            obj.o = m_params.transform.fwd * obj.o;
-            obj.d = (m_params.transform.fwd * obj.d) - obj.o;
-            return obj;
+            return m_params.transform.RayToObjectSpace(world);
         }
 
     protected:
@@ -95,14 +90,12 @@ namespace GI2D
 
             __host__ virtual bool       Finalise() = 0;
 
-            __host__ virtual bool       IsEmpty() const = 0;
-            __host__ virtual void       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
+            __host__ virtual bool       IsConstructed() const = 0;
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
 
             __host__ uint               GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ bool               IsFinalised() const { return m_isFinalised; }
             __host__ bool               IsSelected() const { return m_params.attrFlags & kTracableSelected; }
-
-            __host__ 
 
             __host__ virtual TracableInterface* GetDeviceInstance() const = 0;
 
@@ -115,7 +108,9 @@ namespace GI2D
             }
 
         protected:
-            __host__ Tracable(const std::string& id) : RenderObject(id), m_dirtyFlags(0), m_isFinalised(false) {}
+            __host__ Tracable(const std::string& id);
+
+            __host__ void PrepareTransforms();
 
             __host__ void SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); }
             __host__ void ClearDirtyFlags() { m_dirtyFlags = 0; }

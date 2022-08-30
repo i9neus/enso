@@ -1,5 +1,5 @@
 #include "CudaPrimitive2D.cuh"
-#include "../CudaVector.cuh"
+#include "kernels/CudaVector.cuh"
 
 #include <random>
 
