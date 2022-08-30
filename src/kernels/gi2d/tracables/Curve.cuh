@@ -2,13 +2,19 @@
 
 #include "Tracable.cuh"
 
+#define FWD_DECL_VECTOR
+#define FWD_DECL_BIH2D
+#include "../FwdDecl.cuh"
+
 using namespace Cuda;
 
 namespace GI2D
 {
+    class LineSegment;
+    
     struct CurveParams
     {
-        TracableParams tracable;
+        SceneObjectParams sceneObject;
     };
 
     class CurveInterface : virtual public TracableInterface
@@ -32,7 +38,7 @@ namespace GI2D
     };
 
     namespace Device
-    {
+    {        
         class Curve : public GI2D::CurveInterface // , public Cuda::AssetTags<Host::Curve, Device::Curve>
         {
         public:
@@ -52,6 +58,8 @@ namespace GI2D
 
     namespace Host
     {                  
+        class BIH2DAsset;
+        
         class Curve : public CurveInterface,
                       public Host::Tracable,
                       public Cuda::AssetTags<Host::Curve, Device::Curve>

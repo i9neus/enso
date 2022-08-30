@@ -102,9 +102,11 @@ void GI2DRenderer::Rebuild()
         m_renderObjects->ForEachOfType<GI2D::Host::Tracable>([this](AssetHandle<GI2D::Host::Tracable>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
-                tracable->Rebuild(m_dirtyFlags, m_viewCtx);
+                if(tracable->Rebuild(m_dirtyFlags, m_viewCtx))
+                {
+                    m_hostTracables->EmplaceBack(tracable);
+                }
 
-                m_hostTracables->EmplaceBack(tracable);
                 return true;
             });
         m_hostTracables->Synchronise(kVectorSyncUpload);
@@ -362,6 +364,8 @@ uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targ
     // Invoke the event handler of the new object
     SetDirtyFlags(m_onCreate.newObject->OnCreate(stateID, m_viewCtx));
 
+    Log::Write("%i", m_dirtyFlags);
+
     if (stateID == "kCreateTracableClose")
     {
         Assert(m_onCreate.newObject);
@@ -385,7 +389,7 @@ void GI2DRenderer::OnRender()
 {
     //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     //Log::Write("Tick");
-
+    Log::Warning("%i", m_dirtyFlags);
     if (m_dirtyFlags)
     {
         Rebuild();

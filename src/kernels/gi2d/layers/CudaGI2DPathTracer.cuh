@@ -65,9 +65,10 @@ namespace GI2D
            
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
-
             __host__ void OnDestroyAsset();
-            __host__ virtual void Synchronise() override final;
+
+        protected:
+            __host__ virtual void RebuildImpl() override final;
 
         private:
             PathTracerParams                        m_params;

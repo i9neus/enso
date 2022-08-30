@@ -14,6 +14,44 @@ namespace GI2D
 	class BidirectionalTransform2D
 	{
 	public:
+        __host__ __device__ BidirectionalTransform2D() : 
+            trans(0.0f), rot(0.0f), scale(1.0f)
+        {
+            fwd = mat2::Indentity();
+            inv = mat2::Indentity();
+            nInv = mat2::Indentity();
+        }
+        
+        __host__ __device__  void Prepare(const vec2& tr, const float r, const float sc)
+        {
+            trans = tr;
+            rot = r;
+            scale = sc;
+            
+            const float sinTheta = sin(rot);
+            const float cosTheta = cos(rot);           
+            fwd.i00 = sc * cosTheta; fwd.i01 = sc * sinTheta;
+            fwd.i10 = sc * sinTheta; fwd.i11 = sc * -cosTheta;
+
+            inv = nInv = inverse(fwd);
+        }
+
+        __host__ __device__ __inline__ RayBasic2D RayToObjectSpace(const RayBasic2D& world) const
+        {
+            RayBasic2D obj;
+            obj.o = world.o - trans;
+            obj.d = world.d + obj.o;
+            obj.o = fwd * obj.o;
+            obj.d = (fwd * obj.d) - obj.o;
+            return obj;
+        }
+
+        __host__ __device__ __inline__ vec2 NormalToWorldSpace(const vec2& n) const
+        {
+            return nInv * n;
+        }
+
+    public:
 		vec2 trans;
 		float rot;
 		vec2 scale;

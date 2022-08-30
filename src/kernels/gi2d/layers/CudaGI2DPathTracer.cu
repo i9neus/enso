@@ -164,7 +164,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
     
-    __host__ void Host::PathTracer::Synchronise()
+    __host__ void Host::PathTracer::RebuildImpl()
     {
         if (!m_dirtyFlags) { return; }
         

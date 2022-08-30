@@ -37,7 +37,12 @@ namespace Cuda
 
 		if (px < 0 || px >= image->Width() || py < 0 || py >= image->Height()) { return; }
 
-		surf2Dwrite(*reinterpret_cast<float4*>(&(image->At(px, py))), cuSurface, kx * 16, ky);
+		// Alpha blend rgba values onto a black background and set w to full opacity
+		vec4 rgba = image->At(px, py);
+		rgba.xyz *= rgba.w;
+		rgba.w = 1.0f;
+
+		surf2Dwrite(*reinterpret_cast<float4*>(&rgba), cuSurface, kx * 16, ky);
 	}
 
 	template<typename T>

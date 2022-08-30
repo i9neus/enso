@@ -1,5 +1,8 @@
 #include "Curve.cuh"
+#include "CudaPrimitive2D.cuh"
+#include "../GenericIntersector.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
+#include "../BIH2DAsset.cuh"
 
 using namespace Cuda;
 
@@ -10,7 +13,7 @@ namespace GI2D
         assert(m_bih && m_lineSegments);
         
         RayRange2D range;
-        if (!IntersectRayBBox(rayWorld, m_params.tracable.worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
+        if (!IntersectRayBBox(rayWorld, m_params.sceneObject.worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
         RayBasic2D& rayObject = ToObjectSpace(rayWorld);
         HitCtx2D hitObject;
@@ -47,7 +50,7 @@ namespace GI2D
     __device__ vec4 CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         vec4 L(0.0f);
-        const vec2 pLocal = pWorld - m_params.tracable.transform.trans;
+        const vec2 pLocal = pWorld - m_params.sceneObject.transform.trans;
 
         m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
             {
@@ -73,7 +76,7 @@ namespace GI2D
 
     __device__ void Device::Curve::Synchronise(const CurveParams& params)
     {
-        Super::Synchronise(params.tracable);
+        SceneObjectInterface::Synchronise(params.sceneObject);
         m_params = params;
     }
 
@@ -118,7 +121,7 @@ namespace GI2D
 
     __host__ void Host::Curve::SynchroniseParams()
     {
-        m_params.tracable = Super::m_params;
+        Curve::m_params.sceneObject = SceneObject::m_params;
 
         SynchroniseObjects(cu_deviceInstance, m_params);
     }
@@ -224,8 +227,7 @@ namespace GI2D
 
         if (m_dirtyFlags & kGI2DDirtyTransforms) 
         { 
-            PrepareTransforms();
-            resyncParams = true; 
+            resyncParams = true;
         }
 
         if (resyncParams) { SynchroniseParams(); }

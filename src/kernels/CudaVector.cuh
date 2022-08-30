@@ -175,8 +175,8 @@ namespace Cuda
 				ResizeImpl(size, true, false);
 			}
 
-			__host__ __inline__ VectorBase(const VectorBase& other) { operator=(other); }
-			__host__ __inline__ VectorBase(VectorBase&& other) { operator=(other); }
+			__host__ __inline__ VectorBase(const VectorBase& other) = delete;// { operator=(other); }
+			__host__ __inline__ VectorBase(VectorBase&& other) = delete;// { operator=(other); }
 
 			__host__  ~VectorBase()
 			{

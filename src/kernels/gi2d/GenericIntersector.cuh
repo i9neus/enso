@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Ray2D.cuh"
 
 namespace GI2D

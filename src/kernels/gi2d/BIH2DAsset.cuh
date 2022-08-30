@@ -16,12 +16,7 @@ namespace GI2D
     }
 
     namespace Host
-    {
-        class BIH2DAsset;
-        
-        //template<typename NodeContainer>
-        
-        
+    {        
         class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Cuda::Host::AssetAllocator
         {
             using NodeType = BIH2DFullNode;

@@ -138,7 +138,7 @@ namespace GI2D
         UILayer(id, bih, tracables)
     {        
         // Create some Cuda objects
-        m_hostAccumBuffer = CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiOverlayBuffer", width, height, renderStream);
+        m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
         m_objects.bih = m_hostBIH->GetDeviceInstance();
         m_objects.tracables = m_hostTracables->GetDeviceInstance();
@@ -206,7 +206,7 @@ namespace GI2D
         m_params.hitPoint = ray.PointAt(hit.tFar);        
     }
 
-    __host__ void Host::Overlay::Synchronise()
+    __host__ void Host::Overlay::RebuildImpl()
     {
         if (!m_dirtyFlags) { return; }
 

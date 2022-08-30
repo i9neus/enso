@@ -31,7 +31,7 @@ namespace GI2D
             {
                 const BBox2f primBBox = m_getPrimitiveBBox(idx);
                 AssertMsgFmt(primBBox.IsValid(),
-                    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", primBBox[0].format().c_str(), primBBox[1].format().c_str());
+                    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", idx, primBBox[0].format().c_str(), primBBox[1].format().c_str());
                 m_bih.m_treeBBox = Union(m_bih.m_treeBBox, primBBox);
                 centroidBBox = Union(centroidBBox, primBBox.Centroid());
             }

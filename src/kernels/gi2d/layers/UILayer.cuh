@@ -10,10 +10,18 @@
 
 using namespace Cuda;
 
+//namespace Cuda
+//{
+//    namespace Host { template<typename T> class AssetVector; }
+//}
+
+namespace Cuda { namespace Host { template<typename T> class AssetVector; } }
+namespace GI2D { namespace Host { class BIH2DAsset; } }
+
 namespace GI2D
 {
     namespace Host
-    {
+    {        
         class UILayer : public Cuda::Host::AssetAllocator
         {
         public:
@@ -28,7 +36,6 @@ namespace GI2D
 
             __host__ virtual void   Render() = 0;
             __host__ virtual void   Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const = 0;
-            __host__ virtual void   Synchronise() = 0;
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
             { 
@@ -36,12 +43,14 @@ namespace GI2D
                 m_selectionCtx = selectionCtx;
                 m_dirtyFlags = dirtyFlags;
 
-                Synchronise();
+                RebuildImpl();
             }
 
             __host__ void           SetDirtyFlags(const uint flags) { m_dirtyFlags |= flags; }
 
         protected:
+            __host__ virtual void RebuildImpl() = 0;
+            
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
             {

@@ -28,6 +28,8 @@ namespace GI2D
         __host__ __device__ RayBasic2D() {}
         __host__ __device__ RayBasic2D(const vec2& _o, const vec2& _d) : o(_o), d(_d) {}
 
+        __host__ __device__ vec2 PointAt(const float t) const { return o + d * t; }
+
         vec2        o;
         vec2        d;
     };
