@@ -17,46 +17,45 @@ GI2DRenderer::GI2DRenderer()
     m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
     // Create tracable
-    m_uiGraph.DeclareState("kCreateTracableOpen", this, &GI2DRenderer::OnCreateTracable);      
-    m_uiGraph.DeclareState("kCreateTracableHover", this, &GI2DRenderer::OnCreateTracable);
-    m_uiGraph.DeclareState("kCreateTracableAppend", this, &GI2DRenderer::OnCreateTracable);
-    m_uiGraph.DeclareState("kCreateTracableClose", this, &GI2DRenderer::OnCreateTracable);
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateTracableOpen", KeyboardButtonMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), nullptr, 0);
-    m_uiGraph.DeclareAutoTransition("kCreateTracableOpen", "kCreateTracableHover");
-    m_uiGraph.DeclareDeterministicTransition("kCreateTracableHover", "kCreateTracableHover", nullptr, nullptr, kUITriggerOnMouseMove);
-    m_uiGraph.DeclareDeterministicTransition("kCreateTracableHover", "kCreateTracableAppend", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0);
-    //m_uiGraph.DeclareDeterministicTransition("kCreateTracableHover", "kCreateTracableAppend", nullptr, MouseButtonMap(kMouseLButton, kButtonDown), kUITriggerOnMouseMove);
-    m_uiGraph.DeclareAutoTransition("kCreateTracableAppend", "kCreateTracableHover");
-    m_uiGraph.DeclareDeterministicTransition("kCreateTracableHover", "kCreateTracableClose", KeyboardButtonMap(VK_ESCAPE, kOnButtonDepressed), nullptr, 0);
-    m_uiGraph.DeclareDeterministicTransition("kCreateTracableHover", "kCreateTracableClose", nullptr, MouseButtonMap(kMouseRButton, kOnButtonDepressed), 0);
-    m_uiGraph.DeclareAutoTransition("kCreateTracableClose", "kIdleState");
+    m_uiGraph.DeclareState("kCreateSceneObjectOpen", this, &GI2DRenderer::OnCreateTracable);      
+    m_uiGraph.DeclareState("kCreateSceneObjectHover", this, &GI2DRenderer::OnCreateTracable);
+    m_uiGraph.DeclareState("kCreateSceneObjectAppend", this, &GI2DRenderer::OnCreateTracable);
+    m_uiGraph.DeclareState("kCreateSceneObjectClose", this, &GI2DRenderer::OnCreateTracable);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectOpen", "kCreateSceneObjectHover");
+    m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectHover", nullptr, kUITriggerOnMouseMove);
+    m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectAppend", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectAppend", "kCreateSceneObjectHover");
+    m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectClose", VirtualKeyMap(VK_RBUTTON, kOnButtonDepressed), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectClose", "kIdleState");
 
     // Select/deselect tracable
-    m_uiGraph.DeclareState("kSelectTracableDragging", this, &GI2DRenderer::OnSelectTracables);
-    m_uiGraph.DeclareState("kSelectTracableEnd", this, &GI2DRenderer::OnSelectTracables);
-    m_uiGraph.DeclareState("kDeselectTracable", this, &GI2DRenderer::OnSelectTracables);   
-    m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
-    m_uiGraph.DeclareDeterministicTransition("kSelectTracableDragging", "kSelectTracableDragging", nullptr, MouseButtonMap(kMouseLButton, kButtonDown), kUITriggerOnMouseMove);
-    m_uiGraph.DeclareDeterministicTransition("kSelectTracableDragging", "kSelectTracableEnd", nullptr, MouseButtonMap(kMouseLButton, kOnButtonReleased), 0);
-    m_uiGraph.DeclareAutoTransition("kSelectTracableEnd", "kIdleState");
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeselectTracable", nullptr, MouseButtonMap(kMouseRButton, kOnButtonDepressed), 0);
-    m_uiGraph.DeclareAutoTransition("kDeselectTracable", "kIdleState");
+    m_uiGraph.DeclareState("kSelectSceneObjectDragging", this, &GI2DRenderer::OnSelectTracables);
+    m_uiGraph.DeclareState("kSelectSceneObjectEnd", this, &GI2DRenderer::OnSelectTracables);
+    m_uiGraph.DeclareState("kDeselectSceneObject", this, &GI2DRenderer::OnSelectTracables);   
+    m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
+    m_uiGraph.DeclareDeterministicTransition("kSelectSceneObjectDragging", "kSelectSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+    m_uiGraph.DeclareDeterministicTransition("kSelectSceneObjectDragging", "kSelectSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kSelectSceneObjectEnd", "kIdleState");
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeselectSceneObject", VirtualKeyMap(VK_RBUTTON, kOnButtonDepressed), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kDeselectSceneObject", "kIdleState");
 
     // Move tracable
-    m_uiGraph.DeclareState("kMoveTracableBegin", this, &GI2DRenderer::OnMoveTracable);
+    m_uiGraph.DeclareState("kMoveSceneObjectBegin", this, &GI2DRenderer::OnMoveTracable);
     m_uiGraph.DeclareState("kMoveTracableDragging", this, &GI2DRenderer::OnMoveTracable);
     m_uiGraph.DeclareState("kMoveTracableEnd", this, &GI2DRenderer::OnMoveTracable);
-    //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(kMouseLButton, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
-    m_uiGraph.DeclareAutoTransition("kMoveTracableBegin", "kMoveTracableDragging");
-    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableDragging", nullptr, MouseButtonMap(kMouseLButton, kButtonDown), kUITriggerOnMouseMove);
-    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableEnd", nullptr, MouseButtonMap(kMouseLButton, kOnButtonReleased), 0);
-    m_uiGraph.DeclareAutoTransition("kMoveTracableEnd", "kIdleState");
+    //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
+    m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectBegin", "kMoveTracableDragging");
+    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kMoveTracableEnd", "kIdleState");
 
     // Delete tracable
     m_uiGraph.DeclareState("kDeleteTracable", this, &GI2DRenderer::OnDeletePath);    
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", KeyboardButtonMap({ {VK_DELETE, kOnButtonDepressed}}), nullptr, 0);
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", KeyboardButtonMap({ {VK_BACK, kOnButtonDepressed}}), nullptr, 0);
-    m_uiGraph.DeclareAutoTransition("kDeleteTracable", "kIdleState");    
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed}}), 0);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed}}), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kDeleteTracable", "kIdleState");    
 
     m_uiGraph.Finalise();
 }
@@ -194,7 +193,7 @@ uint GI2DRenderer::OnDeletePath(const uint& sourceStateIdx, const uint& targetSt
 uint GI2DRenderer::OnMoveTracable(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
-    if (stateID == "kMoveTracableBegin")
+    if (stateID == "kMoveSceneObjectBegin")
     {
         m_onMove.dragAnchor = m_viewCtx.mousePos;
     }
@@ -241,29 +240,29 @@ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     // If there are no paths selected, enter selection state. Otherwise, enter moving state.
     if (m_selectionCtx.numSelected == 0)
     {
-        return "kSelectTracableDragging";
+        return "kSelectSceneObjectDragging";
     }
     else
     {
         //Assert(selection.selectedBBox.HasValidArea());
         if (Grow(m_selectionCtx.selectedBBox, m_viewCtx.dPdXY * 2.f).Contains(m_viewCtx.mousePos))
         {
-            return "kMoveTracableBegin";
+            return "kMoveSceneObjectBegin";
         }
         else
         {
             // Deselect everything
             DeselectAll();
-            return "kSelectTracableDragging";
+            return "kSelectSceneObjectDragging";
         }
     }
-    return "kSelectTracableDragging";
+    return "kSelectSceneObjectDragging";
 }
 
 uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& targetStateIdx)
 {
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
-    if (stateID == "kSelectTracableDragging")
+    if (stateID == "kSelectSceneObjectDragging")
     {
         auto& tracables = *m_hostTracables;
         const bool wasLassoing = m_selectionCtx.isLassoing;
@@ -317,7 +316,7 @@ uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& tar
                 if (m_selectionCtx.numSelected > 0 && !wasLassoing)
                 {
                     m_selectionCtx.isLassoing = false;
-                    m_uiGraph.SetState("kMoveTracableBegin");
+                    m_uiGraph.SetState("kMoveSceneObjectBegin");
                 }
             }
         }
@@ -325,16 +324,16 @@ uint GI2DRenderer::OnSelectTracables(const uint& sourceStateIdx, const uint& tar
         SetDirtyFlags(kGI2DDirtyUI);
         //Log::Success("Selecting!");
     }
-    else if (stateID == "kSelectTracableEnd")
+    else if (stateID == "kSelectSceneObjectEnd")
     {
         m_selectionCtx.isLassoing = false;
         SetDirtyFlags(kGI2DDirtyUI);
 
         //Log::Success("Finished!");
     }
-    else if (stateID == "kDeselectTracable")
+    else if (stateID == "kDeselectSceneObject")
     {
-        for (auto& obj : *m_hostTracables) { obj->OnSelect(false); }
+        DeselectAll();
         SetDirtyFlags(kGI2DDirtyUI);
 
         //Log::Success("Finished!");
@@ -352,7 +351,7 @@ uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targ
     std::lock_guard <std::mutex> lock(m_resourceMutex);
     
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
-    if (stateID == "kCreateTracableOpen")
+    if (stateID == "kCreateSceneObjectOpen")
     {        
         //Create a new tracable and add it to the list of render objects
         m_onCreate.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
@@ -364,9 +363,14 @@ uint GI2DRenderer::OnCreateTracable(const uint& sourceStateIdx, const uint& targ
     // Invoke the event handler of the new object
     SetDirtyFlags(m_onCreate.newObject->OnCreate(stateID, m_viewCtx));
 
-    Log::Write("%i", m_dirtyFlags);
+    // Some objects will automatically finalise themselves. If this happens, we're done.
+    if (m_onCreate.newObject->IsFinalised())
+    {
+        m_uiGraph.SetState("kIdleState");
+        return kUIStateOkay;
+    }
 
-    if (stateID == "kCreateTracableClose")
+    if (stateID == "kCreateSceneObjectClose")
     {
         Assert(m_onCreate.newObject);
 
@@ -389,7 +393,6 @@ void GI2DRenderer::OnRender()
 {
     //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     //Log::Write("Tick");
-    Log::Warning("%i", m_dirtyFlags);
     if (m_dirtyFlags)
     {
         Rebuild();
@@ -419,7 +422,7 @@ void GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown
 void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
 {
     // Is the view being changed? 
-    if (code == kMouseMButton)
+    if (code == VK_MBUTTON)
     {
         m_viewCtx.dragAnchor = vec2(m_mouse.pos);
         m_viewCtx.rotAxis = normalize(m_viewCtx.dragAnchor - vec2(m_clientWidth, m_clientHeight) * 0.5f);
@@ -432,7 +435,7 @@ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
 void GI2DRenderer::OnMouseMove()
 {
     // Dragging?
-    if (IsMouseButtonDown(kMouseMButton))
+    if (IsMouseButtonDown(VK_MBUTTON))
     {
         OnViewChange();
     }

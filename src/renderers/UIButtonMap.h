@@ -184,5 +184,4 @@ UIButtonMap<NumButtons> operator|(const UIButtonMap<NumButtons>& lhs, const UIBu
     return UIButtonMap<NumButtons>(lhs) |= rhs;
 }
 
-using KeyboardButtonMap = UIButtonMap<256>;
-using MouseButtonMap = UIButtonMap<9>;
+using VirtualKeyMap = UIButtonMap<256>;

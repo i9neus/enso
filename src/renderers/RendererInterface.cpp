@@ -10,7 +10,7 @@ RendererInterface::RendererInterface() :
 	m_clientWidth(1.0f),
 	m_clientHeight(1.0f),
 	m_dirtyFlags(0),
-	m_uiGraph(m_keyCodes, m_mouse.codes),
+	m_uiGraph(m_keyCodes),
 	m_renderSemaphore(kRenderManagerD3DBlitFinished)
 {
 	m_mouse.pos = std::numeric_limits<int>::min();
@@ -144,7 +144,6 @@ bool RendererInterface::Poll(Json::Document& stateJson)
 
 void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool isDown)
 {
-	m_mouse.codes.Update();
 	m_keyCodes.Update(code, isDown);
 
 	if (code == VK_ESCAPE)
@@ -163,8 +162,7 @@ void RendererInterface::SetKey(const uint code, const bool isSysKey, const bool 
 void RendererInterface::SetMouseButton(const uint code, const bool isDown)
 {
 	// TODO: Calling Update() here feels messy and brittle. Should the UI graph have ownership of the codes?
-	m_keyCodes.Update();
-	m_mouse.codes.Update(code, isDown);
+	m_keyCodes.Update(code, isDown);
 	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseButton);
 
 	// Notify the superclass that a mouse state has changed
@@ -179,7 +177,6 @@ void RendererInterface::SetMousePos(const int mouseX, const int mouseY, const WP
 	m_mouse.delta = m_mouse.pos - m_mouse.prevPos;
 
 	m_keyCodes.Update();
-	m_mouse.codes.Update();
 	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseMove);
 
 	// Notify the superclass that a mouse state has changed
@@ -191,7 +188,6 @@ void RendererInterface::SetMouseWheel(const float angle)
 	m_mouseWheelAngle = angle;
 
 	m_keyCodes.Update();
-	m_mouse.codes.Update();
 	m_uiGraph.OnTriggerTransition(kUITriggerOnMouseWheel);
 
 	// Notify the superclass that a mouse wheel state has changed

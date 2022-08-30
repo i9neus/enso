@@ -51,8 +51,7 @@ struct UIStateTransition
 
     uint                        hash;
 
-    KeyboardButtonMap           keyTrigger;
-    MouseButtonMap              mouseTrigger;
+    VirtualKeyMap               keyTrigger;
     uint                        triggerFlags;
 
     uint                        sourceStateIdx;
@@ -67,9 +66,8 @@ struct UIStateTransition
 class UIStateGraph
 {
 public:
-    UIStateGraph(const KeyboardButtonMap& keyCodes, const MouseButtonMap& mouseCodes) :
+    UIStateGraph(const VirtualKeyMap& keyCodes) :
         m_keyCodes(keyCodes),
-        m_mouseCodes(mouseCodes),
         m_currentState(UIState::kNull)
     {
     }	
@@ -126,8 +124,7 @@ public:
         m_currentState = 0;
     }
 
-    void DeclareTransitionImpl(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, 
-                               const MouseButtonMap& mouseTrigger, const uint& triggerFlags, const bool isAuto)
+    void DeclareTransitionImpl(const std::string& sourceStateID, const std::string& targetStateID, const VirtualKeyMap& keyTrigger, const uint& triggerFlags, const bool isAuto)
     {
         UIState* sourceState = FindState(sourceStateID);
         AssertMsgFmt(sourceState, "Error: transition sourceState '%s' was not declared.", sourceStateID.c_str());
@@ -144,13 +141,12 @@ public:
         }        
         
         // Generate a hash from the origin state's ID and the trigger required to transition away from it
-        const uint hash = HashCombine(HashOf(sourceState->idx), keyTrigger.HashOf(), mouseTrigger.HashOf(), HashOf(triggerFlags));
+        const uint hash = HashCombine(HashOf(sourceState->idx), keyTrigger.HashOf(), HashOf(triggerFlags));
 
         //Log::Error("Hash: 0x%x, 0x%x, 0x%x -> 0x%x", uint(std::hash<uint>{}(0)), keyTrigger.HashOf(), mouseTrigger.HashOf(), hash);
 
         m_uiTransitionList.push_back(UIStateTransition{ hash,
                                              keyTrigger,
-                                             mouseTrigger,
                                              triggerFlags,
                                              sourceState->idx, 
                                              targetState ? targetState->idx : UIState::kInvalid,
@@ -176,24 +172,32 @@ public:
         }
     }
 
-    inline void DeclareDeterministicTransition(const std::string& sourceStateID, const std::string& targetStateID, const KeyboardButtonMap& keyTrigger, 
-                                               const MouseButtonMap& mouseTrigger, const uint& triggerFlags)
+    inline void DeclareDeterministicTransition(const std::string& sourceStateID, const std::string& targetStateID, const VirtualKeyMap& keyTrigger, const uint& triggerFlags)
     {
-        DeclareTransitionImpl(sourceStateID, targetStateID, keyTrigger, mouseTrigger, triggerFlags, false);
+        DeclareTransitionImpl(sourceStateID, targetStateID, keyTrigger, triggerFlags, false);
     }
 
     template<class HostClass, typename GetTransitionState>
-    void DeclareNonDeterministicTransition(const std::string& sourceState, const KeyboardButtonMap& keyTrigger, const MouseButtonMap& mouseTrigger, const uint& triggerFlags,
+    void DeclareNonDeterministicTransition(const std::string& sourceState, const VirtualKeyMap& keyTrigger, const uint& triggerFlags,
                                            HostClass* hostClass, GetTransitionState getTargetState)
     {
-        DeclareTransitionImpl(sourceState, "", keyTrigger, mouseTrigger, triggerFlags, false);
+        DeclareTransitionImpl(sourceState, "", keyTrigger, triggerFlags, false);
 
         m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
     }
 
-    inline void DeclareAutoTransition(const std::string& sourceStateID, const std::string& targetStateID)
+    inline void DeclareDeterministicAutoTransition(const std::string& sourceStateID, const std::string& targetStateID)
     {
-        DeclareTransitionImpl(sourceStateID, targetStateID, nullptr, nullptr, 0, true);
+        DeclareTransitionImpl(sourceStateID, targetStateID, nullptr, 0, true);
+    }
+
+    template<class HostClass, typename GetTransitionState>
+    inline void DeclareNonDeterministicAutoTransition(const std::string& sourceStateID, const std::string& targetStateID, 
+                                                      HostClass* hostClass, GetTransitionState getTargetState)
+    {
+        DeclareTransitionImpl(sourceStateID, "", nullptr, 0, true);
+
+        m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
     }
 
     bool MakeTransition(const UIStateTransition& transition)
@@ -263,7 +267,7 @@ public:
 
 	void OnTriggerTransition(const uint triggerFlags)
 	{
-        uint hash = HashCombine(HashOf(m_currentState), m_keyCodes.HashOf(), m_mouseCodes.HashOf(), HashOf(triggerFlags));
+        uint hash = HashCombine(HashOf(m_currentState), m_keyCodes.HashOf(), HashOf(triggerFlags));
 
         // Search for states that match the current set of triggers
 		auto range = m_uiStateTriggeredTransitionMap.equal_range(hash);
@@ -271,8 +275,7 @@ public:
 		{
             // If this transition doesn't match the trigger criteria, continue looking
             const auto& transition = m_uiTransitionList[it->second];
-            if (transition.sourceStateIdx != m_currentState || transition.keyTrigger != m_keyCodes || 
-                transition.mouseTrigger != m_mouseCodes || transition.triggerFlags != triggerFlags) { continue; }
+            if (transition.sourceStateIdx != m_currentState || transition.keyTrigger != m_keyCodes || transition.triggerFlags != triggerFlags) { continue; }
 	
             MakeTransition(transition);
 		}
@@ -329,8 +332,7 @@ private:
     std::unordered_multimap<uint, uint>             m_uiStateTriggeredTransitionMap;
     std::unordered_map<uint, uint>                  m_uiStateAutoTransitionMap;
 
-	const KeyboardButtonMap&                        m_keyCodes;
-	const MouseButtonMap&   						m_mouseCodes;
+	const VirtualKeyMap&                            m_keyCodes;
 
     uint                                            m_currentState;
 };

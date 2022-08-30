@@ -129,13 +129,13 @@ namespace GI2D
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         const vec2 mousePosLocal = viewCtx.mousePos - Super::m_params.transform.trans;
-        if (stateID == "kCreateTracableOpen")
+        if (stateID == "kCreateSceneObjectOpen")
         {
             Super::m_params.transform.trans = viewCtx.mousePos;
            
             Log::Success("Opened path %s", GetAssetID());
         }
-        else if (stateID == "kCreateTracableHover")
+        else if (stateID == "kCreateSceneObjectHover")
         {
             if (!m_hostLineSegments->IsEmpty())
             {
@@ -143,7 +143,7 @@ namespace GI2D
                 SetDirtyFlags(kGI2DDirtyBVH);
             }
         }
-        else if (stateID == "kCreateTracableAppend")
+        else if (stateID == "kCreateSceneObjectAppend")
         {
             const vec3 colour = Hue(PseudoRNG(HashOf(m_hostLineSegments->Size())).Rand<0>());
 
@@ -160,7 +160,7 @@ namespace GI2D
 
             SetDirtyFlags(kGI2DDirtyBVH);
         }
-        else if (stateID == "kCreateTracableClose")
+        else if (stateID == "kCreateSceneObjectClose")
         {
             // Delete the floating segment when closing the path
             if (!m_hostLineSegments->IsEmpty())

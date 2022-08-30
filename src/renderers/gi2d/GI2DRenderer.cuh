@@ -24,6 +24,7 @@ namespace GI2D
         class Overlay;   
         class PathTracer; 
         class Tracable;
+        class SceneObject;
     }
 }
 
@@ -113,7 +114,7 @@ private:
 
     struct
     {
-        AssetHandle<GI2D::Host::Tracable>   newObject;
+        AssetHandle<GI2D::Host::SceneObject>   newObject;
     } 
     m_onCreate;
 

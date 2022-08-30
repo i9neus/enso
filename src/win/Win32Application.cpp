@@ -146,15 +146,15 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hWnd, UINT message, WPARAM wP
 			case WM_SYSKEYDOWN:	d3dContainer->OnKey(wParam, true, true); return 0;
 			case WM_SYSKEYUP:	d3dContainer->OnKey(wParam, true, false); return 0;
 
-			case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: d3dContainer->OnMouseButton(1, true); return 0;
-			case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK: d3dContainer->OnMouseButton(2, true); return 0;
-			case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: d3dContainer->OnMouseButton(4, true); return 0;
-			case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK: d3dContainer->OnMouseButton(8, true); return 0;
+			case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK: d3dContainer->OnMouseButton(VK_LBUTTON, true); return 0;
+			case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK: d3dContainer->OnMouseButton(VK_RBUTTON, true); return 0;
+			case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: d3dContainer->OnMouseButton(VK_MBUTTON, true); return 0;
+			case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK: d3dContainer->OnMouseButton(VK_XBUTTON1, true); return 0;
 		
-			case WM_LBUTTONUP: d3dContainer->OnMouseButton(1, false); return 0;
-			case WM_RBUTTONUP: d3dContainer->OnMouseButton(2, false); return 0;
-			case WM_MBUTTONUP: d3dContainer->OnMouseButton(4, false); return 0;
-			case WM_XBUTTONUP: d3dContainer->OnMouseButton(8, false); return 0;
+			case WM_LBUTTONUP: d3dContainer->OnMouseButton(VK_LBUTTON, false); return 0;
+			case WM_RBUTTONUP: d3dContainer->OnMouseButton(VK_RBUTTON, false); return 0;
+			case WM_MBUTTONUP: d3dContainer->OnMouseButton(VK_MBUTTON, false); return 0;
+			case WM_XBUTTONUP: d3dContainer->OnMouseButton(VK_XBUTTON1, false); return 0;
 
 			case WM_MOUSEMOVE: d3dContainer->OnMouseMove(int(GET_X_LPARAM(lParam)), int(GET_Y_LPARAM(lParam)), wParam); return 0;
 

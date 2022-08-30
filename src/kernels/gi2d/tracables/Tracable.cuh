@@ -37,16 +37,6 @@ namespace GI2D
     private:
         BBox2f m_handleInnerBBox;
     };
-    
-    namespace Device
-    {
-        class Tracable : virtual public TracableInterface,
-                         public GI2D::Device::SceneObject
-        {
-        public:
-            __device__ Tracable() {}            
-        };
-    }
 
     namespace Host
     {

@@ -16,14 +16,6 @@ enum RenderManagerRenderState : int
     kRenderManagerError
 };
 
-enum RenderManagerMouseButtons : int
-{
-    kMouseLButton = 1,
-    kMouseRButton = 2,
-    kMouseMButton = 4,
-    kMouseXButton = 8
-};
-
 enum RenderManagerSemaphore : uint
 {
     kRenderManagerCompInProgress = 0,
@@ -75,7 +67,7 @@ protected:
 
     inline bool IsKeyDown(const uint code) const { return m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed); }
 
-    #define IsDownImpl (m_mouse.codes.GetState(code) & (kButtonDown | kOnButtonDepressed))
+    #define IsDownImpl (m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed))
     inline bool IsMouseButtonDown(const uint code) const { return IsDownImpl; }
     inline bool IsAnyMouseButtonDown(const uint code) const 
     {  
@@ -116,12 +108,11 @@ protected:
         Cuda::ivec2                                 pos;
         Cuda::ivec2                                 prevPos;
         Cuda::ivec2                                 delta; 
-        MouseButtonMap                              codes;
     }
     m_mouse;
 
     float                                           m_mouseWheelAngle;
-    KeyboardButtonMap                               m_keyCodes;
+    VirtualKeyMap                                   m_keyCodes;
     int                                             m_clientWidth;
     int                                             m_clientHeight;
 
