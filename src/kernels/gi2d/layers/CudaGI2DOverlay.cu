@@ -4,6 +4,7 @@
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 #include "kernels/CudaAssetContainer.cuh"
+#include "../tracables/primitives/LineSegment.cuh"
 
 using namespace Cuda;
 
@@ -111,7 +112,7 @@ namespace GI2D
         if (m_params.isHit)
         {
             LineSegment raySegment(m_params.ray.o, m_params.hitPoint, 0, kOne);
-            const float line = raySegment.Evaluate(xyView, 0.001f, m_params.viewCtx.dPdXY);
+            const float line = raySegment.Evaluate(xyView, m_params.viewCtx.dPdXY);
             if (line > 0.f)
             {
                 L = Blend(L, kOne, line);

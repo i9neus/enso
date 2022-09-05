@@ -660,9 +660,6 @@
     <ClInclude Include="src\kernels\gi2d\layers\UILayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\tracables\CudaPrimitive2D.cuh">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\gi2d\tracables\Curve.cuh">
       <Filter>kernels\gi2d\tracables</Filter>
     </ClInclude>
@@ -683,6 +680,15 @@
     </ClInclude>
     <ClInclude Include="src\generic\debug\GlobalThreadMap.h">
       <Filter>generic\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\primitives\Ellipse.cuh">
+      <Filter>kernels\gi2d\tracables\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
+      <Filter>kernels\gi2d\tracables\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\tracables\primitives\Primitive2D.cuh">
+      <Filter>kernels\gi2d\tracables\primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -808,6 +814,9 @@
     </Filter>
     <Filter Include="kernels\gi2d\tracables">
       <UniqueIdentifier>{e6880f3f-5f05-4b46-8aa3-cd5b58c84b6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\gi2d\tracables\primitives">
+      <UniqueIdentifier>{4c23b6ed-31a1-4857-a213-40f60de92455}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -955,9 +964,6 @@
     <CudaCompile Include="src\kernels\gi2d\layers\CudaGI2DPathTracer.cu">
       <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\tracables\CudaPrimitive2D.cu">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\tracables\Curve.cu">
       <Filter>kernels\gi2d\tracables</Filter>
     </CudaCompile>
@@ -969,6 +975,12 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\SceneObject.cu">
       <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\tracables\primitives\Ellpise.cu">
+      <Filter>kernels\gi2d\tracables\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\tracables\primitives\LineSegment.cu">
+      <Filter>kernels\gi2d\tracables\primitives</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

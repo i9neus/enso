@@ -108,21 +108,17 @@ namespace Cuda
                     (1.0f - xyy.x - xyy.y) * xyy.z / xyy.y);
     }
 
-    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec3& upperRgb, const float& upperAlpha)
+    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec3& rgb2, const float& w2)
     {
         // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
-        lowerRgba = mix(lowerRgba, vec4(upperRgb, 1.0f), upperAlpha);
-        lowerRgba.xyz /= fmaxf(1e-10f, lowerRgba.w);
-
-        return lowerRgba;
+        return vec4(mix(rgba1.xyz * rgba1.w, rgb2, w2) / fmaxf(1e-15f, rgba1.w + (1 - rgba1.w) * w2),
+                    rgba1.w + (1 - rgba1.w) * w2);
     }
 
-    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec4& upperRgba)
+    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec4& rgba2)
     {
         // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
-        lowerRgba = mix(lowerRgba, vec4(upperRgba.xyz, 1.0f), upperRgba.w);
-        lowerRgba.xyz /= fmaxf(1e-10f, lowerRgba.w);
-
-        return lowerRgba;
+        return vec4(mix(rgba1.xyz * rgba1.w, rgba2.xyz, rgba2.w) / fmaxf(1e-15f, rgba1.w + (1 - rgba1.w) * rgba2.w),
+                    rgba1.w + (1 - rgba1.w) * rgba2.w);
     }
 }

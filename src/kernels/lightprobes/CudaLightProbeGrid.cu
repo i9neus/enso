@@ -401,7 +401,7 @@ namespace Cuda
         case kProbeGridHarmonicMean:
         {
             const float weights = InterpolateCoefficient(*m_objects.cu_shData, gridPos, m_params.coefficientsPerProbe - 1, m_params.coefficientsPerProbe, delta)[kProbeFilterWeights];
-            return Hue(0.33f * saturate(1 / weights));
+            return Hue(0.33f * ::saturatef(1 / weights));
         }
         break;
         case kProbeGridValidity:
@@ -436,7 +436,7 @@ namespace Cuda
 
             constexpr float kHeapmapGain = 1.0f;
             const float impulse = 2.0f / (1.0f + expf(-fmaxf(0.0f, sqrError - sqrThreshold))) - 1.0f;
-            return Heatmap(saturate(kHeapmapGain * sqrtf(impulse)));
+            return Heatmap(::saturatef(kHeapmapGain * sqrtf(impulse)));
         }
         break;
         default:

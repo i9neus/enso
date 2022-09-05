@@ -1,4 +1,4 @@
-#include "CudaPrimitive2D.cuh"
+#include "LineSegment.cuh"
 #include "kernels/CudaVector.cuh"
 
 #include <random>
@@ -9,12 +9,12 @@ namespace GI2D
 {    
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
-       return m_v[0] + Cuda::saturate((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;
+        return m_v[0] + saturatef((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;
     }
 
-    __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& thickness, const float& dPdXY) const
+    __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& dPdXY) const
     {
-        return Cuda::saturate(1.0f - (length(p - PerpendicularPoint(p)) - thickness) / dPdXY);
+        return saturatef(1.0f - (length(p - PerpendicularPoint(p)) - dPdXY * 3.0f) / dPdXY);
     }
 
     __host__ __device__ bool LineSegment::TestPoint(const vec2& p, const float& thickness) const
@@ -27,7 +27,7 @@ namespace GI2D
         // The intersection of the ray with the line
         vec2 n = vec2(m_dv.y, -m_dv.x);
         float tRay = (dot(n, m_v[0]) - dot(n, ray.o)) / dot(n, ray.d);
-         
+
         if (tRay < 0.0f || tRay >= hit.tFar) { return false; }
 
         n = vec2(ray.d.y, -ray.d.x);
@@ -37,15 +37,12 @@ namespace GI2D
 
         hit.tFar = tRay;
         return true;
-
-        // Check to see whether it's bounded
-        //return (length2((o + d * t - (v + m_dv * 0.5)) / (m_dv * 0.5)) > 1.0f) ? kFltMax : t;
     }
 
     __host__ __device__ bool LineSegment::Intersects(const BBox2f& bBox) const
     {
         if (bBox.Contains(m_v[0]) || bBox.Contains(m_v[1])) { return true; }
-        
+
         // Ray-box intersection
         vec2 tNearPlane, tFarPlane;
         for (int dim = 0; dim < 2; dim++)
@@ -61,7 +58,7 @@ namespace GI2D
 
         const float t0 = cwiseMax(tNearPlane);
         const float t1 = cwiseMin(tFarPlane);
-        return t0 < t1 && t0 >= 0.f && t0 <= 1.f;        
+        return t0 < t1&& t0 >= 0.f && t0 <= 1.f;
     }
 
     __host__ void GenerateRandomLineSegments(Cuda::Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed)
@@ -69,7 +66,7 @@ namespace GI2D
         std::mt19937 mt(seed);
         std::uniform_real_distribution<> realRng;
         std::uniform_int_distribution<> intRng;
-        
+
         const int numSegments = numSegmentsRange[0] + intRng(mt) % max(1, numSegmentsRange[1] - numSegmentsRange[0]);
         segments.Resize(numSegments);
         for (int segIdx = 0; segIdx < numSegments; ++segIdx)

@@ -27,7 +27,6 @@ namespace Cuda
 	__host__ __device__ __forceinline__ float	mean(vec3 v)								{ return (v.x + v.y + v.z) / 3; }
 	__host__ __device__ __forceinline__ float	sin01(float a)								{ return 0.5f * sin(a) + 0.5f; }
 	__host__ __device__ __forceinline__ float	cos01(float a)								{ return 0.5f * cos(a) + 0.5f; }
-	__host__ __device__ __forceinline__ float	saturate(float a)							{ return clamp(a, 0.0, 1.0); }
 	__host__ __device__ __forceinline__ float	saw01(float a)								{ return fabs(fract(a) * 2 - 1); }
 	__host__ __device__ __forceinline__ void	sort(float& a, float& b)					{ if(a > b) { float s = a; a = b; b = s; } }
 	__host__ __device__ __forceinline__ void	swap(float& a, float& b)					{ float s = a; a = b; b = s; }

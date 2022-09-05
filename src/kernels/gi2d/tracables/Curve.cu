@@ -1,5 +1,5 @@
 #include "Curve.cuh"
-#include "CudaPrimitive2D.cuh"
+#include "primitives/LineSegment.cuh"
 #include "../GenericIntersector.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "../BIH2DAsset.cuh"
@@ -57,7 +57,7 @@ namespace GI2D
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
                     const auto& segment = (*m_lineSegments)[idx];
-                    const float line = segment.Evaluate(pLocal, 0.001f, viewCtx.dPdXY);
+                    const float line = segment.Evaluate(pLocal, viewCtx.dPdXY);
                     if (line > 0.f)
                     {
                         L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);

@@ -31,6 +31,6 @@ namespace Cuda
 
     __host__ __device__ vec3 Heatmap(float phi);
 
-    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec4& upperRgba);
-    __host__ __device__ vec4 Blend(vec4 lowerRgba, const vec3& upperRgb, const float& upperAlpha);
+    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec4& rgba2);
+    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec3& rgb2, const float& w2);
 }
