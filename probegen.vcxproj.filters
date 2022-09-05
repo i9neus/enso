@@ -675,6 +675,9 @@
     <ClInclude Include="src\kernels\gi2d\FwdDecl.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\math\Complex.cuh">
+      <Filter>kernels\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">

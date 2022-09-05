@@ -96,7 +96,9 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\thirdparty\lodepng\lodepng.cpp" />
-    <ClCompile Include="src\utils\BulkUSDProcessor.cpp" />
+    <ClCompile Include="src\utils\BulkUSDProcessor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\win\D3DContainer.cpp" />
     <ClCompile Include="src\win\SecurityAttributes.cpp" />
     <ClCompile Include="src\win\Win32Application.cpp" />
@@ -238,6 +240,7 @@
     <ClInclude Include="src\kernels\materials\CudaMaterial.cuh" />
     <ClInclude Include="src\kernels\materials\CudaSimpleMaterial.cuh" />
     <ClInclude Include="src\kernels\math\bbox\CudaBBox2.cuh" />
+    <ClInclude Include="src\kernels\math\Complex.cuh" />
     <ClInclude Include="src\kernels\math\CudaColourUtils.cuh" />
     <ClInclude Include="src\kernels\math\CudaGeodesics.cuh" />
     <ClInclude Include="src\kernels\math\CudaJitterableParameter.cuh" />
@@ -311,7 +314,9 @@
     <ClInclude Include="src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="src\thirdparty\tinyformat\tinyformat.h" />
-    <ClInclude Include="src\utils\BulkUSDProcessor.h" />
+    <ClInclude Include="src\utils\BulkUSDProcessor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="src\win\D3DContainer.h" />
     <ClInclude Include="src\win\d3dx12.h" />
     <ClInclude Include="src\win\SecurityAttributes.h" />
@@ -370,7 +375,9 @@
     <CudaCompile Include="src\kernels\tracables\CudaSphere.cu" />
     <CudaCompile Include="src\kernels\tracables\CudaTracable.cu" />
     <CudaCompile Include="src\renderers\gi2d\GI2DRenderer.cu" />
-    <CudaCompile Include="src\utils\CompileTest.cu" />
+    <CudaCompile Include="src\utils\CompileTest.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
