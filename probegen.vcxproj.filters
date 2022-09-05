@@ -151,6 +151,9 @@
     <ClCompile Include="src\generic\HighResolutionTimer.cpp">
       <Filter>generic</Filter>
     </ClCompile>
+    <ClCompile Include="src\generic\debug\GlobalThreadMap.cpp">
+      <Filter>generic\debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\kernels\CudaCommonIncludes.cuh">
@@ -677,6 +680,9 @@
     </ClInclude>
     <ClInclude Include="src\kernels\math\Complex.cuh">
       <Filter>kernels\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generic\debug\GlobalThreadMap.h">
+      <Filter>generic\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -8,19 +8,22 @@
 #include "generic/Assert.h"
 #include <type_traits>
 
+// saturate() causes a compiler error when called from a function with both __host__ and __device decorators. Use saturatef() instead.
+#ifdef __CUDA_ARCH__
+#define saturatef(a) saturate(a)
+#else
+inline float saturatef(const float a) { return (a < 0.0f) ? 0.0f : ((a > 1.0f) ? 1.0f : a); }
+#endif
+
 // Define any CUDA math functions that aren't defined in libraries like cmath
 #ifndef __CUDACC__
 #include <math.h>
 
-// Define host implementions of floating point min and max in the root namespace
-inline float fminf(float a, float b) { return a < b ? a : b; }
-inline float fmaxf(float a, float b) { return a > b ? a : b; }
-
 // Define implementations of min and max for integral types in the root namespace
 template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type> 
-inline T max(const T a, const T b) { return a > b ? a : b; }
+__host__ __device__ inline T max(const T a, const T b) { return a > b ? a : b; }
 template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-inline T min(const T a, const T b) { return a < b ? a : b; }
+__host__ __device__ inline T min(const T a, const T b) { return a < b ? a : b; }
 
 #endif
 

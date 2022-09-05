@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\generic\debug\Backtrace.cpp" />
+    <ClCompile Include="src\generic\debug\GlobalThreadMap.cpp" />
     <ClCompile Include="src\generic\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="src\generic\FilesystemUtils.cpp" />
     <ClCompile Include="src\generic\HighResolutionTimer.cpp" />
@@ -107,6 +108,7 @@
     <ClInclude Include="src\generic\Assert.h" />
     <ClInclude Include="src\generic\Constants.h" />
     <ClInclude Include="src\generic\debug\Backtrace.h" />
+    <ClInclude Include="src\generic\debug\GlobalThreadMap.h" />
     <ClInclude Include="src\generic\debug\ProcessMemoryMonitor.h" />
     <ClInclude Include="src\generic\FilesystemUtils.h" />
     <ClInclude Include="src\generic\Hash.h" />
