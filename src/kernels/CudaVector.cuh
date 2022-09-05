@@ -240,7 +240,7 @@ namespace Cuda
 
 			__host__ inline void Prepare()
 			{
-				// FIXME: On Windows, CUDA requires that cudaDeviceSynchronize() is called after kernels access shared memory. 
+				// FIXME: On Windows, CUDA requires that cudaDeviceSync1hronize() is called after kernels access shared memory. 
 				if (m_localParams.flags & kVectorUnifiedMemory)
 				{
 					IsOk(cudaDeviceSynchronize());
@@ -260,7 +260,6 @@ namespace Cuda
 				{
 					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
 				}
-
 				return cu_deviceInstance; 
 			}
 
@@ -555,22 +554,21 @@ namespace Cuda
 		};
 
 		// Requires that HostType inherit AssetTags
-		template<typename HostType>
-		class AssetVector : public VectorBase<AssetHandle<typename HostType>, typename HostType::DeviceVariant*>
+		template<typename HostType, typename DeviceType>
+		class AssetVector : public VectorBase<AssetHandle<typename HostType>, DeviceType*>
 		{
 		public:
-			using DeviceType = typename HostType::DeviceVariant*;
 
 		private:
-			DeviceType*		m_deviceSyncData;
+			DeviceType**		m_deviceSyncData;
 
 		public:
-			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, flags, hostStream)
+			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType*>(id, flags, hostStream)
 			{
 				//static_assert(is_base_of_template<AssetTags, HostType>, "AssetVector type must inherit AssetTags");
-				static_assert(std::is_trivial<DeviceType>::value, "Sanity check failed. Device type is non-trivial.");
+				static_assert(std::is_trivial<DeviceType*>::value, "Sanity check failed. Device type is non-trivial.");
 			}
-			__host__ AssetVector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType>(id, size, flags, hostStream) {}
+			__host__ AssetVector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType*>(id, size, flags, hostStream) {}
 
 			__host__ void Synchronise(const uint syncFlags)
 			{
@@ -586,22 +584,21 @@ namespace Cuda
 				if (!cu_deviceData) { return; }
 
 				// Allocate some temporary storage
-				m_deviceSyncData = new DeviceType[m_localParams.size];
+				m_deviceSyncData = new DeviceType*[m_localParams.size];
 				Assert(m_deviceSyncData);
 
 				// Convert between the host and device datatypes
 				for (int idx = 0; idx < m_localParams.size; ++idx)
 				{
-					//m_deviceSyncData[idx] = convertFunctor(m_localData[idx]);
-					m_deviceSyncData[idx] = m_localData[idx]->GetDeviceInstance();
+					m_deviceSyncData[idx] = m_localData[idx]->HostType::GetDeviceInstance();
 				}
 
 				// Copy to the device
-				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(DeviceType) * m_localParams.size, cudaMemcpyHostToDevice));
+				IsOk(cudaMemcpy(cu_deviceData, m_deviceSyncData, sizeof(DeviceType*) * m_localParams.size, cudaMemcpyHostToDevice));
 				delete[] m_deviceSyncData;
 
 				// Synchronise the device data pointers and the params
-				SynchroniseObjects(GetDeviceInstance(), Tuple<DeviceType*, VectorParams>(cu_deviceData, m_deviceParams));
+				SynchroniseObjects(GetDeviceInstance(), Tuple<DeviceType**, VectorParams>(cu_deviceData, m_deviceParams));
 			}
 		};
 	}

@@ -54,7 +54,7 @@ namespace GI2D
         class IsosurfaceRenderer : public UILayer
         {
         public:
-            IsosurfaceRenderer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
+            IsosurfaceRenderer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
                 const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~IsosurfaceRenderer();

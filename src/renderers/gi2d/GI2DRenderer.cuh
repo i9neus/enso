@@ -4,6 +4,7 @@
 #include "generic/Job.h"
 #include "kernels/gi2d/UICtx.cuh"
 #include "kernels/CudaVector.cuh"
+#include "kernels/gi2d/FwdDecl.cuh"
 
 namespace GI2D
 {
@@ -101,7 +102,7 @@ private:
     std::unique_ptr<GI2D::OverlayParams>        m_overlayParams;
     std::unique_ptr<GI2D::PathTracerParams>     m_pathTracerParams;
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
-    AssetHandle<Cuda::Host::AssetVector<GI2D::Host::Tracable>> m_hostTracables;
+    AssetHandle<GI2D::TracableContainer>              m_hostTracables;
     std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
 
     std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;

@@ -111,7 +111,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
+    Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
                                  const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
         UILayer(id, bih, tracables)
     {

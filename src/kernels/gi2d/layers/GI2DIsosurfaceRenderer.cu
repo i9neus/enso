@@ -99,7 +99,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::IsosurfaceRenderer::IsosurfaceRenderer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables,
+    Host::IsosurfaceRenderer::IsosurfaceRenderer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
         const uint width, const uint height, cudaStream_t renderStream) :
         UILayer(id, bih, tracables)
     {

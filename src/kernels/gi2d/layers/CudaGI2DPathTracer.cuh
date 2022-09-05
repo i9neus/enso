@@ -59,7 +59,7 @@ namespace GI2D
         class PathTracer : public UILayer
         {
         public:
-            PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables, 
+            PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, 
                        const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
             virtual ~PathTracer();
            

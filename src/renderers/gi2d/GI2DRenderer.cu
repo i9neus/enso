@@ -81,7 +81,7 @@ void GI2DRenderer::OnInitialise()
      
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
 
-    m_hostTracables = CreateAsset<Cuda::Host::AssetVector<GI2D::Host::Tracable>>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
+    m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
     m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, m_renderStream);

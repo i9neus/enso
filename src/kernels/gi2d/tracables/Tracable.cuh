@@ -45,13 +45,14 @@ namespace GI2D
                          public Cuda::AssetTags<Host::Tracable, TracableInterface>
         {
         public:
-            __host__ virtual TracableInterface* GetDeviceInstance() const = 0;
+            __host__ TracableInterface* GetDeviceInstance() const { return cu_deviceTracableInterface; }
 
         protected:
             __host__ Tracable(const std::string& id) : SceneObject(id) {}
 
         protected:
             bool                        m_isFinalised;
+            TracableInterface*          cu_deviceTracableInterface;
 
             struct
             {

@@ -87,7 +87,6 @@ namespace GI2D
 
         private:
             Device::Curve*                                  cu_deviceInstance;
-            TracableInterface*                              cu_deviceTracableInterface;
             Device::Curve::Objects                          m_deviceData;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;

@@ -1,4 +1,5 @@
-#ifdef FWD_DECL_VECTOR
+#pragma once
+
 namespace Cuda
 {
     template<typename> class VectorInterface;
@@ -11,21 +12,22 @@ namespace Cuda
     namespace Host
     {
         template<typename> class Vector;
-        template<typename> class AssetVector;
+        template<typename, typename> class AssetVector;
     }
 }
-#endif
 
-#ifdef FWD_DECL_BIH2D
 namespace GI2D
 {
+    // BIH
     template<typename> class BIH2D;
     template<typename> class BIH2DNodeBase;
     struct BIH2DNodeDataCompact;
     struct BIH2DNodeDataFull;
-
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
+
+    class SceneObjectInterface;
+    class TracableInterface;
     
     namespace Device
     {
@@ -35,6 +37,10 @@ namespace GI2D
     namespace Host
     {
         class BIH2DAsset;
+        class SceneObject;
+        class Tracable;
     }
+
+    using TracableContainer = Cuda::Host::AssetVector<Host::Tracable, TracableInterface>;
+    using WidgetContainer = Cuda::Host::AssetVector<Host::SceneObject, SceneObjectInterface>;
 }
-#endif

@@ -7,6 +7,7 @@
 #include "kernels/CudaImage.cuh"
 
 #include "../tracables/Tracable.cuh"
+#include "kernels/gi2d/FwdDecl.cuh"
 
 using namespace Cuda;
 
@@ -15,7 +16,7 @@ using namespace Cuda;
 //    namespace Host { template<typename T> class AssetVector; }
 //}
 
-namespace Cuda { namespace Host { template<typename T> class AssetVector; } }
+namespace Cuda { namespace Host { template<typename, typename> class AssetVector; } }
 namespace GI2D { namespace Host { class BIH2DAsset; } }
 
 namespace GI2D
@@ -25,7 +26,7 @@ namespace GI2D
         class UILayer : public Cuda::Host::AssetAllocator
         {
         public:
-            UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>& tracables) :
+            UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables) :
                 AssetAllocator(id),
                 m_hostBIH(bih),
                 m_hostTracables(tracables)
@@ -64,7 +65,7 @@ namespace GI2D
             UISelectionCtx                                          m_selectionCtx;
              
             AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
-            AssetHandle<Cuda::Host::AssetVector<Host::Tracable>>    m_hostTracables;
+            AssetHandle<TracableContainer>    m_hostTracables;
 
             uint                                                    m_dirtyFlags;
         };
