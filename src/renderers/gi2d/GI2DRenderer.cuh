@@ -113,7 +113,8 @@ private:
     std::unique_ptr<GI2D::OverlayParams>        m_overlayParams;
     std::unique_ptr<GI2D::PathTracerParams>     m_pathTracerParams;
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
-    AssetHandle<GI2D::TracableContainer>              m_hostTracables;
+    AssetHandle<GI2D::TracableContainer>        m_hostTracables;
+    AssetHandle<GI2D::WidgetContainer>          m_hostWidgets;
     std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
 
     std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;

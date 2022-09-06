@@ -191,7 +191,6 @@
     <ClInclude Include="src\kernels\gi2d\GenericIntersector.cuh" />
     <ClInclude Include="src\kernels\gi2d\layers\CudaGI2DOverlay.cuh" />
     <ClInclude Include="src\kernels\gi2d\layers\CudaGI2DPathTracer.cuh" />
-    <ClInclude Include="src\kernels\gi2d\layers\GI2DIsosurfaceRenderer.cuh" />
     <ClInclude Include="src\kernels\gi2d\layers\UILayer.cuh" />
     <ClInclude Include="src\kernels\gi2d\tracables\Curve.cuh" />
     <ClInclude Include="src\kernels\gi2d\tracables\primitives\Ellipse.cuh" />
@@ -199,6 +198,7 @@
     <ClInclude Include="src\kernels\gi2d\tracables\primitives\Primitive2D.cuh" />
     <ClInclude Include="src\kernels\gi2d\tracables\Tracable.cuh" />
     <ClInclude Include="src\kernels\gi2d\SceneObject.cuh" />
+    <ClInclude Include="src\kernels\gi2d\widgets\UIInspector.cuh" />
     <ClInclude Include="src\kernels\GlobalResourceRegistry.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaBxDF.cuh" />
     <ClInclude Include="src\kernels\bxdfs\CudaLambert.cuh" />
@@ -341,12 +341,12 @@
     <CudaCompile Include="src\kernels\gi2d\BIH2DBuilder.cu" />
     <CudaCompile Include="src\kernels\gi2d\layers\CudaGI2DOverlay.cu" />
     <CudaCompile Include="src\kernels\gi2d\layers\CudaGI2DPathTracer.cu" />
-    <CudaCompile Include="src\kernels\gi2d\layers\GI2DIsosurfaceRenderer.cu" />
     <CudaCompile Include="src\kernels\gi2d\SceneObject.cu" />
     <CudaCompile Include="src\kernels\gi2d\tracables\Curve.cu" />
     <CudaCompile Include="src\kernels\gi2d\tracables\primitives\Ellpise.cu" />
     <CudaCompile Include="src\kernels\gi2d\tracables\primitives\LineSegment.cu" />
     <CudaCompile Include="src\kernels\gi2d\tracables\Tracable.cu" />
+    <CudaCompile Include="src\kernels\gi2d\widgets\UIInspector.cu" />
     <CudaCompile Include="src\kernels\GlobalResourceRegistry.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="src\kernels\lightprobes\CudaLightProbeFilter.cu" />

@@ -47,9 +47,9 @@ namespace GI2D
     {
     }*/
 
-    __device__ vec4 CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __device__ bool CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
-        vec4 L(0.0f);
+        vec4 LPrim(0.0f);
         const vec2 pLocal = pWorld - m_params.sceneObject.transform.trans;
 
         m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
@@ -60,12 +60,17 @@ namespace GI2D
                     const float line = segment.Evaluate(pLocal, viewCtx.dPdXY);
                     if (line > 0.f)
                     {
-                        L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                        LPrim = Blend(LPrim, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                     }
                 }
             });
        
-        return L;
+        if (LPrim.w > 0.0f)
+        {
+            L = Blend(L, LPrim);
+            return true;
+        }
+        return false;
     }
     
     __device__ void Device::Curve::Synchronise(const Objects& objects)

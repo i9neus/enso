@@ -31,7 +31,7 @@ namespace GI2D
     class SceneObjectInterface
     {
     public:
-        __device__ virtual vec4                             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const = 0;
+        __device__ virtual bool                             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx, vec4& L) const { return false; }
 
         __host__ __device__ const BBox2f&                   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
         __host__ __device__ const BBox2f&                   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
@@ -85,7 +85,11 @@ namespace GI2D
             __host__ bool               IsFinalised() const { return m_isFinalised; }
             __host__ bool               IsSelected() const { return m_params.attrFlags & kSceneObjectSelected; }
 
-            __host__ virtual SceneObjectInterface* GetDeviceInstance() const = 0;
+            __host__ SceneObjectInterface* GetDeviceInstance() const
+            {
+                AssertMsgFmt(cu_deviceSceneObjectInterface, "SceneObjectInterface::cu_deviceSceneObjectInterface has not been initialised by its inheriting class '%s'", GetAssetID().c_str());
+                return cu_deviceSceneObjectInterface;
+            }
 
             __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true)
             {
@@ -111,6 +115,8 @@ namespace GI2D
                 bool                        isDragging;
             }
             m_onMove;
+
+            SceneObjectInterface* cu_deviceSceneObjectInterface;
         };
     }
 }

@@ -100,12 +100,29 @@ namespace GI2D
                     assert(tracables[idx]);
 
                     const auto& tracable = *tracables[idx];
-                    L = Blend(L, tracable.EvaluateOverlay(xyView, m_params.viewCtx));
+                    vec4 LTracable;
+                    if (tracable.EvaluateOverlay(xyView, m_params.viewCtx, LTracable))
+                    {
+                        L = Blend(L, LTracable);
+                    }
 
                     if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_params.viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
                 }
             };          
             m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
+        }
+
+        // Draw the widgets
+        if (m_objects.widgets)
+        {
+            for (int idx = 0; idx < m_objects.widgets->Size(); ++idx)
+            {
+                vec4 LWidget;
+                if ((*m_objects.widgets)[idx]->EvaluateOverlay(xyView, m_params.viewCtx, LWidget))
+                {
+                    L = Blend(L, LWidget);
+                }
+            }
         }
 
         // Draw the ray
@@ -134,9 +151,10 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
+    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<WidgetContainer>& widgets,
                                    const uint width, const uint height, cudaStream_t renderStream) :
-        UILayer(id, bih, tracables)
+        UILayer(id, bih, tracables),
+        m_hostWidgets(widgets)
     {        
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
@@ -144,6 +162,7 @@ namespace GI2D
         m_objects.bih = m_hostBIH->GetDeviceInstance();
         m_objects.tracables = m_hostTracables->GetDeviceInstance();
         m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_objects.widgets = m_hostWidgets->GetDeviceInstance();
 
         cu_deviceData = InstantiateOnDevice<Device::Overlay>(m_params, m_objects); 
     }

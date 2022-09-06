@@ -38,6 +38,7 @@ namespace GI2D
             struct Objects
             {
                 Cuda::Device::Vector<TracableInterface*>* tracables = nullptr;
+                Cuda::Device::Vector<SceneObjectInterface*>* widgets = nullptr;
                 Device::BIH2DAsset* bih = nullptr;
                 Cuda::Device::ImageRGBW* accumBuffer = nullptr;
             };
@@ -61,7 +62,7 @@ namespace GI2D
         class Overlay : public UILayer
         {
         public:
-            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
+            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<WidgetContainer>& widgets,
                     const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~Overlay();
@@ -82,6 +83,7 @@ namespace GI2D
             Device::Overlay*                            cu_deviceData = nullptr;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
+            AssetHandle<WidgetContainer>                m_hostWidgets;
         };
     }
 }

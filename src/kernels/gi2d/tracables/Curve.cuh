@@ -28,7 +28,7 @@ namespace GI2D
         //__host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;
 
     protected:
-        __device__ virtual vec4             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+        __device__ virtual bool             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
 
     protected:
         BIH2D<BIH2DFullNode>*               m_bih;
@@ -77,9 +77,9 @@ namespace GI2D
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       Finalise() override final;
 
-            __host__ virtual TracableInterface* GetDeviceInstance() const override final 
+            __host__ Device::Curve* GetDeviceInstance() const
             { 
-                return cu_deviceTracableInterface;
+                return cu_deviceInstance;
             }
 
             __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);

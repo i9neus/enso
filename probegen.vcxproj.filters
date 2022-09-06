@@ -687,6 +687,9 @@
     <ClInclude Include="src\kernels\gi2d\tracables\primitives\Primitive2D.cuh">
       <Filter>kernels\gi2d\tracables\primitives</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\widgets\UIInspector.cuh">
+      <Filter>kernels\gi2d\widgets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -814,6 +817,9 @@
     </Filter>
     <Filter Include="kernels\gi2d\tracables\primitives">
       <UniqueIdentifier>{4c23b6ed-31a1-4857-a213-40f60de92455}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kernels\gi2d\widgets">
+      <UniqueIdentifier>{a344f57e-7215-4ef1-a91f-6d877cbd12f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -975,6 +981,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\tracables\primitives\LineSegment.cu">
       <Filter>kernels\gi2d\tracables\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\widgets\UIInspector.cu">
+      <Filter>kernels\gi2d\widgets</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

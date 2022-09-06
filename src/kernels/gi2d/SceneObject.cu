@@ -39,7 +39,8 @@ namespace GI2D
     __host__ Host::SceneObject::SceneObject(const std::string& id) :
         RenderObject(id),
         m_dirtyFlags(kGI2DDirtyAll),
-        m_isFinalised(false)
+        m_isFinalised(false),
+        cu_deviceSceneObjectInterface(nullptr)
     {
     }
 

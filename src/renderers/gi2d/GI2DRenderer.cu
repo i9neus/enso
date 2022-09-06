@@ -7,6 +7,7 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/tracables/Tracable.cuh"
 #include "kernels/gi2d/tracables/Curve.cuh"
+#include "kernels/gi2d/widgets/UIInspector.cuh"
 #include "kernels/Tuple.cuh"
 
 using namespace Cuda;
@@ -87,9 +88,10 @@ void GI2DRenderer::OnInitialise()
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
 
     m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
+    m_hostWidgets = CreateAsset<WidgetContainer>(":gi2d/widgets", kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, m_renderStream);
+    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostWidgets, m_clientWidth, m_clientHeight, m_renderStream);
     m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
@@ -101,7 +103,7 @@ void GI2DRenderer::OnDestroy()
     //m_pathTracer.DestroyAsset();
 
     m_hostTracables.DestroyAsset();
-    //m_hostWidgets.DestroyAsset();
+    m_hostWidgets.DestroyAsset();
     m_renderObjects.DestroyAsset();
     m_sceneBIH.DestroyAsset();
 }
@@ -150,7 +152,7 @@ void GI2DRenderer::Rebuild()
 
     if (m_dirtyFlags & kGI2DDirtyTransforms)
     {
-        /*m_hostWidgets->Clear();
+        m_hostWidgets->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
             {
                 if (widget->Rebuild(m_dirtyFlags, m_viewCtx))
@@ -160,7 +162,7 @@ void GI2DRenderer::Rebuild()
 
                 return true;
             });
-        m_hostWidgets->Synchronise(kVectorSyncUpload);*/
+        m_hostWidgets->Synchronise(kVectorSyncUpload);
     }
 
     // View has changed
@@ -383,7 +385,7 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
         }
         else if (trigger.IsSet('W'))
         {
-            //m_onCreate.newObject = CreateAsset<GI2D::Host::UIInspector>(tfm::format("inspector%i", m_renderObjects->GetUniqueIndex()));
+            m_onCreate.newObject = CreateAsset<GI2D::Host::UIInspector>(tfm::format("inspector%i", m_renderObjects->GetUniqueIndex()));
         }
         else { AssertMsg(false, "Invalid trigger"); }
         
