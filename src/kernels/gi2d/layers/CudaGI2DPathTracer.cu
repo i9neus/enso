@@ -10,45 +10,30 @@ namespace GI2D
 {        
     __host__ __device__ PathTracerParams::PathTracerParams()
     {
-        accum.width = 0;
-        accum.height = 0;
-        accum.downsample = 1;
-        frameIdx = 0;
+        m_accum.width = 0;
+        m_accum.height = 0;
+        m_accum.downsample = 1;
+        m_frameIdx = 0;
     }
 
-    __device__ Device::PathTracer::PathTracer(const PathTracerParams& params, const Objects& objects) :
-        m_params(params),
-        m_objects(objects)
-    {
-      
-    }
-
-    __device__ void Device::PathTracer::Synchronise(const PathTracerParams& params)
-    {
-        m_params = params;
-    }
-
-    __device__ void Device::PathTracer::Synchronise(const Objects& objects)
-    {
-        m_objects = objects;
-    }
+    __device__ Device::PathTracer::PathTracer() { }
 
     __device__ void Device::PathTracer::Render()
     {
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
+        if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen * m_params.accum.downsample);
+        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen * m_accum.downsample);
 
-        vec4& accum = m_objects.accumBuffer->At(xyScreen);
+        vec4& accum = m_accumBuffer->At(xyScreen);
         vec3 L(0.f);
 
-        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
+        if (!m_viewCtx.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
 
-        assert(m_objects.bih);
-        const auto& bih = *m_objects.bih;
-        const Cuda::Device::Vector<TracableInterface*>& tracables = *m_objects.tracables;
+        assert(m_bih);
+        const auto& bih = *m_bih;
+        const VectorInterface<TracableInterface*>& tracables = *m_tracables;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
         //rng.Initialise(HashOf(uint(accum.w)));
@@ -96,16 +81,16 @@ namespace GI2D
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen);
 
-        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
+        if (!m_viewCtx.sceneBounds.Contains(xyView)) 
         { 
             deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return; 
         }
 
-        const vec2 uv = vec2(xyScreen) * vec2(m_objects.accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
-        vec4 L = m_objects.accumBuffer->Lerp(uv);
+        const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
+        vec4 L = m_accumBuffer->Lerp(uv);
 
         deviceOutputImage->At(xyScreen) = vec4(L.xyz / fmaxf(L.w, 1.0f), 1.0f);
     }
@@ -118,20 +103,38 @@ namespace GI2D
         // Create some Cuda objects
         m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_objects.bih = m_hostBIH->GetDeviceInstance();
-        m_objects.tracables = m_hostTracables->GetDeviceInstance();
-        m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        m_params.accum.width = width;
-        m_params.accum.height = height;
-        m_params.accum.downsample = downsample;
+        m_accum.width = width;
+        m_accum.height = height;
+        m_accum.downsample = downsample;
 
-        cu_deviceData = InstantiateOnDevice<Device::PathTracer>(m_params, m_objects);
+        cu_deviceData = InstantiateOnDevice<Device::PathTracer>();
+
+        Synchronise(kSyncObjects);
     }
 
     Host::PathTracer::~PathTracer()
     {
         OnDestroyAsset();
+    }
+
+
+    __host__ void Host::PathTracer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    {
+        UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
+
+        Synchronise(kSyncParams);
+    }
+
+    __host__ void Host::PathTracer::Synchronise(const int syncType)
+    {
+        UILayer::Synchronise(cu_deviceData, syncType);
+
+        if (syncType & kSyncObjects) { SynchroniseObjects2<PathTracerObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams)  { SynchroniseObjects2<PathTracerParams>(cu_deviceData, *this); }
     }
 
     __host__ void Host::PathTracer::OnDestroyAsset()
@@ -162,14 +165,5 @@ namespace GI2D
 
         KernelComposite << < gridSize, blockSize, 0 >> > (cu_deviceData, hostOutputImage->GetDeviceInstance());
         IsOk(cudaDeviceSynchronize());
-    }
-    
-    __host__ void Host::PathTracer::RebuildImpl()
-    {
-        if (!m_dirtyFlags) { return; }
-        
-        m_params.viewCtx = m_viewCtx;
-
-        SynchroniseObjects(cu_deviceData, m_params);
     }
 }

@@ -21,45 +21,36 @@ namespace GI2D
     {
         __host__ __device__ OverlayParams();
 
-        UIViewCtx           viewCtx;
-        UIGridCtx           gridCtx;
-        UISelectionCtx      selectionCtx;
+        UIGridCtx           m_gridCtx;
+    };
 
-        RayBasic2D          ray;
-        vec2                hitPoint;
-        bool                isHit;
+    struct OverlayObjects
+    {
+        VectorInterface<TracableInterface*>*        m_tracables = nullptr;
+        VectorInterface<SceneObjectInterface*>*     m_widgets = nullptr;
+        BIH2D<BIH2DFullNode>*                       m_bih = nullptr;
+        Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class Overlay : public Cuda::Device::Asset
+        class Overlay : public Cuda::Device::Asset,
+                        public UILayerParams,
+                        public OverlayParams,
+                        public OverlayObjects
         {
         public:
-            struct Objects
-            {
-                Cuda::Device::Vector<TracableInterface*>* tracables = nullptr;
-                Cuda::Device::Vector<SceneObjectInterface*>* widgets = nullptr;
-                Device::BIH2DAsset* bih = nullptr;
-                Cuda::Device::ImageRGBW* accumBuffer = nullptr;
-            };
-
-        public:
-            __host__ __device__ Overlay(const OverlayParams& params, const Objects& objects);
+            __host__ __device__ Overlay();
             
-            __device__ void Synchronise(const OverlayParams& params);
-            __device__ void Synchronise(const Objects& params);
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
-
-        private:
-            OverlayParams   m_params;
-            Objects         m_objects;
         };
     }
 
     namespace Host
     {
-        class Overlay : public UILayer
+        class Overlay : public UILayer,
+                        public OverlayParams
         {
         public:
             Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<WidgetContainer>& widgets,
@@ -69,18 +60,18 @@ namespace GI2D
 
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final; 
+            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
 
             __host__ void OnDestroyAsset();
 
         protected:
-            __host__ virtual void RebuildImpl() override final;
+            __host__ void Synchronise(const int syncType);
 
         private:
-            __host__ void TraceRay();
+            //__host__ void TraceRay();
 
-            OverlayParams                               m_params;
-            Device::Overlay::Objects                    m_objects;
             Device::Overlay*                            cu_deviceData = nullptr;
+            OverlayObjects                              m_deviceObjects;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
             AssetHandle<WidgetContainer>                m_hostWidgets;

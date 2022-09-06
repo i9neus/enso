@@ -30,6 +30,8 @@ namespace GI2D
             __host__ inline std::vector<uint>&      GetPrimitiveIndices() { return m_primitiveIdxs; }
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);
             __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
+            __host__ BIH2D<BIH2DFullNode>*          GetDeviceInterfacee() const { return cu_deviceInterface; }
+                
             __host__ void                           Synchronise();
             __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
             __host__ const Cuda::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
@@ -46,6 +48,7 @@ namespace GI2D
             const uint                              m_minBuildablePrims;
 
             Device::BIH2DAsset*                     cu_deviceInstance;
+            BIH2D<BIH2DFullNode>*                   cu_deviceInterface;
         };    
     }
 }

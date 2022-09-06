@@ -29,13 +29,6 @@ namespace GI2D
         return false;
     }
 
-    __device__ void SceneObjectInterface::Synchronise(const SceneObjectParams& params)
-    {
-        m_params = params;
-
-        //m_handleInnerBBox = Grow(m_params.objectBBox, m_params.viewCtx.dPdXY * -5.0f);        
-    }
-
     __host__ Host::SceneObject::SceneObject(const std::string& id) :
         RenderObject(id),
         m_dirtyFlags(kGI2DDirtyAll),
@@ -46,7 +39,7 @@ namespace GI2D
 
     __host__ uint Host::SceneObject::OnSelect(const bool isSelected)
     {
-        if (SetGenericFlags(m_params.attrFlags, uint(kSceneObjectSelected), isSelected))
+        if (SetGenericFlags(m_attrFlags, uint(kSceneObjectSelected), isSelected))
         {
             SetDirtyFlags(kGI2DDirtyUI, true);
         }
@@ -67,8 +60,8 @@ namespace GI2D
 
             const vec2 delta = viewCtx.mousePos - m_onMove.dragAnchor;
             m_onMove.dragAnchor = viewCtx.mousePos;
-            m_params.transform.trans += delta;
-            m_params.worldBBox += delta;
+            m_transform.trans += delta;
+            m_worldBBox += delta;
 
             // The geometry internal to this object hasn't changed, but it will affect the 
             Log::Warning("kMoveSceneObjectDragging");

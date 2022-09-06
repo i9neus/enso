@@ -21,6 +21,7 @@ namespace GI2D
         m_minBuildablePrims(minBuildablePrims)
     {
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>();
+        cu_deviceInterface = StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
         m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc, m_hostStream);
     }
@@ -58,12 +59,6 @@ namespace GI2D
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
         SynchroniseObjects(cu_deviceInstance, m_params);
-    }
-
-    __host__ void Host::BIH2DAsset::Synchronise()
-    {
-        //const BIH2DParams params = {m_isConstructed, m_treeBBox, m_hostNodes->GetDeviceInstance() };
-        //Cuda::Synchronise(cu_deviceInstance, params);
     }
 
     __host__ void Host::BIH2DAsset::CheckTreeNodes() const

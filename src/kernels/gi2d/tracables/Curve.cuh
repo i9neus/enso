@@ -11,17 +11,20 @@ using namespace Cuda;
 namespace GI2D
 {
     class LineSegment;
-    
-    struct CurveParams
+
+    struct CurveObjects
     {
-        SceneObjectParams sceneObject;
+        BIH2D<BIH2DFullNode>* m_bih = nullptr;
+        VectorInterface<LineSegment>* m_lineSegments = nullptr;
     };
 
-    class CurveInterface : virtual public TracableInterface
+    class CurveInterface : virtual public TracableInterface,
+                           //public CurveParams,
+                           public CurveObjects
     {
         using Super = TracableInterface;
     public:
-        __host__ __device__ CurveInterface() : m_bih(nullptr), m_lineSegments(nullptr) {}
+        __host__ __device__ CurveInterface() {}
 
         __host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
         //__host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
@@ -29,30 +32,14 @@ namespace GI2D
 
     protected:
         __device__ virtual bool             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
-
-    protected:
-        BIH2D<BIH2DFullNode>*               m_bih;
-        VectorInterface<LineSegment>*       m_lineSegments;
-
-        CurveParams                         m_params;
     };
 
     namespace Device
     {        
-        class Curve : public GI2D::CurveInterface // , public Cuda::AssetTags<Host::Curve, Device::Curve>
+        class Curve : public CurveInterface
         {
         public:
-            struct Objects
-            {
-                Device::BIH2DAsset* bih = nullptr;
-                Cuda::Device::Vector<LineSegment>* lineSegments = nullptr;
-            };
-
-        public:
             __device__ Curve() {}
-
-            __device__ void             Synchronise(const Objects& objects);
-            __device__ void             Synchronise(const CurveParams& params);
         };
     }
 
@@ -69,7 +56,7 @@ namespace GI2D
             __host__ virtual ~Curve();
 
             __host__ virtual void       OnDestroyAsset() override final;
-            __host__ void               SynchroniseParams();
+            __host__ void               Synchronise(const int syncType);
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
@@ -90,7 +77,7 @@ namespace GI2D
 
         private:
             Device::Curve*                                  cu_deviceInstance;
-            Device::Curve::Objects                          m_deviceData;
+            CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
             AssetHandle<Cuda::Host::Vector<LineSegment>>    m_hostLineSegments;

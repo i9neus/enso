@@ -107,6 +107,7 @@ namespace Cuda
 		{
 		protected:
 			Device::Vector<DeviceType>* cu_deviceInstance;
+			VectorInterface<DeviceType>* cu_deviceInterface;
 
 			DeviceType*					cu_deviceData;
 			VectorParams				m_deviceParams;
@@ -149,6 +150,7 @@ namespace Cuda
 			__host__ VectorBase(const std::string& id, const uint flags, cudaStream_t hostStream) :
 				AssetAllocator(id),
 				cu_deviceInstance(nullptr),
+				cu_deviceInterface(nullptr),
 				cu_deviceData(nullptr)
 			{
 				m_hostStream = hostStream;
@@ -253,14 +255,23 @@ namespace Cuda
 			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
 			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance() 
-			{ 
+			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance()
+			{
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
 				{
 					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
 				}
-				return cu_deviceInstance; 
+				return cu_deviceInstance;
+			}
+
+			__host__ inline VectorInterface<DeviceType>* GetDeviceInterface() 
+			{ 
+				if (cu_deviceInterface == nullptr)
+				{
+					cu_deviceInterface = StaticCastOnDevice<VectorInterface<DeviceType>>(GetDeviceInstance());
+				}
+				return cu_deviceInterface;
 			}
 
 			__host__ inline HostType* GetHostData()

@@ -21,9 +21,21 @@ namespace GI2D { namespace Host { class BIH2DAsset; } }
 
 namespace GI2D
 {
+    struct UILayerParams
+    {
+        __host__ __device__ UILayerParams()
+        {
+            m_selectionCtx.isLassoing = false;
+        }
+        
+        UIViewCtx           m_viewCtx;
+        UISelectionCtx      m_selectionCtx;
+    };
+
     namespace Host
     {        
-        class UILayer : public Cuda::Host::AssetAllocator
+        class UILayer : public Cuda::Host::AssetAllocator,
+                        public UILayerParams
         {
         public:
             UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables) :
@@ -43,14 +55,16 @@ namespace GI2D
                 m_viewCtx = viewCtx;  
                 m_selectionCtx = selectionCtx;
                 m_dirtyFlags = dirtyFlags;
-
-                RebuildImpl();
             }
 
             __host__ void           SetDirtyFlags(const uint flags) { m_dirtyFlags |= flags; }
 
         protected:
-            __host__ virtual void RebuildImpl() = 0;
+            template<typename SubType>
+            __host__ void Synchronise(SubType* cu_object, const int syncType)
+            {
+                if (syncType & kSyncParams)  { SynchroniseObjects2<UILayerParams>(cu_object, *this); }
+            }
             
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
@@ -60,10 +74,7 @@ namespace GI2D
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-        protected:
-            UIViewCtx                                               m_viewCtx;
-            UISelectionCtx                                          m_selectionCtx;
-             
+        protected:             
             AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
             AssetHandle<TracableContainer>    m_hostTracables;
 

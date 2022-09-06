@@ -12,85 +12,68 @@ namespace GI2D
 {    
     __host__ __device__ OverlayParams::OverlayParams()
     {
-        gridCtx.show = true;
-        gridCtx.lineAlpha = 0.0;
-        gridCtx.majorLineSpacing = 1.0f;
-        gridCtx.majorLineSpacing = 1.0f;
-
-        selectionCtx.isLassoing = false;
+        m_gridCtx.show = true;
+        m_gridCtx.lineAlpha = 0.0;
+        m_gridCtx.majorLineSpacing = 1.0f;
+        m_gridCtx.majorLineSpacing = 1.0f;
     }
 
-    __device__ Device::Overlay::Overlay(const OverlayParams& params, const Objects& objects) :
-        m_params(params),
-        m_objects(objects)
+    __device__ Device::Overlay::Overlay()
     {
-    }
-
-    __device__ void Device::Overlay::Synchronise(const OverlayParams& params)
-    {
-        m_params = params;
-    }
-
-    __device__ void Device::Overlay::Synchronise(const Objects& objects)
-    {
-        m_objects = objects;
-
-        assert(objects.bih->GetNumPrimitives() == objects.tracables->Size());
     }
 
     __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && 
-            xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
+        if (xyScreen.x >= 0 && xyScreen.x < m_accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_accumBuffer->Height())
         {            
-            deviceOutputImage->Blend(xyScreen, m_objects.accumBuffer->At(xyScreen));
+            deviceOutputImage->Blend(xyScreen, m_accumBuffer->At(xyScreen));
             //vec4& target = deviceOutputImage->At(xyScreen);
-            //target = Blend(target, m_objects.accumBuffer->At(xyScreen));
-            //target.xyz += m_objects.accumBuffer->At(xyScreen).xyz;
+            //target = Blend(target, m_accumBuffer->At(xyScreen));
+            //target.xyz += m_accumBuffer->At(xyScreen).xyz;
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     __device__ void Device::Overlay::Render()
     {
-        assert(m_objects.accumBuffer);
+        assert(m_accumBuffer);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
+        if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen);
 
-        //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
+        //m_accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
         //return;
 
         vec4 L(0.0f, 0.0f, 0.0f, 0.0f);
 
-        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
+        if (!m_viewCtx.sceneBounds.Contains(xyView)) 
         { 
             L = vec4(0.0f);
         }
-        else if (m_params.gridCtx.show)
+        else if (m_gridCtx.show)
         {
             // Draw the grid
-            vec2 xyGrid = fract(xyView / vec2(m_params.gridCtx.majorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.majorLineSpacing * mix(1.0f, 3.0f, m_params.gridCtx.lineAlpha)) 
+            vec2 xyGrid = fract(xyView / vec2(m_gridCtx.majorLineSpacing)) * sign(xyView);
+            if (cwiseMin(xyGrid) < m_viewCtx.dPdXY / m_gridCtx.majorLineSpacing * mix(1.0f, 3.0f, m_gridCtx.lineAlpha)) 
             { 
-                L = Blend(L, kOne, 0.5 * (1 - m_params.gridCtx.lineAlpha));
+                L = Blend(L, kOne, 0.5 * (1 - m_gridCtx.lineAlpha));
             }
-            xyGrid = fract(xyView / vec2(m_params.gridCtx.minorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.minorLineSpacing * 1.5f)
+            xyGrid = fract(xyView / vec2(m_gridCtx.minorLineSpacing)) * sign(xyView);
+            if (cwiseMin(xyGrid) < m_viewCtx.dPdXY / m_gridCtx.minorLineSpacing * 1.5f)
             { 
-                L = Blend(L, kOne, 0.5 * m_params.gridCtx.lineAlpha);
+                L = Blend(L, kOne, 0.5 * m_gridCtx.lineAlpha);
             }
         }  
 
         // Draw the tracables
-        if (m_objects.bih && m_objects.tracables)
+        if (m_bih && m_tracables)
         {            
-            const Cuda::Device::Vector<TracableInterface*>& tracables = *(m_objects.tracables);
+            const VectorInterface<TracableInterface*>& tracables = *(m_tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
@@ -101,53 +84,37 @@ namespace GI2D
 
                     const auto& tracable = *tracables[idx];
                     vec4 LTracable;
-                    if (tracable.EvaluateOverlay(xyView, m_params.viewCtx, LTracable))
+                    if (tracable.EvaluateOverlay(xyView, m_viewCtx, LTracable))
                     {
                         L = Blend(L, LTracable);
                     }
 
-                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_params.viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
+                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
                 }
             };          
-            m_objects.bih->TestPoint(xyView, onPointIntersectLeaf);
+            m_bih->TestPoint(xyView, onPointIntersectLeaf);
         }
 
         // Draw the widgets
-        if (m_objects.widgets)
+        if (m_widgets)
         {
-            for (int idx = 0; idx < m_objects.widgets->Size(); ++idx)
+            for (int idx = 0; idx < m_widgets->Size(); ++idx)
             {
                 vec4 LWidget;
-                if ((*m_objects.widgets)[idx]->EvaluateOverlay(xyView, m_params.viewCtx, LWidget))
+                if ((*m_widgets)[idx]->EvaluateOverlay(xyView, m_viewCtx, LWidget))
                 {
                     L = Blend(L, LWidget);
                 }
             }
         }
 
-        // Draw the ray
-        if (m_params.isHit)
-        {
-            LineSegment raySegment(m_params.ray.o, m_params.hitPoint, 0, kOne);
-            const float line = raySegment.Evaluate(xyView, m_params.viewCtx.dPdXY);
-            if (line > 0.f)
-            {
-                L = Blend(L, kOne, line);
-            }
-
-            if (length(xyView - m_params.hitPoint) < m_params.viewCtx.dPdXY * 5.0f)
-            {
-                L = vec4(kRed, 1.0f);
-            }
-        }
-
         // Draw the lasso 
-        if (m_params.selectionCtx.isLassoing && m_params.selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
+        if (m_selectionCtx.isLassoing && m_selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
 
         // Draw the selected object's bounding box
-        if (m_params.selectionCtx.numSelected > 0. && m_params.selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
+        if (m_selectionCtx.numSelected > 0. && m_selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
 
-        m_objects.accumBuffer->At(xyScreen) = L;
+        m_accumBuffer->At(xyScreen) = L;
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -159,17 +126,27 @@ namespace GI2D
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
-        m_objects.bih = m_hostBIH->GetDeviceInstance();
-        m_objects.tracables = m_hostTracables->GetDeviceInstance();
-        m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_objects.widgets = m_hostWidgets->GetDeviceInstance();
+        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.m_widgets = m_hostWidgets->GetDeviceInstance();
 
-        cu_deviceData = InstantiateOnDevice<Device::Overlay>(m_params, m_objects); 
+        cu_deviceData = InstantiateOnDevice<Device::Overlay>(); 
+
+        Synchronise(kSyncObjects);
     }
 
     Host::Overlay::~Overlay()
     {
         OnDestroyAsset();
+    }
+
+    __host__ void Host::Overlay::Synchronise(const int syncType)
+    {
+        UILayer::Synchronise(cu_deviceData, syncType);
+
+        if (syncType & kSyncObjects) { SynchroniseObjects2<OverlayObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams)  { SynchroniseObjects2<OverlayParams>(cu_deviceData, *this); }
     }
 
     __host__ void Host::Overlay::OnDestroyAsset()
@@ -200,7 +177,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::Overlay::TraceRay()
+    /*__host__ void Host::Overlay::TraceRay()
     {
         const auto& tracables = *m_hostTracables;
         Ray2D ray(vec2(0.0f), normalize(m_viewCtx.mousePos));
@@ -220,32 +197,25 @@ namespace GI2D
             }
         };
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
+    }*/
 
-        m_params.ray = ray;
-        m_params.isHit = (hit.tFar < kFltMax);
-        m_params.hitPoint = ray.PointAt(hit.tFar);        
-    }
-
-    __host__ void Host::Overlay::RebuildImpl()
+    __host__ void Host::Overlay::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
+        UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
+        
         if (!m_dirtyFlags) { return; }
-
-        m_params.viewCtx = m_viewCtx;
-        m_params.selectionCtx = m_selectionCtx;
          
         // Calculate some values for the guide grid
-        const float logScale = std::log10(m_params.viewCtx.transform.scale);
+        const float logScale = std::log10(m_viewCtx.transform.scale);
         constexpr float kGridScale = 0.05f;
-        m_params.gridCtx.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
-        m_params.gridCtx.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
-        m_params.gridCtx.lineAlpha = 1 - (logScale - std::floor(logScale));
-        m_params.gridCtx.show = true;
-        m_params.selectionCtx.lassoBBox.Rectify();
-        m_params.selectionCtx.selectedBBox.Rectify();
-
-        TraceRay();
+        m_gridCtx.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
+        m_gridCtx.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
+        m_gridCtx.lineAlpha = 1 - (logScale - std::floor(logScale));
+        m_gridCtx.show = true;
+        m_selectionCtx.lassoBBox.Rectify();
+        m_selectionCtx.selectedBBox.Rectify();
 
         // Upload to the device
-        SynchroniseObjects(cu_deviceData, m_params);
+        Synchronise(kSyncParams);
     }
 }

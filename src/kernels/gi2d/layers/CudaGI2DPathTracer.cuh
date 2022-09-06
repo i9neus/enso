@@ -14,49 +14,47 @@ namespace GI2D
     {
         __host__ __device__ PathTracerParams();
 
-        UIViewCtx           viewCtx;
-
         struct
         {
             uint width;
             uint height;
             int downsample;
         }
-        accum;
+        m_accum;
 
-        bool isDirty;
-        int frameIdx;
+        bool m_isDirty;
+        int m_frameIdx;
+    };
+
+    struct PathTracerObjects
+    {
+        VectorInterface<GI2D::TracableInterface*>*      m_tracables = nullptr;
+        BIH2D<BIH2DFullNode>*                           m_bih = nullptr;
+        Cuda::Device::ImageRGBW*                        m_accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class PathTracer : public Cuda::Device::Asset
+        class PathTracer : public Cuda::Device::Asset,
+                           public UILayerParams,
+                           public PathTracerParams,
+                           public PathTracerObjects
         {
         public:
-            struct Objects
-            {
-                Cuda::Device::Vector<GI2D::TracableInterface*>* tracables = nullptr;
-                GI2D::Device::BIH2DAsset* bih = nullptr;
-                Cuda::Device::ImageRGBW* accumBuffer = nullptr;
-            };
+            __host__ __device__ PathTracer();
 
-        public:
-            __host__ __device__ PathTracer(const PathTracerParams& params, const Objects& objects);
-
-            __device__ void Synchronise(const PathTracerParams& params);
-            __device__ void Synchronise(const Objects& params);
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
 
         private:
-            PathTracerParams   m_params;
-            Objects                m_objects;
+
         };
     }
 
     namespace Host
     {
-        class PathTracer : public UILayer
+        class PathTracer : public UILayer, 
+                           public PathTracerParams
         {
         public:
             PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, 
@@ -67,15 +65,16 @@ namespace GI2D
             __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
+            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
+
         protected:
-            __host__ virtual void RebuildImpl() override final;
+            __host__ void Synchronise(const int syncType);
 
         private:
-            PathTracerParams                        m_params;
-            GI2D::Device::PathTracer::Objects       m_objects;
             GI2D::Device::PathTracer*               cu_deviceData = nullptr;
+            PathTracerObjects                       m_deviceObjects;
 
-            AssetHandle<Cuda::Host::ImageRGBW>       m_hostAccumBuffer;      
+            AssetHandle<Cuda::Host::ImageRGBW>      m_hostAccumBuffer;      
         };
     }
 }

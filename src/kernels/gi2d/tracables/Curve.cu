@@ -13,7 +13,7 @@ namespace GI2D
         assert(m_bih && m_lineSegments);
         
         RayRange2D range;
-        if (!IntersectRayBBox(rayWorld, m_params.sceneObject.worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
+        if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
         RayBasic2D& rayObject = ToObjectSpace(rayWorld);
         HitCtx2D hitObject;
@@ -50,7 +50,7 @@ namespace GI2D
     __device__ bool CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
         vec4 LPrim(0.0f);
-        const vec2 pLocal = pWorld - m_params.sceneObject.transform.trans;
+        const vec2 pLocal = pWorld - m_transform.trans;
 
         m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
             {
@@ -72,18 +72,6 @@ namespace GI2D
         }
         return false;
     }
-    
-    __device__ void Device::Curve::Synchronise(const Objects& objects)
-    {
-        m_bih = objects.bih;
-        m_lineSegments = objects.lineSegments;
-    }
-
-    __device__ void Device::Curve::Synchronise(const CurveParams& params)
-    {
-        SceneObjectInterface::Synchronise(params.sceneObject);
-        m_params = params;
-    }
 
     __host__ Host::Curve::Curve(const std::string& id) :
         Tracable(id),
@@ -99,15 +87,14 @@ namespace GI2D
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
         cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
 
-        m_deviceData.bih = m_hostBIH->GetDeviceInstance();
-        m_deviceData.lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
         m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
         m_lineSegments = static_cast<Cuda::VectorInterface<GI2D::LineSegment>*>(m_hostLineSegments.get());
-
-        SynchroniseObjects(cu_deviceInstance, m_deviceData);
-        SynchroniseParams();
+        
+        Synchronise(kSyncObjects);
     }
 
     __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id)
@@ -129,19 +116,22 @@ namespace GI2D
         m_hostLineSegments.DestroyAsset();
     }
 
-    __host__ void Host::Curve::SynchroniseParams()
+    __host__ void Host::Curve::Synchronise(const int syncType)
     {
-        Curve::m_params.sceneObject = SceneObject::m_params;
+        Tracable::Synchronise(cu_deviceInstance, syncType);
 
-        SynchroniseObjects(cu_deviceInstance, m_params);
+        if (syncType == kSyncObjects)
+        {
+            SynchroniseObjects2<CurveObjects>(cu_deviceInstance, m_deviceObjects);
+        }
     }
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - Super::m_params.transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - m_transform.trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            Super::m_params.transform.trans = viewCtx.mousePos;
+            m_transform.trans = viewCtx.mousePos;
            
             Log::Success("Opened path %s", GetAssetID());
         }
@@ -228,8 +218,8 @@ namespace GI2D
             m_hostBIH->Build(getPrimitiveBBox);
 
             // Update the tracable bounding boxes
-            Super::m_params.objectBBox = m_hostBIH->GetBoundingBox();
-            Super::m_params.worldBBox = Super::m_params.objectBBox + Super::m_params.transform.trans;
+            m_objectBBox = m_hostBIH->GetBoundingBox();
+            m_worldBBox = m_objectBBox + m_transform.trans;
             //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
             resyncParams = true;
@@ -240,7 +230,7 @@ namespace GI2D
             resyncParams = true;
         }
 
-        if (resyncParams) { SynchroniseParams(); }
+        if (resyncParams) { Synchronise(kSyncParams); }
 
         ClearDirtyFlags();
 

@@ -31,7 +31,7 @@ namespace GI2D
 
         __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
         {
-            return m_params.transform.RayToObjectSpace(world);
+            return m_transform.RayToObjectSpace(world);
         }
 
     private:
@@ -49,6 +49,8 @@ namespace GI2D
 
         protected:
             __host__ Tracable(const std::string& id) : SceneObject(id) {}
+            
+            template<typename SubType> __host__ void Synchronise(SubType* deviceData, const int syncType) { SceneObject::Synchronise(deviceData, syncType); }
 
         protected:
             bool                        m_isFinalised;
