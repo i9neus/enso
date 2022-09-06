@@ -105,6 +105,11 @@ namespace GI2D
         SynchroniseParams();
     }
 
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id)
+    {
+        return CreateAsset<GI2D::Host::Curve>(id);
+    }
+
     __host__ Host::Curve::~Curve()
     {
         Log::Error("Host::Curve::~Curve");

@@ -82,6 +82,9 @@ namespace GI2D
                 return cu_deviceTracableInterface;
             }
 
+            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
+            __host__ static const std::string GetAssetTypeString() { return "curve"; }
+
         private:
 
 

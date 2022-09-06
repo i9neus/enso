@@ -3,7 +3,13 @@
 #include <map>
 #include "generic/Hash.h"
 
-enum UIButtonStates : uint { kButtonUp = 1, kOnButtonDepressed = 2, kButtonDown = 4, kOnButtonReleased = 8 };
+enum UIButtonStates : uint 
+{ 
+    kButtonUp = 1, 
+    kOnButtonDepressed = 2, 
+    kButtonDown = 4, 
+    kOnButtonReleased = 8 
+};
 
 template<typename T>
 inline std::string bstr(const T& t, const bool truncate = false)
@@ -127,6 +133,12 @@ public:
         return 1 << ((m_codes[bitIdx >> 5] >> (bitIdx & 31)) & 3u);
     }
 
+    bool IsSet(const uint code) const 
+    {
+        const uint state = GetState(code);
+        return state == kOnButtonDepressed || state == kButtonDown;
+    }
+
     void SetState(const uint code, const uint state)
     {        
         // FIXME: Alt-tabbing out of the app breaks things. 
@@ -178,6 +190,7 @@ private:
     std::array < uint, kKeyCodeArraySize > m_codes;
 };
 
+// ORs two maps together
 template<size_t NumButtons>
 UIButtonMap<NumButtons> operator|(const UIButtonMap<NumButtons>& lhs, const UIButtonMap<NumButtons>& rhs)
 {

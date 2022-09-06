@@ -38,8 +38,8 @@ struct UIState
     uint                                              idx;
     std::string                                       id;
 
-    std::function<uint(const uint&, const uint&)>     onExitState;
-    std::function<uint(const uint&, const uint&)>     onEnterState;
+    std::function<uint(const uint&, const uint&, const VirtualKeyMap&)>     onExitState;
+    std::function<uint(const uint&, const uint&, const VirtualKeyMap&)>     onEnterState;
 
     uint                                              entryTransitionIdx;
     uint                                              exitTransitionIdx;
@@ -57,7 +57,7 @@ struct UIStateTransition
     uint                        sourceStateIdx;
     uint                        targetStateIdx;
 
-    std::function<std::string(const uint&)> getTargetState;
+    std::function<std::string(const uint&, const VirtualKeyMap&)> getTargetState;
 
     inline const bool IsNonDeterministic() const { return getTargetState != nullptr; }
     inline const bool HasDeterministicTarget() const { return targetStateIdx != kInvalid; }
@@ -84,15 +84,15 @@ public:
     void DeclareState(const std::string& name, HostType* hostInstance, OnEnterState onEnterState, OnLeaveState onExitState)
     {
         DeclareState(name);        
-        m_uiStateList.back().onExitState = std::bind(onExitState, hostInstance, std::placeholders::_1, std::placeholders::_2);
-        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2);
+        m_uiStateList.back().onExitState = std::bind(onExitState, hostInstance, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     }
 
     template<typename HostType, typename OnEnterState>
     void DeclareState(const std::string& name, HostType* hostInstance, OnEnterState onEnterState)
     {
         DeclareState(name);
-        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2);
+        m_uiStateList.back().onEnterState = std::bind(onEnterState, hostInstance, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     }
 
     inline UIState* FindState(const std::string& name)
@@ -209,7 +209,7 @@ public:
             // Forbid allowing exit functors to change the graph state (for now)
             AssertMsgFmt(m_currentState == sourceStateIdx, "Illegal opereation: exit functor '%s' manually changed the graph state.", m_uiStateList[m_currentState].id.c_str());
             
-            const uint result = m_uiStateList[m_currentState].onExitState(sourceStateIdx, UIState::kInvalid);
+            const uint result = m_uiStateList[m_currentState].onExitState(sourceStateIdx, UIState::kInvalid, transition.keyTrigger);
             AssertMsg(result != kUIStateError, "State transition error.");
             if (result == kUIStateRejected)
             {
@@ -221,7 +221,7 @@ public:
         // If the transition lambda attached then it's non-deterministic. Call the lambda to determine what state we're migrating to
         if (transition.IsNonDeterministic())
         {
-            const std::string newStateID = transition.getTargetState(sourceStateIdx);
+            const std::string newStateID = transition.getTargetState(sourceStateIdx, transition.keyTrigger);
             AssertMsgFmt(!newStateID.empty(),
                 "Error: non-deterministic transition from '%s' failed: state is empty.", m_uiStateList[m_currentState].id.c_str());
 
@@ -246,7 +246,7 @@ public:
             do
             {
                 targetState = m_currentState;
-                const uint result = m_uiStateList[m_currentState].onEnterState(sourceStateIdx, m_currentState);
+                const uint result = m_uiStateList[m_currentState].onEnterState(sourceStateIdx, m_currentState, transition.keyTrigger);
                 AssertMsg(result != kUIStateError, "State transition error.");
 
                 if (result == kUIStateRejected)
@@ -268,6 +268,8 @@ public:
 	void OnTriggerTransition(const uint triggerFlags)
 	{
         uint hash = HashCombine(HashOf(m_currentState), m_keyCodes.HashOf(), HashOf(triggerFlags));
+
+        Log::Write(m_uiStateList[m_currentState].id);
 
         // Search for states that match the current set of triggers
 		auto range = m_uiStateTriggeredTransitionMap.equal_range(hash);

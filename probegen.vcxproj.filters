@@ -666,9 +666,6 @@
     <ClInclude Include="src\kernels\gi2d\tracables\Tracable.cuh">
       <Filter>kernels\gi2d\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernels\gi2d\layers\GI2DIsosurfaceRenderer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernels\gi2d\SceneObject.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
@@ -969,9 +966,6 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\tracables\Tracable.cu">
       <Filter>kernels\gi2d\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\kernels\gi2d\layers\GI2DIsosurfaceRenderer.cu">
-      <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\SceneObject.cu">
       <Filter>kernels\gi2d</Filter>

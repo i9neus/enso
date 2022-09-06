@@ -82,14 +82,25 @@ private:
 
     void                    Rebuild();
 
-    uint                    OnMoveTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnCreateTracable(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnSelectTracables(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx);
-    uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx);
+    uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
 
     std::string             DecideOnClickState(const uint& sourceStateIdx);
     void                    DeselectAll();
+
+    template<typename HostClass>
+    __host__ void AddInstantiator(const uint keyCode)
+    {
+        //const auto id = HostClass::GetAssetTypeString();
+        auto it = m_sceneObjectInstantiators.find(keyCode);
+        Assert(it == m_sceneObjectInstantiators.end());
+        //AssertMsgFmt(it == m_sceneObjectInstantiators.end(), "Internal error: a render object instantiator with ID '%s' already exists.\n", id);
+
+        m_sceneObjectInstantiators[keyCode] = HostClass::Instantiate;
+    }
 
 private:
     enum JobIDs : uint { kJobDraw };
@@ -112,6 +123,8 @@ private:
     GI2D::UIGridCtx                             m_gridCtx;
     GI2D::UIViewCtx                             m_viewCtx;
     GI2D::UISelectionCtx                        m_selectionCtx;
+
+    std::unordered_map<uint, std::function<AssetHandle<GI2D::Host::SceneObject>(const std::string&)>>    m_sceneObjectInstantiators;
 
     struct
     {
