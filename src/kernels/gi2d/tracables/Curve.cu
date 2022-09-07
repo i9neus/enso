@@ -8,7 +8,7 @@ using namespace Cuda;
 
 namespace GI2D
 {    
-    __host__ __device__ bool CurveInterface::IntersectRay(Ray2D& rayWorld, HitCtx2D& hitWorld) const
+    __host__ __device__ bool Device::Curve::IntersectRay(Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {        
         assert(m_bih && m_lineSegments);
         
@@ -39,15 +39,15 @@ namespace GI2D
         return false;
     }
 
-    /*__host__ __device__ bool CurveInterface::InteresectPoint(const vec2& p, const float& thickness) const
+    /*__host__ __device__ bool Device::Curve::InteresectPoint(const vec2& p, const float& thickness) const
     {
     }*/
 
-    /*__host__ __device__ vec2 CurveInterface::PerpendicularPoint(const vec2& p) const 
+    /*__host__ __device__ vec2 Device::Curve::PerpendicularPoint(const vec2& p) const 
     {
     }*/
 
-    __device__ bool CurveInterface::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ bool Device::Curve::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
         vec4 LPrim(0.0f);
         const vec2 pLocal = pWorld - m_transform.trans;

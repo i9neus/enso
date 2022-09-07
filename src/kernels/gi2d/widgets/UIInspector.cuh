@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../SceneObject.cuh"
+#include "../tracables/Tracable.cuh"
 
 #define FWD_DECL_VECTOR
 #define FWD_DECL_BIH2D
@@ -21,12 +21,12 @@ namespace GI2D
 
     namespace Device
     {        
-        class UIInspector : public Device::SceneObject,
+        class UIInspector : public TracableInterface,
                             public UIInspectorParams,
                             public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
         {
-        public:
-            __device__ virtual bool EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
+        protected:
+            __device__ virtual bool EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
 
         public:
             __device__ UIInspector() {}
@@ -37,7 +37,7 @@ namespace GI2D
     {
         class BIH2DAsset;
 
-        class UIInspector : public Host::SceneObject,
+        class UIInspector : public Host::Tracable,
                             public UIInspectorParams,
                             public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
         {

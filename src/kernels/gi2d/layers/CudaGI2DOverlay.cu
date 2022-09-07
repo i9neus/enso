@@ -24,6 +24,8 @@ namespace GI2D
 
     __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {
+        assert(deviceOutputImage);
+        
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x >= 0 && xyScreen.x < m_accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_accumBuffer->Height())
@@ -96,17 +98,17 @@ namespace GI2D
         }
 
         // Draw the widgets
-        if (m_widgets)
+        /*if (m_inspectors)
         {
-            for (int idx = 0; idx < m_widgets->Size(); ++idx)
+            for (int idx = 0; idx < m_inspectors->Size(); ++idx)
             {
                 vec4 LWidget;
-                if ((*m_widgets)[idx]->EvaluateOverlay(xyView, m_viewCtx, LWidget))
+                if ((*m_inspectors)[idx]->EvaluateOverlay(xyView, m_viewCtx, LWidget))
                 {
                     L = Blend(L, LWidget);
                 }
             }
-        }
+        }*/
 
         // Draw the lasso 
         if (m_selectionCtx.isLassoing && m_selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
@@ -118,10 +120,10 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<WidgetContainer>& widgets,
+    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
                                    const uint width, const uint height, cudaStream_t renderStream) :
         UILayer(id, bih, tracables),
-        m_hostWidgets(widgets)
+        m_hostInspectors(inspectors)
     {        
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
@@ -129,7 +131,7 @@ namespace GI2D
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.m_widgets = m_hostWidgets->GetDeviceInstance();
+        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
 
         cu_deviceData = InstantiateOnDevice<Device::Overlay>(); 
 

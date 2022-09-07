@@ -6,7 +6,7 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    __device__ bool Device::UIInspector::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ bool Device::UIInspector::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
         if (!m_worldBBox.Contains(pWorld)) { return false; }
 
@@ -29,13 +29,12 @@ namespace GI2D
     }
 
     __host__ Host::UIInspector::UIInspector(const std::string& id) :
-        SceneObject(id),
-        cu_deviceInstance(nullptr)
+        Tracable(id)
     {
         Log::Success("Host::UIInspector::UIInspector");
 
         cu_deviceInstance = InstantiateOnDevice<Device::UIInspector>();
-        cu_deviceSceneObjectInterface = StaticCastOnDevice<SceneObjectInterface>(cu_deviceInstance);      
+        cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
         
         Synchronise(kSyncObjects);
     }
@@ -53,7 +52,7 @@ namespace GI2D
 
     __host__ void Host::UIInspector::Synchronise(const int type)
     {
-        SceneObject::Synchronise(cu_deviceInstance, type);
+        Tracable::Synchronise(cu_deviceInstance, type);
 
         if (type == kSyncParams) { SynchroniseObjects2<UIInspectorParams>(cu_deviceInstance, *this); }
     }
@@ -70,13 +69,15 @@ namespace GI2D
             m_transform.trans = viewCtx.mousePos;
             m_worldBBox = BBox2f(viewCtx.mousePos - vec2(viewCtx.dPdXY * 20.0f), viewCtx.mousePos + vec2(viewCtx.dPdXY * 20.0f));
 
-            SetDirtyFlags(kGI2DDirtyTransforms);
+            //SetDirtyFlags(kGI2DDirtyTransforms);
+            SetDirtyFlags(kGI2DDirtyBVH);
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             Finalise();
 
-            SetDirtyFlags(kGI2DDirtyTransforms);
+            //SetDirtyFlags(kGI2DDirtyTransforms);
+            SetDirtyFlags(kGI2DDirtyBVH);
         }        
 
         return m_dirtyFlags;
@@ -101,7 +102,7 @@ namespace GI2D
 
         bool resyncParams = false;    
 
-        if (m_dirtyFlags & kGI2DDirtyTransforms)
+        if (m_dirtyFlags & kGI2DDirtyBVH)
         {
             resyncParams = true;
         }

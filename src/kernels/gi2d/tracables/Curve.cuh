@@ -18,28 +18,18 @@ namespace GI2D
         VectorInterface<LineSegment>* m_lineSegments = nullptr;
     };
 
-    class CurveInterface : virtual public TracableInterface,
-                           //public CurveParams,
-                           public CurveObjects
-    {
-        using Super = TracableInterface;
-    public:
-        __host__ __device__ CurveInterface() {}
-
-        __host__ __device__ virtual bool  IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
-        //__host__ __device__ virtual bool    InteresectPoint(const vec2& p, const float& thickness) const override final;
-        //__host__ __device__ virtual vec2    PerpendicularPoint(const vec2& p) const override final;
-
-    protected:
-        __device__ virtual bool             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
-    };
-
     namespace Device
     {        
-        class Curve : public CurveInterface
+        class Curve : public TracableInterface,                           
+                      public CurveObjects
         {
         public:
             __device__ Curve() {}
+
+            __host__ __device__ virtual bool    IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
+
+        protected:
+            __device__ virtual bool             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
         };
     }
 
@@ -47,8 +37,8 @@ namespace GI2D
     {                  
         class BIH2DAsset;
         
-        class Curve : public CurveInterface,
-                      public Host::Tracable,
+        class Curve : public Host::Tracable,
+                      public CurveObjects,
                       public Cuda::AssetTags<Host::Curve, Device::Curve>
         {
         public:
@@ -76,7 +66,7 @@ namespace GI2D
 
 
         private:
-            Device::Curve*                                  cu_deviceInstance;
+            Device::Curve*                                  cu_deviceInstance = nullptr;
             CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;

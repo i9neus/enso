@@ -148,7 +148,7 @@ namespace GI2D
             }
             m_onMove;
 
-            SceneObjectInterface* cu_deviceSceneObjectInterface;
+            SceneObjectInterface* cu_deviceSceneObjectInterface = nullptr;
         };
     }
 }

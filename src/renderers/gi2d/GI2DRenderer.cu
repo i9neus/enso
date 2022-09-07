@@ -2,6 +2,7 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/layers/CudaGI2DOverlay.cuh"
 #include "kernels/gi2d/layers/CudaGI2DPathTracer.cuh"
+#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/CudaVector.cuh"
@@ -49,19 +50,19 @@ GI2DRenderer::GI2DRenderer()
 
     // Move scene object
     m_uiGraph.DeclareState("kMoveSceneObjectBegin", this, &GI2DRenderer::OnMoveSceneObject);
-    m_uiGraph.DeclareState("kMoveTracableDragging", this, &GI2DRenderer::OnMoveSceneObject);
-    m_uiGraph.DeclareState("kMoveTracableEnd", this, &GI2DRenderer::OnMoveSceneObject);
+    m_uiGraph.DeclareState("kMoveSceneObjectDragging", this, &GI2DRenderer::OnMoveSceneObject);
+    m_uiGraph.DeclareState("kMoveSceneObjectEnd", this, &GI2DRenderer::OnMoveSceneObject);
     //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
-    m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectBegin", "kMoveTracableDragging");
-    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
-    m_uiGraph.DeclareDeterministicTransition("kMoveTracableDragging", "kMoveTracableEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
-    m_uiGraph.DeclareDeterministicAutoTransition("kMoveTracableEnd", "kIdleState");
+    m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectBegin", "kMoveSceneObjectDragging");
+    m_uiGraph.DeclareDeterministicTransition("kMoveSceneObjectDragging", "kMoveSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+    m_uiGraph.DeclareDeterministicTransition("kMoveSceneObjectDragging", "kMoveSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectEnd", "kIdleState");
 
     // Delete scene object
-    m_uiGraph.DeclareState("kDeleteTracable", this, &GI2DRenderer::OnDeletePath);
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
-    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteTracable", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
-    m_uiGraph.DeclareDeterministicAutoTransition("kDeleteTracable", "kIdleState");
+    m_uiGraph.DeclareState("kDeleteSceneObjects", this, &GI2DRenderer::OnDeleteSceneObject);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
+    m_uiGraph.DeclareDeterministicAutoTransition("kDeleteSceneObjects", "kIdleState");
 
     m_uiGraph.Finalise();
 }
@@ -88,11 +89,12 @@ void GI2DRenderer::OnInitialise()
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
 
     m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
-    m_hostWidgets = CreateAsset<WidgetContainer>(":gi2d/widgets", kVectorHostAlloc, m_renderStream);
+    m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostWidgets, m_clientWidth, m_clientHeight, m_renderStream);
+    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
     m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
 }
@@ -100,10 +102,11 @@ void GI2DRenderer::OnInitialise()
 void GI2DRenderer::OnDestroy()
 {
     m_overlayRenderer.DestroyAsset();
-    //m_pathTracer.DestroyAsset();
+    m_pathTracer.DestroyAsset();
+    m_isosurfaceExplorer.DestroyAsset();
 
     m_hostTracables.DestroyAsset();
-    m_hostWidgets.DestroyAsset();
+    m_hostInspectors.DestroyAsset();
     m_renderObjects.DestroyAsset();
     m_sceneBIH.DestroyAsset();
 }
@@ -128,6 +131,14 @@ void GI2DRenderer::Rebuild()
             });
         m_hostTracables->Synchronise(kVectorSyncUpload);
 
+        m_hostInspectors->Clear();
+        m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
+            {
+                m_hostInspectors->EmplaceBack(widget);
+                return true;
+            });
+        m_hostInspectors->Synchronise(kVectorSyncUpload);
+
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_hostTracables->Size());
         for (auto& tracable : *m_hostTracables)
@@ -150,24 +161,25 @@ void GI2DRenderer::Rebuild()
         //Log::Write("Rebuilt scene BIH: %s", m_sceneBIH->GetBoundingBox().Format());
     }
 
-    if (m_dirtyFlags & kGI2DDirtyTransforms)
+    /*if (m_dirtyFlags & kGI2DDirtyTransforms)
     {
-        m_hostWidgets->Clear();
+        m_hostInspectors->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
             {
                 if (widget->Rebuild(m_dirtyFlags, m_viewCtx))
                 {
-                    m_hostWidgets->EmplaceBack(widget);
+                    m_hostInspectors->EmplaceBack(widget);
                 }
 
                 return true;
             });
-        m_hostWidgets->Synchronise(kVectorSyncUpload);
-    }
+        m_hostInspectors->Synchronise(kVectorSyncUpload);
+    }*/
 
     // View has changed
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     m_pathTracer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
 }
@@ -178,7 +190,7 @@ uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetSta
     return kUIStateOkay;
 }
 
-uint GI2DRenderer::OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
 {
     if (m_selectionCtx.numSelected == 0) { return kUIStateOkay; }
 
@@ -220,7 +232,7 @@ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& tar
     {
         m_onMove.dragAnchor = m_viewCtx.mousePos;
     }
-    else if (stateID == "kMoveTracableDragging")
+    else if (stateID == "kMoveSceneObjectDragging")
     {
         // Update the selection overlay
         m_selectionCtx.selectedBBox += m_viewCtx.mousePos - m_onMove.dragAnchor;
@@ -236,7 +248,7 @@ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& tar
         if (obj->IsSelected())
         {
             // If the object has moved, trigger a rebuild of the BVH
-            if (obj->OnMove(stateID, m_viewCtx) & kGI2DDirtyTransforms)
+            if (obj->OnMove(stateID, m_viewCtx) & (kGI2DDirtyTransforms | kGI2DDirtyBVH))
             {
                 SetDirtyFlags(kGI2DDirtyBVH);
             }
@@ -435,6 +447,7 @@ void GI2DRenderer::OnRender()
 
     // Render the pass
     m_pathTracer->Render();
+    m_isosurfaceExplorer->Render();
     m_overlayRenderer->Render();
 
     // If a blit is in progress, skip the composite step entirely.
@@ -444,6 +457,7 @@ void GI2DRenderer::OnRender()
     if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
     
     m_pathTracer->Composite(m_compositeImage);
+    m_isosurfaceExplorer->Composite(m_compositeImage);
     m_overlayRenderer->Composite(m_compositeImage);
 
     m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);

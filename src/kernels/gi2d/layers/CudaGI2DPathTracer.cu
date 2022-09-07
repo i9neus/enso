@@ -101,7 +101,7 @@ namespace GI2D
         UILayer(id, bih, tracables)
     {
         // Create some Cuda objects
-        m_hostAccumBuffer = Cuda::CreateAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
+        m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();

@@ -76,7 +76,7 @@ namespace GI2D
 
         protected:             
             AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
-            AssetHandle<TracableContainer>    m_hostTracables;
+            AssetHandle<TracableContainer>                          m_hostTracables;
 
             uint                                                    m_dirtyFlags;
         };

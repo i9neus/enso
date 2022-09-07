@@ -42,5 +42,5 @@ namespace GI2D
     }
 
     using TracableContainer = Cuda::Host::AssetVector<Host::Tracable, TracableInterface>;
-    using WidgetContainer = Cuda::Host::AssetVector<Host::SceneObject, SceneObjectInterface>;
+    using InspectorContainer = Cuda::Host::AssetVector<Host::Tracable, TracableInterface>;
 }

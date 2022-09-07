@@ -65,7 +65,7 @@ namespace GI2D
 
             // The geometry internal to this object hasn't changed, but it will affect the 
             Log::Warning("kMoveSceneObjectDragging");
-            SetDirtyFlags(kGI2DDirtyTransforms);
+            SetDirtyFlags(kGI2DDirtyBVH);
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {

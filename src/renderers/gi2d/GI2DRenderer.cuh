@@ -24,6 +24,7 @@ namespace GI2D
         class Tracable;
         class Overlay;   
         class PathTracer; 
+        class IsosurfaceExplorer;
         class Tracable;
         class SceneObject;
     }
@@ -86,7 +87,7 @@ private:
     uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
     uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
     uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-    uint                    OnDeletePath(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
 
     std::string             DecideOnClickState(const uint& sourceStateIdx);
     void                    DeselectAll();
@@ -109,12 +110,11 @@ private:
 
     AssetHandle<GI2D::Host::Overlay>            m_overlayRenderer;
     AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
+    AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
 
-    std::unique_ptr<GI2D::OverlayParams>        m_overlayParams;
-    std::unique_ptr<GI2D::PathTracerParams>     m_pathTracerParams;
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
     AssetHandle<GI2D::TracableContainer>        m_hostTracables;
-    AssetHandle<GI2D::WidgetContainer>          m_hostWidgets;
+    AssetHandle<GI2D::InspectorContainer>       m_hostInspectors;
     std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
 
     std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;

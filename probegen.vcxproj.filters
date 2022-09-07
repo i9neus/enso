@@ -690,6 +690,9 @@
     <ClInclude Include="src\kernels\gi2d\widgets\UIInspector.cuh">
       <Filter>kernels\gi2d\widgets</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
@@ -984,6 +987,9 @@
     </CudaCompile>
     <CudaCompile Include="src\kernels\gi2d\widgets\UIInspector.cu">
       <Filter>kernels\gi2d\widgets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
+      <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

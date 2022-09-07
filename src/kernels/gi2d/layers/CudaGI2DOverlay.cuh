@@ -27,7 +27,7 @@ namespace GI2D
     struct OverlayObjects
     {
         VectorInterface<TracableInterface*>*        m_tracables = nullptr;
-        VectorInterface<SceneObjectInterface*>*     m_widgets = nullptr;
+        VectorInterface<TracableInterface*>*        m_inspectors = nullptr;
         BIH2D<BIH2DFullNode>*                       m_bih = nullptr;
         Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };
@@ -53,7 +53,7 @@ namespace GI2D
                         public OverlayParams
         {
         public:
-            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<WidgetContainer>& widgets,
+            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
                     const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~Overlay();
@@ -74,7 +74,7 @@ namespace GI2D
             OverlayObjects                              m_deviceObjects;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
-            AssetHandle<WidgetContainer>                m_hostWidgets;
+            AssetHandle<InspectorContainer>             m_hostInspectors;
         };
     }
 }

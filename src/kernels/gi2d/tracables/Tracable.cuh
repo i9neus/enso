@@ -27,7 +27,7 @@ namespace GI2D
     protected:
         __host__ __device__ TracableInterface() {}
 
-        __device__ virtual bool                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const = 0;
+        __device__ virtual bool                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const { return false; }
 
         __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
         {
@@ -40,7 +40,7 @@ namespace GI2D
 
     namespace Host
     {
-        class Tracable : virtual public TracableInterface,
+        class Tracable : public TracableInterface,
                          public GI2D::Host::SceneObject, 
                          public Cuda::AssetTags<Host::Tracable, TracableInterface>
         {
@@ -53,8 +53,7 @@ namespace GI2D
             template<typename SubType> __host__ void Synchronise(SubType* deviceData, const int syncType) { SceneObject::Synchronise(deviceData, syncType); }
 
         protected:
-            bool                        m_isFinalised;
-            TracableInterface*          cu_deviceTracableInterface;
+            TracableInterface*          cu_deviceTracableInterface = nullptr;
 
             struct
             {
