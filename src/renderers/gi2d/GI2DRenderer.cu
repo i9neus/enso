@@ -11,6 +11,8 @@
 #include "kernels/gi2d/widgets/UIInspector.cuh"
 #include "kernels/Tuple.cuh"
 
+#include "kernels/gi2d/ObjectDebugger.cuh"
+
 using namespace Cuda;
 using namespace GI2D;
 
@@ -92,18 +94,35 @@ void GI2DRenderer::OnInitialise()
     m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
-    m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
-    m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, 1, m_renderStream);
+    InvokeDebugger();
+
+    //m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
+    //m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    //m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
+
+    /*if (m_dirtyFlags)
+    {
+        Rebuild();
+    }
+
+    // Render the pass
+    m_overlayRenderer->Render();
+
+    if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
+
+    m_compositeImage->Clear(vec4(kZero, 1.0f));
+    m_overlayRenderer->Composite(m_compositeImage);
+
+    m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);*/
 }
 
 void GI2DRenderer::OnDestroy()
 {
-    m_overlayRenderer.DestroyAsset();
-    m_pathTracer.DestroyAsset();
-    m_isosurfaceExplorer.DestroyAsset();
+    //m_overlayRenderer.DestroyAsset();
+    //m_pathTracer.DestroyAsset();
+    //m_isosurfaceExplorer.DestroyAsset();
 
     m_hostTracables.DestroyAsset();
     m_hostInspectors.DestroyAsset();
@@ -177,9 +196,9 @@ void GI2DRenderer::Rebuild()
     }*/
 
     // View has changed
-    m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-    m_pathTracer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-    m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    //m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    //m_pathTracer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
 }
@@ -446,9 +465,9 @@ void GI2DRenderer::OnRender()
     }
 
     // Render the pass
-    m_pathTracer->Render();
-    m_isosurfaceExplorer->Render();
-    m_overlayRenderer->Render();
+    //m_pathTracer->Render();
+    //m_isosurfaceExplorer->Render();
+    //m_overlayRenderer->Render();
 
     // If a blit is in progress, skip the composite step entirely.
     // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
@@ -456,9 +475,10 @@ void GI2DRenderer::OnRender()
     //m_renderSemaphore.Wait(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress);
     if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
     
-    m_pathTracer->Composite(m_compositeImage);
-    m_isosurfaceExplorer->Composite(m_compositeImage);
-    m_overlayRenderer->Composite(m_compositeImage);
+    //m_pathTracer->Composite(m_compositeImage);
+    //m_isosurfaceExplorer->Composite(m_compositeImage);
+    m_compositeImage->Clear(vec4(kZero, 1.0f));
+    //m_overlayRenderer->Composite(m_compositeImage);
 
     m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
 }

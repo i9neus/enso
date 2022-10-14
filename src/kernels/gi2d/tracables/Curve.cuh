@@ -14,6 +14,8 @@ namespace GI2D
 
     struct CurveObjects
     {
+        __host__ __device__ CurveObjects() {}
+
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
         VectorInterface<LineSegment>* m_lineSegments = nullptr;
     };
@@ -61,6 +63,8 @@ namespace GI2D
 
             __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
             __host__ static const std::string GetAssetTypeString() { return "curve"; }
+
+            __host__ static void Test();
 
         private:
 

@@ -255,16 +255,6 @@ namespace Cuda
 			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
 			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance()
-			{
-				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
-				if (cu_deviceInstance == nullptr)
-				{
-					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
-				}
-				return cu_deviceInstance;
-			}
-
 			__host__ inline VectorInterface<DeviceType>* GetDeviceInterface() 
 			{ 
 				if (cu_deviceInterface == nullptr)
@@ -379,6 +369,16 @@ namespace Cuda
 			}
 
 		protected:
+			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance()
+			{
+				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
+				if (cu_deviceInstance == nullptr)
+				{
+					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
+				}
+				return cu_deviceInstance;
+			}
+
 			__host__ void CopyImpl(HostType* data, const uint newSize)
 			{
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Must specify kVectorHostAlloc to use operator=");

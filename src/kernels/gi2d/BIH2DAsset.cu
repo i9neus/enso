@@ -55,7 +55,7 @@ namespace GI2D
         m_params.isConstructed = m_isConstructed;
         m_params.testAsList = m_testAsList;
         m_params.bBox = m_treeBBox;
-        m_params.nodes = m_hostNodes->GetDeviceInstance();
+        m_params.nodes = m_hostNodes->GetDeviceInterface();
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
         SynchroniseObjects(cu_deviceInstance, m_params);

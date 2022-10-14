@@ -88,7 +88,7 @@ namespace GI2D
                     vec4 LTracable;
                     if (tracable.EvaluateOverlay(xyView, m_viewCtx, LTracable))
                     {
-                        L = Blend(L, LTracable);
+                        //L = Blend(L, LTracable);
                     }
 
                     if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
@@ -129,9 +129,9 @@ namespace GI2D
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInterface();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
+        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInterface();
 
         cu_deviceData = InstantiateOnDevice<Device::Overlay>(); 
 

@@ -49,6 +49,8 @@ namespace GI2D
 
     __device__ bool Device::Curve::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
+        if (!m_bih) { return false; }
+        
         vec4 LPrim(0.0f);
         const vec2 pLocal = pWorld - m_transform.trans;
 
@@ -88,7 +90,7 @@ namespace GI2D
         cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInterface();
 
         // Set the host parameters so we can query the primitive on the host
         m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());

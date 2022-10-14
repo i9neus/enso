@@ -17,6 +17,40 @@ namespace GI2D
         m_frameIdx = 0;
     }
 
+    __host__ __device__ void IsosurfaceExplorerInterface::EvaluateField(const vec2& xyView, float& F, vec2& gradF)
+    {
+        if (!m_inspectors || m_inspectors->IsEmpty()) 
+        { 
+            F = 0.0f;
+            gradF = 0.0f;
+            return; 
+        }
+
+        constexpr float c = 0.05f;
+        constexpr float kMetaThreshold = 8.0f;
+        
+        float denom = 0.0f;
+        for (int isoIdx = 0; isoIdx < m_inspectors->Size(); ++isoIdx)
+        {          
+            const vec2 pt = (*m_inspectors)[isoIdx]->GetWorldSpaceBoundingBox().Centroid();
+            
+            F += c / length2(xyView - pt);
+
+            float n = sqr(xyView.x - pt.x) + sqr(xyView.y - pt.y);
+            gradF += -c * 2.0f * (xyView - pt) / sqr(n);
+
+            denom += c / n;
+        }
+
+        F = 1 / sqrtf(F) - 1 / sqrtf(kMetaThreshold);
+
+        // Vector derivative of F
+        gradF = -0.5f * gradF / powf(denom, 1.5);
+
+        // Vector derivative of |F|
+        //gradF = (0.5f * gradF) * (-1.0 / sqrt(kMetaThreshold) + 1.0 / sqrt(denom)) / (pow(denom, 1.5) * (abs(-1.0 / sqrt(kMetaThreshold)) + 1.0 / sqrt(denom)));
+    }
+
     __device__ Device::IsosurfaceExplorer::IsosurfaceExplorer() { }
 
     __device__ vec2 Mul(const vec2& a, const vec2& b)
@@ -32,28 +66,16 @@ namespace GI2D
         // Transform from screen space to view space
         const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen * m_accum.downsample);
 
-        //if (!m_viewCtx.sceneBounds.Contains(xyView)) { m_accumBuffer->At(xyScreen) = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
+        if (!m_viewCtx.sceneBounds.Contains(xyView)) { m_accumBuffer->At(xyScreen) = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
 
-        Complex z = xyView;
-        Complex c;
-        if (m_inspectors && m_inspectors->Size() > 0)
-        {
-            c = (*m_inspectors)[0]->GetWorldSpaceBoundingBox().Centroid();
-        }        
+        float F = 0.0f;
+        vec2 gradF(0.0f);
+        EvaluateField(xyView, F, gradF);
 
-        bool inSet = true;
-        for(int iterIdx = 0; iterIdx < 10; ++iterIdx)
-        {
-            if (length2(z) > 4.f) 
-            { 
-                m_accumBuffer->At(xyScreen) = vec4(kRed, 1.0f);
-                return;
-            }
-
-            z = z * z + c;
-        }    
-
-        m_accumBuffer->At(xyScreen) = vec4(kGreen, 1.0f);
+        vec3 rgb;
+        rgb = (F > 0.0f && F < 0.01f) ? kOne : vec3(normalize(gradF) * 0.5f + 0.5f, 0.0f);
+        
+        m_accumBuffer->At(xyScreen) = vec4(rgb, 1.0f);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -81,7 +103,7 @@ namespace GI2D
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
+        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInterface();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_accum.width = width;

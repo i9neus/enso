@@ -14,6 +14,8 @@ namespace GI2D
 
     struct UIInspectorParams
     {
+        __host__ __device__ UIInspectorParams() {}
+        
         float viewRadius;
     };
 

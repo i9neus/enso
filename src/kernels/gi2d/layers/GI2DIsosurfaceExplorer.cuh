@@ -30,16 +30,28 @@ namespace GI2D
 
     struct IsosurfaceExplorerObjects
     {
+        __device__ __host__ IsosurfaceExplorerObjects() {}
+        
         VectorInterface<GI2D::TracableInterface*>* m_inspectors = nullptr;
         Cuda::Device::ImageRGBW* m_accumBuffer = nullptr;
+    };
+
+    class IsosurfaceExplorerInterface : public IsosurfaceExplorerParams,
+                                        public IsosurfaceExplorerObjects
+    {
+    public:
+        __host__ __device__ IsosurfaceExplorerInterface() {}
+
+    protected:
+
+        __host__ __device__ void EvaluateField(const vec2& xyView, float& F, vec2& gradF);
     };
 
     namespace Device
     {
         class IsosurfaceExplorer : public Cuda::Device::Asset,
-            public UILayerParams,
-            public IsosurfaceExplorerParams,
-            public IsosurfaceExplorerObjects
+                                   public IsosurfaceExplorerInterface,
+                                   public UILayerParams                                   
         {
         public:
             __host__ __device__ IsosurfaceExplorer();
@@ -51,8 +63,8 @@ namespace GI2D
 
     namespace Host
     {
-        class IsosurfaceExplorer : public UILayer,
-                                   public IsosurfaceExplorerParams
+        class IsosurfaceExplorer : public IsosurfaceExplorerInterface, 
+                                   public UILayer
         {
         public:
             IsosurfaceExplorer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,

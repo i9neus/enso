@@ -36,6 +36,11 @@ void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT cl
 
 		checkCudaErrors(cudaGetDeviceProperties(&m_deviceProp, devId));
 
+		int value;
+		checkCudaErrors(cudaDeviceGetAttribute(&value, cudaDevAttrComputePreemptionSupported, devId));
+
+		Log::Error("cudaDevAttrComputePreemptionSupported: %i", value);
+
 		if ((memcmp(&dx12DeviceLUID.LowPart, m_deviceProp.luid, sizeof(dx12DeviceLUID.LowPart)) == 0) &&
 			(memcmp(&dx12DeviceLUID.HighPart, m_deviceProp.luid + sizeof(dx12DeviceLUID.LowPart), sizeof(dx12DeviceLUID.HighPart)) == 0))
 		{
