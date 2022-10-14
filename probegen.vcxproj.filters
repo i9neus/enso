@@ -693,6 +693,9 @@
     <ClInclude Include="src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
+    <ClInclude Include="src\kernels\DeviceAllocator.cuh">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win">
