@@ -32,14 +32,19 @@
     <ClInclude Include="..\src\generic\Math.h" />
     <ClInclude Include="..\src\generic\StdIncludes.h" />
     <ClInclude Include="..\src\generic\StringUtils.h" />
+    <ClInclude Include="..\src\kernels\DeviceAllocator.cuh" />
     <ClInclude Include="..\src\kernels\gi2d\CudaBIH2D.cuh" />
-    <ClInclude Include="..\src\kernels\gi2d\CudaPrimitive2D.cuh" />
+    <ClInclude Include="..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh" />
     <ClInclude Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaMathUtils.cuh" />
     <ClInclude Include="..\src\kernels\math\CudaTransform.cuh" />
-    <ClInclude Include="suites\CudaBIH2DTests.h" />
-    <ClInclude Include="suites\CudaBIH2DTestsImpl.cuh" />
+    <ClInclude Include="suites\CudaBIH2DTests.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="suites\CudaBIH2DTestsImpl.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="suites\CudaMat2Tests.h" />
     <ClInclude Include="suites\CudaMat3Tests.h" />
     <ClInclude Include="suites\CudaMat4Tests.h" />
@@ -47,6 +52,8 @@
     <ClInclude Include="suites\CudaTracableTests.h" />
     <ClInclude Include="suites\CudaVecTests.h" />
     <ClInclude Include="suites\CudaVectorTestsImpl.cuh" />
+    <ClInclude Include="suites\DeviceObjectTests.h" />
+    <ClInclude Include="suites\DeviceObjectTestsImpl.cuh" />
     <ClInclude Include="suites\IOTests.h" />
     <ClInclude Include="suites\SuiteBase.h" />
     <ClInclude Include="suites\CudaVectorTests.h" />
@@ -56,17 +63,20 @@
     <CudaCompile Include="..\src\kernels\CudaAsset.cu" />
     <CudaCompile Include="..\src\kernels\CudaImage.cu" />
     <CudaCompile Include="..\src\kernels\CudaRenderObject.cu" />
-    <CudaCompile Include="..\src\kernels\gi2d\CudaBIH2D.cu" />
-    <CudaCompile Include="..\src\kernels\gi2d\CudaPrimitive2D.cu" />
+    <CudaCompile Include="..\src\kernels\gi2d\tracables\primitives\LineSegment.cu" />
+    <CudaCompile Include="..\src\kernels\GlobalResourceRegistry.cu" />
     <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
     <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaColourUtils.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu" />
     <CudaCompile Include="..\src\kernels\math\CudaTransform.cu" />
-    <CudaCompile Include="suites\CudaBIH2DTestsImpl.cu" />
+    <CudaCompile Include="suites\CudaBIH2DTestsImpl.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="suites\CudaVectorTestsImpl.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </CudaCompile>
+    <CudaCompile Include="suites\DeviceObjectTestsImpl.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3821692D-C280-42B8-ACEF-EFD18F52200E}</ProjectGuid>
@@ -114,7 +124,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;MS_TEST_FRAMEWORK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

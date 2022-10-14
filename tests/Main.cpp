@@ -6,5 +6,6 @@
 #include "suites\CudaTracableTests.h"
 #include "suites\IOTests.h"
 #include "suites\CudaVectorTests.h"
-#include "suites\CudaBIH2DTests.h"
+#include "suites\DeviceObjectTests.h"
+//#include "suites\CudaBIH2DTests.h"
 

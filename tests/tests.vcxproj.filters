@@ -106,10 +106,19 @@
     <ClInclude Include="..\src\kernels\math\CudaMath.cuh">
       <Filter>dependencies\kernels</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\kernels\gi2d\CudaPrimitive2D.cuh">
+    <ClInclude Include="..\src\kernels\math\CudaTransform.cuh">
       <Filter>dependencies\kernels</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\kernels\math\CudaTransform.cuh">
+    <ClInclude Include="..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
+      <Filter>dependencies\kernels</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\DeviceObjectTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="suites\DeviceObjectTestsImpl.cuh">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\kernels\DeviceAllocator.cuh">
       <Filter>dependencies\kernels</Filter>
     </ClInclude>
   </ItemGroup>
@@ -121,9 +130,6 @@
       <Filter>suites</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\CudaAsset.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\src\kernels\gi2d\CudaBIH2D.cu">
       <Filter>dependencies\kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\cameras\CudaCamera.cu">
@@ -144,9 +150,6 @@
     <CudaCompile Include="..\src\kernels\lightprobes\CudaLightProbeGrid.cu">
       <Filter>dependencies\kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\src\kernels\gi2d\CudaPrimitive2D.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\src\kernels\CudaRenderObject.cu">
       <Filter>dependencies\kernels</Filter>
     </CudaCompile>
@@ -155,6 +158,15 @@
     </CudaCompile>
     <CudaCompile Include="..\src\kernels\math\CudaJitterableParameter.cu">
       <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\gi2d\tracables\primitives\LineSegment.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\kernels\GlobalResourceRegistry.cu">
+      <Filter>dependencies\kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="suites\DeviceObjectTestsImpl.cu">
+      <Filter>suites</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

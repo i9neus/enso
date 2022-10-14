@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CppUnitTest.h"
-#include "generic\StdIncludes.h"
-#include "generic\Math.h"
+#include "generic\WindowsHeaders.h"
 #include "kernels\math\CudaMath.cuh"
 #include "kernels\CudaSampler.cuh"
 #include "generic\StringUtils.h"
+#include <functional>
 
 #include <random>
 

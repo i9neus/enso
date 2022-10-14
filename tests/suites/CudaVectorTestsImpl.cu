@@ -16,6 +16,7 @@ namespace Tests
 	{
 		const std::vector<uint> sizeList = { 0, 1, 10, 100, 1000 };
 		const std::vector<uint> flagsList = { 0u, kVectorHostAlloc, kVectorHostAlloc | kVectorUnifiedMemory };
+		Host::Vector<int>* vec;
 
 		// Construct for different permutations of flags
 		for (const uint flags : flagsList)
@@ -23,7 +24,8 @@ namespace Tests
 			// Construct for different sizes
 			for (const uint size : sizeList)
 			{	
-				auto vec = ConstructImpl<int>(size, flags);
+				vec = new Host::Vector<int>(tfm::format("cudaVector_%i_%i", size, flags), size, flags, nullptr);
+				delete vec;
 			}
 		}
 	}
@@ -39,7 +41,7 @@ namespace Tests
 		for (int iterIdx = 0; iterIdx < kNumIterations; ++iterIdx)
 		{
 			const uint startSize = RandInt(0, kMaxArraySize);
-			auto vec = ConstructImpl<int>(startSize, kVectorHostAlloc);
+			Host::Vector<int> vec(tfm::format("cudaVector_%i_%i", startSize, kVectorHostAlloc), startSize, kVectorHostAlloc, nullptr);
 
 			// Initialise with some random data
 			std::vector<int> reference(startSize);
@@ -87,7 +89,7 @@ namespace Tests
 	}
 
 	template<typename Type>
-	__global__ void KernelSquareValues(Device::Vector<Type>* cu_vector)
+	__global__ void KernelSquareValues(VectorInterface<Type>* cu_vector)
 	{
 		if (kKernelIdx < cu_vector->Size())
 		{
@@ -118,7 +120,7 @@ namespace Tests
 		// Modify the values on the device
 		const int blockSize = 16 * 16;
 		const int gridSize = (hostVec.Size() + (blockSize - 1)) / blockSize;				
-		KernelSquareValues << < gridSize, blockSize >> > (hostVec.GetDeviceInstance());
+		KernelSquareValues << < gridSize, blockSize >> > (hostVec.GetDeviceInterface());
 
 		// Download the data back to the host
 		hostVec.Synchronise(kVectorSyncDownload);
