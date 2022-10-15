@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\..\docs\BugChecklist.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp" />
+    <ClCompile Include="..\..\..\src\generic\debug\GlobalThreadMap.cpp" />
+    <ClCompile Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.cpp" />
+    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp" />
+    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp" />
+    <ClCompile Include="..\..\..\src\generic\HighResolutionTimer.cpp" />
+    <ClCompile Include="..\..\..\src\generic\Job.cpp" />
+    <ClCompile Include="..\..\..\src\generic\JsonCommandQueue.cpp" />
+    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp" />
+    <ClCompile Include="..\..\..\src\generic\Log.cpp" />
+    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\imgui\ComponentManager.cpp" />
+    <ClCompile Include="..\..\..\src\imgui\components\ComponentInterface.cpp" />
+    <ClCompile Include="..\..\..\src\imgui\components\gi2d\GI2DUI.cpp" />
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\ProbegenUI.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\elements\DataTable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\elements\ListBox.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\elements\Widget.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\imgui\tools\MemoryMonitor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\ImageIO.cpp" />
+    <ClCompile Include="..\..\..\src\io\USDIO.cpp" />
+    <ClCompile Include="..\..\..\src\onnx\FCNNProbeDenoiser.cpp" />
+    <ClCompile Include="..\..\..\src\onnx\Grid2Grid.cpp" />
+    <ClCompile Include="..\..\..\src\onnx\OnnxModel.cpp" />
+    <ClCompile Include="..\..\..\src\renderers\CudaObjectManager.cpp" />
+    <ClCompile Include="..\..\..\src\renderers\probegen\Probegen.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\renderers\RendererInterface.cpp" />
+    <ClCompile Include="..\..\..\src\renderers\RendererManager.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
+    <ClCompile Include="..\..\..\src\utils\BulkUSDProcessor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\win\D3DContainer.cpp" />
+    <ClCompile Include="..\..\..\src\win\SecurityAttributes.cpp" />
+    <ClCompile Include="..\..\..\src\win\Win32Application.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\generic\Assert.h" />
+    <ClInclude Include="..\..\..\src\generic\Constants.h" />
+    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h" />
+    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h" />
+    <ClInclude Include="..\..\..\src\generic\debug\GlobalThreadMap.h" />
+    <ClInclude Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.h" />
+    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h" />
+    <ClInclude Include="..\..\..\src\generic\Hash.h" />
+    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h" />
+    <ClInclude Include="..\..\..\src\generic\Job.h" />
+    <ClInclude Include="..\..\..\src\generic\JsonCommandQueue.h" />
+    <ClInclude Include="..\..\..\src\generic\JsonUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\Log.h" />
+    <ClInclude Include="..\..\..\src\generic\Semaphore.h" />
+    <ClInclude Include="..\..\..\src\generic\StdUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\StringUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h" />
+    <ClInclude Include="..\..\..\src\imgui\ComponentManager.h" />
+    <ClInclude Include="..\..\..\src\imgui\components\ComponentInterface.h" />
+    <ClInclude Include="..\..\..\src\imgui\components\gi2d\GI2DUI.h" />
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\ProbegenUI.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\elements\DataTable.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\elements\ListBox.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\elements\Shelf.h" />
+    <ClInclude Include="..\..\..\src\imgui\elements\Widget.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\imgui\elements\WidgetUtils.h" />
+    <ClInclude Include="..\..\..\src\imgui\tools\MemoryMonitor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\ImageIO.h" />
+    <ClInclude Include="..\..\..\src\io\USDIO.h" />
+    <ClInclude Include="..\..\..\src\kernels\AssetAllocator.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaBxDF.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaLambert.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaAssetContainer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaCtx.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaDeviceObjectRAII.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaManagedArray.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaManagedObject.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaRay.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectContainer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectFactory.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaSampler.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaTests.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaVector.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaWavefrontTracer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DNode.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\Common.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\CudaBIH2D.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\FwdDecl.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\ObjectDebugger.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellipse.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Primitive2D.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\Transform2D.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\UICtx.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lights\CudaDistantLight.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lights\CudaLight.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lights\CudaQuadLight.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lights\CudaSphereLight.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\materials\CudaMaterial.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\bbox\CudaBBox2.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\Complex.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaGeodesics.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaMath.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaMathUtils.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaSphericalHarmonics.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat2.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat3.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat4.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec2.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec3.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec4.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec2.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec3.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec4.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVecBase.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaBox.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaCornellBox.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaGenericIntersectors.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaKIFS.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaPlane.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSDF.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSphere.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\tracables\CudaTracable.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\Tuple.cuh" />
+    <ClInclude Include="..\..\..\src\onnx\FCNNProbeDenoiser.h" />
+    <ClInclude Include="..\..\..\src\onnx\Grid2Grid.h" />
+    <ClInclude Include="..\..\..\src\onnx\OnnxModel.h" />
+    <ClInclude Include="..\..\..\src\renderers\CudaObjectManager.h" />
+    <ClInclude Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cuh" />
+    <ClInclude Include="..\..\..\src\renderers\probegen\Probegen.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\renderers\RendererInterface.h" />
+    <ClInclude Include="..\..\..\src\renderers\RendererManager.h" />
+    <ClInclude Include="..\..\..\src\renderers\UIButtonMap.h" />
+    <ClInclude Include="..\..\..\src\renderers\UIStateGraph.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imconfig.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imgui.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imgui_internal.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\lodepng\lodepng.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_cuda.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_string.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\allocators.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\cursorstreamwrapper.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\document.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\encodedstream.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\encodings.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\filereadstream.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\filewritestream.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\fwd.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\istreamwrapper.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\memorybuffer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\memorystream.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\ostreamwrapper.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\pointer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\prettywriter.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\rapidjson.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\reader.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\schema.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stream.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
+    <ClInclude Include="..\..\..\src\utils\BulkUSDProcessor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\win\D3DContainer.h" />
+    <ClInclude Include="..\..\..\src\win\d3dx12.h" />
+    <ClInclude Include="..\..\..\src\win\SecurityAttributes.h" />
+    <ClInclude Include="..\..\..\src\win\Win32Application.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectContainer.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectFactory.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaTests.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaWavefrontTracer.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\ObjectDebugger.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellpise.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lights\CudaDistantLight.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lights\CudaLight.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lights\CudaQuadLight.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lights\CudaSphereLight.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\materials\CudaMaterial.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaGeodesics.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaBox.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaCornellBox.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaKIFS.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaPlane.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSDF.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSphere.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaTracable.cu" />
+    <CudaCompile Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\bin\win64\Release\config.json" />
+    <None Include="..\..\..\scenes\template.usda" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>
+    <RootNamespace>probegen</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
+    <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
+    <TargetName>probegen</TargetName>
+    <IntDir>probegen\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
+    <TargetName>probegen</TargetName>
+    <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
+    <IntDir>probegen\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CudaToolkitDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <InterleaveSourceInPTX>true</InterleaveSourceInPTX>
+      <GenerateLineInfo>true</GenerateLineInfo>
+      <PtxAsOptionV>true</PtxAsOptionV>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <Include>./;../../common/inc</Include>
+      <CompileOut>probegen\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+    </CudaCompile>
+    <CudaLink>
+      <LinkOut>probegen\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CudaToolkitDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <Include>./;../../common/inc</Include>
+      <CompileOut>probegen\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+    </CudaCompile>
+    <CudaLink>
+      <LinkOut>probegen\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.targets" />
+  </ImportGroup>
+</Project>

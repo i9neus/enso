@@ -1,7 +1,7 @@
 #include "CudaBIH2DTestsImpl.cuh"
 
-#include <kernels/gi2d/tracables/primitives/LineSegment.cuh>
-#include <kernels/gi2d/CudaBIH2D.cuh>
+#include "kernels/gi2d/tracables/primitives/LineSegment.cuh"
+#include "kernels/gi2d/CudaBIH2D.cuh"
 
 using namespace Cuda;
 

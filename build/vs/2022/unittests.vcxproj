@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\generic\Assert.h" />
+    <ClInclude Include="..\..\..\src\generic\Constants.h" />
+    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h" />
+    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h" />
+    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h" />
+    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h" />
+    <ClInclude Include="..\..\..\src\generic\JsonUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\Log.h" />
+    <ClInclude Include="..\..\..\src\generic\StdUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\StringUtils.h" />
+    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h" />
+    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTests.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat2Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat3Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat4Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaMathTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaTracableTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaVecTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cuh" />
+    <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cuh" />
+    <ClInclude Include="..\..\..\tests\unit\suites\IOTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\SuiteBase.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu" />
+    <CudaCompile Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cu" />
+    <CudaCompile Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp" />
+    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp" />
+    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp" />
+    <ClCompile Include="..\..\..\src\generic\HighResolutionTimer.cpp" />
+    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp" />
+    <ClCompile Include="..\..\..\src\generic\Log.cpp" />
+    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\tests\unit\Main.cpp" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{828FD1B8-BD86-475A-A4F0-DEFBCD300F39}</ProjectGuid>
+    <RootNamespace>unittests</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)include;$(ONNXRUNTIME_ROOT)\include;$(MSBuildProjectDirectory)\..\..\..\src</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(BOOST_LIBRARYDIR);$(ONNXRUNTIME_ROOT)/lib/;</LibraryPath>
+    <IntDir>unittests\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);$(MSBuildProjectDirectory)\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(TBB_LOCATION)\lib\intel64\vc14;$(USD_ROOT)\lib;$(BOOST_LIBRARYDIR);$(ONNXRUNTIME_ROOT)/lib/;</LibraryPath>
+    <IntDir>unittests\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;MS_TEST_FRAMEWORK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(CudaToolkitDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(BOOST_LIBRARYDIR)</AdditionalLibraryDirectories>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Runtime>MDd</Runtime>
+      <CompileOut>unittests\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+    </CudaCompile>
+    <CudaLink>
+      <LinkOut>unittests\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(CudaToolkitDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CompileOut>unittests\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <Runtime>MD</Runtime>
+    </CudaCompile>
+    <CudaLink>
+      <LinkOut>unittests\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+    </CudaLink>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.targets" />
+  </ImportGroup>
+</Project>

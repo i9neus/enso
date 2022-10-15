@@ -42,3 +42,9 @@ x64/*
 *.jpg
 *.ini
 *.zip
+
+# Visual Studio temp files
+build/vs/2019/*/
+build/vs/2022/*/
+*.deps
+*.cache

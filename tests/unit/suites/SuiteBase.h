@@ -2,6 +2,7 @@
 
 #include "CppUnitTest.h"
 #include "generic\WindowsHeaders.h"
+#include "kernels\CudaAsset.cuh"
 #include "kernels\math\CudaMath.cuh"
 #include "kernels\CudaSampler.cuh"
 #include "generic\StringUtils.h"
@@ -41,7 +42,7 @@ namespace Tests
 
 		void ReseedRNG(const uint seed)
 		{
-			m_mt = std::mt19937(seed);
+			m_mt = std::mt19937(seed); 
 		}
 
 		inline float RandFlt()
