@@ -9,9 +9,9 @@
 namespace GI2D
 {
     struct OverlayParams;  
-    struct PathTracerParams; 
+    //struct PathTracerParams; 
     struct ViewTransform2D;
-    class LineSegment; 
+    //class LineSegment; 
 
     namespace Device
     {
@@ -21,12 +21,11 @@ namespace GI2D
     namespace Host
     {
         class BIH2DAsset;
-        class Tracable;
         class Overlay;   
-        class PathTracer; 
-        class IsosurfaceExplorer;
-        class Tracable;
-        class SceneObject;
+        //class PathTracer; 
+        //class IsosurfaceExplorer;
+        class TracableInterface;
+        class SceneObjectInterface;
     }
 }
 
@@ -109,8 +108,8 @@ private:
     JobManager                                  m_jobManager;
 
     AssetHandle<GI2D::Host::Overlay>            m_overlayRenderer;
-    AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
-    AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
+    //AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
+    //AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
 
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
     AssetHandle<GI2D::TracableContainer>        m_hostTracables;
@@ -125,11 +124,11 @@ private:
     GI2D::UIViewCtx                             m_viewCtx;
     GI2D::UISelectionCtx                        m_selectionCtx;
 
-    std::unordered_map<uint, std::function<AssetHandle<GI2D::Host::SceneObject>(const std::string&)>>    m_sceneObjectInstantiators;
+    std::unordered_map<uint, std::function<AssetHandle<GI2D::Host::SceneObjectInterface>(const std::string&)>>    m_sceneObjectInstantiators;
 
     struct
     {
-        AssetHandle<GI2D::Host::SceneObject>   newObject;
+        AssetHandle<GI2D::Host::SceneObjectInterface>   newObject;
     } 
     m_onCreate;
 

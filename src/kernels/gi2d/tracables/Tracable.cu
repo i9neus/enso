@@ -3,7 +3,7 @@
 
 namespace GI2D
 {
-    __host__ __device__ bool TracableInterface::IntersectBBox(const BBox2f& bBox) const
+    __host__ __device__ bool Device::Tracable::IntersectBBox(const BBox2f& bBox) const
     {
         return bBox.Intersects(m_objectBBox);
     }

@@ -1,9 +1,9 @@
 #pragma once
 
-namespace Cuda
+namespace Core
 {
-    template<typename> class VectorInterface;
-    
+    template<typename> class Vector;
+
     namespace Device
     {
         template<typename> class Vector;
@@ -25,22 +25,21 @@ namespace GI2D
     struct BIH2DNodeDataFull;
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
-
-    class SceneObjectInterface;
-    class TracableInterface;
     
     namespace Device
     {
         class BIH2DAsset;
+        class Tracable;
+        class SceneObject;
     }
 
     namespace Host
     {
         class BIH2DAsset;
-        class SceneObject;
-        class Tracable;
+        class SceneObjectInterface;
+        class TracableInterface;
     }
 
-    using TracableContainer = Cuda::Host::AssetVector<Host::Tracable, TracableInterface>;
-    using InspectorContainer = Cuda::Host::AssetVector<Host::Tracable, TracableInterface>;
+    using TracableContainer = ::Core::Host::AssetVector<Host::TracableInterface, Device::Tracable>;
+    using InspectorContainer = ::Core::Host::AssetVector<Host::TracableInterface, Device::Tracable>;
 }

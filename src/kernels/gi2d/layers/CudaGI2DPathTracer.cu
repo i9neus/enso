@@ -33,7 +33,7 @@ namespace GI2D
 
         assert(m_bih);
         const auto& bih = *m_bih;
-        const VectorInterface<TracableInterface*>& tracables = *m_tracables;
+        const ::Core::Vector<Device::Tracable*>& tracables = *m_tracables;
         RNG rng;       
         rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
         //rng.Initialise(HashOf(uint(accum.w)));
@@ -104,7 +104,7 @@ namespace GI2D
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInterface();
+        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_accum.width = width;
@@ -133,8 +133,8 @@ namespace GI2D
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseObjects2<PathTracerObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams)  { SynchroniseObjects2<PathTracerParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerParams>(cu_deviceData, *this); }
     }
 
     __host__ void Host::PathTracer::OnDestroyAsset()

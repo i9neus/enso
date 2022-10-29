@@ -103,7 +103,7 @@ namespace GI2D
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInterface();
+        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_accum.width = width;
@@ -132,8 +132,8 @@ namespace GI2D
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseObjects2<IsosurfaceExplorerObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseObjects2<IsosurfaceExplorerParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<IsosurfaceExplorerObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<IsosurfaceExplorerParams>(cu_deviceData, *this); }
     }
 
     __host__ void Host::IsosurfaceExplorer::OnDestroyAsset()

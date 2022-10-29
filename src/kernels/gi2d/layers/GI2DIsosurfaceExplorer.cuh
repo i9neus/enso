@@ -32,7 +32,7 @@ namespace GI2D
     {
         __device__ __host__ IsosurfaceExplorerObjects() {}
         
-        VectorInterface<GI2D::TracableInterface*>* m_inspectors = nullptr;
+        Core::Vector<Device::Tracable*>* m_inspectors = nullptr;
         Cuda::Device::ImageRGBW* m_accumBuffer = nullptr;
     };
 

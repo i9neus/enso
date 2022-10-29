@@ -23,9 +23,9 @@ namespace GI2D
 
     namespace Device
     {        
-        class UIInspector : public TracableInterface,
-                            public UIInspectorParams,
-                            public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
+        class UIInspector : public Device::Tracable,
+                            public UIInspectorParams//,
+                            //public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
         {
         protected:
             __device__ virtual bool EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
@@ -39,8 +39,7 @@ namespace GI2D
     {
         class BIH2DAsset;
 
-        class UIInspector : public Host::Tracable,
-                            public UIInspectorParams,
+        class UIInspector : public Host::Tracable<Device::UIInspector>,
                             public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
         {
         public:
@@ -55,14 +54,14 @@ namespace GI2D
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       Finalise() override final;
 
-            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
+            __host__ static AssetHandle<GI2D::Host::SceneObjectInterface> Instantiate(const std::string& id);
             __host__ static const std::string  GetAssetTypeString() { return "inspector"; }
 
         private:
             __host__ void Synchronise(const int type);
 
         private:
-            Device::UIInspector*                            cu_deviceInstance;
+            Device::UIInspector* cu_deviceUIInspectorInstance;
 
             int                                             m_numSelected;
         };

@@ -29,12 +29,12 @@ namespace GI2D
     }
 
     __host__ Host::UIInspector::UIInspector(const std::string& id) :
-        Tracable(id)
+        Host::Tracable(id)
     {
         Log::Success("Host::UIInspector::UIInspector");
 
-        cu_deviceInstance = InstantiateOnDevice<Device::UIInspector>();
-        cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
+        cu_deviceUIInspectorInstance = InstantiateOnDevice<Device::UIInspector>();
+        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceUIInspectorInstance);
         
         Synchronise(kSyncObjects);
     }
@@ -47,14 +47,14 @@ namespace GI2D
 
     __host__ void Host::UIInspector::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        DestroyOnDevice(cu_deviceUIInspectorInstance);
     }
 
     __host__ void Host::UIInspector::Synchronise(const int type)
     {
-        Tracable::Synchronise(cu_deviceInstance, type);
+        Host::Tracable::Synchronise(cu_deviceUIInspectorInstance, type);
 
-        if (type == kSyncParams) { SynchroniseObjects2<UIInspectorParams>(cu_deviceInstance, *this); }
+        if (type == kSyncParams) { SynchroniseInheritedClass<UIInspectorParams>(cu_deviceUIInspectorInstance, *this); }
     }
 
     __host__ uint Host::UIInspector::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
@@ -66,8 +66,8 @@ namespace GI2D
         if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
         {
             // Set the position and bounding box of the widget
-            m_transform.trans = viewCtx.mousePos;
-            m_worldBBox = BBox2f(viewCtx.mousePos - vec2(viewCtx.dPdXY * 20.0f), viewCtx.mousePos + vec2(viewCtx.dPdXY * 20.0f));
+            SceneObjectParams::m_transform.trans = viewCtx.mousePos;
+            SceneObjectParams::m_worldBBox = BBox2f(viewCtx.mousePos - vec2(viewCtx.dPdXY * 20.0f), viewCtx.mousePos + vec2(viewCtx.dPdXY * 20.0f));
 
             //SetDirtyFlags(kGI2DDirtyTransforms);
             SetDirtyFlags(kGI2DDirtyBVH);

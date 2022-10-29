@@ -76,7 +76,7 @@ namespace GI2D
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
-        Tracable(id),
+        Super(id),
         cu_deviceInstance(nullptr)
     {
         Log::Success("Host::Curve::Curve");
@@ -84,17 +84,17 @@ namespace GI2D
         constexpr uint kMinTreePrims = 3;
         
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = CreateChildAsset<Cuda::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
+        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
-        cu_deviceTracableInterface = StaticCastOnDevice<TracableInterface>(cu_deviceInstance);
+        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceInstance);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInterface();
+        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
         m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_lineSegments = static_cast<Cuda::VectorInterface<GI2D::LineSegment>*>(m_hostLineSegments.get());
+        m_lineSegments = static_cast<Cuda::Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
         
         Synchronise(kSyncObjects);
     }
@@ -120,20 +120,20 @@ namespace GI2D
 
     __host__ void Host::Curve::Synchronise(const int syncType)
     {
-        Tracable::Synchronise(cu_deviceInstance, syncType);
+        Host::Tracable::Synchronise(cu_deviceInstance, syncType);
 
         if (syncType == kSyncObjects)
         {
-            SynchroniseObjects2<CurveObjects>(cu_deviceInstance, m_deviceObjects);
+            SynchroniseObjects<CurveObjects>(cu_deviceInstance, m_deviceObjects);
         }
     }
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - m_transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - SceneObjectParams::m_transform.trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            m_transform.trans = viewCtx.mousePos;
+            SceneObjectParams::m_transform.trans = viewCtx.mousePos;
            
             Log::Success("Opened path %s", GetAssetID());
         }
@@ -220,8 +220,8 @@ namespace GI2D
             m_hostBIH->Build(getPrimitiveBBox);
 
             // Update the tracable bounding boxes
-            m_objectBBox = m_hostBIH->GetBoundingBox();
-            m_worldBBox = m_objectBBox + m_transform.trans;
+            SceneObjectParams::m_objectBBox = m_hostBIH->GetBoundingBox();
+            SceneObjectParams::m_worldBBox = SceneObjectParams::m_objectBBox + SceneObjectParams::m_transform.trans;
             //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
             resyncParams = true;

@@ -415,9 +415,6 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\ObjectDebugger.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
@@ -856,9 +853,6 @@
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\ObjectDebugger.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu">

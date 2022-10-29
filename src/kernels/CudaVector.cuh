@@ -5,7 +5,7 @@
 #include "CudaCommonIncludes.cuh"
 #include "Tuple.cuh"
 
-namespace 
+namespace Core
 {
 	struct VectorParams
 	{
@@ -13,10 +13,7 @@ namespace
 		uint capacity;
 		uint flags;
 	};
-}
 
-namespace Cuda
-{
 	// Substitute for std::is_base_of where base class is templatised
 	// https://stackoverflow.com/questions/34672441/stdis-base-of-for-template-classes
 	template < template <typename...> class base, typename derived>
@@ -30,7 +27,7 @@ namespace Cuda
 
 	template < template <typename...> class base, typename derived>
 	using is_base_of_template = typename is_base_of_template_impl<base, derived>::type;
-	
+
 	//enum class AccessSignal : uint { kUnlocked, kReadLocked, kWriteLocked };
 
 	enum CudaVectorFlags : uint
@@ -41,7 +38,7 @@ namespace Cuda
 		kVectorSyncUpload = 8,
 		kVectorSyncDownload = 16
 	};
-	
+
 	namespace Host
 	{
 		// Forward declare some things we'll need for friendship and tagging
@@ -49,15 +46,15 @@ namespace Cuda
 	}
 
 	template<typename Type>
-	class VectorInterface
+	class Vector
 	{
 	public:
-		__host__ __device__ VectorInterface() :
-			m_localData(nullptr) 
+		__host__ __device__ Vector() :
+			m_localData(nullptr)
 		{
 			m_localParams.size = m_localParams.capacity = m_localParams.flags = 0;
 		}
-		__host__ __device__ ~VectorInterface() {}
+		__host__ __device__ ~Vector() {}
 
 		__host__ __device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
 		__host__ __device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
@@ -65,28 +62,28 @@ namespace Cuda
 		__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
 
 		__host__ __device__ Type* Data() { return m_localData; }
-		__host__ __device__ Type& operator[](const uint idx) 
-		{ 
+		__host__ __device__ Type& operator[](const uint idx)
+		{
 			assert(idx < m_localParams.size);
-			return m_localData[idx]; 
+			return m_localData[idx];
 		}
-		__host__ __device__ const Type& operator[](const uint idx) const 
-		{ 
+		__host__ __device__ const Type& operator[](const uint idx) const
+		{
 			assert(idx < m_localParams.size);
-			return m_localData[idx]; 
+			return m_localData[idx];
 		}
-		
+
 	protected:
-		Type*			m_localData;
+		Type* m_localData;
 		VectorParams	m_localParams;
 	};
 
 	namespace Device
 	{
 		template<typename Type>
-		class Vector : public VectorInterface<Type>,
-					   public Device::Asset
-		{	
+		class Vector : public Core::Vector<Type>,
+					   public Cuda::Device::Asset
+		{
 		public:
 			__device__ Vector() {}
 			__device__ ~Vector() {}
@@ -102,14 +99,14 @@ namespace Cuda
 	namespace Host
 	{
 		template<typename HostType, typename DeviceType>
-		class VectorBase : public VectorInterface<HostType>, 
-						   public Host::AssetAllocator
+		class VectorBase : public Core::Vector<HostType>,
+						   public Cuda::Host::AssetAllocator
 		{
 		protected:
 			Device::Vector<DeviceType>* cu_deviceInstance;
-			VectorInterface<DeviceType>* cu_deviceInterface;
+			Core::Vector<DeviceType>* cu_deviceInterface;
 
-			DeviceType*					cu_deviceData;
+			DeviceType* cu_deviceData;
 			VectorParams				m_deviceParams;
 
 		public:
@@ -186,8 +183,8 @@ namespace Cuda
 			}
 
 			__host__ __inline__ VectorBase& operator=(const std::vector<HostType>& rhs)
-			{	
-				CopyImpl(rhs.data(), rhs.size());	
+			{
+				CopyImpl(rhs.data(), rhs.size());
 				return *this;
 			}
 
@@ -205,7 +202,7 @@ namespace Cuda
 				cu_deviceData = rhs.cu_deviceData;
 				m_hostStream = rhs.m_hostStream;
 
-				rhs.Invalidate();				
+				rhs.Invalidate();
 			}
 
 			__host__  virtual void OnDestroyAsset() override final
@@ -218,7 +215,7 @@ namespace Cuda
 				m_deviceParams.capacity = 0;
 
 				Assert(!m_localData || m_localParams.capacity); // Sanity check
-				
+
 				// Clean up host memory (if not unified)
 				if (m_localData && m_localParams.flags & kVectorHostAlloc && !(m_localParams.flags & kVectorUnifiedMemory))
 				{
@@ -237,7 +234,7 @@ namespace Cuda
 				}
 
 				// Destroy the device instance
-				DestroyOnDevice(cu_deviceInstance);				
+				DestroyOnDevice(cu_deviceInstance);
 			}
 
 			__host__ inline void Prepare()
@@ -255,11 +252,11 @@ namespace Cuda
 			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
 			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline VectorInterface<DeviceType>* GetDeviceInterface() 
-			{ 
+			__host__ inline Core::Vector<DeviceType>* GetDeviceCoreInstance()
+			{
 				if (cu_deviceInterface == nullptr)
 				{
-					cu_deviceInterface = StaticCastOnDevice<VectorInterface<DeviceType>>(GetDeviceInstance());
+					cu_deviceInterface = StaticCastOnDevice<Core::Vector<DeviceType>>(GetDeviceInstance());
 				}
 				return cu_deviceInterface;
 			}
@@ -368,8 +365,7 @@ namespace Cuda
 				}
 			}
 
-		protected:
-			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance()
+			__host__ inline Core::Device::Vector<DeviceType>* GetDeviceInstance()
 			{
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
@@ -379,12 +375,13 @@ namespace Cuda
 				return cu_deviceInstance;
 			}
 
+		protected:
 			__host__ void CopyImpl(HostType* data, const uint newSize)
 			{
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Must specify kVectorHostAlloc to use operator=");
 
 				Resize(newSize);
-				
+
 				if (std::is_trivially_copyable<HostType>::value)
 				{
 					std::memcpy(m_localData, data, sizeof(HostType) * m_localParams.size);
@@ -407,7 +404,7 @@ namespace Cuda
 			}
 
 			template<bool CopyPtr>
-			__host__ __inline__ void CopyDeviceToHostPtr() {}			
+			__host__ __inline__ void CopyDeviceToHostPtr() {}
 
 			template<>
 			__host__ __inline__ void CopyDeviceToHostPtr<true>()
@@ -523,7 +520,7 @@ namespace Cuda
 			}
 		};
 
-		// Generic vector where both types are the same
+		// Core vector where both types are the same
 		template<typename CommonType>
 		class Vector : public VectorBase<CommonType, CommonType>
 		{
@@ -566,12 +563,12 @@ namespace Cuda
 
 		// Requires that HostType inherit AssetTags
 		template<typename HostType, typename DeviceType>
-		class AssetVector : public VectorBase<AssetHandle<typename HostType>, DeviceType*>
+		class AssetVector : public VectorBase<Cuda::AssetHandle<typename HostType>, DeviceType*>
 		{
 		public:
 
 		private:
-			DeviceType**		m_deviceSyncData;
+			DeviceType** m_deviceSyncData;
 
 		public:
 			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType*>(id, flags, hostStream)
@@ -595,13 +592,13 @@ namespace Cuda
 				if (!cu_deviceData) { return; }
 
 				// Allocate some temporary storage
-				m_deviceSyncData = new DeviceType*[m_localParams.size];
+				m_deviceSyncData = new DeviceType * [m_localParams.size];
 				Assert(m_deviceSyncData);
 
 				// Convert between the host and device datatypes
 				for (int idx = 0; idx < m_localParams.size; ++idx)
 				{
-					m_deviceSyncData[idx] = m_localData[idx]->HostType::GetDeviceInstance();
+					m_deviceSyncData[idx] = m_localData[idx]->GetDeviceInstance();
 				}
 
 				// Copy to the device

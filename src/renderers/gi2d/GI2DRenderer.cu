@@ -1,17 +1,17 @@
 #include "GI2DRenderer.cuh"
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/layers/CudaGI2DOverlay.cuh"
-#include "kernels/gi2d/layers/CudaGI2DPathTracer.cuh"
-#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
+//#include "kernels/gi2d/layers/CudaGI2DPathTracer.cuh"
+//#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/tracables/Tracable.cuh"
-#include "kernels/gi2d/tracables/Curve.cuh"
-#include "kernels/gi2d/widgets/UIInspector.cuh"
+//#include "kernels/gi2d/tracables/Curve.cuh"
+//#include "kernels/gi2d/widgets/UIInspector.cuh"
 #include "kernels/Tuple.cuh"
 
-#include "kernels/gi2d/ObjectDebugger.cuh"
+//#include "kernels/gi2d/ObjectDebugger.cuh"
 
 using namespace Cuda;
 using namespace GI2D;
@@ -20,7 +20,7 @@ GI2DRenderer::GI2DRenderer()
 {
     // Declare the scene object instantiators
     // TODO: Merge this code with RenderObjectFactory
-    AddInstantiator<GI2D::Host::Curve>('Q');
+    //AddInstantiator<GI2D::Host::Curve>('Q');
     //AddInstantiator<GI2D::Host::UIInspector>('W');
 
     m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
@@ -90,11 +90,9 @@ void GI2DRenderer::OnInitialise()
 
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
 
-    m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", kVectorHostAlloc, m_renderStream);
-    m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", kVectorHostAlloc, m_renderStream);
+    m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc, m_renderStream);
+    m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
-
-    InvokeDebugger();
 
     //m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
     //m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
@@ -138,7 +136,7 @@ void GI2DRenderer::Rebuild()
     {
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
         m_hostTracables->Clear();
-        m_renderObjects->ForEachOfType<GI2D::Host::Tracable>([this](AssetHandle<GI2D::Host::Tracable>& tracable) -> bool
+        m_renderObjects->ForEachOfType<GI2D::Host::TracableInterface>([this](AssetHandle<GI2D::Host::TracableInterface>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
                 if (tracable->Rebuild(m_dirtyFlags, m_viewCtx))
@@ -147,16 +145,16 @@ void GI2DRenderer::Rebuild()
                 }
 
                 return true;
-            });
-        m_hostTracables->Synchronise(kVectorSyncUpload);
+            });        
+        m_hostTracables->Synchronise(Core::kVectorSyncUpload);
 
-        m_hostInspectors->Clear();
+        /*m_hostInspectors->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
             {
                 m_hostInspectors->EmplaceBack(widget);
                 return true;
             });
-        m_hostInspectors->Synchronise(kVectorSyncUpload);
+        m_hostInspectors->Synchronise(Core::kVectorSyncUpload);*/
 
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_hostTracables->Size());
@@ -223,7 +221,7 @@ uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& t
         if (tracables[primIdx]->IsSelected())
         {
             // Erase the object from the container
-            m_renderObjects->Erase(tracables[primIdx]->GetAssetID());
+            m_renderObjects->Erase(tracables[primIdx]->GetRenderObject().GetAssetID());
 
             ++numDeleted;
             if (emptyIdx == -1) { emptyIdx = primIdx; }
@@ -409,19 +407,20 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
     {        
         //Create a new tracable and add it to the list of render objects
         //m_onCreate.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
-
-        if (trigger.IsSet('Q'))
+       
+        /*if (trigger.IsSet('Q'))
         {
-            m_onCreate.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
+            auto newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
+            m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
+            m_onCreate.newObject = newObject;
         }
         else if (trigger.IsSet('W'))
         {
-            m_onCreate.newObject = CreateAsset<GI2D::Host::UIInspector>(tfm::format("inspector%i", m_renderObjects->GetUniqueIndex()));
+            auto newObject = CreateAsset<GI2D::Host::UIInspector>(tfm::format("inspector%i", m_renderObjects->GetUniqueIndex()));
+            m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
+            m_onCreate.newObject = newObject;
         }
-        else { AssertMsg(false, "Invalid trigger"); }
-        
-        
-        m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(m_onCreate.newObject), false);
+        else { AssertMsg(false, "Invalid trigger"); }               */
 
         m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
     }
@@ -443,10 +442,10 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
         // If the new object can't be finalised, delete it
         if (!m_onCreate.newObject->Finalise())
         {
-            m_renderObjects->Erase(m_onCreate.newObject->GetAssetID());
+            m_renderObjects->Erase(m_onCreate.newObject->GetRenderObject().GetAssetID());
             SetDirtyFlags(kGI2DDirtyBVH);
 
-            Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetAssetID());
+            Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetRenderObject().GetAssetID());
         }
 
         return kUIStateOkay;

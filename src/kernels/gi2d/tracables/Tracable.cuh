@@ -10,50 +10,60 @@ namespace GI2D
     {
         kTracableSelected = 1u
     };
-    
-    // This class provides an interface for querying the tracable via geometric operations
-    class TracableInterface : virtual public SceneObjectInterface
+
+    namespace Device
     {
-    public:
-        __host__ __device__ virtual bool                    IntersectRay(Ray2D& ray, HitCtx2D& hit) const { return false; }
-        //__host__ __device__ virtual bool                    InteresectPoint(const vec2& p, const float& thickness) const { return false; }
-        __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const;
-
-        //__host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
-
-        __device__ virtual bool                             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final { return EvaluatePrimitives(pWorld, viewCtx, L); }
-        __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
-
-    protected:
-        __host__ __device__ TracableInterface() {}
-
-        __device__ virtual bool                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const { return false; }
-
-        __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
-        {
-            return m_transform.RayToObjectSpace(world);
-        }
-
-    private:
-        BBox2f m_handleInnerBBox;
-    };
-
-    namespace Host
-    {
-        class Tracable : public TracableInterface,
-                         public GI2D::Host::SceneObject, 
-                         public Cuda::AssetTags<Host::Tracable, TracableInterface>
+        // This class provides an interface for querying the tracable via geometric operations
+        class Tracable : public Device::SceneObject
         {
         public:
-            __host__ TracableInterface* GetDeviceInstance() const { return cu_deviceTracableInterface; }
+            __host__ __device__ virtual bool                    IntersectRay(Ray2D& ray, HitCtx2D& hit) const { return false; }
+            //__host__ __device__ virtual bool                    InteresectPoint(const vec2& p, const float& thickness) const { return false; }
+            __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const;
+
+            //__host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
+
+            __device__ virtual bool                             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final { return EvaluatePrimitives(pWorld, viewCtx, L); }
+            __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
 
         protected:
-            __host__ Tracable(const std::string& id) : SceneObject(id) {}
+            __host__ __device__ Tracable() {}
+
+            __device__ virtual bool                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const { return false; }
+
+            __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
+            {
+                return m_transform.RayToObjectSpace(world);
+            }
+
+        private:
+            BBox2f m_handleInnerBBox;
+        };
+    }
+
+    namespace Host
+    {        
+        class TracableInterface : virtual public SceneObjectInterface
+        {
+        public:
+            __host__ virtual Device::Tracable*  GetDeviceInstance() const = 0;
+        };
+        
+        template<typename DeviceType>
+        class Tracable : virtual public TracableInterface,
+                         public Host::SceneObject<DeviceType>                         
+        {
+            using Super = Host::SceneObject<DeviceType>;
+        public:
+            __host__ virtual Device::Tracable* GetDeviceInstance() const override { return cu_deviceTracableInstance; }
+
+        protected:
+            __host__ Tracable(const std::string& id) : Super(id) {}
             
-            template<typename SubType> __host__ void Synchronise(SubType* deviceData, const int syncType) { SceneObject::Synchronise(deviceData, syncType); }
+            template<typename SubType> __host__ void Synchronise(SubType* deviceData, const int syncType) { SceneObject<DeviceType>::Synchronise(deviceData, syncType); }
 
         protected:
-            TracableInterface*          cu_deviceTracableInterface = nullptr;
+            Device::Tracable*               cu_deviceTracableInstance = nullptr;
 
             struct
             {

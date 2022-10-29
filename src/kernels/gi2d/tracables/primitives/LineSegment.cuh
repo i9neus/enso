@@ -57,5 +57,5 @@ namespace GI2D
         __host__ __device__ __forceinline__ vec2& dv(const uint& idx) { return m_dv; }
     };
 
-    __host__ void GenerateRandomLineSegments(Cuda::Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
+    __host__ void GenerateRandomLineSegments(Core::Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
 };

@@ -75,7 +75,7 @@ namespace GI2D
         // Draw the tracables
         if (m_bih && m_tracables)
         {            
-            const VectorInterface<TracableInterface*>& tracables = *(m_tracables);
+            const Core::Vector<Device::Tracable*>& tracables = *(m_tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
@@ -129,9 +129,9 @@ namespace GI2D
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInterface();
+        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInterface();
+        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
 
         cu_deviceData = InstantiateOnDevice<Device::Overlay>(); 
 
@@ -147,8 +147,8 @@ namespace GI2D
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseObjects2<OverlayObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams)  { SynchroniseObjects2<OverlayParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams)  { SynchroniseInheritedClass<OverlayParams>(cu_deviceData, *this); }
     }
 
     __host__ void Host::Overlay::OnDestroyAsset()

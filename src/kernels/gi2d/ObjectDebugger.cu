@@ -177,7 +177,7 @@ namespace GI2D
 
         // Set the host parameters so we can query the primitive on the host
         m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_lineSegments = static_cast<Cuda::VectorInterface<GI2D::LineSegment>*>(m_hostLineSegments.get());
+        m_lineSegments = static_cast<Cuda::Generic::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
 
         Synchronise(kSyncObjects);
     }
@@ -399,7 +399,7 @@ namespace GI2D
         // Draw the tracables
         if (m_bih && m_tracables)
         {
-            const VectorInterface<TracableInterface2*>& tracables = *(m_tracables);
+            const Generic::Vector<TracableInterface2*>& tracables = *(m_tracables);
 
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
@@ -471,8 +471,8 @@ namespace GI2D
     {
         UILayer2::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseObjects2<OverlayObjects2>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseObjects2<OverlayParams2>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayObjects2>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<OverlayParams2>(cu_deviceData, *this); }
     }
 
     __host__ void Host::Overlay2::OnDestroyAsset()
@@ -561,9 +561,9 @@ namespace GI2D
 
 
 
-    __global__ void KernelTest(BIH2D<BIH2DFullNode>* bih, VectorInterface<TracableInterface2*>* tracablesPtr, VectorInterface<TracableInterface2*>* inspectorsPtr)
+    __global__ void KernelTest(BIH2D<BIH2DFullNode>* bih, Generic::Vector<TracableInterface2*>* tracablesPtr, Generic::Vector<TracableInterface2*>* inspectorsPtr)
     {
-        printf("%i bytes\n", sizeof(VectorInterface<TracableInterface2*>*));
+        printf("%i bytes\n", sizeof(Generic::Vector<TracableInterface2*>*));
         printf("@@@@@@@@@@\nbih: 0x%llx\ntracables: 0x%llx\n", bih, tracablesPtr);
         void* bad = (void*)(0xffffffffffffffff);
         printf("bad: 0x%llx\n", bad);
@@ -576,7 +576,7 @@ namespace GI2D
         // Draw the tracables
         if (bih && tracablesPtr)
         {
-            const VectorInterface<TracableInterface2*>& tracables = *tracablesPtr;
+            const Generic::Vector<TracableInterface2*>& tracables = *tracablesPtr;
 
             printf("Tracables\n");
 

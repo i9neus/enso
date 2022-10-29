@@ -3,8 +3,6 @@
 #include "BIH2DNode.cuh"
 #include "GenericIntersector.cuh"
 
-using namespace Cuda;
-
 namespace GI2D
 {
     #define kNear 0
@@ -18,7 +16,7 @@ namespace GI2D
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
-        Cuda::VectorInterface<NodeDataType>* nodes = nullptr;
+        ::Core::Vector<NodeDataType>* nodes = nullptr;
         uint                        numPrims = 0;
     };
 

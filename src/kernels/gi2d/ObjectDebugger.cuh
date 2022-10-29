@@ -219,7 +219,7 @@ namespace GI2D
     struct CurveObjects2
     {
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        VectorInterface<LineSegment>* m_lineSegments = nullptr;
+        Core::Vector<LineSegment>* m_lineSegments = nullptr;
     };
 
     namespace Device
@@ -364,8 +364,8 @@ namespace GI2D
     {
         __host__ __device__ OverlayObjects2() {}
         
-        VectorInterface<TracableInterface2*>* m_tracables = nullptr;
-        VectorInterface<TracableInterface2*>* m_inspectors = nullptr;
+        Generic::Vector<TracableInterface2*>* m_tracables = nullptr;
+        Generic::Vector<TracableInterface2*>* m_inspectors = nullptr;
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
         Cuda::Device::ImageRGBW* m_accumBuffer = nullptr;
     };

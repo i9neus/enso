@@ -63,7 +63,7 @@ namespace GI2D
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int syncType)
             {
-                if (syncType & kSyncParams)  { SynchroniseObjects2<UILayerParams>(cu_object, *this); }
+                if (syncType & kSyncParams)  { SynchroniseInheritedClass<UILayerParams>(cu_object, *this); }
             }
             
             template<typename T>

@@ -4,7 +4,7 @@
 namespace GI2D
 {
     template<typename NodeType>
-    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Cuda::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs, 
+    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Core::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
                                                   const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
         m_bih(bih),
         m_hostNodes(hostNodes),

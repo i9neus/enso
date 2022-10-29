@@ -34,7 +34,7 @@ namespace GI2D
                 
             __host__ void                           Synchronise();
             __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
-            __host__ const Cuda::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
+            __host__ const ::Core::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
 
             std::function<void(const char*)> m_debugFunctor = nullptr;
 
@@ -42,7 +42,7 @@ namespace GI2D
             __host__ void                           CheckTreeNodes() const;
 
         private:
-            AssetHandle<Cuda::Host::Vector<BIH2DFullNode>> m_hostNodes;
+            AssetHandle<::Core::Host::Vector<BIH2DFullNode>> m_hostNodes;
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DParams<BIH2DFullNode>              m_params;
             const uint                              m_minBuildablePrims;

@@ -4,18 +4,13 @@
 
 #include "../BIH2DAsset.cuh"
 //#include "../tracables/primitives/CudaPrimitive2D.cuh"
-#include "../tracables/Curve.cuh"
+//#include "../tracables/Curve.cuh"
 
 using namespace Cuda;
 
-namespace Cuda
-{
-    //namespace Host { template<typename T> class AssetContainer; }
-}
-
 namespace GI2D
 {         
-    class TracableInterface;
+    namespace Device { class Tracable; }
     
     struct OverlayParams
     {
@@ -26,8 +21,8 @@ namespace GI2D
 
     struct OverlayObjects
     {
-        VectorInterface<TracableInterface*>*        m_tracables = nullptr;
-        VectorInterface<TracableInterface*>*        m_inspectors = nullptr;
+        Core::Device::Vector<Device::Tracable*>*    m_tracables = nullptr;
+        Core::Device::Vector<Device::Tracable*>*    m_inspectors = nullptr;
         BIH2D<BIH2DFullNode>*                       m_bih = nullptr;
         Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };

@@ -89,7 +89,7 @@ namespace Tests
 	}
 
 	template<typename Type>
-	__global__ void KernelSquareValues(VectorInterface<Type>* cu_vector)
+	__global__ void KernelSquareValues(Generic::Vector<Type>* cu_vector)
 	{
 		if (kKernelIdx < cu_vector->Size())
 		{

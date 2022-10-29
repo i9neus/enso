@@ -3,7 +3,7 @@
 
 namespace GI2D
 {
-    __device__ bool SceneObjectInterface::EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ bool Device::SceneObject::EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
         // Draw the bounding box
         /*if (m_params.objectBBox.PointOnPerimiter(p, m_params.viewCtx.dPdXY * 2.f))
@@ -29,15 +29,16 @@ namespace GI2D
         return false;
     }
 
-    __host__ Host::SceneObject::SceneObject(const std::string& id) :
+    template<typename DeviceType>
+    __host__ Host::SceneObject<DeviceType>::SceneObject(const std::string& id) :
         RenderObject(id),
         m_dirtyFlags(kGI2DDirtyAll),
-        m_isFinalised(false),
-        cu_deviceSceneObjectInterface(nullptr)
+        m_isFinalised(false)
     {
     }
 
-    __host__ uint Host::SceneObject::OnSelect(const bool isSelected)
+    template<typename DeviceType>
+    __host__ uint Host::SceneObject<DeviceType>::OnSelect(const bool isSelected)
     {
         if (SetGenericFlags(m_attrFlags, uint(kSceneObjectSelected), isSelected))
         {
@@ -46,7 +47,8 @@ namespace GI2D
         return m_dirtyFlags;
     }
 
-    __host__ uint Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
+    template<typename DeviceType>
+    __host__ uint Host::SceneObject<DeviceType>::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         if (stateID == "kMoveSceneObjectBegin")
         {

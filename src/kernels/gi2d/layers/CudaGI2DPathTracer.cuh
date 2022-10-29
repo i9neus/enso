@@ -28,7 +28,7 @@ namespace GI2D
 
     struct PathTracerObjects
     {
-        VectorInterface<GI2D::TracableInterface*>*      m_tracables = nullptr;
+        ::Core::Vector<Device::Tracable*>*              m_tracables = nullptr;
         BIH2D<BIH2DFullNode>*                           m_bih = nullptr;
         Cuda::Device::ImageRGBW*                        m_accumBuffer = nullptr;
     };

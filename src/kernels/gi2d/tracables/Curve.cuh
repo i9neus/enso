@@ -17,16 +17,17 @@ namespace GI2D
         __host__ __device__ CurveObjects() {}
 
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        VectorInterface<LineSegment>* m_lineSegments = nullptr;
+        int test;
+        ::Core::Vector<LineSegment>* m_lineSegments = nullptr;
     };
 
     namespace Device
     {        
-        class Curve : public TracableInterface,                           
+        class Curve : public Device::Tracable,                           
                       public CurveObjects
         {
         public:
-            __device__ Curve() {}
+            __host__ __device__ Curve() {}
 
             __host__ __device__ virtual bool    IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
 
@@ -39,10 +40,11 @@ namespace GI2D
     {                  
         class BIH2DAsset;
         
-        class Curve : public Host::Tracable,
-                      public CurveObjects,
+        class Curve : public Host::Tracable<Device::Curve>,
                       public Cuda::AssetTags<Host::Curve, Device::Curve>
         {
+            using Super = Host::Tracable<Device::Curve>;
+
         public:
             __host__ Curve(const std::string& id);
             __host__ virtual ~Curve();
@@ -56,15 +58,13 @@ namespace GI2D
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       Finalise() override final;
 
-            __host__ Device::Curve* GetDeviceInstance() const
+            __host__ Device::Curve*     GetDeviceInstance() const
             { 
                 return cu_deviceInstance;
             }
 
-            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
+            __host__ static AssetHandle<Host::SceneObjectInterface> Instantiate(const std::string& id);
             __host__ static const std::string GetAssetTypeString() { return "curve"; }
-
-            __host__ static void Test();
 
         private:
 
@@ -74,7 +74,7 @@ namespace GI2D
             CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
-            AssetHandle<Cuda::Host::Vector<LineSegment>>    m_hostLineSegments;
+            AssetHandle<Core::Host::Vector<LineSegment>>    m_hostLineSegments;
 
             int                                             m_numSelected;
 

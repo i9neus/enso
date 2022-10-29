@@ -23,7 +23,7 @@ namespace GI2D
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>();
         cu_deviceInterface = StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = CreateChildAsset<Cuda::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc, m_hostStream);
+        m_hostNodes = CreateChildAsset<Core::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), Core::kVectorHostAlloc, m_hostStream);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()
@@ -51,11 +51,11 @@ namespace GI2D
         //CheckTreeNodes();
 
         // Synchronise the node data to the device
-        m_hostNodes->Synchronise(kVectorSyncUpload);
+        m_hostNodes->Synchronise(Core::kVectorSyncUpload);
         m_params.isConstructed = m_isConstructed;
         m_params.testAsList = m_testAsList;
         m_params.bBox = m_treeBBox;
-        m_params.nodes = m_hostNodes->GetDeviceInterface();
+        m_params.nodes = m_hostNodes->GetDeviceInstance();
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
         SynchroniseObjects(cu_deviceInstance, m_params);

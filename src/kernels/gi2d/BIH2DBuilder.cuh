@@ -12,7 +12,7 @@ namespace GI2D
     class BIH2DBuilder
     {
     public:
-        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, Cuda::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
+        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, ::Core::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
                              const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
 
         __host__ void Build(const bool printStats = false);
@@ -25,7 +25,7 @@ namespace GI2D
 
     private:
         BIH2D<NodeType>&                            m_bih;
-        Cuda::Host::Vector<NodeType>&               m_hostNodes;
+        Core::Host::Vector<NodeType>&               m_hostNodes;
         std::vector<uint>&                          m_primitiveIdxs;
         std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
         BIH2DStats&                                 m_stats;

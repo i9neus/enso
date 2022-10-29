@@ -52,5 +52,5 @@ namespace GI2D
         __host__ __device__ __forceinline__ vec2& dv(const uint& idx) { return m_dv; }
     };
 
-    __host__ void GenerateRandomEllipses(Cuda::Host::Vector<Ellipse>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
+    __host__ void GenerateRandomEllipses(Core::Host::Vector<Ellipse>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
 };
