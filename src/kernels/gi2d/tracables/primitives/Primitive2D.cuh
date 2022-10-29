@@ -9,7 +9,7 @@
 
 using namespace Cuda;
 
-namespace Cuda
+namespace Core
 {
     namespace Host { template<typename T> class Vector; }
 }

@@ -116,7 +116,7 @@ namespace Cuda
     }
 
     __host__ __device__ vec4 Blend(const vec4& rgba1, const vec4& rgba2)
-    {
+    {               
         // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
         return vec4(mix(rgba1.xyz * rgba1.w, rgba2.xyz, rgba2.w) / fmaxf(1e-15f, rgba1.w + (1 - rgba1.w) * rgba2.w),
                     rgba1.w + (1 - rgba1.w) * rgba2.w);

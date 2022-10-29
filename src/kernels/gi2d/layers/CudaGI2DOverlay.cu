@@ -85,16 +85,16 @@ namespace GI2D
                     assert(tracables[idx]);
 
                     const auto& tracable = *tracables[idx];
-                    vec4 LTracable;
-                    if (tracable.EvaluateOverlay(xyView, m_viewCtx, LTracable))
-                    {
-                        //L = Blend(L, LTracable);
+                    vec4 LTracable = tracable.EvaluateOverlay(xyView, m_viewCtx);
+                    if(LTracable.w > 0.0f)
+                    {                        
+                        L = Blend(L, LTracable); 
                     }
 
-                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
+                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
                 }
             };          
-            m_bih->TestPoint(xyView, onPointIntersectLeaf);
+            m_bih->TestPoint(xyView, onPointIntersectLeaf);        
         }
 
         // Draw the widgets

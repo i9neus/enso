@@ -17,8 +17,15 @@ namespace GI2D
         __host__ __device__ CurveObjects() {}
 
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        int test;
         ::Core::Vector<LineSegment>* m_lineSegments = nullptr;
+
+        __host__ __device__ CurveObjects& operator=(const CurveObjects& other)
+        {
+            m_bih = other.m_bih;
+            m_lineSegments = other.m_lineSegments;
+            printf("0x%x\n", m_bih);
+            return *this;
+        }
     };
 
     namespace Device
@@ -32,7 +39,7 @@ namespace GI2D
             __host__ __device__ virtual bool    IntersectRay(Ray2D& ray, HitCtx2D& hit) const override final;
 
         protected:
-            __device__ virtual bool             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const override final;
+            __device__ virtual vec4             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
         };
     }
 
@@ -77,7 +84,10 @@ namespace GI2D
             AssetHandle<Core::Host::Vector<LineSegment>>    m_hostLineSegments;
 
             int                                             m_numSelected;
-
         };
     }
+
+    // Explicitly declare instances of this class for its inherited types
+    //template class Host::Tracable<Device::Curve>;
+    //template class Host::SceneObject<Device::Curve>;
 }

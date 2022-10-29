@@ -47,13 +47,12 @@ namespace GI2D
     {
     }*/
 
-    __device__ bool Device::Curve::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ vec4 Device::Curve::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        if (!m_bih) { return false; }
-        
-        vec4 LPrim(0.0f);
-        const vec2 pLocal = pWorld - m_transform.trans;
+        if (!m_bih) { return vec4(0.0f); }
 
+        const vec2 pLocal = pWorld - m_transform.trans;
+        vec4 L(0.0f);
         m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
@@ -62,17 +61,12 @@ namespace GI2D
                     const float line = segment.Evaluate(pLocal, viewCtx.dPdXY);
                     if (line > 0.f)
                     {
-                        LPrim = Blend(LPrim, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                    }
-                }
+                        L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
+                    }                 
+                }                
             });
-       
-        if (LPrim.w > 0.0f)
-        {
-            L = Blend(L, LPrim);
-            return true;
-        }
-        return false;
+     
+        return L;
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
@@ -84,22 +78,22 @@ namespace GI2D
         constexpr uint kMinTreePrims = 3;
         
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc, nullptr);
+        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", Core::kVectorHostAlloc, nullptr);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
-        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceInstance);
+        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceInstance);        
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
         m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_lineSegments = static_cast<Cuda::Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
+        m_lineSegments = static_cast<Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
         
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::Curve::Instantiate(const std::string& id)
     {
         return CreateAsset<GI2D::Host::Curve>(id);
     }
@@ -120,11 +114,13 @@ namespace GI2D
 
     __host__ void Host::Curve::Synchronise(const int syncType)
     {
-        Host::Tracable::Synchronise(cu_deviceInstance, syncType);
+        Super::Synchronise(cu_deviceInstance, syncType);
 
         if (syncType == kSyncObjects)
         {
-            SynchroniseObjects<CurveObjects>(cu_deviceInstance, m_deviceObjects);
+            Log::Error("0x%x", m_hostBIH->GetDeviceInstance());
+            Log::Error("0x%x", m_deviceObjects.m_bih);
+            SynchroniseInheritedClass<CurveObjects>(cu_deviceInstance, m_deviceObjects);
         }
     }
 
@@ -202,9 +198,9 @@ namespace GI2D
         // If the geometry has changed, rebuild the BIH
         if (m_dirtyFlags & kGI2DDirtyBVH)
         {
-            // Sync the line segments
+            // Sync the line segmentsb
             auto& segments = *m_hostLineSegments;
-            segments.Synchronise(kVectorSyncUpload);
+            segments.Synchronise(Core::kVectorSyncUpload);
 
             // Create a segment list ready for building
             // TODO: It's probably faster if we build on the already-sorted index list

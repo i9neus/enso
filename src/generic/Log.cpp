@@ -10,11 +10,15 @@ namespace Log
     struct GlobalState
     {
         GlobalState() :
-            flags(kLogNormal | kLogWarning | kLogError | kLogCritical),
+            flags(0),
             verbosity(0),
             indentation(0),
             terminalOut(std::cout)
         {
+            flags = 1 << kLogNormal;
+            flags |= 1 << kLogWarning;
+            flags |= 1 << kLogError;
+            flags |= 1 << kLogCritical;
         }
 
         std::ostream&           terminalOut;

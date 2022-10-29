@@ -22,7 +22,7 @@ namespace GI2D
     {
         class BIH2DAsset;
         class Overlay;   
-        //class PathTracer; 
+        class PathTracer; 
         //class IsosurfaceExplorer;
         class TracableInterface;
         class SceneObjectInterface;
@@ -108,7 +108,7 @@ private:
     JobManager                                  m_jobManager;
 
     AssetHandle<GI2D::Host::Overlay>            m_overlayRenderer;
-    //AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
+    AssetHandle<GI2D::Host::PathTracer>         m_pathTracer;
     //AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
 
     AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;

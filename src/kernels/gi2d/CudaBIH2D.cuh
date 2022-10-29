@@ -79,18 +79,11 @@ namespace GI2D
 
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
         __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
-        {            
-            printf("Start! 0x%x\n", this);
-            
-            if (!m_isConstructed) { printf("Not constructed! 0x%x\n", this); return; }
-
-            printf("Is constructed! 0x%x\n", this);
+        {                        
+            if (!m_isConstructed) { return; }
 
             // Chuck out primitives that don't overlap the bounding box
             if (!m_treeBBox.Intersects(p)) { return; }
-
-            printf("Intersects! 0x%x\n", this);
-            //return;
 
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all sequentially
             if (m_testAsList)

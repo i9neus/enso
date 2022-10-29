@@ -219,7 +219,8 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -229,13 +230,15 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellipse.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Primitive2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cuh" />
@@ -359,20 +362,23 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellpise.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu">

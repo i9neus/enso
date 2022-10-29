@@ -64,7 +64,7 @@ namespace GI2D
         class SceneObject : public SceneObjectParams
         {
         public:
-            __device__ virtual bool EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx, vec4& L) const { return false; }
+            __device__ virtual vec4 EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 
             __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
             __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
@@ -93,8 +93,8 @@ namespace GI2D
             SceneObjectInterface() = default;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual uint       OnSelect(const bool isSelected) = 0;
+            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) { return kGI2DClean;  };
+            __host__ virtual uint       OnSelect(const bool isSelected) { return kGI2DClean; }
             __host__ virtual bool       Finalise() = 0;
             __host__ virtual bool       IsConstructed() const = 0;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
@@ -163,6 +163,55 @@ namespace GI2D
             m_onMove;
 
             Device::SceneObject* cu_deviceSceneObjectInterface = nullptr;
-        };
+        };   
+
+        template<typename DeviceType>
+        __host__ Host::SceneObject<DeviceType>::SceneObject(const std::string& id) :
+            RenderObject(id),
+            m_dirtyFlags(kGI2DDirtyAll),
+            m_isFinalised(false)
+        {
+        }
+
+        template<typename DeviceType>
+        __host__ uint Host::SceneObject<DeviceType>::OnSelect(const bool isSelected)
+        {
+            if (SetGenericFlags(m_attrFlags, uint(kSceneObjectSelected), isSelected))
+            {
+                SetDirtyFlags(kGI2DDirtyUI, true);
+            }
+            return m_dirtyFlags;
+        }
+
+        template<typename DeviceType>
+        __host__ uint Host::SceneObject<DeviceType>::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
+        {
+            if (stateID == "kMoveSceneObjectBegin")
+            {
+                m_onMove.dragAnchor = viewCtx.mousePos;
+                m_onMove.isDragging = true;
+                Log::Error("kMoveSceneObjectBegin");
+            }
+            else if (stateID == "kMoveSceneObjectDragging")
+            {
+                Assert(m_onMove.isDragging);
+
+                const vec2 delta = viewCtx.mousePos - m_onMove.dragAnchor;
+                m_onMove.dragAnchor = viewCtx.mousePos;
+                m_transform.trans += delta;
+                m_worldBBox += delta;
+
+                // The geometry internal to this object hasn't changed, but it will affect the 
+                Log::Warning("kMoveSceneObjectDragging");
+                SetDirtyFlags(kGI2DDirtyBVH);
+            }
+            else if (stateID == "kMoveSceneObjectEnd")
+            {
+                m_onMove.isDragging = false;
+                Log::Success("kMoveSceneObjectEnd");
+            }
+
+            return m_dirtyFlags;
+        }
     }
 }

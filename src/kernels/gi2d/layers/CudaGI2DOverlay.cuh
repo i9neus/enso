@@ -4,7 +4,7 @@
 
 #include "../BIH2DAsset.cuh"
 //#include "../tracables/primitives/CudaPrimitive2D.cuh"
-//#include "../tracables/Curve.cuh"
+#include "../tracables/Curve.cuh"
 
 using namespace Cuda;
 
