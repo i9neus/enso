@@ -1,4 +1,4 @@
-#include "CudaGI2DPathTracer.cuh"
+#include "PathTracerLayer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 
@@ -8,7 +8,7 @@ using namespace Cuda;
 
 namespace GI2D
 {        
-    __host__ __device__ PathTracerParams::PathTracerParams()
+    __host__ __device__ PathTracerLayerParams::PathTracerLayerParams()
     {
         m_accum.width = 0;
         m_accum.height = 0;
@@ -16,9 +16,9 @@ namespace GI2D
         m_frameIdx = 0;
     }
 
-    __device__ Device::PathTracer::PathTracer() { }
+    __device__ Device::PathTracerLayer::PathTracerLayer() { }
 
-    __device__ void Device::PathTracer::Render()
+    __device__ void Device::PathTracerLayer::Render()
     {
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
@@ -73,7 +73,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    __device__ void Device::PathTracer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::PathTracerLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {
         assert(deviceOutputImage);
 
@@ -96,7 +96,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::PathTracer::PathTracer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
+    Host::PathTracerLayer::PathTracerLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
                                  const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
         UILayer(id, bih, tracables)
     {
@@ -111,39 +111,39 @@ namespace GI2D
         m_accum.height = height;
         m_accum.downsample = downsample;
 
-        cu_deviceData = InstantiateOnDevice<Device::PathTracer>();
+        cu_deviceData = InstantiateOnDevice<Device::PathTracerLayer>();
 
         Synchronise(kSyncObjects);
     }
 
-    Host::PathTracer::~PathTracer()
+    Host::PathTracerLayer::~PathTracerLayer()
     {
         OnDestroyAsset();
     }
 
 
-    __host__ void Host::PathTracer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ void Host::PathTracerLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
         UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
 
         Synchronise(kSyncParams);
     }
 
-    __host__ void Host::PathTracer::Synchronise(const int syncType)
+    __host__ void Host::PathTracerLayer::Synchronise(const int syncType)
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerLayerObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerLayerParams>(cu_deviceData, *this); }
     }
 
-    __host__ void Host::PathTracer::OnDestroyAsset()
+    __host__ void Host::PathTracerLayer::OnDestroyAsset()
     {
         DestroyOnDevice(cu_deviceData);
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::PathTracer::Render()
+    __host__ void Host::PathTracerLayer::Render()
     {
         if (m_dirtyFlags)
         {
@@ -158,7 +158,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::PathTracer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::PathTracerLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(hostOutputImage, blockSize, gridSize);

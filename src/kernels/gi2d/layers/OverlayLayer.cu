@@ -1,6 +1,6 @@
 #define CUDA_DEVICE_GLOBAL_ASSERTS
 
-#include "CudaGI2DOverlay.cuh"
+#include "OverlayLayer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "generic/Hash.h"
 #include "kernels/CudaAssetContainer.cuh"
@@ -10,7 +10,7 @@ using namespace Cuda;
 
 namespace GI2D
 {    
-    __host__ __device__ OverlayParams::OverlayParams()
+    __host__ __device__ OverlayLayerParams::OverlayLayerParams()
     {
         m_gridCtx.show = true;
         m_gridCtx.lineAlpha = 0.0;
@@ -18,11 +18,11 @@ namespace GI2D
         m_gridCtx.majorLineSpacing = 1.0f;
     }
 
-    __device__ Device::Overlay::Overlay()
+    __device__ Device::OverlayLayer::OverlayLayer()
     {
     }
 
-    __device__ void Device::Overlay::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::OverlayLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {
         assert(deviceOutputImage);
         
@@ -38,7 +38,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    __device__ void Device::Overlay::Render()
+    __device__ void Device::OverlayLayer::Render()
     {
         assert(m_accumBuffer);
 
@@ -103,7 +103,7 @@ namespace GI2D
             for (int idx = 0; idx < m_inspectors->Size(); ++idx)
             {
                 vec4 LWidget;
-                if ((*m_inspectors)[idx]->EvaluateOverlay(xyView, m_viewCtx, LWidget))
+                if ((*m_inspectors)[idx]->EvaluateOverlayLayer(xyView, m_viewCtx, LWidget))
                 {
                     L = Blend(L, LWidget);
                 }
@@ -120,7 +120,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::Overlay::Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
+    Host::OverlayLayer::OverlayLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
                                    const uint width, const uint height, cudaStream_t renderStream) :
         UILayer(id, bih, tracables),
         m_hostInspectors(inspectors)
@@ -133,31 +133,31 @@ namespace GI2D
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
 
-        cu_deviceData = InstantiateOnDevice<Device::Overlay>(); 
+        cu_deviceData = InstantiateOnDevice<Device::OverlayLayer>(); 
 
         Synchronise(kSyncObjects);
     }
 
-    Host::Overlay::~Overlay()
+    Host::OverlayLayer::~OverlayLayer()
     {
         OnDestroyAsset();
     }
 
-    __host__ void Host::Overlay::Synchronise(const int syncType)
+    __host__ void Host::OverlayLayer::Synchronise(const int syncType)
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams)  { SynchroniseInheritedClass<OverlayParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayLayerObjects>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams)  { SynchroniseInheritedClass<OverlayLayerParams>(cu_deviceData, *this); }
     }
 
-    __host__ void Host::Overlay::OnDestroyAsset()
+    __host__ void Host::OverlayLayer::OnDestroyAsset()
     {
         DestroyOnDevice(cu_deviceData);
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::Overlay::Render()
+    __host__ void Host::OverlayLayer::Render()
     {
         if (!m_dirtyFlags) { return; }
         
@@ -170,7 +170,7 @@ namespace GI2D
         m_dirtyFlags = 0;
     }
 
-    __host__ void Host::Overlay::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::OverlayLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
     {        
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
@@ -179,7 +179,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    /*__host__ void Host::Overlay::TraceRay()
+    /*__host__ void Host::OverlayLayer::TraceRay()
     {
         const auto& tracables = *m_hostTracables;
         Ray2D ray(vec2(0.0f), normalize(m_viewCtx.mousePos));
@@ -201,7 +201,7 @@ namespace GI2D
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
     }*/
 
-    __host__ void Host::Overlay::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ void Host::OverlayLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
         UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
         

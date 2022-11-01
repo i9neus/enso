@@ -1,7 +1,7 @@
 #include "GI2DRenderer.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/layers/CudaGI2DOverlay.cuh"
-#include "kernels/gi2d/layers/CudaGI2DPathTracer.cuh"
+#include "kernels/gi2d/layers/OverlayLayer.cuh"
+#include "kernels/gi2d/layers/PathTracerLayer.cuh"
 //#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
@@ -94,8 +94,8 @@ void GI2DRenderer::OnInitialise()
     m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc, m_renderStream);
     m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::Overlay>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
-    m_pathTracer = CreateAsset<GI2D::Host::PathTracer>(":gi2d/pathTracer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    m_overlayRenderer = CreateAsset<GI2D::Host::OverlayLayer>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
+    m_pathTracerLayer = CreateAsset<GI2D::Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
     //m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
@@ -119,7 +119,7 @@ void GI2DRenderer::OnInitialise()
 void GI2DRenderer::OnDestroy()
 {
     m_overlayRenderer.DestroyAsset();
-    m_pathTracer.DestroyAsset();
+    m_pathTracerLayer.DestroyAsset();
     //m_isosurfaceExplorer.DestroyAsset();
 
     m_hostTracables.DestroyAsset();
@@ -195,7 +195,7 @@ void GI2DRenderer::Rebuild()
 
     // View has changed
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-    m_pathTracer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
@@ -464,7 +464,7 @@ void GI2DRenderer::OnRender()
     }
 
     // Render the pass
-    m_pathTracer->Render();
+    m_pathTracerLayer->Render();
     //m_isosurfaceExplorer->Render();
     m_overlayRenderer->Render();
 
@@ -475,7 +475,7 @@ void GI2DRenderer::OnRender()
     if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
     
     //m_compositeImage->Clear(vec4(kZero, 1.0f));
-    m_pathTracer->Composite(m_compositeImage);
+    m_pathTracerLayer->Composite(m_compositeImage);
     //m_isosurfaceExplorer->Composite(m_compositeImage);    
     m_overlayRenderer->Composite(m_compositeImage);
 

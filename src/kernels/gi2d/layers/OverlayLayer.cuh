@@ -12,14 +12,14 @@ namespace GI2D
 {         
     namespace Device { class Tracable; }
     
-    struct OverlayParams
+    struct OverlayLayerParams
     {
-        __host__ __device__ OverlayParams();
+        __host__ __device__ OverlayLayerParams();
 
         UIGridCtx           m_gridCtx;
     };
 
-    struct OverlayObjects
+    struct OverlayLayerObjects
     {
         Core::Device::Vector<Device::Tracable*>*    m_tracables = nullptr;
         Core::Device::Vector<Device::Tracable*>*    m_inspectors = nullptr;
@@ -29,13 +29,13 @@ namespace GI2D
 
     namespace Device
     {
-        class Overlay : public Cuda::Device::Asset,
+        class OverlayLayer : public Cuda::Device::Asset,
                         public UILayerParams,
-                        public OverlayParams,
-                        public OverlayObjects
+                        public OverlayLayerParams,
+                        public OverlayLayerObjects
         {
         public:
-            __host__ __device__ Overlay();
+            __host__ __device__ OverlayLayer();
             
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
@@ -44,14 +44,14 @@ namespace GI2D
 
     namespace Host
     {
-        class Overlay : public UILayer,
-                        public OverlayParams
+        class OverlayLayer : public UILayer,
+                        public OverlayLayerParams
         {
         public:
-            Overlay(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
+            OverlayLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
                     const uint width, const uint height, cudaStream_t renderStream);
 
-            virtual ~Overlay();
+            virtual ~OverlayLayer();
 
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final; 
@@ -65,8 +65,8 @@ namespace GI2D
         private:
             //__host__ void TraceRay();
 
-            Device::Overlay*                            cu_deviceData = nullptr;
-            OverlayObjects                              m_deviceObjects;
+            Device::OverlayLayer*                       cu_deviceData = nullptr;
+            OverlayLayerObjects                         m_deviceObjects;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
             AssetHandle<InspectorContainer>             m_hostInspectors;

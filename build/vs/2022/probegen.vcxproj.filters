@@ -130,6 +130,9 @@
     <Filter Include="imgui\components\probegen\sceneobjects">
       <UniqueIdentifier>{cfb124b2-7399-4aba-ba78-e79abfe03729}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\gi2d\integrators">
+      <UniqueIdentifier>{0bc7185d-6ab1-494e-baca-faabb9ca4753}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.txt">
@@ -430,10 +433,10 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\UICtx.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cuh">
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cuh">
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh">
@@ -835,6 +838,9 @@
     <ClInclude Include="..\..\..\src\kernels\Tuple.cuh">
       <Filter>kernels</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh">
+      <Filter>kernels\gi2d\integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
@@ -858,10 +864,10 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu">
       <Filter>kernels\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DOverlay.cu">
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cu">
       <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\CudaGI2DPathTracer.cu">
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
       <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
@@ -998,6 +1004,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu">
       <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu">
+      <Filter>kernels\gi2d\integrators</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
