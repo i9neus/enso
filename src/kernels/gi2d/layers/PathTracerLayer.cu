@@ -10,71 +10,40 @@ namespace GI2D
 {        
     __host__ __device__ PathTracerLayerParams::PathTracerLayerParams()
     {
-        m_accum.width = 0;
-        m_accum.height = 0;
         m_accum.downsample = 1;
         m_frameIdx = 0;
     }
 
-    __device__ Device::PathTracerLayer::PathTracerLayer() { }
+    __device__ Device::PathTracerLayer::PathTracerLayer() : 
+        m_overlayTracer(m_scene)
+    {  
+
+    }
+
+    __device__ void Device::PathTracerLayer::OnSynchronise(const int syncFlags)
+    {
+        m_camera.Prepare(m_viewCtx.transform, m_viewCtx.sceneBounds, m_accum.downsample);
+    }
+
+    __device__ void Device::PathTracerLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
+    {
+        m_accumBuffer->At(kKernelPos<ivec2>()) += L;
+    }
 
     __device__ void Device::PathTracerLayer::Render()
-    {
+    {        
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
 
-        // Transform from screen space to view space
-        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen * m_accum.downsample);
+        RenderCtx renderCtx(kKernelY * kKernelWidth + kKernelX, uint(m_frameIdx), 0, *this);
 
-        vec4& accum = m_accumBuffer->At(xyScreen);
-        vec3 L(0.f);
+        m_overlayTracer.Integrate(renderCtx, m_camera);       
 
-        if (!m_viewCtx.sceneBounds.Contains(xyView)) { accum = vec4(0.0f, 0.0f, 0.0f, 1.0f); return; }
-
-        assert(m_bih);
-        const auto& bih = *m_bih;
-        const ::Core::Vector<Device::Tracable*>& tracables = *m_tracables;
-        RNG rng;       
-        rng.Initialise(HashOf(uint(kKernelY * kKernelWidth + kKernelX), uint(accum.w)));
-        //rng.Initialise(HashOf(uint(accum.w)));
-
-        for (int depth = 0; depth < 1; ++depth)
-        {
-            float theta = rng.Rand<0>() * kTwoPi;
-            //const float theta = kTwoPi * (accum.w + rng.Rand<0>()) / 100.0f;
-            Ray2D ray(xyView, vec2(cos(theta), sin(theta)));
-            HitCtx2D hit;
-            int hitIdx = 0;
-
-            auto onIntersect = [&](const uint* primRange, RayRange2D& range) -> float
-            {
-                for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
-                {
-                    if (tracables[idx]->IntersectRay(ray, hit))
-                    {
-                        if (hit.tFar < range.tFar)
-                        {
-                            range.tFar = hit.tFar;
-                            hitIdx = idx;
-                        }
-                    }
-                }
-            };
-            bih.TestRay(ray, kFltMax, onIntersect);
-
-            if (hit.tFar != kFltMax)
-            {
-                L += tracables[hitIdx]->GetColour();
-            }
-        }
-
-        accum.xyz += L;
-        accum.w += 1.0f;
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
     __device__ void Device::PathTracerLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
-    {
+    {        
         assert(deviceOutputImage);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
@@ -97,18 +66,16 @@ namespace GI2D
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     Host::PathTracerLayer::PathTracerLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
-                                 const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
+                                           const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
         UILayer(id, bih, tracables)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_scene.bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.m_scene.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        m_accum.width = width;
-        m_accum.height = height;
         m_accum.downsample = downsample;
 
         cu_deviceData = InstantiateOnDevice<Device::PathTracerLayer>();
@@ -133,8 +100,8 @@ namespace GI2D
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerLayerObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerLayerParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerLayerObjects>(cu_deviceData, m_deviceObjects, kSyncObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerLayerParams>(cu_deviceData, *this, kSyncParams); }
     }
 
     __host__ void Host::PathTracerLayer::OnDestroyAsset()

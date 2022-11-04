@@ -1,10 +1,9 @@
 #pragma once
 
 #include "UILayer.cuh"
-
-#include "../BIH2DAsset.cuh"
-#include "../tracables/Tracable.cuh"
-#include "../Transform2D.cuh"
+#include "../integrators/PathTracer2D.cuh"
+#include "../integrators/Camera2D.cuh"
+#include "../SceneDescription.cuh"
 
 using namespace Cuda;
 
@@ -16,45 +15,52 @@ namespace GI2D
 
         struct
         {
-            uint width;
-            uint height;
             int downsample;
         }
         m_accum;
 
         bool m_isDirty;
-        int m_frameIdx;
+        int m_frameIdx;        
     };
 
     struct PathTracerLayerObjects
     {
-        ::Core::Vector<Device::Tracable*>*              m_tracables = nullptr;
-        BIH2D<BIH2DFullNode>*                           m_bih = nullptr;
+        Device::SceneDescription                        m_scene;
         Cuda::Device::ImageRGBW*                        m_accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class PathTracerLayer : public Cuda::Device::Asset,
-                                public UILayerParams,
+        class PathTracerLayer : public UILayer,
                                 public PathTracerLayerParams,
-                                public PathTracerLayerObjects
+                                public PathTracerLayerObjects,
+                                public Accumulator
         {
         public:
-            __host__ __device__ PathTracerLayer();
+            __device__ PathTracerLayer();
 
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
 
-        private:
+            __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
+            __device__ virtual void OnSynchronise(const int) override final;
+
+            __device__ void Method(PathTracerLayerObjects*) {}
+
+
+        private:
+            PathTracer2D                            m_overlayTracer;
+            //PathTracer2D                            m_voxelTracer;
+            
+            OrthographicCamera2D                    m_camera;
         };
     }
 
     namespace Host
     {
-        class PathTracerLayer : public UILayer, 
-                           public PathTracerLayerParams
+        class PathTracerLayer : public UILayer,
+                                public PathTracerLayerParams
         {
         public:
             PathTracerLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,

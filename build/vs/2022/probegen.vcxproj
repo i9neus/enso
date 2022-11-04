@@ -217,6 +217,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\CudaBIH2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
@@ -229,6 +230,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

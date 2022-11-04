@@ -10,7 +10,7 @@
 using namespace Cuda;
 
 template<typename ObjectType, typename ParamsType>
-__global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
+__global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params, const int syncFlags)
 {
     // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
     assert(cu_object);
@@ -19,20 +19,25 @@ __global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, co
 
     ParamsType& cast = static_cast<ParamsType&>(*cu_object);
     cast = *cu_params;
+
+    cu_object->OnSynchronise(syncFlags);
 }
 
 template<typename ParamsType, typename ObjectType>
-__host__ void SynchroniseInheritedClass(ObjectType* cu_object, const ParamsType& params)
+__host__ void SynchroniseInheritedClass(ObjectType* cu_object, const ParamsType& params, const int syncFlags)
 {
     //AssertIsTransferrableType<ParamsType>();
     Assert(cu_object);
+    static_assert(std::is_standard_layout< ParamsType>::value, "SynchroniseInheritedClass: ParamsType is not standard layout type");
+    static_assert(std::is_base_of<ParamsType, ObjectType>::value, "SynchroniseInheritedClass: ObjectType not derived from ParamsType");
+    //static_assert(std::is_base_of<Device::RenderObject, ObjectType>::value, "cu_object not derived from Device::SceneObject");
 
     ParamsType* cu_params;
     IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
     IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
     IsOk(cudaDeviceSynchronize());
-    KernelSynchroniseInheritedClass << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
+    KernelSynchroniseInheritedClass << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params, syncFlags);
     IsOk(cudaDeviceSynchronize());
 
     IsOk(cudaFree(cu_params));
@@ -64,10 +69,12 @@ namespace GI2D
         class SceneObject : public SceneObjectParams
         {
         public:
-            __device__ virtual vec4 EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
+            __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 
-            __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
-            __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
+            __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
+            __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_worldBBox; };
+            
+            __device__ virtual void OnSynchronise(const int) {}
 
         protected:
             __device__ SceneObject() {}
@@ -145,7 +152,7 @@ namespace GI2D
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int type)
             {
-                if (type == kSyncParams) { SynchroniseInheritedClass<SceneObjectParams>(cu_object, *this); }
+                if (type == kSyncParams) { SynchroniseInheritedClass<SceneObjectParams>(cu_object, *this, kSyncParams); }
             }
 
             __host__ void SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); }

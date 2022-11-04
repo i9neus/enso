@@ -120,7 +120,7 @@ namespace GI2D
         {
             Log::Error("0x%x", m_hostBIH->GetDeviceInstance());
             Log::Error("0x%x", m_deviceObjects.m_bih);
-            SynchroniseInheritedClass<CurveObjects>(cu_deviceInstance, m_deviceObjects);
+            SynchroniseInheritedClass<CurveObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects);
         }
     }
 

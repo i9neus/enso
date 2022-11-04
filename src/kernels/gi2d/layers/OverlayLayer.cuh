@@ -29,10 +29,9 @@ namespace GI2D
 
     namespace Device
     {
-        class OverlayLayer : public Cuda::Device::Asset,
-                        public UILayerParams,
-                        public OverlayLayerParams,
-                        public OverlayLayerObjects
+        class OverlayLayer : public Device::UILayer,
+                             public OverlayLayerParams,
+                             public OverlayLayerObjects
         {
         public:
             __host__ __device__ OverlayLayer();

@@ -32,6 +32,18 @@ namespace GI2D
         UISelectionCtx      m_selectionCtx;
     };
 
+    namespace Device
+    {
+        class UILayer : public Cuda::Device::Asset,
+                        public UILayerParams
+        {
+        public:
+            __device__ UILayer() {}
+
+            __device__ virtual void OnSynchronise(const int) {};
+        };
+    }
+
     namespace Host
     {        
         class UILayer : public Cuda::Host::AssetAllocator,
@@ -63,7 +75,7 @@ namespace GI2D
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int syncType)
             {
-                if (syncType & kSyncParams)  { SynchroniseInheritedClass<UILayerParams>(cu_object, *this); }
+                if (syncType & kSyncParams)  { SynchroniseInheritedClass<UILayerParams>(cu_object, *this, kSyncParams); }
             }
             
             template<typename T>

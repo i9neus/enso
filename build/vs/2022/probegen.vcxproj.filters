@@ -841,6 +841,12 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh">
       <Filter>kernels\gi2d\integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh">
+      <Filter>kernels\gi2d\integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">

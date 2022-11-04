@@ -132,8 +132,8 @@ namespace GI2D
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<IsosurfaceExplorerObjects>(cu_deviceData, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseInheritedClass<IsosurfaceExplorerParams>(cu_deviceData, *this); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<IsosurfaceExplorerObjects>(cu_deviceData, m_deviceObjects, kSyncObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<IsosurfaceExplorerParams>(cu_deviceData, *this, kSyncParams); }
     }
 
     __host__ void Host::IsosurfaceExplorer::OnDestroyAsset()
