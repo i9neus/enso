@@ -34,7 +34,7 @@ namespace GI2D
         class PathTracerLayer : public UILayer,
                                 public PathTracerLayerParams,
                                 public PathTracerLayerObjects,
-                                public Accumulator
+                                public Camera2D
         {
         public:
             __device__ PathTracerLayer();
@@ -42,18 +42,15 @@ namespace GI2D
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
 
+            __device__ virtual bool CreateRay(Ray2D& ray, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
             __device__ virtual void OnSynchronise(const int) override final;
-
-            __device__ void Method(PathTracerLayerObjects*) {}
 
 
         private:
             PathTracer2D                            m_overlayTracer;
             //PathTracer2D                            m_voxelTracer;
-            
-            OrthographicCamera2D                    m_camera;
         };
     }
 

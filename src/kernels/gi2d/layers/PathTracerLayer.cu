@@ -22,12 +22,24 @@ namespace GI2D
 
     __device__ void Device::PathTracerLayer::OnSynchronise(const int syncFlags)
     {
-        m_camera.Prepare(m_viewCtx.transform, m_viewCtx.sceneBounds, m_accum.downsample);
     }
 
     __device__ void Device::PathTracerLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
     {
         m_accumBuffer->At(kKernelPos<ivec2>()) += L;
+    }
+
+    __device__ bool Device::PathTracerLayer::CreateRay(Ray2D& ray, RenderCtx& renderCtx) const
+    {
+        // Transform from screen space to view space
+        ray.o = m_viewCtx.transform.matrix * vec2(kKernelPos<ivec2>() * m_accum.downsample);
+        if (!m_viewCtx.sceneBounds.Contains(ray.o)) { return false; }
+
+        // Randomly scatter
+        const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
+        ray.d = vec2(cosf(theta), sinf(theta));
+
+        return true;
     }
 
     __device__ void Device::PathTracerLayer::Render()
@@ -37,7 +49,7 @@ namespace GI2D
 
         RenderCtx renderCtx(kKernelY * kKernelWidth + kKernelX, uint(m_frameIdx), 0, *this);
 
-        m_overlayTracer.Integrate(renderCtx, m_camera);       
+        m_overlayTracer.Integrate(renderCtx);       
 
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);

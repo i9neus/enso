@@ -54,7 +54,7 @@ namespace GI2D
         
         template<typename DeviceType>
         class Tracable : virtual public TracableInterface,
-                         public Host::SceneObject<DeviceType>                         
+                         public Host::SceneObject<DeviceType>
         {
             using Super = Host::SceneObject<DeviceType>;
         public:

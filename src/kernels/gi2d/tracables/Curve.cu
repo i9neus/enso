@@ -73,6 +73,8 @@ namespace GI2D
         Super(id),
         cu_deviceInstance(nullptr)
     {
+        SetAttributeFlags(kSceneObjectInteractiveElement);
+        
         Log::Success("Host::Curve::Curve");
         
         constexpr uint kMinTreePrims = 3;
@@ -118,8 +120,6 @@ namespace GI2D
 
         if (syncType == kSyncObjects)
         {
-            Log::Error("0x%x", m_hostBIH->GetDeviceInstance());
-            Log::Error("0x%x", m_deviceObjects.m_bih);
             SynchroniseInheritedClass<CurveObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects);
         }
     }

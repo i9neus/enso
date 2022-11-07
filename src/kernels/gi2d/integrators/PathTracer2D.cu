@@ -12,12 +12,12 @@ namespace GI2D
         m_scene(scene)
     {}
 
-    __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx, Camera2D& camera)
+    __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx)
     {    
         assert(m_scene.bih && m_scene.tracables);
         
         Ray2D ray;
-        if (!camera.CreateRay(ray, renderCtx)) { return; }
+        if (!renderCtx.camera.CreateRay(ray, renderCtx)) { return; }
 
         const auto& tracables = *m_scene.tracables;
         const auto& bih = *m_scene.bih;
@@ -46,11 +46,11 @@ namespace GI2D
 
             if (hit.tFar != kFltMax)
             {
-                renderCtx.accumulator.Accumulate(vec4(tracables[hitIdx]->GetColour(), 0.0f), renderCtx);
+                renderCtx.camera.Accumulate(vec4(tracables[hitIdx]->GetColour(), 0.0f), renderCtx);
             }
         }
 
-        renderCtx.accumulator.Accumulate(vec4(kZero, 1.0f), renderCtx);
+        renderCtx.camera.Accumulate(vec4(kZero, 1.0f), renderCtx);
     }
     DEFINE_KERNEL_PASSTHROUGH(Integrate);   
 }

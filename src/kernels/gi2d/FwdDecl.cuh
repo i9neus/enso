@@ -31,6 +31,7 @@ namespace GI2D
         class BIH2DAsset;
         class Tracable;
         class SceneObject;
+        class Camera2D;
     }
 
     namespace Host

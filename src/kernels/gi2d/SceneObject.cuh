@@ -49,7 +49,8 @@ namespace GI2D
 {
     enum SceneObjectFlags : uint
     {
-        kSceneObjectSelected = 1u
+        kSceneObjectSelected                = 1u,
+        kSceneObjectInteractiveElement      = 2u
     };
 
     struct SceneObjectParams
@@ -111,11 +112,11 @@ namespace GI2D
             __host__ virtual void       SetAttributeFlags(const uint flags, bool isSet = true) = 0;
             __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const = 0;
             __host__ virtual const      BBox2f& GetObjectSpaceBoundingBox() const = 0;
-            __host__ virtual const      BBox2f& GetWorldSpaceBoundingBox() const = 0;
+            __host__ virtual const      BBox2f& GetWorldSpaceBoundingBox() const = 0;            
         };
         
-        template<typename DeviceSuper>
-        class SceneObject : public DeviceSuper,
+        template<typename DeviceType = Device::SceneObject>
+        class SceneObject : public DeviceType,
                             virtual public SceneObjectInterface,
                             public Cuda::Host::RenderObject
         {
@@ -139,12 +140,14 @@ namespace GI2D
 
             __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true) override final
             {                
-                DeviceSuper::m_attrFlags = 1;
+                //DeviceSuper::m_attrFlags = 1;
                 /*if (SetGenericFlags(m_attrFlags, flags, isSet))
                 {
                     SetDirtyFlags(kGI2DDirtyUI, true);
                 }*/
             }
+
+            //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
             __host__ SceneObject(const std::string& id);

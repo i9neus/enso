@@ -16,7 +16,7 @@ namespace GI2D
             __host__ __device__ PathTracer2D(const SceneDescription& scene);
 
             //__device__ void Prepare(const SceneDescription* scene);
-            __device__ void Integrate(RenderCtx& renderCtx, Camera2D& camera);
+            __device__ void Integrate(RenderCtx& renderCtx);
 
         private:
             const SceneDescription& m_scene;

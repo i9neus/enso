@@ -135,7 +135,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\..\docs\BugChecklist.txt">
+    <Text Include="..\..\..\docs\BugChecklist.md">
       <Filter>docs</Filter>
     </Text>
   </ItemGroup>
@@ -847,6 +847,9 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh">
       <Filter>kernels\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh">
+      <Filter>kernels\gi2d\integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
@@ -1014,6 +1017,9 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu">
       <Filter>kernels\gi2d\integrators</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu">
+      <Filter>kernels\gi2d\integrators</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\scenes\template.usda">
@@ -1021,6 +1027,9 @@
     </None>
     <None Include="..\..\..\bin\win64\Release\config.json">
       <Filter>scenes</Filter>
+    </None>
+    <None Include="..\..\..\docs\CodeStructure.md">
+      <Filter>docs</Filter>
     </None>
   </ItemGroup>
 </Project>

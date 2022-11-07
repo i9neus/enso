@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\..\docs\BugChecklist.txt" />
+    <Text Include="..\..\..\docs\BugChecklist.md" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp" />
@@ -219,6 +219,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -364,6 +365,7 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -426,6 +428,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\bin\win64\Release\config.json" />
+    <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\scenes\template.usda" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
