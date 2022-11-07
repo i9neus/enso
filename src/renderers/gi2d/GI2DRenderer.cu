@@ -11,6 +11,8 @@
 //#include "kernels/gi2d/widgets/UIInspector.cuh"
 #include "kernels/Tuple.cuh"
 
+#include "kernels/gi2d/integrators/VoxelProxyGrid.cuh"
+
 //#include "kernels/gi2d/ObjectDebugger.cuh"
 
 using namespace Cuda;
@@ -89,14 +91,17 @@ void GI2DRenderer::OnInitialise()
     //m_primitiveContainer.Create(m_renderStream);
 
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
+    m_scene = CreateAsset<GI2D::Host::SceneDescription>(":gi2d/sceneDescription");
 
-    m_hostTracables = CreateAsset<TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc, m_renderStream);
-    m_hostInspectors = CreateAsset<InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc, m_renderStream);
-    m_sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
+    m_scene->hostTracables = CreateAsset<GI2D::Host::TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc, m_renderStream);
+    m_scene->hostInspectors = CreateAsset<GI2D::Host::InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc, m_renderStream);
+    m_scene->sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
+    m_scene->voxelProxy = CreateAsset<GI2D::Host::VoxelProxyGrid>(":gi2d/voxelproxy", m_scene, 100, 100);
+    m_scene->Prepare();
 
-    m_overlayRenderer = CreateAsset<GI2D::Host::OverlayLayer>(":gi2d/overlay", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, m_renderStream);
-    m_pathTracerLayer = CreateAsset<GI2D::Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_sceneBIH, m_hostTracables, m_clientWidth, m_clientHeight, 2, m_renderStream);
-    //m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_sceneBIH, m_hostTracables, m_hostInspectors, m_clientWidth, m_clientHeight, 1, m_renderStream);
+    m_overlayRenderer = CreateAsset<GI2D::Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
+    m_pathTracerLayer = CreateAsset<GI2D::Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    //m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_scene, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
 
@@ -122,10 +127,14 @@ void GI2DRenderer::OnDestroy()
     m_pathTracerLayer.DestroyAsset();
     //m_isosurfaceExplorer.DestroyAsset();
 
-    m_hostTracables.DestroyAsset();
-    m_hostInspectors.DestroyAsset();
+    m_scene->voxelProxy.DestroyAsset();
+
+    m_scene->hostTracables.DestroyAsset();
+    m_scene->hostInspectors.DestroyAsset();
+    m_scene->sceneBIH.DestroyAsset();
+
     m_renderObjects.DestroyAsset();
-    m_sceneBIH.DestroyAsset();
+    m_scene.DestroyAsset();
 }
 
 void GI2DRenderer::Rebuild()
@@ -135,68 +144,69 @@ void GI2DRenderer::Rebuild()
     if (m_dirtyFlags & kGI2DDirtyBVH)
     {
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
-        m_hostTracables->Clear();
+        m_scene->hostTracables->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::TracableInterface>([this](AssetHandle<GI2D::Host::TracableInterface>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
                 if (tracable->Rebuild(m_dirtyFlags, m_viewCtx))
                 {
-                    m_hostTracables->EmplaceBack(tracable);
+                    m_scene->hostTracables->EmplaceBack(tracable);
                 }
 
                 return true;
             });        
-        m_hostTracables->Synchronise(Core::kVectorSyncUpload);
+        m_scene->hostTracables->Synchronise(Core::kVectorSyncUpload);
 
-        /*m_hostInspectors->Clear();
+        /*m_scene->hostInspectors->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
             {
-                m_hostInspectors->EmplaceBack(widget);
+                m_scene->hostInspectors->EmplaceBack(widget);
                 return true;
             });
-        m_hostInspectors->Synchronise(Core::kVectorSyncUpload);*/
+        m_scene->hostInspectors->Synchronise(Core::kVectorSyncUpload);*/
 
         // Cache the object bounding boxes
-        /*m_tracableBBoxes.reserve(m_hostTracables->Size());
-        for (auto& tracable : *m_hostTracables)
+        /*m_tracableBBoxes.reserve(m_scene->hostTracables->Size());
+        for (auto& tracable : *m_scene->hostTracables)
         {
             m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
         }*/
 
         // Create a tracable list ready for building
         // TODO: It's probably faster if we build on the already-sorted index list
-        auto& primIdxs = m_sceneBIH->GetPrimitiveIndices();
-        primIdxs.resize(m_hostTracables->Size());
+        auto& primIdxs = m_scene->sceneBIH->GetPrimitiveIndices();
+        primIdxs.resize(m_scene->hostTracables->Size());
         for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
 
         // Construct the BIH
         std::function<BBox2f(uint)> getPrimitiveBBox = [this](const uint& idx) -> BBox2f
         {
-            return Grow((*m_hostTracables)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
+            return Grow((*m_scene->hostTracables)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
         };
-        m_sceneBIH->Build(getPrimitiveBBox);
-        //Log::Write("Rebuilt scene BIH: %s", m_sceneBIH->GetBoundingBox().Format());
+        m_scene->sceneBIH->Build(getPrimitiveBBox);
+        //Log::Write("Rebuilt scene BIH: %s", m_scene->sceneBIH->GetBoundingBox().Format());
     }
 
     /*if (m_dirtyFlags & kGI2DDirtyTransforms)
     {
-        m_hostInspectors->Clear();
+        m_scene->hostInspectors->Clear();
         m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
             {
                 if (widget->Rebuild(m_dirtyFlags, m_viewCtx))
                 {
-                    m_hostInspectors->EmplaceBack(widget);
+                    m_scene->hostInspectors->EmplaceBack(widget);
                 }
 
                 return true;
             });
-        m_hostInspectors->Synchronise(kVectorSyncUpload);
+        m_scene->hostInspectors->Synchronise(kVectorSyncUpload);
     }*/
 
     // View has changed
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    m_scene->voxelProxy->Rebuild(m_dirtyFlags);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
 }
@@ -213,7 +223,7 @@ uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& t
 
     std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-    auto& tracables = *m_hostTracables;
+    auto& tracables = *m_scene->hostTracables;
     int emptyIdx = -1;
     int numDeleted = 0;
     for (int primIdx = 0; primIdx < tracables.Size(); ++primIdx)
@@ -260,7 +270,7 @@ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& tar
     // Notify the scene objects of the move operation
     std::lock_guard <std::mutex> lock(m_resourceMutex);
     uint tracableDirtyFlags = 0u;
-    for (auto& obj : *m_hostTracables)
+    for (auto& obj : *m_scene->hostTracables)
     {
         if (obj->IsSelected())
         {
@@ -279,7 +289,7 @@ void GI2DRenderer::DeselectAll()
 {
     std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-    for (auto obj : *m_hostTracables)
+    for (auto obj : *m_scene->hostTracables)
     {
         obj->OnSelect(false);
     }
@@ -316,7 +326,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kSelectSceneObjectDragging")
     {
-        auto& tracables = *m_hostTracables;
+        auto& tracables = *m_scene->hostTracables;
         const bool wasLassoing = m_selectionCtx.isLassoing;
 
         if (!m_selectionCtx.isLassoing)
@@ -333,7 +343,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
         m_selectionCtx.selectedBBox = BBox2f::MakeInvalid();
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        if (m_sceneBIH->IsConstructed())
+        if (m_scene->sceneBIH->IsConstructed())
         {
             const uint lastNumSelected = m_selectionCtx.numSelected;
 
@@ -360,7 +370,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
                     }
                 }
             };
-            m_sceneBIH->TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+            m_scene->sceneBIH->TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
             // Only if the number of selected primitives has changed
             if (lastNumSelected != m_selectionCtx.numSelected)
@@ -462,6 +472,8 @@ void GI2DRenderer::OnRender()
     {
         Rebuild();
     }
+
+
 
     // Render the pass
     m_pathTracerLayer->Render();

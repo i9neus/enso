@@ -3,6 +3,7 @@
 #include "generic/Hash.h"
 
 #include "../RenderCtx.cuh"
+#include "../SceneDescription.cuh"
 
 using namespace Cuda;
 
@@ -14,14 +15,9 @@ namespace GI2D
         m_frameIdx = 0;
     }
 
-    __device__ Device::PathTracerLayer::PathTracerLayer() : 
-        m_overlayTracer(m_scene)
-    {  
-
-    }
-
     __device__ void Device::PathTracerLayer::OnSynchronise(const int syncFlags)
     {
+        
     }
 
     __device__ void Device::PathTracerLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
@@ -77,15 +73,13 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::PathTracerLayer::PathTracerLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
-                                           const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
-        UILayer(id, bih, tracables)
+    Host::PathTracerLayer::PathTracerLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, const uint downsample, cudaStream_t renderStream) :
+        UILayer(id, scene)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_scene.bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_scene.tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_scene = scene->GetDeviceObjects(); 
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_accum.downsample = downsample;
@@ -99,7 +93,6 @@ namespace GI2D
     {
         OnDestroyAsset();
     }
-
 
     __host__ void Host::PathTracerLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {

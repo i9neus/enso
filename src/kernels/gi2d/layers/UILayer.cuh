@@ -8,6 +8,7 @@
 
 #include "../tracables/Tracable.cuh"
 #include "kernels/gi2d/FwdDecl.cuh"
+#include "../SceneDescription.cuh"
 
 using namespace Cuda;
 
@@ -50,10 +51,9 @@ namespace GI2D
                         public UILayerParams
         {
         public:
-            UILayer(const std::string& id, AssetHandle<GI2D::Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables) :
+            UILayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene) :
                 AssetAllocator(id),
-                m_hostBIH(bih),
-                m_hostTracables(tracables)
+                m_scene(scene)
             {
             }
 
@@ -86,9 +86,8 @@ namespace GI2D
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-        protected:             
-            AssetHandle<GI2D::Host::BIH2DAsset>                     m_hostBIH;
-            AssetHandle<TracableContainer>                          m_hostTracables;
+        protected:   
+            AssetHandle<Host::SceneDescription>                     m_scene;
 
             uint                                                    m_dirtyFlags;
         };

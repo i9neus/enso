@@ -21,9 +21,7 @@ namespace GI2D
 
     struct OverlayLayerObjects
     {
-        Core::Device::Vector<Device::Tracable*>*    m_tracables = nullptr;
-        Core::Device::Vector<Device::Tracable*>*    m_inspectors = nullptr;
-        BIH2D<BIH2DFullNode>*                       m_bih = nullptr;
+        Device::SceneDescription                    m_scene;
         Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };
 
@@ -34,7 +32,7 @@ namespace GI2D
                              public OverlayLayerObjects
         {
         public:
-            __host__ __device__ OverlayLayer();
+            __host__ __device__ OverlayLayer() {}
             
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
@@ -47,8 +45,7 @@ namespace GI2D
                         public OverlayLayerParams
         {
         public:
-            OverlayLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
-                    const uint width, const uint height, cudaStream_t renderStream);
+            OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~OverlayLayer();
 

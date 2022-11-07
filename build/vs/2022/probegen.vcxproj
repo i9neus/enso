@@ -374,6 +374,7 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -429,6 +430,7 @@
   <ItemGroup>
     <None Include="..\..\..\bin\win64\Release\config.json" />
     <None Include="..\..\..\docs\CodeStructure.md" />
+    <None Include="..\..\..\docs\FixMe.md" />
     <None Include="..\..\..\scenes\template.usda" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

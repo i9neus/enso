@@ -8,10 +8,6 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    __device__ Device::PathTracer2D::PathTracer2D(const SceneDescription& scene) : 
-        m_scene(scene)
-    {}
-
     __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx)
     {    
         assert(m_scene.bih && m_scene.tracables);

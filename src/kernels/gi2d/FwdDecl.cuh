@@ -32,15 +32,14 @@ namespace GI2D
         class Tracable;
         class SceneObject;
         class Camera2D;
+        class VoxelProxyGrid;
     }
 
     namespace Host
     {
         class BIH2DAsset;
         class SceneObjectInterface;
-        class TracableInterface;
+        class TracableInterface; 
+        class VoxelProxyGrid;
     }
-
-    using TracableContainer = ::Core::Host::AssetVector<Host::TracableInterface, Device::Tracable>;
-    using InspectorContainer = ::Core::Host::AssetVector<Host::TracableInterface, Device::Tracable>;
 }

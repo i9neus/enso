@@ -13,13 +13,12 @@ namespace GI2D
         class PathTracer2D : public Cuda::Device::Asset
         {
         public:
-            __host__ __device__ PathTracer2D(const SceneDescription& scene);
+            __device__ PathTracer2D(const Device::SceneDescription& scene) : m_scene(scene) {}
 
-            //__device__ void Prepare(const SceneDescription* scene);
             __device__ void Integrate(RenderCtx& renderCtx);
 
         private:
-            const SceneDescription& m_scene;
+            const Device::SceneDescription& m_scene;
         };
     }
 }

@@ -27,7 +27,7 @@ namespace GI2D
 
     namespace Device
     {
-        class VoxelProxyGrid : public Device::SceneObject,
+        class VoxelProxyGrid : public Cuda::Device::RenderObject,
                                public VoxelProxyGridParams,
                                public VoxelProxyGridObjects,
                                public Camera2D
@@ -40,7 +40,7 @@ namespace GI2D
             __device__ virtual bool CreateRay(Ray2D& ray, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
-            __device__ virtual void OnSynchronise(const int) override final;
+            __device__ void OnSynchronise(const int);
 
         private:
             PathTracer2D                            m_voxelTracer;
@@ -49,21 +49,25 @@ namespace GI2D
 
     namespace Host
     {
-        class VoxelProxyGrid : public Host::SceneObject<>,
+        class VoxelProxyGrid : public Cuda::Host::RenderObject,
                                public VoxelProxyGridParams
         {
         public:
-            __host__ VoxelProxyGrid(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
-                                    const uint width, const uint height);
+            __host__ VoxelProxyGrid(const std::string& id, AssetHandle<Host::SceneDescription>& scene,  const uint width, const uint height);
             __host__ virtual ~VoxelProxyGrid() {}
             
             __host__ void OnDestroyAsset();
 
+            __host__ void Rebuild(const uint dirtyFlags);
             __host__ void Synchronise(const int syncType);
+
+            __host__ Device::VoxelProxyGrid* GetDeviceInstance() { return cu_deviceInstance; }
 
         private:
             GI2D::Device::VoxelProxyGrid*          cu_deviceInstance = nullptr;
             VoxelProxyGridObjects                  m_deviceObjects;
+
+            AssetHandle<Host::SceneDescription>    m_scene;
 
             AssetHandle<Core::Host::Vector<vec3>>  m_hostAccumBuffer;
         };

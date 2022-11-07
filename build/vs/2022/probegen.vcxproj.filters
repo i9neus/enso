@@ -1020,6 +1020,9 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu">
       <Filter>kernels\gi2d\integrators</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu">
+      <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\scenes\template.usda">
@@ -1029,6 +1032,9 @@
       <Filter>scenes</Filter>
     </None>
     <None Include="..\..\..\docs\CodeStructure.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="..\..\..\docs\FixMe.md">
       <Filter>docs</Filter>
     </None>
   </ItemGroup>

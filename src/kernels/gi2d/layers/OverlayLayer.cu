@@ -5,6 +5,7 @@
 #include "generic/Hash.h"
 #include "kernels/CudaAssetContainer.cuh"
 #include "../tracables/primitives/LineSegment.cuh"
+#include "../SceneDescription.cuh"
 
 using namespace Cuda;
 
@@ -16,10 +17,6 @@ namespace GI2D
         m_gridCtx.lineAlpha = 0.0;
         m_gridCtx.majorLineSpacing = 1.0f;
         m_gridCtx.majorLineSpacing = 1.0f;
-    }
-
-    __device__ Device::OverlayLayer::OverlayLayer()
-    {
     }
 
     __device__ void Device::OverlayLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
@@ -73,9 +70,9 @@ namespace GI2D
         }  
 
         // Draw the tracables
-        if (m_bih && m_tracables)
+        if (m_scene.bih && m_scene.tracables)
         {            
-            const Core::Vector<Device::Tracable*>& tracables = *(m_tracables);
+            const Core::Vector<Device::Tracable*>& tracables = *(m_scene.tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
@@ -94,7 +91,7 @@ namespace GI2D
                     if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
                 }
             };          
-            m_bih->TestPoint(xyView, onPointIntersectLeaf);        
+            m_scene.bih->TestPoint(xyView, onPointIntersectLeaf);        
         }
 
         // Draw the widgets
@@ -120,18 +117,14 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    Host::OverlayLayer::OverlayLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables, AssetHandle<InspectorContainer>& inspectors,
-                                   const uint width, const uint height, cudaStream_t renderStream) :
-        UILayer(id, bih, tracables),
-        m_hostInspectors(inspectors)
+    Host::OverlayLayer::OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream) :
+        UILayer(id, scene)
     {        
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
-        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_tracables = m_hostTracables->GetDeviceInstance();
+        m_deviceObjects.m_scene = m_scene->GetDeviceObjects();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.m_inspectors = m_hostInspectors->GetDeviceInstance();
 
         cu_deviceData = InstantiateOnDevice<Device::OverlayLayer>(); 
 

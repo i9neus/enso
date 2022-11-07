@@ -37,7 +37,7 @@ namespace GI2D
                                 public Camera2D
         {
         public:
-            __device__ PathTracerLayer();
+            __device__ PathTracerLayer() : m_overlayTracer(m_scene) {}
 
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
@@ -47,10 +47,8 @@ namespace GI2D
 
             __device__ virtual void OnSynchronise(const int) override final;
 
-
         private:
             PathTracer2D                            m_overlayTracer;
-            //PathTracer2D                            m_voxelTracer;
         };
     }
 
@@ -60,8 +58,7 @@ namespace GI2D
                                 public PathTracerLayerParams
         {
         public:
-            PathTracerLayer(const std::string& id, AssetHandle<Host::BIH2DAsset>& bih, AssetHandle<TracableContainer>& tracables,
-                const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
+            PathTracerLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, const uint downsample, cudaStream_t renderStream);
             virtual ~PathTracerLayer();
            
             __host__ virtual void Render() override final;

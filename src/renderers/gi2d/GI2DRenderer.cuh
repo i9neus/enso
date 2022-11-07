@@ -4,7 +4,7 @@
 #include "generic/Job.h"
 #include "kernels/gi2d/UICtx.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/FwdDecl.cuh"
+#include "kernels/gi2d/SceneDescription.cuh"
 
 namespace GI2D
 {
@@ -23,6 +23,7 @@ namespace GI2D
         class BIH2DAsset;
         class OverlayLayer;   
         class PathTracerLayer; 
+        class VoxelProxyGrid;
         //class IsosurfaceExplorer;
         class TracableInterface;
         class SceneObjectInterface;
@@ -107,14 +108,12 @@ private:
 
     JobManager                                  m_jobManager;
 
-    AssetHandle<GI2D::Host::OverlayLayer>            m_overlayRenderer;
+    AssetHandle<GI2D::Host::OverlayLayer>       m_overlayRenderer;
     AssetHandle<GI2D::Host::PathTracerLayer>    m_pathTracerLayer;
     //AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
 
-    AssetHandle<GI2D::Host::BIH2DAsset>         m_sceneBIH;
-    AssetHandle<GI2D::TracableContainer>        m_hostTracables;
-    AssetHandle<GI2D::InspectorContainer>       m_hostInspectors;
-    std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
+    AssetHandle<GI2D::Host::SceneDescription>   m_scene;
+    //std::vector<Cuda::BBox2f>                   m_tracableBBoxes;
 
     std::unique_ptr<GI2D::ViewTransform2D>      m_viewTransform;
 
