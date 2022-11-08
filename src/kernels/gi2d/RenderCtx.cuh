@@ -13,16 +13,17 @@ namespace GI2D
 	
 	struct RenderCtx
 	{
-		__device__ __forceinline__ RenderCtx(const uint& sIdx, 
+		__device__ __forceinline__ RenderCtx(const uint& probeHash, 
 											 const uint accumIdx, 
 											 const uchar& depth, 
 										     Device::Camera2D& cam) :
-			sampleIdx(sIdx),
-			rng(HashOf(sIdx, uint(depth) + 9871251u, accumIdx)),
+			hash(HashOf(probeHash, uint(depth) + 9871251u, accumIdx)),
+			rng(hash),
 			camera(cam)
-		{}
+		{
+		}
 
-		uint			sampleIdx;
+		uint			hash;
 		RNG				rng;
 		Device::Camera2D& camera;
 	};

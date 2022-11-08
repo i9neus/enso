@@ -2,6 +2,7 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/layers/OverlayLayer.cuh"
 #include "kernels/gi2d/layers/PathTracerLayer.cuh"
+#include "kernels/gi2d/layers/VoxelProxyGridLayer.cuh"
 //#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
@@ -96,11 +97,13 @@ void GI2DRenderer::OnInitialise()
     m_scene->hostTracables = CreateAsset<GI2D::Host::TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc);
     m_scene->hostInspectors = CreateAsset<GI2D::Host::InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc);
     m_scene->sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
-    m_scene->voxelProxy = CreateAsset<GI2D::Host::VoxelProxyGrid>(":gi2d/voxelproxy", m_scene, 100, 100);
+    //m_scene->voxelProxy = CreateAsset<GI2D::Host::VoxelProxyGrid>(":gi2d/voxelproxy", m_scene, 100, 100);
     m_scene->Prepare();
 
     m_overlayRenderer = CreateAsset<GI2D::Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
     m_pathTracerLayer = CreateAsset<GI2D::Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
+    m_voxelProxyGridLayer = CreateAsset<GI2D::Host::VoxelProxyGridLayer>(":gi2d/voxelProxyGridLayer", m_scene, 100, 100);
+
     //m_isosurfaceExplorer = CreateAsset<GI2D::Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_scene, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
     SetDirtyFlags(kGI2DDirtyAll);
@@ -115,9 +118,10 @@ void GI2DRenderer::OnDestroy()
 {
     m_overlayRenderer.DestroyAsset();
     m_pathTracerLayer.DestroyAsset();
+    m_voxelProxyGridLayer.DestroyAsset();
     //m_isosurfaceExplorer.DestroyAsset();
 
-    m_scene->voxelProxy.DestroyAsset();
+    //m_scene->voxelProxy.DestroyAsset();
 
     m_scene->hostTracables.DestroyAsset();
     m_scene->hostInspectors.DestroyAsset();
@@ -195,8 +199,10 @@ void GI2DRenderer::Rebuild()
     // View has changed
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+    m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-    m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
+    
+    //m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
 }
@@ -463,10 +469,11 @@ void GI2DRenderer::OnRender()
         Rebuild();
     }
 
-    m_scene->voxelProxy->Render();
+    //m_scene->voxelProxy->Render();
 
     // Render the pass
-    m_pathTracerLayer->Render();
+    //m_pathTracerLayer->Render();
+    m_voxelProxyGridLayer->Render();
     //m_isosurfaceExplorer->Render();
     m_overlayRenderer->Render();
 
@@ -477,7 +484,8 @@ void GI2DRenderer::OnRender()
     if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
     
     //m_compositeImage->Clear(vec4(kZero, 1.0f));
-    m_pathTracerLayer->Composite(m_compositeImage);
+    //m_pathTracerLayer->Composite(m_compositeImage);
+    m_voxelProxyGridLayer->Composite(m_compositeImage);
     //m_isosurfaceExplorer->Composite(m_compositeImage);    
     m_overlayRenderer->Composite(m_compositeImage);
 

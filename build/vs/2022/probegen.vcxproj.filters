@@ -850,6 +850,9 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh">
       <Filter>kernels\gi2d\integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
+      <Filter>kernels\gi2d\layers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
@@ -1022,6 +1025,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu">
       <Filter>kernels\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
+      <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

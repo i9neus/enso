@@ -14,7 +14,7 @@ HighResolutionTimer::~HighResolutionTimer()
 {
     if (m_lambda)
     {
-        Log::Debug("%s\n", m_lambda(Get()).c_str());
+        Log::Debug("%s\n", m_lambda(Get()).c_str()); 
     }
     else if (!m_message.empty())
     {

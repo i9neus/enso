@@ -219,7 +219,9 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -229,6 +231,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh" />
@@ -365,7 +370,9 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -373,6 +380,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />

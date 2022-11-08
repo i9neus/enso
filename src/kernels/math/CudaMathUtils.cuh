@@ -67,17 +67,13 @@ namespace Cuda
 	template<typename T>
 	__host__ __device__ __forceinline__ T NearestPow2Ceil(const T& j)
 	{
-		T i = 1;
-		for (; i < j; i <<= 1) {};
-		return i;
+		return (int(j) <= 1) ? T(1) : T(1 << int(std::ceil(std::log2(float(j)))));
 	}
 
 	template<typename T>
 	__host__ __device__ __forceinline__ T NearestPow2Floor(const T& j)
 	{
-		T i = 1;
-		for (; i <= j; i <<= 1) {};
-		return i >> 1;
+		return  (int(j) <= 2) ? T(1) : T(1 << int(std::floor(std::log2(float(j)))));
 	}
 
 	#define kOne vec3(1.0f)

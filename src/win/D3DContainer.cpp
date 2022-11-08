@@ -533,7 +533,7 @@ void D3DContainer::PopulateCommandList()
 
 	///////////////////////////////////
 
-	m_ui->PopulateCommandList(m_commandList, m_frameIndex);
+	if (m_ui) { m_ui->PopulateCommandList(m_commandList, m_frameIndex); }
 
 	///////////////////////////////////
 

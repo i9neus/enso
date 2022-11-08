@@ -80,11 +80,11 @@ namespace GI2D
 
         vec4 L(0.0f);
 
-        /*const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
+        const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
         L = m_accumBuffer->Lerp(uv);
-        L.xyz /= fmaxf(L.w, 1.0f);*/
+        L.xyz /= fmaxf(L.w, 1.0f);
 
-        L.xyz += m_scene.voxelProxy->Evaluate(xyView);
+        //L.xyz += m_scene.voxelProxy->Evaluate(xyView);
 
         deviceOutputImage->At(xyScreen) = vec4(L.xyz, 1.0f);
     }

@@ -11,6 +11,19 @@
 #include "debug/Backtrace.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 
+#define BEGIN_EXCEPTION_FENCE try { 
+
+#define END_EXCEPTION_FENCE \
+    } \
+    catch(const std::runtime_error& err) \
+    { \
+        Log::Error("Fenced exception in %s (%i): %s", __FILE__, __LINE__, err.what()); \
+    } \
+    catch(...) \
+    { \
+        Log::Error("Fenced exception in %s (%i)", __FILE__, __LINE__); \
+    } 
+
 #ifdef DISABLE_BACKTRACE_ON_ASSERT
 #define _AssertCacheStackBacktrace
 #else

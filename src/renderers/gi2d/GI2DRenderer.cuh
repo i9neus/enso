@@ -23,6 +23,7 @@ namespace GI2D
         class BIH2DAsset;
         class OverlayLayer;   
         class PathTracerLayer; 
+        class VoxelProxyGridLayer;
         class VoxelProxyGrid;
         //class IsosurfaceExplorer;
         class TracableInterface;
@@ -110,6 +111,7 @@ private:
 
     AssetHandle<GI2D::Host::OverlayLayer>       m_overlayRenderer;
     AssetHandle<GI2D::Host::PathTracerLayer>    m_pathTracerLayer;
+    AssetHandle<GI2D::Host::VoxelProxyGridLayer> m_voxelProxyGridLayer;
     //AssetHandle<GI2D::Host::IsosurfaceExplorer> m_isosurfaceExplorer;
 
     AssetHandle<GI2D::Host::SceneDescription>   m_scene;

@@ -15,7 +15,7 @@ namespace GI2D
             const Core::Vector<Device::Tracable*>*    tracables = nullptr;
             const BIH2D<BIH2DFullNode>*               bih = nullptr;
 
-            const Device::VoxelProxyGrid*             voxelProxy = nullptr;
+            //const Device::VoxelProxyGrid*             voxelProxy = nullptr;
         };
     }
 
@@ -40,7 +40,7 @@ namespace GI2D
             AssetHandle<InspectorContainer>         hostInspectors;
             
             // Voxel grids
-            AssetHandle<Host::VoxelProxyGrid>       voxelProxy;
+            //AssetHandle<Host::VoxelProxyGrid>       voxelProxy;
 
         private:
             Device::SceneDescription*               cu_deviceInstance = nullptr;
