@@ -12,10 +12,10 @@ namespace GI2D
             __device__ SceneDescription() {}
             __device__ void OnSynchronise(const uint) {}
             
-            Core::Vector<Device::Tracable*>*    tracables = nullptr;
-            BIH2D<BIH2DFullNode>*               bih = nullptr;
+            const Core::Vector<Device::Tracable*>*    tracables = nullptr;
+            const BIH2D<BIH2DFullNode>*               bih = nullptr;
 
-            Device::VoxelProxyGrid*             voxelProxy;
+            const Device::VoxelProxyGrid*             voxelProxy = nullptr;
         };
     }
 
@@ -32,7 +32,7 @@ namespace GI2D
             __host__ virtual void   OnDestroyAsset() override final {}
             
             __host__ void           Prepare();
-            __host__ const Device::SceneDescription& GetDeviceObjects() const { return m_deviceObjects; }
+            __host__ const Device::SceneDescription* GetDeviceInstance() const { return cu_deviceInstance; }
 
             // Geometry
             AssetHandle<Host::BIH2DAsset>           sceneBIH;
@@ -43,6 +43,7 @@ namespace GI2D
             AssetHandle<Host::VoxelProxyGrid>       voxelProxy;
 
         private:
+            Device::SceneDescription*               cu_deviceInstance = nullptr;
             Device::SceneDescription                m_deviceObjects;
         };
     };

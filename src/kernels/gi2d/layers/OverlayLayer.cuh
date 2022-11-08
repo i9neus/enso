@@ -21,7 +21,7 @@ namespace GI2D
 
     struct OverlayLayerObjects
     {
-        Device::SceneDescription                    m_scene;
+        const Device::SceneDescription*             m_scenePtr = nullptr;
         Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };
 
@@ -34,8 +34,14 @@ namespace GI2D
         public:
             __host__ __device__ OverlayLayer() {}
             
+            __device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
+
+            __device__ virtual void OnSynchronise(const int) override final;
+
+        private:
+            Device::SceneDescription                    m_scene;
         };
     }
 
@@ -61,7 +67,7 @@ namespace GI2D
         private:
             //__host__ void TraceRay();
 
-            Device::OverlayLayer*                       cu_deviceData = nullptr;
+            Device::OverlayLayer*                       cu_deviceInstance = nullptr;
             OverlayLayerObjects                         m_deviceObjects;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;

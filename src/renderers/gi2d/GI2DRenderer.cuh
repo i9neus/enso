@@ -76,7 +76,7 @@ public:
 
 private:
     virtual void            OnDestroy() override final;
-    //virtual void          OnPreRender() override final;
+    //virtual void            OnPreRender() override final;
     virtual void            OnRender() override final;
     //virtual void          OnPostRender() override final;
     void                    OnViewChange();

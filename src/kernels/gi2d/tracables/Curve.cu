@@ -80,7 +80,7 @@ namespace GI2D
         constexpr uint kMinTreePrims = 3;
         
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", Core::kVectorHostAlloc, nullptr);
+        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", Core::kVectorHostAlloc);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
         cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceInstance);        

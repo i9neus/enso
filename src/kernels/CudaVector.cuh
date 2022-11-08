@@ -34,7 +34,7 @@ namespace Core
 	{
 		kVectorUnifiedMemory = 1,
 		kVectorHostAlloc = 2,
-		kVectorPersistentSyncData = 4,
+		kVectorManualSyncData = 4,
 		kVectorSyncUpload = 8,
 		kVectorSyncDownload = 16
 	};
@@ -64,12 +64,12 @@ namespace Core
 		__host__ __device__ Type* Data() { return m_localData; }
 		__host__ __device__ Type& operator[](const uint idx)
 		{
-			assert(idx < m_localParams.size);
+			dassert(idx < m_localParams.size);
 			return m_localData[idx];
 		}
 		__host__ __device__ const Type& operator[](const uint idx) const
 		{
-			assert(idx < m_localParams.size);
+			dassert(idx < m_localParams.size);
 			return m_localData[idx];
 		}
 
@@ -144,13 +144,12 @@ namespace Core
 			};*/
 
 		public:
-			__host__ VectorBase(const std::string& id, const uint flags, cudaStream_t hostStream) :
+			__host__ VectorBase(const std::string& id, const uint flags) :
 				AssetAllocator(id),
 				cu_deviceInstance(nullptr),
 				cu_deviceInterface(nullptr),
 				cu_deviceData(nullptr)
 			{
-				m_hostStream = hostStream;
 				m_localParams.flags = flags;
 				m_deviceParams = VectorParams{ 0, 0, 0 };
 
@@ -167,8 +166,8 @@ namespace Core
 				//cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>(id);
 			}
 
-			__host__ VectorBase(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) :
-				VectorBase(id, flags, hostStream)
+			__host__ VectorBase(const std::string& id, const uint size, const uint flags) :
+				VectorBase(id, flags)
 			{
 				// Allocate and sync the memory
 				ResizeImpl(size, true, false);
@@ -200,7 +199,6 @@ namespace Core
 				m_deviceParams = rhs.m_deviceParams;
 				m_localData = rhs.m_localData;
 				cu_deviceData = rhs.cu_deviceData;
-				m_hostStream = rhs.m_hostStream;
 
 				rhs.Invalidate();
 			}
@@ -354,9 +352,8 @@ namespace Core
 			// Zeroes the contents of the vector
 			__host__ void Wipe()
 			{
-				/*Assert(cu_deviceInstance);
-				IsOk(cudaMemset(m_localData, 0, sizeof(HostType) * m_localParams.size));
-				IsOk(cudaStreamSynchronize(m_hostStream));*/
+				Assert(cu_deviceInstance);
+				IsOk(cudaMemset(cu_deviceData, 0, sizeof(DeviceType) * m_deviceParams.size));
 
 				// If the vector has host allocation, reset that too
 				if (m_localParams.flags & kVectorHostAlloc && !(m_localParams.flags & kVectorUnifiedMemory))
@@ -525,13 +522,19 @@ namespace Core
 		class Vector : public VectorBase<CommonType, CommonType>
 		{
 		public:
-			__host__ Vector(const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(Asset::MakeTemporaryID(), flags, hostStream) {}
-			__host__ Vector(const std::string& id, const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(id, flags, hostStream) {}
-			__host__ Vector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream = nullptr) : VectorBase<CommonType, CommonType>(id, size, flags, hostStream) {}
+			__host__ Vector(const uint flags) : VectorBase<CommonType, CommonType>(Asset::MakeTemporaryID(), flags) {}
+			__host__ Vector(const std::string& id, const uint flags) : VectorBase<CommonType, CommonType>(id, flags) {}
+			__host__ Vector(const std::string& id, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(id, size, flags) 
+			{
+				SynchroniseImpl(kVectorSyncUpload, false);
+			}
 			__host__ ~Vector() {};
 
+			__host__ inline void Synchronise(const uint syncFlags) { SynchroniseImpl(syncFlags, true); }
+
+		private:
 			// Transfers the contents of the buffers between the host and device 
-			__host__ void Synchronise(const uint syncFlags)
+			__host__ void SynchroniseImpl(const uint syncFlags, bool copyData)
 			{
 				AssertMsg(!(m_localParams.flags & kVectorUnifiedMemory), "Calling Upload() on a Vector with kVectorUnifiedMemory flag set.");
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Trying to synchronise a Vector that does not have host allocation.");
@@ -547,7 +550,12 @@ namespace Core
 
 					if (cu_deviceData)
 					{
-						IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
+						if (copyData)
+						{
+							// Upload the data...
+							IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
+						}
+						// ...and the metadata
 						SynchroniseObjects(GetDeviceInstance(), Tuple<CommonType*, VectorParams>(cu_deviceData, m_deviceParams));
 					}
 				}
@@ -571,14 +579,16 @@ namespace Core
 			DeviceType** m_deviceSyncData;
 
 		public:
-			__host__ AssetVector(const std::string& id, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType*>(id, flags, hostStream)
+			__host__ AssetVector(const std::string& id, const uint flags) : VectorBase<HostType, DeviceType*>(id, flags)
 			{
 				//static_assert(is_base_of_template<AssetTags, HostType>, "AssetVector type must inherit AssetTags");
 				static_assert(std::is_trivial<DeviceType*>::value, "Sanity check failed. Device type is non-trivial.");
 			}
-			__host__ AssetVector(const std::string& id, const uint size, const uint flags, cudaStream_t hostStream) : VectorBase<HostType, DeviceType*>(id, size, flags, hostStream) {}
 
-			__host__ void Synchronise(const uint syncFlags)
+			__host__ inline void Synchronise(const uint syncFlags) { SynchroniseImpl(syncFlags); }
+
+		private:
+			__host__ void SynchroniseImpl(const uint syncFlags)
 			{
 				AssertMsg(syncFlags == kVectorSyncUpload, "Mapped vectors only supports uploading for now.");
 				AssertMsg(m_localParams.flags & kVectorHostAlloc, "Trying to synchronise a Vector that does not have host allocation.");
@@ -592,7 +602,7 @@ namespace Core
 				if (!cu_deviceData) { return; }
 
 				// Allocate some temporary storage
-				m_deviceSyncData = new DeviceType * [m_localParams.size];
+				m_deviceSyncData = new DeviceType*[m_localParams.size];
 				Assert(m_deviceSyncData);
 
 				// Convert between the host and device datatypes

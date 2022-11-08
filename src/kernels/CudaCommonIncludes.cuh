@@ -29,6 +29,12 @@ __host__ __device__ inline T min(const T a, const T b) { return a < b ? a : b; }
 
 //#define CUDA_DEVICE_GLOBAL_ASSERTS
 
+#ifdef _DEBUG
+#define dassert(condition) assert(condition)
+#else
+#define dassert(condition)
+#endif
+
 #if defined(CUDA_DEVICE_ASSERTS) || defined(CUDA_DEVICE_GLOBAL_ASSERTS)
 
 #define CudaDeviceAssert(condition)\

@@ -19,13 +19,12 @@ namespace GI2D
         }
         m_accum;
 
-        bool m_isDirty;
-        int m_frameIdx;        
+        bool m_isDirty;   
     };
 
     struct PathTracerLayerObjects
     {
-        Device::SceneDescription                        m_scene;
+        const Device::SceneDescription*                 m_scenePtr = nullptr;
         Cuda::Device::ImageRGBW*                        m_accumBuffer = nullptr;
     };
 
@@ -39,6 +38,7 @@ namespace GI2D
         public:
             __device__ PathTracerLayer() : m_overlayTracer(m_scene) {}
 
+            __device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
 
@@ -49,6 +49,9 @@ namespace GI2D
 
         private:
             PathTracer2D                            m_overlayTracer;
+            int                                     m_frameIdx;
+
+            Device::SceneDescription                m_scene;
         };
     }
 
@@ -74,7 +77,7 @@ namespace GI2D
             GI2D::Device::PathTracerLayer*          cu_deviceData = nullptr;
             PathTracerLayerObjects                  m_deviceObjects;
 
-            AssetHandle<Cuda::Host::ImageRGBW>      m_hostAccumBuffer;      
+            AssetHandle<Cuda::Host::ImageRGBW>      m_hostAccumBuffer;
         };
     }
 }

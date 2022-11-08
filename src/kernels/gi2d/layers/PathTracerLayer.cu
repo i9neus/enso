@@ -4,6 +4,7 @@
 
 #include "../RenderCtx.cuh"
 #include "../SceneDescription.cuh"
+#include "../integrators/VoxelProxyGrid.cuh"
 
 using namespace Cuda;
 
@@ -12,12 +13,11 @@ namespace GI2D
     __host__ __device__ PathTracerLayerParams::PathTracerLayerParams()
     {
         m_accum.downsample = 1;
-        m_frameIdx = 0;
     }
 
     __device__ void Device::PathTracerLayer::OnSynchronise(const int syncFlags)
     {
-        
+        m_frameIdx = 0;      
     }
 
     __device__ void Device::PathTracerLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
@@ -40,6 +40,8 @@ namespace GI2D
 
     __device__ void Device::PathTracerLayer::Render()
     {        
+        return;
+        
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
 
@@ -49,6 +51,16 @@ namespace GI2D
 
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
+
+    __device__ void Device::PathTracerLayer::Prepare(const uint dirtyFlags)
+    {
+        m_frameIdx++;
+
+        // Save ourselves a deference here by caching the scene pointers
+        assert(m_scenePtr);
+        m_scene = *m_scenePtr;
+    }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
     __device__ void Device::PathTracerLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {        
@@ -66,10 +78,15 @@ namespace GI2D
             return; 
         }
 
-        const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
-        vec4 L = m_accumBuffer->Lerp(uv);
+        vec4 L(0.0f);
 
-        deviceOutputImage->At(xyScreen) = vec4(L.xyz / fmaxf(L.w, 1.0f), 1.0f);
+        /*const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
+        L = m_accumBuffer->Lerp(uv);
+        L.xyz /= fmaxf(L.w, 1.0f);*/
+
+        L.xyz += m_scene.voxelProxy->Evaluate(xyView);
+
+        deviceOutputImage->At(xyScreen) = vec4(L.xyz, 1.0f);
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
@@ -79,7 +96,7 @@ namespace GI2D
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_scene = scene->GetDeviceObjects(); 
+        m_deviceObjects.m_scenePtr = scene->GetDeviceInstance(); 
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         m_accum.downsample = downsample;
@@ -117,15 +134,19 @@ namespace GI2D
 
     __host__ void Host::PathTracerLayer::Render()
     {
+        // Advance the frame counter
+        KernelPrepare << <1, 1 >> > (cu_deviceData, m_dirtyFlags);
+        
         if (m_dirtyFlags)
         {
             m_hostAccumBuffer->Clear(vec4(0.0f));
             m_dirtyFlags = 0;
-        }
+        }        
 
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
+        // Render the frame
         KernelRender << < gridSize, blockSize, 0 >> > (cu_deviceData);
         IsOk(cudaDeviceSynchronize());
     }

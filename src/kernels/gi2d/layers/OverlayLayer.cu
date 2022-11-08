@@ -19,6 +19,11 @@ namespace GI2D
         m_gridCtx.majorLineSpacing = 1.0f;
     }
 
+    __device__ void Device::OverlayLayer::OnSynchronise(const int syncFlags)
+    {
+
+    }
+
     __device__ void Device::OverlayLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
     {
         assert(deviceOutputImage);
@@ -117,16 +122,24 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
+    __device__ void Device::OverlayLayer::Prepare(const uint dirtyFlags)
+    {
+        // Save ourselves a deference here by caching the scene pointers
+        assert(m_scenePtr);
+        m_scene = *m_scenePtr;
+    }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
+
     Host::OverlayLayer::OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream) :
         UILayer(id, scene)
     {        
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
-        m_deviceObjects.m_scene = m_scene->GetDeviceObjects();
+        m_deviceObjects.m_scenePtr = m_scene->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        cu_deviceData = InstantiateOnDevice<Device::OverlayLayer>(); 
+        cu_deviceInstance = InstantiateOnDevice<Device::OverlayLayer>();
 
         Synchronise(kSyncObjects);
     }
@@ -138,37 +151,39 @@ namespace GI2D
 
     __host__ void Host::OverlayLayer::Synchronise(const int syncType)
     {
-        UILayer::Synchronise(cu_deviceData, syncType);
+        UILayer::Synchronise(cu_deviceInstance, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayLayerObjects>(cu_deviceData, m_deviceObjects, kSyncObjects); }
-        if (syncType & kSyncParams)  { SynchroniseInheritedClass<OverlayLayerParams>(cu_deviceData, *this, kSyncParams); }
+        if (syncType & kSyncObjects) { SynchroniseInheritedClass<OverlayLayerObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects); }
+        if (syncType & kSyncParams) { SynchroniseInheritedClass<OverlayLayerParams>(cu_deviceInstance, *this, kSyncParams); }
     }
 
     __host__ void Host::OverlayLayer::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceData);
+        DestroyOnDevice(cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();
     }
 
     __host__ void Host::OverlayLayer::Render()
     {
         if (!m_dirtyFlags) { return; }
-        
+
+        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
-        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData);
+        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
         IsOk(cudaDeviceSynchronize());
 
         m_dirtyFlags = 0;
     }
 
     __host__ void Host::OverlayLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
-    {        
+    {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
 
-        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceData, hostOutputImage->GetDeviceInstance());
+        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
         IsOk(cudaDeviceSynchronize());
     }
 

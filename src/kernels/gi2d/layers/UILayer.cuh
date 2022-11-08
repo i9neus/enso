@@ -59,6 +59,7 @@ namespace GI2D
 
             virtual ~UILayer() = default;
 
+            __host__ virtual void   OnPreRender() {}
             __host__ virtual void   Render() = 0;
             __host__ virtual void   Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const = 0;
 

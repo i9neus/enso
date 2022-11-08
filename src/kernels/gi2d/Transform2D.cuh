@@ -21,19 +21,33 @@ namespace GI2D
             inv = mat2::Indentity();
             nInv = mat2::Indentity();
         }
+
+        __host__ __device__ void Prepare()
+        {
+            inv = nInv = inverse(fwd);
+        }
         
-        __host__ __device__  void Prepare(const vec2& tr, const float r, const float sc)
+        __host__ __device__  void Construct(const vec2& tr, const float r, const float sc)
         {
             trans = tr;
             rot = r;
             scale = sc;
             
-            const float sinTheta = sin(rot);
-            const float cosTheta = cos(rot);           
-            fwd.i00 = sc * cosTheta; fwd.i01 = sc * sinTheta;
-            fwd.i10 = sc * sinTheta; fwd.i11 = sc * -cosTheta;
+            if (rot != 0.0f)
+            {
+                const float sinTheta = sin(rot);
+                const float cosTheta = cos(rot);
+                fwd.i00 = cosTheta; fwd.i01 = sinTheta;
+                fwd.i10 = sinTheta; fwd.i11 = -cosTheta;
+            }
+            else
+            {
+                fwd = mat2::Indentity();
+            }
 
-            inv = nInv = inverse(fwd);
+            fwd[0] *= sc; fwd[1] *= sc;
+
+            Prepare();
         }
 
         __host__ __device__ __inline__ RayBasic2D RayToObjectSpace(const RayBasic2D& world) const
@@ -50,6 +64,9 @@ namespace GI2D
         {
             return nInv * n;
         }
+
+        __host__ __device__ inline vec2 PointToObjectSpace(const vec2& world) const { return fwd * (world - trans); }
+        __host__ __device__ inline vec2 PointToWorldSpace(const vec2& obj) const { return (inv * obj) + trans; }
 
     public:
 		vec2 trans;

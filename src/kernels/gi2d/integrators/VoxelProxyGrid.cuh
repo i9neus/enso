@@ -11,23 +11,30 @@ namespace GI2D
     {
         __host__ __device__ VoxelProxyGridParams();
 
-        ViewTransform2D             m_cameraTransform;
+        BidirectionalTransform2D        m_cameraTransform;
 
-        uint						subprobesPerProbe;	//			<-- A sub-probe is a set of SH coefficients + data. Multiple sub-probes are accumulated to make a full probe. 
-        uint						bucketsPerProbe; //				<-- The total number of accumulation units (coefficients + data) per probe
-        uint						totalBuckets; //				<-- The total number of accumulation units in the grid
-        uint						totalSubprobes; //				<-- The total number of subprobes in the grid
+        struct
+        {
+            ivec2                       size;
+            uint                        numProbes;
+
+            uint						subprobesPerProbe;	//			<-- A sub-probe is a set of SH coefficients + data. Multiple sub-probes are accumulated to make a full probe. 
+            uint						bucketsPerProbe; //				<-- The total number of accumulation units (coefficients + data) per probe
+            uint						totalBuckets; //				<-- The total number of accumulation units in the grid
+            uint						totalSubprobes; //				<-- The total number of subprobes in the grid
+        }
+        m_grid;
     };
 
     struct VoxelProxyGridObjects
     {
-        Device::SceneDescription                        m_scene;
+        const Device::SceneDescription*                 m_scenePtr = nullptr;
         Core::Device::Vector<vec3>*                     m_accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class VoxelProxyGrid : public Cuda::Device::RenderObject,
+        class VoxelProxyGrid : Device::SceneObject,
                                public VoxelProxyGridParams,
                                public VoxelProxyGridObjects,
                                public Camera2D
@@ -35,7 +42,10 @@ namespace GI2D
         public:
             __device__ VoxelProxyGrid();
 
-            __device__ void Evaluate(const vec3& posWorld) const;
+            __device__ vec3 Evaluate(const vec2& posWorld) const;
+
+            __device__ void Prepare(const uint dirtyFlags);
+            __device__ void Render();
 
             __device__ virtual bool CreateRay(Ray2D& ray, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
@@ -44,12 +54,15 @@ namespace GI2D
 
         private:
             PathTracer2D                            m_voxelTracer;
+            int                                     m_frameIdx;
+
+            Device::SceneDescription                m_scene;
         };
     }
 
     namespace Host
     {
-        class VoxelProxyGrid : public Cuda::Host::RenderObject,
+        class VoxelProxyGrid : public Host::SceneObject<>,
                                public VoxelProxyGridParams
         {
         public:
@@ -58,8 +71,12 @@ namespace GI2D
             
             __host__ void OnDestroyAsset();
 
-            __host__ void Rebuild(const uint dirtyFlags);
+            //__host__ void OnPreRender();
+            __host__ void Render();
             __host__ void Synchronise(const int syncType);
+
+            __host__ virtual bool       Finalise() override final { return true; }
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
 
             __host__ Device::VoxelProxyGrid* GetDeviceInstance() { return cu_deviceInstance; }
 

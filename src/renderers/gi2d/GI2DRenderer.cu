@@ -93,8 +93,8 @@ void GI2DRenderer::OnInitialise()
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
     m_scene = CreateAsset<GI2D::Host::SceneDescription>(":gi2d/sceneDescription");
 
-    m_scene->hostTracables = CreateAsset<GI2D::Host::TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc, m_renderStream);
-    m_scene->hostInspectors = CreateAsset<GI2D::Host::InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc, m_renderStream);
+    m_scene->hostTracables = CreateAsset<GI2D::Host::TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc);
+    m_scene->hostInspectors = CreateAsset<GI2D::Host::InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc);
     m_scene->sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
     m_scene->voxelProxy = CreateAsset<GI2D::Host::VoxelProxyGrid>(":gi2d/voxelproxy", m_scene, 100, 100);
     m_scene->Prepare();
@@ -109,16 +109,6 @@ void GI2DRenderer::OnInitialise()
     {
         Rebuild();
     }
-
-    // Render the pass
-    /*m_overlayRenderer->Render();
-
-    if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
-
-    m_compositeImage->Clear(vec4(kZero, 1.0f));
-    m_overlayRenderer->Composite(m_compositeImage);
-
-    m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);*/
 }
 
 void GI2DRenderer::OnDestroy()
@@ -206,7 +196,7 @@ void GI2DRenderer::Rebuild()
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
     //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-    m_scene->voxelProxy->Rebuild(m_dirtyFlags);
+    m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
 }
@@ -473,7 +463,7 @@ void GI2DRenderer::OnRender()
         Rebuild();
     }
 
-
+    m_scene->voxelProxy->Render();
 
     // Render the pass
     m_pathTracerLayer->Render();

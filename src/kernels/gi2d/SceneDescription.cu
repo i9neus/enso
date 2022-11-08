@@ -7,12 +7,12 @@ namespace GI2D
     __host__ Host::SceneDescription::SceneDescription(const std::string& id) :
         Cuda::Host::AssetAllocator(id)
     {
-        //cu_deviceInstance = InstantiateOnDevice<Device::SceneDescription>();
+        cu_deviceInstance = InstantiateOnDevice<Device::SceneDescription>();
     }
 
     __host__ Host::SceneDescription::~SceneDescription()
     {
-        //DestroyOnDevice(cu_deviceInstance);
+        DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::SceneDescription::Prepare()
@@ -22,5 +22,7 @@ namespace GI2D
         //if (hostInspectors) { m_deviceObjects. = hostInspectors->GetDeviceInstance(); }
 
         if (voxelProxy) { m_deviceObjects.voxelProxy = voxelProxy->GetDeviceInstance(); }
+
+        SynchroniseInheritedClass<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects, 0);
     }
 }

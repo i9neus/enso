@@ -23,7 +23,7 @@ namespace GI2D
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>();
         cu_deviceInterface = StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = CreateChildAsset<Core::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), Core::kVectorHostAlloc, m_hostStream);
+        m_hostNodes = CreateChildAsset<Core::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), Core::kVectorHostAlloc);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()

@@ -121,12 +121,14 @@ namespace GI2D
                             public Cuda::Host::RenderObject
         {
         public:
+            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override { return 0u;  }
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override;
             __host__ virtual uint       OnSelect(const bool isSelected) override;
 
             __host__ virtual uint       GetDirtyFlags() const override final { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const override final { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const override final { return m_attrFlags & kSceneObjectSelected; }
+            __host__ virtual bool       IsConstructed() const override { return false; }
             __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const override final { return *this; }
 
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const override final { return Device::SceneObject::GetObjectSpaceBoundingBox(); }
