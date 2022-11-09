@@ -23,16 +23,22 @@ namespace GI2D
         {
         public:
             __host__ __device__ Light() {}
+
+            __device__ virtual void Sample() = 0;
+            __device__ virtual void Evaluate() = 0;
         };
 
         class OmniLight : public Device::Light,
                           public OmniLightParams
-        {
+        {  
         protected:
             __device__ virtual vec4 EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
 
         public:
             __device__ OmniLight() {}
+
+            __device__ virtual void Sample() {}
+            __device__ virtual void Evaluate() {}
         };
     }
 

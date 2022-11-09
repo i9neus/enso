@@ -10,7 +10,7 @@ namespace GI2D
 
         float outerRadius = m_lightRadius - viewCtx.dPdXY;
         if (distance > sqr(outerRadius)) { return vec4(0.f); }
-        float innerRadius = m_lightRadius - viewCtx.dPdXY * 3.0f;
+        float innerRadius = m_lightRadius - viewCtx.dPdXY * 6.0f;
         if (distance < sqr(innerRadius)) { return vec4(0.f); }
 
         distance = sqrt(distance);

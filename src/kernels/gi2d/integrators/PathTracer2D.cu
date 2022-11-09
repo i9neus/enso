@@ -8,7 +8,31 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx)
+    __device__ int Device::PathTracer2D::Trace(const Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx, const Core::Vector<Device::Tracable*>& tracables) const
+    {
+        hit.tracableIdx = kInvalidHit;
+
+        const auto& bih = *m_scene.tracableBIH;
+        auto onIntersect = [&tracables, &ray, &hit](const uint* primRange, RayRange2D& range) -> float
+        {
+            for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
+            {
+                if (tracables[idx]->IntersectRay(ray, hit))
+                {
+                    if (hit.tFar < range.tFar)
+                    {
+                        range.tFar = hit.tFar;
+                        hit.tracableIdx = idx;
+                    }
+                }
+            }
+        };
+        bih.TestRay(ray, kFltMax, onIntersect);
+
+        return hit.tracableIdx;
+    }
+    
+    __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx) const
     {    
         assert(m_scene.tracableBIH && m_scene.tracables);
         
@@ -16,34 +40,15 @@ namespace GI2D
         if (!renderCtx.camera.CreateRay(ray, renderCtx)) { return; }
 
         const auto& tracables = *m_scene.tracables;
-        const auto& bih = *m_scene.tracableBIH;
-        
+        HitCtx2D hit;
         for (int depth = 0; depth < 1; ++depth)
         {
-            float theta = renderCtx.rng.Rand<0>() * kTwoPi;
-            HitCtx2D hit;
-            int hitIdx = 0;
-
-            auto onIntersect = [&, this](const uint* primRange, RayRange2D& range) -> float
-            {
-                for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
-                {
-                    if (tracables[idx]->IntersectRay(ray, hit))
-                    {
-                        if (hit.tFar < range.tFar)
-                        {
-                            range.tFar = hit.tFar;
-                            hitIdx = idx;
-                        }
-                    }
-                }
-            };
-            bih.TestRay(ray, kFltMax, onIntersect);
+            if (Trace(ray, hit, renderCtx, tracables) == kInvalidHit) { break; }
 
             if (hit.tFar != kFltMax)
             {
-                renderCtx.camera.Accumulate(vec4(tracables[hitIdx]->GetColour(), 0.0f), renderCtx);
-            }
+                renderCtx.camera.Accumulate(vec4(tracables[hit.tracableIdx]->GetColour(), 0.0f), renderCtx);
+            }          
         }
 
         renderCtx.camera.Accumulate(vec4(kZero, 1.0f), renderCtx);

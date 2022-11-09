@@ -8,7 +8,7 @@ using namespace Cuda;
 
 namespace GI2D
 {    
-    __host__ __device__ bool Device::Curve::IntersectRay(Ray2D& rayWorld, HitCtx2D& hitWorld) const
+    __host__ __device__ bool Device::Curve::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {        
         assert(m_bih && m_lineSegments);
         

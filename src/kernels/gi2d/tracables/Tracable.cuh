@@ -17,7 +17,7 @@ namespace GI2D
         class Tracable : public Device::SceneObject
         {
         public:
-            __host__ __device__ virtual bool                    IntersectRay(Ray2D& ray, HitCtx2D& hit) const { return false; }
+            __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const { return false; }
             //__host__ __device__ virtual bool                    InteresectPoint(const vec2& p, const float& thickness) const { return false; }
             __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const;
 

@@ -49,5 +49,6 @@ namespace GI2D
         vec2        n;
         float		kickoff;
         float       tFar;
+        uint        tracableIdx;
     };
 }
