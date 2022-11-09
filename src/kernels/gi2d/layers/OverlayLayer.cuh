@@ -71,7 +71,6 @@ namespace GI2D
             OverlayLayerObjects                         m_deviceObjects;
 
             AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
-            AssetHandle<InspectorContainer>             m_hostInspectors;
         };
     }
 }

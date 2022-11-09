@@ -8,7 +8,7 @@ namespace GI2D
 {
     enum TracableFlags : uint
     {
-        kTracableSelected = 1u
+        kTracableIsLight = 1u
     };
 
     namespace Device
@@ -57,17 +57,13 @@ namespace GI2D
                          public Host::SceneObject<DeviceType>
         {
             using Super = Host::SceneObject<DeviceType>;
-        public:
-            __host__ virtual Device::Tracable* GetDeviceInstance() const override { return cu_deviceTracableInstance; }
 
         protected:
             __host__ Tracable(const std::string& id) : Super(id) {}
             
-            template<typename SubType> __host__ void Synchronise(SubType* deviceData, const int syncType) { SceneObject<DeviceType>::Synchronise(deviceData, syncType); }
+            template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Super::Synchronise(deviceData, syncType); }
 
         protected:
-            Device::Tracable*               cu_deviceTracableInstance = nullptr;
-
             struct
             {
                 vec2                        dragAnchor;

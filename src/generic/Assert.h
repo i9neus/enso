@@ -60,4 +60,32 @@
         catch(std::runtime_error& e) { \
             throw std::runtime_error(tfm::format("%s in %s (%d)", buffer, __FILE__, __LINE__)); \
         }
+
+#ifdef _DEBUG
+#define DAssert(condition) \
+        if(!(condition)) {  \
+            _AssertCacheStackBacktrace; \
+            throw std::runtime_error(tfm::format("DEBUG: %s in %s (%d)", #condition, __FILE__, __LINE__)); \
+        }
+
+#define DAssertMsg(condition, message) \
+        if(!(condition)) {  \
+            _AssertCacheStackBacktrace; \
+            throw std::runtime_error(tfm::format("DEBUG: %s in %s (%d)", message, __FILE__, __LINE__)); \
+        }
+
+#define DAssertMsgFmt(condition, message, ...) \
+        if(!(condition)) {  \
+            _AssertCacheStackBacktrace; \
+            char buffer[1024]; \
+            std::snprintf(buffer, 1024, message, __VA_ARGS__); \
+            throw std::runtime_error(tfm::format("DEBUG: %s in %s (%d)", buffer, __FILE__, __LINE__)); \
+        }
+
+#else
+#define DAssert(condition, message)
+#define DAssertMsg(condition, message, ...)
+#define DAssertRethrow(condition, message)
+#endif
+
 #endif

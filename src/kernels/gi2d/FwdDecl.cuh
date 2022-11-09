@@ -30,6 +30,7 @@ namespace GI2D
     {
         class BIH2DAsset;
         class Tracable;
+        class Light;
         class SceneObject;
         class Camera2D;
         class VoxelProxyGrid;
@@ -39,7 +40,13 @@ namespace GI2D
     {
         class BIH2DAsset;
         class SceneObjectInterface;
+        class LightInterface;
         class TracableInterface; 
         class VoxelProxyGrid;
+        class SceneDescription;
+
+        class OverlayLayer;
+        class PathTracerLayer;
+        class VoxelProxyGridLayer;
     }
 }

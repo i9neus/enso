@@ -10,13 +10,13 @@ namespace GI2D
 {
     __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx)
     {    
-        assert(m_scene.bih && m_scene.tracables);
+        assert(m_scene.tracableBIH && m_scene.tracables);
         
         Ray2D ray;
         if (!renderCtx.camera.CreateRay(ray, renderCtx)) { return; }
 
         const auto& tracables = *m_scene.tracables;
-        const auto& bih = *m_scene.bih;
+        const auto& bih = *m_scene.tracableBIH;
         
         for (int depth = 0; depth < 1; ++depth)
         {

@@ -1,18 +1,19 @@
 #include "GI2DRenderer.cuh"
-#include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/layers/OverlayLayer.cuh"
-#include "kernels/gi2d/layers/PathTracerLayer.cuh"
-#include "kernels/gi2d/layers/VoxelProxyGridLayer.cuh"
-//#include "kernels/gi2d/layers/GI2DIsosurfaceExplorer.cuh"
+
 #include "kernels/math/CudaColourUtils.cuh"
 #include "kernels/CudaRenderObjectContainer.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/tracables/Tracable.cuh"
-#include "kernels/gi2d/tracables/Curve.cuh"
-//#include "kernels/gi2d/widgets/UIInspector.cuh"
 #include "kernels/Tuple.cuh"
 
+#include "kernels/gi2d/tracables/Tracable.cuh"
+#include "kernels/gi2d/tracables/Curve.cuh"
+#include "kernels/gi2d/lights/Light.cuh"
+#include "kernels/gi2d/widgets/UIInspector.cuh" 
+#include "kernels/gi2d/SceneDescription.cuh"
 #include "kernels/gi2d/integrators/VoxelProxyGrid.cuh"
+#include "kernels/gi2d/layers/OverlayLayer.cuh"
+#include "kernels/gi2d/layers/PathTracerLayer.cuh"
+#include "kernels/gi2d/layers/VoxelProxyGridLayer.cuh"
 
 //#include "kernels/gi2d/ObjectDebugger.cuh"
 
@@ -92,13 +93,7 @@ void GI2DRenderer::OnInitialise()
     //m_primitiveContainer.Create(m_renderStream);
 
     m_renderObjects = CreateAsset<Cuda::RenderObjectContainer>(":gi2d/renderObjects");
-    m_scene = CreateAsset<GI2D::Host::SceneDescription>(":gi2d/sceneDescription");
-
-    m_scene->hostTracables = CreateAsset<GI2D::Host::TracableContainer>(":gi2d/tracables", Core::kVectorHostAlloc);
-    m_scene->hostInspectors = CreateAsset<GI2D::Host::InspectorContainer>(":gi2d/inspectors", Core::kVectorHostAlloc);
-    m_scene->sceneBIH = CreateAsset<GI2D::Host::BIH2DAsset>(":gi2d/bih", 1);
-    //m_scene->voxelProxy = CreateAsset<GI2D::Host::VoxelProxyGrid>(":gi2d/voxelproxy", m_scene, 100, 100);
-    m_scene->Prepare();
+    m_scene = CreateAsset<GI2D::Host::SceneDescription>(":gi2d/sceneDescription");  
 
     m_overlayRenderer = CreateAsset<GI2D::Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
     m_pathTracerLayer = CreateAsset<GI2D::Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
@@ -123,12 +118,8 @@ void GI2DRenderer::OnDestroy()
 
     //m_scene->voxelProxy.DestroyAsset();
 
-    m_scene->hostTracables.DestroyAsset();
-    m_scene->hostInspectors.DestroyAsset();
-    m_scene->sceneBIH.DestroyAsset();
-
-    m_renderObjects.DestroyAsset();
     m_scene.DestroyAsset();
+    m_renderObjects.DestroyAsset();
 }
 
 void GI2DRenderer::Rebuild()
@@ -137,64 +128,8 @@ void GI2DRenderer::Rebuild()
 
     if (m_dirtyFlags & kGI2DDirtyBVH)
     {
-        // Rebuild and synchronise any tracables that were dirtied since the last iteration
-        m_scene->hostTracables->Clear();
-        m_renderObjects->ForEachOfType<GI2D::Host::TracableInterface>([this](AssetHandle<GI2D::Host::TracableInterface>& tracable) -> bool
-            {
-                // Rebuild the tracable (it will decide whether any action needs to be taken)
-                if (tracable->Rebuild(m_dirtyFlags, m_viewCtx))
-                {
-                    m_scene->hostTracables->EmplaceBack(tracable);
-                }
-
-                return true;
-            });        
-        m_scene->hostTracables->Synchronise(Core::kVectorSyncUpload);
-
-        /*m_scene->hostInspectors->Clear();
-        m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
-            {
-                m_scene->hostInspectors->EmplaceBack(widget);
-                return true;
-            });
-        m_scene->hostInspectors->Synchronise(Core::kVectorSyncUpload);*/
-
-        // Cache the object bounding boxes
-        /*m_tracableBBoxes.reserve(m_scene->hostTracables->Size());
-        for (auto& tracable : *m_scene->hostTracables)
-        {
-            m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
-        }*/
-
-        // Create a tracable list ready for building
-        // TODO: It's probably faster if we build on the already-sorted index list
-        auto& primIdxs = m_scene->sceneBIH->GetPrimitiveIndices();
-        primIdxs.resize(m_scene->hostTracables->Size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-        // Construct the BIH
-        std::function<BBox2f(uint)> getPrimitiveBBox = [this](const uint& idx) -> BBox2f
-        {
-            return Grow((*m_scene->hostTracables)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
-        };
-        m_scene->sceneBIH->Build(getPrimitiveBBox);
-        //Log::Write("Rebuilt scene BIH: %s", m_scene->sceneBIH->GetBoundingBox().Format());
+        m_scene->Rebuild(m_renderObjects, m_viewCtx, m_dirtyFlags);
     }
-
-    /*if (m_dirtyFlags & kGI2DDirtyTransforms)
-    {
-        m_scene->hostInspectors->Clear();
-        m_renderObjects->ForEachOfType<GI2D::Host::UIInspector>([this](AssetHandle<GI2D::Host::UIInspector>& widget) -> bool
-            {
-                if (widget->Rebuild(m_dirtyFlags, m_viewCtx))
-                {
-                    m_scene->hostInspectors->EmplaceBack(widget);
-                }
-
-                return true;
-            });
-        m_scene->hostInspectors->Synchronise(kVectorSyncUpload);
-    }*/
 
     // View has changed
     m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
@@ -219,7 +154,7 @@ uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& t
 
     std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-    auto& tracables = *m_scene->hostTracables;
+    auto& tracables = m_scene->Tracables();
     int emptyIdx = -1;
     int numDeleted = 0;
     for (int primIdx = 0; primIdx < tracables.Size(); ++primIdx)
@@ -266,7 +201,7 @@ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& tar
     // Notify the scene objects of the move operation
     std::lock_guard <std::mutex> lock(m_resourceMutex);
     uint tracableDirtyFlags = 0u;
-    for (auto& obj : *m_scene->hostTracables)
+    for (auto& obj : m_scene->Tracables())
     {
         if (obj->IsSelected())
         {
@@ -285,7 +220,7 @@ void GI2DRenderer::DeselectAll()
 {
     std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-    for (auto obj : *m_scene->hostTracables)
+    for (auto obj : m_scene->Tracables())
     {
         obj->OnSelect(false);
     }
@@ -322,7 +257,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kSelectSceneObjectDragging")
     {
-        auto& tracables = *m_scene->hostTracables;
+        auto& tracables = m_scene->Tracables();
         const bool wasLassoing = m_selectionCtx.isLassoing;
 
         if (!m_selectionCtx.isLassoing)
@@ -339,7 +274,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
         m_selectionCtx.selectedBBox = BBox2f::MakeInvalid();
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        if (m_scene->sceneBIH->IsConstructed())
+        if (m_scene->TracableBIH().IsConstructed())
         {
             const uint lastNumSelected = m_selectionCtx.numSelected;
 
@@ -366,7 +301,7 @@ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& 
                     }
                 }
             };
-            m_scene->sceneBIH->TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+            m_scene->TracableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
             // Only if the number of selected primitives has changed
             if (lastNumSelected != m_selectionCtx.numSelected)
@@ -420,12 +355,12 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
             m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
             m_onCreate.newObject = newObject;
         }
-        /*else if (trigger.IsSet('W'))
+        else if (trigger.IsSet('W'))
         {
-            auto newObject = CreateAsset<GI2D::Host::UIInspector>(tfm::format("inspector%i", m_renderObjects->GetUniqueIndex()));
+            auto newObject = CreateAsset<GI2D::Host::OmniLight>(tfm::format("light%i", m_renderObjects->GetUniqueIndex()));
             m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
             m_onCreate.newObject = newObject;
-        }*/
+        }
         else { AssertMsg(false, "Invalid trigger"); }               
 
         m_onCreate.newObject->OnCreate(stateID, m_viewCtx);

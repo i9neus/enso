@@ -4,9 +4,9 @@
 #include "generic/Job.h"
 #include "kernels/gi2d/UICtx.cuh"
 #include "kernels/CudaVector.cuh"
-#include "kernels/gi2d/SceneDescription.cuh"
+#include "kernels/gi2d/FwdDecl.cuh"
 
-namespace GI2D
+/*namespace GI2D
 {
     struct OverlayLayerParams;  
     struct PathTracerLayerParams; 
@@ -29,7 +29,7 @@ namespace GI2D
         class TracableInterface;
         class SceneObjectInterface;
     }
-}
+}*/
 
 namespace Cuda
 {

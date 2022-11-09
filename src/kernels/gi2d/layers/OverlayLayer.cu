@@ -75,42 +75,29 @@ namespace GI2D
         }  
 
         // Draw the tracables
-        if (m_scene.bih && m_scene.tracables)
+        if (m_scene.tracableBIH && m_scene.tracables)
         {            
-            const Core::Vector<Device::Tracable*>& tracables = *(m_scene.tracables);
+            const Core::Vector<Device::Tracable*>& tracableList = *(m_scene.tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    assert(idx < tracables.Size());
-                    assert(tracables[idx]);
+                    assert(idx < tracableList.Size());
+                    assert(tracableList[idx]);
 
-                    const auto& tracable = *tracables[idx];
-                    vec4 LTracable = tracable.EvaluateOverlay(xyView, m_viewCtx);
-                    if(LTracable.w > 0.0f)
+                    const auto& drawable = *tracableList[idx];
+                    vec4 LPrim = drawable.EvaluateOverlay(xyView, m_viewCtx);
+                    if(LPrim.w > 0.0f)
                     {                        
-                        L = Blend(L, LTracable); 
+                        L = Blend(L, LPrim); 
                     }
 
-                    if (tracable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
+                    if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
                 }
             };          
-            m_scene.bih->TestPoint(xyView, onPointIntersectLeaf);        
+            m_scene.tracableBIH->TestPoint(xyView, onPointIntersectLeaf);
         }
-
-        // Draw the widgets
-        /*if (m_inspectors)
-        {
-            for (int idx = 0; idx < m_inspectors->Size(); ++idx)
-            {
-                vec4 LWidget;
-                if ((*m_inspectors)[idx]->EvaluateOverlayLayer(xyView, m_viewCtx, LWidget))
-                {
-                    L = Blend(L, LWidget);
-                }
-            }
-        }*/
 
         // Draw the lasso 
         if (m_selectionCtx.isLassoing && m_selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }

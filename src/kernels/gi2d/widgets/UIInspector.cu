@@ -6,36 +6,33 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    __device__ bool Device::UIInspector::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ vec4 Device::UIInspector::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        if (!m_worldBBox.Contains(pWorld)) { return false; }
+        if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
 
         float distance = length2(pWorld - m_transform.trans);
 
         float outerRadius = 0.5f * m_worldBBox.EdgeLength(0) - viewCtx.dPdXY;
-        if (distance > sqr(outerRadius)) { return false; }
+        if (distance > sqr(outerRadius)) { return vec4(0.f); }
         float innerRadius = 0.4 * m_worldBBox.EdgeLength(0) - viewCtx.dPdXY;
-        if (distance < sqr(innerRadius)) { return false; }
+        if (distance < sqr(innerRadius)) { return vec4(0.f); }
 
         distance = sqrt(distance);
-        L = Blend(L, kOne, saturatef((outerRadius - distance) / viewCtx.dPdXY) * saturatef((distance - innerRadius) / viewCtx.dPdXY));
-
-        return true;
+        return vec4(kOne, saturatef((outerRadius - distance) / viewCtx.dPdXY) * saturatef((distance - innerRadius) / viewCtx.dPdXY));
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::UIInspector::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::UIInspector::Instantiate(const std::string& id)
     {
         return CreateAsset<GI2D::Host::UIInspector>(id);
     }
 
     __host__ Host::UIInspector::UIInspector(const std::string& id) :
-        Host::Tracable(id)
+        Super(id)
     {
         Log::Success("Host::UIInspector::UIInspector");
 
-        cu_deviceUIInspectorInstance = InstantiateOnDevice<Device::UIInspector>();
-        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceUIInspectorInstance);
-        
+        cu_deviceInstance = InstantiateOnDevice<Device::UIInspector>();
+
         Synchronise(kSyncObjects);
     }
 
@@ -47,14 +44,14 @@ namespace GI2D
 
     __host__ void Host::UIInspector::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceUIInspectorInstance);
+        DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::UIInspector::Synchronise(const int type)
     {
-        Host::Tracable::Synchronise(cu_deviceUIInspectorInstance, type);
+        Host::Tracable<Device::UIInspector>::Synchronise(cu_deviceInstance, type);
 
-        if (type == kSyncParams) { SynchroniseInheritedClass<UIInspectorParams>(cu_deviceUIInspectorInstance, *this); }
+        if (type & kSyncParams) { SynchroniseInheritedClass<UIInspectorParams>(cu_deviceInstance, *this, kSyncParams); }
     }
 
     __host__ uint Host::UIInspector::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)

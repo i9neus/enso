@@ -65,7 +65,7 @@ namespace GI2D
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       Finalise() override final;
 
-            __host__ Device::Curve*     GetDeviceInstance() const
+            __host__ virtual Device::Curve* GetDeviceInstance() const override final
             { 
                 return cu_deviceInstance;
             }

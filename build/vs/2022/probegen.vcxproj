@@ -234,6 +234,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\lights\Light.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh" />
@@ -243,7 +244,7 @@
       </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellipse.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -254,7 +255,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\UICtx.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh" />
     <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
@@ -384,6 +385,7 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
@@ -391,7 +393,7 @@
       </ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellpise.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -399,7 +401,7 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu" />
     <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />

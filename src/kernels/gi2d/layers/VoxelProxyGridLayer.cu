@@ -135,7 +135,7 @@ namespace GI2D
 
         if (probeIdx.x < 0 || probeIdx.x >= m_grid.size.x || probeIdx.y < 0 || probeIdx.y >= m_grid.size.y) { return kOne * 0.2; }
 
-        return (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(max(1, m_frameIdx * m_grid.subprobesPerProbe));
+        return (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(m_grid.subprobesPerProbe * max(1, m_frameIdx));
     }
 
     __device__ void Device::VoxelProxyGridLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)  const

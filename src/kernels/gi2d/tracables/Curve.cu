@@ -83,7 +83,6 @@ namespace GI2D
         m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", Core::kVectorHostAlloc);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
-        cu_deviceTracableInstance = StaticCastOnDevice<Device::Tracable>(cu_deviceInstance);        
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();

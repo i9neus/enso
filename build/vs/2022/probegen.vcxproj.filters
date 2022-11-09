@@ -133,6 +133,9 @@
     <Filter Include="kernels\gi2d\integrators">
       <UniqueIdentifier>{0bc7185d-6ab1-494e-baca-faabb9ca4753}</UniqueIdentifier>
     </Filter>
+    <Filter Include="kernels\gi2d\lights">
+      <UniqueIdentifier>{15be9127-f469-41af-86bf-b80c4b6ddc12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -853,6 +856,9 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\lights\Light.cuh">
+      <Filter>kernels\gi2d\lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
@@ -1028,6 +1034,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
       <Filter>kernels\gi2d\layers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu">
+      <Filter>kernels\gi2d\lights</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
