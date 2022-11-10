@@ -2,6 +2,7 @@
 
 #include "../tracables/Tracable.cuh"
 #include "../FwdDecl.cuh"
+#include "../tracables/primitives/Ellipse.cuh"
 
 using namespace Cuda;
 
@@ -13,8 +14,8 @@ namespace GI2D
     {
         __host__ __device__ OmniLightParams() {}
 
-        float       m_lightRadius;    
-        vec2        m_lightPosWorld;
+        vec2    m_lightPos;
+        float   m_lightRadius;
     };
 
     namespace Device
@@ -24,21 +25,27 @@ namespace GI2D
         public:
             __host__ __device__ Light() {}
 
-            __device__ virtual void Sample() = 0;
-            __device__ virtual void Evaluate() = 0;
+            __device__ virtual bool                     Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const = 0;
+            __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const = 0;
         };
 
         class OmniLight : public Device::Light,
                           public OmniLightParams
         {  
-        protected:
-            __device__ virtual vec4 EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
-
         public:
             __device__ OmniLight() {}
 
-            __device__ virtual void Sample() {}
-            __device__ virtual void Evaluate() {}
+            __host__ __device__ virtual bool            IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
+
+            __device__ virtual bool                     Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const override final;
+            __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const override final;
+
+            __device__ virtual vec4                     EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+
+            __device__ virtual void                     OnSynchronise(const int) override final;
+
+        private:
+            Ellipse m_primitive;
         };
     }
 
@@ -49,7 +56,7 @@ namespace GI2D
         class LightInterface
         {
         public:
-            __host__ virtual Device::Light* GetDeviceInstance() const = 0;
+            __host__ virtual Device::Light*             GetDeviceInstance() const = 0;
 
         protected:
             LightInterface() = default;

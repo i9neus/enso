@@ -38,8 +38,7 @@ namespace GI2D
 
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
 
-        protected:
-            __device__ virtual vec4             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
         };
     }
 

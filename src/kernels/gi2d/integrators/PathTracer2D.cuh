@@ -20,7 +20,8 @@ namespace GI2D
             __device__ void Integrate(RenderCtx& renderCtx) const;
 
         private:
-            __device__ int Trace(const Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx, const Core::Vector<Device::Tracable*>& tracables) const;
+            __device__ int Trace(const Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const;
+            __device__ bool Shade(Ray2D& ray, const HitCtx2D& hit, RenderCtx& renderCtx) const;
 
             const Device::SceneDescription& m_scene;
         };

@@ -28,7 +28,7 @@ namespace GI2D
                             //public Cuda::AssetTags<Host::UIInspector, Device::UIInspector>
         {
         protected:
-            __device__ virtual vec4 EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __device__ virtual vec4 EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
 
         public:
             __device__ UIInspector() {}

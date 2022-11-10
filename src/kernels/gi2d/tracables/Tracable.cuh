@@ -22,17 +22,11 @@ namespace GI2D
             __host__ __device__ virtual bool                    IntersectBBox(const BBox2f& bBox) const;
 
             //__host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
-
-            __device__ virtual vec4                             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final 
-            { 
-                return EvaluatePrimitives(pWorld, viewCtx); 
-            }
+         
             __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
 
         protected:
             __host__ __device__ Tracable() {}
-
-            __device__ virtual vec4                             EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 
             __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
             {

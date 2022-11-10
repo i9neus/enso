@@ -1,20 +1,54 @@
+#include "../tracables/primitives/Ellipse.cuh"
+#include "../GenericIntersector.cuh"
 #include "Light.cuh"
 
 namespace GI2D
 {
-    __device__ vec4 Device::OmniLight::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
 
-        float distance = length2(pWorld - m_transform.trans);
+        return vec4(kOne, m_primitive.Evaluate(pWorld - m_transform.trans, viewCtx.dPdXY));
+    }
 
-        float outerRadius = m_lightRadius - viewCtx.dPdXY;
-        if (distance > sqr(outerRadius)) { return vec4(0.f); }
-        float innerRadius = m_lightRadius - viewCtx.dPdXY * 6.0f;
-        if (distance < sqr(innerRadius)) { return vec4(0.f); }
+    __host__ __device__ bool Device::OmniLight::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
+    {
+        RayRange2D range;
+        if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
-        distance = sqrt(distance);
-        return vec4(kOne, saturatef((outerRadius - distance) / viewCtx.dPdXY) * saturatef((distance - innerRadius) / viewCtx.dPdXY));
+        // TODO: Untransform normal
+        return m_primitive.IntersectRay(RayBasic2D(rayWorld.o - m_transform.trans, rayWorld.d), hitWorld);
+    }
+
+    __device__ bool Device::OmniLight::Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const
+    {
+        const vec2 lightLocal = m_lightPos - hit.p;
+        extant = normalize(vec2(lightLocal.y, -lightLocal.x)) * m_lightRadius * (xi - 0.5f) + lightLocal;
+        float lightDist = length(extant);
+        extant /= lightDist;
+
+        float cosTheta = (hit.flags & kHit2DIsVolume) ? (1.0 / kTwoPi) : dot(extant, hit.n);
+        if (cosTheta <= 0.0) { return false; }
+
+        const float lightSolidAngle = 2.0f * ((lightDist >= m_lightRadius) ? asin(m_lightRadius / lightDist) : kHalfPi);
+
+        L = kOne * lightSolidAngle * cosTheta / (2.0 * m_lightRadius);
+        pdf = 1.0 / lightSolidAngle;
+
+        return true;
+    }
+
+    __device__ bool Device::OmniLight::Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const
+    {
+
+    }
+
+    __device__ void Device::OmniLight::OnSynchronise(const int syncFlags)
+    {
+        if (syncFlags == kSyncParams)
+        {
+            m_primitive = Ellipse(m_lightPos, m_lightRadius);
+        }
     }
 
     __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::OmniLight::Instantiate(const std::string& id)
@@ -77,7 +111,7 @@ namespace GI2D
             if (!m_onCreate.isCentroidSet)
             {
                 m_transform.trans = viewCtx.mousePos;
-                m_lightPosWorld = viewCtx.mousePos;
+                m_lightPos = viewCtx.mousePos;
                 m_lightRadius = viewCtx.dPdXY;
                 m_onCreate.isCentroidSet = true;
             }

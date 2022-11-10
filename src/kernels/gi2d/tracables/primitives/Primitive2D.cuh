@@ -34,7 +34,7 @@ namespace GI2D
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& dPdXY) const { return 0.0f; }
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const { return false; }
-        __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const { return false; }
+        __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const { return kFltMax; }
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const { return BBox2f::MakeInvalid(); }
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const { return false; }
 

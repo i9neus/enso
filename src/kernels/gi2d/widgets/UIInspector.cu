@@ -6,7 +6,7 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    __device__ vec4 Device::UIInspector::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __device__ vec4 Device::UIInspector::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
 

@@ -69,6 +69,10 @@ void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT cl
 
 	IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
 
+	size_t stackSize;
+	IsOk(cudaDeviceGetLimit(&stackSize, cudaLimitStackSize));
+	Log::Error("Stack size: %i\n", stackSize);
+
 	checkCudaErrors(cudaEventCreate(&m_renderEvent));
 
 	//cudaOccupancyMaxPotentialBlockSize(minGridSize, blockSize);

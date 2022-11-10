@@ -32,7 +32,7 @@ namespace GI2D
 
         for (int harIdx = 0; harIdx < m_grid.numHarmonics; ++harIdx)
         {
-            (*m_accumBuffer)[accumIdx + harIdx] += L.xyz;
+            (*m_accumBuffer)[accumIdx + harIdx] += L.xyz; 
         }
     }
 
@@ -56,8 +56,9 @@ namespace GI2D
         if (kKernelIdx >= m_grid.totalSubprobes) { return; }
 
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this);
-        m_voxelTracer.Integrate(renderCtx);
+        printf("ALLOC: %i\n", sizeof(RenderCtx));
 
+        m_voxelTracer.Integrate(renderCtx);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -262,7 +263,7 @@ namespace GI2D
         const int blockSize = 16;
         const int gridSize = (m_grid.numProbes + blockSize - 1) / blockSize;
         
-        KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize>> > (cu_deviceInstance);
+        KernelRender << </*m_kernelParams.grids.accumSize*/ 1, 1>> > (cu_deviceInstance);
 
         Integrate();
 

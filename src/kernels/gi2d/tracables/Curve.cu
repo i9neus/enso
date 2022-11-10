@@ -36,6 +36,7 @@ namespace GI2D
             return true;
         }
 
+        // TODO: Transform normals into screen space
         return false;
     }
 
@@ -47,7 +48,7 @@ namespace GI2D
     {
     }*/
 
-    __device__ vec4 Device::Curve::EvaluatePrimitives(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __device__ vec4 Device::Curve::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_bih) { return vec4(0.0f); }
 
