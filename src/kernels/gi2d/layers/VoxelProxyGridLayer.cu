@@ -259,11 +259,11 @@ namespace GI2D
             m_hostAccumBuffer->Wipe();
             m_dirtyFlags = 0;
         }
-
-        const int blockSize = 16;
-        const int gridSize = (m_grid.numProbes + blockSize - 1) / blockSize;
         
-        KernelRender << </*m_kernelParams.grids.accumSize*/ 1, 1>> > (cu_deviceInstance);
+        ScopedDeviceStackResize(1024 * 3, [this]() -> void
+            {
+                KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
+            });
 
         Integrate();
 

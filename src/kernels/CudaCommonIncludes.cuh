@@ -96,4 +96,41 @@ namespace Cuda
             assert(object); \
             object->FunctionName(); \
         }
+
+    // Little RAII class that temporarily increases the stack size and returns it to the default
+    // when the object is destroyed.
+    class DeviceStackManager
+    {
+    public:
+        DeviceStackManager(const size_t newLimit)
+        {
+            IsOk(cudaDeviceGetLimit(&m_oldLimit, cudaLimitStackSize));
+            IsOk(cudaDeviceSetLimit(cudaLimitStackSize, newLimit));
+            IsOk(cudaDeviceSynchronize());
+        }
+
+        ~DeviceStackManager()
+        {
+            cudaDeviceSetLimit(cudaLimitStackSize, m_oldLimit);
+            cudaDeviceSynchronize();
+        }
+
+    private:
+        size_t m_oldLimit;
+    };
+
+    // RAII functor that temporarily increases the stack size, calls the functor, then returns the stack size to its original value
+    template<typename Lambda>
+    __host__ inline void ScopedDeviceStackResize(const size_t newLimit, Lambda functor)
+    {
+        size_t oldLimit;
+        IsOk(cudaDeviceGetLimit(&oldLimit, cudaLimitStackSize));
+        IsOk(cudaDeviceSetLimit(cudaLimitStackSize, newLimit));
+        IsOk(cudaDeviceSynchronize());
+
+        functor();
+
+        IsOk(cudaDeviceSetLimit(cudaLimitStackSize, oldLimit));
+        IsOk(cudaDeviceSynchronize());
+    }
 }
