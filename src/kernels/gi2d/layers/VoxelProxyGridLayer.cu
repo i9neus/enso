@@ -36,7 +36,7 @@ namespace GI2D
         }
     }
 
-    __device__ bool Device::VoxelProxyGridLayer::CreateRay(Ray2D& ray, RenderCtx& renderCtx) const
+    __device__ bool Device::VoxelProxyGridLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
         const uint probeIdx = kKernelIdx / m_grid.subprobesPerProbe;
         const vec2 probePosNorm = vec2(float(0.5f + probeIdx % m_grid.size.x), float(0.5f + probeIdx / m_grid.size.x));
@@ -44,9 +44,17 @@ namespace GI2D
         // Transform from screen space to view space
         ray.o = m_cameraTransform.PointToWorldSpace(probePosNorm);
 
-        // Randomly scatter
+        // Randomly scatter the ray
         const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
         ray.d = vec2(cosf(theta), sinf(theta));
+        ray.throughput = vec3(1.0f);
+        ray.flags = 0;
+        ray.lightIdx = kTracableNotALight;
+
+        // Initialise the hit context
+        hit.flags = kHit2DIsVolume;
+        hit.p = ray.o;
+        hit.tFar = kFltMax;
 
         return true;
     }
@@ -56,8 +64,6 @@ namespace GI2D
         if (kKernelIdx >= m_grid.totalSubprobes) { return; }
 
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this);
-        printf("ALLOC: %i\n", sizeof(RenderCtx));
-
         m_voxelTracer.Integrate(renderCtx);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
@@ -251,7 +257,7 @@ namespace GI2D
     }
 
     __host__ void Host::VoxelProxyGridLayer::Render()
-    {
+    {        
         KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         if (m_dirtyFlags)
@@ -260,10 +266,9 @@ namespace GI2D
             m_dirtyFlags = 0;
         }
         
-        ScopedDeviceStackResize(1024 * 3, [this]() -> void
-            {
-                KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
-            });
+        BEGIN_SCOPED_STACK_RESIZE(1024 * 3);
+        KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
+        END_SCOPED_STACK_RESIZE();
 
         Integrate();
 

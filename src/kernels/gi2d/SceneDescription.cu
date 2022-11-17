@@ -44,21 +44,29 @@ namespace GI2D
     __host__ void Host::SceneDescription::Rebuild(Cuda::AssetHandle<Cuda::RenderObjectContainer>& renderObjects, const GI2D::UIViewCtx& viewCtx, const uint dirtyFlags)
     {
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
+        int lightIdx = 0;
         m_hostTracables->Clear();
+        m_hostLights->Clear();
+
         renderObjects->ForEachOfType<Host::TracableInterface>([&, this](AssetHandle<GI2D::Host::TracableInterface>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
                 if (tracable->Rebuild(dirtyFlags, viewCtx))
                 {
+                    // Add the tracable to the list
+                    m_hostTracables->EmplaceBack(tracable);
+                    
                     // Tracables that are also lights are separated out into their own container
                     auto light = tracable.DynamicCast<GI2D::Host::LightInterface>();
-                    if (light) { m_hostLights->EmplaceBack(light); }
-
-                    m_hostTracables->EmplaceBack(tracable);
+                    if (light) 
+                    { 
+                        tracable->SetLightIdx(lightIdx++);
+                        m_hostLights->EmplaceBack(light); 
+                    }                    
                 }
 
                 return true;
-            });
+            });       
 
         m_hostTracables->Synchronise(Core::kVectorSyncUpload);
         m_hostLights->Synchronise(Core::kVectorSyncUpload);

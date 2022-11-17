@@ -6,15 +6,23 @@ using namespace Cuda;
 
 namespace GI2D
 {
-    enum TracableFlags : uint
+    enum TracableFlags : int
     {
-        kTracableIsLight = 1u
+        kTracableNotALight = -1
+    };
+
+    struct TracableParams
+    {
+        __host__ __device__ TracableParams() {}
+
+        int m_lightIdx = kTracableNotALight;
     };
 
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
-        class Tracable : public Device::SceneObject
+        class Tracable : public Device::SceneObject,
+                         public TracableParams
         {
         public:
             __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const { return false; }
@@ -24,6 +32,7 @@ namespace GI2D
             //__host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
          
             __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
+            __host__ __device__ virtual int                     GetLightIdx() const { return m_lightIdx; }
 
         protected:
             __host__ __device__ Tracable() {}
@@ -44,6 +53,7 @@ namespace GI2D
         {
         public:
             __host__ virtual Device::Tracable*  GetDeviceInstance() const = 0;
+            __host__ virtual void               SetLightIdx(const int) = 0;
         };
         
         template<typename DeviceType>
@@ -55,7 +65,14 @@ namespace GI2D
         protected:
             __host__ Tracable(const std::string& id) : Super(id) {}
             
-            template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Super::Synchronise(deviceData, syncType); }
+            template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncType) 
+            { 
+                Super::Synchronise(deviceInstance, syncType); 
+
+                if (syncType & kSyncParams) { SynchroniseInheritedClass<TracableParams>(deviceInstance, *this, kSyncParams); }
+            }
+
+            __host__ virtual void SetLightIdx(const int idx) override final { m_lightIdx = idx; }
 
         protected:
             struct

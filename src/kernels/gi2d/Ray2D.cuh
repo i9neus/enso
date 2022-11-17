@@ -18,7 +18,7 @@ namespace GI2D
     
     struct HitCtx2D
     {
-        __host__ __device__ HitCtx2D(const float tf = kFltMax) : kickoff(0.f), tFar(tf) {}
+        __host__ __device__ HitCtx2D() : tFar(kFltMax), flags(0) {}
 
         vec2        p;
         vec2        n;
@@ -61,29 +61,29 @@ namespace GI2D
         __host__ __device__ Ray2D() : flags(0) {}
         __host__ __device__ Ray2D(const vec2& _o, const vec2& _d) :
             RayBasic2D(_o, _d),
-            flags(0) {}
+            flags(0){}
 
         __host__ __device__ __forceinline__ void Derive(const HitCtx2D& hit, const vec2& extant, const vec3& childWeight, const float& childPdf, const uchar childFlags)
         {
             o = hit.p + hit.n * hit.kickoff;
             d = extant;
-            weight *= childWeight;
+            throughput *= childWeight;
             flags |= childFlags;
             pdf = childPdf;
         }
 
-        __host__ __device__ __forceinline__ void DeriveLightSample(const HitCtx2D& hit, const vec2& extant, const vec3& childWeight, const uint idx)
+        __host__ __device__ __forceinline__ void DeriveLightSample(const HitCtx2D& hit, const vec2& extant, const vec3& L, const uint idx)
         {
             o = hit.p + hit.n * hit.kickoff;
             d = extant;
-            weight *= childWeight;
+            throughput *= L;
             flags |= kRay2DLightSample;
             lightIdx = idx;
         }
 
         __host__ __device__ __forceinline__ bool IsLightSample() const { return flags & kRay2DLightSample; }
 
-        vec3        weight;
+        vec3        throughput;
         uchar       flags;
         union
         {

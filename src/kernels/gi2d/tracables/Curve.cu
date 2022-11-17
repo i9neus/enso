@@ -126,10 +126,10 @@ namespace GI2D
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - SceneObjectParams::m_transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - m_transform.trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            SceneObjectParams::m_transform.trans = viewCtx.mousePos;
+            m_transform.trans = viewCtx.mousePos;
            
             Log::Success("Opened path %s", GetAssetID());
         }

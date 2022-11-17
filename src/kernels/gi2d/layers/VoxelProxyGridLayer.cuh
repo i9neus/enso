@@ -54,7 +54,7 @@ namespace GI2D
             __device__ void Composite(Cuda::Device::ImageRGBA* outputImage) const;
             __device__ vec3 Evaluate(const vec2& posWorld) const;
 
-            __device__ virtual bool CreateRay(Ray2D& ray, RenderCtx& renderCtx) const override final;
+            __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
             __device__ virtual void OnSynchronise(const int) override final;

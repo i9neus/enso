@@ -87,6 +87,8 @@ namespace GI2D
             __host__ virtual void       OnDestroyAsset() override final;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       IsConstructed() const override final;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;

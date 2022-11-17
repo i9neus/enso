@@ -25,7 +25,7 @@ namespace GI2D
         m_accumBuffer->At(kKernelPos<ivec2>()) += L;
     }
 
-    __device__ bool Device::PathTracerLayer::CreateRay(Ray2D& ray, RenderCtx& renderCtx) const
+    __device__ bool Device::PathTracerLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
         // Transform from screen space to view space
         ray.o = m_viewCtx.transform.matrix * vec2(kKernelPos<ivec2>() * m_accum.downsample);

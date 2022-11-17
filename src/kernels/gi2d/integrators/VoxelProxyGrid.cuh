@@ -47,7 +47,7 @@ namespace GI2D
             __device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
 
-            __device__ virtual bool CreateRay(Ray2D& ray, RenderCtx& renderCtx) const override final;
+            __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
             __device__ void OnSynchronise(const int);
