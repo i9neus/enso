@@ -123,6 +123,7 @@ namespace Cuda
     template<typename Lambda>
     __host__ inline void ScopedDeviceStackResize(const size_t newLimit, Lambda functor)
     {
+#ifdef _DEBUG
         size_t oldLimit;
         IsOk(cudaDeviceGetLimit(&oldLimit, cudaLimitStackSize));
         IsOk(cudaDeviceSetLimit(cudaLimitStackSize, newLimit));
@@ -132,5 +133,8 @@ namespace Cuda
 
         IsOk(cudaDeviceSetLimit(cudaLimitStackSize, oldLimit));
         IsOk(cudaDeviceSynchronize());
+#else
+        functor();
+#endif
     }
 }
