@@ -20,7 +20,8 @@
 using namespace Cuda;
 using namespace GI2D;
 
-GI2DRenderer::GI2DRenderer()
+GI2DRenderer::GI2DRenderer() :
+    m_isRunning(true)
 {
     // Declare the scene object instantiators
     // TODO: Merge this code with RenderObjectFactory
@@ -69,6 +70,10 @@ GI2DRenderer::GI2DRenderer()
     m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
     m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
     m_uiGraph.DeclareDeterministicAutoTransition("kDeleteSceneObjects", "kIdleState");
+
+    // Utils
+    m_uiGraph.DeclareState("kToggleRun", this, &GI2DRenderer::OnToggleRun);
+    m_uiGraph.DeclareDeterministicTransition("kIdleState", "kToggleRun", VirtualKeyMap({ {VK_SPACE, kOnButtonDepressed} }), 0);
 
     m_uiGraph.Finalise();
 }
@@ -140,6 +145,15 @@ void GI2DRenderer::Rebuild()
     //m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
     SetDirtyFlags(kGI2DDirtyAll, false);
+}
+
+uint GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+{
+    m_isRunning = !m_isRunning;      
+    Log::Warning(m_isRunning ? "Running" : "Paused"); 
+
+    m_uiGraph.SetState("kIdleState");    
+    return kUIStateOkay;
 }
 
 uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
@@ -397,8 +411,6 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
 
 void GI2DRenderer::OnRender()
 {
-    //std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    //Log::Write("Tick");
     if (m_dirtyFlags)
     {
         Rebuild();
@@ -408,7 +420,15 @@ void GI2DRenderer::OnRender()
 
     // Render the pass
     //m_pathTracerLayer->Render();
-    m_voxelProxyGridLayer->Render();
+    if (m_isRunning)
+    {
+        //if (m_renderTimer.Get() > 0.1f)
+        {
+            m_voxelProxyGridLayer->Render();
+            //m_renderTimer.Reset();
+            //Log::Write("-----");
+        }
+    }
     //m_isosurfaceExplorer->Render();
     m_overlayRenderer->Render();
 

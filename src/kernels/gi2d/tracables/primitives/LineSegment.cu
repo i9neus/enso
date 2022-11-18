@@ -34,8 +34,12 @@ namespace GI2D
         float tSeg = (dot(n, ray.o) - dot(n, m_v[0])) / dot(n, m_dv);
 
         if (tSeg < 0.0f || tSeg > 1.0f) { return false; }
-
+     
+        n = vec2(m_dv.y, -m_dv.x);
+        hit.n = n * (float(dot(n, ray.o - m_v[0]) > 0.0f) * 2.0f - 1.0f);
         hit.tFar = tRay;
+        hit.kickoff = 1e-3f;
+
         return true;
     }
 

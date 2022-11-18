@@ -55,6 +55,7 @@ namespace GI2D
         hit.flags = kHit2DIsVolume;
         hit.p = ray.o;
         hit.tFar = kFltMax;
+        hit.depth = 0;
 
         return true;
     }
@@ -62,8 +63,16 @@ namespace GI2D
     __device__ void Device::VoxelProxyGridLayer::Render()
     {
         if (kKernelIdx >= m_grid.totalSubprobes) { return; }
+         
+        const int subprobeIdx = ((kKernelIdx / m_grid.numHarmonics) % m_grid.subprobesPerProbe);
+        const int probeIdx = kKernelIdx / m_grid.unitsPerProbe;
 
-        RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this);
+        const uchar ctxFlags = (probeIdx / m_grid.size.x == m_grid.size.y / 2 && 
+                               probeIdx % m_grid.size.x == m_grid.size.x / 2 &&
+                               subprobeIdx == 0) ? kRenderCtxDebug : 0;
+        
+        RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, ctxFlags);
+
         m_voxelTracer.Integrate(renderCtx);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
@@ -115,7 +124,7 @@ namespace GI2D
 
             assert(probeIdx < m_grid.numProbes && coeffIdx < m_grid.numHarmonics);
 
-            (*m_gridBuffer)[probeIdx * m_grid.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx];          
+            (*m_gridBuffer)[probeIdx * m_grid.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx];
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(ReduceAccumulationBuffer);
@@ -266,9 +275,10 @@ namespace GI2D
             m_dirtyFlags = 0;
         }
         
-        BEGIN_SCOPED_STACK_RESIZE(1024 * 3);
-        KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
-        END_SCOPED_STACK_RESIZE();
+        ScopedDeviceStackResize(1024 * 10, [this]() -> void
+            {
+                KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
+            });
 
         Integrate();
 

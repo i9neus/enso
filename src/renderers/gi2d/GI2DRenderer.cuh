@@ -89,6 +89,7 @@ private:
     uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
     uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
     uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+    uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
 
     std::string             DecideOnClickState(const uint& sourceStateIdx);
     void                    DeselectAll();
@@ -138,4 +139,7 @@ private:
         Cuda::vec2                              dragAnchor;
     }
     m_onMove;
+
+    bool                                        m_isRunning;
+    HighResolutionTimer                         m_renderTimer;
 };

@@ -20,12 +20,20 @@ namespace GI2D
     {
         __host__ __device__ HitCtx2D() : tFar(kFltMax), flags(0) {}
 
+        __host__ __device__ void PrepareNext()
+        {
+            // Resets the hit context for the next ray test and increments the depth
+            tFar = kFltMax;
+            flags = 0;
+        }
+
         vec2        p;
         vec2        n;
         float		kickoff;
         float       tFar;
         uint        tracableIdx;
         uchar       flags;
+        uchar       depth;
     };
     
     struct RayRange2D
@@ -53,7 +61,9 @@ namespace GI2D
 
     enum Ray2DFlags
     {
-        kRay2DLightSample = 1
+        kRay2DDirectLightSample = 1,
+        kRay2DDirectBxDFSample = 2,
+        kRay2DIndirectSample = 4
     };
 
     struct Ray2D : public RayBasic2D
@@ -63,31 +73,32 @@ namespace GI2D
             RayBasic2D(_o, _d),
             flags(0){}
 
-        __host__ __device__ __forceinline__ void Derive(const HitCtx2D& hit, const vec2& extant, const vec3& childWeight, const float& childPdf, const uchar childFlags)
+        __host__ __device__ __forceinline__ void DeriveIndirectSample (const HitCtx2D& hit, const vec2& extant, const vec3& childWeight)
         {
             o = hit.p + hit.n * hit.kickoff;
             d = extant;
             throughput *= childWeight;
-            flags |= childFlags;
-            pdf = childPdf;
+            flags |= kRay2DIndirectSample;
+            //pdf = childPdf;
         }
 
-        __host__ __device__ __forceinline__ void DeriveLightSample(const HitCtx2D& hit, const vec2& extant, const vec3& L, const uint idx)
+        __host__ __device__ __forceinline__ void DeriveDirectSample(const HitCtx2D& hit, const vec2& extant, const vec3& L, const uint idx)
         {
             o = hit.p + hit.n * hit.kickoff;
             d = extant;
             throughput *= L;
-            flags |= kRay2DLightSample;
+            flags |= kRay2DDirectLightSample;
             lightIdx = idx;
         }
 
-        __host__ __device__ __forceinline__ bool IsLightSample() const { return flags & kRay2DLightSample; }
+        __host__ __device__ __forceinline__ bool IsDirectSample() const { return flags & (kRay2DDirectLightSample | kRay2DDirectBxDFSample); }
+        __host__ __device__ __forceinline__ bool IsIndirectSample() const { return flags & kRay2DIndirectSample; }
 
         vec3        throughput;
         uchar       flags;
         union
         {
-            float       pdf;
+            //float       pdf;
             uint        lightIdx;
         };
     };

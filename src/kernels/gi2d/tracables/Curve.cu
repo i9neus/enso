@@ -33,10 +33,12 @@ namespace GI2D
         if (hitObject.tFar < hitWorld.tFar)
         {
             hitWorld.tFar = hitObject.tFar;
+            // TODO: Transform normals into screen space
+            hitWorld.n = hitObject.n;
+            hitWorld.kickoff = hitObject.kickoff;
             return true;
         }
 
-        // TODO: Transform normals into screen space
         return false;
     }
 

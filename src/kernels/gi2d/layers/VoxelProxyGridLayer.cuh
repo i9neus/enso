@@ -49,10 +49,10 @@ namespace GI2D
         public:
             __device__ VoxelProxyGridLayer() : m_voxelTracer(m_scene) {}
 
-            __device__ void Prepare(const uint dirtyFlags);
-            __device__ void Render();
-            __device__ void Composite(Cuda::Device::ImageRGBA* outputImage) const;
-            __device__ vec3 Evaluate(const vec2& posWorld) const;
+            __device__ __forceinline__ void Prepare(const uint dirtyFlags);
+            __device__ __forceinline__ void Render();
+            __device__ __forceinline__ void Composite(Cuda::Device::ImageRGBA* outputImage) const;
+            __device__ __forceinline__ vec3 Evaluate(const vec2& posWorld) const;
 
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
