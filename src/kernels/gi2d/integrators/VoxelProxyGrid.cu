@@ -76,7 +76,7 @@ namespace GI2D
     
     __host__ Host::VoxelProxyGrid::VoxelProxyGrid(const std::string& id, AssetHandle<Host::SceneDescription>& scene,
                                                   const uint width, const uint height) : 
-        Host::SceneObject<>(id),
+        Host::SceneObject(id, m_hostInstance),
         m_scene(scene)
     {
         constexpr uint kGridWidth = 100;

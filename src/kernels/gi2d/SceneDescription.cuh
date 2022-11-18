@@ -22,8 +22,8 @@ namespace GI2D
 
     namespace Host
     {
-        using TracableContainer = ::Core::Host::AssetVector<Host::TracableInterface, Device::Tracable>;
-        using LightContainer = ::Core::Host::AssetVector<Host::LightInterface, Device::Light>;
+        using TracableContainer = ::Core::Host::AssetVector<Host::Tracable, Device::Tracable>;
+        using LightContainer = ::Core::Host::AssetVector<Host::Light, Device::Light>;
         
         class SceneDescription : public Cuda::Host::AssetAllocator
         {

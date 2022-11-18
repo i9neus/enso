@@ -32,9 +32,11 @@ namespace GI2D
         Core::Device::Vector<vec3>*                     m_accumBuffer = nullptr;
     };
 
+    namespace Host { class VoxelProxyGrid; }
+
     namespace Device
     {
-        class VoxelProxyGrid : Device::SceneObject,
+        class VoxelProxyGrid : public Device::SceneObject,
                                public VoxelProxyGridParams,
                                public VoxelProxyGridObjects,
                                public Camera2D
@@ -62,11 +64,11 @@ namespace GI2D
 
     namespace Host
     {
-        class VoxelProxyGrid : public Host::SceneObject<>,
+        class VoxelProxyGrid : public Host::SceneObject,
                                public VoxelProxyGridParams
         {
         public:
-            __host__ VoxelProxyGrid(const std::string& id, AssetHandle<Host::SceneDescription>& scene,  const uint width, const uint height);
+            __host__ VoxelProxyGrid(const std::string& id, AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height);
             __host__ virtual ~VoxelProxyGrid() {}
             
             __host__ void OnDestroyAsset();
@@ -75,18 +77,20 @@ namespace GI2D
             __host__ void Render();
             __host__ void Synchronise(const int syncType);
 
-            __host__ virtual bool       Finalise() override final { return true; }
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
+            __host__ virtual bool       Finalise() { return true; }
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
 
             __host__ Device::VoxelProxyGrid* GetDeviceInstance() { return cu_deviceInstance; }
 
         private:
-            GI2D::Device::VoxelProxyGrid*          cu_deviceInstance = nullptr;
+            Device::VoxelProxyGrid*                cu_deviceInstance = nullptr;
             VoxelProxyGridObjects                  m_deviceObjects;
 
             AssetHandle<Host::SceneDescription>    m_scene;
 
             AssetHandle<Core::Host::Vector<vec3>>  m_hostAccumBuffer;
+
+            Device::VoxelProxyGrid                 m_hostInstance;
         };
     }
 }

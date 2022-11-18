@@ -6,31 +6,6 @@
 #include "kernels/CudaVector.cuh"
 #include "kernels/gi2d/FwdDecl.cuh"
 
-/*namespace GI2D
-{
-    struct OverlayLayerParams;  
-    struct PathTracerLayerParams; 
-    struct ViewTransform2D;
-    //class LineSegment; 
-
-    namespace Device
-    {
-        class Tracable;
-    }
-
-    namespace Host
-    {
-        class BIH2DAsset;
-        class OverlayLayer;   
-        class PathTracerLayer; 
-        class VoxelProxyGridLayer;
-        class VoxelProxyGrid;
-        //class IsosurfaceExplorer;
-        class TracableInterface;
-        class SceneObjectInterface;
-    }
-}*/
-
 namespace Cuda
 {
     class Asset;
@@ -126,11 +101,11 @@ private:
     GI2D::UIViewCtx                             m_viewCtx;
     GI2D::UISelectionCtx                        m_selectionCtx;
 
-    std::unordered_map<uint, std::function<AssetHandle<GI2D::Host::SceneObjectInterface>(const std::string&)>>    m_sceneObjectInstantiators;
+    std::unordered_map<uint, std::function<AssetHandle<GI2D::Host::SceneObject>(const std::string&)>>    m_sceneObjectInstantiators;
 
     struct
     {
-        AssetHandle<GI2D::Host::SceneObjectInterface>   newObject;
+        AssetHandle<GI2D::Host::SceneObject>   newObject;
     } 
     m_onCreate;
 

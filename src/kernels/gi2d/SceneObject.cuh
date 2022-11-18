@@ -64,11 +64,15 @@ namespace GI2D
         uint                        m_attrFlags;
     };
 
+    namespace Host { class SceneObject; }
+
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
         class SceneObject : public SceneObjectParams
         {
+            friend Host::SceneObject;
+
         public:
             __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 
@@ -94,45 +98,24 @@ namespace GI2D
 
     namespace Host
     {
-        // Interface that hides the templated SceneObject<> class and permits us to use polymorphism
-        class SceneObjectInterface
-        {
-        public:            
-            SceneObjectInterface() = default;
-
-            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) { return kGI2DClean;  };
-            __host__ virtual uint       OnSelect(const bool isSelected) { return kGI2DClean; }
-            __host__ virtual bool       Finalise() = 0;
-            __host__ virtual bool       IsConstructed() const = 0;
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual uint       GetDirtyFlags() const = 0;
-            __host__ virtual bool       IsFinalised() const = 0;
-            __host__ virtual bool       IsSelected() const = 0;
-            __host__ virtual void       SetAttributeFlags(const uint flags, bool isSet = true) = 0;
-            __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const = 0;
-            __host__ virtual const      BBox2f& GetObjectSpaceBoundingBox() const = 0;
-            __host__ virtual const      BBox2f& GetWorldSpaceBoundingBox() const = 0;            
-        };
-        
-        template<typename DeviceType = Device::SceneObject>
-        class SceneObject : public DeviceType,
-                            virtual public SceneObjectInterface,
-                            public Cuda::Host::RenderObject
+        class SceneObject : public Cuda::Host::RenderObject,
+                            public SceneObjectParams
         {
         public:
-            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override { return 0u;  }
-            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override;
-            __host__ virtual uint       OnSelect(const bool isSelected) override;
+            __host__ virtual bool       Finalise() = 0;
+            
+            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
+            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
+            __host__ virtual uint       OnSelect(const bool isSelected);
 
-            __host__ virtual uint       GetDirtyFlags() const override final { return m_dirtyFlags; }
-            __host__ virtual bool       IsFinalised() const override final { return m_isFinalised; }
-            __host__ virtual bool       IsSelected() const override final { return m_attrFlags & kSceneObjectSelected; }
-            __host__ virtual bool       IsConstructed() const override { return false; }
-            __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const override final { return *this; }
+            __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
+            __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
+            __host__ virtual bool       IsSelected() const { return m_attrFlags & kSceneObjectSelected; }
+            __host__ virtual bool       IsConstructed() const { return false; }
+            __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const { return *this; }
 
-            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const override final { return Device::SceneObject::GetObjectSpaceBoundingBox(); }
-            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const override final { return Device::SceneObject::GetWorldSpaceBoundingBox(); }
+            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; }
+            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; }
 
             /*__host__ Device::SceneObject* GetDeviceInstance() const
             {
@@ -140,7 +123,7 @@ namespace GI2D
                 return cu_deviceSceneObjectInterface;
             }*/
 
-            __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true) override final
+            __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true) 
             {                
                 //DeviceSuper::m_attrFlags = 1;
                 /*if (SetGenericFlags(m_attrFlags, flags, isSet))
@@ -152,7 +135,7 @@ namespace GI2D
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ SceneObject(const std::string& id);
+            __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance);
 
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int type)
@@ -174,56 +157,7 @@ namespace GI2D
             }
             m_onMove;
 
-            Device::SceneObject* cu_deviceSceneObjectInterface = nullptr;
+            Device::SceneObject&        m_hostInstance;
         };   
-
-        template<typename DeviceType>
-        __host__ Host::SceneObject<DeviceType>::SceneObject(const std::string& id) :
-            RenderObject(id),
-            m_dirtyFlags(kGI2DDirtyAll),
-            m_isFinalised(false)
-        {
-        }
-
-        template<typename DeviceType>
-        __host__ uint Host::SceneObject<DeviceType>::OnSelect(const bool isSelected)
-        {
-            if (SetGenericFlags(m_attrFlags, uint(kSceneObjectSelected), isSelected))
-            {
-                SetDirtyFlags(kGI2DDirtyUI, true);
-            }
-            return m_dirtyFlags;
-        }
-
-        template<typename DeviceType>
-        __host__ uint Host::SceneObject<DeviceType>::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
-        {
-            if (stateID == "kMoveSceneObjectBegin")
-            {
-                m_onMove.dragAnchor = viewCtx.mousePos;
-                m_onMove.isDragging = true;
-                Log::Error("kMoveSceneObjectBegin");
-            }
-            else if (stateID == "kMoveSceneObjectDragging")
-            {
-                Assert(m_onMove.isDragging);
-
-                const vec2 delta = viewCtx.mousePos - m_onMove.dragAnchor;
-                m_onMove.dragAnchor = viewCtx.mousePos;
-                m_transform.trans += delta;
-                m_worldBBox += delta;
-
-                // The geometry internal to this object hasn't changed, but it will affect the 
-                Log::Warning("kMoveSceneObjectDragging");
-                SetDirtyFlags(kGI2DDirtyBVH);
-            }
-            else if (stateID == "kMoveSceneObjectEnd")
-            {
-                m_onMove.isDragging = false;
-                Log::Success("kMoveSceneObjectEnd");
-            }
-
-            return m_dirtyFlags;
-        }
     }
 }

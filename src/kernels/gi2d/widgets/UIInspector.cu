@@ -21,13 +21,13 @@ namespace GI2D
         return vec4(kOne, saturatef((outerRadius - distance) / viewCtx.dPdXY) * saturatef((distance - innerRadius) / viewCtx.dPdXY));
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::UIInspector::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::UIInspector::Instantiate(const std::string& id)
     {
         return CreateAsset<GI2D::Host::UIInspector>(id);
     }
 
     __host__ Host::UIInspector::UIInspector(const std::string& id) :
-        Super(id)
+        Host::Tracable(id, m_hostInstance)
     {
         Log::Success("Host::UIInspector::UIInspector");
 
@@ -49,7 +49,7 @@ namespace GI2D
 
     __host__ void Host::UIInspector::Synchronise(const int type)
     {
-        Host::Tracable<Device::UIInspector>::Synchronise(cu_deviceInstance, type);
+        Host::Tracable::Synchronise(cu_deviceInstance, type);
 
         if (type & kSyncParams) { SynchroniseInheritedClass<UIInspectorParams>(cu_deviceInstance, *this, kSyncParams); }
     }

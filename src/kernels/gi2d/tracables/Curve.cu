@@ -73,7 +73,7 @@ namespace GI2D
     }
 
     __host__ Host::Curve::Curve(const std::string& id) :
-        Super(id),
+        Tracable(id, m_hostInstance),
         cu_deviceInstance(nullptr)
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
@@ -91,13 +91,13 @@ namespace GI2D
         m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
-        m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_lineSegments = static_cast<Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
+        m_hostInstance.m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
+        m_hostInstance.m_lineSegments = static_cast<Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
         
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::Curve::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id)
     {
         return CreateAsset<GI2D::Host::Curve>(id);
     }
@@ -118,7 +118,7 @@ namespace GI2D
 
     __host__ void Host::Curve::Synchronise(const int syncType)
     {
-        Super::Synchronise(cu_deviceInstance, syncType);
+        Tracable::Synchronise(cu_deviceInstance, syncType);
 
         if (syncType == kSyncObjects)
         {

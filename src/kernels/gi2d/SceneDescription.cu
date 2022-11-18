@@ -48,7 +48,7 @@ namespace GI2D
         m_hostTracables->Clear();
         m_hostLights->Clear();
 
-        renderObjects->ForEachOfType<Host::TracableInterface>([&, this](AssetHandle<GI2D::Host::TracableInterface>& tracable) -> bool
+        renderObjects->ForEachOfType<Host::Tracable>([&, this](AssetHandle<GI2D::Host::Tracable>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
                 if (tracable->Rebuild(dirtyFlags, viewCtx))
@@ -57,7 +57,7 @@ namespace GI2D
                     m_hostTracables->EmplaceBack(tracable);
                     
                     // Tracables that are also lights are separated out into their own container
-                    auto light = tracable.DynamicCast<GI2D::Host::LightInterface>();
+                    auto light = tracable.DynamicCast<GI2D::Host::Light>();
                     if (light) 
                     { 
                         tracable->SetLightIdx(lightIdx++);

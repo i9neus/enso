@@ -46,11 +46,8 @@ namespace GI2D
     {                  
         class BIH2DAsset;
         
-        class Curve : public Host::Tracable<Device::Curve>,
-                      public Cuda::AssetTags<Host::Curve, Device::Curve>
+        class Curve : public Host::Tracable                     
         {
-            using Super = Host::Tracable<Device::Curve>;
-
         public:
             __host__ Curve(const std::string& id);
             __host__ virtual ~Curve();
@@ -70,7 +67,7 @@ namespace GI2D
                 return cu_deviceInstance;
             }
 
-            __host__ static AssetHandle<Host::SceneObjectInterface> Instantiate(const std::string& id);
+            __host__ static AssetHandle<Host::SceneObject> Instantiate(const std::string& id);
             __host__ static const std::string GetAssetTypeString() { return "curve"; }
 
         private:
@@ -78,6 +75,7 @@ namespace GI2D
 
         private:
             Device::Curve*                                  cu_deviceInstance = nullptr;
+            Device::Curve                                   m_hostInstance;
             CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;

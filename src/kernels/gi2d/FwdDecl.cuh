@@ -39,9 +39,9 @@ namespace GI2D
     namespace Host
     {
         class BIH2DAsset;
-        class SceneObjectInterface;
-        class LightInterface;
-        class TracableInterface; 
+        class SceneObject;
+        class Light;
+        class Tracable; 
         class VoxelProxyGrid;
         class SceneDescription;
 

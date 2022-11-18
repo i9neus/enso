@@ -17,6 +17,8 @@ namespace GI2D
 
         int m_lightIdx = kTracableNotALight;
     };
+     
+    namespace Host { class Tracable; }
 
     namespace Device
     {
@@ -24,6 +26,7 @@ namespace GI2D
         class Tracable : public Device::SceneObject,
                          public TracableParams
         {
+            friend class Host::Tracable;
         public:
             __host__ __device__ virtual bool                    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const { return false; }
             //__host__ __device__ virtual bool                    InteresectPoint(const vec2& p, const float& thickness) const { return false; }
@@ -31,7 +34,7 @@ namespace GI2D
 
             //__host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
          
-            __host__ __device__ virtual const vec3              GetColour() const { return kOne; }
+            __host__ __device__ virtual vec3                    GetColour() const { return kOne; }
             __host__ __device__ virtual int                     GetLightIdx() const { return m_lightIdx; }
 
         protected:
@@ -49,30 +52,28 @@ namespace GI2D
 
     namespace Host
     {        
-        class TracableInterface : virtual public SceneObjectInterface
+        class Tracable : public Host::SceneObject,
+                         public TracableParams
+
         {
         public:
-            __host__ virtual Device::Tracable*  GetDeviceInstance() const = 0;
-            __host__ virtual void               SetLightIdx(const int) = 0;
-        };
-        
-        template<typename DeviceType>
-        class Tracable : virtual public TracableInterface,
-                         public Host::SceneObject<DeviceType>
-        {
-            using Super = Host::SceneObject<DeviceType>;
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
+            __host__ virtual void       SetLightIdx(const int idx) { m_lightIdx = idx; }
+            __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
 
         protected:
-            __host__ Tracable(const std::string& id) : Super(id) {}
+            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance) : 
+                SceneObject(id, hostInstance),
+                m_hostInstance(hostInstance)
+            {
+            }
             
             template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncType) 
             { 
-                Super::Synchronise(deviceInstance, syncType); 
+                SceneObject::Synchronise(deviceInstance, syncType); 
 
                 if (syncType & kSyncParams) { SynchroniseInheritedClass<TracableParams>(deviceInstance, *this, kSyncParams); }
             }
-
-            __host__ virtual void SetLightIdx(const int idx) override final { m_lightIdx = idx; }
 
         protected:
             struct
@@ -81,6 +82,8 @@ namespace GI2D
                 bool                        isDragging;
             }
             m_onMove;
+
+            Device::Tracable&               m_hostInstance;
         };
     }
 }

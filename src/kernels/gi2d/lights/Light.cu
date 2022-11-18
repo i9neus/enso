@@ -51,13 +51,13 @@ namespace GI2D
         }
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObjectInterface> Host::OmniLight::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::OmniLight::Instantiate(const std::string& id)
     {
         return CreateAsset<GI2D::Host::OmniLight>(id);
     }
 
     __host__ Host::OmniLight::OmniLight(const std::string& id) :
-        Super(id)
+        Host::Light(id, m_hostInstance)
     {
         Log::Success("Host::OmniLight::OmniLight");
 
@@ -82,7 +82,7 @@ namespace GI2D
 
     __host__ void Host::OmniLight::Synchronise(const int type)
     {
-        Super::Synchronise(cu_deviceInstance, type);
+        Light::Synchronise(cu_deviceInstance, type);
 
         if (type & kSyncParams) { SynchroniseInheritedClass<OmniLightParams>(cu_deviceInstance, *this, kSyncParams); }
     }

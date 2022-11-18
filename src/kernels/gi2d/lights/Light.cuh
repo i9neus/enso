@@ -18,10 +18,18 @@ namespace GI2D
         float   m_lightRadius;
     };
 
+    namespace Host
+    {
+        class Light;
+        class OmniLight;
+    }
+
     namespace Device
     {
         class Light : public Device::Tracable
         {
+            friend class Host::Light;
+
         public:
             __host__ __device__ Light() {}
 
@@ -32,6 +40,8 @@ namespace GI2D
         class OmniLight : public Device::Light,
                           public OmniLightParams
         {  
+            friend class Host::OmniLight;
+
         public:
             __device__ OmniLight() {}
 
@@ -53,33 +63,28 @@ namespace GI2D
     {
         class BIH2DAsset;
 
-        class LightInterface
+        class Light : public Host::Tracable
         {
         public:
-            __host__ virtual Device::Light*             GetDeviceInstance() const = 0;
+            __host__ Light(const std::string& id, Device::Light& hostInstance) : 
+                Tracable(id, hostInstance),
+                m_hostInstance(hostInstance) 
+            {}
+
+            __host__ virtual ~Light() {} 
+
+            __host__ virtual Device::Light* GetDeviceInstance() const = 0;
 
         protected:
-            LightInterface() = default;
+            template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Tracable::Synchronise(deviceData, syncType); }
+
+        private:
+            Device::Light&          m_hostInstance;
         };
 
-        template<typename DeviceType>
-        class Light : public Host::Tracable<DeviceType>,
-                      public LightInterface
+        class OmniLight : public Host::Light,
+                          public OmniLightParams
         {
-            using Super = Host::Tracable<DeviceType>;
-
-        public:
-            __host__ Light(const std::string& id) : Super(id) {}
-            __host__ virtual ~Light() {}         
-
-        protected:
-            template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Super::Synchronise(deviceData, syncType); }
-        };
-
-        class OmniLight : public Host::Light<Device::OmniLight>
-        {
-            using Super = Host::Light<Device::OmniLight>;
-
         public:
             __host__ OmniLight(const std::string& id);
             __host__ virtual ~OmniLight();
@@ -91,10 +96,10 @@ namespace GI2D
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       IsConstructed() const override final;
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
             __host__ virtual bool       Finalise() override final;
 
-            __host__ static AssetHandle<GI2D::Host::SceneObjectInterface> Instantiate(const std::string& id);
+            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
             __host__ static const std::string  GetAssetTypeString() { return "omnilight"; }
 
             __host__ void               Synchronise(const int syncType);
@@ -106,6 +111,7 @@ namespace GI2D
 
         private:
             Device::OmniLight*          cu_deviceInstance = nullptr;
+            Device::OmniLight           m_hostInstance;
 
             struct
             {
