@@ -439,9 +439,6 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh">
       <Filter>kernels\gi2d\layers</Filter>
     </ClInclude>
@@ -883,9 +880,6 @@
       <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
-      <Filter>kernels\gi2d\layers</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\GI2DIsosurfaceExplorer.cu">
       <Filter>kernels\gi2d\layers</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu">
