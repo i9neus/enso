@@ -19,7 +19,6 @@
     <ClCompile Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp" />
     <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp" />
-    <ClCompile Include="..\..\..\src\generic\HighResolutionTimer.cpp" />
     <ClCompile Include="..\..\..\src\generic\Job.cpp" />
     <ClCompile Include="..\..\..\src\generic\JsonCommandQueue.cpp" />
     <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp" />
