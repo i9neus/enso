@@ -44,7 +44,7 @@ namespace Cuda
         // Child objects don't need to have DAG paths because they aren't user-referenceable
         else if (requireDAGPath && !newObject->IsChildObject())
         {
-            Log::Error("Error: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
+            Log::Warning("Warning: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
             return;
         }
     }

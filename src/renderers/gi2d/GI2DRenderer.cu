@@ -25,8 +25,11 @@ GI2DRenderer::GI2DRenderer() :
 {
     // Declare the scene object instantiators
     // TODO: Merge this code with RenderObjectFactory
-    AddInstantiator<GI2D::Host::Curve>('Q');
+    //AddInstantiator<GI2D::Host::Curve>('Q');
     //AddInstantiator<GI2D::Host::UIInspector>('W');
+
+    m_sceneObjectFactory.RegisterInstantiator<GI2D::Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+    m_sceneObjectFactory.RegisterInstantiator<GI2D::Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
 
     m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
@@ -362,8 +365,12 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
     {        
         //Create a new tracable and add it to the list of render objects
         //m_onCreate.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
+
+        auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_renderObjects);
+        m_onCreate.newObject = newObject.DynamicCast<GI2D::Host::SceneObject>();
+        Assert(m_onCreate.newObject);
        
-        if (trigger.IsSet('Q'))
+        /*if (trigger.IsSet('Q'))
         {
             auto newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
             m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
@@ -375,7 +382,7 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
             m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
             m_onCreate.newObject = newObject;
         }
-        else { AssertMsg(false, "Invalid trigger"); }               
+        else { AssertMsg(false, "Invalid trigger"); }*/
 
         m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
     }

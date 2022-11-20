@@ -3,7 +3,7 @@
 #include "CudaRenderObjectFactory.cuh"
 #include "CudaRenderObjectContainer.cuh"
 
-#include "tracables/CudaSphere.cuh"
+/*#include "tracables/CudaSphere.cuh"
 #include "tracables/CudaPlane.cuh"
 #include "tracables/CudaCornellBox.cuh"
 #include "tracables/CudaBox.cuh"
@@ -31,73 +31,23 @@
 #include "ml/CudaGrid2Grid.cuh"
 #include "ml/CudaFCNNProbeDenoiser.cuh"
 
-#include "CudaWavefrontTracer.cuh"
+#include "CudaWavefrontTracer.cuh"*/
 
 namespace Cuda
 {            
-    RenderObjectFactory::RenderObjectFactory(cudaStream_t hostStream) :
-        m_hostStream(hostStream) 
+    RenderObjectFactory::RenderObjectFactory() :
+        m_newInstanceCounter(0)
     {
-        AddInstantiator<Host::Sphere>();
-        AddInstantiator<Host::KIFS>();
-        AddInstantiator<Host::SDF>();
-        AddInstantiator<Host::Plane>();
-        AddInstantiator<Host::CornellBox>();
-        AddInstantiator<Host::Box>();
-
-        AddInstantiator<Host::QuadLight>();
-        AddInstantiator<Host::SphereLight>();
-        AddInstantiator<Host::EnvironmentLight>();
-        AddInstantiator<Host::DistantLight>();
-
-        AddInstantiator<Host::SimpleMaterial>();
-        AddInstantiator<Host::CornellMaterial>();
-        AddInstantiator<Host::KIFSMaterial>();
-
-        AddInstantiator<Host::LambertBRDF>();
-
-        AddInstantiator<Host::WavefrontTracer>();
-
-        AddInstantiator<Host::PerspectiveCamera>();
-        AddInstantiator<Host::LightProbeCamera>();
-
-        AddInstantiator<Host::LightProbeKernelFilter>();
-        AddInstantiator<Host::LightProbeRegressionFilter>();
-        AddInstantiator<Host::LightProbeIO>();
-
-        AddInstantiator<Host::Grid2Grid>();
-        AddInstantiator<Host::FCNNProbeDenoiser>();
-    }    
-
-    template<typename T, typename... Pack>
-    __global__ void KernelCreateDeviceInstance2(T** newInstance, Pack... args)
-    {
-        assert(newInstance);
-        assert(!*newInstance);
-
-        T* newObj = new T;
+        
     }
 
-    template<typename ObjectType, typename... Pack>
-    __host__ inline ObjectType* InstantiateOnDevice2(Pack... args)
+    __host__ void RenderObjectFactory::RegisterGroup(const std::string& groupName, const uint flags)
     {
-        ObjectType** cu_tempBuffer;
-        IsOk(cudaMalloc((void***)&cu_tempBuffer, sizeof(ObjectType*)));
-        IsOk(cudaMemset(cu_tempBuffer, 0, sizeof(ObjectType*)));
-
-        KernelCreateDeviceInstance2 << <1, 1 >> > (cu_tempBuffer, args...);
-        IsOk(cudaDeviceSynchronize());
-
-        ObjectType* cu_data = nullptr;
-        IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
-        IsOk(cudaFree(cu_tempBuffer));
-
-        Log::System("Instantiated device object at 0x%x\n", cu_data);
-        return cu_data;
-    }       
+        m_groupList.emplace_back(ObjectGroup{ groupName, flags });
+    }
    
-    __host__ void RenderObjectFactory::InstantiateList(const ::Json::Node& node, const AssetType& expectedType, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
-    {        
+    __host__ void RenderObjectFactory::InstantiateGroup(const ::Json::Node& node, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
+    {
         for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
             AssetHandle<Host::RenderObject> newObject;
@@ -110,7 +60,7 @@ namespace Cuda
                 continue;
             }
 
-            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }        
+            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }
 
             std::string newClass;
             if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
@@ -118,21 +68,20 @@ namespace Cuda
             {
                 Log::Indent indent(tfm::format("Creating new object '%s'...\n", newId));
 
-                auto& instantiator = m_instantiators.find(newClass);
-                if (instantiator == m_instantiators.end())
+                const auto& it = m_instantiators.find(newClass);
+                if (it == m_instantiators.end())
                 {
                     Log::Error("Error: '%s' is not a valid render object type.\n", newClass);
                     continue;
                 }
+                const auto instantiator = *(it->second);
 
-                // Get the object instance flags
-                auto& flagsFunctor = m_instanceFlagFunctors.find(newClass);
-                Assert(flagsFunctor != m_instanceFlagFunctors.end());
-                const uint instanceFlags = (flagsFunctor->second)();
+                // Get the object instance flags                
+                const uint instanceFlags = instantiator.flagFunctor();
 
                 int numInstances = 1;
                 if (childNode.GetValue("instances", numInstances, ::Json::kSilent))
-                {                    
+                {
                     // Check if this class allows for multiple instances from the same object
                     if (!(instanceFlags & kInstanceFlagsAllowMultipleInstances))
                     {
@@ -159,7 +108,8 @@ namespace Cuda
                         continue;
                     }
 
-                    newObject = (instantiator->second)(instanceId, expectedType, childNode);
+                    // Instantiate the object
+                    newObject = instantiator.instanceFunctor(instanceId, childNode);
                     IsOk(cudaDeviceSynchronize());
 
                     if (!newObject)
@@ -167,75 +117,73 @@ namespace Cuda
                         Log::Error("Failed to instantiate object '%s' of class '%s'.\n", instanceId, newClass);
                         continue;
                     }
-                    
+
                     // Instanced objects have virtual DAG paths, so replace the trailing ID from the JSON file with the actual ID from the asset
                     const std::string instancedDAGPath = tfm::format("%s%c%i", childNode.GetDAGPath(), Json::Node::kDAGDelimiter, instanceIdx + 1);
-                    newObject->SetDAGPath(instancedDAGPath);                   
+                    newObject->SetDAGPath(instancedDAGPath);
 
                     // Emplace the newly created object
-                    newObject->SetHostStream(m_hostStream);
-                    renderObjects->Emplace(newObject);
-
-                    // The render object may have generated some of its own assets. Add them to the object list. 
-                    std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
-                    if (!childObjects.empty())
-                    {
-                        Log::Debug("Captured %i child objects:\n", childObjects.size());
-                        Log::Indent indent2;
-                        for (auto& child : childObjects)
-                        {
-                            AssertMsg(child, "A captured child object handle is invalid.");
-                            child->SetHostStream(m_hostStream);
-                            renderObjects->Emplace(child);
-
-                            Log::Debug("%s\n", child->GetAssetID());
-                        }
-                    }
+                    EmplaceNewObject(newObject, renderObjects);
                 }
             }
         }
     }
 
-    __host__ void RenderObjectFactory::InstantiateSceneObjects(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
+    __host__ void RenderObjectFactory::EmplaceNewObject(AssetHandle<Host::RenderObject> newObject, AssetHandle<RenderObjectContainer>& renderObjects)
     {
-        Assert(renderObjects);
+        renderObjects->Emplace(newObject);
 
+        // The render object may have generated some of its own assets. Add them to the object list. 
+        std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
+        if (!childObjects.empty())
         {
-            const ::Json::Node childNode = rootNode.GetChildObject("tracables", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kTracable, "tracable", renderObjects);
-        }
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("lights", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kLight, "light", renderObjects);
-        }
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("materials", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kMaterial, "material", renderObjects);
-        }
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("bxdfs", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kBxDF, "BxDF", renderObjects);
-        }
-    }
-    
-    __host__ void RenderObjectFactory::InstantiatePeripherals(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
-    {               
-        Assert(renderObjects);
-
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("cameras", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kCamera, "camera", renderObjects);
-        }
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("integrators", ::Json::kRequiredAssert);
-            InstantiateList(childNode, AssetType::kIntegrator, "integrator", renderObjects);
-        }
-        {
-            const ::Json::Node childNode = rootNode.GetChildObject("filters", ::Json::kRequiredWarn);
-            if (childNode)
+            Log::Debug("Captured %i child objects:\n", childObjects.size());
+            Log::Indent indent2;
+            for (auto& child : childObjects)
             {
-                InstantiateList(childNode, AssetType::kLightProbeFilter, "filter", renderObjects);
+                AssertMsg(child, "A captured child object handle is invalid.");
+                //child->SetHostStream(m_hostStream);
+                renderObjects->Emplace(child);
+
+                Log::Debug("%s\n", child->GetAssetID());
             }
         }
+    }
+
+    __host__ void RenderObjectFactory::InstantiateFromJson(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
+    {
+        for (const auto& group : m_groupList)
+        {
+            const ::Json::Node childNode = rootNode.GetChildObject(group.name, group.flags);
+            InstantiateGroup(childNode, group.name, renderObjects);
+        }
+    }  
+
+    __host__ AssetHandle<Host::RenderObject> RenderObjectFactory::InstantiateFromHash(const uint hash, AssetHandle<RenderObjectContainer>& renderObjects)
+    {
+        // Look for an instantiator that matches the hash
+        auto it = m_hashMap.find(hash);
+        if (it == m_hashMap.end()) 
+        { 
+            Log::Error("Error: an object with hash %i does not exist.", hash);
+            return AssetHandle<Host::RenderObject>();
+        }
+        auto instantiator = *it->second;
+
+        // Instantiate the object
+        Json::Document childNode;
+        AssetHandle<Host::RenderObject> newObject = instantiator.instanceFunctor(tfm::format("object%i", ++m_newInstanceCounter), childNode);
+        IsOk(cudaDeviceSynchronize());
+
+        if (!newObject)
+        {
+            Log::Error("Failed to instantiate object of class '%s'.\n", instantiator.id);
+            return AssetHandle<Host::RenderObject>();
+        }
+
+        // Emplace the newly created object
+        EmplaceNewObject(newObject, renderObjects);
+
+        return newObject;
     }
 }

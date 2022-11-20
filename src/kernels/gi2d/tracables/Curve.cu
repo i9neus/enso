@@ -97,7 +97,7 @@ namespace GI2D
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id, const Json::Node&)
     {
         return CreateAsset<GI2D::Host::Curve>(id);
     }

@@ -99,7 +99,7 @@ namespace GI2D
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
             __host__ virtual bool       Finalise() override final;
 
-            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id);
+            __host__ static AssetHandle<GI2D::Host::SceneObject> Instantiate(const std::string& id, const Json::Node&);
             __host__ static const std::string  GetAssetTypeString() { return "omnilight"; }
 
             __host__ void               Synchronise(const int syncType);

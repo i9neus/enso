@@ -114,6 +114,37 @@ void Probegen::Build(const Json::Document& sceneJson)
 			Log::Indent indent("Creating scene objects...\n");
 
 			Cuda::RenderObjectFactory objectFactory(m_renderStream);
+
+			objectFactory.RegisterInstantiator<Host::Sphere>();
+			objectFactory.RegisterInstantiator<Host::KIFS>();
+			objectFactory.RegisterInstantiator<Host::SDF>();
+			objectFactory.RegisterInstantiator<Host::Plane>();
+			objectFactory.RegisterInstantiator<Host::CornellBox>();
+			objectFactory.RegisterInstantiator<Host::Box>();
+
+			objectFactory.RegisterInstantiator<Host::QuadLight>();
+			objectFactory.RegisterInstantiator<Host::SphereLight>();
+			objectFactory.RegisterInstantiator<Host::EnvironmentLight>();
+			objectFactory.RegisterInstantiator<Host::DistantLight>();
+
+			objectFactory.RegisterInstantiator<Host::SimpleMaterial>();
+			objectFactory.RegisterInstantiator<Host::CornellMaterial>();
+			objectFactory.RegisterInstantiator<Host::KIFSMaterial>();
+
+			objectFactory.RegisterInstantiator<Host::LambertBRDF>();
+
+			objectFactory.RegisterInstantiator<Host::WavefrontTracer>();
+
+			objectFactory.RegisterInstantiator<Host::PerspectiveCamera>();
+			objectFactory.RegisterInstantiator<Host::LightProbeCamera>();
+
+			objectFactory.RegisterInstantiator<Host::LightProbeKernelFilter>();
+			objectFactory.RegisterInstantiator<Host::LightProbeRegressionFilter>();
+			objectFactory.RegisterInstantiator<Host::LightProbeIO>();
+
+			objectFactory.RegisterInstantiator<Host::Grid2Grid>();
+			objectFactory.RegisterInstantiator<Host::FCNNProbeDenoiser>();
+
 			objectFactory.InstantiateSceneObjects(m_sceneJson, m_renderObjects);
 			objectFactory.InstantiatePeripherals(m_sceneJson, m_renderObjects);
 		}

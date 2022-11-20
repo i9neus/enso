@@ -117,6 +117,8 @@ namespace GI2D
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; }
             __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; }
 
+            __host__ static uint        GetInstanceFlags() { return 0u; }
+
             /*__host__ Device::SceneObject* GetDeviceInstance() const
             {
                 AssertMsgFmt(cu_deviceSceneObjectInterface, "Device::SceneObject::cu_deviceSceneObjectInterface has not been initialised by its inheriting class '%s'", GetAssetID().c_str());

@@ -67,7 +67,7 @@ namespace GI2D
                 return cu_deviceInstance;
             }
 
-            __host__ static AssetHandle<Host::SceneObject> Instantiate(const std::string& id);
+            __host__ static AssetHandle<Host::SceneObject> Instantiate(const std::string& id, const Json::Node&);
             __host__ static const std::string GetAssetTypeString() { return "curve"; }
 
         private:

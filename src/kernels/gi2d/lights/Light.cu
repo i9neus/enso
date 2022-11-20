@@ -51,7 +51,7 @@ namespace GI2D
         }
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::OmniLight::Instantiate(const std::string& id)
+    __host__ AssetHandle<GI2D::Host::SceneObject> Host::OmniLight::Instantiate(const std::string& id, const Json::Node&)
     {
         return CreateAsset<GI2D::Host::OmniLight>(id);
     }
