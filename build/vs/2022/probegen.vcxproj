@@ -235,6 +235,7 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh" />
+    <ClInclude Include="..\..\..\src\kernels\gi2d\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -381,6 +382,7 @@
     <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\Serialisable.cu" />
     <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>

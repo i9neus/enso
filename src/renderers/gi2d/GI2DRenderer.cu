@@ -362,27 +362,11 @@ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& t
     
     const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
     if (stateID == "kCreateSceneObjectOpen")
-    {        
-        //Create a new tracable and add it to the list of render objects
-        //m_onCreate.newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
-
+    {
+        // Try and instante the objerct
         auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_renderObjects);
         m_onCreate.newObject = newObject.DynamicCast<GI2D::Host::SceneObject>();
         Assert(m_onCreate.newObject);
-       
-        /*if (trigger.IsSet('Q'))
-        {
-            auto newObject = CreateAsset<GI2D::Host::Curve>(tfm::format("curve%i", m_renderObjects->GetUniqueIndex()));
-            m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
-            m_onCreate.newObject = newObject;
-        }
-        else if (trigger.IsSet('W'))
-        {
-            auto newObject = CreateAsset<GI2D::Host::OmniLight>(tfm::format("light%i", m_renderObjects->GetUniqueIndex()));
-            m_renderObjects->Emplace(AssetHandle<Cuda::Host::RenderObject>(newObject), false);
-            m_onCreate.newObject = newObject;
-        }
-        else { AssertMsg(false, "Invalid trigger"); }*/
 
         m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
     }

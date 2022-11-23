@@ -18,7 +18,7 @@ public:
     void UpdateRenderState(const Json::Document& json);
 
     void DeserialiseJson();
-    void SerialiseJson() const;
+    void SerialiseJson() const; 
 
     IMGUIDirtiness GetDirtiness() const { return m_dirtiness; }
     void MakeClean() { m_dirtiness = IMGUIDirtiness::kClean; }

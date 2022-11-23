@@ -853,6 +853,9 @@
     <ClInclude Include="..\..\..\src\kernels\gi2d\lights\Light.cuh">
       <Filter>kernels\gi2d\lights</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\kernels\gi2d\Serialisable.cuh">
+      <Filter>kernels\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
@@ -1028,6 +1031,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu">
       <Filter>kernels\gi2d\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\kernels\gi2d\Serialisable.cu">
+      <Filter>kernels\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

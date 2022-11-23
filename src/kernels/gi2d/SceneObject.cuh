@@ -7,6 +7,8 @@
 
 #include "kernels/CudaRenderObject.cuh"
 
+#include "Serialisable.cuh"
+
 using namespace Cuda;
 
 template<typename ObjectType, typename ParamsType>
@@ -99,6 +101,7 @@ namespace GI2D
     namespace Host
     {
         class SceneObject : public Cuda::Host::RenderObject,
+                            public Core::Serialisable,
                             public SceneObjectParams
         {
         public:
