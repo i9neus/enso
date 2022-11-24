@@ -442,7 +442,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>
-    <RootNamespace>probegen</RootNamespace>
+    <RootNamespace>enso</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -474,14 +474,14 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
     <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
-    <TargetName>probegen</TargetName>
-    <IntDir>probegen\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>enso</TargetName>
+    <IntDir>enso\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
-    <TargetName>probegen</TargetName>
+    <TargetName>enso</TargetName>
     <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
-    <IntDir>probegen\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>enso\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -507,10 +507,10 @@
       <PtxAsOptionV>true</PtxAsOptionV>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Include>./;../../common/inc</Include>
-      <CompileOut>probegen\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
     </CudaCompile>
     <CudaLink>
-      <LinkOut>probegen\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+      <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -536,10 +536,10 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Include>./;../../common/inc</Include>
-      <CompileOut>probegen\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
     </CudaCompile>
     <CudaLink>
-      <LinkOut>probegen\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
+      <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
     </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
