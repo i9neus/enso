@@ -14,84 +14,20 @@
     <Text Include="..\..\..\docs\BugChecklist.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp" />
-    <ClCompile Include="..\..\..\src\generic\debug\GlobalThreadMap.cpp" />
-    <ClCompile Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.cpp" />
-    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp" />
-    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp" />
-    <ClCompile Include="..\..\..\src\generic\Job.cpp" />
-    <ClCompile Include="..\..\..\src\generic\JsonCommandQueue.cpp" />
-    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp" />
-    <ClCompile Include="..\..\..\src\generic\Log.cpp" />
-    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp" />
-    <ClCompile Include="..\..\..\src\imgui\ComponentManager.cpp" />
-    <ClCompile Include="..\..\..\src\imgui\components\ComponentInterface.cpp" />
-    <ClCompile Include="..\..\..\src\imgui\components\gi2d\GI2DUI.cpp" />
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\ProbegenUI.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\DataTable.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\ListBox.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\Widget.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\tools\MemoryMonitor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp" />
+    <ClCompile Include="..\..\..\src\core\debug\GlobalThreadMap.cpp" />
+    <ClCompile Include="..\..\..\src\core\debug\ProcessMemoryMonitor.cpp" />
+    <ClCompile Include="..\..\..\src\core\GlobalStateAuthority.cpp" />
+    <ClCompile Include="..\..\..\src\core\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp" />
+    <ClCompile Include="..\..\..\src\io\json\JsonCommandQueue.cpp" />
+    <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\Log.cpp" />
     <ClCompile Include="..\..\..\src\io\USDIO.cpp" />
-    <ClCompile Include="..\..\..\src\onnx\FCNNProbeDenoiser.cpp" />
-    <ClCompile Include="..\..\..\src\onnx\Grid2Grid.cpp" />
-    <ClCompile Include="..\..\..\src\onnx\OnnxModel.cpp" />
-    <ClCompile Include="..\..\..\src\renderers\CudaObjectManager.cpp" />
-    <ClCompile Include="..\..\..\src\renderers\probegen\Probegen.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\renderers\RendererInterface.cpp" />
-    <ClCompile Include="..\..\..\src\renderers\RendererManager.cpp" />
+    <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp" />
+    <ClCompile Include="..\..\..\src\modules\RendererInterface.cpp" />
+    <ClCompile Include="..\..\..\src\modules\RendererManager.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui.cpp" />
@@ -99,220 +35,100 @@
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
-    <ClCompile Include="..\..\..\src\utils\BulkUSDProcessor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\ComponentManager.cpp" />
+    <ClCompile Include="..\..\..\src\ui\components\ComponentInterface.cpp" />
+    <ClCompile Include="..\..\..\src\ui\components\gi2d\GI2DUI.cpp" />
+    <ClCompile Include="..\..\..\src\ui\elements\DataTable.cpp" />
+    <ClCompile Include="..\..\..\src\ui\elements\ListBox.cpp" />
+    <ClCompile Include="..\..\..\src\ui\elements\Widget.cpp" />
+    <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp" />
     <ClCompile Include="..\..\..\src\win\D3DContainer.cpp" />
     <ClCompile Include="..\..\..\src\win\SecurityAttributes.cpp" />
     <ClCompile Include="..\..\..\src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\generic\Assert.h" />
-    <ClInclude Include="..\..\..\src\generic\Constants.h" />
-    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h" />
-    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h" />
-    <ClInclude Include="..\..\..\src\generic\debug\GlobalThreadMap.h" />
-    <ClInclude Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.h" />
-    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h" />
-    <ClInclude Include="..\..\..\src\generic\Hash.h" />
-    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h" />
-    <ClInclude Include="..\..\..\src\generic\Job.h" />
-    <ClInclude Include="..\..\..\src\generic\JsonCommandQueue.h" />
-    <ClInclude Include="..\..\..\src\generic\JsonUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\Log.h" />
-    <ClInclude Include="..\..\..\src\generic\Semaphore.h" />
-    <ClInclude Include="..\..\..\src\generic\StdUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\StringUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h" />
-    <ClInclude Include="..\..\..\src\imgui\ComponentManager.h" />
-    <ClInclude Include="..\..\..\src\imgui\components\ComponentInterface.h" />
-    <ClInclude Include="..\..\..\src\imgui\components\gi2d\GI2DUI.h" />
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\ProbegenUI.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\DataTable.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\ListBox.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\Shelf.h" />
-    <ClInclude Include="..\..\..\src\imgui\elements\Widget.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\WidgetUtils.h" />
-    <ClInclude Include="..\..\..\src\imgui\tools\MemoryMonitor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Assert.h" />
+    <ClInclude Include="..\..\..\src\core\Asset.cuh" />
+    <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh" />
+    <ClInclude Include="..\..\..\src\core\AssetContainer.cuh" />
+    <ClInclude Include="..\..\..\src\core\CudaCommonIncludes.cuh" />
+    <ClInclude Include="..\..\..\src\core\debug\Backtrace.h" />
+    <ClInclude Include="..\..\..\src\core\debug\GlobalThreadMap.h" />
+    <ClInclude Include="..\..\..\src\core\debug\ProcessMemoryMonitor.h" />
+    <ClInclude Include="..\..\..\src\core\GenericObject.cuh" />
+    <ClInclude Include="..\..\..\src\core\GenericObjectContainer.cuh" />
+    <ClInclude Include="..\..\..\src\core\GenericObjectFactory.cuh" />
+    <ClInclude Include="..\..\..\src\core\GlobalStateAuthority.h" />
+    <ClInclude Include="..\..\..\src\core\Hash.h" />
+    <ClInclude Include="..\..\..\src\core\HighResolutionTimer.h" />
+    <ClInclude Include="..\..\..\src\core\Image.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\bbox\BBox2.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\ColourUtils.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\Complex.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\Constants.h" />
+    <ClInclude Include="..\..\..\src\core\math\Geodesics.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\JitterableParameter.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\Math.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\MathUtils.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat2.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat3.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\Sampler.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\SphericalHarmonics.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec2.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec3.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec4.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec2.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec3.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec4.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\vec\VecBase.cuh" />
+    <ClInclude Include="..\..\..\src\core\Semaphore.h" />
+    <ClInclude Include="..\..\..\src\core\StdUtils.h" />
+    <ClInclude Include="..\..\..\src\core\StringUtils.h" />
+    <ClInclude Include="..\..\..\src\core\Tuple.cuh" />
+    <ClInclude Include="..\..\..\src\core\UIButtonMap.h" />
+    <ClInclude Include="..\..\..\src\core\UIStateGraph.h" />
+    <ClInclude Include="..\..\..\src\core\Vector.cuh" />
+    <ClInclude Include="..\..\..\src\core\WindowsHeaders.h" />
+    <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
     <ClInclude Include="..\..\..\src\io\ImageIO.h" />
+    <ClInclude Include="..\..\..\src\io\json\JsonCommandQueue.h" />
+    <ClInclude Include="..\..\..\src\io\json\JsonUtils.h" />
+    <ClInclude Include="..\..\..\src\io\Log.h" />
     <ClInclude Include="..\..\..\src\io\USDIO.h" />
-    <ClInclude Include="..\..\..\src\kernels\AssetAllocator.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaBxDF.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaLambert.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaAssetContainer.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaCtx.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaDeviceObjectRAII.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaManagedArray.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaManagedObject.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaRay.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectContainer.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectFactory.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaSampler.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaTests.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaVector.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaWavefrontTracer.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DNode.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Common.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\CudaBIH2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\FwdDecl.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\lights\Light.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Serialisable.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellipse.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Primitive2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Transform2D.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\UICtx.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaDistantLight.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaLight.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaQuadLight.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaSphereLight.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaMaterial.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\bbox\CudaBBox2.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\Complex.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaGeodesics.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaMath.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaMathUtils.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaSphericalHarmonics.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat2.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat3.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat4.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec2.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec3.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec4.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec2.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec3.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec4.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVecBase.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaBox.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaCornellBox.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaGenericIntersectors.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaKIFS.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaPlane.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSDF.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSphere.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaTracable.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\Tuple.cuh" />
-    <ClInclude Include="..\..\..\src\onnx\FCNNProbeDenoiser.h" />
-    <ClInclude Include="..\..\..\src\onnx\Grid2Grid.h" />
-    <ClInclude Include="..\..\..\src\onnx\OnnxModel.h" />
-    <ClInclude Include="..\..\..\src\renderers\CudaObjectManager.h" />
-    <ClInclude Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cuh" />
-    <ClInclude Include="..\..\..\src\renderers\probegen\Probegen.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\RendererInterface.h" />
-    <ClInclude Include="..\..\..\src\renderers\RendererManager.h" />
-    <ClInclude Include="..\..\..\src\renderers\UIButtonMap.h" />
-    <ClInclude Include="..\..\..\src\renderers\UIStateGraph.h" />
+    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DNode.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\Common.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\GenericIntersector.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Accumulator.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\Ray.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\Serialisable.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Curve.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Primitive.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\Transform.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cuh" />
+    <ClInclude Include="..\..\..\src\modules\RendererInterface.h" />
+    <ClInclude Include="..\..\..\src\modules\RendererManager.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\imconfig.h" />
@@ -345,100 +161,57 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
-    <ClInclude Include="..\..\..\src\utils\BulkUSDProcessor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\ComponentManager.h" />
+    <ClInclude Include="..\..\..\src\ui\components\ComponentInterface.h" />
+    <ClInclude Include="..\..\..\src\ui\components\gi2d\GI2DUI.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\DataTable.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\ListBox.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\Shelf.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\Widget.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\WidgetUtils.h" />
+    <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h" />
+    <ClInclude Include="..\..\..\src\utils\CudaTests.cuh" />
     <ClInclude Include="..\..\..\src\win\D3DContainer.h" />
+    <ClInclude Include="..\..\..\src\win\D3DIncludes.h" />
     <ClInclude Include="..\..\..\src\win\d3dx12.h" />
     <ClInclude Include="..\..\..\src\win\SecurityAttributes.h" />
     <ClInclude Include="..\..\..\src\win\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectContainer.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectFactory.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaTests.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaWavefrontTracer.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\Serialisable.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellpise.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaDistantLight.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaLight.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaQuadLight.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaSphereLight.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaMaterial.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaGeodesics.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaBox.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaCornellBox.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaKIFS.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaPlane.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSDF.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSphere.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaTracable.cu" />
-    <CudaCompile Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\core\Asset.cu" />
+    <CudaCompile Include="..\..\..\src\core\GenericObject.cu" />
+    <CudaCompile Include="..\..\..\src\core\GenericObjectContainer.cu" />
+    <CudaCompile Include="..\..\..\src\core\GenericObjectFactory.cu" />
+    <CudaCompile Include="..\..\..\src\core\Image.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\JitterableParameter.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\Light.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\Serialisable.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\utils\CudaTests.cu" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\bin\win64\Release\config.json" />
     <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\docs\FixMe.md" />
-    <None Include="..\..\..\scenes\template.usda" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>

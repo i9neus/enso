@@ -4,92 +4,8 @@
     <Filter Include="docs">
       <UniqueIdentifier>{e629c5d6-bbe7-4036-af81-c5171169e1ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="generic">
-      <UniqueIdentifier>{665e09a9-0d3e-434e-824b-4936e38d0958}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="generic\debug">
-      <UniqueIdentifier>{a01c1c8f-687f-4009-9c57-a868eb07587a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui">
-      <UniqueIdentifier>{9e7548fb-fff3-4c47-b3e0-ed8ad39ab94f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\components">
-      <UniqueIdentifier>{762e2d73-6ea4-4336-b64a-f63985f42544}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\components\gi2d">
-      <UniqueIdentifier>{9ee722f5-f77d-4c75-8039-cb8316e1b6b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\components\probegen">
-      <UniqueIdentifier>{cd4c8f36-3648-4f06-ae2e-1ca64276ab2d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\elements">
-      <UniqueIdentifier>{ddbd6714-a6da-4a7c-b550-46ef28b7711d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\tools">
-      <UniqueIdentifier>{5f98954c-98d7-43f8-95de-f9a17068a0e5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="io">
       <UniqueIdentifier>{2401d7cd-5695-4950-89c3-332fde070f52}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels">
-      <UniqueIdentifier>{76f34e17-78d9-4898-9d75-fce091977e92}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\bxdfs">
-      <UniqueIdentifier>{953857f1-5fcf-41c7-8a2c-a026e18ab4f0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\cameras">
-      <UniqueIdentifier>{1c84aa79-3a30-421c-a20e-e4e74c7fc9ea}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\gi2d">
-      <UniqueIdentifier>{8ca84ea0-7e80-47b5-857b-c9f2b6fe5832}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\lightprobes">
-      <UniqueIdentifier>{aa943cff-42f2-4ca4-aac3-437cafdaa23b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\lights">
-      <UniqueIdentifier>{65162e39-5f12-4a55-991e-62667224a107}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\materials">
-      <UniqueIdentifier>{e6e92d1c-5cc0-46bc-a789-c20e57dde32e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\math">
-      <UniqueIdentifier>{d21eb54a-f30d-46c2-b093-b9483452e453}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\ml">
-      <UniqueIdentifier>{cd07da9a-5a4f-49e0-b900-aab442027864}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\tracables">
-      <UniqueIdentifier>{aa157db0-0a91-4a36-a99d-924a4aa1ba5a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\gi2d\layers">
-      <UniqueIdentifier>{209cba65-35a3-4564-b288-72a48a03e6c8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\gi2d\tracables">
-      <UniqueIdentifier>{0a3bb1d5-1e78-46da-96ac-137511a00ba7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\gi2d\widgets">
-      <UniqueIdentifier>{6cb010fd-4ed4-4722-9bc2-d4ddd2d3c077}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\gi2d\tracables\primitives">
-      <UniqueIdentifier>{c07d76c2-29dd-48fc-bd5d-bdf51b24edbf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\math\bbox">
-      <UniqueIdentifier>{bf472f02-2efc-49a4-8d76-8ec80d60b81f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\math\mat">
-      <UniqueIdentifier>{d2088b7c-8a7f-4241-9ded-ad84678fbdd5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="kernels\math\vec">
-      <UniqueIdentifier>{0394812e-44d1-4b1d-8e80-916ebe868060}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="onnx">
-      <UniqueIdentifier>{83e4643e-a879-4ad7-8b6e-ffb130414a4a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="renderers">
-      <UniqueIdentifier>{f517df30-2b10-4af6-a911-ba4c216490d7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="scenes">
-      <UniqueIdentifier>{e8390dab-1a0e-45cf-bf1f-3cdfcc7b39c8}</UniqueIdentifier>
     </Filter>
     <Filter Include="thirdparty">
       <UniqueIdentifier>{54568757-b9db-4853-ba05-3960fc3f12a7}</UniqueIdentifier>
@@ -118,23 +34,68 @@
     <Filter Include="thirdparty\imgui\backends">
       <UniqueIdentifier>{4d8ab183-1d59-4be6-89b3-149a64e551aa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderers\gi2d">
-      <UniqueIdentifier>{19a2206c-93b1-4903-ab63-90b9411b5111}</UniqueIdentifier>
+    <Filter Include="io\json">
+      <UniqueIdentifier>{e2be4337-aba5-4cae-b1a8-790cb3c53b18}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderers\probegen">
-      <UniqueIdentifier>{fd5a275d-457c-4be3-b48e-fee951790f31}</UniqueIdentifier>
+    <Filter Include="modules">
+      <UniqueIdentifier>{5f593df5-52db-4ccb-ad29-274603da2314}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui\components\probegen\bakepermutor">
-      <UniqueIdentifier>{fcb8b7dc-3b4e-48c5-b591-757f32281480}</UniqueIdentifier>
+    <Filter Include="modules\gi2d">
+      <UniqueIdentifier>{eca99f3a-ef0b-4546-a38b-ce2424ef92ba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui\components\probegen\sceneobjects">
-      <UniqueIdentifier>{cfb124b2-7399-4aba-ba78-e79abfe03729}</UniqueIdentifier>
+    <Filter Include="modules\gi2d\bih">
+      <UniqueIdentifier>{0ff05bc4-b9f5-406e-a61e-f4281c613178}</UniqueIdentifier>
     </Filter>
-    <Filter Include="kernels\gi2d\integrators">
-      <UniqueIdentifier>{0bc7185d-6ab1-494e-baca-faabb9ca4753}</UniqueIdentifier>
+    <Filter Include="modules\gi2d\integrators">
+      <UniqueIdentifier>{9d71252e-a64f-4291-80a4-7374975f37e6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="kernels\gi2d\lights">
-      <UniqueIdentifier>{15be9127-f469-41af-86bf-b80c4b6ddc12}</UniqueIdentifier>
+    <Filter Include="modules\gi2d\lights">
+      <UniqueIdentifier>{75490de9-0708-4770-a984-7d70c6201f30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\layers">
+      <UniqueIdentifier>{36e7c326-8448-4af6-9469-21c545f02069}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\tracables">
+      <UniqueIdentifier>{2d2a21fe-5b63-4ba1-af2e-81fffbfefafe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\tracables\primitives">
+      <UniqueIdentifier>{b12f6cb4-c275-4951-b298-b0595155b5c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\widgets">
+      <UniqueIdentifier>{0f0a81f0-5cd5-47f3-87b6-75482fa04ab1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui">
+      <UniqueIdentifier>{2b5a2888-41ef-40c2-ac23-2b4dc7b3e523}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui\modules">
+      <UniqueIdentifier>{5c8bc3e1-c9f5-4b1e-82d2-a807e163f8dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui\elements">
+      <UniqueIdentifier>{ff2f7153-adc4-4a4a-a614-a60f517740b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui\tools">
+      <UniqueIdentifier>{e164cc36-c20f-4e1c-9303-a47a925c5e71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui\modules\gi2d">
+      <UniqueIdentifier>{82c0e93b-2a11-40f0-b589-436e7f0d1f63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{523857cc-de4b-4297-b715-1c6a47c4054a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\debug">
+      <UniqueIdentifier>{e94673aa-bb76-4c1a-84ae-b77587460254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\math">
+      <UniqueIdentifier>{4bc23a3a-2623-4c88-9651-6d97c29fe9d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\math\bbox">
+      <UniqueIdentifier>{b9eb80b0-31fa-4f4a-ab5d-054a38a307e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\math\mat">
+      <UniqueIdentifier>{d7ef0b50-1257-4541-84c6-c1e38bbe44f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\math\vec">
+      <UniqueIdentifier>{a9fab65b-3f9b-4643-b594-b92414f84c6c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -143,57 +104,6 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp">
-      <Filter>generic\debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\debug\GlobalThreadMap.cpp">
-      <Filter>generic\debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.cpp">
-      <Filter>generic\debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\Job.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\JsonCommandQueue.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\Log.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp">
-      <Filter>generic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\ComponentManager.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\gi2d\GI2DUI.cpp">
-      <Filter>imgui\components\gi2d</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\ComponentInterface.cpp">
-      <Filter>imgui\components</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\DataTable.cpp">
-      <Filter>imgui\elements</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\ListBox.cpp">
-      <Filter>imgui\elements</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\elements\Widget.cpp">
-      <Filter>imgui\elements</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\tools\MemoryMonitor.cpp">
-      <Filter>imgui\tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
@@ -208,9 +118,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\win\Win32Application.cpp">
       <Filter>win</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\utils\BulkUSDProcessor.cpp">
-      <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.cpp">
       <Filter>thirdparty\imgui\backends</Filter>
@@ -233,367 +140,70 @@
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp">
       <Filter>thirdparty\lodepng</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\renderers\CudaObjectManager.cpp">
-      <Filter>renderers</Filter>
+    <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp">
+      <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\renderers\RendererInterface.cpp">
-      <Filter>renderers</Filter>
+    <ClCompile Include="..\..\..\src\io\Log.cpp">
+      <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\renderers\RendererManager.cpp">
-      <Filter>renderers</Filter>
+    <ClCompile Include="..\..\..\src\io\json\JsonCommandQueue.cpp">
+      <Filter>io\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\renderers\probegen\Probegen.cpp">
-      <Filter>renderers\probegen</Filter>
+    <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp">
+      <Filter>io\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\onnx\FCNNProbeDenoiser.cpp">
-      <Filter>onnx</Filter>
+    <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp">
+      <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\onnx\Grid2Grid.cpp">
-      <Filter>onnx</Filter>
+    <ClCompile Include="..\..\..\src\modules\RendererInterface.cpp">
+      <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\onnx\OnnxModel.cpp">
-      <Filter>onnx</Filter>
+    <ClCompile Include="..\..\..\src\modules\RendererManager.cpp">
+      <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.cpp">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClCompile Include="..\..\..\src\ui\ComponentManager.cpp">
+      <Filter>ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.cpp">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClCompile Include="..\..\..\src\ui\components\ComponentInterface.cpp">
+      <Filter>ui\modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.cpp">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClCompile Include="..\..\..\src\ui\components\gi2d\GI2DUI.cpp">
+      <Filter>ui\modules\gi2d</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\ui\elements\Widget.cpp">
+      <Filter>ui\elements</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\ui\elements\DataTable.cpp">
+      <Filter>ui\elements</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\ui\elements\ListBox.cpp">
+      <Filter>ui\elements</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp">
+      <Filter>ui\tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\core\GlobalStateAuthority.cpp">
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\core\StringUtils.cpp">
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\core\debug\GlobalThreadMap.cpp">
+      <Filter>core\debug</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClCompile Include="..\..\..\src\core\debug\ProcessMemoryMonitor.cpp">
+      <Filter>core\debug</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.cpp">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\imgui\components\probegen\ProbegenUI.cpp">
-      <Filter>imgui\components\probegen</Filter>
+    <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp">
+      <Filter>core\debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h">
-      <Filter>generic\debug</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\debug\GlobalThreadMap.h">
-      <Filter>generic\debug</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\debug\ProcessMemoryMonitor.h">
-      <Filter>generic\debug</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Assert.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Constants.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Hash.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Job.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\JsonCommandQueue.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\JsonUtils.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Log.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Semaphore.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\StdUtils.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\StringUtils.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h">
-      <Filter>generic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\ComponentManager.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\gi2d\GI2DUI.h">
-      <Filter>imgui\components\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\ComponentInterface.h">
-      <Filter>imgui\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\DataTable.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\ListBox.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\Shelf.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\Widget.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\elements\WidgetUtils.h">
-      <Filter>imgui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\tools\MemoryMonitor.h">
-      <Filter>imgui\tools</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\io\ImageIO.h">
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\io\USDIO.h">
       <Filter>io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaBxDF.cuh">
-      <Filter>kernels\bxdfs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\bxdfs\CudaLambert.cuh">
-      <Filter>kernels\bxdfs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh">
-      <Filter>kernels\cameras</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cuh">
-      <Filter>kernels\cameras</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cuh">
-      <Filter>kernels\cameras</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DNode.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Common.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\CudaBIH2D.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\FwdDecl.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\GenericIntersector.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Ray2D.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\RenderCtx.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneObject.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Transform2D.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\UICtx.cuh">
-      <Filter>kernels\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\UILayer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cuh">
-      <Filter>kernels\gi2d\widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Curve.cuh">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cuh">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellipse.cuh">
-      <Filter>kernels\gi2d\tracables\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cuh">
-      <Filter>kernels\gi2d\tracables\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\tracables\primitives\Primitive2D.cuh">
-      <Filter>kernels\gi2d\tracables\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cuh">
-      <Filter>kernels\lightprobes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaDistantLight.cuh">
-      <Filter>kernels\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cuh">
-      <Filter>kernels\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaLight.cuh">
-      <Filter>kernels\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaQuadLight.cuh">
-      <Filter>kernels\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lights\CudaSphereLight.cuh">
-      <Filter>kernels\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cuh">
-      <Filter>kernels\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cuh">
-      <Filter>kernels\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cuh">
-      <Filter>kernels\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaMaterial.cuh">
-      <Filter>kernels\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cuh">
-      <Filter>kernels\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\Complex.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaGeodesics.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaMath.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaMathUtils.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaSphericalHarmonics.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh">
-      <Filter>kernels\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\bbox\CudaBBox2.cuh">
-      <Filter>kernels\math\bbox</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat2.cuh">
-      <Filter>kernels\math\mat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat3.cuh">
-      <Filter>kernels\math\mat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\mat\CudaMat4.cuh">
-      <Filter>kernels\math\mat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec2.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec3.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaIVec4.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec2.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec3.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVec4.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\vec\CudaVecBase.cuh">
-      <Filter>kernels\math\vec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cuh">
-      <Filter>kernels\ml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cuh">
-      <Filter>kernels\ml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaBox.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaCornellBox.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaGenericIntersectors.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaKIFS.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaPlane.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSDF.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaSphere.cuh">
-      <Filter>kernels\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\tracables\CudaTracable.cuh">
-      <Filter>kernels\tracables</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\win\D3DContainer.h">
       <Filter>win</Filter>
@@ -606,9 +216,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\win\Win32Application.h">
       <Filter>win</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\utils\BulkUSDProcessor.h">
-      <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h">
       <Filter>thirdparty\imgui\backends</Filter>
@@ -706,343 +313,364 @@
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_string.h">
       <Filter>thirdparty\nvidia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\CudaObjectManager.h">
-      <Filter>renderers</Filter>
+    <ClInclude Include="..\..\..\src\io\FilesystemUtils.h">
+      <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\RendererInterface.h">
-      <Filter>renderers</Filter>
+    <ClInclude Include="..\..\..\src\io\Log.h">
+      <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\RendererManager.h">
-      <Filter>renderers</Filter>
+    <ClInclude Include="..\..\..\src\io\json\JsonCommandQueue.h">
+      <Filter>io\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\UIButtonMap.h">
-      <Filter>renderers</Filter>
+    <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
+      <Filter>io\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\UIStateGraph.h">
-      <Filter>renderers</Filter>
+    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h">
+      <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cuh">
-      <Filter>renderers\gi2d</Filter>
+    <ClInclude Include="..\..\..\src\modules\RendererInterface.h">
+      <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\renderers\probegen\Probegen.h">
-      <Filter>renderers\probegen</Filter>
+    <ClInclude Include="..\..\..\src\modules\RendererManager.h">
+      <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\onnx\FCNNProbeDenoiser.h">
-      <Filter>onnx</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\GenericIntersector.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\onnx\Grid2Grid.h">
-      <Filter>onnx</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\onnx\OnnxModel.h">
-      <Filter>onnx</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\Ray.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\BakePermutor.h">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\RenderObjectStateMap.h">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\bakepermutor\StateManager.h">
-      <Filter>imgui\components\probegen\bakepermutor</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\BxDFShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\Serialisable.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\CameraShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\Transform.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\FilterShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\IntegratorShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\Common.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\LightShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh">
+      <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MaterialShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh">
+      <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\MLShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cuh">
+      <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\ShelfFactory.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DNode.cuh">
+      <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\sceneobjects\TracableShelves.h">
-      <Filter>imgui\components\probegen\sceneobjects</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh">
+      <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\imgui\components\probegen\ProbegenUI.h">
-      <Filter>imgui\components\probegen</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\AssetAllocator.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaAssetContainer.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Accumulator.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
+      <Filter>modules\gi2d\lights</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaCtx.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh">
+      <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaDeviceObjectRAII.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh">
+      <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cuh">
+      <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaManagedArray.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh">
+      <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaManagedObject.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Curve.cuh">
+      <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaRay.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh">
+      <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cuh">
+      <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectContainer.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh">
+      <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObjectFactory.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Primitive.cuh">
+      <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaSampler.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cuh">
+      <Filter>modules\gi2d\widgets</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaTests.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\utils\CudaTests.cuh">
+      <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaVector.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\ui\ComponentManager.h">
+      <Filter>ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaWavefrontTracer.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\ui\components\ComponentInterface.h">
+      <Filter>ui\modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\ui\components\gi2d\GI2DUI.h">
+      <Filter>ui\modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\ui\elements\ListBox.h">
+      <Filter>ui\elements</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\Tuple.cuh">
-      <Filter>kernels</Filter>
+    <ClInclude Include="..\..\..\src\ui\elements\Shelf.h">
+      <Filter>ui\elements</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cuh">
-      <Filter>kernels\gi2d\integrators</Filter>
+    <ClInclude Include="..\..\..\src\ui\elements\Widget.h">
+      <Filter>ui\elements</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\Camera2D.cuh">
-      <Filter>kernels\gi2d\integrators</Filter>
+    <ClInclude Include="..\..\..\src\ui\elements\WidgetUtils.h">
+      <Filter>ui\elements</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\SceneDescription.cuh">
-      <Filter>kernels\gi2d</Filter>
+    <ClInclude Include="..\..\..\src\ui\elements\DataTable.h">
+      <Filter>ui\elements</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cuh">
-      <Filter>kernels\gi2d\integrators</Filter>
+    <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h">
+      <Filter>ui\tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cuh">
-      <Filter>kernels\gi2d\layers</Filter>
+    <ClInclude Include="..\..\..\src\win\D3DIncludes.h">
+      <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\lights\Light.cuh">
-      <Filter>kernels\gi2d\lights</Filter>
+    <ClInclude Include="..\..\..\src\core\CudaCommonIncludes.cuh">
+      <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\Serialisable.cuh">
-      <Filter>kernels\gi2d</Filter>
+    <ClInclude Include="..\..\..\src\core\GenericObject.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\GenericObjectContainer.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\GenericObjectFactory.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\GlobalStateAuthority.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Hash.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\HighResolutionTimer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Image.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Semaphore.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\StdUtils.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\StringUtils.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\UIButtonMap.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\UIStateGraph.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\WindowsHeaders.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Assert.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\AssetContainer.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Asset.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Vector.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Tuple.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\ColourUtils.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Complex.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Constants.h">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Geodesics.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\JitterableParameter.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Math.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\MathUtils.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Sampler.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\SphericalHarmonics.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\bbox\BBox2.cuh">
+      <Filter>core\math\bbox</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat2.cuh">
+      <Filter>core\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat3.cuh">
+      <Filter>core\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh">
+      <Filter>core\math\mat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec3.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec4.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec2.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec3.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\Vec4.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\VecBase.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\vec\IVec2.cuh">
+      <Filter>core\math\vec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\GlobalThreadMap.h">
+      <Filter>core\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\ProcessMemoryMonitor.h">
+      <Filter>core\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\Backtrace.h">
+      <Filter>core\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\..\src\kernels\bxdfs\CudaLambert.cu">
-      <Filter>kernels\bxdfs</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu">
-      <Filter>kernels\cameras</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaLightProbeCamera.cu">
-      <Filter>kernels\cameras</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaPerspectiveCamera.cu">
-      <Filter>kernels\cameras</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DBuilder.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneObject.cu">
-      <Filter>kernels\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\OverlayLayer.cu">
-      <Filter>kernels\gi2d\layers</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\PathTracerLayer.cu">
-      <Filter>kernels\gi2d\layers</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\widgets\UIInspector.cu">
-      <Filter>kernels\gi2d\widgets</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Curve.cu">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\Tracable.cu">
-      <Filter>kernels\gi2d\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\Ellpise.cu">
-      <Filter>kernels\gi2d\tracables\primitives</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\tracables\primitives\LineSegment.cu">
-      <Filter>kernels\gi2d\tracables\primitives</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeFilter.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeIO.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeKernelFilter.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeRegressionFilter.cu">
-      <Filter>kernels\lightprobes</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaDistantLight.cu">
-      <Filter>kernels\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaEnvironmentLight.cu">
-      <Filter>kernels\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaLight.cu">
-      <Filter>kernels\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaQuadLight.cu">
-      <Filter>kernels\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lights\CudaSphereLight.cu">
-      <Filter>kernels\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaCornellMaterial.cu">
-      <Filter>kernels\materials</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaEmitterMaterial.cu">
-      <Filter>kernels\materials</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaKIFSMaterial.cu">
-      <Filter>kernels\materials</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaMaterial.cu">
-      <Filter>kernels\materials</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\materials\CudaSimpleMaterial.cu">
-      <Filter>kernels\materials</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu">
-      <Filter>kernels\math</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaGeodesics.cu">
-      <Filter>kernels\math</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu">
-      <Filter>kernels\math</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu">
-      <Filter>kernels\math</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\ml\CudaFCNNProbeDenoiser.cu">
-      <Filter>kernels\ml</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\ml\CudaGrid2Grid.cu">
-      <Filter>kernels\ml</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaBox.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaCornellBox.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaKIFS.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaPlane.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSDF.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaSphere.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\tracables\CudaTracable.cu">
-      <Filter>kernels\tracables</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <Filter>utils</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\renderers\gi2d\GI2DRenderer.cu">
-      <Filter>renderers\gi2d</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu">
+      <Filter>modules\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu">
+      <Filter>modules\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu">
+      <Filter>modules\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\Serialisable.cu">
+      <Filter>modules\gi2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectContainer.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu">
+      <Filter>modules\gi2d\bih</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObjectFactory.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu">
+      <Filter>modules\gi2d\bih</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaTests.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu">
+      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaWavefrontTracer.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
+      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu">
-      <Filter>kernels</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\Light.cu">
+      <Filter>modules\gi2d\lights</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\PathTracer2D.cu">
-      <Filter>kernels\gi2d\integrators</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu">
+      <Filter>modules\gi2d\layers</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\integrators\VoxelProxyGrid.cu">
-      <Filter>kernels\gi2d\integrators</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu">
+      <Filter>modules\gi2d\layers</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\SceneDescription.cu">
-      <Filter>kernels\gi2d</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu">
+      <Filter>modules\gi2d\layers</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\layers\VoxelProxyGridLayer.cu">
-      <Filter>kernels\gi2d\layers</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu">
+      <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\lights\Light.cu">
-      <Filter>kernels\gi2d\lights</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu">
+      <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\Serialisable.cu">
-      <Filter>kernels\gi2d</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu">
+      <Filter>modules\gi2d\tracables\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu">
+      <Filter>modules\gi2d\tracables\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cu">
+      <Filter>modules\gi2d\widgets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\utils\CudaTests.cu">
+      <Filter>utils</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\GenericObject.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\GenericObjectContainer.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\GenericObjectFactory.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\Image.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\Asset.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu">
+      <Filter>core\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu">
+      <Filter>core\math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\math\JitterableParameter.cu">
+      <Filter>core\math</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\scenes\template.usda">
-      <Filter>scenes</Filter>
-    </None>
-    <None Include="..\..\..\bin\win64\Release\config.json">
-      <Filter>scenes</Filter>
-    </None>
     <None Include="..\..\..\docs\CodeStructure.md">
       <Filter>docs</Filter>
     </None>
