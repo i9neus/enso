@@ -1,16 +1,14 @@
 #pragma once
 
-#include "../BIH2DAsset.cuh"
+#include "../bih/BIH2DAsset.cuh"
 #include "../SceneDescription.cuh"
 #include "Camera2D.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     namespace Device
-    {        
-        class PathTracer2D : public Cuda::Device::Asset
+    {
+        class PathTracer2D : public Device::Asset
         {
             enum _attrs : int { kInvalidHit = -1 };
 

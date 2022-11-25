@@ -1,8 +1,8 @@
-﻿#include "CudaRenderObjectContainer.cuh"
+﻿#include "GenericObjectContainer.cuh"
 
-namespace Cuda
+namespace Enso
 {
-    __host__ void RenderObjectContainer::Finalise() const
+    __host__ void GenericObjectContainer::Finalise() const
     {
         Log::Debug("Finalising...\n");
         Log::Indent indent;
@@ -17,7 +17,7 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectContainer::Emplace(AssetHandle<Host::RenderObject>& newObject, const bool requireDAGPath)
+    __host__ void GenericObjectContainer::Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath)
     {
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
@@ -49,24 +49,24 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectContainer::Erase(const Host::RenderObject& obj)
+    __host__ void GenericObjectContainer::Erase(const Host::GenericObject& obj)
     {
         Erase(obj.GetAssetID());
     }
 
-    __host__ void RenderObjectContainer::Erase(const std::string& id)
+    __host__ void GenericObjectContainer::Erase(const std::string& id)
     {
         auto it = m_idToIdxMap.find(id);
         AssertMsgFmt(it != m_idToIdxMap.end(), "Invalid asset ID '%s'", id.c_str());
         Erase(it->second);
     }
 
-    __host__ void RenderObjectContainer::Erase(const uint objectIdx)
+    __host__ void GenericObjectContainer::Erase(const uint objectIdx)
     {
         AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
         AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
 
-        AssetHandle<Host::RenderObject> obj(m_objectVector[objectIdx]);
+        AssetHandle<Host::GenericObject> obj(m_objectVector[objectIdx]);
         Assert(obj);
 
         // Erase the object from the DAG map
@@ -88,15 +88,15 @@ namespace Cuda
         obj.DestroyAsset();
     } 
 
-    __host__ AssetHandle<Host::RenderObject> RenderObjectContainer::operator[](const uint objectIdx)
+    __host__ AssetHandle<Host::GenericObject> GenericObjectContainer::operator[](const uint objectIdx)
     {
         AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
         AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
 
-        return AssetHandle<Host::RenderObject>(m_objectVector[objectIdx]);
+        return AssetHandle<Host::GenericObject>(m_objectVector[objectIdx]);
     }
 
-    __host__ void RenderObjectContainer::Bind()
+    __host__ void GenericObjectContainer::Bind()
     {
         for (auto& object : m_objectMap)
         {
@@ -104,7 +104,7 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectContainer::Synchronise()
+    __host__ void GenericObjectContainer::Synchronise()
     {
         for (auto& object : m_objectMap)
         {
@@ -112,7 +112,7 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectContainer::OnDestroyAsset()
+    __host__ void GenericObjectContainer::OnDestroyAsset()
     {
         Log::Debug("Unloading scene graph...");
         

@@ -1,15 +1,13 @@
 #define CUDA_DEVICE_GLOBAL_ASSERTS
 
 #include "OverlayLayer.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
-#include "generic/Hash.h"
-#include "kernels/CudaAssetContainer.cuh"
+#include "core/math/ColourUtils.cuh"
+#include "core/Hash.h"
+#include "core/AssetContainer.cuh"
 #include "../tracables/primitives/LineSegment.cuh"
 #include "../SceneDescription.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {    
     __host__ __device__ OverlayLayerParams::OverlayLayerParams()
     {
@@ -24,7 +22,7 @@ namespace GI2D
 
     }
 
-    __device__ void Device::OverlayLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::OverlayLayer::Composite(Device::ImageRGBA* deviceOutputImage)
     {
         assert(deviceOutputImage);
         
@@ -32,7 +30,7 @@ namespace GI2D
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x >= 0 && xyScreen.x < m_accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_accumBuffer->Height())
         {            
-            deviceOutputImage->Blend(xyScreen, m_accumBuffer->At(xyScreen));
+            deviceOutputImage->BlendPixel(xyScreen, m_accumBuffer->At(xyScreen));
             //vec4& target = deviceOutputImage->At(xyScreen);
             //target = Blend(target, m_accumBuffer->At(xyScreen));
             //target.xyz += m_accumBuffer->At(xyScreen).xyz;
@@ -77,7 +75,7 @@ namespace GI2D
         // Draw the tracables
         if (m_scene.tracableBIH && m_scene.tracables)
         {            
-            const Core::Vector<Device::Tracable*>& tracableList = *(m_scene.tracables);
+            const Vector<Device::Tracable*>& tracableList = *(m_scene.tracables);
       
             auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
             {
@@ -121,7 +119,7 @@ namespace GI2D
         UILayer(id, scene)
     {        
         // Create some Cuda objects
-        m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("accumBuffer", width, height, renderStream);
+        m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
         m_deviceObjects.m_scenePtr = m_scene->GetDeviceInstance();
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -165,7 +163,7 @@ namespace GI2D
         m_dirtyFlags = 0;
     }
 
-    __host__ void Host::OverlayLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::OverlayLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);

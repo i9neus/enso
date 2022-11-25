@@ -1,27 +1,27 @@
 ﻿#pragma once
 
 #include "AssetAllocator.cuh"
-#include "math/CudaMath.cuh"
+#include "math/Math.cuh"
 #include <map>
 #include <string>
 #include <functional>
 
-namespace Json { class Node; }
-
-namespace Cuda
+namespace Enso
 {
-    class RenderObjectContainer;
-    namespace Host { class RenderObject; }
-    
-    class RenderObjectFactory
-    {
-        using InstantiatorLambda = std::function < AssetHandle<Host::RenderObject>(const std::string&, const int&, const ::Json::Node&)>;
-    public:
-        __host__ RenderObjectFactory();
+    namespace Json { class Node; }
 
-        __host__ void InstantiateFromJson(const ::Json::Node& json, AssetHandle<RenderObjectContainer>& renderObjects);
+    class GenericObjectContainer;
+    namespace Host { class GenericObject; }
+    
+    class GenericObjectFactory
+    {
+        using InstantiatorLambda = std::function < AssetHandle<Host::GenericObject>(const std::string&, const int&, const Json::Node&)>;
+    public:
+        __host__ GenericObjectFactory();
+
+        __host__ void InstantiateFromJson(const Json::Node& json, AssetHandle<GenericObjectContainer>& renderObjects);
         
-        __host__ AssetHandle<Host::RenderObject> InstantiateFromHash(const uint hash, AssetHandle<RenderObjectContainer>& renderObjects);
+        __host__ AssetHandle<Host::GenericObject> InstantiateFromHash(const uint hash, AssetHandle<GenericObjectContainer>& renderObjects);
 
         template<typename HostClass>
         __host__ void RegisterInstantiator(const uint hash = 0u)
@@ -49,7 +49,7 @@ namespace Cuda
         __host__ void RegisterGroup(const std::string& groupName, const uint flags);
 
     private:
-        using InstantiatorSignature = AssetHandle<Host::RenderObject>(const std::string&, const ::Json::Node&);
+        using InstantiatorSignature = AssetHandle<Host::GenericObject>(const std::string&, const Json::Node&);
         
         struct ObjectGroup
         {
@@ -64,8 +64,8 @@ namespace Cuda
             std::function<uint()>                   flagFunctor;
         };
 
-        __host__ void InstantiateGroup(const ::Json::Node& node, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects);
-        __host__ void EmplaceNewObject(AssetHandle<Host::RenderObject> newObject, AssetHandle<RenderObjectContainer>& renderObjects);
+        __host__ void InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, AssetHandle<GenericObjectContainer>& renderObjects);
+        __host__ void EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, AssetHandle<GenericObjectContainer>& renderObjects);
 
         std::map<std::string, std::shared_ptr<Instantiator>>    m_instantiators;
         std::map<uint, std::shared_ptr<Instantiator>>           m_hashMap;

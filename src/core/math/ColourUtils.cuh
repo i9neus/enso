@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "CudaMath.cuh"
+#include "Math.cuh"
 
-namespace Cuda
+namespace Enso
 {
     enum ColourSpace : int
     {
@@ -33,4 +33,12 @@ namespace Cuda
 
     __host__ __device__ vec4 Blend(const vec4& rgba1, const vec4& rgba2);
     __host__ __device__ vec4 Blend(const vec4& rgba1, const vec3& rgb2, const float& w2);
+
+    #define kBlack vec3(0.0f)
+    #define kWhite vec3(1.0f)
+    #define kRed vec3(1.0f, 0.0f, 0.0f)
+    #define kYellow vec3(1.0f, 1.0f, 0.0f)
+    #define kGreen vec3(0.0f, 1.0f, 0.0f)
+    #define kBlue vec3(0.0f, 0.0f, 1.0f)
+    #define kPink vec3(1.0f, 0.0f, 1.0f)
 }

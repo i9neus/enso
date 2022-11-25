@@ -4,19 +4,22 @@
 
 struct _PROCESS_MEMORY_COUNTERS;
 
-class ProcessMemoryMonitor
+namespace Enso
 {
-public:
-    static ProcessMemoryMonitor&    Get();
-    void                            Snapshot();
-    void                            Clear();
+    class ProcessMemoryMonitor
+    {
+    public:
+        static ProcessMemoryMonitor& Get();
+        void                            Snapshot();
+        void                            Clear();
 
-    int64_t                         GetWorkingSetSize() const;
+        int64_t                         GetWorkingSetSize() const;
 
-private:
-    ProcessMemoryMonitor();
+    private:
+        ProcessMemoryMonitor();
 
-private:
-    std::unique_ptr<_PROCESS_MEMORY_COUNTERS> m_pmcStart;
-    bool                                     m_isGood;
-};
+    private:
+        std::unique_ptr<_PROCESS_MEMORY_COUNTERS> m_pmcStart;
+        bool                                     m_isGood;
+    };
+}

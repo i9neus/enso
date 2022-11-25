@@ -5,54 +5,53 @@
 #include "Transform2D.cuh"
 #include "UICtx.cuh"
 
-#include "kernels/CudaRenderObject.cuh"
+#include "core/GenericObject.cuh"
+#include "core/math/Math.cuh"
 
 #include "Serialisable.cuh"
 
-using namespace Cuda;
-
-template<typename ObjectType, typename ParamsType>
-__global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params, const int syncFlags)
+namespace Enso
 {
-    // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-    assert(cu_object);
-    assert(cu_params);
-    assert(sizeof(ParamsType) == hostParamsSize);
+    template<typename ObjectType, typename ParamsType>
+    __global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params, const int syncFlags)
+    {
+        // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
+        assert(cu_object);
+        assert(cu_params);
+        assert(sizeof(ParamsType) == hostParamsSize);
 
-    ParamsType& cast = static_cast<ParamsType&>(*cu_object);
-    cast = *cu_params;
+        ParamsType& cast = static_cast<ParamsType&>(*cu_object);
+        cast = *cu_params;
 
-    cu_object->OnSynchronise(syncFlags);
-}
+        cu_object->OnSynchronise(syncFlags);
+    }
 
-template<typename ParamsType, typename ObjectType>
-__host__ void SynchroniseInheritedClass(ObjectType* cu_object, const ParamsType& params, const int syncFlags)
-{
-    //AssertIsTransferrableType<ParamsType>();
-    Assert(cu_object);
-    static_assert(std::is_standard_layout< ParamsType>::value, "SynchroniseInheritedClass: ParamsType is not standard layout type");
-    static_assert(std::is_base_of<ParamsType, ObjectType>::value, "SynchroniseInheritedClass: ObjectType not derived from ParamsType");
-    //static_assert(std::is_base_of<Device::RenderObject, ObjectType>::value, "cu_object not derived from Device::SceneObject");
+    template<typename ParamsType, typename ObjectType>
+    __host__ void SynchroniseInheritedClass(ObjectType* cu_object, const ParamsType& params, const int syncFlags)
+    {
+        //AssertIsTransferrableType<ParamsType>();
+        Assert(cu_object);
+        static_assert(std::is_standard_layout< ParamsType>::value, "SynchroniseInheritedClass: ParamsType is not standard layout type");
+        static_assert(std::is_base_of<ParamsType, ObjectType>::value, "SynchroniseInheritedClass: ObjectType not derived from ParamsType");
+        //static_assert(std::is_base_of<Device::SceneObject, ObjectType>::value, "cu_object not derived from Device::SceneObject");
 
-    ParamsType* cu_params;
-    IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
-    IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
+        ParamsType* cu_params;
+        IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
+        IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
-    IsOk(cudaDeviceSynchronize());
-    KernelSynchroniseInheritedClass << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params, syncFlags);
-    IsOk(cudaDeviceSynchronize());
+        IsOk(cudaDeviceSynchronize());
+        KernelSynchroniseInheritedClass << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params, syncFlags);
+        IsOk(cudaDeviceSynchronize());
 
-    IsOk(cudaFree(cu_params));
-}
+        IsOk(cudaFree(cu_params));
+    }
 
-enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
+    enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
 
-namespace GI2D
-{
     enum SceneObjectFlags : uint
     {
-        kSceneObjectSelected                = 1u,
-        kSceneObjectInteractiveElement      = 2u
+        kSceneObjectSelected = 1u,
+        kSceneObjectInteractiveElement = 2u
     };
 
     struct SceneObjectParams
@@ -78,9 +77,9 @@ namespace GI2D
         public:
             __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
 
-            __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
-            __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_worldBBox; };
-            
+            __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
+            __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
+
             __device__ virtual void OnSynchronise(const int) {}
 
         protected:
@@ -100,13 +99,13 @@ namespace GI2D
 
     namespace Host
     {
-        class SceneObject : public Cuda::Host::RenderObject,
-                            public Core::Serialisable,
-                            public SceneObjectParams
+        class SceneObject : public Host::GenericObject,
+            public Serialisable,
+            public SceneObjectParams
         {
         public:
             __host__ virtual bool       Finalise() = 0;
-            
+
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual uint       OnSelect(const bool isSelected);
@@ -115,7 +114,7 @@ namespace GI2D
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return false; }
-            __host__ virtual const Cuda::Host::RenderObject& GetRenderObject() const { return *this; }
+            __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
 
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; }
             __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; }
@@ -128,8 +127,8 @@ namespace GI2D
                 return cu_deviceSceneObjectInterface;
             }*/
 
-            __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true) 
-            {                
+            __host__ virtual void SetAttributeFlags(const uint flags, bool isSet = true)
+            {
                 //DeviceSuper::m_attrFlags = 1;
                 /*if (SetGenericFlags(m_attrFlags, flags, isSet))
                 {
@@ -162,7 +161,7 @@ namespace GI2D
             }
             m_onMove;
 
-            Device::SceneObject&        m_hostInstance;
-        };   
+            Device::SceneObject& m_hostInstance;
+        };
     }
 }

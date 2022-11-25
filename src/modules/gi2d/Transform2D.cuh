@@ -2,16 +2,11 @@
 
 #include "Ray2D.cuh"
 
-using namespace Cuda;
-
-namespace Cuda
+namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
-}
-
-namespace GI2D
-{
-	class BidirectionalTransform2D
+    
+    class BidirectionalTransform2D
 	{
 	public:
         __host__ __device__ BidirectionalTransform2D() : 

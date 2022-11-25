@@ -1,11 +1,9 @@
 #include "LineSegment.cuh"
-#include "kernels/CudaVector.cuh"
+#include "core/Vector.cuh"
 
 #include <random>
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {    
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
@@ -65,7 +63,7 @@ namespace GI2D
         return t0 < t1&& t0 >= 0.f && t0 <= 1.f;
     }
 
-    __host__ void GenerateRandomLineSegments(Core::Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed)
+    __host__ void GenerateRandomLineSegments(Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed)
     {
         std::mt19937 mt(seed);
         std::uniform_real_distribution<> realRng;

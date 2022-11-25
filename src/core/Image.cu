@@ -1,6 +1,6 @@
-﻿#include "CudaImage.cuh"
+﻿#include "Image.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	template<typename T>
 	__global__ void KernelSignalChange(Device::Image<T>* image, const unsigned int currentState, const unsigned int newState) { atomicCAS(image->AccessSignal(), currentState, newState); }

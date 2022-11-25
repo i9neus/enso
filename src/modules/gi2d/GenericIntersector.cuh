@@ -2,7 +2,7 @@
 
 #include "Ray2D.cuh"
 
-namespace GI2D
+namespace Enso
 {
     __host__ __device__ __forceinline__ bool IntersectRayBBox(const RayBasic2D& ray, const BBox2f& bBox, RayRange2D& range)
     {

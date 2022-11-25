@@ -2,9 +2,12 @@
 
 #include <vector>
 #include <string>
-#include "kernels/math/CudaMath.cuh"
+#include "core/math/Math.cuh"
 
-namespace ImageIO
+namespace Enso
 {
-    void WriteAccumulationBufferPNG(const std::vector<Cuda::vec4>& data, const Cuda::ivec2& dataDimensions, std::string filePath, const float exposure = 1.0f, const float gamma = 2.2f);
+    namespace ImageIO
+    {
+        void WriteAccumulationBufferPNG(const std::vector<vec4>& data, const ivec2& dataDimensions, std::string filePath, const float exposure = 1.0f, const float gamma = 2.2f);
+    }
 }

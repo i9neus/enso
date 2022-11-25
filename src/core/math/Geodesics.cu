@@ -1,6 +1,6 @@
-#include "CudaGeodesics.cuh"
+#include "Geodesics.cuh"
 
-namespace Cuda
+namespace Enso
 {
     class Tri
     {

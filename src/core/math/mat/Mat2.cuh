@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "../vec/CudaVec2.cuh"
+#include "../vec/Vec2.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	template<typename Type>
 	struct __mat2

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "kernels/math/CudaMath.cuh"
-#include "../AssetAllocator.cuh"
+#include "core/math/Math.cuh"
+#include "core/AssetAllocator.cuh"
 
-namespace GI2D
+namespace Enso
 {
     enum GI2DDirtyFlags : uint
     {

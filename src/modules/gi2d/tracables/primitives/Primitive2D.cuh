@@ -2,20 +2,14 @@
 
 #include "../../Common.cuh"
 
-#include "kernels/CudaManagedObject.cuh"
-#include "kernels/CudaImage.cuh"
+#include "core/Image.cuh"
 
 #include "../../Ray2D.cuh"
 
-using namespace Cuda;
-
-namespace Core
+namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
-}
 
-namespace GI2D
-{   
     enum GI2DPrimitiveFlags : int
     {
         k2DPrimitiveSelected = 1
@@ -39,12 +33,12 @@ namespace GI2D
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const { return false; }
 
         __host__ __device__ __forceinline__ bool            IsSelected() const { return m_flags & k2DPrimitiveSelected; }
-        __host__ __device__ __forceinline__ void            SetFlags(const uchar flags, const bool set) 
-        { 
+        __host__ __device__ __forceinline__ void            SetFlags(const uchar flags, const bool set)
+        {
             if (set) { m_flags |= flags; }
-            else     { m_flags &= ~flags; }
+            else { m_flags &= ~flags; }
         }
-        __host__ __device__ __forceinline__ const vec3&     GetColour() const { return m_colour; }
+        __host__ __device__ __forceinline__ const vec3& GetColour() const { return m_colour; }
         //__host__ __device__ __forceinline__ void            UnsetFlags(const uchar flags) { m_flags &= ~flags; }
     };
-};
+}

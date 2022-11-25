@@ -1,11 +1,11 @@
 #include "BIH2DBuilder.cuh"
-#include "generic/HighResolutionTimer.h"
+#include "core/HighResolutionTimer.h"
 
-namespace GI2D
+namespace Enso
 {
     template<typename NodeType>
-    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Core::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
-                                                  const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
+    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
+        const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
         m_bih(bih),
         m_hostNodes(hostNodes),
         m_primitiveIdxs(primitiveIdxs),
@@ -59,11 +59,11 @@ namespace GI2D
         }
 
         // Update the host data structures
-        m_bih.m_nodes = m_hostNodes.GetHostData();        
+        m_bih.m_nodes = m_hostNodes.GetHostData();
         m_bih.m_numNodes = m_hostNodes.Size();
         m_bih.m_numPrims = m_primitiveIdxs.size();
         m_bih.m_isConstructed = true;
-        
+
         if (printStats)
         {
             m_stats.buildTime = timer.Get() * 1e3f;
@@ -77,10 +77,10 @@ namespace GI2D
     //template<typename NodeContainer>
     template<typename NodeType>
     __host__ void BIH2DBuilder<NodeType>::BuildPartition(const int i0, const int i1, const uint thisIdx, const uchar depth, const BBox2f& parentBBox, const BBox2f& centroidBBox)
-    {    
+    {
         // Sanity checks
         Assert(depth < 16);
-        
+
         m_stats.maxDepth = max(depth, m_stats.maxDepth);
 
         // If this node only contains one primitive, it's a leaf
@@ -155,7 +155,7 @@ namespace GI2D
         // Grow the node vector by two
         const int leftIdx = m_hostNodes.Size();
         const int rightIdx = leftIdx + 1;
-        m_hostNodes.Grow(2);   
+        m_hostNodes.Grow(2);
 
         // Refresh the reference and build the inner node          
         m_hostNodes[thisIdx].MakeInner(leftIdx, axis, leftBBox[1][axis], rightBBox[0][axis], i0, i1);

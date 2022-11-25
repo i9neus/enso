@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "CudaMat2.cuh"
-#include "../vec/CudaVec3.cuh"
+#include "Mat2.cuh"
+#include "../vec/Vec3.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	#define _det2(a, b, c, d) ((a) * (d) - (b) * (c))
 	

@@ -1,95 +1,93 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
+#include "math/Math.cuh"
 #include "AssetAllocator.cuh"
 
 #include <map>
 #include <unordered_set>
 #include <functional>
 
-namespace Cuda
+namespace Enso
 {
-    class RenderObjectContainer;
+    class GenericObjectContainer;
 
-    enum RenderObjectFlags : uint 
+    enum GenericObjectFlags : uint 
     { 
-        kRenderObjectDisabled                   = 1u << 0,
-        kRenderObjectExcludeFromBake            = 1u << 1,        
-        kRenderObjectIsChild                    = 1u << 2,
-        kRenderObjectUserFacingParameterMask    = (kRenderObjectExcludeFromBake << 1) - 1u
+        kGenericObjectDisabled                   = 1u << 0,
+        kGenericObjectExcludeFromBake            = 1u << 1,        
+        kGenericObjectIsChild                    = 1u << 2,
+        kGenericObjectUserFacingParameterMask    = (kGenericObjectExcludeFromBake << 1) - 1u
     };
 
-    enum RenderObjectInstanceFlags : uint
+    enum GenericObjectInstanceFlags : uint
     {
         kInstanceFlagsAllowMultipleInstances    = 1u << 0,
         kInstanceSingleton                      = 1u << 2
     };
 
-    enum RenderObjectDirtyFlags : uint
+    enum GenericObjectDirtyFlags : uint
     {
-        kRenderObjectClean                      = 0u,
-        kRenderObjectDirtyRender                = 1u << 1,
-        kRenderObjectDirtyProbeGrids            = 1u << 2,
-        kRenderObjectDirtyAll                   = kRenderObjectDirtyRender | kRenderObjectDirtyProbeGrids
+        kGenericObjectClean                      = 0u,
+        kGenericObjectDirtyRender                = 1u << 1,
+        kGenericObjectDirtyProbeGrids            = 1u << 2,
+        kGenericObjectDirtyAll                   = kGenericObjectDirtyRender | kGenericObjectDirtyProbeGrids
     };
 
-    struct RenderObjectParams
+    struct GenericObjectParams
     {
-        __host__ __device__ RenderObjectParams();
-        __host__ RenderObjectParams(const ::Json::Node& node, const uint flags) : RenderObjectParams() { FromJson(node, flags);  }
+        __host__ __device__ GenericObjectParams();
+        __host__ GenericObjectParams(const Json::Node& node, const uint flags) : GenericObjectParams() { FromJson(node, flags);  }
 
-        __host__ uint FromJson(const ::Json::Node& node, const uint flags);
-        __host__ void ToJson(::Json::Node& node) const;
+        __host__ uint FromJson(const Json::Node& node, const uint flags);
+        __host__ void ToJson(Json::Node& node) const;
         __host__ void Randomise(const vec2& range);
-
-        JitterableFlags     flags;
     };
     
     namespace Device
     {
-        class RenderObject : public Device::Asset
+        class GenericObject : public Device::Asset
         {
         public:
-            __device__ RenderObject() {}
-            __device__ virtual ~RenderObject() {}
+            __device__ GenericObject() {}
+            __device__ virtual ~GenericObject() {}
         };
     }
 
     namespace Host
     {        
-        class RenderObject : public Host::AssetAllocator
+        class GenericObject : public Host::AssetAllocator
         {
         public:            
-            __host__ virtual void                                           Bind(RenderObjectContainer& objectContainer) {}
-            __host__ virtual std::vector<AssetHandle<Host::RenderObject>>   GetChildObjectHandles() { return std::vector<AssetHandle<Host::RenderObject>>();  }
-            __host__ virtual const RenderObjectParams*                      GetRenderObjectParams() const { return nullptr; }
+            __host__ virtual void                                           Bind(GenericObjectContainer& objectContainer) {}
+            __host__ virtual std::vector<AssetHandle<Host::GenericObject>>   GetChildObjectHandles() { return std::vector<AssetHandle<Host::GenericObject>>();  }
+            __host__ virtual const GenericObjectParams*                      GetGenericObjectParams() const { return nullptr; }
             
-            __host__ void                   UpdateDAGPath(const ::Json::Node& node);
+            __host__ void                   UpdateDAGPath(const Json::Node& node);
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
             __host__ bool                   HasDAGPath() const { return !m_dagPath.empty(); }
 
-            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kRenderObjectIsChild; }
+            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kGenericObjectIsChild; }
             __host__ static uint            GetInstanceFlags() { return 0; }
 
             __host__ virtual void           OnPreRender() {}
             __host__ virtual void           OnPostRender() {}
             __host__ virtual void           OnPreRenderPass(const float wallTime) {}
             __host__ virtual void           OnPostRenderPass() {}
-            __host__ virtual void           OnUpdateSceneGraph(RenderObjectContainer& sceneObjects, const uint dirtyFlags) {}
+            __host__ virtual void           OnUpdateSceneGraph(GenericObjectContainer& sceneObjects, const uint dirtyFlags) {}
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
             __host__ virtual void           Synchronise() {}
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
-            __host__ void SetRenderObjectFlags(const uint flags, const bool set = true)
+            __host__ void SetGenericObjectFlags(const uint flags, const bool set = true)
             {
                 if (set) { m_renderObjectFlags |= flags; }
                 else { m_renderObjectFlags &= ~flags; }
             }
 
-            __host__ void SetUserFacingRenderObjectFlags(const uint flags)
+            __host__ void SetUserFacingGenericObjectFlags(const uint flags)
             {
-                m_renderObjectFlags = (m_renderObjectFlags & ~kRenderObjectUserFacingParameterMask) | 
-                                        (flags & kRenderObjectUserFacingParameterMask);
+                m_renderObjectFlags = (m_renderObjectFlags & ~kGenericObjectUserFacingParameterMask) | 
+                                        (flags & kGenericObjectUserFacingParameterMask);
             }
 
             template<typename Subclass, typename DeligateLambda>
@@ -97,7 +95,7 @@ namespace Cuda
             {
                 for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
                 {
-                    if (&it->second.m_owner == static_cast<RenderObject*>(&owner))
+                    if (&it->second.m_owner == static_cast<GenericObject*>(&owner))
                     {
                         Log::Error("Internal error: deligate '%s' ['%s' -> '%s'] is already registered", eventID, GetAssetID(), owner.GetAssetID());
                         return;
@@ -105,20 +103,20 @@ namespace Cuda
                 }
 
                 m_actionDeligates.emplace(eventID, EventDeligate(owner,
-                    std::function<void(const RenderObject&, const std::string&)>(std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2))));
+                    std::function<void(const GenericObject&, const std::string&)>(std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2))));
             }
 
-            __host__ void  Unlisten(const RenderObject& owner, const std::string& eventID);
+            __host__ void  Unlisten(const GenericObject& owner, const std::string& eventID);
 
         protected:
-            __host__ RenderObject(const std::string& id) : AssetAllocator(id), m_renderObjectFlags(0) {}
-            __host__ virtual ~RenderObject() {}
+            __host__ GenericObject(const std::string& id) : AssetAllocator(id), m_renderObjectFlags(0) {}
+            __host__ virtual ~GenericObject() {}
 
             template<typename ThisType, typename BindType>
-            __host__ AssetHandle<BindType> GetAssetHandleForBinding(RenderObjectContainer& objectContainer, const std::string& otherId)
+            __host__ AssetHandle<BindType> GetAssetHandleForBinding(GenericObjectContainer& objectContainer, const std::string& otherId)
             {
                 // Try to find a handle to the asset
-                AssetHandle<RenderObject> baseAsset = objectContainer.FindByID(otherId);
+                AssetHandle<GenericObject> baseAsset = objectContainer.FindByID(otherId);
                 if (!baseAsset)
                 {
                     Log::Error("Unable to bind %s '%s' to %s '%s': %s does not exist.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
@@ -146,16 +144,16 @@ namespace Cuda
 
             struct EventDeligate
             {
-                EventDeligate(RenderObject& owner, std::function<void(const RenderObject&, const std::string&)>& functor) :
+                EventDeligate(GenericObject& owner, std::function<void(const GenericObject&, const std::string&)>& functor) :
                     m_owner(owner),
                     m_functor(functor) {}
 
-                RenderObject&                                                   m_owner;
-                std::function<void(const RenderObject&, const std::string&)>    m_functor;
+                GenericObject&                                                   m_owner;
+                std::function<void(const GenericObject&, const std::string&)>    m_functor;
 
                 bool operator <(const EventDeligate& rhs)
                 {
-                    return std::hash<RenderObject*>{}(&m_owner) < std::hash<RenderObject*>{}(&rhs.m_owner);
+                    return std::hash<GenericObject*>{}(&m_owner) < std::hash<GenericObject*>{}(&rhs.m_owner);
                 }
             };
 

@@ -1,13 +1,12 @@
 ﻿#pragma once
 
-#include "CudaCommonIncludes.cuh"
 #include "AssetAllocator.cuh"
 #include <map>
 #include <vector>
 
 //#define CudaImageBoundCheck
 
-namespace Cuda
+namespace Enso
 {
 	namespace Host
 	{
@@ -186,7 +185,7 @@ namespace Cuda
 			__host__ Iterator begin() { return Iterator(*this, 0); }
 			__host__ Iterator end() { return Iterator(*this, m_assetMap.size()); }
 
-			__host__ virtual uint FromJson(const ::Json::Node& parentNode, const uint flags) override final
+			__host__ virtual uint FromJson(const Json::Node& parentNode, const uint flags) override final
 			{
 				for (auto& asset : m_assetMap)
 				{

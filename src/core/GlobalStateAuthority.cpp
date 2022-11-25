@@ -1,25 +1,28 @@
 #include "GlobalStateAuthority.h"
-#include "FilesystemUtils.h"
+#include "io/FilesystemUtils.h"
 
-GlobalStateAuthority::GlobalStateAuthority()
+namespace Enso
 {
-    try
+    GlobalStateAuthority::GlobalStateAuthority()
     {
-        Log::Write("Looking for config.json...\n");
+        try
+        {
+            Log::Write("Looking for config.json...\n");
 
-        m_configJson.Deserialise("config.json");
-        m_configJson.GetValue("scene", m_defaultScenePath, Json::kRequiredAssert);
+            m_configJson.Deserialise("config.json");
+            m_configJson.GetValue("scene", m_defaultScenePath, Json::kRequiredAssert);
 
-        m_defaultSceneDirectory = GetParentDirectory(m_defaultScenePath);
+            m_defaultSceneDirectory = GetParentDirectory(m_defaultScenePath);
+        }
+        catch (const std::runtime_error& err)
+        {
+            throw std::runtime_error(tfm::format("Unable to initialise global state authority: %s", err.what()));
+        }
     }
-    catch (const std::runtime_error& err)
+
+    GlobalStateAuthority& GlobalStateAuthority::Get()
     {
-        throw std::runtime_error(tfm::format("Unable to initialise global state authority: %s", err.what()));
+        static GlobalStateAuthority singleton;
+        return singleton;
     }
-}
-
-GlobalStateAuthority& GlobalStateAuthority::Get()
-{
-    static GlobalStateAuthority singleton;
-    return singleton;
 }

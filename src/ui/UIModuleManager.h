@@ -1,20 +1,23 @@
 #pragma once
 
 //#include "tools/MemoryMonitor.h"
-#include "components/ComponentInterface.h"
+#include "modules/UIModuleInterface.h"
+#include "win/WindowsHeaders.h"
+#include "win/D3DHeaders.h"
 
-class RendererManager;
-class RendererInterface;
+#include <memory>
 
-namespace Gui
-{
+namespace Enso
+{    
     class GI2DUI;
+    class ModuleManager;
+    class ModuleInterface;
     
-    class ComponentManager
+    class UIModuleManager
     {
     public:
-        ComponentManager(HWND hWnd, std::shared_ptr<RendererManager>& rendererManager);
-        ~ComponentManager();
+        UIModuleManager(HWND hWnd, std::shared_ptr<ModuleManager>& moduleManager);
+        ~UIModuleManager();
 
         void                            CreateD3DDeviceObjects(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames);
         void                            Construct();
@@ -30,8 +33,8 @@ namespace Gui
     private:
         ComPtr<ID3D12DescriptorHeap>            m_srvHeap;
         HWND                                    m_hWnd;
-        std::shared_ptr<RendererManager>        m_rendererManager;
-        std::shared_ptr<RendererInterface>      m_activeRenderer;
+        std::shared_ptr<ModuleManager>          m_moduleManager;
+        std::shared_ptr<ModuleInterface>        m_activeRenderer;
         //MemoryMonitor                         m_memoryMonitor;
 
         bool                                    m_showConsole;

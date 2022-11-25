@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "CudaVecBase.cuh"
+#include "VecBase.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	template<typename Type>
 	struct __vec_swizzle<Type, 3, 3, 0, 1, 2>
@@ -31,8 +31,7 @@ namespace Cuda
             /*__vec_swizzle<Type, 3, 2, 2, 0> zx;*/ /*__vec_swizzle<Type, 3, 2, 2, 1> zy;*/ /*__vec_swizzle<Type, 3, 2, 2, 2> zz;*/
 		};
 
-        __vec_swizzle() = default;
-        __vec_swizzle(const __vec_swizzle&) = default;
+        __host__ __device__ __vec_swizzle() {}
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const Type v) : x(v), y(v), z(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const Type& x_, const Type& y_, const Type& z_) : x(x_), y(y_), z(z_) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const __ivec2<Type>& v, const Type& z_) : x(v.x), y(v.y), z(z_) {}

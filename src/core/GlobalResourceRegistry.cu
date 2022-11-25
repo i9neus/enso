@@ -1,11 +1,11 @@
 #include "GlobalResourceRegistry.cuh"
-#include "generic/Hash.h"
+#include "Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include <map>
-#include "generic/Log.h"
-#include "generic/Assert.h"
+#include "io/Log.h"
+#include "Assert.h"
 
-namespace Cuda
+namespace Enso
 {
     GlobalResourceRegistry& GlobalResourceRegistry::Get()
     {

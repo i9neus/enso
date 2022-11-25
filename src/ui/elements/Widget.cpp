@@ -1,8 +1,8 @@
 #include "IMGUIWidget.h"
 
-#include "kernels/lightprobes/CudaLightProbeDataTransform.cuh"
-#include "kernels/math/CudaMath.cuh"
-#include "kernels/CudaAsset.cuh"
+#include "kernels/lightprobes/LightProbeDataTransform.cuh"
+#include "kernels/math/Math.cuh"
+#include "kernels/Asset.cuh"
 
 void IMGUIWidget::Text(const std::string& text, const ImColor colour)
 {
@@ -11,7 +11,7 @@ void IMGUIWidget::Text(const std::string& text, const ImColor colour)
     ImGui::PopStyleColor(1);
 }
 
-void IMGUIWidget::ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale)
+void IMGUIWidget::ConstructJitteredTransform(BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale)
 {
     if (!ImGui::TreeNodeEx("Transform", 0)) { return; }
 
@@ -88,9 +88,9 @@ void IMGUIWidget::ConstructJitteredTransform(Cuda::BidirectionalTransform& trans
         ImVec2 size = ImGui::GetItemRectSize();
         size.x = 75;
         int operation = -1;
-        if (ImGui::Button("Shuffle", size)) { operation = Cuda::kJitterRandomise; } SL;
-        if (ImGui::Button("Reset", size)) { operation = Cuda::kJitterReset; } SL;
-        if (ImGui::Button("Flatten", size)) { operation = Cuda::kJitterFlatten; }
+        if (ImGui::Button("Shuffle", size)) { operation = kJitterRandomise; } SL;
+        if (ImGui::Button("Reset", size)) { operation = kJitterReset; } SL;
+        if (ImGui::Button("Flatten", size)) { operation = kJitterFlatten; }
 
         if (operation != -1)
         {
@@ -163,7 +163,7 @@ void IMGUIWidget::ConstructComboBox(const std::string& name, const std::vector<s
     }
 }
 
-void IMGUIWidget::ConstructProbeDataTransform(Cuda::LightProbeDataTransformParams& params)
+void IMGUIWidget::ConstructProbeDataTransform(LightProbeDataTransformParams& params)
 {
     static const std::vector<std::string> kSwizzleLabels = { "XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX" };
     
@@ -219,11 +219,11 @@ void IMGUIJitteredColourPicker::Construct()
         m_param.p = mix(m_hsv[0], m_hsv[1], 0.5f);
         m_param.dpdt = (m_hsv[1] - m_hsv[0]) * 0.5f;
 
-        if (ImGui::Button("s")) { m_param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+        if (ImGui::Button("s")) { m_param.Update(kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
         ToolTip("Shuffle");
-        if (ImGui::Button("r")) { m_param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+        if (ImGui::Button("r")) { m_param.Update(kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
         ToolTip("Reset");
-        if (ImGui::Button("f")) { m_param.Update(Cuda::kJitterFlatten); }
+        if (ImGui::Button("f")) { m_param.Update(kJitterFlatten); }
         ToolTip("Flatten");
 
         ImGui::EndTable();
@@ -238,7 +238,7 @@ void IMGUIJitteredColourPicker::Update()
     m_hsv[1] = m_param.p + m_param.dpdt;
 }
 
-void IMGUIJitteredParameterTable::Push(const std::string& label, const std::string& tooltip, Cuda::JitterableFloat& param, const Cuda::vec3& range)
+void IMGUIJitteredParameterTable::Push(const std::string& label, const std::string& tooltip, JitterableFloat& param, const vec3& range)
 {
     Assert(!label.empty());
 
@@ -278,11 +278,11 @@ void IMGUIJitteredParameterTable::Construct()
                     ImGui::SliderFloat("", &param.t, 0.0f, 1.0f); SL;
                     ImGui::PopItemWidth();
 
-                    if (ImGui::Button("s")) { param.Update(Cuda::kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
+                    if (ImGui::Button("s")) { param.Update(kJitterRandomise); } ImGui::SameLine(0.0f, 1.0f);
                     ToolTip("Shuffle");
-                    if (ImGui::Button("r")) { param.Update(Cuda::kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
+                    if (ImGui::Button("r")) { param.Update(kJitterReset); } ImGui::SameLine(0.0f, 1.0f);
                     ToolTip("Reset");
-                    if (ImGui::Button("f")) { param.Update(Cuda::kJitterFlatten); }
+                    if (ImGui::Button("f")) { param.Update(kJitterFlatten); }
                     ToolTip("Flatten");
                 }
             }
@@ -293,7 +293,7 @@ void IMGUIJitteredParameterTable::Construct()
     }
 }
 
-IMGUIJitteredFlagArray::IMGUIJitteredFlagArray(Cuda::JitterableFlags& param, const std::string& id) :
+IMGUIJitteredFlagArray::IMGUIJitteredFlagArray(JitterableFlags& param, const std::string& id) :
     m_param(param),
     m_t(0.0f),
     m_switchLabels({ "Off", "On", "Rnd" })

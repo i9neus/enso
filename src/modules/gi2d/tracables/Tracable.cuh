@@ -2,9 +2,7 @@
 
 #include "../SceneObject.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     enum TracableFlags : int
     {

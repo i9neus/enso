@@ -1,14 +1,13 @@
 #include "VoxelProxyGridLayer.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
-#include "generic/Hash.h"
+#include "core/math/ColourUtils.cuh"
+#include "core/Hash.h"
+#include "core/CudaHeaders.cuh"
 
 #include "../RenderCtx.cuh"
 #include "../SceneDescription.cuh"
 #include "../integrators/VoxelProxyGrid.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     constexpr size_t kAccumBufferSize = 1024 * 1024;
     
@@ -145,6 +144,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
+
     __device__ vec3 Device::VoxelProxyGridLayer::Evaluate(const vec2& posWorld) const
     {
         const ivec2 probeIdx = ivec2(m_cameraTransform.PointToObjectSpace(posWorld));
@@ -154,7 +154,7 @@ namespace GI2D
         return (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(m_grid.subprobesPerProbe * max(1, m_frameIdx));
     }
 
-    __device__ void Device::VoxelProxyGridLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)  const
+    __device__ void Device::VoxelProxyGridLayer::Composite(Device::ImageRGBA* deviceOutputImage)  const
     {
         assert(deviceOutputImage);
 
@@ -201,9 +201,9 @@ namespace GI2D
         m_cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));
 
         // Create some assets
-        m_hostAccumBuffer = CreateChildAsset<Core::Host::Vector<vec3>>("accumBuffer", kAccumBufferSize, Core::kVectorHostAlloc);
-        m_hostReduceBuffer = CreateChildAsset<Core::Host::Vector<vec3>>("reduceBuffer", kAccumBufferSize, Core::kVectorHostAlloc);
-        m_hostProxyGrid = CreateChildAsset<Core::Host::Vector<vec3>>("proxyGrid", m_grid.totalGridUnits, Core::kVectorHostAlloc);
+        m_hostAccumBuffer = CreateChildAsset<Host::Vector<vec3>>("accumBuffer", kAccumBufferSize, kVectorHostAlloc);
+        m_hostReduceBuffer = CreateChildAsset<Host::Vector<vec3>>("reduceBuffer", kAccumBufferSize, kVectorHostAlloc);
+        m_hostProxyGrid = CreateChildAsset<Host::Vector<vec3>>("proxyGrid", m_grid.totalGridUnits, kVectorHostAlloc);
 
         // Set the device objects
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -285,7 +285,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::VoxelProxyGridLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::VoxelProxyGridLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(hostOutputImage, blockSize, gridSize);

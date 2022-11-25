@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../CudaAsset.cuh"
+#include "core/Asset.cuh"
 
-namespace Json
+namespace Enso
 {
-    class Node;
-    class Document;
-}
-
-namespace Core
-{
+    namespace Json
+    {
+        class Node;
+        class Document;
+    }
+    
     class Serialisable
     {
     public: 

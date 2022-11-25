@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-namespace Cuda
+namespace Enso
 {
 	__host__ void VerifyTypeSizes();
 }

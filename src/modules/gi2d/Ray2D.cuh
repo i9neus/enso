@@ -1,21 +1,16 @@
 #pragma once
 
-#include "../math/CudaMath.cuh"
+#include "core/math/Math.cuh"
 
-using namespace Cuda;
-
-namespace Cuda
+namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
-}
 
-namespace GI2D
-{   
-    enum HitCtx2DFlags : int 
-    { 
-        kHit2DIsVolume = 1 
+    enum HitCtx2DFlags : int
+    {
+        kHit2DIsVolume = 1
     };
-    
+
     struct HitCtx2D
     {
         __host__ __device__ HitCtx2D() : tFar(kFltMax), flags(0) {}
@@ -35,7 +30,7 @@ namespace GI2D
         uchar       flags;
         uchar       depth;
     };
-    
+
     struct RayRange2D
     {
         __host__ __device__ RayRange2D() : tNear(0.0f), tFar(kFltMax) {}
@@ -43,11 +38,11 @@ namespace GI2D
 
         __host__ __device__ __forceinline__ void ClipFar(const float& t) { tFar = fminf(tFar, t); }
         __host__ __device__ __forceinline__ void ClipNear(const float& t) { tNear = fmaxf(tNear, t); }
-        
+
         float tNear;
         float tFar;
     };
-    
+
     struct RayBasic2D
     {
         __host__ __device__ RayBasic2D() {}
@@ -67,13 +62,13 @@ namespace GI2D
     };
 
     struct Ray2D : public RayBasic2D
-    {           
+    {
         __host__ __device__ Ray2D() : flags(0) {}
         __host__ __device__ Ray2D(const vec2& _o, const vec2& _d) :
             RayBasic2D(_o, _d),
-            flags(0){}
+            flags(0) {}
 
-        __host__ __device__ __forceinline__ void DeriveIndirectSample (const HitCtx2D& hit, const vec2& extant, const vec3& childWeight)
+        __host__ __device__ __forceinline__ void DeriveIndirectSample(const HitCtx2D& hit, const vec2& extant, const vec3& childWeight)
         {
             o = hit.p + hit.n * hit.kickoff;
             d = extant;
@@ -102,6 +97,4 @@ namespace GI2D
             uint        lightIdx;
         };
     };
-
-  
 }

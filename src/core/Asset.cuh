@@ -1,14 +1,14 @@
 #pragma once
 
-#include "CudaCommonIncludes.cuh"
 #include "GlobalResourceRegistry.cuh"
 #include <memory>
-#include "generic/Log.h"
+#include "io/Log.h"
+#include "CudaHeaders.cuh"
 
-namespace Json { class Node; }
-
-namespace Cuda
+namespace Enso
 {
+    namespace Json { class Node; }
+    
     template<typename T/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>  class AssetHandle;
 
     template<typename HostType, typename DeviceType>
@@ -61,7 +61,7 @@ namespace Cuda
         public:
             __host__ virtual ~Asset() {}
 
-            __host__ virtual uint               FromJson(const ::Json::Node& jsonNode, const uint flags) { return 0u; }
+            __host__ virtual uint               FromJson(const Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual AssetType          GetAssetType() const { return AssetType::kUnknown; }
             __host__ const inline std::string&  GetAssetID() const { return m_assetId; }
             __host__ const inline std::string&  GetParentAssetID() const { return m_parentAssetId; }

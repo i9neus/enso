@@ -6,10 +6,9 @@
 #include <memory>
 #include <mutex>
 
-namespace Json { class Node; }
-
-namespace Cuda
+namespace Enso
 {
+    namespace Json { class Node; }
     namespace Host { class Asset; }
     
     class GlobalResourceRegistry
@@ -45,5 +44,5 @@ namespace Cuda
         std::mutex                                                      m_mutex;
     };
 
-    __host__ inline GlobalResourceRegistry& AR() { return Cuda::GlobalResourceRegistry::Get(); }
+    __host__ inline GlobalResourceRegistry& AR() { return GlobalResourceRegistry::Get(); }
 }

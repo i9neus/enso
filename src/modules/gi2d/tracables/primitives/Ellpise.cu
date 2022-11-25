@@ -1,11 +1,10 @@
 #include "Ellipse.cuh"
-#include "kernels/CudaVector.cuh"
+#include "core/Vector.cuh"
+#include "core/math/Math.cuh"
 
 #include <random>
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     __host__ __device__ float Ellipse::Evaluate(const vec2& p, const float& dPdXY) const
     {

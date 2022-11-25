@@ -1,10 +1,9 @@
 #pragma once
 
-#include "IMGUIDataTable.h"
-#include "IMGUIListBox.h"
-#include "IMGUIUtils.h"
+#include "DataTable.h"
+#include "ListBox.h"
 
-namespace Cuda
+namespace Enso
 {
     class LightProbeDataTransformParams;
 }
@@ -17,12 +16,12 @@ public:
 protected:
     void Text(const std::string& text, const ImColor colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f));
 
-    void ConstructJitteredTransform(Cuda::BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale = false);
-    void ConstructJitteredFloat(Cuda::JitterableFloat& value);
+    void ConstructJitteredTransform(BidirectionalTransform& transform, const bool isJitterable, const bool isNonlinearScale = false);
+    void ConstructJitteredFloat(JitterableFloat& value);
     void ConstructComboBox(const std::string& name, const std::vector<std::string>& elements, int& selected);
     void ConstructListBox(const std::string& name, const std::vector<std::string>& listItems, int& selected);
     void ConstructFlagCheckBox(const std::string& name, const uint& mask, uint& flags);
-    void ConstructProbeDataTransform(Cuda::LightProbeDataTransformParams& params);
+    void ConstructProbeDataTransform(LightProbeDataTransformParams& params);
 
     template<typename T>
     void ConstructMappedListBox(const std::string& id, const std::map<const std::string, T>& container, std::string& selectedStr, int& selectedIdx)
@@ -47,22 +46,22 @@ protected:
 class IMGUIJitteredColourPicker
 {
 public:
-    IMGUIJitteredColourPicker(Cuda::JitterableVec3& param, const std::string& id) : m_param(param), m_id(id) {}
+    IMGUIJitteredColourPicker(JitterableVec3& param, const std::string& id) : m_param(param), m_id(id) {}
 
     void Construct();
     void Update();
 
 private:
-    Cuda::vec3                  m_hsv[2];
-    Cuda::vec3                  m_jitter;
-    Cuda::JitterableVec3& m_param;
+    vec3                  m_hsv[2];
+    vec3                  m_jitter;
+    JitterableVec3& m_param;
     std::string                 m_id;
 };
 
 class IMGUIJitteredFlagArray
 {
 public:
-    IMGUIJitteredFlagArray(Cuda::JitterableFlags& param, const std::string& id);
+    IMGUIJitteredFlagArray(JitterableFlags& param, const std::string& id);
 
     void Initialise(const std::vector<std::string>& flagLabels);
     void Construct();
@@ -80,7 +79,7 @@ private:
     int                                 m_numBits;
     const std::array<std::string, 3>    m_switchLabels;
 
-    Cuda::JitterableFlags& m_param;
+    JitterableFlags& m_param;
 
 };
 
@@ -90,17 +89,17 @@ public:
     struct Element
     {
         Element() = default;
-        Element(const std::string& l, const std::string& t, Cuda::JitterableFloat& p, const Cuda::vec3& r) : label(l), tooltip(t), param(&p), range(r) {}
+        Element(const std::string& l, const std::string& t, JitterableFloat& p, const vec3& r) : label(l), tooltip(t), param(&p), range(r) {}
 
         std::string             label;
         std::string             tooltip;
-        Cuda::JitterableFloat* param;
-        Cuda::vec3              range;
+        JitterableFloat* param;
+        vec3              range;
     };
 public:
     IMGUIJitteredParameterTable(const std::string& id) : m_id(id) {}
 
-    void Push(const std::string& label, const std::string& tooltip, Cuda::JitterableFloat& param, const Cuda::vec3& range);
+    void Push(const std::string& label, const std::string& tooltip, JitterableFloat& param, const vec3& range);
     void Construct();
 
 private:
@@ -112,7 +111,7 @@ class IMGUIJitteredParameter : public IMGUIJitteredParameterTable
 {
 public:
     IMGUIJitteredParameter(const std::string& id) : IMGUIJitteredParameterTable(id) {}
-    IMGUIJitteredParameter(Cuda::JitterableFloat& param, const std::string& label, const std::string& tooltip, const Cuda::vec3& range) : IMGUIJitteredParameterTable(label)
+    IMGUIJitteredParameter(JitterableFloat& param, const std::string& label, const std::string& tooltip, const vec3& range) : IMGUIJitteredParameterTable(label)
     {
         IMGUIJitteredParameterTable::Push(label, tooltip, param, range);
     }

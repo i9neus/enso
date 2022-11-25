@@ -2,10 +2,9 @@
 
 #include "PathTracer2D.cuh"
 #include "../SceneObject.cuh"
+#include "core/math/Math.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {     
     struct VoxelProxyGridParams
     {
@@ -28,8 +27,8 @@ namespace GI2D
 
     struct VoxelProxyGridObjects
     {
-        const Device::SceneDescription*                 m_scenePtr = nullptr;
-        Core::Device::Vector<vec3>*                     m_accumBuffer = nullptr;
+        const Device::SceneDescription*         m_scenePtr = nullptr;
+        Device::Vector<vec3>*                   m_accumBuffer = nullptr;
     };
 
     namespace Host { class VoxelProxyGrid; }
@@ -88,7 +87,7 @@ namespace GI2D
 
             AssetHandle<Host::SceneDescription>    m_scene;
 
-            AssetHandle<Core::Host::Vector<vec3>>  m_hostAccumBuffer;
+            AssetHandle<Host::Vector<vec3>>        m_hostAccumBuffer;
 
             Device::VoxelProxyGrid                 m_hostInstance;
         };

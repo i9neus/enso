@@ -1,16 +1,13 @@
 #pragma once
 
-#include "kernels/math/bbox/CudaBBox2.cuh"
+#include "core/math/bbox/BBox2.cuh"
 #include <map>
 
-#include "../CudaAsset.cuh"
-#include "../CudaManagedObject.cuh"
-#include "../CudaImage.cuh"
-#include "../CudaVector.cuh"
+#include "core/Asset.cuh"
+#include "core/Image.cuh"
+#include "core/Vector.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     enum BIHFlags : unsigned char
     {

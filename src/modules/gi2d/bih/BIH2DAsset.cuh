@@ -2,11 +2,11 @@
 
 #include "BIH2DBuilder.cuh"
 
-namespace GI2D
+namespace Enso
 {
     namespace Device
     {
-        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Cuda::Device::Asset
+        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Device::Asset
         {
         public:
             __device__ BIH2DAsset() {}
@@ -16,25 +16,25 @@ namespace GI2D
     }
 
     namespace Host
-    {        
-        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Cuda::Host::AssetAllocator
+    {
+        class BIH2DAsset : public BIH2D<BIH2DFullNode>, public Host::AssetAllocator
         {
             using NodeType = BIH2DFullNode;
             using SubclassType = BIH2D<NodeType>;
-        public:            
+        public:
             __host__ BIH2DAsset(const std::string& id, const uint& minBuildablePrims);
             __host__ virtual ~BIH2DAsset();
 
             __host__ virtual void                   OnDestroyAsset() override final;
 
-            __host__ inline std::vector<uint>&      GetPrimitiveIndices() { return m_primitiveIdxs; }
+            __host__ inline std::vector<uint>& GetPrimitiveIndices() { return m_primitiveIdxs; }
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);
-            __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
-            __host__ BIH2D<BIH2DFullNode>*          GetDeviceInterface() const { return cu_deviceInterface; }
-                
+            __host__ Device::BIH2DAsset* GetDeviceInstance() const { return cu_deviceInstance; }
+            __host__ BIH2D<BIH2DFullNode>* GetDeviceInterface() const { return cu_deviceInterface; }
+
             __host__ void                           Synchronise();
-            __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
-            __host__ const ::Core::Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
+            __host__ const BIH2DStats& GetTreeStats() const { return m_stats; }
+            __host__ const Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
 
             std::function<void(const char*)> m_debugFunctor = nullptr;
 
@@ -42,13 +42,13 @@ namespace GI2D
             __host__ void                           CheckTreeNodes() const;
 
         private:
-            AssetHandle<::Core::Host::Vector<BIH2DFullNode>> m_hostNodes;
+            AssetHandle<Host::Vector<BIH2DFullNode>> m_hostNodes;
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DParams<BIH2DFullNode>              m_params;
             const uint                              m_minBuildablePrims;
 
-            Device::BIH2DAsset*                     cu_deviceInstance;
-            BIH2D<BIH2DFullNode>*                   cu_deviceInterface;
-        };    
-    }
+            Device::BIH2DAsset* cu_deviceInstance;
+            BIH2D<BIH2DFullNode>* cu_deviceInterface;
+        };
+    }   
 }

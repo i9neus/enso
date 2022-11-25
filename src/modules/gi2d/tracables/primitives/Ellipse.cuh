@@ -2,15 +2,10 @@
 
 #include "Primitive2D.cuh"
 
-using namespace Cuda;
-
-namespace Cuda
+namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
-}
 
-namespace GI2D
-{
     class Ellipse : public Primitive2D
     {
     private:
@@ -33,5 +28,5 @@ namespace GI2D
         }
     };
 
-    __host__ void GenerateRandomEllipses(Core::Host::Vector<Ellipse>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
-};
+    __host__ void GenerateRandomEllipses(Host::Vector<Ellipse>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);
+}

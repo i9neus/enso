@@ -107,9 +107,6 @@
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp">
       <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\io\USDIO.cpp">
-      <Filter>io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\win\D3DContainer.cpp">
       <Filter>win</Filter>
     </ClCompile>
@@ -155,20 +152,14 @@
     <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp">
       <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\modules\RendererInterface.cpp">
+    <ClCompile Include="..\..\..\src\modules\ModuleInterface.cpp">
       <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\modules\RendererManager.cpp">
+    <ClCompile Include="..\..\..\src\modules\ModuleManager.cpp">
       <Filter>modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\ComponentManager.cpp">
+    <ClCompile Include="..\..\..\src\ui\UIModuleManager.cpp">
       <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\components\ComponentInterface.cpp">
-      <Filter>ui\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\components\gi2d\GI2DUI.cpp">
-      <Filter>ui\modules\gi2d</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\Widget.cpp">
       <Filter>ui\elements</Filter>
@@ -197,12 +188,12 @@
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp">
       <Filter>core\debug</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp">
+      <Filter>ui\modules\gi2d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\io\ImageIO.h">
-      <Filter>io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\io\USDIO.h">
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\win\D3DContainer.h">
@@ -328,10 +319,10 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h">
       <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\RendererInterface.h">
+    <ClInclude Include="..\..\..\src\modules\ModuleInterface.h">
       <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\RendererManager.h">
+    <ClInclude Include="..\..\..\src\modules\ModuleManager.h">
       <Filter>modules</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\GenericIntersector.cuh">
@@ -340,7 +331,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Ray.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\Ray2D.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
@@ -355,7 +346,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\Serialisable.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Transform.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh">
@@ -418,7 +409,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh">
       <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Primitive.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Primitive2D.cuh">
       <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cuh">
@@ -427,14 +418,8 @@
     <ClInclude Include="..\..\..\src\utils\CudaTests.cuh">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\ComponentManager.h">
+    <ClInclude Include="..\..\..\src\ui\UIModuleManager.h">
       <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\components\ComponentInterface.h">
-      <Filter>ui\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\components\gi2d\GI2DUI.h">
-      <Filter>ui\modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ui\elements\ListBox.h">
       <Filter>ui\elements</Filter>
@@ -454,10 +439,10 @@
     <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h">
       <Filter>ui\tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\win\D3DIncludes.h">
+    <ClInclude Include="..\..\..\src\win\D3DHeaders.h">
       <Filter>win</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\CudaCommonIncludes.cuh">
+    <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\GenericObject.cuh">
@@ -493,10 +478,7 @@
     <ClInclude Include="..\..\..\src\core\UIButtonMap.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\UIStateGraph.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\WindowsHeaders.h">
+    <ClInclude Include="..\..\..\src\core\StateGraph.h">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\Assert.h">
@@ -529,13 +511,7 @@
     <ClInclude Include="..\..\..\src\core\math\Geodesics.cuh">
       <Filter>core\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\math\JitterableParameter.cuh">
-      <Filter>core\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\Math.cuh">
-      <Filter>core\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\math\MathUtils.cuh">
       <Filter>core\math</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\Sampler.cuh">
@@ -585,6 +561,27 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\debug\Backtrace.h">
       <Filter>core\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\win\WindowsHeaders.h">
+      <Filter>win</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Types.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\modules\gi2d\GI2DModule.h">
+      <Filter>ui\modules\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\MathUtils.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\GlobalResourceRegistry.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\VecUtils.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\modules\UIModuleInterface.h">
+      <Filter>ui\modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -666,8 +663,8 @@
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu">
       <Filter>core\math</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\math\JitterableParameter.cu">
-      <Filter>core\math</Filter>
+    <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu">
+      <Filter>core</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

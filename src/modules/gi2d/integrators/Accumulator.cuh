@@ -4,20 +4,18 @@
 #include "../Transform2D.cuh"
 #include "../RenderCtx.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     struct PathTracerLayerObjects
     {
-        ::Core::Vector<vec3>* m_tracables = nullptr;
+        Vector<vec3>* m_tracables = nullptr;
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        Cuda::Device::ImageRGBW* m_accumBuffer = nullptr;
+        Device::ImageRGBW* m_accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class PathTracerLayer : public Cuda::Device::Asset,
+        class PathTracerLayer : public Device::Asset,
             public UILayerParams,
             public PathTracerLayerParams,
             public PathTracerLayerObjects
@@ -26,7 +24,7 @@ namespace GI2D
             __host__ __device__ PathTracerLayer();
 
             __device__ void Render();
-            __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
+            __device__ void Composite(Device::ImageRGBA* outputImage);
 
         private:
             Device::PathTracer2D                            m_overlayTracer;
@@ -45,7 +43,7 @@ namespace GI2D
             virtual ~PathTracerLayer();
 
             __host__ virtual void Render() override final;
-            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
+            __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
@@ -54,10 +52,10 @@ namespace GI2D
             __host__ void Synchronise(const int syncType);
 
         private:
-            GI2D::Device::PathTracerLayer* cu_deviceData = nullptr;
+            Device::PathTracerLayer* cu_deviceData = nullptr;
             PathTracerLayerObjects                  m_deviceObjects;
 
-            AssetHandle<Cuda::Host::ImageRGBW>      m_hostAccumBuffer;
+            AssetHandle<Host::ImageRGBW>      m_hostAccumBuffer;
         };
     }
 }

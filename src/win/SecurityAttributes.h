@@ -1,16 +1,18 @@
 #pragma once
 
-#include "generic/WindowsHeaders.h"
+#include "WindowsHeaders.h"
 
-class WindowsSecurityAttributes 
+namespace Enso
 {
-public:
-	WindowsSecurityAttributes();
-	~WindowsSecurityAttributes();
-	SECURITY_ATTRIBUTES* operator&();
+	class WindowsSecurityAttributes
+	{
+	public:
+		WindowsSecurityAttributes();
+		~WindowsSecurityAttributes();
+		SECURITY_ATTRIBUTES* operator&();
 
-protected:
-	SECURITY_ATTRIBUTES m_winSecurityAttributes;
-	PSECURITY_DESCRIPTOR m_winPSecurityDescriptor;
-};
-
+	protected:
+		SECURITY_ATTRIBUTES m_winSecurityAttributes;
+		PSECURITY_DESCRIPTOR m_winPSecurityDescriptor;
+	};
+}

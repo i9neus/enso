@@ -1,18 +1,18 @@
 #include "SceneDescription.cuh"
-#include "BIH2DAsset.cuh"
+#include "bih/BIH2DAsset.cuh"
 #include "integrators/VoxelProxyGrid.cuh"
-#include "kernels/CudaRenderObjectContainer.cuh"
+#include "core/GenericObjectContainer.cuh"
 #include "lights/Light.cuh"
 
-namespace GI2D
+namespace Enso
 {
     __host__ Host::SceneDescription::SceneDescription(const std::string& id) :
-        Cuda::Host::AssetAllocator(id)
+        Host::AssetAllocator(id)
     {
-        m_hostTracables = CreateChildAsset<GI2D::Host::TracableContainer>("tracables", Core::kVectorHostAlloc);
-        m_hostLights = CreateChildAsset<GI2D::Host::LightContainer>("lights", Core::kVectorHostAlloc);
+        m_hostTracables = CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
+        m_hostLights = CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
 
-        m_hostTracableBIH = CreateChildAsset<GI2D::Host::BIH2DAsset>("bih", 1);
+        m_hostTracableBIH = CreateChildAsset<Host::BIH2DAsset>("bih", 1);
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -41,14 +41,14 @@ namespace GI2D
         END_EXCEPTION_FENCE
     }
 
-    __host__ void Host::SceneDescription::Rebuild(Cuda::AssetHandle<Cuda::RenderObjectContainer>& renderObjects, const GI2D::UIViewCtx& viewCtx, const uint dirtyFlags)
+    __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
         int lightIdx = 0;
         m_hostTracables->Clear();
         m_hostLights->Clear();
 
-        renderObjects->ForEachOfType<Host::Tracable>([&, this](AssetHandle<GI2D::Host::Tracable>& tracable) -> bool
+        renderObjects->ForEachOfType<Host::Tracable>([&, this](AssetHandle<Host::Tracable>& tracable) -> bool
             {
                 // Rebuild the tracable (it will decide whether any action needs to be taken)
                 if (tracable->Rebuild(dirtyFlags, viewCtx))
@@ -57,7 +57,7 @@ namespace GI2D
                     m_hostTracables->EmplaceBack(tracable);
                     
                     // Tracables that are also lights are separated out into their own container
-                    auto light = tracable.DynamicCast<GI2D::Host::Light>();
+                    auto light = tracable.DynamicCast<Host::Light>();
                     if (light) 
                     { 
                         tracable->SetLightIdx(lightIdx++);
@@ -68,8 +68,8 @@ namespace GI2D
                 return true;
             });       
 
-        m_hostTracables->Synchronise(Core::kVectorSyncUpload);
-        m_hostLights->Synchronise(Core::kVectorSyncUpload);
+        m_hostTracables->Synchronise(kVectorSyncUpload);
+        m_hostLights->Synchronise(kVectorSyncUpload);
 
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_scene->m_hostTracables->Size());

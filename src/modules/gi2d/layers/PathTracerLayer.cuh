@@ -5,9 +5,7 @@
 #include "../integrators/Camera2D.cuh"
 #include "../SceneDescription.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {     
     struct PathTracerLayerParams
     {
@@ -25,7 +23,7 @@ namespace GI2D
     struct PathTracerLayerObjects
     {
         const Device::SceneDescription*                 m_scenePtr = nullptr;
-        Cuda::Device::ImageRGBW*                        m_accumBuffer = nullptr;
+        Device::ImageRGBW*                        m_accumBuffer = nullptr;
     };
 
     namespace Device
@@ -40,7 +38,7 @@ namespace GI2D
 
             __device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
-            __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
+            __device__ void Composite(Device::ImageRGBA* outputImage);
 
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
@@ -65,7 +63,7 @@ namespace GI2D
             virtual ~PathTracerLayer();
            
             __host__ virtual void Render() override final;
-            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
+            __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
@@ -74,10 +72,10 @@ namespace GI2D
             __host__ void Synchronise(const int syncType);
 
         private:
-            GI2D::Device::PathTracerLayer*          cu_deviceData = nullptr;
+            Device::PathTracerLayer*          cu_deviceData = nullptr;
             PathTracerLayerObjects                  m_deviceObjects;
 
-            AssetHandle<Cuda::Host::ImageRGBW>      m_hostAccumBuffer;
+            AssetHandle<Host::ImageRGBW>      m_hostAccumBuffer;
         };
     }
 }

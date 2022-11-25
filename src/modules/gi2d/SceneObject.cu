@@ -1,7 +1,7 @@
 #include "SceneObject.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
+#include "core/math/ColourUtils.cuh"
 
-namespace GI2D
+namespace Enso
 {
     __device__ bool Device::SceneObject::EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
@@ -30,7 +30,7 @@ namespace GI2D
     }    
 
     __host__ Host::SceneObject::SceneObject(const std::string& id, Device::SceneObject& hostInstance) :
-        RenderObject(id),
+        GenericObject(id),
         m_dirtyFlags(kGI2DDirtyAll),
         m_isFinalised(false),
         m_hostInstance(hostInstance)

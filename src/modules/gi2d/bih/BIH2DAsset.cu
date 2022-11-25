@@ -1,8 +1,6 @@
 #include "BIH2DAsset.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
     {
@@ -23,7 +21,7 @@ namespace GI2D
         cu_deviceInstance = InstantiateOnDevice<Device::BIH2DAsset>();
         cu_deviceInterface = StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = CreateChildAsset<Core::Host::Vector<NodeType>>(tfm::format("%s_nodes", id), Core::kVectorHostAlloc);
+        m_hostNodes = CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()
@@ -51,7 +49,7 @@ namespace GI2D
         //CheckTreeNodes();
 
         // Synchronise the node data to the device
-        m_hostNodes->Synchronise(Core::kVectorSyncUpload);
+        m_hostNodes->Synchronise(kVectorSyncUpload);
         m_params.isConstructed = m_isConstructed;
         m_params.testAsList = m_testAsList;
         m_params.bBox = m_treeBBox;

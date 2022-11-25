@@ -1,8 +1,8 @@
-#include "GI2DUI.h"
+#include "GI2DModule.h"
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
-namespace Gui
+namespace Enso
 {
     /*void GI2DUI::ConstructToolbox()
     {

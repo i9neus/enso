@@ -1,8 +1,8 @@
 #pragma once
 
-#include "CudaCommonIncludes.cuh"
+#include "CudaHeaders.cuh"
 
-namespace Core
+namespace Enso
 {
     namespace detail
     {

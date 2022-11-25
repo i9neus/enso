@@ -36,25 +36,28 @@ The MIT License (MIT)
 
 #pragma once
 
-#include "generic/WindowsHeaders.h"
+#include "WindowsHeaders.h"
 
-class DX12CudaSample;
-class DXSample;
-class D3DContainer;
-
-class Win32Application
+namespace Enso
 {
-public:
-	static int Run(D3DContainer& pSample, HINSTANCE hInstance, int nCmdShow);
-    static HWND& GetHwnd()
+    class DX12CudaSample;
+    class DXSample;
+    class D3DContainer;
+
+    class Win32Application
     {
-        static HWND hwnd = nullptr;
-        return hwnd;
-    }
+    public:
+        static int Run(D3DContainer& pSample, HINSTANCE hInstance, int nCmdShow);
+        static HWND& GetHwnd()
+        {
+            static HWND hwnd = nullptr;
+            return hwnd;
+        }
 
-protected:
-	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-    static void InitialiseIMGUI(HWND hWnd);
-    static void DestroyIMGUI();
+    protected:
+        static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+        static void InitialiseIMGUI(HWND hWnd);
+        static void DestroyIMGUI();
 
-};
+    };
+}

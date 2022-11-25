@@ -1,14 +1,14 @@
 #pragma once
 
-#include "kernels/CudaAsset.cuh"
+#include "core/Asset.cuh"
 #include "../Transform2D.cuh"
 #include "../RenderCtx.cuh"
 
-namespace GI2D
+namespace Enso
 {
     namespace Device
     {
-        class Camera2D : public Cuda::Device::Asset
+        class Camera2D : public Device::Asset
         {
         public:
             __host__ __device__ Camera2D() {}

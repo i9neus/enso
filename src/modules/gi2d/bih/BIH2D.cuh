@@ -1,9 +1,9 @@
 #pragma once
 
 #include "BIH2DNode.cuh"
-#include "GenericIntersector.cuh"
+#include "../GenericIntersector.cuh"
 
-namespace GI2D
+namespace Enso
 {
     #define kNear 0
     #define kFar 1
@@ -16,7 +16,7 @@ namespace GI2D
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
-        ::Core::Vector<NodeDataType>* nodes = nullptr;
+        Generic::Vector<NodeDataType>* nodes = nullptr;
         uint                        numPrims = 0;
     };
 

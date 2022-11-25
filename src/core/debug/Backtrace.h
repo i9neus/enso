@@ -3,11 +3,14 @@
 #include <vector>
 #include <string>
 
-namespace StackBacktrace
+namespace Enso
 {
-    void                        Clear();
-    void                        Cache();
-    std::vector<std::string>    Get();
-    void                        Print();
-}
+    namespace StackBacktrace
+    {
+        void                        Clear();
+        void                        Cache();
+        std::vector<std::string>    Get();
+        void                        Print();
+    }
     //std::string                 ExceptionBacktrace(_EXCEPTION_POINTERS* exPtrs);
+}

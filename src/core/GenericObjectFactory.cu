@@ -1,58 +1,28 @@
-﻿#include "generic/JsonUtils.h"
+﻿#include "io/json/JsonUtils.h"
 
-#include "CudaRenderObjectFactory.cuh"
-#include "CudaRenderObjectContainer.cuh"
+#include "GenericObjectFactory.cuh"
+#include "GenericObjectContainer.cuh"
 
-/*#include "tracables/CudaSphere.cuh"
-#include "tracables/CudaPlane.cuh"
-#include "tracables/CudaCornellBox.cuh"
-#include "tracables/CudaBox.cuh"
-#include "tracables/CudaSDF.cuh"
-#include "tracables/CudaKIFS.cuh"
-
-#include "lights/CudaQuadLight.cuh"
-#include "lights/CudaSphereLight.cuh"
-#include "lights/CudaEnvironmentLight.cuh"
-#include "lights/CudaDistantLight.cuh"
-
-#include "bxdfs/CudaLambert.cuh"
-
-#include "materials/CudaSimpleMaterial.cuh"
-#include "materials/CudaCornellMaterial.cuh"
-#include "materials/CudaKIFSMaterial.cuh"
-
-#include "cameras/CudaPerspectiveCamera.cuh"
-#include "cameras/CudaLightProbeCamera.cuh"
-
-#include "lightprobes/CudaLightProbeKernelFilter.cuh"
-#include "lightprobes/CudaLightProbeRegressionFilter.cuh"
-#include "lightprobes/CudaLightProbeIO.cuh"
-
-#include "ml/CudaGrid2Grid.cuh"
-#include "ml/CudaFCNNProbeDenoiser.cuh"
-
-#include "CudaWavefrontTracer.cuh"*/
-
-namespace Cuda
+namespace Enso
 {            
-    RenderObjectFactory::RenderObjectFactory() :
+    GenericObjectFactory::GenericObjectFactory() :
         m_newInstanceCounter(0)
     {
         
     }
 
-    __host__ void RenderObjectFactory::RegisterGroup(const std::string& groupName, const uint flags)
+    __host__ void GenericObjectFactory::RegisterGroup(const std::string& groupName, const uint flags)
     {
         m_groupList.emplace_back(ObjectGroup{ groupName, flags });
     }
    
-    __host__ void RenderObjectFactory::InstantiateGroup(const ::Json::Node& node, const std::string& objectTypeStr, AssetHandle<RenderObjectContainer>& renderObjects)
+    __host__ void GenericObjectFactory::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, AssetHandle<GenericObjectContainer>& renderObjects)
     {
-        for (::Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
+        for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
         {
-            AssetHandle<Host::RenderObject> newObject;
+            AssetHandle<Host::GenericObject> newObject;
             std::string newId = it.Name();
-            ::Json::Node childNode = *it;
+            Json::Node childNode = *it;
 
             if (newId.empty())
             {
@@ -60,10 +30,10 @@ namespace Cuda
                 continue;
             }
 
-            if (!childNode.GetBool("enabled", true, ::Json::kSilent)) { continue; }
+            if (!childNode.GetBool("enabled", true, Json::kSilent)) { continue; }
 
             std::string newClass;
-            if (!childNode.GetValue("class", newClass, ::Json::kRequiredWarn)) { continue; }
+            if (!childNode.GetValue("class", newClass, Json::kRequiredWarn)) { continue; }
 
             {
                 Log::Indent indent(tfm::format("Creating new object '%s'...\n", newId));
@@ -80,7 +50,7 @@ namespace Cuda
                 const uint instanceFlags = instantiator.flagFunctor();
 
                 int numInstances = 1;
-                if (childNode.GetValue("instances", numInstances, ::Json::kSilent))
+                if (childNode.GetValue("instances", numInstances, Json::kSilent))
                 {
                     // Check if this class allows for multiple instances from the same object
                     if (!(instanceFlags & kInstanceFlagsAllowMultipleInstances))
@@ -129,12 +99,12 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectFactory::EmplaceNewObject(AssetHandle<Host::RenderObject> newObject, AssetHandle<RenderObjectContainer>& renderObjects)
+    __host__ void GenericObjectFactory::EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, AssetHandle<GenericObjectContainer>& renderObjects)
     {
         renderObjects->Emplace(newObject);
 
         // The render object may have generated some of its own assets. Add them to the object list. 
-        std::vector<AssetHandle<Host::RenderObject>> childObjects = newObject->GetChildObjectHandles();
+        std::vector<AssetHandle<Host::GenericObject>> childObjects = newObject->GetChildObjectHandles();
         if (!childObjects.empty())
         {
             Log::Debug("Captured %i child objects:\n", childObjects.size());
@@ -150,35 +120,35 @@ namespace Cuda
         }
     }
 
-    __host__ void RenderObjectFactory::InstantiateFromJson(const ::Json::Node& rootNode, AssetHandle<RenderObjectContainer>& renderObjects)
+    __host__ void GenericObjectFactory::InstantiateFromJson(const Json::Node& rootNode, AssetHandle<GenericObjectContainer>& renderObjects)
     {
         for (const auto& group : m_groupList)
         {
-            const ::Json::Node childNode = rootNode.GetChildObject(group.name, group.flags);
+            const Json::Node childNode = rootNode.GetChildObject(group.name, group.flags);
             InstantiateGroup(childNode, group.name, renderObjects);
         }
     }  
 
-    __host__ AssetHandle<Host::RenderObject> RenderObjectFactory::InstantiateFromHash(const uint hash, AssetHandle<RenderObjectContainer>& renderObjects)
+    __host__ AssetHandle<Host::GenericObject> GenericObjectFactory::InstantiateFromHash(const uint hash, AssetHandle<GenericObjectContainer>& renderObjects)
     {
         // Look for an instantiator that matches the hash
         auto it = m_hashMap.find(hash);
         if (it == m_hashMap.end()) 
         { 
             Log::Error("Error: an object with hash %i does not exist.", hash);
-            return AssetHandle<Host::RenderObject>();
+            return AssetHandle<Host::GenericObject>();
         }
         auto instantiator = *it->second;
 
         // Instantiate the object
         Json::Document childNode;
-        AssetHandle<Host::RenderObject> newObject = instantiator.instanceFunctor(tfm::format("object%i", ++m_newInstanceCounter), childNode);
+        AssetHandle<Host::GenericObject> newObject = instantiator.instanceFunctor(tfm::format("object%i", ++m_newInstanceCounter), childNode);
         IsOk(cudaDeviceSynchronize());
 
         if (!newObject)
         {
             Log::Error("Failed to instantiate object of class '%s'.\n", instantiator.id);
-            return AssetHandle<Host::RenderObject>();
+            return AssetHandle<Host::GenericObject>();
         }
 
         // Emplace the newly created object

@@ -1,15 +1,20 @@
 #pragma once
 
+#include "debug/Backtrace.h"
+#include "thirdparty/tinyformat/tinyformat.h"
+#include "Types.h"
+
+namespace Enso
+{
+
 #ifdef DISABLE_ASSERTS
 
 #define Assert(condition, message)
 #define AssertMsg(condition, message, ...)
 #define AssertRethrow(condition, message)
+}
 
 #else
-
-#include "debug/Backtrace.h"
-#include "thirdparty/tinyformat/tinyformat.h"
 
 #define BEGIN_EXCEPTION_FENCE try { 
 
@@ -88,4 +93,6 @@
 #define DAssertRethrow(condition, message)
 #endif
 
-#endif
+#endif // #ifdef DISABLE_ASSERTS 
+
+}

@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "CudaVecBase.cuh"
-#include "CudaVec2.cuh"
+#include "VecBase.cuh"
+#include "Vec2.cuh"
 
-namespace Cuda
+namespace Enso
 {		
     // Full specialisation of __vec_swizzle for vec3
 	template<>
@@ -33,8 +33,7 @@ namespace Cuda
 			__vec_swizzle<float, 3, 2, 2, 0> zx; __vec_swizzle<float, 3, 2, 2, 1> zy; /*__vec_swizzle<float, 3, 2, 2, 2> zz;*/
 		};
 
-        __vec_swizzle() = default;
-        __vec_swizzle(const __vec_swizzle&) = default;
+        __host__ __device__ __vec_swizzle() {}
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const float v) : x(v), y(v), z(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const float& x_, const float& y_, const float& z_) : x(x_), y(y_), z(z_) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}

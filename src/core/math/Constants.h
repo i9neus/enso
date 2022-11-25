@@ -1,5 +1,10 @@
 #pragma once
 
+#include "../Types.h"
+
+namespace Enso
+{
+
 #define kPi         3.14159265359f
 #define kTwoPi      (2 * kPi)
 #define kFourPi     (4 * kPi)
@@ -10,6 +15,4 @@
 #define kInvPhi     (1 / kPhi)
 #define kLog2       0.6931471805599453f
 
-using uint = unsigned int;
-using uchar = unsigned char;
-using ushort = unsigned short;
+}

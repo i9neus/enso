@@ -1,30 +1,30 @@
-#include "ComponentManager.h"
+#include "UIModuleManager.h"
 #include "thirdparty/imgui/backends/imgui_impl_dx12.h"
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
-#include "components/gi2d/GI2DUI.h"
-#include "renderers/RendererManager.h"
+#include "modules/gi2d/GI2DModule.h"
+#include "modules/ModuleManager.h"
 
-namespace Gui
+namespace Enso
 {
-    ComponentManager::ComponentManager(HWND hwnd, std::shared_ptr<RendererManager>& rendererManager) :
+    UIModuleManager::UIModuleManager(HWND hwnd, std::shared_ptr<ModuleManager>& moduleManager) :
         m_showConsole(false)
     {
         m_hWnd = hwnd;
-        m_rendererManager = rendererManager;
-        m_activeRenderer = m_rendererManager->GetRendererPtr();
+        m_moduleManager = moduleManager;
+        m_activeRenderer = m_moduleManager->GetRendererPtr();
 
         m_gi2DUI = std::make_unique<GI2DUI>(m_commandQueue);
     }
 
-    ComponentManager::~ComponentManager()
+    UIModuleManager::~UIModuleManager()
     {
         Destroy();
 
         m_gi2DUI.reset();
     }
 
-    void ComponentManager::CreateD3DDeviceObjects(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
+    void UIModuleManager::CreateD3DDeviceObjects(ComPtr<ID3D12RootSignature>& rootSignature, ComPtr<ID3D12Device>& device, const int numConcurrentFrames)
     {
         Assert(rootSignature);
         Assert(device);
@@ -44,7 +44,7 @@ namespace Gui
         Log::Success("IMGUI successfully initialised!\n");
     }
 
-    void ComponentManager::Destroy()
+    void UIModuleManager::Destroy()
     {
         ImGui::ImplDX12_Shutdown();
 
@@ -53,7 +53,7 @@ namespace Gui
         Log::Write("Destroyed IMGUI D3D objects.\n");
     }
 
-    void ComponentManager::PollRenderer()
+    void UIModuleManager::PollRenderer()
     {
         Assert(m_activeRenderer);
         Assert(m_activeRenderer->Poll(m_renderStateJson));
@@ -64,10 +64,10 @@ namespace Gui
             managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
             managerJson.GetValue("smoothedFrameTime", m_meanFrameTime, Json::kRequiredAssert);
             managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
-        } */           
+        } */
     }
 
-    void ComponentManager::ConstructConsole()
+    void UIModuleManager::ConstructConsole()
     {
         ImGui::Begin("Console");
 
@@ -77,14 +77,14 @@ namespace Gui
         ImGui::End();
     }
 
-    void ComponentManager::Construct()
+    void UIModuleManager::Construct()
     {
         // Clear out the command queue ready for the next frame
         m_commandQueue.Clear();
-        
+
         // Poll the renderer for data to populate the UI
         PollRenderer();
-        
+
         // Start the Dear ImGui frame
         ImGui::ImplDX12_NewFrame();
         ImGui::ImplWin32_NewFrame();
@@ -102,7 +102,7 @@ namespace Gui
         ImGui::Begin("Debug");
         for (int i = 0; i < 2; ++i)
         {
-            switch (m_rendererManager->diag[i])
+            switch (m_moduleManager->diag[i])
             {
             case 0: ImGui::Text("0000"); break;
             case 1: ImGui::Text("11111111"); break;
@@ -140,7 +140,7 @@ namespace Gui
         DispatchCommands();
     }
 
-    void ComponentManager::DispatchCommands()
+    void UIModuleManager::DispatchCommands()
     {
         if (!m_commandQueue.IsEmpty())
         {
@@ -148,7 +148,7 @@ namespace Gui
         }
     }
 
-    void ComponentManager::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)
+    void UIModuleManager::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)
     {
         Construct();
 

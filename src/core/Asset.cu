@@ -1,8 +1,9 @@
-#include "CudaAsset.cuh"
-#include "generic/Hash.h"
+#include "math/Math.cuh"
+#include "Asset.cuh"
+#include "Hash.h"
 #include "thirdparty/tinyformat/tinyformat.h"
 
-namespace Cuda
+namespace Enso
 {    
     __host__ std::string Host::Asset::MakeTemporaryID()
     {

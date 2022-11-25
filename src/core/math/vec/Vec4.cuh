@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "CudaVecBase.cuh"
-#include "CudaVec3.cuh"
+#include "VecBase.cuh"
+#include "Vec3.cuh"
 
-namespace Cuda
+namespace Enso
 {		    
     template<>
     struct __align__(16) __vec_swizzle<float, 4, 4, 0, 1, 2, 3>
@@ -105,8 +105,7 @@ namespace Cuda
             /*__vec_swizzle<float, 4, 2, 3, 0> wx;*/ /*__vec_swizzle<float, 4, 2, 3, 1> wy;*/ /*__vec_swizzle<float, 4, 2, 3, 2> wz;*/ /*__vec_swizzle<float, 4, 2, 3, 3> ww;*/
 		};        
 
-        __vec_swizzle() = default;
-        __vec_swizzle(const __vec_swizzle&) = default;
+        __host__ __device__ __vec_swizzle() {}
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const float v) : x(v), y(v), z(v), w(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const float& x_, const float& y_, const float& z_, const float& w_) : x(x_), y(y_), z(z_), w(w_) {}
 

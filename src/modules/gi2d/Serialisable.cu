@@ -1,6 +1,6 @@
 #include "Serialisable.cuh"
 
-namespace Core
+namespace Enso
 {
 
 }

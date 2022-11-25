@@ -1,7 +1,7 @@
 #include "Tracable.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
+#include "core/math/ColourUtils.cuh"
 
-namespace GI2D
+namespace Enso
 {
     __host__ __device__ bool Device::Tracable::IntersectBBox(const BBox2f& bBox) const
     {

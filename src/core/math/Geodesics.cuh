@@ -1,9 +1,9 @@
-#include "CudaMath.cuh"
-#include "generic/Log.h"
+#include "Math.cuh"
+#include "io/Log.h"
 
 #include <vector>
 
-namespace Cuda
+namespace Enso
 {
     enum GeodesicClass : int
     {

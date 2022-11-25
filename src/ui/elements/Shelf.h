@@ -36,7 +36,7 @@ public:
     virtual bool IsDirty() const = 0;
     virtual void MakeClean() = 0;
     virtual void MakeDirty() = 0;
-    virtual Cuda::AssetType GetRenderObjectAssetType() const = 0;
+    virtual AssetType GetGenericObjectAssetType() const = 0;
     virtual void OnUpdateRenderObjectStatistics(const Json::Node& shelfNode, const Json::Node& rootNode) {}
 
     virtual void Jitter(const uint flags, const uint operation) = 0;
@@ -110,7 +110,7 @@ public:
 
     virtual void Reset() { Update(); }
 
-    virtual Cuda::AssetType GetRenderObjectAssetType() const override { return ObjectType::GetAssetStaticType(); }
+    virtual AssetType GetGenericObjectAssetType() const override { return ObjectType::GetAssetStaticType(); }
 
     ParamsType& GetParamsObject() { return m_paramsBuffer[0]; }
 

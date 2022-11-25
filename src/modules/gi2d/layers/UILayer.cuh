@@ -3,24 +3,13 @@
 #include "../UICtx.cuh"
 
 #include "../Common.cuh"
-#include "kernels/CudaManagedObject.cuh"
-#include "kernels/CudaImage.cuh"
+#include "core/Image.cuh"
 
 #include "../tracables/Tracable.cuh"
-#include "kernels/gi2d/FwdDecl.cuh"
+#include "../FwdDecl.cuh"
 #include "../SceneDescription.cuh"
 
-using namespace Cuda;
-
-//namespace Cuda
-//{
-//    namespace Host { template<typename T> class AssetVector; }
-//}
-
-namespace Cuda { namespace Host { template<typename, typename> class AssetVector; } }
-namespace GI2D { namespace Host { class BIH2DAsset; } }
-
-namespace GI2D
+namespace Enso
 {
     struct UILayerParams
     {
@@ -35,7 +24,7 @@ namespace GI2D
 
     namespace Device
     {
-        class UILayer : public Cuda::Device::Asset,
+        class UILayer : public Device::Asset,
                         public UILayerParams
         {
         public:
@@ -47,7 +36,10 @@ namespace GI2D
 
     namespace Host
     {        
-        class UILayer : public Cuda::Host::AssetAllocator,
+        template<typename, typename> class AssetVector;
+        class BIH2DAsset;
+        
+        class UILayer : public Host::AssetAllocator,
                         public UILayerParams
         {
         public:
@@ -61,7 +53,7 @@ namespace GI2D
 
             __host__ virtual void   OnPreRender() {}
             __host__ virtual void   Render() = 0;
-            __host__ virtual void   Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const = 0;
+            __host__ virtual void   Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const = 0;
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
             { 
@@ -80,7 +72,7 @@ namespace GI2D
             }
             
             template<typename T>
-            __host__ void           KernelParamsFromImage(const AssetHandle<Cuda::Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
+            __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
             {
                 const auto& meta = image->GetMetadata();
                 blockSize = dim3(16, 16, 1);

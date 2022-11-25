@@ -1,22 +1,22 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
+#include "math/Math.cuh"
 #include "AssetAllocator.cuh"
 #include <unordered_map>
-#include "CudaRenderObject.cuh"
-//#include "CudaVector.cuh"
+#include "GenericObject.cuh"
+//#include "Vector.cuh"
 
-namespace Cuda
+namespace Enso
 {    
-    enum class RenderObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
+    enum class GenericObjectContainerResult : uint { kSuccess = 0, kNotFound, kInvalidType };
     
-    class RenderObjectContainer : public Host::AssetAllocator
+    class GenericObjectContainer : public Host::AssetAllocator
     {
         // FIXME: Weak pointers need to replaced with an integrated strong/weak asset handle
-        using RenderObjectMap = std::unordered_map<std::string, AssetHandle<Host::RenderObject>>;
-        using WeakRenderObjectMap = std::unordered_map<std::string, WeakAssetHandle<Host::RenderObject>>;
+        using RenderObjectMap = std::unordered_map<std::string, AssetHandle<Host::GenericObject>>;
+        using WeakRenderObjectMap = std::unordered_map<std::string, WeakAssetHandle<Host::GenericObject>>;
         
-        using WeakRenderObjectArray = std::vector< WeakAssetHandle<Host::RenderObject>>;
+        using WeakRenderObjectArray = std::vector< WeakAssetHandle<Host::GenericObject>>;
 
     private:
         RenderObjectMap                         m_objectMap;
@@ -38,36 +38,36 @@ namespace Cuda
             __Iterator& operator++() { ++m_it; return *this; }
             bool operator!=(const __Iterator& rhs) const { return m_it != rhs.m_it; }
 
-            template<bool C = IsConst> inline typename std::enable_if<!C, AssetHandle<Host::RenderObject>&>::type operator*() { return m_it->second; }
-            template<bool C = IsConst> inline typename std::enable_if<C, const AssetHandle<Host::RenderObject>&>::type operator*() const { return m_it->second; }
+            template<bool C = IsConst> inline typename std::enable_if<!C, AssetHandle<Host::GenericObject>&>::type operator*() { return m_it->second; }
+            template<bool C = IsConst> inline typename std::enable_if<C, const AssetHandle<Host::GenericObject>&>::type operator*() const { return m_it->second; }
         };
 
         using Iterator = __Iterator<RenderObjectMap::iterator, false>;
         using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
 
-        __host__ RenderObjectContainer(const std::string& id) : AssetAllocator(id), m_uniqueIdx(0){}
-        __host__ RenderObjectContainer(const RenderObjectContainer&) = delete;
-        __host__ RenderObjectContainer(const RenderObjectContainer&&) = delete;
+        __host__ GenericObjectContainer(const std::string& id) : AssetAllocator(id), m_uniqueIdx(0){}
+        __host__ GenericObjectContainer(const GenericObjectContainer&) = delete;
+        __host__ GenericObjectContainer(const GenericObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;
 
-        __host__ AssetHandle<Host::RenderObject> operator[](const uint idx);
+        __host__ AssetHandle<Host::GenericObject> operator[](const uint idx);
 
         __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
         __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }
         __host__ ConstIterator begin() const noexcept { return ConstIterator(m_objectMap.cbegin()); }
         __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
 
-        template<typename ObjectType = Host::RenderObject>
+        template<typename ObjectType = Host::GenericObject>
         __host__ AssetHandle<ObjectType> FindByID(const std::string& id) const
         {
             auto it = m_objectMap.find(id);
             return (it == m_objectMap.end()) ? AssetHandle<ObjectType>(nullptr) : it->second.DynamicCast<ObjectType>();
         }
 
-        __host__ AssetHandle<Host::RenderObject> FindByDAG(const std::string& id) const
+        __host__ AssetHandle<Host::GenericObject> FindByDAG(const std::string& id) const
         {
             auto it = m_dagMap.find(id);
-            return (it == m_dagMap.end()) ? AssetHandle<Host::RenderObject>(nullptr) : AssetHandle<Host::RenderObject>(it->second);
+            return (it == m_dagMap.end()) ? AssetHandle<Host::GenericObject>(nullptr) : AssetHandle<Host::GenericObject>(it->second);
         }
 
         template<typename DowncastType, typename OpFunctor>
@@ -123,9 +123,9 @@ namespace Cuda
         __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
         __host__ size_t Size() const { return m_objectMap.size(); }
 
-        __host__ void Emplace(AssetHandle<Host::RenderObject>& newObject, const bool requireDAGPath = true);
+        __host__ void Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath = true);
 
-        __host__ void Erase(const Host::RenderObject& obj);
+        __host__ void Erase(const Host::GenericObject& obj);
         __host__ void Erase(const std::string& id);
         __host__ void Erase(const uint objectIdx);
 
@@ -136,7 +136,7 @@ namespace Cuda
             {
                 // Try downcasting the objeect to the specified type.
                 Assert(!m_objectVector[idx].expired());
-                AssetHandle<DowncastType> object = AssetHandle<Host::RenderObject>(m_objectVector[idx]).DynamicCast<DowncastType>();
+                AssetHandle<DowncastType> object = AssetHandle<Host::GenericObject>(m_objectVector[idx]).DynamicCast<DowncastType>();
                 if (!object) { continue; }
 
                 // Call the functor to see whether it can be deleted

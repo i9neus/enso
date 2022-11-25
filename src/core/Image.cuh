@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
-#include "math/CudaColourUtils.cuh"
+#include "math/Math.cuh"
+#include "math/ColourUtils.cuh"
 #include "AssetAllocator.cuh"
 
 //#define CudaImageBoundCheck
 
-namespace Cuda
+namespace Enso
 {		
 	enum ImageAccessSignal : unsigned int { kImageUnlocked, kImageReadLocked, kImageWriteLocked };
 
@@ -49,13 +49,13 @@ namespace Cuda
 				return cu_data[xy.y * m_width + xy.x];
 			}
 
-			__device__ __forceinline__ typename std::enable_if<std::is_same<T, vec4>::value>::type Blend(const ivec2& xy, const vec4& rgba)
+			__device__ __forceinline__ typename std::enable_if<std::is_same<T, vec4>::value>::type BlendPixel(const ivec2& xy, const vec4& rgba)
 			{
 #ifdef CudaImageBoundCheck
 				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
 #endif
 				auto& pixel = cu_data[xy.y * m_width + xy.x];
-				pixel = Cuda::Blend(pixel, rgba);
+				pixel = Blend(pixel, rgba);
 			}
 
 			__device__ __inline__ T Lerp(const vec2& xy)

@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "CudaColourUtils.cuh"
+#include "ColourUtils.cuh"
 
-namespace Cuda
+namespace Enso
 {
     __host__ __device__  vec3 Hue(float phi)
     {

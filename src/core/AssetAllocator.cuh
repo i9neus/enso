@@ -1,8 +1,8 @@
 #pragma once
 
-#include "CudaAsset.cuh"
+#include "Asset.cuh"
 
-namespace
+namespace Enso
 {
 	template<typename ObjectType, typename UpcastType, typename... Pack>
 	__global__ void KernelCreateDeviceInstance(UpcastType** newInstance, Pack... args)
@@ -48,10 +48,7 @@ namespace
 	{
 		if (cu_instance != nullptr) { delete cu_instance; }
 	}
-}
-
-namespace Cuda
-{
+	
 	enum MemoryAllocFlags : uint { kCudaMemoryManaged = 1 };
 	
 	namespace Host

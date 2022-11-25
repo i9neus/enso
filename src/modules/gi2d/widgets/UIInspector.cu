@@ -1,10 +1,8 @@
 #include "UIInspector.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
-#include "../BIH2DAsset.cuh"
+#include "core/math/ColourUtils.cuh"
+#include "../bih/BIH2DAsset.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     __device__ vec4 Device::UIInspector::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
@@ -21,9 +19,9 @@ namespace GI2D
         return vec4(kOne, saturatef((outerRadius - distance) / viewCtx.dPdXY) * saturatef((distance - innerRadius) / viewCtx.dPdXY));
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::UIInspector::Instantiate(const std::string& id)
+    __host__ AssetHandle<Host::SceneObject> Host::UIInspector::Instantiate(const std::string& id)
     {
-        return CreateAsset<GI2D::Host::UIInspector>(id);
+        return CreateAsset<Host::UIInspector>(id);
     }
 
     __host__ Host::UIInspector::UIInspector(const std::string& id) :

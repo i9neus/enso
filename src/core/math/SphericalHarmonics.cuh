@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "CudaMath.cuh"
+#include "Math.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	namespace SH
 	{

@@ -1,14 +1,12 @@
 #include "PathTracerLayer.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
-#include "generic/Hash.h"
+#include "core/math/ColourUtils.cuh"
+#include "core/Hash.h"
 
 #include "../RenderCtx.cuh"
 #include "../SceneDescription.cuh"
 #include "../integrators/VoxelProxyGrid.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {        
     __host__ __device__ PathTracerLayerParams::PathTracerLayerParams()
     {
@@ -62,7 +60,7 @@ namespace GI2D
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
-    __device__ void Device::PathTracerLayer::Composite(Cuda::Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::PathTracerLayer::Composite(Device::ImageRGBA* deviceOutputImage)
     {        
         assert(deviceOutputImage);
 
@@ -94,7 +92,7 @@ namespace GI2D
         UILayer(id, scene)
     {
         // Create some Cuda objects
-        m_hostAccumBuffer = CreateChildAsset<Cuda::Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
+        m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
         m_deviceObjects.m_scenePtr = scene->GetDeviceInstance(); 
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -151,7 +149,7 @@ namespace GI2D
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::PathTracerLayer::Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::PathTracerLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
         KernelParamsFromImage(hostOutputImage, blockSize, gridSize);

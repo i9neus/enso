@@ -2,7 +2,7 @@
 #include "../GenericIntersector.cuh"
 #include "Light.cuh"
 
-namespace GI2D
+namespace Enso
 {
     __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
@@ -51,9 +51,9 @@ namespace GI2D
         }
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::OmniLight::Instantiate(const std::string& id, const Json::Node&)
+    __host__ AssetHandle<Host::GenericObject> Host::OmniLight::Instantiate(const std::string& id, const Json::Node&)
     {
-        return CreateAsset<GI2D::Host::OmniLight>(id);
+        return CreateAsset<Host::OmniLight>(id);
     }
 
     __host__ Host::OmniLight::OmniLight(const std::string& id) :

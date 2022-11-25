@@ -1,8 +1,8 @@
 ﻿#include "CudaTests.cuh"
-#include "math/CudaMath.cuh"
-#include "tracables/CudaKIFS.cuh"
+#include "core/math/Math.cuh"
+#include "io/Log.h"
 
-namespace Cuda
+namespace Enso
 {
 	struct TypeSizeTestResults
 	{
@@ -30,8 +30,6 @@ namespace Cuda
 		results->mat4Size = sizeof(mat4);
 		results->mat3Size = sizeof(mat3);
 		results->ptrSize = sizeof(int*);
-
-		results->kifsScratchpadSize = Device::KIFS::SizeOfSharedMemory();
 	}
 
 	__host__ void VerifyTypeSizes()

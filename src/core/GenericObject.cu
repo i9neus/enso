@@ -1,28 +1,27 @@
-﻿#include "CudaRenderObject.cuh"
-#include "generic/JsonUtils.h"
-#include "generic/FilesystemUtils.h"
+﻿#include "GenericObject.cuh"
+#include "io/json/JsonUtils.h"
+#include "io/FilesystemUtils.h"
 
-namespace Cuda
+namespace Enso
 {    
-    __host__ __device__ RenderObjectParams::RenderObjectParams() :
-        flags(0, 2) {}
+    __host__ __device__ GenericObjectParams::GenericObjectParams()
+        {}
 
-    __host__ void RenderObjectParams::ToJson(::Json::Node& node) const
+    __host__ void GenericObjectParams::ToJson(Json::Node& node) const
     {
-        flags.ToJson("objectFlags", node);
+        //flags.ToJson("objectFlags", node);
     }
 
-    __host__ uint RenderObjectParams::FromJson(const ::Json::Node& node, const uint flags)
+    __host__ uint GenericObjectParams::FromJson(const Json::Node& node, const uint flags)
     {
-        return this->flags.FromJson("objectFlags", node, flags);
+        return 0u;
     }
 
-    __host__ void RenderObjectParams::Randomise(const vec2& range)
+    __host__ void GenericObjectParams::Randomise(const vec2& range)
     {
-        flags.Update(kJitterRandomise);
     }
     
-    __host__ void Host::RenderObject::UpdateDAGPath(const ::Json::Node& node)
+    __host__ void Host::GenericObject::UpdateDAGPath(const Json::Node& node)
     {
         if (!node.HasDAGPath())
         {
@@ -33,14 +32,14 @@ namespace Cuda
         SetDAGPath(node.GetDAGPath());
     }
     
-    __host__ void Host::RenderObject::RegisterEvent(const std::string& eventID)
+    __host__ void Host::GenericObject::RegisterEvent(const std::string& eventID)
     {
         AssertMsgFmt(m_eventRegistry.find(eventID) == m_eventRegistry.end(), "Event '%s' already registered", eventID.c_str());
 
         m_eventRegistry.emplace(eventID);
     }
 
-    __host__ void Host::RenderObject::Unlisten(const RenderObject& owner, const std::string& eventID)
+    __host__ void Host::GenericObject::Unlisten(const GenericObject& owner, const std::string& eventID)
     {
         for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
         {
@@ -55,7 +54,7 @@ namespace Cuda
         Log::Error("Internal error: deligate '%s' ['%s' -> '%s'] can't be deregistered because it does not exist.", eventID, GetAssetID(), owner.GetAssetID());
     }
 
-    __host__ void Host::RenderObject::OnEvent(const std::string& eventID)
+    __host__ void Host::GenericObject::OnEvent(const std::string& eventID)
     {
         for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
         {

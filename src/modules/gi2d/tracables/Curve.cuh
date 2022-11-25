@@ -1,14 +1,9 @@
 #pragma once
 
 #include "Tracable.cuh"
-
-#define FWD_DECL_VECTOR
-#define FWD_DECL_BIH2D
 #include "../FwdDecl.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {
     class LineSegment;
 
@@ -17,7 +12,7 @@ namespace GI2D
         __host__ __device__ CurveObjects() {}
 
         BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        ::Core::Vector<LineSegment>* m_lineSegments = nullptr;
+        Generic::Vector<LineSegment>* m_lineSegments = nullptr;
 
         __host__ __device__ CurveObjects& operator=(const CurveObjects& other)
         {
@@ -67,7 +62,7 @@ namespace GI2D
                 return cu_deviceInstance;
             }
 
-            __host__ static AssetHandle<Host::SceneObject> Instantiate(const std::string& id, const Json::Node&);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&);
             __host__ static const std::string GetAssetTypeString() { return "curve"; }
 
         private:
@@ -79,7 +74,7 @@ namespace GI2D
             CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
-            AssetHandle<Core::Host::Vector<LineSegment>>    m_hostLineSegments;
+            AssetHandle<Host::Vector<LineSegment>>    m_hostLineSegments;
 
             int                                             m_numSelected;
         };
@@ -87,5 +82,5 @@ namespace GI2D
 
     // Explicitly declare instances of this class for its inherited types
     //template class Host::Tracable<Device::Curve>;
-    //template class Host::SceneObject<Device::Curve>;
+    //template class Host::GenericObject<Device::Curve>;
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../CudaMath.cuh"
+#include "../VecUtils.cuh"
  
-namespace Cuda
+namespace Enso
 {
     template<typename T>
     struct BBox2

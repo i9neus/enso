@@ -1,19 +1,17 @@
 #pragma once
 
-#include "CudaBIH2D.cuh"
+#include "BIH2D.cuh"
 #include <functional>
 #include <vector>
-
-using namespace Cuda;
-
-namespace GI2D
+ 
+namespace Enso
 {
     template<typename NodeType>
     class BIH2DBuilder
     {
     public:
-        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, ::Core::Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
-                             const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
+        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
+            const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
 
         __host__ void Build(const bool printStats = false);
 
@@ -25,7 +23,7 @@ namespace GI2D
 
     private:
         BIH2D<NodeType>&                            m_bih;
-        Core::Host::Vector<NodeType>&               m_hostNodes;
+        Host::Vector<NodeType>&                     m_hostNodes;
         std::vector<uint>&                          m_primitiveIdxs;
         std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
         BIH2DStats&                                 m_stats;

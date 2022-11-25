@@ -1,12 +1,10 @@
 #include "Curve.cuh"
 #include "primitives/LineSegment.cuh"
 #include "../GenericIntersector.cuh"
-#include "kernels/math/CudaColourUtils.cuh"
-#include "../BIH2DAsset.cuh"
+#include "core/math/ColourUtils.cuh"
+#include "../bih/BIH2DAsset.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {    
     __host__ __device__ bool Device::Curve::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {        
@@ -83,7 +81,7 @@ namespace GI2D
         constexpr uint kMinTreePrims = 3;
         
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = CreateChildAsset<Core::Host::Vector<LineSegment>>("lineSegments", Core::kVectorHostAlloc);
+        m_hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
         
         cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
 
@@ -92,14 +90,14 @@ namespace GI2D
 
         // Set the host parameters so we can query the primitive on the host
         m_hostInstance.m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_hostInstance.m_lineSegments = static_cast<Core::Vector<GI2D::LineSegment>*>(m_hostLineSegments.get());
+        m_hostInstance.m_lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.get());
         
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<GI2D::Host::SceneObject> Host::Curve::Instantiate(const std::string& id, const Json::Node&)
+    __host__ AssetHandle<Host::GenericObject> Host::Curve::Instantiate(const std::string& id, const Json::Node&)
     {
-        return CreateAsset<GI2D::Host::Curve>(id);
+        return CreateAsset<Host::Curve>(id);
     }
 
     __host__ Host::Curve::~Curve()
@@ -202,7 +200,7 @@ namespace GI2D
         {
             // Sync the line segmentsb
             auto& segments = *m_hostLineSegments;
-            segments.Synchronise(Core::kVectorSyncUpload);
+            segments.Synchronise(kVectorSyncUpload);
 
             // Create a segment list ready for building
             // TODO: It's probably faster if we build on the already-sorted index list

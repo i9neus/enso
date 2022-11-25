@@ -1,22 +1,6 @@
 #pragma once
 
-namespace Core
-{
-    template<typename> class Vector;
-
-    namespace Device
-    {
-        template<typename> class Vector;
-    }
-
-    namespace Host
-    {
-        template<typename> class Vector;
-        template<typename, typename> class AssetVector;
-    }
-}
-
-namespace GI2D
+namespace Enso
 {
     // BIH
     template<typename> class BIH2D;
@@ -25,7 +9,12 @@ namespace GI2D
     struct BIH2DNodeDataFull;
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
-    
+
+    namespace Generic
+    {
+        template<typename> class Vector;
+    }
+
     namespace Device
     {
         class BIH2DAsset;
@@ -34,6 +23,7 @@ namespace GI2D
         class SceneObject;
         class Camera2D;
         class VoxelProxyGrid;
+        template<typename> class Vector;
     }
 
     namespace Host
@@ -41,12 +31,14 @@ namespace GI2D
         class BIH2DAsset;
         class SceneObject;
         class Light;
-        class Tracable; 
+        class Tracable;
         class VoxelProxyGrid;
         class SceneDescription;
 
         class OverlayLayer;
         class PathTracerLayer;
         class VoxelProxyGridLayer;
+        template<typename> class Vector;
+        template<typename, typename> class AssetVector;
     }
 }

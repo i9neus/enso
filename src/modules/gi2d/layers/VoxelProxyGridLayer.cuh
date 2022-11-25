@@ -5,9 +5,7 @@
 #include "../integrators/Camera2D.cuh"
 #include "../SceneDescription.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {     
     struct VoxelProxyGridLayerParams
     {
@@ -34,9 +32,9 @@ namespace GI2D
     {
         const Device::SceneDescription* m_scenePtr = nullptr;
         
-        Core::Device::Vector<vec3>* m_accumBuffer = nullptr;
-        Core::Device::Vector<vec3>* m_reduceBuffer = nullptr;
-        Core::Device::Vector<vec3>* m_gridBuffer = nullptr;
+        Device::Vector<vec3>* m_accumBuffer = nullptr;
+        Device::Vector<vec3>* m_reduceBuffer = nullptr;
+        Device::Vector<vec3>* m_gridBuffer = nullptr;
     };
 
     namespace Device
@@ -51,7 +49,7 @@ namespace GI2D
 
             __device__ __forceinline__ void Prepare(const uint dirtyFlags);
             __device__ __forceinline__ void Render();
-            __device__ __forceinline__ void Composite(Cuda::Device::ImageRGBA* outputImage) const;
+            __device__ __forceinline__ void Composite(Device::ImageRGBA* outputImage) const;
             __device__ __forceinline__ vec3 Evaluate(const vec2& posWorld) const;
 
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
@@ -79,7 +77,7 @@ namespace GI2D
             virtual ~VoxelProxyGridLayer();
            
             __host__ virtual void Render() override final;
-            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final;
+            __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
@@ -90,12 +88,12 @@ namespace GI2D
             __host__ void Integrate();
 
         private:
-            GI2D::Device::VoxelProxyGridLayer*          cu_deviceInstance = nullptr;
+            Device::VoxelProxyGridLayer*          cu_deviceInstance = nullptr;
             VoxelProxyGridLayerObjects                  m_deviceObjects;
 
-            AssetHandle<Core::Host::Vector<vec3>>       m_hostAccumBuffer;
-            AssetHandle<Core::Host::Vector<vec3>>       m_hostReduceBuffer;
-            AssetHandle<Core::Host::Vector<vec3>>       m_hostProxyGrid;
+            AssetHandle<Host::Vector<vec3>>       m_hostAccumBuffer;
+            AssetHandle<Host::Vector<vec3>>       m_hostReduceBuffer;
+            AssetHandle<Host::Vector<vec3>>       m_hostProxyGrid;
 
             struct
             {

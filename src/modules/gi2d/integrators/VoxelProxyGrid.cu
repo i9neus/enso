@@ -1,6 +1,6 @@
 #include "VoxelProxyGrid.cuh"
 
-namespace GI2D
+namespace Enso
 {    
     __host__ __device__ VoxelProxyGridParams::VoxelProxyGridParams()
     {
@@ -87,7 +87,7 @@ namespace GI2D
 
         m_cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));
 
-        m_hostAccumBuffer = CreateChildAsset<Core::Host::Vector<vec3>>("accumBuffer", m_grid.numProbes, Core::kVectorHostAlloc);
+        m_hostAccumBuffer = CreateChildAsset<Host::Vector<vec3>>("accumBuffer", m_grid.numProbes, Core::kVectorHostAlloc);
 
         m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_deviceObjects.m_scenePtr = m_scene->GetDeviceInstance();

@@ -1,11 +1,10 @@
 ﻿#pragma once
 
-#include "math/CudaMath.cuh"
+#include "math/Math.cuh"
 #include "AssetAllocator.cuh"
-#include "CudaCommonIncludes.cuh"
 #include "Tuple.cuh"
 
-namespace Core
+namespace Enso
 {
 	struct VectorParams
 	{
@@ -39,50 +38,47 @@ namespace Core
 		kVectorSyncDownload = 16
 	};
 
-	namespace Host
+	namespace Generic
 	{
-		// Forward declare some things we'll need for friendship and tagging
-		//template<typename T, typename S> class Vector;
+		template<typename Type>
+		class Vector
+		{
+		public:
+			__host__ __device__ Vector() :
+				m_localData(nullptr)
+			{
+				m_localParams.size = m_localParams.capacity = m_localParams.flags = 0;
+			}
+			__host__ __device__ ~Vector() {}
+
+			__host__ __device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
+			__host__ __device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
+			__host__ __device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
+			__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
+
+			__host__ __device__ Type* Data() { return m_localData; }
+			__host__ __device__ Type& operator[](const uint idx)
+			{
+				dassert(idx < m_localParams.size);
+				return m_localData[idx];
+			}
+			__host__ __device__ const Type& operator[](const uint idx) const
+			{
+				dassert(idx < m_localParams.size);
+				return m_localData[idx];
+			}
+
+		protected:
+			Type* m_localData;
+			VectorParams	m_localParams;
+		};
 	}
-
-	template<typename Type>
-	class Vector
-	{
-	public:
-		__host__ __device__ Vector() :
-			m_localData(nullptr)
-		{
-			m_localParams.size = m_localParams.capacity = m_localParams.flags = 0;
-		}
-		__host__ __device__ ~Vector() {}
-
-		__host__ __device__ __forceinline__ unsigned int		Size() const { return m_localParams.size; }
-		__host__ __device__ __forceinline__ unsigned int		Capacity() const { return m_localParams.capacity; }
-		__host__ __device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
-		__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
-
-		__host__ __device__ Type* Data() { return m_localData; }
-		__host__ __device__ Type& operator[](const uint idx)
-		{
-			dassert(idx < m_localParams.size);
-			return m_localData[idx];
-		}
-		__host__ __device__ const Type& operator[](const uint idx) const
-		{
-			dassert(idx < m_localParams.size);
-			return m_localData[idx];
-		}
-
-	protected:
-		Type* m_localData;
-		VectorParams	m_localParams;
-	};
 
 	namespace Device
 	{
 		template<typename Type>
-		class Vector : public Core::Vector<Type>,
-					   public Cuda::Device::Asset
+		class Vector : public Generic::Vector<Type>,
+					   public Device::Asset
 		{
 		public:
 			__device__ Vector() {}
@@ -99,12 +95,12 @@ namespace Core
 	namespace Host
 	{
 		template<typename HostType, typename DeviceType>
-		class VectorBase : public Core::Vector<HostType>,
-						   public Cuda::Host::AssetAllocator
+		class VectorBase : public Generic::Vector<HostType>,
+						   public Host::AssetAllocator
 		{
 		protected:
 			Device::Vector<DeviceType>* cu_deviceInstance;
-			Core::Vector<DeviceType>* cu_deviceInterface;
+			Vector<DeviceType>* cu_deviceInterface;
 
 			DeviceType* cu_deviceData;
 			VectorParams				m_deviceParams;
@@ -250,15 +246,6 @@ namespace Core
 			__host__ inline ConstIterator	begin() const { return ConstIterator(0, m_localData); }
 			__host__ inline ConstIterator	end() const { return ConstIterator(m_localParams.size, m_localData); }
 
-			__host__ inline Core::Vector<DeviceType>* GetDeviceCoreInstance()
-			{
-				if (cu_deviceInterface == nullptr)
-				{
-					cu_deviceInterface = StaticCastOnDevice<Core::Vector<DeviceType>>(GetDeviceInstance());
-				}
-				return cu_deviceInterface;
-			}
-
 			__host__ inline HostType* GetHostData()
 			{
 				AssertMsgFmt(m_localParams.flags & kVectorHostAlloc, "Vector '%s' does not have host allocation.", GetAssetID().c_str());
@@ -362,7 +349,7 @@ namespace Core
 				}
 			}
 
-			__host__ inline Core::Device::Vector<DeviceType>* GetDeviceInstance()
+			__host__ inline Device::Vector<DeviceType>* GetDeviceInstance()
 			{
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
@@ -524,7 +511,7 @@ namespace Core
 		public:
 			__host__ Vector(const uint flags) : VectorBase<CommonType, CommonType>(Asset::MakeTemporaryID(), flags) {}
 			__host__ Vector(const std::string& id, const uint flags) : VectorBase<CommonType, CommonType>(id, flags) {}
-			__host__ Vector(const std::string& id, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(id, size, flags) 
+			__host__ Vector(const std::string& id, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(id, size, flags)
 			{
 				SynchroniseImpl(kVectorSyncUpload, false);
 			}
@@ -571,7 +558,7 @@ namespace Core
 
 		// Requires that HostType inherit AssetTags
 		template<typename HostType, typename DeviceType>
-		class AssetVector : public VectorBase<Cuda::AssetHandle<typename HostType>, DeviceType*>
+		class AssetVector : public VectorBase<AssetHandle<typename HostType>, DeviceType*>
 		{
 		public:
 
@@ -602,7 +589,7 @@ namespace Core
 				if (!cu_deviceData) { return; }
 
 				// Allocate some temporary storage
-				m_deviceSyncData = new DeviceType*[m_localParams.size];
+				m_deviceSyncData = new DeviceType * [m_localParams.size];
 				Assert(m_deviceSyncData);
 
 				// Convert between the host and device datatypes
@@ -629,4 +616,5 @@ namespace Core
 			cu_vector->Fill(kKernelIdx, value);
 		}
 	}
-}
+
+} // namespace Enso

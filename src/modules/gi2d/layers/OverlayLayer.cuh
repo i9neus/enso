@@ -2,13 +2,11 @@
 
 #include "UILayer.cuh"
 
-#include "../BIH2DAsset.cuh"
-//#include "../tracables/primitives/CudaPrimitive2D.cuh"
+#include "../bih/BIH2DAsset.cuh"
+//#include "../tracables/primitives/Primitive2D.cuh"
 #include "../tracables/Curve.cuh"
 
-using namespace Cuda;
-
-namespace GI2D
+namespace Enso
 {         
     namespace Device { class Tracable; }
     
@@ -22,7 +20,7 @@ namespace GI2D
     struct OverlayLayerObjects
     {
         const Device::SceneDescription*             m_scenePtr = nullptr;
-        Cuda::Device::ImageRGBW*                    m_accumBuffer = nullptr;
+        Device::ImageRGBW*                    m_accumBuffer = nullptr;
     };
 
     namespace Device
@@ -36,7 +34,7 @@ namespace GI2D
             
             __device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
-            __device__ void Composite(Cuda::Device::ImageRGBA* outputImage);
+            __device__ void Composite(Device::ImageRGBA* outputImage);
 
             __device__ virtual void OnSynchronise(const int) override final;
 
@@ -56,7 +54,7 @@ namespace GI2D
             virtual ~OverlayLayer();
 
             __host__ virtual void Render() override final;
-            __host__ virtual void Composite(AssetHandle<Cuda::Host::ImageRGBA>& hostOutputImage) const override final; 
+            __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final; 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
 
             __host__ void OnDestroyAsset();
@@ -70,7 +68,7 @@ namespace GI2D
             Device::OverlayLayer*                       cu_deviceInstance = nullptr;
             OverlayLayerObjects                         m_deviceObjects;
 
-            AssetHandle<Cuda::Host::ImageRGBW>          m_hostAccumBuffer;
+            AssetHandle<Host::ImageRGBW>          m_hostAccumBuffer;
         };
     }
 }

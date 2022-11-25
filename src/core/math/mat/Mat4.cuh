@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "CudaMat3.cuh"
-#include "../vec/CudaVec4.cuh"
+#include "Mat3.cuh"
+#include "../vec/Vec4.cuh"
 
-namespace Cuda
+namespace Enso
 {
 	struct __builtin_align__(16) mat4
 	{
