@@ -523,6 +523,10 @@ namespace Enso
 
     void GI2DRenderer::OnResizeClient()
     {
-    }
+    } 
 
+    bool GI2DRenderer::Serialise(Json::Document& json, const int flags) 
+    {
+        return true;
+    }
 }

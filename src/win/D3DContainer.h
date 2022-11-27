@@ -121,7 +121,7 @@ namespace Enso
 		ComPtr<ID3D12Fence>				m_fence;
 		UINT64							m_fenceValues[kFrameCount];
 
-		std::shared_ptr<ModuleManager> m_rendererManager;
+		std::shared_ptr<ModuleManager>	m_moduleManager;
 		std::unique_ptr<UIModuleManager> m_ui;
 		HWND							m_hWnd;
 

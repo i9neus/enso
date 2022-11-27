@@ -10,6 +10,12 @@ namespace Enso
         std::string name;
     };
 
+    enum ModuleManagerSerialiseFlags : int
+    {
+        kModuleManagerSerialiseAll,
+        kModuleManagerSerialiseDirty
+    };
+
     class ModuleManager : public CudaObjectManager
     {
     public:
@@ -18,13 +24,13 @@ namespace Enso
         void                                    Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
         void                                    Destroy();
         std::vector<RendererComponentInfo>      GetRendererList() const;
-        ModuleInterface& GetRenderer() { Assert(m_activeRenderer); return *m_activeRenderer; }
-        std::shared_ptr<ModuleInterface>      GetRendererPtr() { return m_activeRenderer; }
+        ModuleInterface& GetRenderer()          { Assert(m_activeRenderer); return *m_activeRenderer; }
+        std::shared_ptr<ModuleInterface>        GetRendererPtr() { return m_activeRenderer; }
         void                                    LoadRenderer(const std::string& id);
         void                                    UnloadRenderer();
         void						            UpdateD3DOutputTexture(UINT64& currentFenceValue);
 
-        unsigned int diag[2];
+        inline bool                             Serialise(Json::Document& json, const int flags);
 
     private:
         template<typename HostClass>

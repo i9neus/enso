@@ -1,1 +1,6 @@
-#pragma once
+#include "UIModuleInterface.h"
+
+namespace Enso
+{
+
+}

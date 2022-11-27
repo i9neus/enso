@@ -8,8 +8,6 @@
 #include "core/GenericObject.cuh"
 #include "core/math/Math.cuh"
 
-#include "Serialisable.cuh"
-
 namespace Enso
 {
     template<typename ObjectType, typename ParamsType>

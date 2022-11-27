@@ -306,6 +306,11 @@ namespace Enso
             Document(const Document&) = delete;
             Document(const Document&&) = delete;
 
+            Document(const std::string& str) : Document()
+            {
+                Parse(str);
+            }
+
             Document& operator=(const Node& node)
             {
                 m_allocator->Clear();

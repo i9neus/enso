@@ -29,22 +29,22 @@ namespace Enso
 		UpdateAssetDimensions();
 
 		// Crtate the renderer
-		m_rendererManager = std::make_shared<ModuleManager>();
+		m_moduleManager = std::make_shared<ModuleManager>();
 
 		// Set up the D3D pipeline
 		CreatePipeline();
 
 		// Load the renderer
-		m_rendererManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-		m_rendererManager->LoadRenderer("2dgi");
+		m_moduleManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+		m_moduleManager->LoadRenderer("2dgi");
 
 		// Create the GUI interface
-		m_ui = std::make_unique<UIModuleManager>(m_hWnd, m_rendererManager);
+		m_ui = std::make_unique<UIModuleManager>(m_hWnd, m_moduleManager);
 
 		// Setup IMGUI objects
 		m_ui->CreateD3DDeviceObjects(m_rootSignature, m_device, 2);
 
-		m_rendererManager->GetRenderer().Start();
+		m_moduleManager->GetRenderer().Start();
 	}
 
 	void D3DContainer::OnDestroy()
@@ -56,8 +56,8 @@ namespace Enso
 		m_ui->Destroy();
 		m_ui.reset();
 
-		m_rendererManager->Destroy();
-		m_rendererManager.reset();
+		m_moduleManager->Destroy();
+		m_moduleManager.reset();
 
 		for (int i = 0; i < kFrameCount; ++i)
 		{
@@ -383,7 +383,7 @@ namespace Enso
 
 			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
-			m_rendererManager->LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, m_clientWidth, m_clientHeight);
+			m_moduleManager->LinkD3DOutputTexture(m_device, m_texture, m_quadTexWidth, m_quadTexHeight, m_clientWidth, m_clientHeight);
 		}
 	}
 
@@ -400,7 +400,7 @@ namespace Enso
 				ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 			}
 
-			m_rendererManager->LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
+			m_moduleManager->LinkSynchronisationObjects(m_device, m_fence, m_fenceEvent);
 
 			m_fenceValues[m_frameIndex]++;
 
@@ -562,7 +562,7 @@ namespace Enso
 		// After everything's rendered, dispatch any commands that IMGUI may have emitted
 		//m_ui.DispatchRenderCommands();
 
-		m_rendererManager->UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
+		m_moduleManager->UpdateD3DOutputTexture(m_fenceValues[m_frameIndex]);
 		//m_commandQueue->Signal(m_fence.Get(), currentFenceValue + 1);
 
 		// Update the frame index.
@@ -644,21 +644,21 @@ namespace Enso
 
 	void D3DContainer::OnKey(const WPARAM code, const bool isSysKey, const bool isDown)
 	{
-		if (m_rendererManager) { m_rendererManager->GetRenderer().SetKey(code, isSysKey, isDown); }
+		if (m_moduleManager) { m_moduleManager->GetRenderer().SetKey(code, isSysKey, isDown); }
 	}
 
 	void D3DContainer::OnMouseButton(const int button, const bool isDown)
 	{
-		if (m_rendererManager) { m_rendererManager->GetRenderer().SetMouseButton(button, isDown); }
+		if (m_moduleManager) { m_moduleManager->GetRenderer().SetMouseButton(button, isDown); }
 	}
 
 	void D3DContainer::OnMouseMove(const int mouseX, const int mouseY, const WPARAM flags)
 	{
-		if (m_rendererManager) { m_rendererManager->GetRenderer().SetMousePos(mouseX, mouseY, flags); }
+		if (m_moduleManager) { m_moduleManager->GetRenderer().SetMousePos(mouseX, mouseY, flags); }
 	}
 
 	void D3DContainer::OnMouseWheel(const float degrees)
 	{
-		if (m_rendererManager) { m_rendererManager->GetRenderer().SetMouseWheel(degrees); }
+		if (m_moduleManager) { m_moduleManager->GetRenderer().SetMouseWheel(degrees); }
 	}
 }

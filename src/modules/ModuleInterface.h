@@ -54,6 +54,8 @@ namespace Enso
         Semaphore& GetRenderSemaphore() { return m_renderSemaphore; }
 
         void SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
+        
+        virtual bool Serialise(Json::Document& json, const int flags) = 0;
 
     protected:
         ModuleInterface();

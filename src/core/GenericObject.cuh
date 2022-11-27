@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "math/Math.cuh"
+#include "io/Serialisable.cuh"
 #include "AssetAllocator.cuh"
 
 #include <map>
@@ -55,7 +56,8 @@ namespace Enso
 
     namespace Host
     {        
-        class GenericObject : public Host::AssetAllocator
+        class GenericObject : public Host::AssetAllocator,
+                              public Serialisable
         {
         public:            
             __host__ virtual void                                           Bind(GenericObjectContainer& objectContainer) {}

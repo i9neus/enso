@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\..\src\io\json\JsonCommandQueue.cpp" />
     <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\Log.cpp" />
+    <ClCompile Include="..\..\..\src\io\Serialisable.cu" />
     <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp" />
     <ClCompile Include="..\..\..\src\modules\ModuleInterface.cpp" />
     <ClCompile Include="..\..\..\src\modules\ModuleManager.cpp" />
@@ -34,17 +35,11 @@
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
+    <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp" />
+    <ClCompile Include="..\..\..\src\ui\elements\UIGenericObject.cpp" />
     <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp" />
+    <ClCompile Include="..\..\..\src\ui\modules\UIModuleInterface.cpp" />
     <ClCompile Include="..\..\..\src\ui\UIModuleManager.cpp" />
-    <ClCompile Include="..\..\..\src\ui\elements\DataTable.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\ListBox.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\Widget.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -100,8 +95,10 @@
     <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
     <ClInclude Include="..\..\..\src\io\ImageIO.h" />
     <ClInclude Include="..\..\..\src\io\json\JsonCommandQueue.h" />
+    <ClInclude Include="..\..\..\src\io\json\JsonSerialiser.h" />
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h" />
     <ClInclude Include="..\..\..\src\io\Log.h" />
+    <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h" />
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh" />
@@ -126,7 +123,6 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Curve.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cuh" />
@@ -169,24 +165,11 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h" />
+    <ClInclude Include="..\..\..\src\ui\elements\UIGenericObject.h" />
     <ClInclude Include="..\..\..\src\ui\modules\gi2d\GI2DModule.h" />
     <ClInclude Include="..\..\..\src\ui\modules\UIModuleInterface.h" />
     <ClInclude Include="..\..\..\src\ui\UIModuleManager.h" />
-    <ClInclude Include="..\..\..\src\ui\elements\DataTable.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\ListBox.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\Shelf.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\Widget.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\WidgetUtils.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -220,7 +203,6 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\Light.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\Serialisable.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu" />

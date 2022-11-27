@@ -49,6 +49,8 @@ namespace Enso
 
         static std::shared_ptr<ModuleInterface> Instantiate();
 
+        virtual bool Serialise(Json::Document& json, const int flags) override final;
+
     private:
         virtual void            OnDestroy() override final;
         //virtual void            OnPreRender() override final;

@@ -161,15 +161,6 @@
     <ClCompile Include="..\..\..\src\ui\UIModuleManager.cpp">
       <Filter>ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\Widget.cpp">
-      <Filter>ui\elements</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\DataTable.cpp">
-      <Filter>ui\elements</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\ListBox.cpp">
-      <Filter>ui\elements</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp">
       <Filter>ui\tools</Filter>
     </ClCompile>
@@ -190,6 +181,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp">
       <Filter>ui\modules\gi2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\modules\UIModuleInterface.cpp">
+      <Filter>ui\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\elements\UIGenericObject.cpp">
+      <Filter>ui\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp">
+      <Filter>ui\elements</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\Serialisable.cu">
+      <Filter>io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -343,9 +346,6 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Serialisable.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
@@ -420,21 +420,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ui\UIModuleManager.h">
       <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\ListBox.h">
-      <Filter>ui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\Shelf.h">
-      <Filter>ui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\Widget.h">
-      <Filter>ui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\WidgetUtils.h">
-      <Filter>ui\elements</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\DataTable.h">
-      <Filter>ui\elements</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h">
       <Filter>ui\tools</Filter>
@@ -583,6 +568,18 @@
     <ClInclude Include="..\..\..\src\ui\modules\UIModuleInterface.h">
       <Filter>ui\modules</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\io\json\JsonSerialiser.h">
+      <Filter>io\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h">
+      <Filter>ui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\elements\UIGenericObject.h">
+      <Filter>ui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\Serialisable.cuh">
+      <Filter>io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -595,9 +592,6 @@
       <Filter>modules\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu">
-      <Filter>modules\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\Serialisable.cu">
       <Filter>modules\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu">

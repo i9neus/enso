@@ -1,11 +1,14 @@
 #pragma once
 
 #include "io/json/JsonCommandQueue.h"
-
 #include "win/D3DHeaders.h"
+
+#include <unordered_map>
 
 namespace Enso
 {
+    class UIGenericObject;
+    
     class UIModuleInterface
     {
     public:
@@ -16,5 +19,7 @@ namespace Enso
     protected:
         const std::string   m_componentId;
         Json::CommandQueue& m_commandQueue;
+
+        std::unordered_map<std::string, std::shared_ptr<UIGenericObject>>   m_uiObjectMap;
     };
 }

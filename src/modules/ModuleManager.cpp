@@ -41,8 +41,6 @@ namespace Enso
 
     void ModuleManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
     {
-        diag[0] = (unsigned int)(m_activeRenderer->GetRenderSemaphore());
-
         if (m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
         {
             HighResolutionTimer timer;
@@ -56,8 +54,6 @@ namespace Enso
             CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, false);
             //Log::Warning("Not blitted");
         }
-
-        diag[1] = (unsigned int)(m_activeRenderer->GetRenderSemaphore());
     }
 
     /*std::shared_ptr<ModuleInterface> ModuleManager::GetRenderer()
@@ -97,5 +93,10 @@ namespace Enso
         m_activeRenderer.reset();
 
         Log::Success("Successfully unloaded renderer!");
+    }
+
+    bool ModuleManager::Serialise(Json::Document& json, const int flags)
+    {
+        return m_activeRenderer->Serialise(json, flags);
     }
 }
