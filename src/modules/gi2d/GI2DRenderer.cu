@@ -15,6 +15,8 @@
 #include "layers/PathTracerLayer.cuh"
 #include "layers/VoxelProxyGridLayer.cuh"
 
+#include "io/Serialisable.cuh"
+
 //#include "kernels/gi2d/ObjectDebugger.cuh"
 
 namespace Enso
@@ -27,6 +29,8 @@ namespace Enso
         // TODO: Merge this code with RenderObjectFactory
         //AddInstantiator<Host::Curve>('Q');
         //AddInstantiator<Host::UIInspector>('W');
+
+        SerialisableObjectSchemaContainer::Load("schema.json");
 
         m_sceneObjectFactory.RegisterInstantiator<Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());

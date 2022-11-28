@@ -1,62 +1,54 @@
 #pragma once
 
 #include "core/math/Math.cuh"
+#include "io/json/JsonUtils.h"
+#include "io/Serialisable.cuh"
+
+#include <functional>
 
 namespace Enso
 {
-    namespace Json { class Node; }
-    
-    enum UIAttributeDataType : int
-    {
-        kUIDataUndefined = -1,
+    namespace Json { class Node; }  
 
-        kUIDataBool,
-        kUIDataString,
-        kUIDataInt,
-        kUIDataInt2,
-        kUIDataInt3,
-        kUIDataFloat,
-        kUIDataFloat2,
-        kUIDataFloat3,
-        kUIDataMat2,
-        kUIDataMat3,
-        kUIDataMat4,
-    };
-
-    enum UIAttributeWidgetType : int
-    {
-        kUIWidgetUndefined = -1,
-        kUIWidgetDefault = 0,
-
-        kUIWidgetString,
-        kUIWidgetNumber,
-        kUIWidgetSlider
-    };
-
-    class UIAttribute
+    class UIGenericAttribute : public SerialisableAttributeProperties
     {
     public:
-        UIAttribute();
+        UIGenericAttribute() = default;
+        ~UIGenericAttribute() = default;
 
-        void Serialise(Json::Node&) const;
-        void Deserialise(const Json::Node&);
+        void Initialise(const SerialisableAttributeProperties& properties);
+        virtual void Serialise(Json::Node&) const = 0;
+        virtual void Deserialise(const Json::Node&) = 0;
 
-        void Construct() const;
         bool IsDirty() const;
         void MakeClean();
 
-    private:
-        std::string     m_id;
-        int             m_dataType;
-        int             m_widgetType;
-        
-        union
-        {
-            int             m_intType;
-            float           m_floatType;
-            std::string     m_strType;
-        };
+        bool Construct();
+
+    protected:
+        virtual bool ConstructImpl() = 0;
 
         bool            m_isDirty;
     };
+
+#define UI_ATTRIBUTE_FLOAT(Dimension, DataType) \
+    class UIAttributeFloat##Dimension : public UIGenericAttribute \
+    { \
+    public: \
+        UIAttributeFloat##Dimension() : m_data(0.0f) {} \
+        virtual void Serialise(Json::Node&) const override final; \
+        virtual void Deserialise(const Json::Node&) override final; \
+    \
+    protected: \
+        virtual bool ConstructImpl() override final; \
+    \
+    private: \
+        DataType m_data; \
+    }
+
+    UI_ATTRIBUTE_FLOAT(, float);
+    UI_ATTRIBUTE_FLOAT(2, vec2);
+    UI_ATTRIBUTE_FLOAT(3, vec3);
+    UI_ATTRIBUTE_FLOAT(4, vec4);
+
 }

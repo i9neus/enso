@@ -97,6 +97,9 @@
     <Filter Include="core\math\vec">
       <UniqueIdentifier>{a9fab65b-3f9b-4643-b594-b92414f84c6c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="config">
+      <UniqueIdentifier>{82619602-f189-45f2-b0be-d2d91d0b7c4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -582,6 +585,7 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
       <Filter>modules\gi2d\lights</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -669,6 +673,9 @@
     </None>
     <None Include="..\..\..\docs\FixMe.md">
       <Filter>docs</Filter>
+    </None>
+    <None Include="..\..\..\bin\win64\Release\schema.json">
+      <Filter>config</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -119,6 +119,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh" />
@@ -200,7 +201,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\Light.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu" />
@@ -215,6 +216,7 @@
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\bin\win64\Release\schema.json" />
     <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\docs\FixMe.md" />
   </ItemGroup>
@@ -324,4 +326,9 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.targets" />
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
