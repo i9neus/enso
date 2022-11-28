@@ -7,7 +7,7 @@
 
 #include "tracables/Tracable.cuh"
 #include "tracables/Curve.cuh"
-#include "lights/Light.cuh"
+#include "lights/OmniLight.cuh"
 #include "widgets/UIInspector.cuh" 
 #include "SceneDescription.cuh"
 #include "integrators/VoxelProxyGrid.cuh"

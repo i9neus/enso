@@ -382,7 +382,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Accumulator.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh">
       <Filter>modules\gi2d\lights</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh">
@@ -580,6 +580,8 @@
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh">
       <Filter>io</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
+      <Filter>modules\gi2d\lights</Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -606,7 +608,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\Light.cu">
+    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu">
       <Filter>modules\gi2d\lights</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu">

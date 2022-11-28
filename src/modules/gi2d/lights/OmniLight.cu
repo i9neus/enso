@@ -1,6 +1,8 @@
+#include "OmniLight.cuh"
+
 #include "../tracables/primitives/Ellipse.cuh"
 #include "../GenericIntersector.cuh"
-#include "Light.cuh"
+#include "io/json/JsonUtils.h"
 
 namespace Enso
 {
@@ -59,8 +61,6 @@ namespace Enso
     __host__ Host::OmniLight::OmniLight(const std::string& id) :
         Host::Light(id, m_hostInstance)
     {
-        Log::Success("Host::OmniLight::OmniLight");
-
         cu_deviceInstance = InstantiateOnDevice<Device::OmniLight>();
 
         Synchronise(kSyncObjects);
@@ -175,5 +175,13 @@ namespace Enso
         ClearDirtyFlags();
 
         return IsConstructed();
+    }
+
+    __host__ bool Host::OmniLight::Serialise(Json::Node& node, const int flags) const
+    {
+        node.AddValue("radius", m_lightRadius);
+        node.AddVector("pos", m_lightPos);
+        
+        return true;
     }
 }

@@ -2,7 +2,7 @@
 #include "bih/BIH2DAsset.cuh"
 #include "integrators/VoxelProxyGrid.cuh"
 #include "core/GenericObjectContainer.cuh"
-#include "lights/Light.cuh"
+#include "lights/OmniLight.cuh"
 
 namespace Enso
 {
