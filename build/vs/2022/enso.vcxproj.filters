@@ -586,6 +586,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
       <Filter>modules\gi2d\lights</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Lexer.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

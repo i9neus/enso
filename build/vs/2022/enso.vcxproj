@@ -64,6 +64,7 @@
     <ClInclude Include="..\..\..\src\core\Hash.h" />
     <ClInclude Include="..\..\..\src\core\HighResolutionTimer.h" />
     <ClInclude Include="..\..\..\src\core\Image.cuh" />
+    <ClInclude Include="..\..\..\src\core\Lexer.h" />
     <ClInclude Include="..\..\..\src\core\math\bbox\BBox2.cuh" />
     <ClInclude Include="..\..\..\src\core\math\ColourUtils.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Complex.cuh" />
