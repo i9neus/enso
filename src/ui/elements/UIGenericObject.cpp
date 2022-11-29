@@ -4,7 +4,7 @@
 
 namespace Enso
 {
-    UIGenericObject::UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema) :
+    UIGenericObject::UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema, const Json::Node& node) :
         m_id(id)
     {
         for (auto& attribute : schema.GetAttributes())
@@ -28,7 +28,7 @@ namespace Enso
             };
 
             // Initialise and emplace the new attribute
-            newAttr->Initialise(*attribute);
+            newAttr->Initialise(*attribute, node);
             m_attributeMap.emplace(newAttr->m_id, newAttr);
             m_attributeList.emplace_back(newAttr);
         }
@@ -44,47 +44,20 @@ namespace Enso
             attribute->Construct();
         }
     }
-    
-    UIObjectContainer::UIObjectContainer()
-    {
-    }
 
-    void UIObjectContainer::Construct()
+    void UIGenericObject::Deserialise(const Json::Node& node)
     {
-        ImGui::Begin("Scene Objects");
-        
-        for (const auto& object : m_objectMap)
+        for (auto& attr : m_attributeList)
         {
-            object.second->Construct();
+            attr->Deserialise(node);
         }
-
-        ImGui::End();
     }
 
-    void UIObjectContainer::OnAddObject(const Json::Node& node)
+    void UIGenericObject::Serialise(Json::Node& node) const
     {
-        std::string objectId;
-        node.GetValue("id", objectId, Json::kRequiredAssert | Json::kNotBlank);
-
-        auto it = m_objectMap.find(objectId);
-        AssertMsgFmt(it == m_objectMap.end(), "Error: UI object '%s' already exists in map.", objectId.c_str());
-
-        std::string objectClass;
-        node.GetValue("class", objectClass, Json::kRequiredAssert | Json::kNotBlank);
-
-        auto schema = SerialisableObjectSchemaContainer::FindSchema(objectClass);
-        AssertMsgFmt(schema, "Error: schema for class '%s' has not been registered.", objectClass.c_str());
-
-        m_objectMap.emplace(objectId, std::make_shared<UIGenericObject>(objectId, *schema));
-    }
-
-    void UIObjectContainer::OnDeleteObject(const Json::Node& node)
-    {
-
-    }
-
-    void UIObjectContainer::OnUpdateObject(const Json::Node& node)
-    {
-
+        for (const auto& attr : m_attributeList)
+        {
+            attr->Serialise(node);
+        }
     }
 }

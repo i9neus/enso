@@ -100,6 +100,9 @@
     <Filter Include="config">
       <UniqueIdentifier>{82619602-f189-45f2-b0be-d2d91d0b7c4e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="docs\protocols">
+      <UniqueIdentifier>{7ef70ebe-149a-4e2a-913f-d9dcaa9f777b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -146,9 +149,6 @@
     <ClCompile Include="..\..\..\src\io\Log.cpp">
       <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\io\json\JsonCommandQueue.cpp">
-      <Filter>io\json</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp">
       <Filter>io\json</Filter>
     </ClCompile>
@@ -194,8 +194,11 @@
     <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp">
       <Filter>ui\elements</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\io\Serialisable.cu">
+    <ClCompile Include="..\..\..\src\io\CommandQueue.cpp">
       <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\elements\UICommandManager.cpp">
+      <Filter>ui\elements</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -315,9 +318,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\io\Log.h">
       <Filter>io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\io\json\JsonCommandQueue.h">
-      <Filter>io\json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
       <Filter>io\json</Filter>
@@ -586,6 +586,15 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
       <Filter>modules\gi2d\lights</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\io\CommandQueue.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\elements\UICommandManager.h">
+      <Filter>ui\elements</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h">
+      <Filter>io</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\core\Lexer.h">
       <Filter>core</Filter>
     </ClInclude>
@@ -669,6 +678,12 @@
     <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu">
       <Filter>core</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp">
+      <Filter>io</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu">
+      <Filter>modules\gi2d</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\docs\CodeStructure.md">
@@ -679,6 +694,9 @@
     </None>
     <None Include="..\..\..\bin\win64\Release\schema.json">
       <Filter>config</Filter>
+    </None>
+    <None Include="..\..\..\docs\protocols\Messages.json">
+      <Filter>docs\protocols</Filter>
     </None>
   </ItemGroup>
 </Project>

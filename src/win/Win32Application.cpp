@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 	InitialiseGlobalObjects();
 
 	Log::EnableLevel(kLogSystem, true);
-	//Log::Get().EnableLevel(kLogDebug, true);
+	Log::EnableLevel(kLogDebug, true);
 
 	try
 	{

@@ -63,6 +63,7 @@ namespace Enso
 
             __host__ virtual uint               FromJson(const Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual AssetType          GetAssetType() const { return AssetType::kUnknown; }
+            __host__ virtual std::string        GetAssetClass() const { return ""; }
             __host__ const inline std::string&  GetAssetID() const { return m_assetId; }
             __host__ const inline std::string&  GetParentAssetID() const { return m_parentAssetId; }
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }

@@ -26,7 +26,7 @@ namespace Enso
         template<typename HostClass>
         __host__ void RegisterInstantiator(const uint hash = 0u)
         {
-            const auto id = HostClass::GetAssetTypeString();
+            const auto id = HostClass::GetAssetClassStatic();
             auto it = m_instantiators.find(id);
             AssertMsgFmt(it == m_instantiators.end(),
                 "Internal error: a render object instantiator with ID '%s' already exists.\n", id);

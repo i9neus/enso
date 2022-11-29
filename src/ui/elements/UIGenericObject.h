@@ -7,9 +7,12 @@ namespace Enso
     class UIGenericObject
     {
     public:
-        UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema);
+        UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema, const Json::Node& node);
 
         void Construct();
+
+        void Deserialise(const Json::Node&);
+        void Serialise(Json::Node&) const;
 
     private:
         std::string                                                     m_id;
@@ -17,18 +20,5 @@ namespace Enso
         std::vector<std::shared_ptr<UIGenericAttribute>>                m_attributeList;
     };
 
-    class UIObjectContainer
-    {
-    public:
-        UIObjectContainer();
-
-        void Construct();
-        
-        void OnAddObject(const Json::Node& node);
-        void OnDeleteObject(const Json::Node& node);
-        void OnUpdateObject(const Json::Node& node);
-
-    private:
-        std::unordered_map<std::string, std::shared_ptr<UIGenericObject>>   m_objectMap;
-    };
+    using UIObjectContainer = std::unordered_map<std::string, std::shared_ptr<UIGenericObject>>;   
 }

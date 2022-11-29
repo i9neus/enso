@@ -5,6 +5,7 @@
 #include "core/Vector.cuh"
 #include "FwdDecl.cuh"
 #include "core/GenericObjectFactory.cuh"
+#include "io/CommandQueue.h"
 
 namespace Enso
 {
@@ -34,41 +35,45 @@ namespace Enso
     class GI2DRenderer : public ModuleInterface
     {
     public:
-        GI2DRenderer();
-        virtual ~GI2DRenderer();
+        enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };
 
-        virtual void OnInitialise() override final;
-        virtual void OnMouseMove() override final;
-        virtual void OnMouseButton(const uint code, const bool isDown) override final;
-        virtual void OnMouseWheel() override final;
-        virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) override final;
-        virtual void OnResizeClient() override final;
+        __host__ GI2DRenderer(std::shared_ptr<CommandQueue> outQueue);
+        __host__ virtual ~GI2DRenderer();
 
-        //virtual void OnResizeClient() override final;
-        virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
+        __host__ virtual void OnInitialise() override final;
+        __host__ virtual void OnMouseMove() override final;
+        __host__ virtual void OnMouseButton(const uint code, const bool isDown) override final;
+        __host__ virtual void OnMouseWheel() override final;
+        __host__ virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) override final;
+        __host__ virtual void OnResizeClient() override final;
 
-        static std::shared_ptr<ModuleInterface> Instantiate();
+        //__host__ virtual void OnResizeClient() override final;
+        __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
 
-        virtual bool Serialise(Json::Document& json, const int flags) override final;
+        __host__ static std::shared_ptr<ModuleInterface> Instantiate(std::shared_ptr<CommandQueue> outQueue);
+
+        __host__ virtual bool Serialise(Json::Document& json, const int flags) override final;
 
     private:
-        virtual void            OnDestroy() override final;
+        __host__ virtual void            OnDestroy() override final;
         //virtual void            OnPreRender() override final;
-        virtual void            OnRender() override final;
+        __host__ virtual void            OnRender() override final;
         //virtual void          OnPostRender() override final;
-        void                    OnViewChange();
+        __host__ void                    OnViewChange();
 
-        void                    Rebuild();
+        __host__ void                    Rebuild();
 
-        uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-        uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-        uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-        uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-        uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-        uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
 
-        std::string             DecideOnClickState(const uint& sourceStateIdx);
-        void                    DeselectAll();
+        __host__ std::string             DecideOnClickState(const uint& sourceStateIdx);
+        __host__ void                    DeselectAll();
+
+        __host__ void                    EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
 
     private:
         enum JobIDs : uint { kJobDraw };
@@ -83,7 +88,7 @@ namespace Enso
 
         std::unique_ptr<ViewTransform2D>      m_viewTransform;
 
-        AssetHandle<GenericObjectContainer> m_renderObjects;
+        AssetHandle<GenericObjectContainer>   m_renderObjects;
 
         UIGridCtx                             m_gridCtx;
         UIViewCtx                             m_viewCtx;
@@ -102,6 +107,8 @@ namespace Enso
             vec2                              dragAnchor;
         }
         m_onMove;
+
+        std::vector<AssetHandle<Host::Tracable>>    m_selectedTracables;
 
         bool                                        m_isRunning;
         HighResolutionTimer                         m_renderTimer;

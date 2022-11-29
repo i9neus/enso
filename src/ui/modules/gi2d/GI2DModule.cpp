@@ -8,15 +8,26 @@ namespace Enso
     {
 
     }*/
+
+    GI2DUI::GI2DUI() : 
+        UIModuleInterface("gi2d"),
+        m_commandManger(m_objectContainer)
+    {}
     
     void GI2DUI::ConstructComponent()
     {
-        ImGui::Begin(m_componentId.c_str());
-        m_commandQueue.BeginComponent(m_componentId);
-        
-        if (ImGui::Button("Draw"))
+        ImGui::Begin(m_componentId.c_str()); 
+
+        // Flush the command queue and update the object
+        if (m_inboundCmdQueue)
         {
-            m_commandQueue.BeginCommand("draw");
+            m_commandManger.Flush(*m_inboundCmdQueue);
+        }
+        
+        // Construct the objects
+        for (auto& object : m_objectContainer)
+        {
+            object.second->Construct();
         }
 
         ImGui::End();

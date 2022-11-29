@@ -1,11 +1,13 @@
 #include "ModuleManager.h"
 #include "core/HighResolutionTimer.h"
+#include "io/CommandQueue.h"
 
 #include "gi2d/GI2DRenderer.cuh"
 
 namespace Enso
 {
-    ModuleManager::ModuleManager()
+    ModuleManager::ModuleManager() : 
+        m_outboundCmdQueue(std::make_shared<CommandQueue>())
     {
         AddInstantiator<GI2DRenderer>("2dgi");
     }
@@ -72,7 +74,7 @@ namespace Enso
         Log::Indent indent("Loading renderer...");
 
         // Instantiate and set up the renderer
-        m_activeRenderer = (it->second)();
+        m_activeRenderer = (it->second)(m_outboundCmdQueue);
         m_activeRenderer->SetCudaObjects(m_compositeImage, m_renderStream);
         m_activeRenderer->Initialise(m_clientWidth, m_clientHeight);
 

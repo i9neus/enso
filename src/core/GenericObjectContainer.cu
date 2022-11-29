@@ -22,11 +22,7 @@ namespace Enso
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
         // Store a strong reference to the object in the object map
-        m_objectMap[newObject->GetAssetID()] = newObject;
-        // Store a weak indexable reference in the object vector
-        m_objectVector.emplace_back(newObject.GetWeakHandle());
-        // Link the ID with the vector index
-        m_idToIdxMap[newObject->GetAssetID()] = m_objectVector.size() - 1;
+        m_objectMap[newObject->GetAssetID()] = newObject;        
         ++m_uniqueIdx;
 
         // If the object has a DAG path, add it to the map alongside its weak reference
@@ -52,22 +48,14 @@ namespace Enso
     __host__ void GenericObjectContainer::Erase(const Host::GenericObject& obj)
     {
         Erase(obj.GetAssetID());
-    }
+    }   
 
     __host__ void GenericObjectContainer::Erase(const std::string& id)
     {
-        auto it = m_idToIdxMap.find(id);
-        AssertMsgFmt(it != m_idToIdxMap.end(), "Invalid asset ID '%s'", id.c_str());
-        Erase(it->second);
-    }
-
-    __host__ void GenericObjectContainer::Erase(const uint objectIdx)
-    {
-        AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
-        AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
-
-        AssetHandle<Host::GenericObject> obj(m_objectVector[objectIdx]);
-        Assert(obj);
+        // Get the handle to the object
+        auto it = m_objectMap.find(id);
+        AssertMsgFmt(it != m_objectMap.end(), "Render object '%s' is not in the container.", id.c_str());
+        auto obj = it->second;
 
         // Erase the object from the DAG map
         if (obj->HasDAGPath())
@@ -77,24 +65,12 @@ namespace Enso
         }
 
         // Erase the object from the main asset map
-        const auto& id = obj->GetAssetID();
         AssertMsgFmt(m_objectMap.erase(id), "Internal error: object map and object list have gone out of sync with object '%s'", id.c_str());
-
-        // Erase the object from the indexed list
-        m_objectVector[objectIdx] = m_objectVector.back();
-        m_objectVector.pop_back();
 
         // Destroy the asset
         obj.DestroyAsset();
     } 
 
-    __host__ AssetHandle<Host::GenericObject> GenericObjectContainer::operator[](const uint objectIdx)
-    {
-        AssertMsg(objectIdx < m_objectVector.size(), "Render object index out of bounds.");
-        AssertMsg(!m_objectVector[objectIdx].expired(), "Internal error: render object expired unexpectedly");
-
-        return AssetHandle<Host::GenericObject>(m_objectVector[objectIdx]);
-    }
 
     __host__ void GenericObjectContainer::Bind()
     {

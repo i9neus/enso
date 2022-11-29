@@ -8,13 +8,15 @@
 namespace Enso
 {
     UIModuleManager::UIModuleManager(HWND hwnd, std::shared_ptr<ModuleManager>& moduleManager) :
-        m_showConsole(false)
-    {
+        m_showConsole(false),
+        m_outboundCmdQueue(std::make_shared<CommandQueue>())
+    {       
         m_hWnd = hwnd;
         m_moduleManager = moduleManager;
         m_activeRenderer = m_moduleManager->GetRendererPtr();
 
-        m_gi2DUI = std::make_unique<GI2DUI>(m_commandQueue);
+        m_gi2DUI = std::make_unique<GI2DUI>();
+        m_gi2DUI->SetOutboundCommandQueue(m_outboundCmdQueue);
     }
 
     UIModuleManager::~UIModuleManager()
@@ -53,25 +55,14 @@ namespace Enso
         Log::Write("Destroyed IMGUI D3D objects.\n");
     }
 
-    void UIModuleManager::PollRenderer()
-    {
-        Assert(m_activeRenderer);
-        Assert(m_activeRenderer->Poll(m_renderStateJson));
-
-        /*const Json::Node managerJson = m_renderStateJson.GetChildObject("renderer", Json::kSilent | Json::kLiteralID);
-        if (managerJson)
-        {
-            managerJson.GetValue("frameIdx", m_frameIdx, Json::kRequiredAssert);
-            managerJson.GetValue("smoothedFrameTime", m_meanFrameTime, Json::kRequiredAssert);
-            managerJson.GetValue("rendererStatus", m_renderState, Json::kRequiredAssert);
-        } */
-    }
-
     void UIModuleManager::ConstructConsole()
     {
         ImGui::Begin("Console");
 
-        m_renderStateFmt = m_renderStateJson.Stringify(true);
+        if (m_inboundCmdQueue)
+        {
+            m_renderStateFmt = m_inboundCmdQueue->Format();
+        }
         ImGui::TextWrapped(m_renderStateFmt.c_str());
 
         ImGui::End();
@@ -79,11 +70,8 @@ namespace Enso
 
     void UIModuleManager::Construct()
     {
-        // Clear out the command queue ready for the next frame
-        m_commandQueue.Clear();
-
         // Poll the renderer for data to populate the UI
-        PollRenderer();
+        //PollRenderer();
 
         // Start the Dear ImGui frame
         ImGui::ImplDX12_NewFrame();
@@ -94,10 +82,10 @@ namespace Enso
         ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, kBaseSize.x * 2.0f);
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.3f));
 
+        if (m_showConsole) { ConstructConsole(); }       
+
         // Construct the active component
         m_gi2DUI->ConstructComponent();
-
-        if (m_showConsole) { ConstructConsole(); }       
 
         // Menu Bar
         if (ImGui::BeginMainMenuBar())
@@ -124,15 +112,7 @@ namespace Enso
         ImGui::Render();
 
         // Dispatch any JSON commands that may have been generated
-        DispatchCommands();
-    }
-
-    void UIModuleManager::DispatchCommands()
-    {
-        if (!m_commandQueue.IsEmpty())
-        {
-            Log::Write(m_commandQueue.GetJson().Stringify(true));
-        }
+        //DispatchCommands();
     }
 
     void UIModuleManager::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx)
@@ -147,4 +127,11 @@ namespace Enso
 
         ImGui::ImplDX12_RenderDrawData(drawData, commandList.Get());
     }
+
+    void UIModuleManager::SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound) 
+    { 
+        m_inboundCmdQueue = inbound;
+        m_gi2DUI->SetInboundCommandQueue(m_inboundCmdQueue);
+    }
+
 }

@@ -5,45 +5,15 @@
 namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
+    namespace Json { class Node; }
     
     class BidirectionalTransform2D
 	{
 	public:
-        __host__ __device__ BidirectionalTransform2D() : 
-            trans(0.0f), rot(0.0f), scale(1.0f)
-        {
-            fwd = mat2::Indentity();
-            inv = mat2::Indentity();
-            nInv = mat2::Indentity();
-        }
+        __host__ __device__ BidirectionalTransform2D();
 
-        __host__ __device__ void Prepare()
-        {
-            inv = nInv = inverse(fwd);
-        }
-        
-        __host__ __device__  void Construct(const vec2& tr, const float r, const float sc)
-        {
-            trans = tr;
-            rot = r;
-            scale = sc;
-            
-            if (rot != 0.0f)
-            {
-                const float sinTheta = sin(rot);
-                const float cosTheta = cos(rot);
-                fwd.i00 = cosTheta; fwd.i01 = sinTheta;
-                fwd.i10 = sinTheta; fwd.i11 = -cosTheta;
-            }
-            else
-            {
-                fwd = mat2::Indentity();
-            }
-
-            fwd[0] *= sc; fwd[1] *= sc;
-
-            Prepare();
-        }
+        __host__ __device__ void Prepare();        
+        __host__ __device__ void Construct(const vec2& tr, const float r, const float sc);
 
         __host__ __device__ __inline__ RayBasic2D RayToObjectSpace(const RayBasic2D& world) const
         {
@@ -60,8 +30,18 @@ namespace Enso
             return nInv * n;
         }
 
-        __host__ __device__ inline vec2 PointToObjectSpace(const vec2& world) const { return fwd * (world - trans); }
-        __host__ __device__ inline vec2 PointToWorldSpace(const vec2& obj) const { return (inv * obj) + trans; }
+        __host__ __device__ inline vec2 PointToObjectSpace(const vec2& world) const
+        {
+            return fwd * (world - trans);
+        }
+
+        __host__ __device__ inline vec2 PointToWorldSpace(const vec2& obj) const
+        {
+            return (inv * obj) + trans;
+        }
+
+        __host__ bool Serialise(Json::Node& rootNode, const int flags) const;
+        __host__ bool Deserialise(const Json::Node& rootNode, const int flags);
 
     public:
 		vec2 trans;
@@ -75,16 +55,8 @@ namespace Enso
 
     struct ViewTransform2D
     {
-        __host__ __device__ ViewTransform2D()
-        {
-            matrix = mat3::Indentity();
-            scale = 1.f;
-            rotate = 0.f;
-            trans = vec2(0.f);
-        }
-
-        __host__ __device__ ViewTransform2D(const mat3& mat, const vec2& tra, const float& rot, const float& sca) :
-            matrix(mat), trans(tra), rotate(rot), scale(sca) {}
+        __host__ __device__ ViewTransform2D();
+        __host__ __device__ ViewTransform2D(const mat3& mat, const vec2& tra, const float& rot, const float& sca);
 
         mat3 matrix;
         vec2 trans;
@@ -92,15 +64,5 @@ namespace Enso
         float scale;
     }; 
 
-    __host__ __inline__ mat3 ConstructViewMatrix(const vec2& trans, const float rotate, const float scale)
-    {
-        const float sinTheta = std::sin(rotate);
-        const float cosTheta = std::cos(rotate);
-        mat3 m = mat3::Indentity();
-        m.i00 = scale * cosTheta; m.i01 = scale * sinTheta;
-        m.i10 = scale * sinTheta; m.i11 = scale * -cosTheta;
-        m.i02 = trans.x;
-        m.i12 = trans.y;
-        return m;
-    }
+    __host__ mat3 ConstructViewMatrix(const vec2& trans, const float rotate, const float scale);    
 }

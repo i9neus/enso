@@ -31,6 +31,8 @@ namespace Enso
         void						            UpdateD3DOutputTexture(UINT64& currentFenceValue);
 
         inline bool                             Serialise(Json::Document& json, const int flags);
+        std::shared_ptr<CommandQueue>           GetOutboundCommandQueue() { return m_outboundCmdQueue; }
+        void                                    SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound) { m_inboundCmdQueue = inbound; }
 
     private:
         template<typename HostClass>
@@ -45,9 +47,12 @@ namespace Enso
 
     public:
         std::shared_ptr<ModuleInterface>                                                      m_activeRenderer;
-        std::unordered_map<std::string, std::function<std::shared_ptr<ModuleInterface>()>>    m_instantiators;
+        std::unordered_map<std::string, std::function<std::shared_ptr<ModuleInterface>(std::shared_ptr<CommandQueue>)>>    m_instantiators;
 
     private:
         AssetHandle<Host::ImageRGBA>		m_compositeImage;
+
+        std::shared_ptr<CommandQueue>       m_inboundCmdQueue;
+        std::shared_ptr<CommandQueue>       m_outboundCmdQueue;
     };
 }

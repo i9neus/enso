@@ -259,7 +259,7 @@ namespace Enso
 
         bool Node::IsObject() const { CheckOk(); return m_node->IsObject(); }
 
-        int Node::NumMembers() const
+        int Node::Size() const
         {
             CheckOk();
             if (!m_node->IsObject()) { return 0; }

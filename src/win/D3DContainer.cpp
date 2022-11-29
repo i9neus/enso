@@ -41,6 +41,11 @@ namespace Enso
 		// Create the GUI interface
 		m_ui = std::make_unique<UIModuleManager>(m_hWnd, m_moduleManager);
 
+		// Connect the command queues of the UI and module manager. 
+		// NOTE: In headless mode, this will be replaced by a web socket or pipe
+		m_ui->SetInboundCommandQueue(m_moduleManager->GetOutboundCommandQueue());
+		m_moduleManager->SetInboundCommandQueue(m_ui->GetOutboundCommandQueue());
+
 		// Setup IMGUI objects
 		m_ui->CreateD3DDeviceObjects(m_rootSignature, m_device, 2);
 

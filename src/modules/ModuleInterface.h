@@ -30,6 +30,8 @@ namespace Enso
         kRenderManagerD3DBlitFinished = 3
     };
 
+    class CommandQueue;
+
     class ModuleInterface
     {
     public:
@@ -56,9 +58,10 @@ namespace Enso
         void SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
         
         virtual bool Serialise(Json::Document& json, const int flags) = 0;
+        void SetInboundCommandQueue(std::shared_ptr<CommandQueue> inQueue) { m_inboundCmdQueue = inQueue; }
 
     protected:
-        ModuleInterface();
+        ModuleInterface(std::shared_ptr<CommandQueue> outQueue);
         virtual ~ModuleInterface();
 
         virtual void OnMouseMove() {}
@@ -98,7 +101,7 @@ namespace Enso
         void RunThread();
 
     protected:
-        AssetHandle<Host::ImageRGBA>        m_compositeImage;
+        AssetHandle<Host::ImageRGBA>                    m_compositeImage;
         cudaStream_t                                    m_renderStream;
 
         std::atomic<int>	                            m_threadSignal;
@@ -113,9 +116,9 @@ namespace Enso
 
         struct
         {
-            ivec2                                 pos;
-            ivec2                                 prevPos;
-            ivec2                                 delta;
+            ivec2                                       pos;
+            ivec2                                       prevPos;
+            ivec2                                       delta;
         }
         m_mouse;
 
@@ -124,7 +127,7 @@ namespace Enso
         int                                             m_clientWidth;
         int                                             m_clientHeight;
 
-        mat3                                      m_clientToNormMatrix;
+        mat3                                            m_clientToNormMatrix;
 
         std::mutex		                                m_jsonInputMutex;
         std::mutex			                            m_jsonOutputMutex;
@@ -134,7 +137,9 @@ namespace Enso
         Semaphore                                       m_renderSemaphore;
 
         UIStateGraph                                    m_uiGraph;
-    private:
+
+        std::shared_ptr<CommandQueue>                   m_outboundCmdQueue;
+        std::shared_ptr<CommandQueue>                   m_inboundCmdQueue;
 
     };
 }

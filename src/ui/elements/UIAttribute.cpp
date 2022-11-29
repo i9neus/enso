@@ -22,10 +22,13 @@ namespace Enso
         }
     }    
 
-    void UIGenericAttribute::Initialise(const SerialisableAttributeProperties& properties)
+    void UIGenericAttribute::Initialise(const SchemaAttributeProperties& properties, const Json::Node& node)
     {
-        // Copy the properties
-        static_cast<SerialisableAttributeProperties&>(*this) = properties;
+        // Copy the schema data
+        static_cast<SchemaAttributeProperties&>(*this) = properties;
+
+        // Deserialise the data
+        Deserialise(node);
     }
 
     bool UIGenericAttribute::Construct()
@@ -48,13 +51,13 @@ namespace Enso
         switch (m_uiWidget.type)  \
         {  \
         case kUIWidgetDrag:  \
-            ImGui::DragFloat(m_uiWidget.label.c_str(), DataPtr, maxf(0.00001f, *DataPtr * 0.01f), m_dataRange[0], m_dataRange[1], "%.6f");  \
+            ImGui::DragFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, maxf(0.00001f, *DataPtr * 0.01f), m_dataRange[0], m_dataRange[1], "%.6f");  \
             break;  \
         case kUIWidgetSlider:  \
-            ImGui::SliderFloat(m_uiWidget.label.c_str(), DataPtr, m_dataRange[0], m_dataRange[1], "%.6f");  \
+            ImGui::SliderFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, m_dataRange[0], m_dataRange[1], "%.6f");  \
             break;  \
         default:  \
-            ImGui::InputFloat(m_uiWidget.label.c_str(), DataPtr, m_dataRange[0], m_dataRange[1], "%.6f");  \
+            ImGui::InputFloat##Dimension(m_uiWidget.label.c_str(), DataPtr);  \
             break;  \
         } \
         \

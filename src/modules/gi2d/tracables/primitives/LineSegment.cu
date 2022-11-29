@@ -63,6 +63,16 @@ namespace Enso
         return t0 < t1&& t0 >= 0.f && t0 <= 1.f;
     }
 
+    __host__ bool LineSegment::Serialise(Json::Node& rootNode, const int flags) const
+    {
+        return true;
+    }
+
+    __host__ bool LineSegment::Deserialise(const Json::Node& rootNode, const int flags)
+    {
+        return true;
+    }
+
     __host__ void GenerateRandomLineSegments(Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed)
     {
         std::mt19937 mt(seed);

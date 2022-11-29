@@ -98,8 +98,7 @@ namespace Enso
     namespace Host
     {
         class SceneObject : public Host::GenericObject,
-            public Serialisable,
-            public SceneObjectParams
+                            public SceneObjectParams
         {
         public:
             __host__ virtual bool       Finalise() = 0;
@@ -118,6 +117,9 @@ namespace Enso
             __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; }
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
+
+            __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
+            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override;
 
             /*__host__ Device::SceneObject* GetDeviceInstance() const
             {

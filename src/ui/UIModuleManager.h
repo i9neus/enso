@@ -24,11 +24,11 @@ namespace Enso
         void                            PopulateCommandList(ComPtr<ID3D12GraphicsCommandList>& commandList, const int frameIdx);
         void                            Destroy();
 
+        std::shared_ptr<CommandQueue>   GetOutboundCommandQueue() { return m_outboundCmdQueue; }
+        void                            SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound);
+
     private:
         void                            ConstructConsole();
-
-        void                            PollRenderer(); 
-        void                            DispatchCommands();
 
     private:
         ComPtr<ID3D12DescriptorHeap>            m_srvHeap;
@@ -43,10 +43,12 @@ namespace Enso
         float                                   m_meanFrameTime;
 
         Json::Document                          m_renderStateJson;
-        Json::CommandQueue                      m_commandQueue;
         int                                     m_renderState;
         std::string                             m_renderStateFmt;
 
         std::unique_ptr<GI2DUI>                 m_gi2DUI;
+
+        std::shared_ptr<CommandQueue>           m_inboundCmdQueue;
+        std::shared_ptr<CommandQueue>           m_outboundCmdQueue;
     };
 }

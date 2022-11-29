@@ -51,7 +51,7 @@ namespace Enso
             __host__ virtual bool       Finalise() override final;
 
             __host__ static AssetHandle<Host::SceneObject> Instantiate(const std::string& id);
-            __host__ static const std::string  GetAssetTypeString() { return "inspector"; }
+            __host__ static const std::string  GetAssetClassStatic() { return "inspector"; }
 
             __host__ virtual Device::UIInspector* GetDeviceInstance() const override final
             {

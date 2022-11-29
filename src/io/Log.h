@@ -35,6 +35,14 @@ namespace Enso
             kFgTeal = 36,
             kFgWhite = 37,
             kFgDefault = 39,
+            kFgBrightBlack = 90,
+            kFgBrightRed = 91,
+            kFgBrightGreen = 92,
+            kFgBrightYellow = 93,
+            kFgBrightBlue = 94,
+            kFgBrightMagenta = 95,
+            kFgBrightCyan = 96,
+            kFgBrightWhite = 97,
             kBgRed = 41,
             kBgGreen = 42,
             kBgYellow = 43,
@@ -42,7 +50,15 @@ namespace Enso
             kBgPurple = 45,
             kBgTeal = 46,
             kBgWhite = 47,
-            kBgDefault = 49
+            kBgDefault = 49,
+            kBgBrightBlack = 100,
+            kBgBrightRed = 101,
+            kBgBrightGreen = 102,
+            kBgBrightYellow = 103,
+            kBgBrightBlue = 104,
+            kBgBrightMagenta = 105,
+            kBgBrightCyan = 106,
+            kBgBrightWhite = 107
         };
 
         // Little class to indent the log and un-indent automatically on destruction
@@ -86,17 +102,17 @@ namespace Enso
                                      inline void Name(const std::string& message) { WriteImpl(__FILE__, __LINE__, message, Colour, Type); }
 
         LOG_TYPE(Write, kFgDefault, kLogNormal)
-            LOG_TYPE(Success, kFgGreen, kLogNormal)
-            LOG_TYPE(Debug, kFgBlue, kLogDebug)
-            LOG_TYPE(Warning, kFgYellow, kLogWarning)
-            LOG_TYPE(Error, kBgRed, kLogError)
-            LOG_TYPE(System, kFgTeal, kLogSystem)
+        LOG_TYPE(Success, kFgGreen, kLogNormal)
+        LOG_TYPE(Debug, kFgBrightCyan, kLogDebug)
+        LOG_TYPE(Warning, kFgYellow, kLogWarning)
+        LOG_TYPE(Error, kBgRed, kLogError)
+        LOG_TYPE(System, kFgTeal, kLogSystem)
 
-            LOG_TYPE_ONCE(WriteOnce, kFgDefault, kLogNormal)
-            LOG_TYPE_ONCE(SuccessOnce, kFgGreen, kLogNormal)
-            LOG_TYPE_ONCE(DebugOnce, kFgBlue, kLogDebug)
-            LOG_TYPE_ONCE(WarningOnce, kFgYellow, kLogWarning)
-            LOG_TYPE_ONCE(ErrorOnce, kBgRed, kLogError)
-            LOG_TYPE_ONCE(SystemOnce, kFgTeal, kLogSystem)
+        LOG_TYPE_ONCE(WriteOnce, kFgDefault, kLogNormal)
+        LOG_TYPE_ONCE(SuccessOnce, kFgGreen, kLogNormal)
+        LOG_TYPE_ONCE(DebugOnce, kFgBrightCyan, kLogDebug)
+        LOG_TYPE_ONCE(WarningOnce, kFgYellow, kLogWarning)
+        LOG_TYPE_ONCE(ErrorOnce, kBgRed, kLogError)
+        LOG_TYPE_ONCE(SystemOnce, kFgTeal, kLogSystem)
     }
 }

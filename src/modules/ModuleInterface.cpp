@@ -4,14 +4,15 @@
 
 namespace Enso
 {
-	ModuleInterface::ModuleInterface() :
+	ModuleInterface::ModuleInterface(std::shared_ptr<CommandQueue> outQueue) :
 		m_frameTimes(20),
 		m_mouseWheelAngle(0.0f),
 		m_clientWidth(1.0f),
 		m_clientHeight(1.0f),
 		m_dirtyFlags(0),
 		m_uiGraph(m_keyCodes),
-		m_renderSemaphore(kRenderManagerD3DBlitFinished)
+		m_renderSemaphore(kRenderManagerD3DBlitFinished),
+		m_outboundCmdQueue(outQueue)
 	{
 		m_mouse.pos = std::numeric_limits<int>::min();
 		m_mouse.prevPos = std::numeric_limits<int>::min();

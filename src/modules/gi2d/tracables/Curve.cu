@@ -3,6 +3,7 @@
 #include "../GenericIntersector.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "../bih/BIH2DAsset.cuh"
+#include "io/json/JsonUtils.h"
 
 namespace Enso
 {    
@@ -233,5 +234,48 @@ namespace Enso
         ClearDirtyFlags();
 
         return IsConstructed();
+    }
+
+    __host__ bool Host::Curve::Serialise(Json::Node& node, const int flags) const
+    {
+        Tracable::Serialise(node, flags);
+
+        // Serialise the entire curve including its vertices
+        if (flags & kSerialiseAll)
+        {
+            // Represent the vertices as a 2D vector [[v0.x, v0.y], [v1.x, v1.y], .... , [vn.x, vn.y]]
+            const auto& segments = *m_hostLineSegments;
+            std::vector<std::vector<float>> vertices(segments.Size() + 1);
+            vertices[0] = { segments[0][0].x, segments[0][0].y };
+            for (int idx = 0; idx < segments.Size(); ++idx)
+            {
+                vertices[idx + 1] = { segments[idx][1].x, segments[idx][1].y };
+            }
+            node.AddArray2D("v", vertices);
+        }
+
+        return true;
+    }
+
+    __host__ bool Host::Curve::Deserialise(const Json::Node& node, const int flags)
+    {
+        Tracable::Deserialise(node, flags);
+
+        // Deserialise the entire curve including its vertices
+        if (flags & kSerialiseAll)
+        {
+            std::vector<std::vector<float>> vertices; 
+            node.GetArray2DValues("v", vertices, flags);
+
+            auto& segments = *m_hostLineSegments;
+            segments.Resize(vertices.size() - 1);
+            for (int idx = 0; idx < segments.Size(); ++idx)
+            {
+                segments[idx][0] = vec2(vertices[idx][0], vertices[idx][1]);
+                segments[idx][1] = vec2(vertices[idx+1][0], vertices[idx+1][1]);
+            }
+        }
+
+        return true;
     }
 }

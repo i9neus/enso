@@ -1,5 +1,6 @@
 #include "SceneObject.cuh"
 #include "core/math/ColourUtils.cuh"
+#include "io/json/JsonUtils.h"
 
 namespace Enso
 {
@@ -74,5 +75,21 @@ namespace Enso
         }
 
         return m_dirtyFlags;
+    }
+
+    __host__ bool Host::SceneObject::Serialise(Json::Node& node, const int flags) const
+    {        
+        Json::Node sceneNode = node.AddChildObject("sceneobject");
+        
+        m_transform.Serialise(sceneNode, flags);
+        return true;
+    }
+
+    __host__ bool Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
+    {
+        const Json::Node sceneNode = node.GetChildObject("sceneobject", flags);
+
+        if (sceneNode) { m_transform.Deserialise(sceneNode, flags); }
+        return true;
     }
 }

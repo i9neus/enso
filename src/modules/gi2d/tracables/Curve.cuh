@@ -63,7 +63,11 @@ namespace Enso
             }
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&);
-            __host__ static const std::string GetAssetTypeString() { return "curve"; }
+            __host__ static const std::string GetAssetClassStatic() { return "curve"; }
+            __host__ virtual std::string GetAssetClass() const override final { return GetAssetClassStatic(); }
+
+            __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override final;
+            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override final;
 
         private:
 
@@ -74,7 +78,7 @@ namespace Enso
             CurveObjects                                    m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
-            AssetHandle<Host::Vector<LineSegment>>    m_hostLineSegments;
+            AssetHandle<Host::Vector<LineSegment>>          m_hostLineSegments;
 
             int                                             m_numSelected;
         };

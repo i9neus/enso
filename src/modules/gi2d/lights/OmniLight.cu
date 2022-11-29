@@ -24,7 +24,7 @@ namespace Enso
 
     __device__ bool Device::OmniLight::Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const
     {
-        const vec2 lightLocal = m_lightPos - hit.p;
+        const vec2 lightLocal = m_transform.trans - hit.p;
         extant = normalize(vec2(lightLocal.y, -lightLocal.x)) * m_lightRadius * (xi - 0.5f) + lightLocal;
         float lightDist = length(extant);
         extant /= lightDist;
@@ -70,7 +70,7 @@ namespace Enso
     {
         BEGIN_EXCEPTION_FENCE
 
-            OnDestroyAsset(); 
+            OnDestroyAsset();
 
         END_EXCEPTION_FENCE
     }
@@ -89,9 +89,9 @@ namespace Enso
 
     __host__ uint Host::OmniLight::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        if (stateID != "kMoveSceneObjectDragging") { return 0; }        
+        if (stateID != "kMoveSceneObjectDragging") { return 0; }
 
-        m_lightPos = m_transform.trans = viewCtx.mousePos;
+        m_transform.trans = viewCtx.mousePos;
         m_worldBBox = BBox2f(m_transform.trans - vec2(m_lightRadius), m_transform.trans + vec2(m_lightRadius));
 
         SetDirtyFlags(kGI2DDirtyBVH);
@@ -122,7 +122,6 @@ namespace Enso
             if (!m_onCreate.isCentroidSet)
             {
                 m_transform.trans = viewCtx.mousePos;
-                m_lightPos = viewCtx.mousePos;
                 m_lightRadius = viewCtx.dPdXY;
                 m_onCreate.isCentroidSet = true;
             }
@@ -179,9 +178,17 @@ namespace Enso
 
     __host__ bool Host::OmniLight::Serialise(Json::Node& node, const int flags) const
     {
+        Tracable::Serialise(node, flags);
+
         node.AddValue("radius", m_lightRadius);
-        node.AddVector("pos", m_lightPos);
-        
+        return true;
+    }
+
+    __host__ bool Host::OmniLight::Deserialise(const Json::Node& node, const int flags)
+    {
+        Tracable::Deserialise(node, flags);
+
+        node.GetValue("radius", m_lightRadius, Json::kRequiredWarn | flags);
         return true;
     }
 }

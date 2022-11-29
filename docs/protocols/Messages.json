@@ -1,0 +1,26 @@
+{
+    "OnCreateSceneObject": {
+        "light1": {
+            "tracable": {
+                "sceneobject": {
+                    "trans": {
+
+                    }
+                }
+            }
+            "class": "omnilight",
+            "radius":  1.0,
+            "pos": [ 0.0, 0.0 ]
+        }
+    },
+    "OnUpdateSceneObject": {
+        "light1": {
+            "class": "omnilight",
+            "pos": [ 0.0, 0.0 ]
+        }
+    },
+    "OnDeleteSceneObject": {
+
+    }
+}
+    

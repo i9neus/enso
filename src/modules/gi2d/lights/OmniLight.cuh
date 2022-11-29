@@ -12,7 +12,6 @@ namespace Enso
     {
         __host__ __device__ OmniLightParams() {}
 
-        vec2    m_lightPos;
         float   m_lightRadius;
     };
 
@@ -67,7 +66,8 @@ namespace Enso
             __host__ virtual bool       Finalise() override final;
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&);
-            __host__ static const std::string  GetAssetTypeString() { return "omnilight"; }
+            __host__ static const std::string  GetAssetClassStatic() { return "omnilight"; }
+            __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
             __host__ void               Synchronise(const int syncType);
 
@@ -77,6 +77,7 @@ namespace Enso
             }
 
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override final;
+            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override final;
 
         private:
             Device::OmniLight*          cu_deviceInstance = nullptr;

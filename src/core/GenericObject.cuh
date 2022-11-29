@@ -121,7 +121,7 @@ namespace Enso
                 AssetHandle<GenericObject> baseAsset = objectContainer.FindByID(otherId);
                 if (!baseAsset)
                 {
-                    Log::Error("Unable to bind %s '%s' to %s '%s': %s does not exist.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
+                    Log::Error("Unable to bind %s '%s' to %s '%s': %s does not exist.\n", BindType::GetAssetClassStatic(), otherId, ThisType::GetAssetClassStatic(), GetAssetID(), otherId);
                     return nullptr;
                 }
 
@@ -129,11 +129,11 @@ namespace Enso
                 AssetHandle<BindType> downcastAsset = baseAsset.DynamicCast<BindType>();
                 if (!downcastAsset)
                 {
-                    Log::Error("Unable to bind %s '%s' to %s '%s': asset is not  he correct type.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID(), otherId);
+                    Log::Error("Unable to bind %s '%s' to %s '%s': asset is not  he correct type.\n", BindType::GetAssetClassStatic(), otherId, ThisType::GetAssetClassStatic(), GetAssetID(), otherId);
                     return nullptr;
                 }
               
-                Log::Write("Bound %s '%s' to %s '%s'.\n", BindType::GetAssetTypeString(), otherId, ThisType::GetAssetTypeString(), GetAssetID());
+                Log::Write("Bound %s '%s' to %s '%s'.\n", BindType::GetAssetClassStatic(), otherId, ThisType::GetAssetClassStatic(), GetAssetID());
                 return downcastAsset;
             } 
 

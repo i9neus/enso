@@ -16,7 +16,7 @@ namespace Enso
         __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags, const vec3& col) noexcept :
             Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
 
-        __host__ __device__  virtual vec2                   PerpendicularPoint(const vec2& p) const override final;
+        __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
         __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const override final;
@@ -48,8 +48,12 @@ namespace Enso
             return *this;
         }
 
+        __host__ __device__ __forceinline__ vec2& operator[](const uint& idx) { return m_v[idx]; }
         __host__ __device__ __forceinline__ const vec2& operator[](const uint& idx) const { return m_v[idx]; }
         __host__ __device__ __forceinline__ vec2& dv(const uint& idx) { return m_dv; }
+
+        __host__ bool Serialise(Json::Node& rootNode, const int flags) const;
+        __host__ bool Deserialise(const Json::Node& rootNode, const int flags);
     };
 
     __host__ void GenerateRandomLineSegments(Host::Vector<LineSegment>& segments, const BBox2f& bounds, const ivec2 numSegmentsRange, const vec2 sizeRange, const uint seed);

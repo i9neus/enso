@@ -40,9 +40,9 @@ namespace Enso
         class Node
         {
         protected:
-            rapidjson::Value* m_node;
-            const Document* m_rootDocument;
-            rapidjson::Document::AllocatorType* m_allocator;
+            rapidjson::Value*                       m_node;
+            const Document*                         m_rootDocument;
+            rapidjson::Document::AllocatorType*     m_allocator;
             std::string                             m_dagPath;
 
         public:
@@ -128,7 +128,8 @@ namespace Enso
             ConstIterator end() const { CheckOk(); return ConstIterator(m_node->MemberEnd(), *this); }
 
             bool IsObject() const;
-            int NumMembers() const;
+            inline int NumMembers() const { return Size(); }
+            int Size() const;
 
             template<typename T>
             void AddValue(const std::string& name, const T& value)
@@ -318,6 +319,12 @@ namespace Enso
                 return *this;
             }
 
+            Document& operator=(const nullptr_t& node)
+            {
+                m_allocator->Clear();
+                return *this;
+            }
+
             inline Document& operator=(const Document& node) { return this->operator=(static_cast<const Node&>(node)); }
 
             void Clear()
@@ -333,9 +340,9 @@ namespace Enso
             const std::string& GetOriginFilePath() const { return m_originFilePath; }
 
         private:
-            rapidjson::Document m_document;
+            rapidjson::Document         m_document;
 
-            std::string m_originFilePath;
+            std::string                 m_originFilePath;
         };
 
         template<> struct Node::GetValueImpl<true, true>

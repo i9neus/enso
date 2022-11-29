@@ -1,5 +1,6 @@
 #include "GI2DRenderer.cuh"
 
+#include "core/math/Math.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/GenericObjectContainer.cuh"
 #include "core/Vector.cuh"
@@ -15,22 +16,24 @@
 #include "layers/PathTracerLayer.cuh"
 #include "layers/VoxelProxyGridLayer.cuh"
 
-#include "io/Serialisable.cuh"
+#include "io/SerialisableObjectSchema.h"
 
 //#include "kernels/gi2d/ObjectDebugger.cuh"
 
 namespace Enso
 {
 
-    GI2DRenderer::GI2DRenderer() :
+    __host__ GI2DRenderer::GI2DRenderer(std::shared_ptr<CommandQueue> outQueue) :
+        ModuleInterface(outQueue),
         m_isRunning(true)
     {
-        // Declare the scene object instantiators
-        // TODO: Merge this code with RenderObjectFactory
-        //AddInstantiator<Host::Curve>('Q');
-        //AddInstantiator<Host::UIInspector>('W');
-
+        // Load the object schema
         SerialisableObjectSchemaContainer::Load("schema.json");
+
+        // Register some commands
+        m_outboundCmdQueue->RegisterCommand("OnCreateObject");
+        m_outboundCmdQueue->RegisterCommand("OnUpdateObject");
+        m_outboundCmdQueue->RegisterCommand("OnDeleteObject");
 
         m_sceneObjectFactory.RegisterInstantiator<Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
@@ -85,17 +88,17 @@ namespace Enso
         m_uiGraph.Finalise();
     }
 
-    GI2DRenderer::~GI2DRenderer()
+    __host__ GI2DRenderer::~GI2DRenderer()
     {
         Destroy();
     }
 
-    std::shared_ptr<ModuleInterface> GI2DRenderer::Instantiate()
+    std::shared_ptr<ModuleInterface> GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
     {
-        return std::make_shared<GI2DRenderer>();
+        return std::make_shared<GI2DRenderer>(outQueue);
     }
 
-    void GI2DRenderer::OnInitialise()
+    __host__ void GI2DRenderer::OnInitialise()
     {
         m_viewCtx.transform = ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);
         m_viewCtx.dPdXY = length(vec2(m_viewCtx.transform.matrix.i00, m_viewCtx.transform.matrix.i10));
@@ -121,7 +124,7 @@ namespace Enso
         }
     }
 
-    void GI2DRenderer::OnDestroy()
+    __host__ void GI2DRenderer::OnDestroy()
     {
         m_overlayRenderer.DestroyAsset();
         m_pathTracerLayer.DestroyAsset();
@@ -134,7 +137,7 @@ namespace Enso
         m_renderObjects.DestroyAsset();
     }
 
-    void GI2DRenderer::Rebuild()
+    __host__ void GI2DRenderer::Rebuild()
     {
         std::lock_guard<std::mutex> lock(m_resourceMutex);
 
@@ -154,7 +157,44 @@ namespace Enso
         SetDirtyFlags(kGI2DDirtyAll, false);
     }
 
-    uint GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ void GI2DRenderer::EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
+    {
+        if (!m_outboundCmdQueue->IsRegistered(eventId)) { return; }
+
+        // Lambda to do the actual serialisation
+        auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::GenericObject>& obj) -> void
+        {
+            // Create a new child object and add its class ID for the schema
+            Json::Node childNode = node.AddChildObject(obj->GetAssetID());
+            const std::string assetClass = obj->GetAssetClass();
+            AssertMsgFmt(!assetClass.empty(), "Error: asset '%s' has no defined class", obj->GetAssetClass());
+            childNode.AddValue("class", assetClass);
+            
+            // Deleted objects don't need their full attribute list serialised
+            if (!(flags & kEnqueueIdOnly))
+            { 
+                m_onCreate.newObject->Serialise(childNode, kSerialiseExposedOnly); 
+            }
+        };
+
+        Json::Node node = m_outboundCmdQueue->Create(eventId);
+        if (flags & kEnqueueAll)
+        {
+            for (auto& obj : *m_renderObjects) { SerialiseImpl(node, obj); }
+        }
+        else if (flags & kEnqueueSelected)
+        {
+            for (auto& obj : m_selectedTracables) { SerialiseImpl(node, obj); }
+        }
+        else if (flags & kEnqueueOne)
+        {
+            SerialiseImpl(node, asset);
+        }
+
+        m_outboundCmdQueue->Enqueue();  // Enqueue the staged command
+    }
+
+    __host__ uint GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         m_isRunning = !m_isRunning;
         Log::Warning(m_isRunning ? "Running" : "Paused");
@@ -163,13 +203,13 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         //Log::Success("Back home!");
         return kUIStateOkay;
     }
 
-    uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         if (m_selectionCtx.numSelected == 0) { return kUIStateOkay; }
 
@@ -198,13 +238,18 @@ namespace Enso
         tracables.Resize(tracables.Size() - numDeleted);
         Log::Error("Delete!");
 
+        EnqueueObjects("OnDeleteObject", kEnqueueSelected | kEnqueueIdOnly);
+
+        // Clear the tracables list
+        m_selectedTracables.clear();
         m_selectionCtx.numSelected = 0;
+
         SetDirtyFlags(kGI2DDirtyBVH);
 
         return kUIStateOkay;
     }
 
-    uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kMoveSceneObjectBegin")
@@ -219,25 +264,27 @@ namespace Enso
             SetDirtyFlags(kGI2DDirtyUI);
         }
 
-        // Notify the scene objects of the move operation
+        // Notify the scene objects of the move operation  
         std::lock_guard <std::mutex> lock(m_resourceMutex);
         uint tracableDirtyFlags = 0u;
-        for (auto& obj : m_scene->Tracables())
+        for (auto& obj : m_selectedTracables)
         {
-            if (obj->IsSelected())
+            Assert(obj->IsSelected());
+
+            // If the object has moved, trigger a rebuild of the BVH
+            if (obj->OnMove(stateID, m_viewCtx) & (kGI2DDirtyTransforms | kGI2DDirtyBVH))
             {
-                // If the object has moved, trigger a rebuild of the BVH
-                if (obj->OnMove(stateID, m_viewCtx) & (kGI2DDirtyTransforms | kGI2DDirtyBVH))
-                {
-                    SetDirtyFlags(kGI2DDirtyBVH);
-                }
+                SetDirtyFlags(kGI2DDirtyBVH);
             }
         }
+
+        // Enqueue the list of selected tracables
+        EnqueueObjects("OnUpdateObject", kEnqueueSelected);
 
         return kUIStateOkay;
     }
 
-    void GI2DRenderer::DeselectAll()
+    __host__ void GI2DRenderer::DeselectAll()
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
@@ -245,11 +292,14 @@ namespace Enso
         {
             obj->OnSelect(false);
         }
-        SetDirtyFlags(kGI2DDirtyUI);
+
+        m_selectedTracables.clear();
         m_selectionCtx.numSelected = 0;
+
+        SetDirtyFlags(kGI2DDirtyUI);
     }
 
-    std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
+    __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
         // If there are no paths selected, enter selection state. Otherwise, enter moving state.
         if (m_selectionCtx.numSelected == 0)
@@ -273,7 +323,7 @@ namespace Enso
         return "kSelectSceneObjectDragging";
     }
 
-    uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
@@ -293,6 +343,7 @@ namespace Enso
             m_selectionCtx.mouseBBox.upper = m_viewCtx.mousePos;
             m_selectionCtx.lassoBBox = Grow(Rectify(m_selectionCtx.mouseBBox), m_viewCtx.dPdXY * 2.);
             m_selectionCtx.selectedBBox = BBox2f::MakeInvalid();
+            m_selectedTracables.clear();
 
             std::lock_guard <std::mutex> lock(m_resourceMutex);
             if (m_scene->TracableBIH().IsConstructed())
@@ -304,7 +355,11 @@ namespace Enso
                     // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
                     if (isInnerNode)
                     {
-                        for (int idx = primRange[0]; idx < primRange[1]; ++idx) { tracables[idx]->OnSelect(true); }
+                        for (int idx = primRange[0]; idx < primRange[1]; ++idx)
+                        {
+                            m_selectedTracables.emplace_back(tracables[idx]);
+                            tracables[idx]->OnSelect(true);
+                        }
                         m_selectionCtx.numSelected += primRange[1] - primRange[0];
                     }
                     else
@@ -315,6 +370,7 @@ namespace Enso
                             const bool isCaptured = bBoxWorld.Intersects(m_selectionCtx.lassoBBox);
                             if (isCaptured)
                             {
+                                m_selectedTracables.emplace_back(tracables[idx]);
                                 m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, bBoxWorld);
                                 ++m_selectionCtx.numSelected;
                             }
@@ -360,7 +416,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
+    __host__ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
@@ -371,8 +427,6 @@ namespace Enso
             auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_renderObjects);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
             Assert(m_onCreate.newObject);
-
-            m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
         }
 
         // Invoke the event handler of the new object
@@ -381,6 +435,7 @@ namespace Enso
         // Some objects will automatically finalise themselves. If this happens, we're done.
         if (m_onCreate.newObject->IsFinalised())
         {
+            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
             m_uiGraph.SetState("kIdleState");
             return kUIStateOkay;
         }
@@ -398,13 +453,16 @@ namespace Enso
                 Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
             }
 
+            // Serialise the new object to the outbound queue
+            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+
             return kUIStateOkay;
         }
 
         return kUIStateOkay;
     }
 
-    void GI2DRenderer::OnRender()
+    __host__ void GI2DRenderer::OnRender()
     {
         if (m_dirtyFlags)
         {
@@ -442,12 +500,12 @@ namespace Enso
         m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
     }
 
-    void GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown)
+    __host__ void GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown)
     {
 
     }
 
-    void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
+    __host__ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
         if (code == VK_MBUTTON)
@@ -460,7 +518,7 @@ namespace Enso
         }
     }
 
-    void GI2DRenderer::OnMouseMove()
+    __host__ void GI2DRenderer::OnMouseMove()
     {
         // Dragging?
         if (IsMouseButtonDown(VK_MBUTTON))
@@ -474,14 +532,14 @@ namespace Enso
         }
     }
 
-    void GI2DRenderer::OnViewChange()
+    __host__ void GI2DRenderer::OnViewChange()
     {
         auto& transform = m_viewCtx.transform;
 
         // Zooming?
         if (IsKeyDown(VK_CONTROL))
         {
-            float logScaleAnchor = std::log2(::max(1e-10f, m_viewCtx.scaleAnchor));
+            float logScaleAnchor = std::log2(std::max(1e-10f, m_viewCtx.scaleAnchor));
             logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
             transform.scale = std::pow(2.0, logScaleAnchor);
 
@@ -520,16 +578,16 @@ namespace Enso
         }
     }
 
-    void GI2DRenderer::OnMouseWheel()
+    __host__ void GI2DRenderer::OnMouseWheel()
     {
 
     }
 
-    void GI2DRenderer::OnResizeClient()
+    __host__ void GI2DRenderer::OnResizeClient()
     {
     } 
 
-    bool GI2DRenderer::Serialise(Json::Document& json, const int flags) 
+    __host__ bool GI2DRenderer::Serialise(Json::Document& json, const int flags)
     {
         return true;
     }

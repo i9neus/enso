@@ -20,9 +20,7 @@ namespace Enso
 
     private:
         RenderObjectMap                         m_objectMap;
-        WeakRenderObjectMap                     m_dagMap;        
-        WeakRenderObjectArray                   m_objectVector;
-        std::unordered_map<std::string, uint>   m_idToIdxMap;
+        WeakRenderObjectMap                     m_dagMap;
 
         uint                                    m_uniqueIdx;
 
@@ -50,12 +48,12 @@ namespace Enso
         __host__ GenericObjectContainer(const GenericObjectContainer&&) = delete;
         __host__ virtual void OnDestroyAsset() override final;
 
-        __host__ AssetHandle<Host::GenericObject> operator[](const uint idx);
-
         __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
         __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }
         __host__ ConstIterator begin() const noexcept { return ConstIterator(m_objectMap.cbegin()); }
         __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
+
+        __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
 
         template<typename ObjectType = Host::GenericObject>
         __host__ AssetHandle<ObjectType> FindByID(const std::string& id) const
@@ -120,31 +118,21 @@ namespace Enso
         __host__ void Synchronise();
         __host__ uint GetUniqueIndex() { return m_uniqueIdx; }
 
-        __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
         __host__ size_t Size() const { return m_objectMap.size(); }
 
         __host__ void Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath = true);
 
         __host__ void Erase(const Host::GenericObject& obj);
         __host__ void Erase(const std::string& id);
-        __host__ void Erase(const uint objectIdx);
 
         template<typename DowncastType, typename DeleteFunctor>
         __host__ void Erase(DeleteFunctor& canDelete)
-        {
-            for (int idx = 0; idx < m_objectVector.size(); ++idx)
+        {            
+            for (auto it = m_objectMap.begin(); it != m_objectMap.end();)
             {
-                // Try downcasting the objeect to the specified type.
-                Assert(!m_objectVector[idx].expired());
-                AssetHandle<DowncastType> object = AssetHandle<Host::GenericObject>(m_objectVector[idx]).DynamicCast<DowncastType>();
-                if (!object) { continue; }
-
                 // Call the functor to see whether it can be deleted
-                if (canDelete(object))
-                {
-                    Erase(idx);
-                    idx--; // This element needs to be checked again in case the moved element also needs to be scheduled for deletion
-                }
+                if (canDelete(it->second)) { it = m_objectMap.erase(it); }
+                else                       { ++it; }
             }
         }
     };
