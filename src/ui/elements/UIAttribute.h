@@ -13,15 +13,15 @@ namespace Enso
     class UIGenericAttribute : public SchemaAttributeProperties
     {
     public:
-        UIGenericAttribute() = default;
+        UIGenericAttribute() : m_isDirty(false) {}
         ~UIGenericAttribute() = default;
 
         void Initialise(const SchemaAttributeProperties& properties, const Json::Node& node);
         virtual void Serialise(Json::Node&) const = 0;
         virtual void Deserialise(const Json::Node&) = 0;
 
-        bool IsDirty() const;
-        void MakeClean();
+        bool IsDirty() const { return m_isDirty; }
+        void MakeClean() { m_isDirty = false; }
 
         bool Construct();
 

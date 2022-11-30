@@ -15,8 +15,7 @@ namespace Enso
         m_moduleManager = moduleManager;
         m_activeRenderer = m_moduleManager->GetRendererPtr();
 
-        m_gi2DUI = std::make_unique<GI2DUI>();
-        m_gi2DUI->SetOutboundCommandQueue(m_outboundCmdQueue);
+        m_gi2DUI = std::make_unique<GI2DUI>(m_outboundCmdQueue);
     }
 
     UIModuleManager::~UIModuleManager()

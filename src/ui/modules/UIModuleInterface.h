@@ -12,12 +12,11 @@ namespace Enso
     class UIModuleInterface
     {
     public:
-        UIModuleInterface(const std::string& id) : m_componentId(id) {}
+        UIModuleInterface(const std::string& id, std::shared_ptr<CommandQueue> outQueue) : m_componentId(id), m_outboundCmdQueue(outQueue) {}
 
         virtual void ConstructComponent() = 0;
 
         void SetInboundCommandQueue(std::shared_ptr<CommandQueue> inQueue) { m_inboundCmdQueue = inQueue; }
-        void SetOutboundCommandQueue(std::shared_ptr<CommandQueue> outQueue) { m_outboundCmdQueue = outQueue; }
 
     protected:
         const std::string   m_componentId;

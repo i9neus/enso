@@ -12,7 +12,8 @@ namespace Tests
 		void AddChildDAGInEmptyTree();
 		void AddChildDAGInValidTree();
 		void AddChildDAGInInvalidTree();
-		void AddChildMalformedDAG();
+		void AddChildMalformedPath();
+		void MoveCtor();
 	};
 	
 	TEST_CLASS(JsonTests)
@@ -21,6 +22,7 @@ namespace Tests
 		EXTERNAL_TEST_METHOD(JsonTestsImpl, AddChildDAGInEmptyTree);
 		EXTERNAL_TEST_METHOD(JsonTestsImpl, AddChildDAGInValidTree);
 		EXTERNAL_TEST_METHOD(JsonTestsImpl, AddChildDAGInInvalidTree);
-		EXTERNAL_TEST_METHOD(JsonTestsImpl, AddChildMalformedDAG);
+		EXTERNAL_TEST_METHOD(JsonTestsImpl, AddChildMalformedPath);
+		//EXTERNAL_TEST_METHOD(JsonTestsImpl, MoveCtor);
 	};
 }

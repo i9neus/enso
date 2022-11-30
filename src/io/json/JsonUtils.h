@@ -8,6 +8,7 @@
 #include "core/Assert.h"
 #include "core/Types.h"
 #include <map>
+#include <functional>
 
 namespace Enso
 {
@@ -54,6 +55,10 @@ namespace Enso
             {
                 m_dagPath = (parent.m_dagPath.empty()) ? id : (parent.m_dagPath + kDAGDelimiter + id);
             }
+            Node(const Node&) = default;
+            Node& operator=(const Node&) = default;
+            //Node(Node&&);
+            //Node& operator=(Node&&);
 
             rapidjson::Value* GetChildImpl(const std::string& path, uint flags) const;
 
@@ -101,19 +106,14 @@ namespace Enso
                     }
                 }
             };
-
-            template<typename T, typename Lambda>
-            void AddArrayImpl(const std::string& name, const std::vector<T>& values, Lambda Push)
-            {
-                CheckOk();
-                rapidjson::Value jsonArray(rapidjson::kArrayType);
-                for (const auto& element : values) { Push(jsonArray, element); }
-
-                m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), jsonArray, *m_allocator);
-            }
+         
+            // Ensures that the specified DAG path exists up until the last element (which will be decided by the calling function)
+            Node ResolveDAGRoute(const std::string& path, const uint flags, rapidjson::Value* node, std::function<Node(rapidjson::Value*, const std::string&, const uint)> functor);
 
         public:
             inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
+            bool IsValidName(const std::string& name) const;
+
             const Document& GetRootDocument() const { Assert(m_rootDocument); return *m_rootDocument; }
             void DeepCopy(const Node& other);
 
@@ -132,63 +132,84 @@ namespace Enso
             int Size() const;
 
             template<typename T>
-            void AddValue(const std::string& name, const T& value)
+            void AddValue(const std::string& path, const T& value, const uint flags = 0)
             {
-                CheckOk();
-                m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), value, *m_allocator);
+                auto functor = [this, &value](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+                {
+                    node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), value, *m_allocator);
+                    return Node();
+                };
+                ResolveDAGRoute(path, flags, m_node, functor);
             }
 
-            void AddValue(const std::string& name, const std::string& value);
+            void AddValue(const std::string& name, const std::string& value, const uint flags = 0);
 
             template<typename VecType>
-            void AddVector(const std::string& name, const VecType& vec)
+            void AddVector(const std::string& name, const VecType& vec, const uint flags = 0)
             {
                 std::vector<typename VecType::kType> values(VecType::kDims);
                 for (int i = 0; i < VecType::kDims; i++) { values[i] = vec[i]; }
 
-                AddArray(name, values);
+                AddArray(name, values, flags);
             }
 
             template<typename T>
-            void AddArray(const std::string& name, const std::vector<T>& values)
+            void AddArray(const std::string& path, const std::vector<T>& values, const uint flags = 0)
             {
-                AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const T& element) { jsonArray.PushBack(element, *m_allocator); });
+                auto functor = [this, &values](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+                {
+                    rapidjson::Value jsonArray(rapidjson::kArrayType);
+                    for (const auto& element : values)
+                    {
+                        jsonArray.PushBack(element, *m_allocator);
+                    }
+                    node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), jsonArray, *m_allocator);
+                    return Node();
+                };
+                ResolveDAGRoute(path, flags, m_node, functor);
             }
 
-            void AddArray(const std::string& name, const std::vector<std::string>& values);
+            void AddArray(const std::string& name, const std::vector<std::string>& values, const uint flags = 0);
 
             template<typename T>
-            void AddArray2D(const std::string& name, const std::vector<std::vector<T>>& values)
+            void AddArray2D(const std::string& path, const std::vector<std::vector<T>>& values, const uint flags = 0)
             {
                 static_assert(std::is_arithmetic<T>::value, "Can only add arithmetic values to 2D arrays for now.");
 
-                CheckOk();
-                rapidjson::Value rowArray(rapidjson::kArrayType);
-                for (const auto& row : values)
+                auto functor = [this, &values](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
                 {
-                    rapidjson::Value colArray(rapidjson::kArrayType);
-                    for (const auto& col : row)
+                    rapidjson::Value rowArray(rapidjson::kArrayType);
+                    for (const auto& row : values)
                     {
-                        colArray.PushBack(col, *m_allocator);
+                        rapidjson::Value colArray(rapidjson::kArrayType);
+                        for (const auto& col : row)
+                        {
+                            colArray.PushBack(col, *m_allocator);
+                        }
+                        rowArray.PushBack(colArray, *m_allocator);
                     }
-                    rowArray.PushBack(colArray, *m_allocator);
-                }
-
-                m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rowArray, *m_allocator);
+                    node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rowArray, *m_allocator);
+                    return Node();
+                };
+                ResolveDAGRoute(path, flags, m_node, functor);               
             }
 
             template<typename T>
-            void AddEnumeratedParameter(const std::string& parameterName, const std::vector<std::string>& ids, const T& parameterValue)
+            void AddEnumeratedParameter(const std::string& path, const std::vector<std::string>& ids, const T& parameterValue, const uint flags = 0)
             {
                 AssertMsgFmt(parameterValue >= 0 && parameterValue < ids.size(),
-                    "Parameter value %i for attribute '%s' is not in the valid range [0, %i)", parameterValue, parameterName.c_str(), ids.size());
+                    "Parameter value %i for attribute '%s' is not in the valid range [0, %i)", parameterValue, path.c_str(), ids.size());
 
-                CheckOk();
-                m_node->AddMember(rapidjson::Value(parameterName.c_str(), *m_allocator).Move(),
-                    rapidjson::Value(ids[parameterValue].c_str(), *m_allocator).Move(), *m_allocator);
+                auto functor = [this, &parameterValue, &ids](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+                {
+                    node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(),
+                                    rapidjson::Value(ids[parameterValue].c_str(), *m_allocator).Move(), *m_allocator);
+                    return Node();
+                };
+                ResolveDAGRoute(path, flags, m_node, functor);                
             }
 
-            const Node AddChildObject(const std::string& name, const int flags = 0);
+            Node AddChildObject(const std::string& name, const int flags = 0);
 
             bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const;
 

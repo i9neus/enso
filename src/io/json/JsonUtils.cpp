@@ -4,6 +4,7 @@
 #include "thirdparty/rapidjson/prettywriter.h"
 
 #include "io/FilesystemUtils.h"
+#include <functional>
 
 #undef GetObject
  
@@ -11,6 +12,34 @@ namespace Enso
 {
     namespace Json
     {
+        /*Node::Node(Node&& other)
+        {
+            m_node = other.m_node;
+            m_rootDocument = other.m_rootDocument;
+            m_allocator = m_allocator;
+            m_dagPath = std::move(other.m_dagPath);
+        }
+
+        Node& Node::operator=(Node&& other)
+        {
+            m_node = other.m_node;
+            m_rootDocument = other.m_rootDocument;
+            m_allocator = m_allocator;
+            m_dagPath = std::move(other.m_dagPath);
+            return *this;
+        }*/
+        
+        bool Node::IsValidName(const std::string& name) const
+        {
+            // JSON node names may only contain alphanumeric characters, underscores and dashes
+            if (name.empty()) { return false; }
+            for (auto& c : name)
+            {
+                if (!std::isalnum(c) && c != '_' && c != '-') { return false; }
+            }
+            return true;
+        }
+        
         rapidjson::Value* Node::GetChildImpl(const std::string& path, const uint flags) const
         {
             Assert(m_node);
@@ -70,63 +99,93 @@ namespace Enso
             return nullptr;
         }
 
-        void Node::AddValue(const std::string& name, const std::string& value)
+        void Node::AddValue(const std::string& path, const std::string& value, const uint flags)
         {
-            CheckOk();
-            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(),
-                rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
+            auto functor = [this, &value](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+            {
+                node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(),
+                                  rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
+
+                return Node();
+            };
+
+            ResolveDAGRoute(path, flags, m_node, functor);
         }
 
-        void Node::AddArray(const std::string& name, const std::vector<std::string>& values)
+        void Node::AddArray(const std::string& path, const std::vector<std::string>& values, const uint flags)
         {
-            AddArrayImpl(name, values, [&](rapidjson::Value& jsonArray, const std::string& element)
+            auto functor = [this, &values](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+            {
+                rapidjson::Value jsonArray(rapidjson::kArrayType);
+                for (const auto& element : values)
                 {
                     jsonArray.PushBack(rapidjson::Value(element.c_str(), *m_allocator).Move(), *m_allocator);
-                });
+                }
+                node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), jsonArray, *m_allocator);
+                return Node();
+            };
+
+            ResolveDAGRoute(path, flags, m_node, functor);
         }
 
-        const Node Node::AddChildObject(const std::string& path, const int flags)
+        Node Node::ResolveDAGRoute(const std::string& path, const uint flags, rapidjson::Value* node, std::function<Node(rapidjson::Value*, const std::string&, const uint)> functor)
         {
-            AssertMsg(!path.empty(), "Child path cannot be blank.");
             CheckOk();
-
-            // If this is a literal ID, just add the node and we're done 
+            
             if (!(flags & kPathIsDAG))
             {
-                m_node->AddMember(rapidjson::Value(path.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
-                rapidjson::Value& newNode = (*m_node)[path.c_str()];
-                newNode.SetObject();
-                return Node(&newNode, *this);
+                AssertMsgFmt(IsValidName(path), "'%s' is not a valid node name (must be alphanumeric, underscore or dash)", path.c_str());
+                return functor(node, path, flags);
             }
-
-            // Otherwise, parse it a series of delimiter-separated tokens specifying the DAG path
+            
+            // Parse the DAG path into its constituent tokens
             Lexer lex(path);
             Assert(lex);
-            rapidjson::Value* node = m_node;
+            std::vector<std::string> tokens;
             do
             {
-                std::string childID;
-                bool success = lex.ParseToken(childID, [](char c) { return c != kDAGDelimiter; });
+                tokens.resize(tokens.size() + 1);
+                bool success = lex.ParseToken(tokens.back(), [](char c) { return c != kDAGDelimiter; });
                 AssertMsgFmt(success, "Malformed or missing identifier in path string '%s'.", path.c_str());
+                AssertMsgFmt(IsValidName(tokens.back()), "Token '%s' in DAG path '%s' is not a valid node name.", tokens.back().c_str(), path.c_str());
 
+            } while (lex && lex.PeekNext(kDAGDelimiter));
+
+            // Create a path into the tree according to the token list, creating new nodes as necessary
+            for (int idx = 0; idx < tokens.size() - 1; ++idx)
+            {
                 // If a child with this ID does not already exist,  create it
-                rapidjson::Value::MemberIterator jsonIt = node->FindMember(childID.c_str());
+                rapidjson::Value::MemberIterator jsonIt = node->FindMember(tokens[idx].c_str());
                 if (jsonIt == node->MemberEnd())
                 {
-                    node->AddMember(rapidjson::Value(childID.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
-                    node = &(*node)[childID.c_str()];
+                    node->AddMember(rapidjson::Value(tokens[idx].c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
+                    node = &(*node)[tokens[idx].c_str()];
                     node->SetObject();
                 }
                 // Otherwise, jump into the existing node
                 else
-                {                    
-                    AssertMsgFmt(jsonIt->value.IsObject(), "Node '%s' in DAG '%s' is not an object.", childID.c_str(), path.c_str());
-                    node = &jsonIt->value; 
-                }                
+                {
+                    AssertMsgFmt(jsonIt->value.IsObject(), "Node '%s' in DAG '%s' is not an object.", tokens[idx].c_str(), path.c_str());
+                    node = &jsonIt->value;
+                }
+            }
 
-            } while (lex && lex.PeekNext(kDAGDelimiter));
-            
-            return Node(node, *this);
+            return functor(node, tokens.back(), flags);
+        }
+
+        Node Node::AddChildObject(const std::string& path, const int flags)
+        {
+            auto functor = [this](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
+            {
+                // Add the new child node
+                node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
+                rapidjson::Value& newNode = (*node)[name.c_str()];
+                newNode.SetObject();
+
+                return Node(&newNode, *this);
+            };
+
+            return ResolveDAGRoute(path, flags, m_node, functor);
         }
 
         bool Node::GetBool(const std::string& name, const bool defaultValue, const uint flags) const

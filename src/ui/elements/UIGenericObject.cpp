@@ -36,16 +36,17 @@ namespace Enso
 
     bool UIGenericObject::Construct()
     {
+        m_isDirty = false;
+        
         if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return false; }
         
         // Construct the attributes in order
-        bool isDirty = false;
         for (const auto& attribute : m_attributeList)
         {
-            isDirty |= attribute->Construct();
+            m_isDirty |= attribute->Construct();
         }
 
-        return isDirty;
+        return m_isDirty;
     }
 
     void UIGenericObject::Deserialise(const Json::Node& node)
@@ -58,9 +59,10 @@ namespace Enso
 
     void UIGenericObject::Serialise(Json::Node& node) const
     {
+        Json::Node childNode = node.AddChildObject(m_id);
         for (const auto& attr : m_attributeList)
         {
-            attr->Serialise(node);
+            attr->Serialise(childNode);
         }
     }
 }

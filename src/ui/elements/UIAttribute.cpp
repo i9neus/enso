@@ -34,7 +34,7 @@ namespace Enso
     bool UIGenericAttribute::Construct()
     {
         // Construct the full element
-        if (!ConstructImpl()) { return false; }
+        m_isDirty = ConstructImpl();       
         
         // Display the tooltip if specified
         if (!m_uiWidget.tooltip.empty())
@@ -42,7 +42,7 @@ namespace Enso
             HelpMarker(m_uiWidget.tooltip.c_str());
         }
 
-        return true;
+        return m_isDirty;
     }
 
 #define UI_ATTRIBUTE_FLOAT_CONSTRUCT(Dimension, DataPtr) \
@@ -51,16 +51,12 @@ namespace Enso
         switch (m_uiWidget.type)  \
         {  \
         case kUIWidgetDrag:  \
-            ImGui::DragFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, maxf(0.00001f, *DataPtr * 0.01f), m_dataRange[0], m_dataRange[1], "%.6f");  \
-            break;  \
+            return ImGui::DragFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, maxf(0.00001f, *DataPtr * 0.01f), m_dataRange[0], m_dataRange[1], "%.6f");  \
         case kUIWidgetSlider:  \
-            ImGui::SliderFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, m_dataRange[0], m_dataRange[1], "%.6f");  \
-            break;  \
+            return ImGui::SliderFloat##Dimension(m_uiWidget.label.c_str(), DataPtr, m_dataRange[0], m_dataRange[1], "%.6f");  \
         default:  \
-            ImGui::InputFloat##Dimension(m_uiWidget.label.c_str(), DataPtr);  \
-            break;  \
+            return ImGui::InputFloat##Dimension(m_uiWidget.label.c_str(), DataPtr);  \
         } \
-        \
         return true; \
     }    
 
@@ -83,7 +79,7 @@ namespace Enso
 #define UI_ATTRIBUTE_FLOAT_DESERIALISE(Dimension, Deserialiser) \
     void UIAttributeFloat##Dimension::Deserialise(const Json::Node& node) \
     {  \
-        node.##Deserialiser(m_id, m_data, Json::kRequiredWarn); \
+        node.##Deserialiser(m_id, m_data, Json::kRequiredWarn | Json::kPathIsDAG); \
     }   
 
     UI_ATTRIBUTE_FLOAT_DESERIALISE(, GetValue)

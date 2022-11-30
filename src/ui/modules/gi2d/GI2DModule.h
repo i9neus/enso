@@ -9,7 +9,7 @@ namespace Enso
     class GI2DUI : public UIModuleInterface
     {
     public:
-        GI2DUI();
+        GI2DUI(std::shared_ptr<CommandQueue> outQueue);
 
         virtual void ConstructComponent() override final;
 

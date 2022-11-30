@@ -9,10 +9,14 @@ namespace Enso
 
     }*/
 
-    GI2DUI::GI2DUI() : 
-        UIModuleInterface("gi2d"),
+    GI2DUI::GI2DUI(std::shared_ptr<CommandQueue> outQueue) :
+        UIModuleInterface("gi2d", outQueue),
         m_commandManger(m_objectContainer)
-    {}
+    {
+        Assert(outQueue);
+
+        outQueue->RegisterCommand("OnUpdateObject");
+    }
     
     void GI2DUI::ConstructComponent()
     {
@@ -25,9 +29,27 @@ namespace Enso
         }
         
         // Construct the objects
+        std::vector<UIGenericObject*> dirtyObjects;
         for (auto& object : m_objectContainer)
         {
-            object.second->Construct();
+            if (object.second->Construct())
+            {
+                dirtyObjects.push_back(object.second.get());
+            }
+        }
+        
+        // If any are dirty, update them now
+        if (!dirtyObjects.empty())
+        {
+            m_outboundCmdQueue->Clear();
+            Json::Node cmdNode = m_outboundCmdQueue->Create("OnUpdateObject");
+            for (auto& object : dirtyObjects)
+            {
+                object->Serialise(cmdNode);
+            }
+            m_outboundCmdQueue->Enqueue();
+            Log::Success(m_outboundCmdQueue->Format());
+            Log::Write("Finished!");
         }
 
         ImGui::End();
