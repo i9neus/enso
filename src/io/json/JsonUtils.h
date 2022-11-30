@@ -15,11 +15,11 @@ namespace Enso
     {
         enum RequiredFlags : uint
         {
-            kSilent = 1 << 0,
-            kRequiredWarn = 1 << 1,
-            kRequiredAssert = 1 << 2,
-            kNotBlank = 1 << 3,
-            kLiteralID = 1 << 4
+            kSilent             = 1,
+            kRequiredWarn       = 2,
+            kRequiredAssert     = 4,
+            kNotBlank           = 8,
+            kPathIsDAG          = 16
         };
 
         template<typename... Pack>
@@ -188,7 +188,8 @@ namespace Enso
                     rapidjson::Value(ids[parameterValue].c_str(), *m_allocator).Move(), *m_allocator);
             }
 
-            const Node AddChildObject(const std::string& name);
+            const Node AddChildObject(const std::string& name, const int flags = 0);
+
             bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const;
 
             template<typename T>

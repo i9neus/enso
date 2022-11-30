@@ -34,15 +34,18 @@ namespace Enso
         }
     }
 
-    void UIGenericObject::Construct()
+    bool UIGenericObject::Construct()
     {
-        if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+        if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return false; }
         
         // Construct the attributes in order
+        bool isDirty = false;
         for (const auto& attribute : m_attributeList)
         {
-            attribute->Construct();
+            isDirty |= attribute->Construct();
         }
+
+        return isDirty;
     }
 
     void UIGenericObject::Deserialise(const Json::Node& node)

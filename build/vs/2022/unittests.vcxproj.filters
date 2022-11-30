@@ -66,6 +66,15 @@
     <ClInclude Include="..\..\..\tests\unit\suites\MathTests.h">
       <Filter>suites</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\tests\unit\suites\JsonTests.h">
+      <Filter>suites</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
+      <Filter>dependencies\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\FilesystemUtils.h">
+      <Filter>dependencies\cpp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cu">
@@ -90,6 +99,15 @@
       <Filter>dependencies\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp">
+      <Filter>dependencies\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\tests\unit\suites\JsonTests.cpp">
+      <Filter>suites</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp">
+      <Filter>dependencies\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp">
       <Filter>dependencies\cpp</Filter>
     </ClCompile>
   </ItemGroup>

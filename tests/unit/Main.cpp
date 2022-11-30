@@ -5,4 +5,5 @@
 #include "suites\VecTests.h"
 #include "suites\VectorTests.h"
 #include "suites\DeviceObjectTests.h"
+#include "suites\JsonTests.h"
 

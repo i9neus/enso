@@ -17,8 +17,8 @@ namespace Enso
             AssertMsg(!path.empty(), "Must specify a path to a node.");
             AssertMsg(m_node->IsObject(), "Parent node is not an object.");
 
-            // If this ID is marked as literal, search for it directly without trying to parse it as a path
-            if (flags & kLiteralID)
+            // If this ID isn't a DAG, search for it directly without trying to parse it as a path
+            if (!(flags & kPathIsDAG))
             {
                 if (!m_node->IsObject())
                 {
@@ -85,13 +85,48 @@ namespace Enso
                 });
         }
 
-        const Node Node::AddChildObject(const std::string& name)
+        const Node Node::AddChildObject(const std::string& path, const int flags)
         {
+            AssertMsg(!path.empty(), "Child path cannot be blank.");
             CheckOk();
-            m_node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
-            rapidjson::Value& newNode = (*m_node)[name.c_str()];
-            newNode.SetObject();
-            return Node(&newNode, *this);
+
+            // If this is a literal ID, just add the node and we're done 
+            if (!(flags & kPathIsDAG))
+            {
+                m_node->AddMember(rapidjson::Value(path.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
+                rapidjson::Value& newNode = (*m_node)[path.c_str()];
+                newNode.SetObject();
+                return Node(&newNode, *this);
+            }
+
+            // Otherwise, parse it a series of delimiter-separated tokens specifying the DAG path
+            Lexer lex(path);
+            Assert(lex);
+            rapidjson::Value* node = m_node;
+            do
+            {
+                std::string childID;
+                bool success = lex.ParseToken(childID, [](char c) { return c != kDAGDelimiter; });
+                AssertMsgFmt(success, "Malformed or missing identifier in path string '%s'.", path.c_str());
+
+                // If a child with this ID does not already exist,  create it
+                rapidjson::Value::MemberIterator jsonIt = node->FindMember(childID.c_str());
+                if (jsonIt == node->MemberEnd())
+                {
+                    node->AddMember(rapidjson::Value(childID.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
+                    node = &(*node)[childID.c_str()];
+                    node->SetObject();
+                }
+                // Otherwise, jump into the existing node
+                else
+                {                    
+                    AssertMsgFmt(jsonIt->value.IsObject(), "Node '%s' in DAG '%s' is not an object.", childID.c_str(), path.c_str());
+                    node = &jsonIt->value; 
+                }                
+
+            } while (lex && lex.PeekNext(kDAGDelimiter));
+            
+            return Node(node, *this);
         }
 
         bool Node::GetBool(const std::string& name, const bool defaultValue, const uint flags) const

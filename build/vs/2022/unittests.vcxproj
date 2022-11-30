@@ -15,6 +15,8 @@
     <ClInclude Include="..\..\..\src\core\DeviceAllocator.cuh" />
     <ClInclude Include="..\..\..\src\core\GlobalResourceRegistry.cuh" />
     <ClInclude Include="..\..\..\src\core\StringUtils.h" />
+    <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
+    <ClInclude Include="..\..\..\src\io\json\JsonUtils.h" />
     <ClInclude Include="..\..\..\src\io\Log.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\BIH2DTests.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -24,6 +26,7 @@
     </ClInclude>
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cuh" />
+    <ClInclude Include="..\..\..\tests\unit\suites\JsonTests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\Mat2Tests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\Mat3Tests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\Mat4Tests.h" />
@@ -44,8 +47,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp" />
     <ClCompile Include="..\..\..\src\core\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\Log.cpp" />
     <ClCompile Include="..\..\..\tests\unit\Main.cpp" />
+    <ClCompile Include="..\..\..\tests\unit\suites\JsonTests.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{828FD1B8-BD86-475A-A4F0-DEFBCD300F39}</ProjectGuid>

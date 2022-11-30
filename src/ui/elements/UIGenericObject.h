@@ -9,7 +9,7 @@ namespace Enso
     public:
         UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema, const Json::Node& node);
 
-        void Construct();
+        bool Construct();
 
         void Deserialise(const Json::Node&);
         void Serialise(Json::Node&) const;
