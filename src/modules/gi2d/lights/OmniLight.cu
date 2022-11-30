@@ -87,7 +87,7 @@ namespace Enso
         if (type & kSyncParams) { SynchroniseInheritedClass<OmniLightParams>(cu_deviceInstance, *this, kSyncParams); }
     }
 
-    __host__ uint Host::OmniLight::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
+    /*__host__ uint Host::OmniLight::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         if (stateID != "kMoveSceneObjectDragging") { return 0; }
 
@@ -96,7 +96,7 @@ namespace Enso
 
         SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
-    }
+    }*/
 
     __host__ uint Host::OmniLight::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {

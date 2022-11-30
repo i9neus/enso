@@ -53,7 +53,7 @@ namespace Enso
         {
             m_onMove.dragAnchor = viewCtx.mousePos;
             m_onMove.isDragging = true;
-            //Log::Error("kMoveSceneObjectBegin");
+            Log::Error("kMoveSceneObjectBegin");
         }
         else if (stateID == "kMoveSceneObjectDragging")
         {
@@ -65,13 +65,13 @@ namespace Enso
             m_worldBBox += delta;
 
             // The geometry internal to this object hasn't changed, but it will affect the 
-            //Log::Warning("kMoveSceneObjectDragging");
+            Log::Warning("kMoveSceneObjectDragging");
             SetDirtyFlags(kDirtyObjectBounds);
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {
             m_onMove.isDragging = false;
-            //Log::Success("kMoveSceneObjectEnd");
+            Log::Success("kMoveSceneObjectEnd");
         }
 
         return m_dirtyFlags;

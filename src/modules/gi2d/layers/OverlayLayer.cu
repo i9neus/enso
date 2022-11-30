@@ -101,7 +101,7 @@ namespace Enso
         if (m_selectionCtx.isLassoing && m_selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
 
         // Draw the selected object's bounding box
-        if (m_selectionCtx.numSelected > 0. && m_selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
+        if (m_selectionCtx.numSelected > 0 && m_selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
 
         m_accumBuffer->At(xyScreen) = L;
     }
