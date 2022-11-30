@@ -32,7 +32,7 @@ namespace Enso
 
         inline bool                             Serialise(Json::Document& json, const int flags);
         std::shared_ptr<CommandQueue>           GetOutboundCommandQueue() { return m_outboundCmdQueue; }
-        void                                    SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound) { m_inboundCmdQueue = inbound; }
+        void                                    SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound);
 
     private:
         template<typename HostClass>

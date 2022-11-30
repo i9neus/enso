@@ -5,12 +5,11 @@
 #include "core/Vector.cuh"
 #include "FwdDecl.cuh"
 #include "core/GenericObjectFactory.cuh"
-#include "io/CommandQueue.h"
+#include "io/CommandManager.h"
 
 namespace Enso
 {
     class Asset;
-    class GenericObjectContainer;
     namespace Host
     {
         class RenderObject;
@@ -60,6 +59,7 @@ namespace Enso
         __host__ virtual void            OnRender() override final;
         //virtual void          OnPostRender() override final;
         __host__ void                    OnViewChange();
+        __host__ void                    OnCommandsWaiting(CommandQueue& inbound) override final;
 
         __host__ void                    Rebuild();
 
@@ -73,7 +73,9 @@ namespace Enso
         __host__ std::string             DecideOnClickState(const uint& sourceStateIdx);
         __host__ void                    DeselectAll();
 
-        __host__ void                    EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
+        __host__ void                    EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::SceneObject> asset = nullptr);
+
+        __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
     private:
         enum JobIDs : uint { kJobDraw };
@@ -88,7 +90,7 @@ namespace Enso
 
         std::unique_ptr<ViewTransform2D>      m_viewTransform;
 
-        AssetHandle<GenericObjectContainer>   m_renderObjects;
+        AssetHandle<GenericObjectContainer>   m_sceneObjects;
 
         UIGridCtx                             m_gridCtx;
         UIViewCtx                             m_viewCtx;
@@ -109,6 +111,7 @@ namespace Enso
         m_onMove;
 
         std::vector<AssetHandle<Host::Tracable>>    m_selectedTracables;
+        CommandManager                              m_commandManager;
 
         bool                                        m_isRunning;
         HighResolutionTimer                         m_renderTimer;

@@ -139,7 +139,7 @@ namespace Enso
             if (!m_hostLineSegments->IsEmpty())
             {
                 m_hostLineSegments->Back().Set(1, mousePosLocal);
-                SetDirtyFlags(kGI2DDirtyBVH);
+                SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
@@ -157,7 +157,7 @@ namespace Enso
                 m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], mousePosLocal, 0, colour);
             }
 
-            SetDirtyFlags(kGI2DDirtyBVH);
+            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
         else if (stateID == "kCreateSceneObjectClose")
         {
@@ -168,7 +168,7 @@ namespace Enso
             }
 
             Log::Warning("Closed path %s", GetAssetID());
-            SetDirtyFlags(kGI2DDirtyBVH);
+            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
         else
         {
@@ -197,7 +197,7 @@ namespace Enso
         bool resyncParams = false;
         
         // If the geometry has changed, rebuild the BIH
-        if (m_dirtyFlags & kGI2DDirtyBVH)
+        if (m_dirtyFlags & kDirtyObjectBVH)
         {
             // Sync the line segmentsb
             auto& segments = *m_hostLineSegments;
@@ -215,25 +215,33 @@ namespace Enso
                 return Grow(segments[idx].GetBoundingBox(), 0.001f);
             };
             m_hostBIH->Build(getPrimitiveBBox);
-
-            // Update the tracable bounding boxes
-            SceneObjectParams::m_objectBBox = m_hostBIH->GetBoundingBox();
-            SceneObjectParams::m_worldBBox = SceneObjectParams::m_objectBBox + SceneObjectParams::m_transform.trans;
+            
             //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
             resyncParams = true;
         }
 
-        if (m_dirtyFlags & kGI2DDirtyTransforms) 
-        { 
+        if (m_dirtyFlags & kDirtyObjectBounds)
+        {             
             resyncParams = true;
         }
 
-        if (resyncParams) { Synchronise(kSyncParams); }
+        if (resyncParams) 
+        { 
+            // Update the tracable bounding boxes
+            RecomputeBoundingBoxes();
+            
+            Synchronise(kSyncParams); 
+        }
 
         ClearDirtyFlags();
 
         return IsConstructed();
+    }
+
+    __host__ BBox2f Host::Curve::RecomputeObjectSpaceBoundingBox()
+    {
+        return m_hostBIH->GetBoundingBox();
     }
 
     __host__ bool Host::Curve::Serialise(Json::Node& node, const int flags) const
@@ -257,7 +265,7 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::Curve::Deserialise(const Json::Node& node, const int flags)
+    __host__ uint Host::Curve::Deserialise(const Json::Node& node, const int flags)
     {
         Tracable::Deserialise(node, flags);
 
@@ -274,8 +282,10 @@ namespace Enso
                 segments[idx][0] = vec2(vertices[idx][0], vertices[idx][1]);
                 segments[idx][1] = vec2(vertices[idx+1][0], vertices[idx+1][1]);
             }
+
+            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
 
-        return true;
+        return m_dirtyFlags;
     }
 }

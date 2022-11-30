@@ -65,14 +65,14 @@ namespace Enso
             SceneObjectParams::m_worldBBox = BBox2f(viewCtx.mousePos - vec2(viewCtx.dPdXY * 20.0f), viewCtx.mousePos + vec2(viewCtx.dPdXY * 20.0f));
 
             //SetDirtyFlags(kGI2DDirtyTransforms);
-            SetDirtyFlags(kGI2DDirtyBVH);
+            SetDirtyFlags(kDirtyObjectBounds);
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             Finalise();
 
             //SetDirtyFlags(kGI2DDirtyTransforms);
-            SetDirtyFlags(kGI2DDirtyBVH);
+            SetDirtyFlags(kDirtyObjectBounds);
         }        
 
         return m_dirtyFlags;
@@ -97,7 +97,7 @@ namespace Enso
 
         bool resyncParams = false;    
 
-        if (m_dirtyFlags & kGI2DDirtyBVH)
+        if (m_dirtyFlags & kDirtyObjectBounds)
         {
             resyncParams = true;
         }
@@ -110,5 +110,10 @@ namespace Enso
         ClearDirtyFlags();
 
         return IsConstructed();
+    }
+
+    __host__ BBox2f Host::UIInspector::RecomputeObjectSpaceBoundingBox()
+    {
+        return BBox2f(-vec2(viewCtx.dPdXY * 20.0f), vec2(viewCtx.dPdXY * 20.0f));
     }
 }

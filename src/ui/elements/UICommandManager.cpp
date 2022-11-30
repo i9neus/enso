@@ -5,45 +5,12 @@
 namespace Enso
 {
     UICommandManager::UICommandManager(UIObjectContainer& container) :
+        CommandManager(),
         m_objectContainer(container)
     {
         RegisterEventHandler("OnCreateObject", this, &UICommandManager::OnCreateObject);
         RegisterEventHandler("OnUpdateObject", this, &UICommandManager::OnUpdateObject);
         RegisterEventHandler("OnDeleteObject", this, &UICommandManager::OnDeleteObject);
-    }
-
-    // Flushes the command queue and processes the commands contained within it
-    void UICommandManager::Flush(CommandQueue& cmdQueue)
-    {
-        // Copy the data from the command queue and purge it
-        Json::Document rootNode;
-        if (!cmdQueue.Flush(rootNode)) { return; }
-
-        Log::Debug(rootNode.Stringify(true));
-
-        try
-        {
-            // Process each command in turn
-            for (Json::Document::Iterator nodeIt = rootNode.begin(); nodeIt != rootNode.end(); ++nodeIt)
-            {
-                Json::Node childNode = *nodeIt;
-                if (!childNode.IsObject()) { continue; }
-
-                const auto functorIt = m_eventMap.find(nodeIt.Name());
-                if (functorIt == m_eventMap.end())
-                {
-                    Log::Debug("Flush: command '%s' was not registered", nodeIt.Name());
-                    continue;
-                }
-
-                // Call the event functor
-                (functorIt->second)(childNode);
-            }
-        }
-        catch (std::runtime_error& err)
-        {
-            Log::Error("Command error: %s", err.what());
-        }
     }
 
     // Create a UI object that conforms to the specified schema

@@ -200,6 +200,9 @@
     <ClCompile Include="..\..\..\src\ui\elements\UICommandManager.cpp">
       <Filter>ui\elements</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\io\CommandManager.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\io\ImageIO.h">
@@ -597,6 +600,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\Lexer.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\CommandManager.h">
+      <Filter>io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

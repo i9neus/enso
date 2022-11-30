@@ -19,6 +19,7 @@
     <ClCompile Include="..\..\..\src\core\debug\ProcessMemoryMonitor.cpp" />
     <ClCompile Include="..\..\..\src\core\GlobalStateAuthority.cpp" />
     <ClCompile Include="..\..\..\src\core\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\CommandManager.cpp" />
     <ClCompile Include="..\..\..\src\io\CommandQueue.cpp" />
     <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp" />
@@ -93,6 +94,7 @@
     <ClInclude Include="..\..\..\src\core\UIButtonMap.h" />
     <ClInclude Include="..\..\..\src\core\StateGraph.h" />
     <ClInclude Include="..\..\..\src\core\Vector.cuh" />
+    <ClInclude Include="..\..\..\src\io\CommandManager.h" />
     <ClInclude Include="..\..\..\src\io\CommandQueue.h" />
     <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
     <ClInclude Include="..\..\..\src\io\ImageIO.h" />
@@ -133,7 +135,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\ModuleInterface.h" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -213,7 +217,9 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIInspector.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>

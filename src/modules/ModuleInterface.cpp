@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ModuleInterface.h"
+#include "io/CommandQueue.h"
 
 namespace Enso
 {
@@ -86,6 +87,11 @@ namespace Enso
 			while (m_threadSignal.load() == kRenderManagerRun)
 			{
 				HighResolutionTimer timer;
+
+				if (m_inboundCmdQueue && !m_inboundCmdQueue->IsEmpty())
+				{
+					OnCommandsWaiting(*m_inboundCmdQueue);
+				}
 
 				// Notify that a render "tick" has begun
 				{
@@ -207,5 +213,10 @@ namespace Enso
 		m_clientToNormMatrix.i12 = -0.5f;
 
 		OnResizeClient();
+	}
+
+	void ModuleInterface::OnCommandsWaiting(CommandQueue& inbound) 
+	{ 
+		inbound.Clear(); 
 	}
 }

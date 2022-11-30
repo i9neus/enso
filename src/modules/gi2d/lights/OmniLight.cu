@@ -94,7 +94,7 @@ namespace Enso
         m_transform.trans = viewCtx.mousePos;
         m_worldBBox = BBox2f(m_transform.trans - vec2(m_lightRadius), m_transform.trans + vec2(m_lightRadius));
 
-        SetDirtyFlags(kGI2DDirtyBVH);
+        SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
     }
 
@@ -135,10 +135,9 @@ namespace Enso
             return m_dirtyFlags;
         }
 
-        // If the object is dirty, recompute the bounding box
-        SetDirtyFlags(kGI2DDirtyBVH);
-        m_worldBBox = BBox2f(m_transform.trans - vec2(m_lightRadius), m_transform.trans + vec2(m_lightRadius));
 
+        // If the object is dirty, recompute the bounding box
+        SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
     }
 
@@ -158,19 +157,9 @@ namespace Enso
         //AssertInThread("kRenderThread");
 
         if (!m_dirtyFlags) { return IsConstructed(); }
-
-        bool resyncParams = false;
-
-        if (m_dirtyFlags & kGI2DDirtyBVH)
-        {
-            resyncParams = true;
-        }
-
-        if (resyncParams)
-        {
-            Synchronise(kSyncParams);
-        }
-
+        
+        RecomputeBoundingBoxes();
+        Synchronise(kSyncParams);
         ClearDirtyFlags();
 
         return IsConstructed();
@@ -184,11 +173,20 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::OmniLight::Deserialise(const Json::Node& node, const int flags)
+    __host__ uint Host::OmniLight::Deserialise(const Json::Node& node, const int flags)
     {
         Tracable::Deserialise(node, flags);
 
-        node.GetValue("radius", m_lightRadius, Json::kRequiredWarn | flags);
-        return true;
+        if (node.GetValue("radius", m_lightRadius, Json::kRequiredWarn | flags)) 
+        { 
+            SetDirtyFlags(kDirtyObjectBounds); 
+        }
+
+        return m_dirtyFlags;
+    }
+
+    __host__ BBox2f Host::OmniLight::RecomputeObjectSpaceBoundingBox()
+    {
+        return BBox2f(-vec2(m_lightRadius), vec2(m_lightRadius));
     }
 }

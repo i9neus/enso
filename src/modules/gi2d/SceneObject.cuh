@@ -119,7 +119,7 @@ namespace Enso
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
-            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override;
+            __host__ virtual uint Deserialise(const Json::Node& rootNode, const int flags) override;
 
             /*__host__ Device::SceneObject* GetDeviceInstance() const
             {
@@ -146,6 +146,10 @@ namespace Enso
             {
                 if (type == kSyncParams) { SynchroniseInheritedClass<SceneObjectParams>(cu_object, *this, kSyncParams); }
             }
+
+            __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() = 0;
+            __host__ void RecomputeWorldSpaceBoundingBox();
+            __host__ void RecomputeBoundingBoxes();
 
             __host__ void SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); }
             __host__ void ClearDirtyFlags() { m_dirtyFlags = 0; }

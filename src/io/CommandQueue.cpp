@@ -59,12 +59,6 @@ namespace Enso
         m_commandList.Clear();
     }
 
-    int CommandQueue::Size()
-    { 
-        std::lock_guard<std::mutex> lock(m_resourceMutex);
-        return m_commandList.NumMembers(); 
-    }    
-
     std::string CommandQueue::Format()
     {
         std::lock_guard<std::mutex> lock(m_resourceMutex);        

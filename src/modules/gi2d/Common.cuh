@@ -7,27 +7,24 @@ namespace Enso
 {
     enum GI2DDirtyFlags : uint
     {
-        kGI2DClean = 0,
+        kClean = 0,
 
         // View params i.e. camera position and orientation
-        kGI2DDirtyView = 1,
+        kDirtyView = 1,
 
         // UI changes like selection and lassoing
-        kGI2DDirtyUI = 2,
+        kDirtyUI = 2,
 
         // Primitive attributes that don't affect the hierarchy like material properteis
-        kGI2DDirtyPrimitiveAttributes = 4,
+        kDirtyMaterials = 4,
         
-        // Changes to an object transform
-        kGI2DDirtyTransforms = 8,
+        // Changes to the boundary of one or more objects (e.g. transform change, BHV change)
+        kDirtyObjectBounds = 8,
 
-        // Changes to geometry that require a complete rebuild of the hierarchy
-        kGI2DDirtyBVH = 16,
+        // Changes the internal BHV of an object
+        kDirtyObjectBVH = 16,
 
-        // Changes to the number of scene objects
-        kGI2DDirtySceneObjectCount = 32,
-
-        kGI2DDirtyAll = 0xffffffff
+        kDirtyAll = 0xffffffff
     };
 
     template<typename FlagType>

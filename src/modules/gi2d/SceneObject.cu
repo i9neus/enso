@@ -28,11 +28,11 @@ namespace Enso
         }
 
         return false;
-    }    
+    }
 
     __host__ Host::SceneObject::SceneObject(const std::string& id, Device::SceneObject& hostInstance) :
         GenericObject(id),
-        m_dirtyFlags(kGI2DDirtyAll),
+        m_dirtyFlags(kDirtyAll),
         m_isFinalised(false),
         m_hostInstance(hostInstance)
     {
@@ -42,7 +42,7 @@ namespace Enso
     {
         if (SetGenericFlags(m_attrFlags, uint(kSceneObjectSelected), isSelected))
         {
-            SetDirtyFlags(kGI2DDirtyUI, true);
+            SetDirtyFlags(kDirtyUI, true);
         }
         return m_dirtyFlags;
     }
@@ -53,7 +53,7 @@ namespace Enso
         {
             m_onMove.dragAnchor = viewCtx.mousePos;
             m_onMove.isDragging = true;
-            Log::Error("kMoveSceneObjectBegin");
+            //Log::Error("kMoveSceneObjectBegin");
         }
         else if (stateID == "kMoveSceneObjectDragging")
         {
@@ -65,31 +65,48 @@ namespace Enso
             m_worldBBox += delta;
 
             // The geometry internal to this object hasn't changed, but it will affect the 
-            Log::Warning("kMoveSceneObjectDragging");
-            SetDirtyFlags(kGI2DDirtyBVH);
+            //Log::Warning("kMoveSceneObjectDragging");
+            SetDirtyFlags(kDirtyObjectBounds);
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {
             m_onMove.isDragging = false;
-            Log::Success("kMoveSceneObjectEnd");
+            //Log::Success("kMoveSceneObjectEnd");
         }
 
         return m_dirtyFlags;
     }
 
     __host__ bool Host::SceneObject::Serialise(Json::Node& node, const int flags) const
-    {        
+    {
         Json::Node sceneNode = node.AddChildObject("sceneobject");
-        
+
         m_transform.Serialise(sceneNode, flags);
         return true;
     }
 
-    __host__ bool Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
+    __host__ uint Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
     {
         const Json::Node sceneNode = node.GetChildObject("sceneobject", flags);
 
-        if (sceneNode) { m_transform.Deserialise(sceneNode, flags); }
-        return true;
+        if (sceneNode)
+        {
+            if (m_transform.Deserialise(sceneNode, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+        }
+        return m_dirtyFlags;
     }
+
+    __host__ void Host::SceneObject::RecomputeWorldSpaceBoundingBox()
+    {
+        m_worldBBox = m_objectBBox + m_transform.trans;
+        Log::Warning("Rebuilt world bbox: %s", m_worldBBox.Format());
+
+    }
+
+    __host__ void Host::SceneObject::RecomputeBoundingBoxes()
+    {
+        m_objectBBox = RecomputeObjectSpaceBoundingBox();
+        RecomputeWorldSpaceBoundingBox();
+    }
+
 }

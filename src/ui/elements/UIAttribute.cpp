@@ -68,7 +68,7 @@ namespace Enso
 #define UI_ATTRIBUTE_FLOAT_SERIALISE(Dimension, Serialiser) \
     void UIAttributeFloat##Dimension::Serialise(Json::Node& node) const \
     {  \
-        node.##Serialiser(m_id, m_data); \
+        node.##Serialiser(m_id, m_data, Json::kPathIsDAG); \
     }   
 
     UI_ATTRIBUTE_FLOAT_SERIALISE(, AddValue)

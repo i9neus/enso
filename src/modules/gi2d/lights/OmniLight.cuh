@@ -76,8 +76,11 @@ namespace Enso
                 return cu_deviceInstance;
             }
 
-            __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override final;
-            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override final;
+            __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
+            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override final;
+
+        protected:
+            __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
             Device::OmniLight*          cu_deviceInstance = nullptr;

@@ -76,6 +76,8 @@ namespace Enso
         virtual void OnRender() {};
         virtual void OnPostRender() {};
 
+        virtual void OnCommandsWaiting(CommandQueue& inbound);
+
         inline bool IsKeyDown(const uint code) const { return m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed); }
 
 #define IsDownImpl (m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed))

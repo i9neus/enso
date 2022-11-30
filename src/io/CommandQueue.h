@@ -26,8 +26,8 @@ namespace Enso
         bool            Flush(Json::Document& other);
         void            Clear();
 
-        int             Size();
-        inline bool     IsEmpty() { return Size() == 0; }
+        int             Size() const { return m_queueSize; }
+        inline bool     IsEmpty() { return m_queueSize == 0; }
         void            Echo();
         std::string     Format();
 

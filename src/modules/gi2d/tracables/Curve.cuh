@@ -66,11 +66,11 @@ namespace Enso
             __host__ static const std::string GetAssetClassStatic() { return "curve"; }
             __host__ virtual std::string GetAssetClass() const override final { return GetAssetClassStatic(); }
 
-            __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override final;
-            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override final;
+            __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
+            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
-        private:
-
+        protected:
+            __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
             Device::Curve*                                  cu_deviceInstance = nullptr;

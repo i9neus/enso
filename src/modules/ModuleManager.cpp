@@ -101,4 +101,11 @@ namespace Enso
     {
         return m_activeRenderer->Serialise(json, flags);
     }
+
+    void ModuleManager::SetInboundCommandQueue(std::shared_ptr<CommandQueue> inbound)
+    { 
+        m_inboundCmdQueue = inbound; 
+        m_activeRenderer->SetInboundCommandQueue(inbound);
+    }
+
 }

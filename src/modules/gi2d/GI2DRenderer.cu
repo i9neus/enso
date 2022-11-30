@@ -30,10 +30,13 @@ namespace Enso
         // Load the object schema
         SerialisableObjectSchemaContainer::Load("schema.json");
 
-        // Register some commands
+        // Register the outbound commands
         m_outboundCmdQueue->RegisterCommand("OnCreateObject");
         m_outboundCmdQueue->RegisterCommand("OnUpdateObject");
         m_outboundCmdQueue->RegisterCommand("OnDeleteObject");
+
+        // Register the inbound command handlers
+        m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
 
         m_sceneObjectFactory.RegisterInstantiator<Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
@@ -107,7 +110,7 @@ namespace Enso
 
         //m_primitiveContainer.Create(m_renderStream);
 
-        m_renderObjects = CreateAsset<GenericObjectContainer>(":gi2d/renderObjects");
+        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/renderObjects");
         m_scene = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
 
         m_overlayRenderer = CreateAsset<Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
@@ -116,7 +119,7 @@ namespace Enso
 
         //m_isosurfaceExplorer = CreateAsset<Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_scene, m_clientWidth, m_clientHeight, 1, m_renderStream);
 
-        SetDirtyFlags(kGI2DDirtyAll);
+        SetDirtyFlags(kDirtyAll);
 
         if (m_dirtyFlags)
         {
@@ -134,17 +137,16 @@ namespace Enso
         //m_scene->voxelProxy.DestroyAsset();
 
         m_scene.DestroyAsset();
-        m_renderObjects.DestroyAsset();
+        m_sceneObjects.DestroyAsset();
     }
 
     __host__ void GI2DRenderer::Rebuild()
     {
         std::lock_guard<std::mutex> lock(m_resourceMutex);
 
-        if (m_dirtyFlags & kGI2DDirtyBVH)
-        {
-            m_scene->Rebuild(m_renderObjects, m_viewCtx, m_dirtyFlags);
-        }
+        if (!m_dirtyFlags) { return; }
+
+        m_scene->Rebuild(m_sceneObjects, m_viewCtx, m_dirtyFlags);
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
@@ -154,37 +156,55 @@ namespace Enso
 
         //m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
-        SetDirtyFlags(kGI2DDirtyAll, false);
+        SetDirtyFlags(kDirtyAll, false);
     }
 
-    __host__ void GI2DRenderer::EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
+    __host__ void GI2DRenderer::OnInboundUpdateObject(const Json::Node& node)
+    {
+        for (Json::Node::ConstIterator nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        {
+            const std::string& objId = nodeIt.Name();
+            auto objectHandle = m_sceneObjects->FindByID(objId);
+
+            if (!objectHandle)
+            {
+                Log::Warning("Error: '%s' is not a valid scene object.", objId);
+                continue;
+            }
+
+            const uint dirtyFlags = objectHandle->Deserialise(*nodeIt, Json::kRequiredWarn);
+            SetDirtyFlags(dirtyFlags);
+        }
+    }
+
+    __host__ void GI2DRenderer::EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::SceneObject> asset)
     {
         if (!m_outboundCmdQueue->IsRegistered(eventId)) { return; }
 
         // Lambda to do the actual serialisation
-        auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::GenericObject>& obj) -> void
+        auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::SceneObject>& obj) -> void
         {
             // Create a new child object and add its class ID for the schema
             Json::Node childNode = node.AddChildObject(obj->GetAssetID());
             const std::string assetClass = obj->GetAssetClass();
             AssertMsgFmt(!assetClass.empty(), "Error: asset '%s' has no defined class", obj->GetAssetClass());
             childNode.AddValue("class", assetClass);
-            
+
             // Deleted objects don't need their full attribute list serialised
             if (!(flags & kEnqueueIdOnly))
-            { 
-                m_onCreate.newObject->Serialise(childNode, kSerialiseExposedOnly); 
+            {
+                m_onCreate.newObject->Serialise(childNode, kSerialiseExposedOnly);
             }
         };
 
         Json::Node node = m_outboundCmdQueue->Create(eventId);
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : *m_renderObjects) { SerialiseImpl(node, obj); }
+            for (auto& obj : *m_sceneObjects) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
         }
         else if (flags & kEnqueueSelected)
         {
-            for (auto& obj : m_selectedTracables) { SerialiseImpl(node, obj); }
+            for (auto& obj : m_selectedTracables) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
         }
         else if (flags & kEnqueueOne)
         {
@@ -223,7 +243,7 @@ namespace Enso
             if (tracables[primIdx]->IsSelected())
             {
                 // Erase the object from the container
-                m_renderObjects->Erase(tracables[primIdx]->GetSceneObject().GetAssetID());
+                m_sceneObjects->Erase(tracables[primIdx]->GetSceneObject().GetAssetID());
 
                 ++numDeleted;
                 if (emptyIdx == -1) { emptyIdx = primIdx; }
@@ -244,7 +264,7 @@ namespace Enso
         m_selectedTracables.clear();
         m_selectionCtx.numSelected = 0;
 
-        SetDirtyFlags(kGI2DDirtyBVH);
+        SetDirtyFlags(kDirtyObjectBounds);
 
         return kUIStateOkay;
     }
@@ -261,7 +281,7 @@ namespace Enso
             // Update the selection overlay
             m_selectionCtx.selectedBBox += m_viewCtx.mousePos - m_onMove.dragAnchor;
             m_onMove.dragAnchor = m_viewCtx.mousePos;
-            SetDirtyFlags(kGI2DDirtyUI);
+            SetDirtyFlags(kDirtyUI);
         }
 
         // Notify the scene objects of the move operation  
@@ -272,10 +292,8 @@ namespace Enso
             Assert(obj->IsSelected());
 
             // If the object has moved, trigger a rebuild of the BVH
-            if (obj->OnMove(stateID, m_viewCtx) & (kGI2DDirtyTransforms | kGI2DDirtyBVH))
-            {
-                SetDirtyFlags(kGI2DDirtyBVH);
-            }
+            const uint objDirty = obj->OnMove(stateID, m_viewCtx);
+            SetDirtyFlags(objDirty & (kDirtyObjectBounds | kDirtyObjectBVH));
         }
 
         // Enqueue the list of selected tracables
@@ -296,7 +314,7 @@ namespace Enso
         m_selectedTracables.clear();
         m_selectionCtx.numSelected = 0;
 
-        SetDirtyFlags(kGI2DDirtyUI);
+        SetDirtyFlags(kDirtyUI);
     }
 
     __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
@@ -391,20 +409,20 @@ namespace Enso
                 }
             }
 
-            SetDirtyFlags(kGI2DDirtyUI);
+            SetDirtyFlags(kDirtyUI);
             //Log::Success("Selecting!");
         }
         else if (stateID == "kSelectSceneObjectEnd")
         {
             m_selectionCtx.isLassoing = false;
-            SetDirtyFlags(kGI2DDirtyUI);
+            SetDirtyFlags(kDirtyUI);
 
             //Log::Success("Finished!");
         }
         else if (stateID == "kDeselectSceneObject")
         {
             DeselectAll();
-            SetDirtyFlags(kGI2DDirtyUI);
+            SetDirtyFlags(kDirtyUI);
 
             //Log::Success("Finished!");
         }
@@ -424,7 +442,7 @@ namespace Enso
         if (stateID == "kCreateSceneObjectOpen")
         {
             // Try and instante the objerct
-            auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_renderObjects);
+            auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_sceneObjects);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
             Assert(m_onCreate.newObject);
         }
@@ -447,8 +465,8 @@ namespace Enso
             // If the new object can't be finalised, delete it
             if (!m_onCreate.newObject->Finalise())
             {
-                m_renderObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
-                SetDirtyFlags(kGI2DDirtyBVH);
+                m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
+                SetDirtyFlags(kDirtyObjectBounds);
 
                 Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
             }
@@ -460,6 +478,11 @@ namespace Enso
         }
 
         return kUIStateOkay;
+    }
+
+    __host__ void GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
+    {
+        m_commandManager.Flush(inbound, true);
     }
 
     __host__ void GI2DRenderer::OnRender()
@@ -574,7 +597,7 @@ namespace Enso
             m_viewCtx.Prepare();
 
             // Mark the scene as dirty
-            SetDirtyFlags(kGI2DDirtyView);
+            SetDirtyFlags(kDirtyView);
         }
     }
 

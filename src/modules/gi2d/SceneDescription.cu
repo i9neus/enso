@@ -43,6 +43,9 @@ namespace Enso
 
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {
+        // Only rebuilid if the object bounds have change through insertion, deletion or movement
+        if (!(dirtyFlags & kDirtyObjectBounds)) { return; }
+        
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
         int lightIdx = 0;
         m_hostTracables->Clear();
@@ -90,6 +93,7 @@ namespace Enso
             return Grow((*m_hostTracables)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
         };
         m_hostTracableBIH->Build(getPrimitiveBBox);
-        //Log::Write("Rebuilt scene BIH: %s", m_scene->m_hostTracableBIH->GetBoundingBox().Format());
+        
+        Log::Write("Rebuilt scene BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
     }
 }

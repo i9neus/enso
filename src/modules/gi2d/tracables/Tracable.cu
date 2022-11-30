@@ -17,11 +17,11 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::Tracable::Deserialise(const Json::Node& node, const int flags)
+    __host__ uint Host::Tracable::Deserialise(const Json::Node& node, const int flags)
     {
         Json::Node tracableNode = node.GetChildObject("tracable", flags);
         if (tracableNode) { SceneObject::Deserialise(tracableNode, flags); }
 
-        return true;
+        return m_dirtyFlags;
     }
 }

@@ -58,10 +58,12 @@ namespace Enso
                 return cu_deviceInstance;
             }
 
-        private:
-            __host__ void Synchronise(const int type);
+        protected:
+            __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
+            __host__ void               Synchronise(const int type);
+
             Device::UIInspector*        cu_deviceInstance = nullptr;
             Device::UIInspector         m_hostInstance;
 
