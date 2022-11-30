@@ -7,8 +7,8 @@ namespace Tests
     public:
         DeviceObjectTestsImpl() = default;
 
-        void ConstructDestruct();
-        void Cast();
+        //void ConstructDestruct();
+        //void Cast();
 
     private:
 

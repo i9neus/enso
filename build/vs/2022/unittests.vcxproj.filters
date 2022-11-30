@@ -7,40 +7,19 @@
     <Filter Include="suites">
       <UniqueIdentifier>{be64922d-cb31-4cf9-9913-65324c8fd670}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dependencies\kernels">
+    <Filter Include="dependencies\cuda">
       <UniqueIdentifier>{0ba4d936-5f13-4321-a0d6-e4c9ba18629f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dependencies\cpp">
+      <UniqueIdentifier>{35d51d19-85a6-4379-a037-6db3f44c091d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTests.h">
+    <ClInclude Include="..\..\..\tests\unit\suites\SuiteBase.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cuh">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat2Tests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat3Tests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat4Tests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMathTests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaTracableTests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVecTests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTests.h">
-      <Filter>suites</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cuh">
-      <Filter>suites</Filter>
+    <ClInclude Include="..\..\..\src\core\DeviceAllocator.cuh">
+      <Filter>dependencies\cuda</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTests.h">
       <Filter>suites</Filter>
@@ -48,154 +27,70 @@
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cuh">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\IOTests.h">
+    <ClInclude Include="..\..\..\src\core\GlobalResourceRegistry.cuh">
+      <Filter>dependencies\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\StringUtils.h">
+      <Filter>dependencies\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\Log.h">
+      <Filter>dependencies\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\Backtrace.h">
+      <Filter>dependencies\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\tests\unit\suites\VecTests.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\SuiteBase.h">
+    <ClInclude Include="..\..\..\tests\unit\suites\VectorTests.h">
       <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\VectorTestsImpl.cuh">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\BIH2DTests.h">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\BIH2DTestsImpl.cuh">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat2Tests.h">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat3Tests.h">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat4Tests.h">
+      <Filter>suites</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Assert.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Constants.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\JsonUtils.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\Log.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\StdUtils.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\StringUtils.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh">
-      <Filter>dependencies\kernels</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h">
-      <Filter>dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh">
-      <Filter>dependencies\kernels</Filter>
+    <ClInclude Include="..\..\..\tests\unit\suites\MathTests.h">
+      <Filter>suites</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cu">
-      <Filter>suites</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cu">
-      <Filter>suites</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cu">
       <Filter>suites</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu">
-      <Filter>dependencies\kernels</Filter>
+    <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu">
+      <Filter>dependencies\cuda</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu">
-      <Filter>dependencies\kernels</Filter>
+    <CudaCompile Include="..\..\..\tests\unit\suites\VectorTestsImpl.cu">
+      <Filter>suites</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu">
-      <Filter>dependencies\kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu">
-      <Filter>dependencies\kernels</Filter>
+    <CudaCompile Include="..\..\..\tests\unit\suites\BIH2DTestsImpl.cu">
+      <Filter>suites</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\tests\unit\Main.cpp" />
-    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp">
-      <Filter>dependencies</Filter>
+    <ClCompile Include="..\..\..\src\core\StringUtils.cpp">
+      <Filter>dependencies\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp">
-      <Filter>dependencies</Filter>
+    <ClCompile Include="..\..\..\src\io\Log.cpp">
+      <Filter>dependencies\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\HighResolutionTimer.cpp">
-      <Filter>dependencies</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp">
-      <Filter>dependencies</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\Log.cpp">
-      <Filter>dependencies</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp">
-      <Filter>dependencies</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp">
-      <Filter>dependencies</Filter>
+    <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp">
+      <Filter>dependencies\cpp</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

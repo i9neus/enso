@@ -1,13 +1,13 @@
-#include "CudaBIH2DTestsImpl.cuh"
+#include "BIH2DTestsImpl.cuh"
 
 #include "kernels/gi2d/tracables/primitives/LineSegment.cuh"
-#include "kernels/gi2d/CudaBIH2D.cuh"
+#include "kernels/gi2d/BIH2D.cuh"
 
-using namespace Cuda;
+using namespace Enso;
 
 namespace Tests
 {
-	__host__ void CudaBIH2DTestsImpl::CreateCircleSegments(Cuda::Host::Vector<Cuda::LineSegment>& segments)
+	__host__ void BIH2DTestsImpl::CreateCircleSegments(Host::Vector<LineSegment>& segments)
 	{
 		constexpr int kCircleSegs = 10;
 		segments.Resize(kCircleSegs);
@@ -22,7 +22,7 @@ namespace Tests
 		segments.Synchronise(kVectorSyncUpload);
 	}
 
-	__host__ void CudaBIH2DTestsImpl::CreateRowSegments(Cuda::Host::Vector<Cuda::LineSegment>& segments)
+	__host__ void BIH2DTestsImpl::CreateRowSegments(Host::Vector<LineSegment>& segments)
 	{
 		constexpr int kRowSegments = 10;
 		segments.Resize(kRowSegments);
@@ -36,7 +36,7 @@ namespace Tests
 		segments.Synchronise(kVectorSyncUpload);
 	}
 
-	__host__ void CudaBIH2DTestsImpl::BuildBIH(AssetHandle<Host::BIH2DAsset>& bih, Cuda::Host::Vector<Cuda::LineSegment>& segments, const bool printStats)
+	__host__ void BIH2DTestsImpl::BuildBIH(AssetHandle<Host::BIH2DAsset>& bih, Host::Vector<LineSegment>& segments, const bool printStats)
 	{
 		// Prime the list of indices ready for building
 		auto& primIdxs = bih->GetPrimitiveIndices();
@@ -69,7 +69,7 @@ namespace Tests
 		}
 	}
 	
-	__host__ void CudaBIH2DTestsImpl::BuildSimpleGeometry()
+	__host__ void BIH2DTestsImpl::BuildSimpleGeometry()
 	{
 		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);		
@@ -89,7 +89,7 @@ namespace Tests
 		bih.DestroyAsset();
 	}
 
-	__host__ void CudaBIH2DTestsImpl::PointTestSimpleGeometry()
+	__host__ void BIH2DTestsImpl::PointTestSimpleGeometry()
 	{
 		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
@@ -128,7 +128,7 @@ namespace Tests
 		bih.DestroyAsset();
 	}
 
-	__host__ void CudaBIH2DTestsImpl::RayTestSimpleGeometry() 
+	__host__ void BIH2DTestsImpl::RayTestSimpleGeometry() 
 	{
 		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
@@ -153,7 +153,7 @@ namespace Tests
 
 		bih.DestroyAsset();
 	}
-	__host__ void CudaBIH2DTestsImpl::RayTestRandomGeometry()
+	__host__ void BIH2DTestsImpl::RayTestRandomGeometry()
 	{
 		constexpr int kNumIterations = 1;
 		constexpr int kNumRays = 1000;

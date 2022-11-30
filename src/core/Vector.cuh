@@ -513,7 +513,10 @@ namespace Enso
 			__host__ Vector(const std::string& id, const uint flags) : VectorBase<CommonType, CommonType>(id, flags) {}
 			__host__ Vector(const std::string& id, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(id, size, flags)
 			{
-				SynchroniseImpl(kVectorSyncUpload, false);
+				if (flags & kVectorHostAlloc)
+				{
+					SynchroniseImpl(kVectorSyncUpload, false);
+				}
 			}
 			__host__ ~Vector() {};
 

@@ -44,5 +44,5 @@ namespace Enso
         std::mutex                                                      m_mutex;
     };
 
-    __host__ inline GlobalResourceRegistry& AR() { return GlobalResourceRegistry::Get(); }
+    static inline GlobalResourceRegistry& AR() { return GlobalResourceRegistry::Get(); }
 }

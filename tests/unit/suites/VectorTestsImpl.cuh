@@ -2,10 +2,10 @@
 
 namespace Tests
 {
-    class CudaVectorTestsImpl : public SuiteBase
+    class VectorTestsImpl : public SuiteBase
     {
     public:
-        CudaVectorTestsImpl() = default;
+        VectorTestsImpl() = default;
 
         void ConstructDestruct();
         void Resize();

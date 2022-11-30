@@ -4,10 +4,10 @@
 
 namespace Tests
 {
-	TEST_CLASS(CudaMathTests), MatrixTestUtils
+	TEST_CLASS(MathTests), MatrixTestUtils
 	{
 	public:
-		TEST_METHOD(TestBidirTransformScale)
+		/*TEST_METHOD(TestBidirTransformScale)
 		{
 			// Test that the matrix decomposition is correct for BidirectionalTransform object.
 
@@ -18,7 +18,7 @@ namespace Tests
 			const BidirectionalTransform transform(rotate, translate, scale);
 
 			//MatrixTestUtils(scale, transform.scale, 1e-7f, "scale");
-		}
+		}*/
 
 		/*TEST_METHOD(TestBidirObjectToWorld)
 		{

@@ -1,17 +1,18 @@
 #pragma once
 
 #include "CppUnitTest.h"
-#include "generic\WindowsHeaders.h"
-#include "kernels\CudaAsset.cuh"
-#include "kernels\math\CudaMath.cuh"
-#include "kernels\CudaSampler.cuh"
-#include "generic\StringUtils.h"
+#include "win\WindowsHeaders.h"
+#include "core\Asset.cuh"
+#include "core\math\Math.cuh"
+#include "core\math\Sampler.cuh"
+#include "core\StringUtils.h"
+#include "thirdparty\tinyformat\tinyformat.h"
 #include <functional>
 
 #include <random>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-using namespace Cuda;
+using namespace Enso;
 
 #define EXTERNAL_TEST_METHOD(ClassName, FuncName) \
 	TEST_METHOD(FuncName) \

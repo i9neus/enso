@@ -4,7 +4,7 @@
 
 namespace Tests
 {
-	TEST_CLASS(CudaVecTests), MatrixTestUtils
+	TEST_CLASS(VecTests), MatrixTestUtils
 	{
 	public:
 		TEST_METHOD(TestMathStructSizes)
@@ -19,7 +19,7 @@ namespace Tests
 			CheckTypeSize<uvec3>(sizeof(unsigned int) * 3, "uvec3");
 			CheckTypeSize<uvec4>(sizeof(unsigned int) * 4, "uvec4");
 		}
-		TEST_METHOD(TestMathOrthoBasis)
+		/*TEST_METHOD(TestMathOrthoBasis)
 		{
 			// Test the CreateBasis(n) function by checking that three orthogonal vectors, when transformed, are still orthogonal
 
@@ -59,7 +59,7 @@ namespace Tests
 				Assert::IsTrue(std::abs(dot(s1, s2)) < kDotEpsilon, Widen(tfm::format("s1 and s2 are not ortogonal: dot product = %f", dot(s1, s2))).c_str());
 				Assert::IsTrue(std::abs(dot(s2, s0)) < kDotEpsilon, Widen(tfm::format("s2 and s0 are not ortogonal: dot product = %f", dot(s2, s0))).c_str());
 			}
-		}
+		}*/
 
 		TEST_METHOD(TestMathVecCast)
 		{

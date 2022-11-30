@@ -4,7 +4,7 @@
 
 namespace Tests
 {	
-	TEST_CLASS(CudaMat3Tests), MatrixTestUtils
+	TEST_CLASS(Mat3Tests), MatrixTestUtils
 	{
 	public:
 		TEST_METHOD(TestMat3Trace)

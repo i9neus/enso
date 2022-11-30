@@ -1,12 +1,12 @@
 #pragma once
 
-#include "CudaBIH2DTestsImpl.cuh"
+#include "BIH2DTestsImpl.cuh"
 
-using namespace Cuda;
+using namespace Enso;
 
 namespace Tests
 {
-	TEST_CLASS(CudaBIH2DTests), public SuiteBase
+	TEST_CLASS(BIH2DTests), public SuiteBase
 	{
 	public:
 		EXTERNAL_TEST_METHOD(CudaBIH2DTestsImpl, BuildSimpleGeometry)

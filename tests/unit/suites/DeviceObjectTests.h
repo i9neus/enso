@@ -2,14 +2,14 @@
 
 #include "DeviceObjectTestsImpl.cuh"
 
-using namespace Cuda;
+using namespace Enso;
 
 namespace Tests
 {
 	TEST_CLASS(DeviceObjectTests), public SuiteBase
 	{
 	public:
-		EXTERNAL_TEST_METHOD(DeviceObjectTestsImpl, ConstructDestruct)
-		EXTERNAL_TEST_METHOD(DeviceObjectTestsImpl, Cast)
+		//EXTERNAL_TEST_METHOD(DeviceObjectTestsImpl, ConstructDestruct)
+		//EXTERNAL_TEST_METHOD(DeviceObjectTestsImpl, Cast)
 	};
 }

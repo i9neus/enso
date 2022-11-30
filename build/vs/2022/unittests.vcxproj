@@ -11,83 +11,40 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\generic\Assert.h" />
-    <ClInclude Include="..\..\..\src\generic\Constants.h" />
-    <ClInclude Include="..\..\..\src\generic\D3DIncludes.h" />
-    <ClInclude Include="..\..\..\src\generic\debug\Backtrace.h" />
-    <ClInclude Include="..\..\..\src\generic\FilesystemUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\GlobalStateAuthority.h" />
-    <ClInclude Include="..\..\..\src\generic\HighResolutionTimer.h" />
-    <ClInclude Include="..\..\..\src\generic\JsonUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\Log.h" />
-    <ClInclude Include="..\..\..\src\generic\StdUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\StringUtils.h" />
-    <ClInclude Include="..\..\..\src\generic\WindowsHeaders.h" />
-    <ClInclude Include="..\..\..\src\kernels\cameras\CudaCamera.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaAsset.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaCommonIncludes.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaImage.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\CudaRenderObject.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\DeviceAllocator.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cuh">
+    <ClInclude Include="..\..\..\src\core\debug\Backtrace.h" />
+    <ClInclude Include="..\..\..\src\core\DeviceAllocator.cuh" />
+    <ClInclude Include="..\..\..\src\core\GlobalResourceRegistry.cuh" />
+    <ClInclude Include="..\..\..\src\core\StringUtils.h" />
+    <ClInclude Include="..\..\..\src\io\Log.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\BIH2DTests.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\kernels\GlobalResourceRegistry.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaColourUtils.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaJitterableParameter.cuh" />
-    <ClInclude Include="..\..\..\src\kernels\math\CudaTransform.cuh" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTests.h">
+    <ClInclude Include="..\..\..\tests\unit\suites\BIH2DTestsImpl.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat2Tests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat3Tests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMat4Tests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaMathTests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaTracableTests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVecTests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTests.h" />
-    <ClInclude Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cuh" />
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cuh" />
-    <ClInclude Include="..\..\..\tests\unit\suites\IOTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat2Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat3Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\Mat4Tests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\MathTests.h" />
     <ClInclude Include="..\..\..\tests\unit\suites\SuiteBase.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\VecTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\VectorTests.h" />
+    <ClInclude Include="..\..\..\tests\unit\suites\VectorTestsImpl.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\..\src\kernels\cameras\CudaCamera.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaAsset.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaImage.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\CudaRenderObject.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\gi2d\BIH2DAsset.cu">
+    <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu" />
+    <CudaCompile Include="..\..\..\tests\unit\suites\BIH2DTestsImpl.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\kernels\GlobalResourceRegistry.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeDataTransform.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\lightprobes\CudaLightProbeGrid.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaColourUtils.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaJitterableParameter.cu" />
-    <CudaCompile Include="..\..\..\src\kernels\math\CudaTransform.cu" />
-    <CudaCompile Include="..\..\..\tests\unit\suites\CudaBIH2DTestsImpl.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\tests\unit\suites\CudaVectorTestsImpl.cu" />
     <CudaCompile Include="..\..\..\tests\unit\suites\DeviceObjectTestsImpl.cu" />
+    <CudaCompile Include="..\..\..\tests\unit\suites\VectorTestsImpl.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\generic\debug\Backtrace.cpp" />
-    <ClCompile Include="..\..\..\src\generic\FilesystemUtils.cpp" />
-    <ClCompile Include="..\..\..\src\generic\GlobalStateAuthority.cpp" />
-    <ClCompile Include="..\..\..\src\generic\HighResolutionTimer.cpp" />
-    <ClCompile Include="..\..\..\src\generic\JsonUtils.cpp" />
-    <ClCompile Include="..\..\..\src\generic\Log.cpp" />
-    <ClCompile Include="..\..\..\src\generic\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp" />
+    <ClCompile Include="..\..\..\src\core\StringUtils.cpp" />
+    <ClCompile Include="..\..\..\src\io\Log.cpp" />
     <ClCompile Include="..\..\..\tests\unit\Main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

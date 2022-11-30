@@ -1,18 +1,18 @@
-#include "CudaVectorTestsImpl.cuh"
+#include "VectorTestsImpl.cuh"
 
-#include <kernels/CudaVector.cuh>
+#include "core/Vector.cuh"
 
-using namespace Cuda;
+using namespace Enso;
 
 namespace Tests
 {
 	template<typename T>
 	inline Host::Vector<int> ConstructImpl(const uint size, const uint flags)
 	{
-		return Host::Vector<int>(tfm::format("cudaVector_%i_%i", size, flags), size, flags, nullptr);
+		return Host::Vector<int>(tfm::format("cudaVector_%i_%i", size, flags), size, flags);
 	}
 
-	void CudaVectorTestsImpl::ConstructDestruct()
+	void VectorTestsImpl::ConstructDestruct()
 	{
 		const std::vector<uint> sizeList = { 0, 1, 10, 100, 1000 };
 		const std::vector<uint> flagsList = { 0u, kVectorHostAlloc, kVectorHostAlloc | kVectorUnifiedMemory };
@@ -24,14 +24,14 @@ namespace Tests
 			// Construct for different sizes
 			for (const uint size : sizeList)
 			{	
-				vec = new Host::Vector<int>(tfm::format("cudaVector_%i_%i", size, flags), size, flags, nullptr);
+				vec = new Host::Vector<int>(tfm::format("cudaVector_%i_%i", size, flags), size, flags);
 				delete vec;
 			}
 		}
 	}
 
 	// Create a set of arrays and resize them a certain number of times
-	void CudaVectorTestsImpl::Resize()
+	void VectorTestsImpl::Resize()
 	{
 		constexpr int kNumIterations = 10;
 		constexpr int kNumResizes = 10;
@@ -41,7 +41,7 @@ namespace Tests
 		for (int iterIdx = 0; iterIdx < kNumIterations; ++iterIdx)
 		{
 			const uint startSize = RandInt(0, kMaxArraySize);
-			Host::Vector<int> vec(tfm::format("cudaVector_%i_%i", startSize, kVectorHostAlloc), startSize, kVectorHostAlloc, nullptr);
+			Host::Vector<int> vec(tfm::format("cudaVector_%i_%i", startSize, kVectorHostAlloc), startSize, kVectorHostAlloc);
 
 			// Initialise with some random data
 			std::vector<int> reference(startSize);
@@ -83,7 +83,7 @@ namespace Tests
 		}
 	}	
 
-	void CudaVectorTestsImpl::EmplaceBack()
+	void VectorTestsImpl::EmplaceBack()
 	{
 
 	}
@@ -97,14 +97,14 @@ namespace Tests
 		}
 	}
 
-	void CudaVectorTestsImpl::Synchronise()
+	void VectorTestsImpl::Synchronise()
 	{
 		const size_t kRefSize = 10;
 		std::vector<int> referenceVec(kRefSize);
 		for (auto& i : referenceVec) { i = RandInt(-1e5, 1e5); }
 
 		std::string inputListStr;
-		Host::Vector<int> hostVec(tfm::format("cudaVector"), 0u, kVectorHostAlloc, nullptr);
+		Host::Vector<int> hostVec(tfm::format("cudaVector"), 0u, kVectorHostAlloc);
 		for (const auto i : referenceVec)
 		{
 			hostVec.PushBack(i);
@@ -120,7 +120,7 @@ namespace Tests
 		// Modify the values on the device
 		const int blockSize = 16 * 16;
 		const int gridSize = (hostVec.Size() + (blockSize - 1)) / blockSize;				
-		KernelSquareValues << < gridSize, blockSize >> > (hostVec.GetDeviceInterface());
+		KernelSquareValues << < gridSize, blockSize >> > (hostVec.GetDeviceInstance());
 
 		// Download the data back to the host
 		hostVec.Synchronise(kVectorSyncDownload);
