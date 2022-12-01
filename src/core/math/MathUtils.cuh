@@ -25,6 +25,12 @@ namespace Enso
 	template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
 	__host__ __device__ inline T min(const T a, const T b) { return a < b ? a : b; }
 
+	// Min/max for triples
+	template<typename T>
+	__host__ __device__ __forceinline__ T	max3(const T& a, const T& b, const T& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
+	template<typename T>
+	__host__ __device__ __forceinline__ T	min3(const T& a, const T& b, const T& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
+
 	__host__ __device__ __forceinline__ float	clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
 	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ __forceinline__ float	fract(const float& v) noexcept { return fmodf(v, 1.0f); }
@@ -40,9 +46,7 @@ namespace Enso
 	__host__ __device__ __forceinline__ float	cos01(float a) { return 0.5f * cos(a) + 0.5f; }
 	__host__ __device__ __forceinline__ float	saw01(float a) { return fabs(fract(a) * 2 - 1); }
 	__host__ __device__ __forceinline__ void	sort(float& a, float& b) { if (a > b) { float s = a; a = b; b = s; } }
-	__host__ __device__ __forceinline__ void	swap(float& a, float& b) { float s = a; a = b; b = s; }
-	__host__ __device__ __forceinline__ float	max3(const float& a, const float& b, const float& c) { return (a > b) ? ((a > c) ? a : c) : ((b > c) ? b : c); }
-	__host__ __device__ __forceinline__ float	min3(const float& a, const float& b, const float& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
+	__host__ __device__ __forceinline__ void	swap(float& a, float& b) { float s = a; a = b; b = s; }	
 	template<typename A, typename B, typename V> __host__ __device__ __forceinline__ A mix(const A& a, const B& b, const V& v) { return a * (V(1) - v) + b * v; }
 	template<typename T> __host__ __forceinline__ void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 

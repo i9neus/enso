@@ -52,7 +52,7 @@ namespace Enso
 
     const std::vector<std::string>& SerialisableObjectSchema::GetWidgetTypeStrings()
     {
-        static const std::vector<std::string> widgetTypeStr = { "default", "input", "drag", "slider" };
+        static const std::vector<std::string> widgetTypeStr = { "default", "input", "drag", "slider", "colourpicker" };
         return widgetTypeStr;
     }
 

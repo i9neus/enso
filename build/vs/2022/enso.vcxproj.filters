@@ -103,6 +103,9 @@
     <Filter Include="docs\protocols">
       <UniqueIdentifier>{7ef70ebe-149a-4e2a-913f-d9dcaa9f777b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ui\elements\types">
+      <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -202,6 +205,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\io\CommandManager.cpp">
       <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp">
+      <Filter>ui\elements\types</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeTransform.cpp">
+      <Filter>ui\elements\types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -603,6 +612,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\io\CommandManager.h">
       <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h">
+      <Filter>ui\elements\types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeTransform.h">
+      <Filter>ui\elements\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

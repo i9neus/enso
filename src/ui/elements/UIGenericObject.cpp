@@ -12,16 +12,16 @@ namespace Enso
             std::shared_ptr<UIGenericAttribute> newAttr;
             switch (attribute->m_dataType)
             {
-            //case kSerialDataBool:     newAttr = std::make_shared<UIAttributeBool>(); break;
+            case kSerialDataBool:     newAttr = std::make_shared<UIAttributeNumeric<bool, 1>>(); break;
             //case kSerialDataString:   newAttr = std::make_shared<UIAttributeString>(); break;
-            //case kSerialDataInt:      newAttr = std::make_shared<UIAttributeInt>(); break;
-            //case kSerialDataInt2:     newAttr = std::make_shared<UIAttributeInt2>(); break;
-            //case kSerialDataInt3:     newAttr = std::make_shared<UIAttributeInt3>(); break;
-            //case kSerialDataInt4:     newAttr = std::make_shared<UIAttributeInt4>(); break;
-            case kSerialDataFloat:      newAttr = std::make_shared<UIAttributeFloat>(); break;
-            case kSerialDataFloat2:     newAttr = std::make_shared<UIAttributeFloat2>(); break;
-            case kSerialDataFloat3:     newAttr = std::make_shared<UIAttributeFloat3>(); break;
-            case kSerialDataFloat4:     newAttr = std::make_shared<UIAttributeFloat4>(); break;
+            case kSerialDataInt:        newAttr = std::make_shared<UIAttributeNumeric<int, 1>>(); break;
+            case kSerialDataInt2:       newAttr = std::make_shared<UIAttributeNumeric<int, 2>>(); break;
+            case kSerialDataInt3:       newAttr = std::make_shared<UIAttributeNumeric<int, 3>>(); break;
+            case kSerialDataInt4:       newAttr = std::make_shared<UIAttributeNumeric<int, 4>>(); break;
+            case kSerialDataFloat:      newAttr = std::make_shared<UIAttributeNumeric<float, 1>>(); break;
+            case kSerialDataFloat2:     newAttr = std::make_shared<UIAttributeNumeric<float, 2>>(); break;
+            case kSerialDataFloat3:     newAttr = std::make_shared<UIAttributeNumeric<float, 3>>(); break;
+            case kSerialDataFloat4:     newAttr = std::make_shared<UIAttributeNumeric<float, 4>>(); break;
             //case kSerialDataMat2:     newAttr = std::make_shared<UIAttributeMat2>(); break;
             //case kSerialDataMat3:     newAttr = std::make_shared<UIAttributeMat3>(); break;
             //case kSerialDataMat4:     newAttr = std::make_shared<UIAttributeMat4>(); break;

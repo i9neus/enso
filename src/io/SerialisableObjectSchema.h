@@ -32,6 +32,7 @@ namespace Enso
         kSerialDataMat2,
         kSerialDataMat3,
         kSerialDataMat4,
+        kSerialDataTransform
     };
 
     enum SerialWidgetType : int
@@ -41,7 +42,8 @@ namespace Enso
 
         kUIWidgetInput,
         kUIWidgetDrag,
-        kUIWidgetSlider
+        kUIWidgetSlider,
+        kUIWidgetColourPicker
     };
 
     struct SchemaAttributeProperties

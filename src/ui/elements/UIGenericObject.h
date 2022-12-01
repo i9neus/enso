@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UIAttribute.h"
+#include "types/UIAttributeNumeric.h"
 
 namespace Enso
 {  
