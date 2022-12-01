@@ -1,0 +1,39 @@
+{
+    "omnilight": {
+        "radius": {
+            "dataType": "float",
+            "dataRange": [ 0.0, 1.0 ],
+            "widgetLabel": "Radius",
+            "widgetType": "slider"
+        },
+        "colour": {
+            "dataType": "float3",
+            "dataRange": [ 0.0, 1.0 ],
+            "widgetLabel": "Colour",
+            "widgetType": "colourpicker"
+        },
+        "intensity": {
+            "dataType": "float",
+            "dataRange": [ -20.0, 20.0 ],
+            "widgetLabel": "Intensity",
+            "widgetType": "slider"
+        }
+    },
+    "curve": {
+        "tracable/sceneobject/transform/tra": {
+            "dataType": "float2",
+            "widgetLabel": "Position",
+            "widgetType": "drag"
+        },
+        "tracable/sceneobject/transform/rot": {
+            "dataType": "float",
+            "widgetLabel": "Rotation",
+            "widgetType": "drag"
+        },
+        "tracable/sceneobject/transform/sca": {
+            "dataType": "float2",
+            "widgetLabel": "Scale",
+            "widgetType": "drag"
+        }
+    }
+}
