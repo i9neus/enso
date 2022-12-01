@@ -20,6 +20,7 @@ namespace Enso
 
             __device__ virtual bool                     Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const = 0;
             __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const = 0;
+            __device__ virtual float                    Estimate(const Ray2D& parentRay, const HitCtx2D& hit) const = 0;
         };
     }
 

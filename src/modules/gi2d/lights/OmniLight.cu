@@ -45,6 +45,11 @@ namespace Enso
 
     }
 
+    __device__ float Device::OmniLight::Estimate(const Ray2D& parentRay, const HitCtx2D& hit) const
+    {
+        return length(m_transform.trans - hit.p) * powf(2.0f, m_lightIntensity);
+    }
+
     __device__ void Device::OmniLight::OnSynchronise(const int syncFlags)
     {
         if (syncFlags == kSyncParams)

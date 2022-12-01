@@ -41,9 +41,47 @@ namespace Enso
         return hit.tracableIdx;
     }
 
+    template<typename T>
+    __device__ __inline__ __forceinline__ int LowerBound(int i0, int i1, const T* pmf, const float& xi)
+    {
+        while (i1 - i0 > 1)
+        {
+            const int iMid = i0 + (i1 - i0) / 2;
+            if (pmf[iMid] < xi) { i0 = iMid; }
+            else { i1 = iMid; }
+        }
+
+        if (pmf[i1] < xi) { return i1 + 1; }
+        else if (pmf[i0] < xi) { return i0 + 1; }
+        return i0;
+    }
+
+    __device__ bool Device::PathTracer2D::SelectLight(const Ray2D& incident, const HitCtx2D& hitCtx, const float& xi, int& lightIdx, float& weight) const
+    {
+        constexpr int kMaxLights = 5;
+        float pmf[kMaxLights + 1];
+        pmf[0] = 0.0f;
+        const auto& lights = *(m_scene.lights);
+        for (int idx = 0; idx < lights.Size() && idx < kMaxLights; ++idx)
+        {
+            float estimate = lights[idx]->Estimate(incident, hitCtx);
+
+            pmf[1 + idx] = pmf[idx] + estimate;
+        }
+
+        // No lights are in range to sample
+        if (pmf[lights.Size()] == 0.0f) { return false; }
+
+        lightIdx = LowerBound(1, lights.Size(), pmf, xi * pmf[lights.Size()]) - 1;
+        weight = pmf[lights.Size()] / (pmf[lightIdx + 1] - pmf[lightIdx]);
+
+        assert(lightIdx >= 0 && lightIdx < lights.Size());
+        return true;
+    }
+
     __device__ bool Device::PathTracer2D::Shade(Ray2D& ray, const HitCtx2D& hit, RenderCtx& renderCtx) const
     {
-        const vec3 xi = renderCtx.rng.Rand<0, 1, 2>();
+        const vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
 
         // Sample the direct component
         if (xi.z < 0.5)
@@ -51,8 +89,25 @@ namespace Enso
             const auto& lights = *m_scene.lights;
             if (lights.IsEmpty()) { return false; }
 
-            // Choose a light at random
-            const int lightIdx = max<int>(lights.Size() - 1, int(xi.x * lights.Size()));
+            // Select a light to sample or evaluate
+            int lightIdx = 0;
+            float weightLight = 1.0f;
+            if (lights.Size() > 1)
+            {
+                // Weight each light equally. Cheap to sample but noisy for scenes with lots of lights.
+                //if (m_activeParams.lightSelectionMode == kLightSelectionNaive)
+                if(false)
+                {
+                    lightIdx = max<int>(lights.Size() - 1, int(xi.x * lights.Size()));
+                    weightLight = float(lights.Size());
+                }
+                // Build a PMF based on a crude estiamte of the irradiance at the shading point. Expensive, but 
+                // significantly reduces noise. 
+                else if (!SelectLight(ray, hit, xi.w, lightIdx, weightLight))
+                {
+                    return false;
+                }
+            }            
 
             // Sample the light
             vec2 extantLight;
@@ -61,7 +116,7 @@ namespace Enso
             if (!lights[lightIdx]->Sample(ray, hit, xi.y, extantLight, LLight, pdfLight)) { return false; }
 
             // Derive the extant ray from the incident ray
-            ray.DeriveDirectSample(hit, extantLight, LLight, lightIdx);
+            ray.DeriveDirectSample(hit, extantLight, LLight * weightLight, lightIdx);
         }
         // Indirect light sampling	
         else

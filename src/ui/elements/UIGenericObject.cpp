@@ -39,12 +39,16 @@ namespace Enso
         m_isDirty = false;
         
         if (!ImGui::CollapsingHeader(m_id.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { return false; }
+
+        ImGui::PushID(m_id.c_str());
         
         // Construct the attributes in order
         for (const auto& attribute : m_attributeList)
         {
             m_isDirty |= attribute->Construct();
         }
+
+        ImGui::PopID();
 
         return m_isDirty;
     }

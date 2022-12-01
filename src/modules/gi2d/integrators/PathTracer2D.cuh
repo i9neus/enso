@@ -18,6 +18,8 @@ namespace Enso
             __device__ void Integrate(RenderCtx& renderCtx) const;
 
         private:
+            __device__ bool SelectLight(const Ray2D& incident, const HitCtx2D& hitCtx, const float& xi, int& lightIdx, float& weight) const;
+
             __device__ int Trace(const Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const;
             __device__ bool Shade(Ray2D& ray, const HitCtx2D& hit, RenderCtx& renderCtx) const;
 
