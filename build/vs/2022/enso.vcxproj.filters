@@ -209,9 +209,6 @@
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp">
       <Filter>ui\elements\types</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeTransform.cpp">
-      <Filter>ui\elements\types</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\io\ImageIO.h">
@@ -614,9 +611,6 @@
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h">
-      <Filter>ui\elements\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeTransform.h">
       <Filter>ui\elements\types</Filter>
     </ClInclude>
   </ItemGroup>

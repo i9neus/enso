@@ -10,9 +10,12 @@ namespace Enso
 
     struct OmniLightParams
     {
-        __host__ __device__ OmniLightParams() {}
+        __host__ __device__ OmniLightParams() : m_lightRadius(0.0f), m_lightColour(1.0f), m_lightIntensity(0.0f) {}
 
         float   m_lightRadius;
+
+        vec3    m_lightColour;
+        float   m_lightIntensity;
     };
 
     namespace Host

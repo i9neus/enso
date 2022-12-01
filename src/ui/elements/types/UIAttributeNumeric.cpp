@@ -97,7 +97,6 @@ namespace Enso
     template<> inline bool ConstructInput<int, 4>(std::array<int, 4>& data, const char* label, const vec2& dataRange) 
     { return ImGui::InputInt4(label, data.data()); }
 
-
     // Colour picker
     template<typename Type, int Dim> inline bool ConstructColourPicker(std::array<Type, Dim>& data, const char* label)
     {
@@ -105,7 +104,7 @@ namespace Enso
     }
     template<> inline bool ConstructColourPicker(std::array<float, 3>& data, const char* label)
     {
-        return ImGui::ColorEdit4(label, data.data(), ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputHSV | ImGuiColorEditFlags_Float);
+        return ImGui::ColorEdit3(label, data.data(), ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Float);
     }
 
     template<typename Type, int Dimension>
@@ -114,13 +113,13 @@ namespace Enso
         switch (m_uiWidget.type)  
         {  
         case kUIWidgetDrag:  
-            return ConstructDrag(m_data, m_id.c_str(), m_dataRange);
+            return ConstructDrag(m_data, m_uiWidget.label.c_str(), m_dataRange);
         case kUIWidgetSlider:  
-            return ConstructSlider(m_data, m_id.c_str(), m_dataRange);
-        case kUIWidgetColourPicker: 
-            return ConstructColourPicker(m_data, m_id.c_str());
-        default:  
-            return ConstructInput(m_data, m_id.c_str(), m_dataRange);
+            return ConstructSlider(m_data, m_uiWidget.label.c_str(), m_dataRange);
+        case kUIWidgetColourPicker:
+            return ConstructColourPicker(m_data, m_uiWidget.label.c_str());
+        default:
+            return ConstructInput(m_data, m_uiWidget.label.c_str(), m_dataRange);
         }
     }
 

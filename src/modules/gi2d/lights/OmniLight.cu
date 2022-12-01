@@ -34,7 +34,7 @@ namespace Enso
 
         const float lightSolidAngle = 2.0f * ((lightDist >= m_lightRadius) ? asin(m_lightRadius / lightDist) : kHalfPi);
 
-        L = kOne * lightSolidAngle * cosTheta / (2.0 * m_lightRadius);
+        L = m_lightColour * powf(2.0f, m_lightIntensity) * lightSolidAngle * cosTheta / (2.0 * m_lightRadius);
         pdf = 1.0 / lightSolidAngle;
 
         return true;
@@ -158,10 +158,13 @@ namespace Enso
 
         if (!m_dirtyFlags) { return IsConstructed(); }
         
-        RecomputeBoundingBoxes();
+        if (m_dirtyFlags & kDirtyObjectBounds)
+        {
+            RecomputeBoundingBoxes();
+        }
+
         Synchronise(kSyncParams);
         ClearDirtyFlags();
-
         return IsConstructed();
     }
 
@@ -170,6 +173,8 @@ namespace Enso
         Tracable::Serialise(node, flags);
 
         node.AddValue("radius", m_lightRadius);
+        node.AddVector("colour", m_lightColour);
+        node.AddValue("intensity", m_lightIntensity);
         return true;
     }
 
@@ -177,10 +182,9 @@ namespace Enso
     {
         Tracable::Deserialise(node, flags);
 
-        if (node.GetValue("radius", m_lightRadius, Json::kRequiredWarn | flags)) 
-        { 
-            SetDirtyFlags(kDirtyObjectBounds); 
-        }
+        if (node.GetValue("radius", m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+        if (node.GetVector("colour", m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        if (node.GetValue("intensity", m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
 
         return m_dirtyFlags;
     }

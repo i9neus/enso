@@ -36,9 +36,6 @@
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp" />
-    <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeTransform.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UIGenericObject.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UICommandManager.cpp" />
@@ -177,9 +174,6 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h" />
-    <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeTransform.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h" />
     <ClInclude Include="..\..\..\src\ui\elements\UIGenericObject.h" />
     <ClInclude Include="..\..\..\src\ui\elements\UICommandManager.h" />
@@ -272,7 +266,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\;$(CUDNN_ROOT)\include\;$(ZLIB_ROOT)\include\</IncludePath>
     <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
     <TargetName>enso</TargetName>
     <IntDir>enso\$(Platform)\$(Configuration)\</IntDir>
@@ -295,8 +289,8 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;cublas.lib;cublasLt.lib;zlibwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);$(CUDNN_ROOT)lib;$(ZLIB_ROOT)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>
