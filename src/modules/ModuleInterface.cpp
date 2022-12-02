@@ -206,7 +206,7 @@ namespace Enso
 		m_clientWidth = width;
 		m_clientHeight = height;
 
-		m_clientToNormMatrix = mat3::Indentity();
+		m_clientToNormMatrix = mat3::Identity();
 		m_clientToNormMatrix.i00 = 1.0f / height;
 		m_clientToNormMatrix.i11 = 1.0f / height;
 		m_clientToNormMatrix.i02 = -0.5f * float(width) / float(height);

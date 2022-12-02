@@ -20,6 +20,25 @@ namespace Enso
 
         range.tNear = fmaxf(0.f, cwiseMax(tNearPlane));
         range.tFar = cwiseMin(tFarPlane);
-        return range.tNear < range.tFar;
+        return range.tNear <= range.tFar;
+    }
+
+    __host__ __device__ __forceinline__ bool IntersectRayCircle(const RayBasic2D& ray, const vec2& origin, const float radius, RayRange2D& range)
+    {
+        // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
+        vec2 o = ray.o - origin;
+        float a = dot(ray.d, ray.d);
+        float b = 2.0 * dot(ray.d, o);
+        float c = dot(o, o) - sqr(radius);
+
+        float b2ac4 = b * b - 4.0 * a * c;
+        if (b2ac4 < 0.0) { return false; }
+
+        float sqrtb2ac4 = sqrt(b2ac4);
+        float t0 = (-b + sqrtb2ac4) / (2.0 * a);
+        float t1 = (-b - sqrtb2ac4) / (2.0 * a);
+
+        range = (t1 > t0) ? RayRange2D(t0, t1) : RayRange2D(t1, t0); 
+        return range.tNear <= range.tFar;
     }
 }

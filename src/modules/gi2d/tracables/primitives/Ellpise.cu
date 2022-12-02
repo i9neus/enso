@@ -1,12 +1,13 @@
 #include "Ellipse.cuh"
 #include "core/Vector.cuh"
 #include "core/math/Math.cuh"
+#include "../../GenericIntersector.cuh"
 
 #include <random>
 
 namespace Enso
 {
-    __host__ __device__ float Ellipse::Evaluate(const vec2& p, const float& dPdXY) const
+    __host__ __device__ float Ellipse::EvaluateOverlay(const vec2& p, const float& dPdXY) const
     {
         float distance = length2(p);
 
@@ -22,7 +23,7 @@ namespace Enso
     __host__ __device__ bool Ellipse::IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const
     {
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic
-        vec2 o = ray.o - m_origin;
+        /*vec2 o = ray.o - m_origin;
         float a = dot(ray.d, ray.d);
         float b = 2.0 * dot(ray.d, o);
         float c = dot(o, o) - sqr(m_radius);
@@ -45,6 +46,21 @@ namespace Enso
         {
             hit.n = (o + ray.d * t1) / m_radius;
             hit.tFar = t1;
+        }
+        else { return false; }*/
+
+        RayRange2D hitRange;
+        if (!IntersectRayCircle(ray, m_origin, m_radius, hitRange)) { return false; }
+
+        if (hitRange.tNear > 0.0 && hitRange.tNear < hit.tFar)
+        {
+            hit.n = (ray.o - m_origin + ray.d * hitRange.tNear) / m_radius;
+            hit.tFar = hitRange.tNear;
+        }
+        else if (hitRange.tFar > 0.0 && hitRange.tFar < hit.tFar)
+        {
+            hit.n = (ray.o - m_origin + ray.d * hitRange.tFar) / m_radius;
+            hit.tFar = hitRange.tFar;
         }
         else { return false; }
 

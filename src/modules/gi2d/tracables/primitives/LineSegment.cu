@@ -10,7 +10,7 @@ namespace Enso
         return m_v[0] + saturatef((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;
     }
 
-    __host__ __device__ float LineSegment::Evaluate(const vec2& p, const float& dPdXY) const
+    __host__ __device__ float LineSegment::EvaluateOverlay(const vec2& p, const float& dPdXY) const
     {
         return saturatef(1.0f - (length(p - PerpendicularPoint(p)) - dPdXY * 3.0f) / dPdXY);
     }

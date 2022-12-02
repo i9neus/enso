@@ -19,7 +19,7 @@ namespace Enso
             m_origin(o),
             m_radius(r) {}
 
-        __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& dPdXY) const override final;
+        __host__ __device__ virtual float                   EvaluateOverlay(const vec2& p, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const;
 
         __host__ __device__ __forceinline__ virtual BBox2f  GetBoundingBox() const override final

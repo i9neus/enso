@@ -35,5 +35,30 @@
             "widgetLabel": "Scale",
             "widgetType": "drag"
         }
+    },
+    "kifs": {
+        "rotate": {
+            "dataType": "float",
+            "widgetLabel": "Theta",
+            "widgetType": "drag"
+        },
+        "pivot": {
+            "dataType": "float2",
+            "dataRange": [ 0.0, 1.0 ],
+            "widgetLabel": "Pivot",
+            "widgetType": "slider"
+        },
+        "isosurface": {
+            "dataType": "float",
+            "dataRange": [ 0.0, 100000.0 ],
+            "widgetLabel": "Isosurface",
+            "widgetType": "drag"
+        },
+        "numIterations": {
+            "dataType": "int",
+            "dataRange": [ 0.0, 5.0 ],
+            "widgetLabel": "Iterations",
+            "widgetType": "slider"
+        }
     }
 }

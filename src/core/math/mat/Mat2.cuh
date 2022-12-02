@@ -28,7 +28,7 @@ namespace Enso
 			i00(i00_), i01(i01_),
 			i10(i10_), i11(i11_) {}
 
-		__host__ __device__ __forceinline__ static __mat2 Indentity()
+		__host__ __device__ __forceinline__ static __mat2 Identity()
 		{
 			return __mat2(VecType(1.0f, 0.0f), VecType(0.0f, 1.0f));
 		}

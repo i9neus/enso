@@ -29,7 +29,7 @@ namespace Enso
             const auto id = HostClass::GetAssetClassStatic();
             auto it = m_instantiators.find(id);
             AssertMsgFmt(it == m_instantiators.end(),
-                "Internal error: a render object instantiator with ID '%s' already exists.\n", id);
+                "Internal error: a render object instantiator with ID '%s' already exists.\n", id.c_str());
 
             auto newInst = std::make_shared<Instantiator>();
             m_instantiators[id] = newInst;

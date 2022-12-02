@@ -25,7 +25,7 @@ namespace Enso
         // Flush the command queue and update the object
         if (m_inboundCmdQueue)
         {
-            m_commandManger.Flush(*m_inboundCmdQueue);
+            m_commandManger.Flush(*m_inboundCmdQueue, true);
         }
         
         // Construct the objects

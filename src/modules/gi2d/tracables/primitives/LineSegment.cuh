@@ -17,7 +17,7 @@ namespace Enso
             Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
 
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const override final;
-        __host__ __device__ virtual float                   Evaluate(const vec2& p, const float& dPdXY) const override final;
+        __host__ __device__ virtual float                   EvaluateOverlay(const vec2& p, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
         __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const override final;
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const override final;

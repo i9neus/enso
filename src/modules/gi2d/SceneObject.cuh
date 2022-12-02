@@ -101,7 +101,7 @@ namespace Enso
                             public SceneObjectParams
         {
         public:
-            __host__ virtual bool       Finalise() = 0;
+            //__host__ virtual bool       Finalise() = 0;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);

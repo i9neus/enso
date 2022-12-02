@@ -10,7 +10,7 @@ namespace Enso
     {
         if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
 
-        return vec4(kOne, m_primitive.Evaluate(pWorld - m_transform.trans, viewCtx.dPdXY));
+        return vec4(kOne, m_primitive.EvaluateOverlay(pWorld - m_transform.trans, viewCtx.dPdXY));
     }
 
     __host__ __device__ bool Device::OmniLight::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const

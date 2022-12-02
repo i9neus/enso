@@ -6,9 +6,9 @@ namespace Enso
     __host__ __device__ BidirectionalTransform2D::BidirectionalTransform2D() :
         trans(0.0f), rot(0.0f), scale(1.0f)
     {
-        fwd = mat2::Indentity();
-        inv = mat2::Indentity();
-        nInv = mat2::Indentity();
+        fwd = mat2::Identity();
+        inv = mat2::Identity();
+        nInv = mat2::Identity();
     }
 
     __host__ __device__ void BidirectionalTransform2D::Prepare()
@@ -31,7 +31,7 @@ namespace Enso
         }
         else
         {
-            fwd = mat2::Indentity();
+            fwd = mat2::Identity();
         }
 
         fwd[0] *= sc; fwd[1] *= sc;
@@ -62,7 +62,7 @@ namespace Enso
 
     __host__ __device__ ViewTransform2D::ViewTransform2D()
     {
-        matrix = mat3::Indentity();
+        matrix = mat3::Identity();
         scale = 1.f;
         rotate = 0.f;
         trans = vec2(0.f);
@@ -75,7 +75,7 @@ namespace Enso
     {
         const float sinTheta = std::sin(rotate);
         const float cosTheta = std::cos(rotate);
-        mat3 m = mat3::Indentity();
+        mat3 m = mat3::Identity();
         m.i00 = scale * cosTheta; m.i01 = scale * sinTheta;
         m.i10 = scale * sinTheta; m.i11 = scale * -cosTheta;
         m.i02 = trans.x;

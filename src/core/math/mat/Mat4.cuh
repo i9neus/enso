@@ -23,7 +23,7 @@ namespace Enso
 			vec4 data[4];
 		};
 
-		__host__ __device__  static mat4 Indentity()
+		__host__ __device__  static mat4 Identity()
 		{
 			return mat4(vec4(1.0f, 0.0f, 0.0f, 0.0f), vec4(0.0f, 1.0f, 0.0f, 0.0f), vec4(0.0f, 0.0f, 1.0f, 0.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		}

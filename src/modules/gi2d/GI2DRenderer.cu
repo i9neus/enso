@@ -6,10 +6,11 @@
 #include "core/Vector.cuh"
 #include "core/Tuple.cuh"
 
-#include "tracables/Tracable.cuh"
 #include "tracables/Curve.cuh"
+#include "tracables/KIFS.cuh"
+
 #include "lights/OmniLight.cuh"
-#include "widgets/UIInspector.cuh" 
+
 #include "SceneDescription.cuh"
 #include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
@@ -39,7 +40,8 @@ namespace Enso
         m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
 
         m_sceneObjectFactory.RegisterInstantiator<Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());        
 
         m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
@@ -49,6 +51,7 @@ namespace Enso
         m_uiGraph.DeclareState("kCreateSceneObjectAppend", this, &GI2DRenderer::OnCreateSceneObject);
         m_uiGraph.DeclareState("kCreateSceneObjectClose", this, &GI2DRenderer::OnCreateSceneObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectOpen", "kCreateSceneObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectHover", nullptr, kUITriggerOnMouseMove);
@@ -193,7 +196,7 @@ namespace Enso
             // Deleted objects don't need their full attribute list serialised
             if (!(flags & kEnqueueIdOnly))
             {
-                m_onCreate.newObject->Serialise(childNode, kSerialiseExposedOnly);
+                obj->Serialise(childNode, kSerialiseExposedOnly);
             }
         };
 
@@ -462,17 +465,19 @@ namespace Enso
         {
             Assert(m_onCreate.newObject);
 
-            // If the new object can't be finalised, delete it
-            if (!m_onCreate.newObject->Finalise())
+            // If the new object has closed but has not been finalised, delete it
+            if (!m_onCreate.newObject->IsFinalised())
             {
                 m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
                 SetDirtyFlags(kDirtyObjectBounds);
 
                 Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
             }
-
-            // Serialise the new object to the outbound queue
-            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            else
+            {
+                // Serialise the new object to the outbound queue
+                EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            }
 
             return kUIStateOkay;
         }
