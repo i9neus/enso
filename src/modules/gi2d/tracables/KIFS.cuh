@@ -36,7 +36,7 @@ namespace Enso
             __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
             __device__ virtual void             OnSynchronise(const int) override final;
 
-            __host__ __device__ __forceinline__ bool  Iterate(vec2 z, vec3& F) const;
+            __host__ __device__ __forceinline__ bool  SampleSDF(vec2 z, vec3& F) const;
 
         private:
             const mat2 m_kBary;

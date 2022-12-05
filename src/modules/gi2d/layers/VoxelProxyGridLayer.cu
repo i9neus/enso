@@ -130,7 +130,7 @@ namespace Enso
 
     __device__ void Device::VoxelProxyGridLayer::Prepare(const uint dirtyFlags)
     {
-        if (dirtyFlags)
+        if (dirtyFlags & kDirtyIntegrators)
         {
             // Save ourselves a deference here by caching the scene pointers
             assert(m_scenePtr);
@@ -175,24 +175,24 @@ namespace Enso
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, AssetHandle<Host::SceneDescription>& scene,
-                                                  const uint width, const uint height) :
+        const uint width, const uint height) :
         UILayer(id, scene)
     {
         Assert(m_scene);
-        
+
         constexpr uint kGridWidth = 100;
         constexpr uint kGridHeight = 100;
         constexpr uint kNumHarmonics = 1;
 
         // Establish the properties of the grid
         m_grid.size = ivec2(kGridWidth, kGridHeight);
-        m_grid.numProbes = Area(m_grid.size);        
+        m_grid.numProbes = Area(m_grid.size);
         m_grid.numHarmonics = (kNumHarmonics - 1) * 2 + 1;
         m_grid.totalGridUnits = m_grid.numProbes * m_grid.numHarmonics;
 
         // Derive some more properties used when accumulating and reducing.
         m_grid.subprobesPerProbe = std::min(kAccumBufferSize / m_grid.numProbes,
-                                            kAccumBufferSize / m_grid.totalGridUnits);
+            kAccumBufferSize / m_grid.totalGridUnits);
         m_grid.unitsPerProbe = m_grid.subprobesPerProbe * m_grid.numHarmonics;
         m_grid.totalSubprobes = m_grid.subprobesPerProbe * m_grid.numProbes;
         m_grid.totalAccumUnits = m_grid.totalSubprobes * m_grid.numHarmonics;
@@ -235,14 +235,16 @@ namespace Enso
         uint batchSize = reduceBatchSizePow2;
         while (batchSize > 1)
         {
-            KernelReduceAccumulationBuffer << < m_kernelParams.grids.reduceSize, m_kernelParams.blockSize>> > ( cu_deviceInstance, reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
+            KernelReduceAccumulationBuffer << < m_kernelParams.grids.reduceSize, m_kernelParams.blockSize >> > (cu_deviceInstance, reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
             batchSize >>= 1;
         }
-        IsOk(cudaDeviceSynchronize());     
+        IsOk(cudaDeviceSynchronize());
     }
 
     __host__ void Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
+        m_dirtyFlags = dirtyFlags;
+
         UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
 
         Synchronise(kSyncParams);
@@ -266,14 +268,14 @@ namespace Enso
     }
 
     __host__ void Host::VoxelProxyGridLayer::Render()
-    {        
+    {
         KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
-        if (m_dirtyFlags)
+        if (m_dirtyFlags & kDirtyIntegrators)
         {
             m_hostAccumBuffer->Wipe();
-            m_dirtyFlags = 0;
         }
+        m_dirtyFlags = 0;
         
         ScopedDeviceStackResize(1024 * 10, [this]() -> void
             {

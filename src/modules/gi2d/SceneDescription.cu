@@ -44,7 +44,7 @@ namespace Enso
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {
         // Only rebuilid if the object bounds have change through insertion, deletion or movement
-        if (!(dirtyFlags & kDirtyObjectBounds)) { return; }
+        if (!(dirtyFlags & kDirtyIntegrators)) { return; }
         
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
         int lightIdx = 0;

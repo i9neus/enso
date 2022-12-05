@@ -24,6 +24,9 @@ namespace Enso
         // Changes the internal BHV of an object
         kDirtyObjectBVH = 16,
 
+        // Changes that affect integrated values
+        kDirtyIntegrators = kDirtyMaterials | kDirtyObjectBounds | kDirtyObjectBVH,
+
         kDirtyAll = 0xffffffff
     };
 

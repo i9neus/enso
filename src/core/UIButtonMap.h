@@ -75,6 +75,11 @@ namespace Enso
 
         ~UIButtonMap() = default;
 
+        void Clear()
+        {
+            for (auto code : m_codes) { code = 0u; }
+        }
+
         inline uint StateToBits(const uint state) const
         {
             switch (state)

@@ -71,6 +71,7 @@ namespace Enso
         __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
         __host__ std::string             DecideOnClickState(const uint& sourceStateIdx);
         __host__ void                    DeselectAll();

@@ -613,6 +613,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh">
       <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\GenericSDF.cuh">
+      <Filter>modules\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

@@ -466,12 +466,13 @@ namespace Enso
             FinaliseNewSceneObject();
         }
 
+        return kUIStateOkay;
+    }
 
     __host__ void GI2DRenderer::FinaliseNewSceneObject()
     {
         Assert(m_onCreate.newObject);
 
-            return kUIStateOkay;
         // If the new object has closed but has not been finalised, delete it
         if (!m_onCreate.newObject->IsFinalised())
         {
@@ -486,7 +487,6 @@ namespace Enso
             EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
         } 
 
-        return kUIStateOkay;
         m_onCreate.newObject = nullptr;
     }
 

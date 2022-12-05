@@ -111,6 +111,8 @@ namespace Enso
 
     __host__ void Host::PathTracerLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
+        m_dirtyFlags = dirtyFlags;
+        
         UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
 
         Synchronise(kSyncParams);
@@ -135,11 +137,11 @@ namespace Enso
         // Advance the frame counter
         KernelPrepare << <1, 1 >> > (cu_deviceData, m_dirtyFlags);
         
-        if (m_dirtyFlags)
+        if (m_dirtyFlags & (kDirtyMaterials | kDirtyObjectBounds | kDirtyObjectBVH))
         {
             m_hostAccumBuffer->Clear(vec4(0.0f));
-            m_dirtyFlags = 0;
         }        
+        m_dirtyFlags = 0;
 
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
