@@ -110,7 +110,7 @@ namespace Enso
             __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_attrFlags & kSceneObjectSelected; }
-            __host__ virtual bool       IsConstructed() const { return false; }
+            __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
 
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; }
@@ -157,6 +157,7 @@ namespace Enso
         protected:
             uint                        m_dirtyFlags;
             bool                        m_isFinalised;
+            bool                        m_isConstructed;
 
             struct
             {

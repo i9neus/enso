@@ -647,6 +647,11 @@ namespace Enso
 		return 0;*/
 	}
 
+	void D3DContainer::OnFocusChange(HWND hWnd, bool isSet)
+	{
+		if (m_moduleManager) { m_moduleManager->GetRenderer().FocusChange(isSet); }
+	}
+
 	void D3DContainer::OnKey(const WPARAM code, const bool isSysKey, const bool isDown)
 	{
 		if (m_moduleManager) { m_moduleManager->GetRenderer().SetKey(code, isSysKey, isDown); }

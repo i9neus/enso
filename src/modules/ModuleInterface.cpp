@@ -215,6 +215,17 @@ namespace Enso
 		OnResizeClient();
 	}
 
+	void ModuleInterface::FocusChange(const bool isSet)
+	{	
+		// Notify the deriving class that the focus has changed so it can do clean-up
+		OnFocusChange(isSet);
+
+		// Reset the state and UI graph
+		m_keyCodes.Clear();
+		m_uiGraph.Reset();
+		Log::Debug(isSet ? "Focus set" : "Focus lost");
+	}
+
 	void ModuleInterface::OnCommandsWaiting(CommandQueue& inbound) 
 	{ 
 		inbound.Clear(); 

@@ -171,6 +171,11 @@ namespace Enso
 				case WM_SIZE:
 					d3dContainer->OnClientResize(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), wParam);
 					return 0;
+
+				case WM_SETFOCUS:
+				case WM_KILLFOCUS:
+					d3dContainer->OnFocusChange(hWnd, message == WM_SETFOCUS);
+					return 0;
 				}
 			}
 

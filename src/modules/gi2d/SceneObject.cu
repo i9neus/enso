@@ -34,6 +34,7 @@ namespace Enso
         GenericObject(id),
         m_dirtyFlags(kDirtyAll),
         m_isFinalised(false),
+        m_isConstructed(false),
         m_hostInstance(hostInstance)
     {
     }

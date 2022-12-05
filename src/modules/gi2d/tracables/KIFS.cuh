@@ -63,7 +63,6 @@ namespace Enso
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
-            __host__ virtual bool       IsConstructed() const override final { return m_isConstructed; }
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) override final;
 
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final
@@ -84,9 +83,7 @@ namespace Enso
 
         private:
             Device::KIFS*               cu_deviceInstance = nullptr;
-            Device::KIFS                m_hostInstance;
-
-            bool                        m_isConstructed;            
+            Device::KIFS                m_hostInstance;       
         };
     }
 

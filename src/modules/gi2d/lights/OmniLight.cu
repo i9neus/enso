@@ -113,6 +113,7 @@ namespace Enso
         {
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
+            m_isConstructed = true;
             m_lightRadius = viewCtx.dPdXY;
         }
         else if (stateID == "kCreateSceneObjectHover")
@@ -132,7 +133,7 @@ namespace Enso
             }
             else
             {
-                Finalise();
+                m_isFinalised = true;
             }
         }
         else
@@ -144,17 +145,6 @@ namespace Enso
         // If the object is dirty, recompute the bounding box
         SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
-    }
-
-    __host__ bool Host::OmniLight::IsConstructed() const
-    {
-        return true;
-    }
-
-    __host__ bool Host::OmniLight::Finalise()
-    {
-        m_isFinalised = true;
-        return true;
     }
 
     __host__ bool Host::OmniLight::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)

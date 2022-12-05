@@ -168,6 +168,7 @@ namespace Enso
             }
 
             Log::Warning("Closed path %s", GetAssetID());
+            m_isFinalised = true;
             SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
         else
@@ -181,13 +182,6 @@ namespace Enso
     __host__ bool Host::Curve::IsConstructed() const
     {
         return !m_hostLineSegments->IsEmpty() && m_hostBIH->IsConstructed();
-    }
-
-    __host__ bool Host::Curve::Finalise()
-    {
-        m_isFinalised = true;
-
-        return IsConstructed();
     }
 
     __host__ bool Host::Curve::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)

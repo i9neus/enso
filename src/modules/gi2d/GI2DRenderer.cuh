@@ -45,6 +45,8 @@ namespace Enso
         __host__ virtual void OnMouseWheel() override final;
         __host__ virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) override final;
         __host__ virtual void OnResizeClient() override final;
+        __host__ virtual void OnFocusChange(const bool isSet) override final;
+
 
         //__host__ virtual void OnResizeClient() override final;
         __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
@@ -74,8 +76,8 @@ namespace Enso
         __host__ void                    DeselectAll();
 
         __host__ void                    EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::SceneObject> asset = nullptr);
+        __host__ void                    FinaliseNewSceneObject();
 
-        __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
     private:
         enum JobIDs : uint { kJobDraw };

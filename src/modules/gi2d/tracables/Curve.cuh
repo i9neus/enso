@@ -69,7 +69,6 @@ namespace Enso
             __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
         protected:
-            __host__ bool               Finalise();
             __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:

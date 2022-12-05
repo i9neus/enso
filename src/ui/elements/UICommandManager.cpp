@@ -19,7 +19,7 @@ namespace Enso
         AssertMsg(node.IsObject() && node.NumMembers() == 1, "OnCreateObject: Expecting an object with 1 member.");
         auto nodeIt = node.begin();
         
-        AssertMsgFmt(!ObjectExists(nodeIt.Name()), "OnCreateObject: UI object with name '%s' already exists.", nodeIt.Name());
+        AssertMsgFmt(!ObjectExists(nodeIt.Name()), "OnCreateObject: UI object with name '%s' already exists.", nodeIt.Name().c_str());
 
         // Get the class of the object
         const Json::Node objectJson = *nodeIt;

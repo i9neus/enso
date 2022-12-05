@@ -447,10 +447,10 @@ namespace Enso
             // Try and instante the objerct
             auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_sceneObjects);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
-            Assert(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
+        Assert(m_onCreate.newObject);
         SetDirtyFlags(m_onCreate.newObject->OnCreate(stateID, m_viewCtx));
 
         // Some objects will automatically finalise themselves. If this happens, we're done.
@@ -463,26 +463,31 @@ namespace Enso
 
         if (stateID == "kCreateSceneObjectClose")
         {
-            Assert(m_onCreate.newObject);
-
-            // If the new object has closed but has not been finalised, delete it
-            if (!m_onCreate.newObject->IsFinalised())
-            {
-                m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
-                SetDirtyFlags(kDirtyObjectBounds);
-
-                Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
-            }
-            else
-            {
-                // Serialise the new object to the outbound queue
-                EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
-            }
-
-            return kUIStateOkay;
+            FinaliseNewSceneObject();
         }
 
+
+    __host__ void GI2DRenderer::FinaliseNewSceneObject()
+    {
+        Assert(m_onCreate.newObject);
+
+            return kUIStateOkay;
+        // If the new object has closed but has not been finalised, delete it
+        if (!m_onCreate.newObject->IsFinalised())
+        {
+            m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
+            SetDirtyFlags(kDirtyObjectBounds);
+
+            Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
+        }
+        else
+        {
+            // Serialise the new object to the outbound queue
+            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+        } 
+
         return kUIStateOkay;
+        m_onCreate.newObject = nullptr;
     }
 
     __host__ void GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
@@ -614,6 +619,15 @@ namespace Enso
     __host__ void GI2DRenderer::OnResizeClient()
     {
     } 
+
+    __host__ void GI2DRenderer::OnFocusChange(const bool isSet)
+    {
+        // Finalise any objects that are in the process of being created
+        if (m_onCreate.newObject)
+        {
+            FinaliseNewSceneObject();
+        }
+    }
 
     __host__ bool GI2DRenderer::Serialise(Json::Document& json, const int flags)
     {

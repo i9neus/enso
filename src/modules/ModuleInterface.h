@@ -49,6 +49,7 @@ namespace Enso
         void SetMousePos(const int mouseX, const int mouseY, const WPARAM flags);
         void SetMouseWheel(const float angle);
         void SetClientSize(const int width, const int height);
+        void FocusChange(const bool isSet);
 
         virtual std::string GetRendererName() const = 0;
         virtual const std::string& GetRendererDescription() const { static std::string defaultDesc;  return defaultDesc; }
@@ -69,6 +70,7 @@ namespace Enso
         virtual void OnMouseWheel() {}
         virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) {}
         virtual void OnResizeClient() {}
+        virtual void OnFocusChange(const bool isSet) {}
 
         virtual void OnInitialise() {}
         virtual void OnDestroy() {};

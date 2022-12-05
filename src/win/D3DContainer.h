@@ -55,6 +55,7 @@ namespace Enso
 		void OnUpdate();
 
 		void OnClientResize(HWND hWnd, UINT width, UINT height, WPARAM wParam);
+		void OnFocusChange(HWND hWnd, bool isSet);
 
 		void OnKey(const WPARAM code, const bool isSysKey, const bool isDown);
 		void OnMouseButton(const int button, const bool isDown);

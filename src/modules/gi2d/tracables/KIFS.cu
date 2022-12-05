@@ -92,8 +92,7 @@ namespace Enso
 
     __host__ Host::KIFS::KIFS(const std::string& id) :
         Tracable(id, m_hostInstance),
-        cu_deviceInstance(nullptr),
-        m_isConstructed(false)
+        cu_deviceInstance(nullptr)
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
         cu_deviceInstance = InstantiateOnDevice<Device::KIFS>();
