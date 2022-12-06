@@ -46,15 +46,17 @@ namespace Enso
 
         if (probeIdx.x < 0 || probeIdx.x >= m_grid.size.x || probeIdx.y < 0 || probeIdx.y >= m_grid.size.y) { return kOne * 0.2; }
 
-        return (*m_accumBuffer)[probeIdx.y * m_grid.size.x + probeIdx.x] / float(max(1, m_frameIdx));
+        vec3 L = (*m_accumBuffer)[probeIdx.y * m_grid.size.x + probeIdx.x] / float(max(1, m_frameIdx));
+
+        return L;
     }
 
-    __device__ void Device::VoxelProxyGrid::Render()
+    __device__ void Device::VoxelProxyGrid::Render(void* debugData)
     {
         if (kKernelIdx >= m_grid.numProbes) { return; }
       
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this);
-        m_voxelTracer.Integrate(renderCtx);
+        m_voxelTracer.Integrate(renderCtx, debugData);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 

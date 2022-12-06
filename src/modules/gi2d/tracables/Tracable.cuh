@@ -38,10 +38,9 @@ namespace Enso
         protected:
             __host__ __device__ Tracable() {}
 
-            __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
-            {
-                return m_transform.RayToObjectSpace(world);
-            }
+            __host__ __device__ __forceinline__ RayBasic2D RayToObjectSpace(const Ray2D& world) const { return m_transform.RayToObjectSpace(world); }
+            __host__ __device__ __forceinline__ vec2 NormalToWorldSpace(const vec2& object) const { return m_transform.NormalToWorldSpace(object); }
+            __host__ __device__ __forceinline__ vec2 PointToWorldSpace(const vec2& world) const { return m_transform.PointToWorldSpace(world); }
 
         private:
             BBox2f m_handleInnerBBox;

@@ -73,7 +73,7 @@ namespace Enso
 
         private:
             Device::PathTracerLayer*          cu_deviceData = nullptr;
-            PathTracerLayerObjects                  m_deviceObjects;
+            PathTracerLayerObjects            m_deviceObjects;
 
             AssetHandle<Host::ImageRGBW>      m_hostAccumBuffer;
         };

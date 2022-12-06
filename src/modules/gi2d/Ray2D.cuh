@@ -13,7 +13,7 @@ namespace Enso
 
     struct HitCtx2D
     {
-        __host__ __device__ HitCtx2D() : tFar(kFltMax), flags(0) {}
+        __host__ __device__ HitCtx2D() : tFar(kFltMax), flags(0), debugData(nullptr) {}
 
         __host__ __device__ void PrepareNext()
         {
@@ -22,6 +22,10 @@ namespace Enso
             flags = 0;
         }
 
+        __host__ __device__ vec3 GetDebugL() const { return (debugData) ? *reinterpret_cast<vec3*>(debugData) : vec3(0.0f); }
+        __host__ __device__ void SetDebugL(const vec3& L) { if (debugData) { *reinterpret_cast<vec3*>(debugData) = L; } }
+        __host__ __device__ void AccumDebugL(const vec3& L) { if (debugData) { *reinterpret_cast<vec3*>(debugData) += L; } }
+
         vec2        p;
         vec2        n;
         float		kickoff;
@@ -29,6 +33,8 @@ namespace Enso
         uint        tracableIdx;
         uchar       flags;
         uchar       depth;
+
+        void*       debugData;
     };
 
     struct RayRange2D

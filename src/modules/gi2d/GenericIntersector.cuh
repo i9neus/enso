@@ -18,9 +18,18 @@ namespace Enso
             }
         }
 
-        range.tNear = fmaxf(0.f, cwiseMax(tNearPlane));
+        range.tNear = cwiseMax(tNearPlane);
         range.tFar = cwiseMin(tFarPlane);
         return range.tNear <= range.tFar;
+    }
+
+    // Find the closest intersection between a ray and box. Returns -kFltMax if not hit and 0.0 if the ray origin is inside the box.
+    __host__ __device__ __forceinline__ float IntersectRayBBox(const RayBasic2D& ray, const BBox2f& bBox)
+    {
+        RayRange2D range;
+        if(!IntersectRayBBox(ray, bBox, range) || range.tFar < 0.0f) { return -kFltMax; }
+
+        return (range.tNear < 0.0f) ? 0.0f : range.tNear;
     }
 
     __host__ __device__ __forceinline__ bool IntersectRayCircle(const RayBasic2D& ray, const vec2& origin, const float radius, RayRange2D& range)

@@ -17,8 +17,8 @@ namespace Enso
 
     template<typename Type> __host__ __device__ Type maxn(const Type* v, const int size) { FIND_MINMAX_N(Type, max); }
     template<typename Type> __host__ __device__ Type minn(const Type* v, const int size) { FIND_MINMAX_N(Type, min); }
-    template<> __host__ __device__ float maxn(const float* v, const int size) { FIND_MINMAX_N(float, maxf); }
-    template<> __host__ __device__ float minn(const float* v, const int size) { FIND_MINMAX_N(float, minf); }
+    template<> __host__ __device__ float maxn(const float* v, const int size) { FIND_MINMAX_N(float, fmaxf); }
+    template<> __host__ __device__ float minn(const float* v, const int size) { FIND_MINMAX_N(float, fminf); }
     
     template<typename Type, int Dimension>
     UIAttributeNumeric<Type, Dimension>::UIAttributeNumeric()
@@ -33,21 +33,21 @@ namespace Enso
         return false;  
     }   
     template<> inline bool ConstructDrag(std::array<float, 1>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragFloat(label, data.data(), maxf(0.00001f, data[0] * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
+    { return ImGui::DragFloat(label, data.data(), fmaxf(0.00001f, data[0] * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
     template<> inline bool ConstructDrag(std::array<float, 2>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragFloat2(label, data.data(), maxf(0.00001f, maxf(data[0], data[1]) * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
+    { return ImGui::DragFloat2(label, data.data(), fmaxf(0.00001f, fmaxf(data[0], data[1]) * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
     template<> inline bool ConstructDrag(std::array<float, 3>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragFloat3(label, data.data(), maxf(0.00001f, max3(data[0], data[1], data[2])* 0.01f), dataRange[0], dataRange[1], "%.6f"); }
+    { return ImGui::DragFloat3(label, data.data(), fmaxf(0.00001f, max3(data[0], data[1], data[2])* 0.01f), dataRange[0], dataRange[1], "%.6f"); }
     template<> inline bool ConstructDrag(std::array<float, 4>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragFloat4(label, data.data(), maxf(0.00001f, maxn(data.data(), 4) * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
+    { return ImGui::DragFloat4(label, data.data(), fmaxf(0.00001f, maxn(data.data(), 4) * 0.01f), dataRange[0], dataRange[1], "%.6f"); }
     template<> inline bool ConstructDrag(std::array<int, 1>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragInt(label, data.data(), int(maxf(0.00001f, data[0] * 0.01f)), int(dataRange[0]), int(dataRange[1]), "%i"); }
+    { return ImGui::DragInt(label, data.data(), int(fmaxf(0.00001f, data[0] * 0.01f)), int(dataRange[0]), int(dataRange[1]), "%i"); }
     template<> inline bool ConstructDrag(std::array<int, 2>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragInt2(label, data.data(), maxf(0.00001f, max(data[0], data[1]) * 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
+    { return ImGui::DragInt2(label, data.data(), fmaxf(0.00001f, max(data[0], data[1]) * 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
     template<> inline bool ConstructDrag(std::array<int, 3>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragInt3(label, data.data(), maxf(0.00001f, max3(data[0], data[1], data[2])* 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
+    { return ImGui::DragInt3(label, data.data(), fmaxf(0.00001f, max3(data[0], data[1], data[2])* 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
     template<> inline bool ConstructDrag(std::array<int, 4>& data, const char* label, const vec2& dataRange) 
-    { return ImGui::DragInt4(label, data.data(), maxf(0.00001f, maxn(data.data(), 4) * 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
+    { return ImGui::DragInt4(label, data.data(), fmaxf(0.00001f, maxn(data.data(), 4) * 0.01f), int(dataRange[0]), int(dataRange[1]), "%i"); }
 
     // Slider
     template<typename Type, int Dim> inline bool ConstructSlider(std::array<Type, Dim>& data, const char* label, const vec2& dataRange) 

@@ -5,6 +5,16 @@
 
 namespace Enso
 {
+    struct KIFSDebugData
+    {
+        enum __attrs : int { kMaxPoints = 10 };
+        vec2    pNear, pFar;
+        vec2    marchPts[kMaxPoints];
+        vec2    normal;
+        vec2    hit;
+        bool    isHit;
+    };
+    
     struct KIFSParams
     {
         __host__ __device__ KIFSParams();
@@ -22,6 +32,16 @@ namespace Enso
         }
         m_kifs;
       
+        struct
+        {
+            float       cutoffThreshold;
+            float       escapeThreshold;
+            float       failThreshold;
+            float       rayIncrement;
+            float       rayKickoff;
+            int         maxIterations;
+
+        } m_intersector;
     };
 
     namespace Device
@@ -36,7 +56,7 @@ namespace Enso
             __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
             __device__ virtual void             OnSynchronise(const int) override final;
 
-            __host__ __device__ __forceinline__ bool  SampleSDF(vec2 z, vec3& F) const;
+            __host__ __device__ __forceinline__ vec3 EvaluateSDF(vec2 z, const mat2& basis) const;
 
         private:
             const mat2 m_kBary;

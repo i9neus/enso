@@ -37,29 +37,71 @@
         }
     },
     "kifs": {
-        "rotate": {
+        "kifs/rotate": {
             "dataType": "float",
             "widgetLabel": "Theta",
             "dataRange": [ -3.1415, 3.1415 ],
             "widgetType": "slider"
         },
-        "pivot": {
+        "kifs/scale": {
+            "dataType": "float",
+            "widgetLabel": "Scale",
+            "dataRange": [ 0.0, 100.0 ],
+            "widgetType": "drag"
+        },
+        "kifs/pivot": {
             "dataType": "float2",
             "dataRange": [ -1.0, 1.0 ],
             "widgetLabel": "Pivot",
             "widgetType": "slider"
         },
-        "isosurface": {
+        "kifs/isosurface": {
             "dataType": "float",
             "dataRange": [ 0.0, 1000.0 ],
             "widgetLabel": "Isosurface",
             "widgetType": "drag"
         },
-        "iterations": {
+        "kifs/iterations": {
             "dataType": "int",
             "dataRange": [ 0.0, 5.0 ],
             "widgetLabel": "Iterations",
             "widgetType": "slider"
+        },
+        "isector/maxIterations": {
+            "dataType": "int",
+            "widgetLabel": "Max Iterations",
+            "dataRange": [ 1.0, 100.0 ],
+            "widgetType": "slider"
+        },
+        "isector/escapeThreshold": {
+            "dataType": "float",
+            "widgetLabel": "Escape threshold",
+            "dataRange": [ 0.0, 1000.0 ],
+            "widgetType": "drag"
+        },
+        "isector/cutoffThreshold": {
+            "dataType": "float",
+            "widgetLabel": "Cutoff threshold",
+            "dataRange": [ 0.00001, 1.0 ],
+            "widgetType": "drag"
+        },
+        "isector/rayIncrement": {
+            "dataType": "float",
+            "widgetLabel": "Ray increment",
+            "dataRange": [ 0.001, 2.0 ],
+            "widgetType": "slider"
+        },
+        "isector/rayKickoff": {
+            "dataType": "float",
+            "widgetLabel": "Ray kickoff",
+            "dataRange": [ 0.000001, 1.0 ],
+            "widgetType": "drag"
+        },
+        "isector/failThreshold": {
+            "dataType": "float",
+            "widgetLabel": "Fail threshold",
+            "dataRange": [ 0.00001, 1.0 ],
+            "widgetType": "drag"
         }
     }
 }

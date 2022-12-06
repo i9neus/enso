@@ -24,7 +24,8 @@ namespace Enso
 			hash(HashOf(probeHash, uint(depth) + 9871251u, accumIdx)),
 			rng(hash),
 			camera(cam),
-			flags(fl)
+			flags(fl),
+			debugData(nullptr)
 		{
 		}
 
@@ -33,6 +34,8 @@ namespace Enso
 		Device::Camera2D& camera;
 		uchar			flags;
 
-		__device__ __inline__ bool IsDebug() const { return flags & kRenderCtxDebug; }
+		void*			debugData;
+
+		__device__ __inline__ bool IsDebug() const { return (flags & kRenderCtxDebug) || debugData; }
 	};
 }

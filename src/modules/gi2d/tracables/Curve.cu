@@ -14,7 +14,7 @@ namespace Enso
         RayRange2D range;
         if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
-        RayBasic2D& rayObject = ToObjectSpace(rayWorld);
+        RayBasic2D& rayObject = RayToObjectSpace(rayWorld);
         HitCtx2D hitObject;
 
         auto onIntersect = [&](const uint* startEndIdx, RayRange2D& rangeTree)

@@ -4,6 +4,7 @@
 #include "../integrators/PathTracer2D.cuh"
 #include "../integrators/Camera2D.cuh"
 #include "../SceneDescription.cuh"
+#include "../tracables/KIFS.cuh"
 
 namespace Enso
 {     
@@ -64,6 +65,8 @@ namespace Enso
             int                                     m_frameIdx;
 
             Device::SceneDescription                m_scene;
+
+            KIFSDebugData                           m_kifsDebug;
         };
     }
 
@@ -89,7 +92,7 @@ namespace Enso
 
         private:
             Device::VoxelProxyGridLayer*          cu_deviceInstance = nullptr;
-            VoxelProxyGridLayerObjects                  m_deviceObjects;
+            VoxelProxyGridLayerObjects            m_deviceObjects;
 
             AssetHandle<Host::Vector<vec3>>       m_hostAccumBuffer;
             AssetHandle<Host::Vector<vec3>>       m_hostReduceBuffer;

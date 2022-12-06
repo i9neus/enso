@@ -6,6 +6,7 @@
 #include "../RenderCtx.cuh"
 #include "../SceneDescription.cuh"
 #include "../integrators/VoxelProxyGrid.cuh"
+#include "../GenericSDF.cuh"
 
 namespace Enso
 {
@@ -46,6 +47,13 @@ namespace Enso
         // Randomly scatter the ray
         const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
         ray.d = vec2(cosf(theta), sinf(theta));
+
+        /*if (renderCtx.IsDebug())
+        {
+            ray.o = vec2(0.0f);
+            ray.d = normalize(m_viewCtx.mousePos - ray.o);
+        }*/
+
         ray.throughput = vec3(1.0f);
         ray.flags = 0;
         ray.lightIdx = kTracableNotALight;
@@ -71,6 +79,10 @@ namespace Enso
                                subprobeIdx == 0) ? kRenderCtxDebug : 0;
         
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, ctxFlags);
+        /*if (ctxFlags & kRenderCtxDebug)
+        {
+            renderCtx.debugData = &m_kifsDebug;
+        }*/
 
         m_voxelTracer.Integrate(renderCtx);
     }
@@ -151,7 +163,22 @@ namespace Enso
 
         if (probeIdx.x < 0 || probeIdx.x >= m_grid.size.x || probeIdx.y < 0 || probeIdx.y >= m_grid.size.y) { return kOne * 0.2; }
 
-        return (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(m_grid.subprobesPerProbe * max(1, m_frameIdx));
+        vec3 L = (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(m_grid.subprobesPerProbe * max(1, m_frameIdx));
+
+        /*if (length(posWorld - m_kifsDebug.pNear) < m_viewCtx.dPdXY * 4.0f) { L += kRed; }
+        if (length(posWorld - m_kifsDebug.pFar) < m_viewCtx.dPdXY * 4.0f) { L += kYellow; }
+        for (int idx = 0; idx < KIFSDebugData::kMaxPoints; ++idx)
+        {
+            if (length(posWorld - m_kifsDebug.marchPts[idx]) < m_viewCtx.dPdXY * 4.0f) { L += kGreen; }
+        }*/
+
+        /*if (m_kifsDebug.isHit)
+        {
+            if (length(posWorld - m_kifsDebug.hit) < m_viewCtx.dPdXY * 5.0f) { L += kRed; }
+            if (SDFLine(posWorld, m_kifsDebug.hit, m_kifsDebug.normal * m_viewCtx.dPdXY * 100.0f).x < m_viewCtx.dPdXY * 1.f) { L += kRed; }
+        }*/
+
+        return L;
     }
 
     __device__ void Device::VoxelProxyGridLayer::Composite(Device::ImageRGBA* deviceOutputImage)  const

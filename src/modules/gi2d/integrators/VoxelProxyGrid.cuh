@@ -46,7 +46,7 @@ namespace Enso
             __device__ vec3 Evaluate(const vec2& posWorld) const;
 
             __device__ void Prepare(const uint dirtyFlags);
-            __device__ void Render();
+            __device__ void Render(void* debugData = nullptr);
 
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
@@ -56,7 +56,7 @@ namespace Enso
         private:
             PathTracer2D                            m_voxelTracer;
             int                                     m_frameIdx;
-
+            
             Device::SceneDescription                m_scene;
         };
     }

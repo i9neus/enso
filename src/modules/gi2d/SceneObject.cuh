@@ -85,11 +85,6 @@ namespace Enso
 
             __device__ bool                                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
 
-            __host__ __device__ __forceinline__ RayBasic2D ToObjectSpace(const Ray2D& world) const
-            {
-                return m_transform.RayToObjectSpace(world);
-            }
-
         private:
             BBox2f m_handleInnerBBox;
         };
