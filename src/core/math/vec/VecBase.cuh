@@ -50,12 +50,16 @@ namespace Enso
 		template<typename OtherType, typename = typename std::enable_if<std::is_arithmetic<OtherType>::value>::type>
 		__host__ __device__ __forceinline__ __vec_swizzle& operator=(const OtherType& rhs)
 		{
+			#pragma unroll
 			for (int i = 0; i < ActualSize; i++)
 			{
 				data[i] = Type(rhs);
 			}
 			return *this;
 		}
+
+		__host__ __device__ __forceinline__ const Type& operator[](const uint idx) const { return data[idx]; }
+		__host__ __device__ __forceinline__ Type& operator[](const uint idx) { return data[idx]; }
 	};
 
 	// Generic vector types for more convenient templatisation

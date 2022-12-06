@@ -329,12 +329,14 @@ namespace Enso
     __host__ __device__ __forceinline__ float cwiseMax(const vec4& v)
     {
         float m = v[0];
+        #pragma unroll            
         for (int i = 1; i < 4; i++) { m = fmaxf(m, v[i]); }
         return m;
     }
     __host__ __device__ __forceinline__ float cwiseMin(const vec4& v)
     {
         float m = v[0];
+        #pragma unroll
         for (int i = 1; i < 4; i++) { m = fminf(m, v[i]); }
         return m;
     }

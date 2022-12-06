@@ -10,13 +10,6 @@ namespace Enso
 	#define saturatef(a) __saturatef(a)
 #else
 	inline float saturatef(const float a) { return (a < 0.0f) ? 0.0f : ((a > 1.0f) ? 1.0f : a); }
-
-	// Define implementations of min and max for floating point types
-	template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
-	__host__ __device__ inline T maxf(const T a, const T b) { return a > b ? a : b; }
-	template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
-	__host__ __device__ inline T minf(const T a, const T b) { return a < b ? a : b; }
-
 #endif	
 
 	// Define implementations of min and max for integral types

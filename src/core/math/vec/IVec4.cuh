@@ -342,6 +342,7 @@ namespace Enso
     __host__ __device__ __forceinline__ Type cwiseMax(const __ivec4<Type>& v)
     {
         Type m = v[0];
+        #pragma unroll
         for (int i = 1; i < 4; i++) { m = fmaxf(m, v[i]); }
         return m;
     }
@@ -350,6 +351,7 @@ namespace Enso
     __host__ __device__ __forceinline__ Type cwiseMin(const __ivec4<Type>& v)
     {
         Type m = v[i];
+        #pragma unroll
         for (int i = 1; i < 4; i++) { m = min(m, v[i]); }
         return m;
     }

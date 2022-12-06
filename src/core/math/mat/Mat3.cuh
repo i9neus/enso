@@ -164,8 +164,10 @@ namespace Enso
 	template<typename Type>
 	__host__ __device__ __forceinline__ bool operator ==(const __mat3<Type>& a, const __mat3<Type>& b)
 	{
+		#pragma unroll
 		for (int i = 0; i < 3; i++)
 		{
+			#pragma unroll
 			for (int j = 0; j < 3; j++)
 			{
 				if (a[i][j] != b[i][j]) { return false; }

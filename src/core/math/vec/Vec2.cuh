@@ -187,7 +187,7 @@ namespace Enso
         return sqrt(v.data[L0] * v.data[L0] + v.data[L1] * v.data[L1]);
     }
     template<int LS, int L0, int L1>
-    __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 2, L0, L1> normalize(const __vec_swizzle<float, LS, 2, L0, L1>& v)
+    __host__ __device__ __forceinline__ vec2 normalize(const __vec_swizzle<float, LS, 2, L0, L1>& v)
     {
         return v / length(v);
     }

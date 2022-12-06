@@ -176,8 +176,10 @@ namespace Enso
 
 	__host__ __device__ __forceinline__ bool operator ==(const mat4& a, const mat4& b)
 	{
+		#pragma unroll
 		for (int i = 0; i < 4; i++)
 		{
+			#pragma unroll
 			for (int j = 0; j < 4; j++)
 			{
 				if (a[i][j] != b[i][j]) { return false; }
