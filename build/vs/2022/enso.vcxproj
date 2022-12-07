@@ -44,6 +44,7 @@
     <ClCompile Include="..\..\..\src\ui\UIModuleManager.cpp" />
     <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\src\win\D3DContainer.cpp" />
     <ClCompile Include="..\..\..\src\win\SecurityAttributes.cpp" />
@@ -119,6 +120,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh" />
@@ -181,6 +183,7 @@
     <ClInclude Include="..\..\..\src\ui\UIModuleManager.h" />
     <ClInclude Include="..\..\..\src\ui\tools\MemoryMonitor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\src\utils\CudaTests.cuh" />
     <ClInclude Include="..\..\..\src\win\D3DContainer.h" />
@@ -206,6 +209,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu" />
@@ -269,7 +273,7 @@
     <IntDir>enso\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(MSBuildProjectDirectory)\..\..\..\src;$(USD_ROOT)\include;$(BOOST_ROOT);$(TBB_LOCATION)\include\;$(ONNXRUNTIME_ROOT)\include\;$(THRUST_ROOT)\include\;$(CUDNN_ROOT)\include\;$(ZLIB_ROOT)\include\</IncludePath>
     <TargetName>enso</TargetName>
     <OutDir>$(MSBuildProjectDirectory)\..\..\..\bin\win64\$(Configuration)\</OutDir>
     <IntDir>enso\$(Platform)\$(Configuration)\</IntDir>
@@ -320,8 +324,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;cublas.lib;cublasLt.lib;zlibwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);$(ZLIB_ROOT)\;$(CUDNN_ROOT)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
