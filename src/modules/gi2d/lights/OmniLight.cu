@@ -55,7 +55,7 @@ namespace Enso
         return length(m_transform.trans - hit.p) * powf(2.0f, m_lightIntensity);
     }
 
-    __device__ void Device::OmniLight::OnSynchronise(const int syncFlags)
+    __host__ __device__ void Device::OmniLight::OnSynchronise(const int syncFlags)
     {
         if (syncFlags == kSyncParams)
         {
@@ -90,11 +90,15 @@ namespace Enso
         DestroyOnDevice(cu_deviceInstance);
     }
 
-    __host__ void Host::OmniLight::Synchronise(const int type)
+    __host__ void Host::OmniLight::Synchronise(const int syncFlags)
     {
-        Light::Synchronise(cu_deviceInstance, type);
+        Light::Synchronise(cu_deviceInstance, syncFlags);
 
-        if (type & kSyncParams) { SynchroniseInheritedClass<OmniLightParams>(cu_deviceInstance, *this, kSyncParams); }
+        if (syncFlags & kSyncParams) 
+        { 
+            SynchroniseInheritedClass<OmniLightParams>(cu_deviceInstance, m_hostInstance, kSyncParams); 
+            m_hostInstance.OnSynchronise(syncFlags);
+        }
     }
 
     /*__host__ uint Host::OmniLight::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
@@ -119,21 +123,21 @@ namespace Enso
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
-            m_lightRadius = viewCtx.dPdXY;
+            m_hostInstance.m_lightRadius = viewCtx.dPdXY;
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
-                m_lightRadius = length(m_transform.trans - viewCtx.mousePos);
+                m_hostInstance.m_lightRadius = length(m_hostInstance.m_transform.trans - viewCtx.mousePos);
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             if (!m_onCreate.isCentroidSet)
             {
-                m_transform.trans = viewCtx.mousePos;
-                m_lightRadius = viewCtx.dPdXY;
+                m_hostInstance.m_transform.trans = viewCtx.mousePos;
+                m_hostInstance.m_lightRadius = viewCtx.dPdXY;
                 m_onCreate.isCentroidSet = true;
             }
             else
@@ -172,9 +176,9 @@ namespace Enso
     {
         Tracable::Serialise(node, flags);
 
-        node.AddValue("radius", m_lightRadius);
-        node.AddVector("colour", m_lightColour);
-        node.AddValue("intensity", m_lightIntensity);
+        node.AddValue("radius", m_hostInstance.m_lightRadius);
+        node.AddVector("colour", m_hostInstance.m_lightColour);
+        node.AddValue("intensity", m_hostInstance.m_lightIntensity);
         return true;
     }
 
@@ -182,9 +186,9 @@ namespace Enso
     {
         Tracable::Deserialise(node, flags);
 
-        if (node.GetValue("radius", m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
-        if (node.GetVector("colour", m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
-        if (node.GetValue("intensity", m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        if (node.GetValue("radius", m_hostInstance.m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+        if (node.GetVector("colour", m_hostInstance.m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        if (node.GetValue("intensity", m_hostInstance.m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
 
         return m_dirtyFlags;
     }
@@ -196,6 +200,6 @@ namespace Enso
 
     __host__ BBox2f Host::OmniLight::RecomputeObjectSpaceBoundingBox()
     {
-        return BBox2f(-vec2(m_lightRadius), vec2(m_lightRadius));
+        return BBox2f(-vec2(m_hostInstance.m_lightRadius), vec2(m_hostInstance.m_lightRadius));
     }
 }

@@ -2,7 +2,7 @@
     "omnilight": {
         "radius": {
             "dataType": "float",
-            "dataRange": [ 0.0, 1.0 ],
+            "dataRange": [ 0.0, 0.3 ],
             "widgetLabel": "Radius",
             "widgetType": "slider"
         },
@@ -61,6 +61,12 @@
             "widgetLabel": "Isosurface",
             "widgetType": "drag"
         },
+        "kifs/primSize": {
+            "dataType": "float",
+            "dataRange": [ 0.0, 100.0 ],
+            "widgetLabel": "Primitive size",
+            "widgetType": "drag"
+        },
         "kifs/iterations": {
             "dataType": "int",
             "dataRange": [ 0.0, 5.0 ],
@@ -102,6 +108,18 @@
             "widgetLabel": "Fail threshold",
             "dataRange": [ 0.00001, 1.0 ],
             "widgetType": "drag"
+        },
+        "look/phase": {
+            "dataType": "float",
+            "widgetLabel": "Colour phase",
+            "dataRange": [ 0.0, 1.0 ],
+            "widgetType": "slider"
+        },
+        "look/range": {
+            "dataType": "float",
+            "widgetLabel": "Colour range",
+            "dataRange": [ 0.0, 1.0 ],
+            "widgetType": "slider"
         }
     }
 }

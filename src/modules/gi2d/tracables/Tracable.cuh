@@ -49,13 +49,12 @@ namespace Enso
 
     namespace Host
     {        
-        class Tracable : public Host::SceneObject,
-                         public TracableParams
+        class Tracable : public Host::SceneObject
 
         {
         public:
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual void       SetLightIdx(const int idx) { m_lightIdx = idx; }
+            __host__ virtual void       SetLightIdx(const int idx) { m_hostInstance.m_lightIdx = idx; }
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
@@ -68,11 +67,15 @@ namespace Enso
             {
             }
             
-            template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncType) 
+            template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncFlags) 
             { 
-                SceneObject::Synchronise(deviceInstance, syncType); 
+                SceneObject::Synchronise(deviceInstance, syncFlags); 
 
-                if (syncType & kSyncParams) { SynchroniseInheritedClass<TracableParams>(deviceInstance, *this, kSyncParams); }
+                if (syncFlags & kSyncParams) 
+                { 
+                    SynchroniseInheritedClass<TracableParams>(deviceInstance, m_hostInstance, kSyncParams);
+                    m_hostInstance.OnSynchronise(syncFlags);
+                }
             }
 
         protected:

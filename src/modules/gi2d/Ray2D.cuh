@@ -33,6 +33,7 @@ namespace Enso
         uint        tracableIdx;
         uchar       flags;
         uchar       depth;
+        uint        hash;
 
         void*       debugData;
     };

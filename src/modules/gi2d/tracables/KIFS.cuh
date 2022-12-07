@@ -26,9 +26,9 @@ namespace Enso
             float       isosurface;
             float       sdfScale;
             float       iterScale;
-            int         numIterations;
-             
+            int         numIterations;             
             float       objectBounds;
+            float       primSize;
         }
         m_kifs;
       
@@ -42,6 +42,13 @@ namespace Enso
             int         maxIterations;
 
         } m_intersector;
+
+        struct
+        {
+            float       phase;
+            float       range;
+        } 
+        m_look;
     };
 
     namespace Device
@@ -56,9 +63,9 @@ namespace Enso
             __host__ __device__ virtual bool    Contains(const UIViewCtx& viewCtx) const override final;
 
             __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
-            __device__ virtual void             OnSynchronise(const int) override final;
+            __host__ __device__ virtual void    OnSynchronise(const int) override final;
 
-            __host__ __device__ __forceinline__ vec3 EvaluateSDF(vec2 z, const mat2& basis) const;
+            __host__ __device__ __forceinline__ vec3 EvaluateSDF(vec2 z, const mat2& basis, uint& code) const;
 
         private:
             const mat2 m_kBary;

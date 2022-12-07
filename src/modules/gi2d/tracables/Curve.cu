@@ -29,6 +29,11 @@ namespace Enso
         };
         m_bih->TestRay(rayObject, range.tFar, onIntersect);
 
+        /*for (int primIdx = 0; primIdx < m_lineSegments->Size(); ++primIdx)
+        {
+            (*m_lineSegments)[primIdx].IntersectRay(rayObject, hitObject);
+        }*/
+
         if (hitObject.tFar < hitWorld.tFar)
         {
             hitWorld.tFar = hitObject.tFar;
@@ -128,10 +133,10 @@ namespace Enso
 
     __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - m_transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - m_hostInstance.m_transform.trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            m_transform.trans = viewCtx.mousePos;
+            m_hostInstance.m_transform.trans = viewCtx.mousePos;
            
             Log::Success("Opened path %s", GetAssetID());
         }

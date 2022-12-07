@@ -79,7 +79,7 @@ namespace Enso
             __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
             __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
 
-            __device__ virtual void OnSynchronise(const int) {}
+            __host__ __device__ virtual void OnSynchronise(const int) {}
 
         protected:
             __device__ SceneObject() {}
@@ -93,8 +93,7 @@ namespace Enso
 
     namespace Host
     {
-        class SceneObject : public Host::GenericObject,
-                            public SceneObjectParams
+        class SceneObject : public Host::GenericObject
         {
         public:
             //__host__ virtual bool       Finalise() = 0;
@@ -105,13 +104,13 @@ namespace Enso
 
             __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
-            __host__ virtual bool       IsSelected() const { return m_attrFlags & kSceneObjectSelected; }
+            __host__ virtual bool       IsSelected() const { return m_hostInstance.m_attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual bool       Contains(const UIViewCtx& viewCtx) const { return false; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
 
-            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; }
-            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; }
+            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_objectBBox; }
+            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_worldBBox; }
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
@@ -139,9 +138,13 @@ namespace Enso
             __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance);
 
             template<typename SubType>
-            __host__ void Synchronise(SubType* cu_object, const int type)
+            __host__ void Synchronise(SubType* cu_object, const int syncFlags)
             {
-                if (type == kSyncParams) { SynchroniseInheritedClass<SceneObjectParams>(cu_object, *this, kSyncParams); }
+                if (syncFlags & kSyncParams)
+                { 
+                    SynchroniseInheritedClass<SceneObjectParams>(cu_object, m_hostInstance, kSyncParams);
+                    m_hostInstance.OnSynchronise(syncFlags);
+                }
             }
 
             __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() = 0;

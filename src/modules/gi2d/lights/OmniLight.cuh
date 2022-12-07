@@ -42,7 +42,7 @@ namespace Enso
 
             __device__ virtual vec4                     EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
 
-            __device__ virtual void                     OnSynchronise(const int) override final;
+            __host__ __device__ virtual void            OnSynchronise(const int) override final;
 
         private:
             Ellipse m_primitive;
@@ -53,8 +53,7 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class OmniLight : public Host::Light,
-                          public OmniLightParams
+        class OmniLight : public Host::Light
         {
         public:
             __host__ OmniLight(const std::string& id);

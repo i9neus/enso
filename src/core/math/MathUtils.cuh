@@ -58,4 +58,14 @@ namespace Enso
 	{
 		return  (int(j) <= 2) ? T(1) : T(1 << int(std::floor(std::log2(float(j)))));
 	}
+
+	__host__ __device__ __forceinline__ float IntToUnitFloat(const uint& integer)
+	{
+		return float(integer) / float(0xffffffff);
+	}
+
+	__host__ __device__ __forceinline__ float IntToUnitFloat(const int& integer)
+	{
+		return float(integer) / float(0x7fffffff);
+	}
 }

@@ -11,6 +11,7 @@ namespace Enso
     {
         hit.tracableIdx = kInvalidHit;
         hit.flags = 0;
+        hit.hash = 0u;
 
         const auto& bih = *m_scene.tracableBIH;
         const auto& tracables = *m_scene.tracables;
@@ -83,6 +84,9 @@ namespace Enso
     {
         const vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
 
+        // Evaluate albedo
+        const vec3 albedo = (hit.hash != 0u) ? Hue(IntToUnitFloat(hit.hash)) : kOne;
+
         // Sample the direct component
         if (xi.z < 0.5)
         {
@@ -116,7 +120,7 @@ namespace Enso
             if (!lights[lightIdx]->Sample(ray, hit, xi.y, extantLight, LLight, pdfLight)) { return false; }
 
             // Derive the extant ray from the incident ray
-            ray.DeriveDirectSample(hit, extantLight, LLight * weightLight, lightIdx);
+            ray.DeriveDirectSample(hit, extantLight, LLight * weightLight * albedo, lightIdx);
         }
         // Indirect light sampling	
         else
@@ -127,7 +131,7 @@ namespace Enso
 
             //if (renderCtx.IsDebug()) printf("Scatter: [%f, %f] %f\n", hit.p.x, hit.p.y, hit.kickoff);
 
-            ray.DeriveIndirectSample(hit, d, kOne);
+            ray.DeriveIndirectSample(hit, d, albedo);
         }
 
         return true;
