@@ -77,7 +77,7 @@ namespace Enso
         const float cosTheta = std::cos(rotate);
         mat3 m = mat3::Identity();
         m.i00 = scale * cosTheta; m.i01 = scale * sinTheta;
-        m.i10 = scale * sinTheta; m.i11 = scale * -cosTheta;
+        m.i10 = scale * -sinTheta; m.i11 = scale * cosTheta;
         m.i02 = trans.x;
         m.i12 = trans.y;
         return m;
