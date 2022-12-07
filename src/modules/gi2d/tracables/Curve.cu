@@ -55,7 +55,7 @@ namespace Enso
 
         const vec2 pLocal = pWorld - m_transform.trans;
         vec4 L(0.0f);
-        m_bih->TestPoint(pLocal, [&, this](const uint* idxRange)
+        m_bih->TestPoint(pLocal, [&, this](const uint* idxRange) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
@@ -65,7 +65,8 @@ namespace Enso
                     {
                         L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                     }                 
-                }                
+                }
+                return false;
             });
      
         return L;

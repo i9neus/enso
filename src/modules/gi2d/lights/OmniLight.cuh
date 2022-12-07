@@ -34,6 +34,7 @@ namespace Enso
             __device__ OmniLight() {}
 
             __host__ __device__ virtual bool            IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
+            __host__ __device__ virtual bool            Contains(const UIViewCtx& viewCtx) const override final;
 
             __device__ virtual bool                     Sample(const Ray2D& parentRay, const HitCtx2D& hit, float xi, vec2& extant, vec3& L, float& pdf) const override final;
             __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const override final;
@@ -62,6 +63,7 @@ namespace Enso
             __host__ virtual void       OnDestroyAsset() override final;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+            __host__ virtual bool       Contains(const UIViewCtx& viewCtx) const override final;
             //__host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;

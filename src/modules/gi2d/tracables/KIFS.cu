@@ -177,6 +177,13 @@ namespace Enso
         return true;        
     }
 
+    __host__ __device__ bool Device::KIFS::Contains(const UIViewCtx& viewCtx) const
+    {
+        if (!m_worldBBox.Contains(viewCtx.mousePos)) { return false; }
+        uint code;
+        return EvaluateSDF(viewCtx.mousePos - m_transform.trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f;
+    }
+
     __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         vec2 pObject = pWorld - m_transform.trans;
@@ -260,6 +267,11 @@ namespace Enso
 
         ClearDirtyFlags();
         return IsConstructed();
+    }
+
+    __host__ bool Host::KIFS::Contains(const UIViewCtx& viewCtx) const
+    {
+        return m_hostInstance.Contains(viewCtx);
     }
 
     __host__ BBox2f Host::KIFS::RecomputeObjectSpaceBoundingBox()

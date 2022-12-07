@@ -20,6 +20,11 @@ namespace Enso
         return saturatef((outerRadius - distance) / dPdXY) * saturatef((distance - innerRadius) / dPdXY);
     }    
 
+    __host__ __device__ bool Ellipse::Contains(const vec2& p, const float&) const
+    {
+        return length2(p) < sqr(m_radius);
+    }
+
     __host__ __device__ bool Ellipse::IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const
     {
         // A ray intersects a sphere in at most two places which means we can find t by solving a quadratic

@@ -77,6 +77,8 @@ namespace Enso
         template<>
         __host__ __device__ __forceinline__ void OnRayIntersectInner(const BBox2f&, const RayRange2D& t, const bool&, nullptr_t) const { }
 
+        // LeafLambda expects the signature bool(const uint*)
+        // InnerLambda expects the signature void(const uint*)
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
         __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
         {                        
@@ -120,7 +122,7 @@ namespace Enso
                     OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimIdxs());
+                        if (onIntersectLeaf(node->GetPrimIdxs())) { return; }
                     }                    
                     node = nullptr;
                 }

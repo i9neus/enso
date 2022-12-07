@@ -13,6 +13,11 @@ namespace Enso
         return vec4(kOne, m_primitive.EvaluateOverlay(pWorld - m_transform.trans, viewCtx.dPdXY));
     }
 
+    __host__ __device__ bool Device::OmniLight::Contains(const UIViewCtx& viewCtx) const
+    {       
+        return m_primitive.Contains(viewCtx.mousePos - m_transform.trans, viewCtx.dPdXY) > 0.0f;
+    }
+
     __host__ __device__ bool Device::OmniLight::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {
         RayRange2D range;
@@ -182,6 +187,11 @@ namespace Enso
         if (node.GetValue("intensity", m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
 
         return m_dirtyFlags;
+    }
+
+    __host__ bool Host::OmniLight::Contains(const UIViewCtx& viewCtx) const
+    {
+        return m_hostInstance.Contains(viewCtx);
     }
 
     __host__ BBox2f Host::OmniLight::RecomputeObjectSpaceBoundingBox()

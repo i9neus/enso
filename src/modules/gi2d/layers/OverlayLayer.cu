@@ -77,7 +77,7 @@ namespace Enso
         {            
             const Vector<Device::Tracable*>& tracableList = *(m_scene.tracables);
       
-            auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> void
+            auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
@@ -93,6 +93,7 @@ namespace Enso
 
                     if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
                 }
+                return false;
             };          
             m_scene.tracableBIH->TestPoint(xyView, onPointIntersectLeaf);
         }

@@ -12,7 +12,7 @@
 #include "lights/OmniLight.cuh"
 
 #include "SceneDescription.cuh"
-#include "integrators/VoxelProxyGrid.cuh"
+//#include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
 #include "layers/PathTracerLayer.cuh"
 #include "layers/VoxelProxyGridLayer.cuh"
@@ -322,6 +322,35 @@ namespace Enso
 
     __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
+        // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
+        if (m_scene->TracableBIH().IsConstructed())
+        {
+            auto& tracables = m_scene->Tracables();
+            int hitIdx = -1;
+            auto onContainsPrim = [&, this](const uint* primRange) -> bool
+            {
+                for (int primIdx = primRange[0]; primIdx < primRange[1]; ++primIdx)
+                {
+                    if (tracables[primIdx]->Contains(m_viewCtx))
+                    {
+                        hitIdx = primIdx;
+                        return true;
+                    }
+                }
+                return false;
+            };
+            m_scene->TracableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+
+            // If we've intersected something, select it and go straight to the move state.
+            if (hitIdx != -1)
+            {
+                DeselectAll();
+                m_selectedTracables.push_back(tracables[hitIdx]);
+                m_selectedTracables.back()->OnSelect(true);
+                return "kMoveSceneObjectBegin";
+            }
+        }
+        
         // If there are no paths selected, enter selection state. Otherwise, enter moving state.
         if (m_selectionCtx.numSelected == 0)
         {
@@ -388,7 +417,7 @@ namespace Enso
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
                             const auto& bBoxWorld = tracables[idx]->GetWorldSpaceBoundingBox();
-                            const bool isCaptured = bBoxWorld.Intersects(m_selectionCtx.lassoBBox);
+                            const bool isCaptured = m_selectionCtx.lassoBBox.Contains(bBoxWorld);
                             if (isCaptured)
                             {
                                 m_selectedTracables.emplace_back(tracables[idx]);

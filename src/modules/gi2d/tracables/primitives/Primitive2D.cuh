@@ -31,6 +31,7 @@ namespace Enso
         __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const { dassert("IntersectRay not implemented."); return kFltMax; }
         __host__ __device__ virtual BBox2f                  GetBoundingBox() const { dassert("GetBoundingBox not implemented."); return BBox2f::MakeInvalid(); }
         __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const { dassert("Intersects not implemented."); return false; }
+        __host__ __device__ virtual bool                    Contains(const vec2& p, const float& dPdXY) const { dassert("Contains not implemented."); return false; }
 
         __host__ __device__ __forceinline__ bool            IsSelected() const { return m_flags & k2DPrimitiveSelected; }
         __host__ __device__ __forceinline__ void            SetFlags(const uchar flags, const bool set)
