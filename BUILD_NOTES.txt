@@ -1,0 +1,5 @@
+Notes:
+
+* libtorch requires a hacky linker include in order to correctly pick up CUDA: 
+
+	-INCLUDE:?warp_size@cuda@at@@YAHXZ
