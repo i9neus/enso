@@ -17,7 +17,7 @@ namespace Enso
         m_gridCtx.majorLineSpacing = 1.0f;
     }
 
-    __device__ void Device::OverlayLayer::OnSynchronise(const int syncFlags)
+    __host__ __device__ void Device::OverlayLayer::OnSynchronise(const int syncFlags)
     {
 
     }
@@ -207,7 +207,7 @@ namespace Enso
         m_gridCtx.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
         m_gridCtx.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_gridCtx.lineAlpha = 1 - (logScale - std::floor(logScale));
-        m_gridCtx.show = true;
+        m_gridCtx.show = false;
         m_selectionCtx.lassoBBox.Rectify();
         m_selectionCtx.selectedBBox.Rectify();
 

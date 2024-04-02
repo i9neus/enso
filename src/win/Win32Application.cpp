@@ -236,14 +236,22 @@ int main(int argc, char* argv[])
 	Log::EnableLevel(kLogSystem, true);
 	Log::EnableLevel(kLogDebug, true);
 
+	// For some reason, MSVC's debugger won't catch certain handled exceptions (possibly something to do with CUDA?)
+	#define DISABLE_EXCEPTION_HANDLING
+
+#ifndef DISABLE_EXCEPTION_HANDLING
 	try
 	{
+#endif
+
 		D3DContainer d3dContainer("Probegen");
 		auto rValue = Win32Application::Run(d3dContainer, GetModuleHandle(NULL), SW_SHOW);
 
 		AR().VerifyEmpty();
 
 		return rValue;
+
+#ifndef DISABLE_EXCEPTION_HANDLING
 	}
 	catch (const std::runtime_error& err)
 	{
@@ -255,4 +263,5 @@ int main(int argc, char* argv[])
 	{
 		Log::Error("Unhandled error");
 	}
+#endif
 }

@@ -36,7 +36,7 @@ namespace Enso
             __device__ void Render();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
-            __device__ virtual void OnSynchronise(const int) override final;
+            __host__ __device__ virtual void OnSynchronise(const int) override final;
 
         private:
             Device::SceneDescription                    m_scene;

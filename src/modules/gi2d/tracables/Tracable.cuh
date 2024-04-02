@@ -50,7 +50,6 @@ namespace Enso
     namespace Host
     {        
         class Tracable : public Host::SceneObject
-
         {
         public:
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
@@ -59,6 +58,9 @@ namespace Enso
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
             __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override;
+
+            __host__ virtual bool       HasOverlay() const override { return true; }
+
 
         protected:
             __host__ Tracable(const std::string& id, Device::Tracable& hostInstance) : 

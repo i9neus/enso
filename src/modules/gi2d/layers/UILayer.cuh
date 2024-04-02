@@ -30,7 +30,7 @@ namespace Enso
         public:
             __device__ UILayer() {}
 
-            __device__ virtual void OnSynchronise(const int) {};
+            __host__ __device__ virtual void OnSynchronise(const int) {};
         };
     }
 

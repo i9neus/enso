@@ -106,6 +106,9 @@
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gi2d\raycaster">
+      <UniqueIdentifier>{285bf8b8-d8cf-4661-96b1-ed3ef2d1a8c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -388,9 +391,6 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Accumulator.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
@@ -616,6 +616,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\GenericSDF.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -637,9 +640,6 @@
       <Filter>modules\gi2d\bih</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu">
@@ -701,6 +701,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu">
       <Filter>modules\gi2d\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu">
+      <Filter>modules\gi2d\integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu">
+      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

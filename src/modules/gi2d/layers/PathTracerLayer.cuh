@@ -43,7 +43,7 @@ namespace Enso
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
-            __device__ virtual void OnSynchronise(const int) override final;
+            __host__ __device__ virtual void OnSynchronise(const int) override final;
 
         private:
             PathTracer2D                            m_overlayTracer;

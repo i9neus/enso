@@ -17,7 +17,7 @@ namespace Enso
 
     }
 
-    __device__ void Device::VoxelProxyGridLayer::OnSynchronise(const int syncFlags)
+    __host__ __device__ void Device::VoxelProxyGridLayer::OnSynchronise(const int syncFlags)
     {
         if (syncFlags == kSyncObjects)
         {

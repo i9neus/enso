@@ -11,8 +11,11 @@ namespace Enso
     {
         m_hostTracables = CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
         m_hostLights = CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
+        m_hostCameras = CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
+        m_hostWidgets = CreateChildAsset<Host::SceneObjectContainer>("widgets", kVectorHostAlloc);
 
-        m_hostTracableBIH = CreateChildAsset<Host::BIH2DAsset>("bih", 1);
+        m_hostTracableBIH = CreateChildAsset<Host::BIH2DAsset>("tracablebih", 1);
+        m_hostWidgetBIH = CreateChildAsset<Host::BIH2DAsset>("widgetbih", 1);
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -29,7 +32,9 @@ namespace Enso
 
         m_hostTracables.DestroyAsset();
         m_hostLights.DestroyAsset();
+        m_hostCameras.DestroyAsset();
         m_hostTracableBIH.DestroyAsset();
+        m_hostWidgetBIH.DestroyAsset();
     }
 
     __host__ Host::SceneDescription::~SceneDescription()
@@ -39,6 +44,24 @@ namespace Enso
             OnDestroyAsset();
 
         END_EXCEPTION_FENCE
+    }
+
+    template<typename ContainerType>
+    __host__ void RebuildBIH(AssetHandle<Host::BIH2DAsset>& bih, ContainerType& primitives)
+    {
+        // Create a tracable list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = bih->GetPrimitiveIndices();
+        primIdxs.resize(primitives->Size());
+        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [&](const uint& idx) -> BBox2f
+        {
+            // Expand the world space bbox slightly
+            return Grow((*primitives)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
+        };
+        bih->Build(getPrimitiveBBox);
     }
 
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
@@ -69,10 +92,30 @@ namespace Enso
                 }
 
                 return true;
-            });       
+            }); 
+
+        // Make a list of drawable widgets that aren't tracables
+        renderObjects->ForEach([&, this](AssetHandle<Host::GenericObject>& genericObject) -> bool
+            {
+                auto tracable = genericObject.DynamicCast<Host::Tracable>();
+                if (!tracable)
+                {
+                    auto sceneObject = genericObject.DynamicCast<Host::SceneObject>();
+                    if (sceneObject)
+                    {
+                        m_hostWidgets->EmplaceBack(sceneObject);
+                    }
+                }
+
+                return true;
+            });
 
         m_hostTracables->Synchronise(kVectorSyncUpload);
         m_hostLights->Synchronise(kVectorSyncUpload);
+        m_hostCameras->Synchronise(kVectorSyncUpload);
+
+        RebuildBIH(m_hostTracableBIH, m_hostTracables);
+        Log::Write("Rebuilt scene BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
 
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_scene->m_hostTracables->Size());
@@ -81,19 +124,6 @@ namespace Enso
             m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
         }*/
 
-        // Create a tracable list ready for building
-        // TODO: It's probably faster if we build on the already-sorted index list
-        auto& primIdxs = m_hostTracableBIH->GetPrimitiveIndices();
-        primIdxs.resize(m_hostTracables->Size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-        // Construct the BIH
-        std::function<BBox2f(uint)> getPrimitiveBBox = [this](const uint& idx) -> BBox2f
-        {
-            return Grow((*m_hostTracables)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
-        };
-        m_hostTracableBIH->Build(getPrimitiveBBox);
         
-        Log::Write("Rebuilt scene BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
     }
 }

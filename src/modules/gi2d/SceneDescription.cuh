@@ -2,6 +2,7 @@
 
 #include "FwdDecl.cuh"
 #include "tracables/Tracable.cuh"
+#include "integrators/Camera2D.cuh"
 
 namespace Enso
 {
@@ -24,6 +25,8 @@ namespace Enso
     {
         using TracableContainer = Host::AssetVector<Host::Tracable, Device::Tracable>;
         using LightContainer = Host::AssetVector<Host::Light, Device::Light>;
+        using CameraContainer = Host::AssetVector<Host::Camera2D, Device::Camera2D>;
+        using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
 
         class SceneDescription : public Host::AssetAllocator
         {
@@ -38,17 +41,23 @@ namespace Enso
             __host__ Host::BIH2DAsset& TracableBIH() { DAssert(m_hostTracableBIH);  return *m_hostTracableBIH; }
             __host__ TracableContainer& Tracables() { DAssert(m_hostTracableBIH); return *m_hostTracables; }
             __host__ TracableContainer& Lights() { DAssert(m_hostTracableBIH); return *m_hostTracables; }
+            __host__ CameraContainer& Cameras() { return *m_hostCameras; }
 
-        private:
+        private:    
             // Geometry
             AssetHandle<Host::BIH2DAsset>           m_hostTracableBIH;
+            AssetHandle<Host::BIH2DAsset>           m_hostWidgetBIH;
+
             AssetHandle<TracableContainer>          m_hostTracables;
             AssetHandle<LightContainer>             m_hostLights;
+            AssetHandle<CameraContainer>            m_hostCameras;
+            AssetHandle<SceneObjectContainer>       m_hostWidgets;
+
 
             // Voxel grids
             //AssetHandle<Host::VoxelProxyGrid>       voxelProxy;
 
-            Device::SceneDescription* cu_deviceInstance = nullptr;
+            Device::SceneDescription*               cu_deviceInstance = nullptr;
             Device::SceneDescription                m_deviceObjects;
         };
     };

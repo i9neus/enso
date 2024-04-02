@@ -118,10 +118,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Accumulator.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
@@ -206,11 +203,9 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu" />
@@ -332,6 +327,8 @@
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Include>./;../../common/inc</Include>
       <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <HostDebugInfo>true</HostDebugInfo>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </CudaCompile>
     <CudaLink>
       <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>

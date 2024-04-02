@@ -74,7 +74,7 @@ namespace Enso
 
         public:
             __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
-            __host__ __device__ virtual bool    Contains(const UIViewCtx& viewCtx) const { return false; }
+            __host__ __device__ virtual bool    Contains(const UIViewCtx& viewCtx) const { return false; };
 
             __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
             __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
@@ -92,7 +92,7 @@ namespace Enso
     }
 
     namespace Host
-    {
+    {       
         class SceneObject : public Host::GenericObject
         {
         public:
@@ -106,6 +106,7 @@ namespace Enso
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_hostInstance.m_attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
+            __host__ virtual bool       HasOverlay() const { return false; }
             __host__ virtual bool       Contains(const UIViewCtx& viewCtx) const { return false; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
 

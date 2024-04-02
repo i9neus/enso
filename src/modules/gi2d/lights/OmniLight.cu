@@ -150,7 +150,6 @@ namespace Enso
             return m_dirtyFlags;
         }
 
-
         // If the object is dirty, recompute the bounding box
         SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
