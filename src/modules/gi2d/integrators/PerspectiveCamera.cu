@@ -27,7 +27,7 @@ namespace Enso
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
 
-        Log::Success("Host::Curve::Curve");     
+        Log::Success("Host::PerspectiveCamera::PerspectiveCamera");     
 
         Synchronise(kSyncObjects);
     }

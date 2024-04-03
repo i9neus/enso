@@ -6,7 +6,7 @@
 #include "core/Vector.cuh"
 #include "core/Tuple.cuh"
 
-#include "tracables/Curve.cuh"
+#include "tracables/LineStrip.cuh"
 #include "tracables/KIFS.cuh"
 
 #include "lights/OmniLight.cuh"
@@ -39,7 +39,7 @@ namespace Enso
         // Register the inbound command handlers
         m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
 
-        m_sceneObjectFactory.RegisterInstantiator<Host::Curve>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_sceneObjectFactory.RegisterInstantiator<Host::LineStrip>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());        
 

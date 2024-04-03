@@ -1,4 +1,4 @@
-#include "Curve.cuh"
+#include "LineStrip.cuh"
 #include "primitives/LineSegment.cuh"
 #include "../GenericIntersector.cuh"
 #include "core/math/ColourUtils.cuh"
@@ -6,11 +6,11 @@
 #include "io/json/JsonUtils.h"
 
 namespace Enso
-{    
-    __host__ __device__ bool Device::Curve::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
-    {        
+{
+    __host__ __device__ bool Device::LineStrip::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
+    {
         assert(m_bih && m_lineSegments);
-        
+
         RayRange2D range;
         if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
 
@@ -46,15 +46,15 @@ namespace Enso
         return false;
     }
 
-    /*__host__ __device__ bool Device::Curve::InteresectPoint(const vec2& p, const float& thickness) const
+    /*__host__ __device__ bool Device::LineStrip::InteresectPoint(const vec2& p, const float& thickness) const
     {
     }*/
 
-    /*__host__ __device__ vec2 Device::Curve::PerpendicularPoint(const vec2& p) const 
+    /*__host__ __device__ vec2 Device::LineStrip::PerpendicularPoint(const vec2& p) const
     {
     }*/
 
-    __device__ vec4 Device::Curve::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_bih) { return vec4(0.0f); }
 
@@ -69,28 +69,28 @@ namespace Enso
                     if (line > 0.f)
                     {
                         L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                    }                 
+                    }
                 }
-                return false;
+        return false;
             });
-     
+
         return L;
     }
 
-    __host__ Host::Curve::Curve(const std::string& id) :
+    __host__ Host::LineStrip::LineStrip(const std::string& id) :
         Tracable(id, m_hostInstance),
         cu_deviceInstance(nullptr)
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
-        
-        Log::Success("Host::Curve::Curve");
-        
+
+        Log::Success("Host::LineStrip::LineStrip");
+
         constexpr uint kMinTreePrims = 3;
-        
+
         m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
         m_hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
-        
-        cu_deviceInstance = InstantiateOnDevice<Device::Curve>();
+
+        cu_deviceInstance = InstantiateOnDevice<Device::LineStrip>();
 
         m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
@@ -98,22 +98,22 @@ namespace Enso
         // Set the host parameters so we can query the primitive on the host
         m_hostInstance.m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
         m_hostInstance.m_lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.get());
-        
+
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::Curve::Instantiate(const std::string& id, const Json::Node&)
+    __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&)
     {
-        return CreateAsset<Host::Curve>(id);
+        return CreateAsset<Host::LineStrip>(id);
     }
 
-    __host__ Host::Curve::~Curve()
+    __host__ Host::LineStrip::~LineStrip()
     {
-        Log::Error("Host::Curve::~Curve");
+        Log::Error("Host::LineStrip::~LineStrip");
         OnDestroyAsset();
     }
 
-    __host__ void Host::Curve::OnDestroyAsset()
+    __host__ void Host::LineStrip::OnDestroyAsset()
     {
         DestroyOnDevice(cu_deviceInstance);
 
@@ -121,23 +121,23 @@ namespace Enso
         m_hostLineSegments.DestroyAsset();
     }
 
-    __host__ void Host::Curve::Synchronise(const int syncType)
+    __host__ void Host::LineStrip::Synchronise(const int syncType)
     {
         Tracable::Synchronise(cu_deviceInstance, syncType);
 
         if (syncType == kSyncObjects)
         {
-            SynchroniseInheritedClass<CurveObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects);
+            SynchroniseInheritedClass<LineStripObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects);
         }
     }
 
-    __host__ uint Host::Curve::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ uint Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         const vec2 mousePosLocal = viewCtx.mousePos - m_hostInstance.m_transform.trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
             m_hostInstance.m_transform.trans = viewCtx.mousePos;
-           
+
             Log::Success("Opened path %s", GetAssetID());
         }
         else if (stateID == "kCreateSceneObjectHover")
@@ -185,17 +185,17 @@ namespace Enso
         return m_dirtyFlags;
     }
 
-    __host__ bool Host::Curve::IsConstructed() const
+    __host__ bool Host::LineStrip::IsConstructed() const
     {
         return !m_hostLineSegments->IsEmpty() && m_hostBIH->IsConstructed();
     }
 
-    __host__ bool Host::Curve::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::LineStrip::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
     {
         if (!m_dirtyFlags) { return IsConstructed(); }
 
         bool resyncParams = false;
-        
+
         // If the geometry has changed, rebuild the BIH
         if (m_dirtyFlags & kDirtyObjectBVH)
         {
@@ -215,23 +215,23 @@ namespace Enso
                 return Grow(segments[idx].GetBoundingBox(), 0.001f);
             };
             m_hostBIH->Build(getPrimitiveBBox);
-            
+
             //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
             resyncParams = true;
         }
 
         if (m_dirtyFlags & kDirtyObjectBounds)
-        {             
+        {
             resyncParams = true;
         }
 
-        if (resyncParams) 
-        { 
+        if (resyncParams)
+        {
             // Update the tracable bounding boxes
             RecomputeBoundingBoxes();
-            
-            Synchronise(kSyncParams); 
+
+            Synchronise(kSyncParams);
         }
 
         ClearDirtyFlags();
@@ -239,12 +239,12 @@ namespace Enso
         return IsConstructed();
     }
 
-    __host__ BBox2f Host::Curve::RecomputeObjectSpaceBoundingBox()
+    __host__ BBox2f Host::LineStrip::RecomputeObjectSpaceBoundingBox()
     {
         return m_hostBIH->GetBoundingBox();
     }
 
-    __host__ bool Host::Curve::Serialise(Json::Node& node, const int flags) const
+    __host__ bool Host::LineStrip::Serialise(Json::Node& node, const int flags) const
     {
         Tracable::Serialise(node, flags);
 
@@ -265,7 +265,7 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::Curve::Deserialise(const Json::Node& node, const int flags)
+    __host__ uint Host::LineStrip::Deserialise(const Json::Node& node, const int flags)
     {
         Tracable::Deserialise(node, flags);
 

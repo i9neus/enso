@@ -406,7 +406,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh">
       <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Curve.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh">
       <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh">
@@ -654,7 +654,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu">
       <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu">
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu">
       <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu">

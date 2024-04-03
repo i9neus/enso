@@ -129,7 +129,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Curve.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cuh" />
@@ -212,7 +212,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Curve.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu" />
