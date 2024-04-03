@@ -58,9 +58,6 @@
     <Filter Include="modules\gi2d\tracables">
       <UniqueIdentifier>{2d2a21fe-5b63-4ba1-af2e-81fffbfefafe}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\tracables\primitives">
-      <UniqueIdentifier>{b12f6cb4-c275-4951-b298-b0595155b5c5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ui">
       <UniqueIdentifier>{2b5a2888-41ef-40c2-ac23-2b4dc7b3e523}</UniqueIdentifier>
     </Filter>
@@ -102,6 +99,9 @@
     </Filter>
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\primitives">
+      <UniqueIdentifier>{e624d2c9-3eed-4466-9a7b-fa7e47356b61}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -338,9 +338,6 @@
     <ClInclude Include="..\..\..\src\modules\ModuleManager.h">
       <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\GenericIntersector.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
@@ -409,15 +406,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh">
       <Filter>modules\gi2d\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cuh">
-      <Filter>modules\gi2d\tracables\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellipse.cuh">
-      <Filter>modules\gi2d\tracables\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\primitives\Primitive2D.cuh">
-      <Filter>modules\gi2d\tracables\primitives</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\utils\CudaTests.cuh">
       <Filter>utils</Filter>
@@ -608,11 +596,23 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh">
       <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\GenericSDF.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh">
       <Filter>modules\gi2d\integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Ellipse.cuh">
+      <Filter>modules\gi2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cuh">
+      <Filter>modules\gi2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Primitive2D.cuh">
+      <Filter>modules\gi2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericIntersector.cuh">
+      <Filter>modules\gi2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericSDF.cuh">
+      <Filter>modules\gi2d\primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -655,12 +655,6 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu">
       <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\Ellpise.cu">
-      <Filter>modules\gi2d\tracables\primitives</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\primitives\LineSegment.cu">
-      <Filter>modules\gi2d\tracables\primitives</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu">
       <Filter>utils</Filter>
     </CudaCompile>
@@ -702,6 +696,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu">
       <Filter>modules\gi2d\integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\Ellpise.cu">
+      <Filter>modules\gi2d\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cu">
+      <Filter>modules\gi2d\primitives</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

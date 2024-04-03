@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Ray2D.cuh"
+#include "../Ray2D.cuh"
 
 namespace Enso
 {

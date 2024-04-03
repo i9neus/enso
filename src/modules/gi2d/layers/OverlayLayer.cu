@@ -4,7 +4,7 @@
 #include "core/math/ColourUtils.cuh"
 #include "core/Hash.h"
 #include "core/AssetContainer.cuh"
-#include "../tracables/primitives/LineSegment.cuh"
+#include "../primitives/LineSegment.cuh"
 #include "../SceneDescription.cuh"
 
 namespace Enso

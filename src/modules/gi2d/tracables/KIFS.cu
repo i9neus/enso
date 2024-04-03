@@ -1,7 +1,7 @@
 #include "KIFS.cuh"
 
-#include "../GenericIntersector.cuh"
-#include "../GenericSDF.cuh"
+#include "../primitives/GenericIntersector.cuh"
+#include "../primitives/GenericSDF.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "../bih/BIH2DAsset.cuh"
 #include "io/json/JsonUtils.h"

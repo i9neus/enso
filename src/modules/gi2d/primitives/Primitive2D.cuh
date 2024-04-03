@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../Common.cuh"
+#include "../Common.cuh"
 
 #include "core/Image.cuh"
 
-#include "../../Ray2D.cuh"
+#include "../Ray2D.cuh"
 
 namespace Enso
 {

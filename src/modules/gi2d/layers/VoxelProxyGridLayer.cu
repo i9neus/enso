@@ -6,7 +6,7 @@
 #include "../RenderCtx.cuh"
 #include "../SceneDescription.cuh"
 #include "../integrators/VoxelProxyGrid.cuh"
-#include "../GenericSDF.cuh"
+#include "../primitives/GenericSDF.cuh"
 
 namespace Enso
 {

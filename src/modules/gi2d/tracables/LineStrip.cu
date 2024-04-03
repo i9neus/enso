@@ -1,5 +1,5 @@
 #include "LineStrip.cuh"
-#include "primitives/LineSegment.cuh"
+#include "../primitives/LineSegment.cuh"
 #include "../GenericIntersector.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "../bih/BIH2DAsset.cuh"

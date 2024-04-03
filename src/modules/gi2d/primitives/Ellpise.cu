@@ -1,7 +1,7 @@
 #include "Ellipse.cuh"
 #include "core/Vector.cuh"
 #include "core/math/Math.cuh"
-#include "../../GenericIntersector.cuh"
+#include "GenericIntersector.cuh"
 
 #include <random>
 

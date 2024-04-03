@@ -1,7 +1,7 @@
 #include "OmniLight.cuh"
 
-#include "../tracables/primitives/Ellipse.cuh"
-#include "../GenericIntersector.cuh"
+#include "../primitives/Ellipse.cuh"
+#include "../primitives/GenericIntersector.cuh"
 #include "io/json/JsonUtils.h"
 
 namespace Enso
