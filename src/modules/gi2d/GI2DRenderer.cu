@@ -331,7 +331,7 @@ namespace Enso
             {
                 for (int primIdx = primRange[0]; primIdx < primRange[1]; ++primIdx)
                 {
-                    if (tracables[primIdx]->Contains(m_viewCtx))
+                    if (tracables[primIdx]->OnMouseClick(m_viewCtx) == kSceneObjectPrecisionDrag)
                     {
                         hitIdx = primIdx;
                         return true;

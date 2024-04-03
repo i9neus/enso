@@ -183,14 +183,14 @@ namespace Enso
         return true;        
     }
 
-    __host__ __device__ bool Device::KIFS::Contains(const UIViewCtx& viewCtx) const
+    __host__ __device__ uint Device::KIFS::OnMouseClick(const UIViewCtx& viewCtx) const
     {
         if (!m_worldBBox.Contains(viewCtx.mousePos)) { return false; }
         uint code;
-        return EvaluateSDF(viewCtx.mousePos - m_transform.trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f;
+        return (EvaluateSDF(viewCtx.mousePos - m_transform.trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
-    __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_worldBBox.Contains(pWorld)) { return vec4(0.0f); }
         
@@ -277,9 +277,9 @@ namespace Enso
         return IsConstructed();
     }
 
-    __host__ bool Host::KIFS::Contains(const UIViewCtx& viewCtx) const
+    __host__ uint Host::KIFS::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.Contains(viewCtx);
+        return m_hostInstance.OnMouseClick(viewCtx);
     }
 
     __host__ BBox2f Host::KIFS::RecomputeObjectSpaceBoundingBox()

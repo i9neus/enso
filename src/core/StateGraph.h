@@ -287,7 +287,7 @@ namespace Enso
                 MakeTransition(transition);
             }
 
-            // Iteratively execute any auto-transitions that exist for the current
+            // Iteratively execute any auto-transitions that exist for the current state
             for (auto it = m_uiStateAutoTransitionMap.find(m_currentState);
                 it != m_uiStateAutoTransitionMap.end();
                 it = m_uiStateAutoTransitionMap.find(m_currentState))

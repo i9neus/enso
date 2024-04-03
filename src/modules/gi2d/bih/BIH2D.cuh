@@ -79,20 +79,20 @@ namespace Enso
 
         // LeafLambda expects the signature bool(const uint*)
         // InnerLambda expects the signature void(const uint*)
+        // Returns true if a primitive is successfully hit
         template<typename LeafLambda, typename InnerLambda = nullptr_t>
-        __host__ __device__ void TestPoint(const vec2& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
+        __host__ __device__ bool TestPoint(const vec2& p, LeafLambda onIntersectLeaf, InnerLambda onIntersectInner = nullptr) const
         {                        
-            if (!m_isConstructed) { return; }
+            if (!m_isConstructed) { return false; }
 
             // Chuck out primitives that don't overlap the bounding box
-            if (!m_treeBBox.Intersects(p)) { return; }
+            if (!m_treeBBox.Intersects(p)) { return false; }
 
             // If there are only a handful of primitives in the tree, don't bother traversing and just test them all sequentially
             if (m_testAsList)
             {
                 const uint idxRange[2] = { 0, m_numPrims };
-                onIntersectLeaf(idxRange);
-                return;
+                return onIntersectLeaf(idxRange);
             }
 
             BIH2DPrimitiveStackElement stack[kBIH2DStackSize];
@@ -122,7 +122,7 @@ namespace Enso
                     OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        if (onIntersectLeaf(node->GetPrimIdxs())) { return; }
+                        if (onIntersectLeaf(node->GetPrimIdxs())) { return true; }
                     }                    
                     node = nullptr;
                 }
@@ -163,6 +163,8 @@ namespace Enso
                     }
                 }
             } while (stackIdx >= 0 || node != nullptr);
+
+            return false;
         }
 
         template<typename LeafLambda, typename InnerLambda = nullptr_t>

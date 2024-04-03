@@ -54,7 +54,12 @@ namespace Enso
     {
     }*/
 
-    __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ uint Device::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const
+    {
+        return (EvaluateOverlay(viewCtx.mousePos, viewCtx).w > 0.f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+    }
+
+    __host__ __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_bih) { return vec4(0.0f); }
 
@@ -71,7 +76,7 @@ namespace Enso
                         L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
                     }
                 }
-        return false;
+                return false;
             });
 
         return L;
@@ -183,6 +188,11 @@ namespace Enso
         }
 
         return m_dirtyFlags;
+    }
+
+    __host__ uint Host::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const
+    {
+        return m_hostInstance.OnMouseClick(viewCtx);
     }
 
     __host__ bool Host::LineStrip::IsConstructed() const

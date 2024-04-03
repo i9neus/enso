@@ -32,8 +32,9 @@ namespace Enso
             __host__ __device__ LineStrip() {}
 
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
-            __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
         };
     }
 
@@ -51,6 +52,7 @@ namespace Enso
             __host__ void               Synchronise(const int syncType);
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+            __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       IsConstructed() const override final;

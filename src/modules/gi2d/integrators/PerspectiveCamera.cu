@@ -135,8 +135,8 @@ namespace Enso
         return m_dirtyFlags;
     }
 
-    __host__ bool Host::PerspectiveCamera::Contains(const UIViewCtx& viewCtx) const
+    __host__ uint Host::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.Contains(viewCtx);
+        return m_hostInstance.OnMouseClick(viewCtx);
     }
 }

@@ -61,9 +61,6 @@
     <Filter Include="modules\gi2d\tracables\primitives">
       <UniqueIdentifier>{b12f6cb4-c275-4951-b298-b0595155b5c5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\widgets">
-      <UniqueIdentifier>{0f0a81f0-5cd5-47f3-87b6-75482fa04ab1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ui">
       <UniqueIdentifier>{2b5a2888-41ef-40c2-ac23-2b4dc7b3e523}</UniqueIdentifier>
     </Filter>
@@ -111,6 +108,7 @@
     <Text Include="..\..\..\docs\BugChecklist.md">
       <Filter>docs</Filter>
     </Text>
+    <Text Include="..\..\..\BUILD_NOTES.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp">

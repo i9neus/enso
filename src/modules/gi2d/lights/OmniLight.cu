@@ -6,16 +6,16 @@
 
 namespace Enso
 {
-    __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
         if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
 
         return vec4(kOne, m_primitive.EvaluateOverlay(pWorld - m_transform.trans, viewCtx.dPdXY));
     }
 
-    __host__ __device__ bool Device::OmniLight::Contains(const UIViewCtx& viewCtx) const
+    __host__ __device__ uint Device::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const
     {       
-        return m_primitive.Contains(viewCtx.mousePos - m_transform.trans, viewCtx.dPdXY) > 0.0f;
+        return (m_primitive.Contains(viewCtx.mousePos - m_transform.trans, viewCtx.dPdXY) > 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
     __host__ __device__ bool Device::OmniLight::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
@@ -192,9 +192,9 @@ namespace Enso
         return m_dirtyFlags;
     }
 
-    __host__ bool Host::OmniLight::Contains(const UIViewCtx& viewCtx) const
+    __host__ uint Host::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.Contains(viewCtx);
+        return m_hostInstance.OnMouseClick(viewCtx);
     }
 
     __host__ BBox2f Host::OmniLight::RecomputeObjectSpaceBoundingBox()

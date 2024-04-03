@@ -52,6 +52,13 @@ namespace Enso
         kSceneObjectInteractiveElement = 2u
     };
 
+    enum SceneObjectSelectType : int
+    {
+        kSceneObjectInvalidSelect = 0,
+        kSceneObjectPrecisionDrag = 1,
+        kSceneObjectDelegatedSelect = 2
+    };
+
     struct SceneObjectParams
     {
         __host__ __device__ SceneObjectParams() {}
@@ -73,8 +80,8 @@ namespace Enso
             friend Host::SceneObject;
 
         public:
-            __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
-            __host__ __device__ virtual bool    Contains(const UIViewCtx& viewCtx) const { return false; };
+            __host__ __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
+            __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const { return false; };
 
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
             __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_worldBBox; };
@@ -92,7 +99,7 @@ namespace Enso
     }
 
     namespace Host
-    {       
+    {               
         class SceneObject : public Host::GenericObject
         {
         public:
@@ -101,13 +108,13 @@ namespace Enso
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual uint       OnSelect(const bool isSelected);
+            __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
 
             __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_hostInstance.m_attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual bool       HasOverlay() const { return false; }
-            __host__ virtual bool       Contains(const UIViewCtx& viewCtx) const { return false; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
             __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
 
