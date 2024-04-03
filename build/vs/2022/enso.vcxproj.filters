@@ -106,9 +106,6 @@
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\raycaster">
-      <UniqueIdentifier>{285bf8b8-d8cf-4661-96b1-ed3ef2d1a8c7}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">

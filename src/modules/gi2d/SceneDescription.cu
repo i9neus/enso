@@ -19,7 +19,9 @@ namespace Enso
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
+        m_deviceObjects.widgets = m_hostWidgets->GetDeviceInstance();
         m_deviceObjects.tracableBIH = m_hostTracableBIH->GetDeviceInstance();
+        m_deviceObjects.widgetBIH = m_hostWidgetBIH->GetDeviceInstance();
 
         cu_deviceInstance = InstantiateOnDevice<Device::SceneDescription>();
 
@@ -66,64 +68,64 @@ namespace Enso
 
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {
-        // Only rebuilid if the object bounds have change through insertion, deletion or movement
+        // Only rebuilid if the object bounds have changed through insertion, deletion or movement
         if (!(dirtyFlags & kDirtyIntegrators)) { return; }
         
         // Rebuild and synchronise any tracables that were dirtied since the last iteration
         int lightIdx = 0;
         m_hostTracables->Clear();
         m_hostLights->Clear();
+        m_hostWidgets->Clear();
 
-        renderObjects->ForEachOfType<Host::Tracable>([&, this](AssetHandle<Host::Tracable>& tracable) -> bool
+        renderObjects->ForEachOfType<Host::SceneObject>([&, this](AssetHandle<Host::SceneObject>& sceneObject) -> bool
             {
-                // Rebuild the tracable (it will decide whether any action needs to be taken)
-                if (tracable->Rebuild(dirtyFlags, viewCtx))
+                // Tracables have their own BIH and build process, so process them separaately here.
+                auto tracable = sceneObject.DynamicCast<Host::Tracable>();
+                if (tracable)
                 {
-                    // Add the tracable to the list
-                    m_hostTracables->EmplaceBack(tracable);
+                    // Rebuild the tracable (it will decide whether any action needs to be taken)
+                    if (tracable->Rebuild(dirtyFlags, viewCtx))
+                    {
+                        // Add the tracable to the list
+                        m_hostTracables->EmplaceBack(tracable);
                     
-                    // Tracables that are also lights are separated out into their own container
-                    auto light = tracable.DynamicCast<Host::Light>();
-                    if (light) 
-                    { 
-                        tracable->SetLightIdx(lightIdx++);
-                        m_hostLights->EmplaceBack(light); 
-                    }                    
+                        // Tracables that are also lights are separated out into their own container
+                        auto light = tracable.DynamicCast<Host::Light>();
+                        if (light) 
+                        { 
+                            tracable->SetLightIdx(lightIdx++);
+                            m_hostLights->EmplaceBack(light); 
+                        }                    
+                    }
+                }
+                // Ordinary widgets go into a separate BIH
+                else
+                {
+                    m_hostWidgets->EmplaceBack(sceneObject);
                 }
 
                 return true;
             }); 
 
-        // Make a list of drawable widgets that aren't tracables
-        renderObjects->ForEach([&, this](AssetHandle<Host::GenericObject>& genericObject) -> bool
-            {
-                auto tracable = genericObject.DynamicCast<Host::Tracable>();
-                if (!tracable)
-                {
-                    auto sceneObject = genericObject.DynamicCast<Host::SceneObject>();
-                    if (sceneObject)
-                    {
-                        m_hostWidgets->EmplaceBack(sceneObject);
-                    }
-                }
-
-                return true;
-            });
-
+        // Sync the scene objects with the device
         m_hostTracables->Synchronise(kVectorSyncUpload);
         m_hostLights->Synchronise(kVectorSyncUpload);
         m_hostCameras->Synchronise(kVectorSyncUpload);
+        m_hostWidgets->Synchronise(kVectorSyncUpload);
 
+        // Rebuild the tracable BIH
         RebuildBIH(m_hostTracableBIH, m_hostTracables);
         Log::Write("Rebuilt scene BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
+
+        // Rebuild the widget BIH
+        RebuildBIH(m_hostWidgetBIH, m_hostWidgets);
+        Log::Write("Rebuilt widget BIH: %s", m_hostWidgetBIH->GetBoundingBox().Format());
 
         // Cache the object bounding boxes
         /*m_tracableBBoxes.reserve(m_scene->m_hostTracables->Size());
         for (auto& tracable : *m_scene->m_hostTracables)
         {
             m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
-        }*/
-
-        
+        }*/        
     }
 }

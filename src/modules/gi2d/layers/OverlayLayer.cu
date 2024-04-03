@@ -38,6 +38,30 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
+    template<typename ContainerType>
+    __device__ void DrawOverlayElements(const vec2& xyView, const UIViewCtx& viewCtx, const BIH2D<BIH2DFullNode>& bih, const ContainerType& elementList, vec4& L)
+    {
+        auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
+        {
+            for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
+            {
+                assert(idx < elementList.Size());
+                assert(elementList[idx]);
+
+                const auto& drawable = *elementList[idx];
+                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
+                if (LPrim.w > 0.0f)
+                {
+                    L = Blend(L, LPrim);
+                }
+
+                if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
+            }
+            return false;
+        };
+        bih.TestPoint(xyView, onPointIntersectLeaf);
+    }
+
     __device__ void Device::OverlayLayer::Render()
     {
         assert(m_accumBuffer);
@@ -75,27 +99,7 @@ namespace Enso
         // Draw the tracables
         if (m_scene.tracableBIH && m_scene.tracables)
         {            
-            const Vector<Device::Tracable*>& tracableList = *(m_scene.tracables);
-      
-            auto onPointIntersectLeaf = [&, this](const uint* idxRange) -> bool
-            {
-                for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
-                {
-                    assert(idx < tracableList.Size());
-                    assert(tracableList[idx]);
-
-                    const auto& drawable = *tracableList[idx];
-                    vec4 LPrim = drawable.EvaluateOverlay(xyView, m_viewCtx);
-                    if(LPrim.w > 0.0f)
-                    {                        
-                        L = Blend(L, LPrim); 
-                    }
-
-                    if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, m_viewCtx.dPdXY)) L = vec4(kRed, 1.0f);                  
-                }
-                return false;
-            };          
-            m_scene.tracableBIH->TestPoint(xyView, onPointIntersectLeaf);
+            DrawOverlayElements(xyView, m_viewCtx, *m_scene.tracableBIH, *m_scene.tracables, L);            
         }
 
         // Draw the lasso 

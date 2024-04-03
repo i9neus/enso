@@ -76,10 +76,10 @@ namespace Enso
             __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
             __host__ __device__ virtual bool    Contains(const UIViewCtx& viewCtx) const { return false; };
 
-            __host__ __device__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_objectBBox; };
-            __host__ __device__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_worldBBox; };
+            __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
+            __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_worldBBox; };
 
-            __host__ __device__ virtual void OnSynchronise(const int) {}
+            __host__ __device__ virtual void    OnSynchronise(const int) {}
 
         protected:
             __device__ SceneObject() {}
@@ -109,6 +109,7 @@ namespace Enso
             __host__ virtual bool       HasOverlay() const { return false; }
             __host__ virtual bool       Contains(const UIViewCtx& viewCtx) const { return false; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
+            __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
 
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_objectBBox; }
             __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_worldBBox; }

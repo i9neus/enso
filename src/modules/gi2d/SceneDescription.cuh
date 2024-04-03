@@ -15,7 +15,10 @@ namespace Enso
 
             const Vector<Device::Tracable*>* tracables = nullptr;
             const Vector<Device::Light*>* lights = nullptr;
+            const Vector<Device::SceneObject*>* widgets = nullptr;
+
             const BIH2D<BIH2DFullNode>* tracableBIH = nullptr;
+            const BIH2D<BIH2DFullNode>* widgetBIH = nullptr;
 
             //const Device::VoxelProxyGrid*             voxelProxy = nullptr;
         };
@@ -52,10 +55,6 @@ namespace Enso
             AssetHandle<LightContainer>             m_hostLights;
             AssetHandle<CameraContainer>            m_hostCameras;
             AssetHandle<SceneObjectContainer>       m_hostWidgets;
-
-
-            // Voxel grids
-            //AssetHandle<Host::VoxelProxyGrid>       voxelProxy;
 
             Device::SceneDescription*               cu_deviceInstance = nullptr;
             Device::SceneDescription                m_deviceObjects;
