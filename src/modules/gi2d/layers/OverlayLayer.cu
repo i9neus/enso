@@ -39,9 +39,12 @@ namespace Enso
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     template<typename ContainerType>
-    __device__ void DrawOverlayElements(const vec2& xyView, const UIViewCtx& viewCtx, const BIH2D<BIH2DFullNode>& bih, const ContainerType& elementList, vec4& L)
+    __device__ void DrawOverlayElements(const vec2& xyView, const UIViewCtx& viewCtx, const BIH2D<BIH2DFullNode>* bih, const ContainerType* elementListPtr, vec4& L)
     {
-        auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
+        if (!bih || !elementListPtr) { return; }
+
+        const ContainerType& elementList = *elementListPtr;
+        /*auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
         {
             for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
             {
@@ -59,7 +62,20 @@ namespace Enso
             }
             return false;
         };
-        bih.TestPoint(xyView, onPointIntersectLeaf);
+        bih->TestPoint(xyView, onPointIntersectLeaf);*/
+        for (int idx = 0; idx < elementList.Size(); ++idx)
+        {
+            assert(elementList[idx]);
+
+            const auto& drawable = *elementList[idx];
+            vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
+            if (LPrim.w > 0.0f)
+            {
+                L = Blend(L, LPrim);
+            }
+
+            if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
+        }
     }
 
     __device__ void Device::OverlayLayer::Render()
@@ -96,11 +112,8 @@ namespace Enso
             }
         }  
 
-        // Draw the tracables
-        if (m_scene.tracableBIH && m_scene.tracables)
-        {            
-            DrawOverlayElements(xyView, m_viewCtx, *m_scene.tracableBIH, *m_scene.tracables, L);            
-        }
+        // Draw the tracables and widgets    
+        DrawOverlayElements(xyView, m_viewCtx, m_scene.sceneBIH, m_scene.sceneObjects, L);
 
         // Draw the lasso 
         if (m_selectionCtx.isLassoing && m_selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }

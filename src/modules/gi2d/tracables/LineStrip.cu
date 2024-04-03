@@ -1,6 +1,6 @@
 #include "LineStrip.cuh"
 #include "../primitives/LineSegment.cuh"
-#include "../GenericIntersector.cuh"
+#include "../primitives/GenericIntersector.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "../bih/BIH2DAsset.cuh"
 #include "io/json/JsonUtils.h"

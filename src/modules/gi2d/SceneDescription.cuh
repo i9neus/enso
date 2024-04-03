@@ -15,10 +15,10 @@ namespace Enso
 
             const Vector<Device::Tracable*>* tracables = nullptr;
             const Vector<Device::Light*>* lights = nullptr;
-            const Vector<Device::SceneObject*>* widgets = nullptr;
+            const Vector<Device::SceneObject*>* sceneObjects = nullptr;
 
             const BIH2D<BIH2DFullNode>* tracableBIH = nullptr;
-            const BIH2D<BIH2DFullNode>* widgetBIH = nullptr;
+            const BIH2D<BIH2DFullNode>* sceneBIH = nullptr;
 
             //const Device::VoxelProxyGrid*             voxelProxy = nullptr;
         };
@@ -42,19 +42,21 @@ namespace Enso
             __host__ const Device::SceneDescription* GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ Host::BIH2DAsset& TracableBIH() { DAssert(m_hostTracableBIH);  return *m_hostTracableBIH; }
+            __host__ Host::BIH2DAsset& SceneBIH() { DAssert(m_hostSceneBIH);  return *m_hostSceneBIH; }
+
             __host__ TracableContainer& Tracables() { DAssert(m_hostTracableBIH); return *m_hostTracables; }
             __host__ TracableContainer& Lights() { DAssert(m_hostTracableBIH); return *m_hostTracables; }
-            __host__ CameraContainer& Cameras() { return *m_hostCameras; }
+            __host__ SceneObjectContainer& SceneObjects() { return *m_hostSceneObjects; }
 
         private:    
             // Geometry
             AssetHandle<Host::BIH2DAsset>           m_hostTracableBIH;
-            AssetHandle<Host::BIH2DAsset>           m_hostWidgetBIH;
+            AssetHandle<Host::BIH2DAsset>           m_hostSceneBIH;
 
             AssetHandle<TracableContainer>          m_hostTracables;
             AssetHandle<LightContainer>             m_hostLights;
-            AssetHandle<CameraContainer>            m_hostCameras;
-            AssetHandle<SceneObjectContainer>       m_hostWidgets;
+            //AssetHandle<CameraContainer>            m_hostCameras;
+            AssetHandle<SceneObjectContainer>       m_hostSceneObjects;
 
             Device::SceneDescription*               cu_deviceInstance = nullptr;
             Device::SceneDescription                m_deviceObjects;

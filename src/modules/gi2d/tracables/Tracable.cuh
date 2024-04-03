@@ -52,7 +52,6 @@ namespace Enso
         class Tracable : public Host::SceneObject
         {
         public:
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
             __host__ virtual void       SetLightIdx(const int idx) { m_hostInstance.m_lightIdx = idx; }
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
 

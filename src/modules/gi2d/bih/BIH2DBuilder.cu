@@ -30,14 +30,17 @@ namespace Enso
             for (const auto idx : m_primitiveIdxs)
             {
                 const BBox2f primBBox = m_getPrimitiveBBox(idx);
-                AssertMsgFmt(primBBox.IsValid(),
-                    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", idx, primBBox[0].format().c_str(), primBBox[1].format().c_str());
-                m_bih.m_treeBBox = Union(m_bih.m_treeBBox, primBBox);
-                centroidBBox = Union(centroidBBox, primBBox.Centroid());
+                //AssertMsgFmt(primBBox.IsValid(),
+                //    "BIH primitive at index %i has returned an invalid bounding box: {%s, %s}", idx, primBBox[0].format().c_str(), primBBox[1].format().c_str());
+                if (primBBox.IsValid())
+                {
+                    m_bih.m_treeBBox = Union(m_bih.m_treeBBox, primBBox);
+                    centroidBBox = Union(centroidBBox, primBBox.Centroid());
+                }
             }
 
-            AssertMsgFmt(m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite(),
-                "BIH bounding box is invalid: %s", m_bih.m_treeBBox.Format().c_str());
+            //AssertMsgFmt(m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite(),
+            //    "BIH bounding box is invalid: %s", m_bih.m_treeBBox.Format().c_str());
         }
 
         // If the list contains below the minimum ammount of primitives, don't build and flag the tree as a list traversal
@@ -62,7 +65,7 @@ namespace Enso
         m_bih.m_nodes = m_hostNodes.GetHostData();
         m_bih.m_numNodes = m_hostNodes.Size();
         m_bih.m_numPrims = m_primitiveIdxs.size();
-        m_bih.m_isConstructed = true;
+        m_bih.m_isConstructed = m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite();
 
         if (printStats)
         {
@@ -150,6 +153,13 @@ namespace Enso
                 rightBBox[0][axis] = fminf(rightBBox[0][axis], primBBox[0][axis]);
                 rightCentroidBBox[0][axis] = fminf(rightCentroidBBox[0][axis], centroid[axis]);
             }
+        }
+
+        // If we've got a bunch of overlapping primitives that we can't effectively partition, just convert this node to a leaf
+        if (j == i0 || j == i1)
+        {
+            m_hostNodes[thisIdx].MakeLeaf(m_primitiveIdxs[i0], m_primitiveIdxs[i1 - 1]);
+            return;
         }
 
         // Grow the node vector by two

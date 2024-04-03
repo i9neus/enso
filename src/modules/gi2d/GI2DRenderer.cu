@@ -11,6 +11,8 @@
 
 #include "lights/OmniLight.cuh"
 
+#include "integrators/PerspectiveCamera.cuh"
+
 #include "SceneDescription.cuh"
 //#include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
@@ -40,8 +42,9 @@ namespace Enso
         m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
 
         m_sceneObjectFactory.RegisterInstantiator<Host::LineStrip>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());        
+        m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_sceneObjectFactory.RegisterInstantiator<Host::PerspectiveCamera>(VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());        
 
         m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
@@ -52,7 +55,9 @@ namespace Enso
         m_uiGraph.DeclareState("kCreateSceneObjectClose", this, &GI2DRenderer::OnCreateSceneObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectOpen", "kCreateSceneObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectHover", nullptr, kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectAppend", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0);
@@ -207,7 +212,7 @@ namespace Enso
         }
         else if (flags & kEnqueueSelected)
         {
-            for (auto& obj : m_selectedTracables) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
+            for (auto& obj : m_selectedObjects) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
         }
         else if (flags & kEnqueueOne)
         {
@@ -238,33 +243,33 @@ namespace Enso
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        auto& tracables = m_scene->Tracables();
+        auto& sceneObjects = m_scene->SceneObjects();
         int emptyIdx = -1;
         int numDeleted = 0;
-        for (int primIdx = 0; primIdx < tracables.Size(); ++primIdx)
+        for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
         {
-            if (tracables[primIdx]->IsSelected())
+            if (sceneObjects[primIdx]->IsSelected())
             {
                 // Erase the object from the container
-                m_sceneObjects->Erase(tracables[primIdx]->GetSceneObject().GetAssetID());
+                m_sceneObjects->Erase(sceneObjects[primIdx]->GetSceneObject().GetAssetID());
 
                 ++numDeleted;
                 if (emptyIdx == -1) { emptyIdx = primIdx; }
             }
             else if (emptyIdx >= 0)
             {
-                tracables[emptyIdx++] = tracables[primIdx];
+                sceneObjects[emptyIdx++] = sceneObjects[primIdx];
             }
         }
 
-        Assert(numDeleted <= tracables.Size());
-        tracables.Resize(tracables.Size() - numDeleted);
+        Assert(numDeleted <= sceneObjects.Size());
+        sceneObjects.Resize(sceneObjects.Size() - numDeleted);
         Log::Error("Delete!");
 
         EnqueueObjects("OnDeleteObject", kEnqueueSelected | kEnqueueIdOnly);
 
-        // Clear the tracables list
-        m_selectedTracables.clear();
+        // Clear the selected object list
+        m_selectedObjects.clear();
         m_selectionCtx.numSelected = 0;
 
         SetDirtyFlags(kDirtyObjectBounds);
@@ -289,8 +294,8 @@ namespace Enso
 
         // Notify the scene objects of the move operation  
         std::lock_guard <std::mutex> lock(m_resourceMutex);
-        uint tracableDirtyFlags = 0u;
-        for (auto& obj : m_selectedTracables)
+        uint objectDirtyFlags = 0u;
+        for (auto& obj : m_selectedObjects)
         {
             Assert(obj->IsSelected());
 
@@ -299,7 +304,7 @@ namespace Enso
             SetDirtyFlags(objDirty & (kDirtyObjectBounds | kDirtyObjectBVH));
         }
 
-        // Enqueue the list of selected tracables
+        // Enqueue the list of selected scene objects
         EnqueueObjects("OnUpdateObject", kEnqueueSelected);
 
         return kUIStateOkay;
@@ -309,12 +314,12 @@ namespace Enso
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        for (auto obj : m_scene->Tracables())
+        for (auto obj : m_scene->SceneObjects())
         {
             obj->OnSelect(false);
         }
 
-        m_selectedTracables.clear();
+        m_selectedObjects.clear();
         m_selectionCtx.numSelected = 0;
 
         SetDirtyFlags(kDirtyUI);
@@ -323,15 +328,15 @@ namespace Enso
     __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
-        if (m_scene->TracableBIH().IsConstructed())
+        if (m_scene->SceneBIH().IsConstructed())
         {
-            auto& tracables = m_scene->Tracables();
+            auto& sceneObjects = m_scene->SceneObjects();
             int hitIdx = -1;
             auto onContainsPrim = [&, this](const uint* primRange) -> bool
             {
                 for (int primIdx = primRange[0]; primIdx < primRange[1]; ++primIdx)
                 {
-                    if (tracables[primIdx]->OnMouseClick(m_viewCtx) == kSceneObjectPrecisionDrag)
+                    if (sceneObjects[primIdx]->OnMouseClick(m_viewCtx) == kSceneObjectPrecisionDrag)
                     {
                         hitIdx = primIdx;
                         return true;
@@ -339,14 +344,14 @@ namespace Enso
                 }
                 return false;
             };
-            m_scene->TracableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            m_scene->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something, select it and go straight to the move state.
             if (hitIdx != -1)
             {
                 DeselectAll();
-                m_selectedTracables.push_back(tracables[hitIdx]);
-                m_selectedTracables.back()->OnSelect(true);
+                m_selectedObjects.push_back(sceneObjects[hitIdx]);
+                m_selectedObjects.back()->OnSelect(true);
                 return "kMoveSceneObjectBegin";
             }
         }
@@ -378,7 +383,7 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
         {
-            auto& tracables = m_scene->Tracables();
+            auto& sceneObjects = m_scene->SceneObjects();
             const bool wasLassoing = m_selectionCtx.isLassoing;
 
             if (!m_selectionCtx.isLassoing)
@@ -393,22 +398,22 @@ namespace Enso
             m_selectionCtx.mouseBBox.upper = m_viewCtx.mousePos;
             m_selectionCtx.lassoBBox = Grow(Rectify(m_selectionCtx.mouseBBox), m_viewCtx.dPdXY * 2.);
             m_selectionCtx.selectedBBox = BBox2f::MakeInvalid();
-            m_selectedTracables.clear();
+            m_selectedObjects.clear();
 
             std::lock_guard <std::mutex> lock(m_resourceMutex);
-            if (m_scene->TracableBIH().IsConstructed())
+            if (m_scene->SceneBIH().IsConstructed())
             {
                 const uint lastNumSelected = m_selectionCtx.numSelected;
 
-                auto onIntersectPrim = [&tracables, this](const uint* primRange, const bool isInnerNode)
+                auto onIntersectPrim = [&sceneObjects, this](const uint* primRange, const bool isInnerNode)
                 {
                     // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
                     if (isInnerNode)
                     {
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
-                            m_selectedTracables.emplace_back(tracables[idx]);
-                            tracables[idx]->OnSelect(true);
+                            m_selectedObjects.emplace_back(sceneObjects[idx]);
+                            sceneObjects[idx]->OnSelect(true);
                         }
                         m_selectionCtx.numSelected += primRange[1] - primRange[0];
                     }
@@ -416,19 +421,19 @@ namespace Enso
                     {
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
-                            const auto& bBoxWorld = tracables[idx]->GetWorldSpaceBoundingBox();
+                            const auto& bBoxWorld = sceneObjects[idx]->GetWorldSpaceBoundingBox();
                             const bool isCaptured = m_selectionCtx.lassoBBox.Contains(bBoxWorld);
                             if (isCaptured)
                             {
-                                m_selectedTracables.emplace_back(tracables[idx]);
+                                m_selectedObjects.emplace_back(sceneObjects[idx]);
                                 m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, bBoxWorld);
                                 ++m_selectionCtx.numSelected;
                             }
-                            tracables[idx]->OnSelect(isCaptured);
+                            sceneObjects[idx]->OnSelect(isCaptured);
                         }
                     }
                 };
-                m_scene->TracableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                m_scene->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.numSelected)
@@ -508,7 +513,7 @@ namespace Enso
             m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
             SetDirtyFlags(kDirtyObjectBounds);
 
-            Log::Success("Destroyed unfinalised tracable '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
+            Log::Success("Destroyed unfinalised scene object '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
         }
         else
         {

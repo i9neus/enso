@@ -77,7 +77,7 @@ namespace Enso
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&);
-            __host__ static const std::string  GetAssetClassStatic() { return "omnilight"; }
+            __host__ static const std::string  GetAssetClassStatic() { return "perspectivecamera"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
             __host__ void               Synchronise(const int syncType);

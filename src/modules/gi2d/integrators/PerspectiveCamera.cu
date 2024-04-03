@@ -1,7 +1,7 @@
 #include "PerspectiveCamera.cuh"
 
 #include "../primitives/Ellipse.cuh"
-#include "../GenericIntersector.cuh"
+#include "../primitives/GenericIntersector.cuh"
 #include "io/json/JsonUtils.h"
 
 namespace Enso
@@ -96,6 +96,7 @@ namespace Enso
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
+            m_hostInstance.m_transform.trans = viewCtx.mousePos;
             m_hostInstance.m_lightRadius = viewCtx.dPdXY;
         }
         else if (stateID == "kCreateSceneObjectHover")

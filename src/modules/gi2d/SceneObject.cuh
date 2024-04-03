@@ -80,7 +80,7 @@ namespace Enso
             friend Host::SceneObject;
 
         public:
-            __host__ __device__ virtual vec4             EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const { return false; };
 
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
@@ -104,6 +104,7 @@ namespace Enso
         {
         public:
             //__host__ virtual bool       Finalise() = 0;
+            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
@@ -175,7 +176,7 @@ namespace Enso
             }
             m_onMove;
 
-            Device::SceneObject& m_hostInstance;
+            Device::SceneObject&        m_hostInstance;
         };
     }
 }

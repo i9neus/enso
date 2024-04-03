@@ -123,6 +123,7 @@ namespace Enso
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
+            m_hostInstance.m_transform.trans = viewCtx.mousePos;
             m_hostInstance.m_lightRadius = viewCtx.dPdXY;
         }
         else if (stateID == "kCreateSceneObjectHover")

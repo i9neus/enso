@@ -113,7 +113,7 @@ namespace Enso
         }
         m_onMove;
 
-        std::vector<AssetHandle<Host::Tracable>>    m_selectedTracables;
+        std::vector<AssetHandle<Host::SceneObject>> m_selectedObjects;
         CommandManager                              m_commandManager;
 
         bool                                        m_isRunning;
