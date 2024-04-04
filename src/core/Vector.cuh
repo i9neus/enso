@@ -81,7 +81,7 @@ namespace Enso
 					   public Device::Asset
 		{
 		public:
-			__device__ Vector() {}
+			__device__ Vector() : Generic::Vector<Type>() {}
 			__device__ ~Vector() {}
 
 			__device__ void Synchronise(const Tuple<Type*, VectorParams>& tuple)
@@ -546,7 +546,8 @@ namespace Enso
 							IsOk(cudaMemcpy(cu_deviceData, m_localData, sizeof(CommonType) * m_localParams.size, cudaMemcpyHostToDevice));
 						}
 						// ...and the metadata
-						SynchroniseObjects(GetDeviceInstance(), Tuple<CommonType*, VectorParams>(cu_deviceData, m_deviceParams));
+						// FIXME: This class doesn't like the newer templated version of this function. Why not?
+						LegacySynchroniseObjects(GetDeviceInstance(), Tuple<CommonType*, VectorParams>(cu_deviceData, m_deviceParams));
 					}
 				}
 				else
@@ -606,7 +607,8 @@ namespace Enso
 				delete[] m_deviceSyncData;
 
 				// Synchronise the device data pointers and the params
-				SynchroniseObjects(GetDeviceInstance(), Tuple<DeviceType**, VectorParams>(cu_deviceData, m_deviceParams));
+				// FIXME: This class doesn't like the newer templated version of this function. Why not?
+				LegacySynchroniseObjects(GetDeviceInstance(), Tuple<DeviceType**, VectorParams>(cu_deviceData, m_deviceParams));
 			}
 		};
 	}

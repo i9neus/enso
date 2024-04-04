@@ -162,7 +162,7 @@ namespace Enso
 				}
 
 				// Synchronise the object list to the device
-				SynchroniseObjects(cu_deviceData, m_deviceObjects);
+				SynchroniseObjects<Device::AssetContainer>(cu_deviceData, m_deviceObjects);
 			}
 
 			__host__ void Destroy()

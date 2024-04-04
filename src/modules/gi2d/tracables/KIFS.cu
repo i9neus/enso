@@ -10,24 +10,24 @@ namespace Enso
 {
     __host__ __device__ KIFSParams::KIFSParams()        
     {
-        m_kifs.pivot = vec2(0.0);        
-        m_kifs.isosurface = 0.0038f;
-        m_kifs.iterScale = 2.0f;
-        m_kifs.numIterations = 4;
-        m_kifs.rotate = 0.944f;
-        m_kifs.objectBounds = 0.5f;
-        m_kifs.sdfScale = 4.5f;
-        m_kifs.primSize = 17.0f;
+        kifs.pivot = vec2(0.0);        
+        kifs.isosurface = 0.0038f;
+        kifs.iterScale = 2.0f;
+        kifs.numIterations = 4;
+        kifs.rotate = 0.944f;
+        kifs.objectBounds = 0.5f;
+        kifs.sdfScale = 4.5f;
+        kifs.primSize = 17.0f;
 
-        m_intersector.maxIterations = 50;
-        m_intersector.cutoffThreshold = 1e-5f;
-        m_intersector.escapeThreshold = 1.0f;
-        m_intersector.rayIncrement = 0.9f;
-        m_intersector.rayKickoff = 1e-4f;
-        m_intersector.failThreshold = 1e-2f;
+        intersector.maxIterations = 50;
+        intersector.cutoffThreshold = 1e-5f;
+        intersector.escapeThreshold = 1.0f;
+        intersector.rayIncrement = 0.9f;
+        intersector.rayKickoff = 1e-4f;
+        intersector.failThreshold = 1e-2f;
 
-        m_look.phase = 0.0f;
-        m_look.range = 1.0f;
+        look.phase = 0.0f;
+        look.range = 1.0f;
     }
 
     __host__ __device__ Device::KIFS::KIFS() :
@@ -40,22 +40,22 @@ namespace Enso
 
     __host__ __device__ void Device::KIFS::OnSynchronise(const int flags)
     {
-        m_rot1 = mat2(vec2(cos(m_kifs.rotate), -sin(m_kifs.rotate)), vec2(sin(m_kifs.rotate), cos(m_kifs.rotate)));
+        m_rot1 = mat2(vec2(cos(m_params.kifs.rotate), -sin(m_params.kifs.rotate)), vec2(sin(m_params.kifs.rotate), cos(m_params.kifs.rotate)));
         m_rot2 = mat2(vec2(1.0, 0.0), vec2(0.0, 1.0));
     }
     
     __host__ __device__ __forceinline__ vec3 Device::KIFS::EvaluateSDF(vec2 z, const mat2& basis, uint& code) const
     { 
-        z *= m_kifs.sdfScale;
+        z *= m_params.kifs.sdfScale;
         
         // Fold and transform
         constexpr int kMaxIterations = 5;
         code = 0u;
         mat2 bi = basis;
         float gamma;
-        for (int idx = 0; idx < kMaxIterations && idx < m_kifs.numIterations; ++idx)
+        for (int idx = 0; idx < kMaxIterations && idx < m_params.kifs.numIterations; ++idx)
         {
-            z = m_rot1 * z + m_kifs.pivot;
+            z = m_rot1 * z + m_params.kifs.pivot;
             bi[0] = m_rot1 * bi[0];
             bi[1] = m_rot1 * bi[1];
 
@@ -85,17 +85,17 @@ namespace Enso
                 code = code | (2u << (idx << 1));
             }
 
-            z = (m_kBaryInv * b) * m_kifs.iterScale;
+            z = (m_kBaryInv * b) * m_params.kifs.iterScale;
             bi[0] = m_kBaryInv * (bu - b);
             bi[1] = m_kBaryInv * (bv - b);
         }
 
         // Compute the properties of the field
-        vec3 F = SDF::Line(z, vec2(-0.5f * m_kifs.primSize, 0.0), vec2(1.0f * m_kifs.primSize, 0.0)) / m_kifs.sdfScale;
-        //vec3 F = SDFPoint(z, vec2(0.0f), 1.0f) / m_kifs.sdfScale;
+        vec3 F = SDF::Line(z, vec2(-0.5f * m_params.kifs.primSize, 0.0), vec2(1.0f * m_params.kifs.primSize, 0.0)) / m_params.kifs.sdfScale;
+        //vec3 F = SDFPoint(z, vec2(0.0f), 1.0f) / m_params.kifs.sdfScale;
 
         // Return the field strength relative to the iso-surface, plus the gradient
-        F.x = F.x / powf(m_kifs.iterScale, float(m_kifs.numIterations)) - m_kifs.isosurface;
+        F.x = F.x / powf(m_params.kifs.iterScale, float(m_params.kifs.numIterations)) - m_params.kifs.isosurface;
         
         F.yz = bi * F.yz;
         F.yz = basis[0] * F.y + basis[1] * F.z;
@@ -105,7 +105,7 @@ namespace Enso
     __host__ __device__ bool Device::KIFS::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {        
         RayRange2D range;
-        if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
+        if (!IntersectRayBBox(rayWorld, GetWorldBBox(), range) || range.tNear > hitWorld.tFar) { return false; }
 
         /*if (hitWorld.debugData)
         {
@@ -124,7 +124,7 @@ namespace Enso
         const float localMag = 1.0f;
         //rayObject.d /= localMag;
         //t *= localMag;
-        //rayObject.o *= m_kifs.sdfScale;
+        //rayObject.o *= m_params.kifs.sdfScale;
 
         // The transpose of the basis of the ray tangent and its direction
         mat2 basis(-rayObject.d.y, rayObject.d.x, rayObject.d.x, rayObject.d.y);
@@ -134,7 +134,7 @@ namespace Enso
         int iterIdx = 0;
         constexpr int kMaxIterations = 50;
         bool isSubsurface = false;
-        for (iterIdx = 0; iterIdx < kMaxIterations && iterIdx < m_intersector.maxIterations; iterIdx++)
+        for (iterIdx = 0; iterIdx < kMaxIterations && iterIdx < m_params.intersector.maxIterations; iterIdx++)
         {
             F = EvaluateSDF(p, basis, code);
 
@@ -147,12 +147,12 @@ namespace Enso
             // On the first iteration, simply determine whether we're inside the isosurface or not
             if (iterIdx == 0) { isSubsurface = F.x < 0.0; }
             // Otherwise, check to see if we're at the surface
-            else if (fabsf(F.x) < m_intersector.cutoffThreshold * localMag) { break; }
+            else if (fabsf(F.x) < m_params.intersector.cutoffThreshold * localMag) { break; }
 
-            //if (F.x > m_intersector.escapeThreshold) { hitWorld.AccumDebug(kBlue); return false; }
+            //if (F.x > intersector.escapeThreshold) { hitWorld.AccumDebug(kBlue); return false; }
 
             // Increment the ray position based on the SDF magnitude
-            t += (isSubsurface ? -F.x : F.x) * m_intersector.rayIncrement;
+            t += (isSubsurface ? -F.x : F.x) * m_params.intersector.rayIncrement;
 
             // If we've left the bounding box, bail out now
             if (t / localMag > hitWorld.tFar) { return false; }
@@ -160,7 +160,7 @@ namespace Enso
             p = rayObject.PointAt(t);
         }
 
-        if (F.x > m_intersector.failThreshold) { return false; }
+        if (F.x > m_params.intersector.failThreshold) { return false; }
         
         t /= localMag;
 
@@ -169,8 +169,8 @@ namespace Enso
         hitWorld.tFar = t;
         // TODO: Transform normals into screen space
         hitWorld.n = normalize(F.yz);
-        hitWorld.kickoff = m_intersector.rayKickoff;
-        hitWorld.hash = uint(fract(IntToUnitFloat(HashOf(code)) * m_look.range + m_look.phase) * float(0xffffffff));
+        hitWorld.kickoff = m_params.intersector.rayKickoff;
+        hitWorld.hash = uint(fract(IntToUnitFloat(HashOf(code)) * m_params.look.range + m_params.look.phase) * float(0xffffffff));
 
         /*if (hitWorld.debugData)
         {
@@ -185,20 +185,20 @@ namespace Enso
 
     __host__ __device__ uint Device::KIFS::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        if (!m_worldBBox.Contains(viewCtx.mousePos)) { return false; }
+        if (!GetWorldBBox().Contains(viewCtx.mousePos)) { return false; }
         uint code;
-        return (EvaluateSDF(viewCtx.mousePos - m_transform.trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+        return (EvaluateSDF(viewCtx.mousePos - GetTransform().trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
     __host__ __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        if (!m_worldBBox.Contains(pWorld)) { return vec4(0.0f); }
+        if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
         
-        vec2 pObject = pWorld - m_transform.trans;
+        vec2 pObject = pWorld - GetTransform().trans;
         uint code;
         vec3 F = EvaluateSDF(pObject, mat2(1.0f, 0.0f, 0.0f, 1.0f), code);
 
-        return (F.x < 0.0f) ? vec4(Hue(fract(IntToUnitFloat(HashOf(code)) * m_look.range + m_look.phase)), 1.0f) : vec4(0.0f);
+        return (F.x < 0.0f) ? vec4(Hue(fract(IntToUnitFloat(HashOf(code)) * m_params.look.range + m_params.look.phase)), 1.0f) : vec4(0.0f);
         //return vec4(vec3(normalize(F.yz) + 1.0f * 0.5f, 0.0f), 1.0f);
     }
 
@@ -232,16 +232,16 @@ namespace Enso
 
         if (syncType & kSyncParams)
         {
-            SynchroniseInheritedClass<KIFSParams>(cu_deviceInstance, m_hostInstance, kSyncParams);
+            SynchroniseObjects<Device::KIFS>(cu_deviceInstance, m_hostInstance.m_params);
         }
     }
 
     __host__ uint Host::KIFS::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - m_hostInstance.m_transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
         {
-            m_hostInstance.m_transform.trans = viewCtx.mousePos;
+            GetTransform().trans = viewCtx.mousePos;
             m_isConstructed = true;
             SetDirtyFlags(kDirtyObjectBounds);
 
@@ -284,7 +284,7 @@ namespace Enso
 
     __host__ BBox2f Host::KIFS::RecomputeObjectSpaceBoundingBox()
     {
-        return BBox2f(vec2(-m_hostInstance.m_kifs.objectBounds), vec2(m_hostInstance.m_kifs.objectBounds));
+        return BBox2f(vec2(-m_hostInstance.m_params.kifs.objectBounds), vec2(m_hostInstance.m_params.kifs.objectBounds));
     }
 
     __host__ bool Host::KIFS::Serialise(Json::Node& node, const int flags) const
@@ -292,24 +292,26 @@ namespace Enso
         Tracable::Serialise(node, flags);
 
         Json::Node kifsNode = node.AddChildObject("kifs");
-        kifsNode.AddValue("rotate", m_hostInstance.m_kifs.rotate);
-        kifsNode.AddVector("pivot", m_hostInstance.m_kifs.pivot);
-        kifsNode.AddValue("isosurface", m_hostInstance.m_kifs.isosurface);
-        kifsNode.AddValue("primSize", m_hostInstance.m_kifs.primSize);
-        kifsNode.AddValue("iterations", m_hostInstance.m_kifs.numIterations);
-        kifsNode.AddValue("scale", m_hostInstance.m_kifs.sdfScale);
+        const auto& kifs = m_hostInstance.m_params.kifs;
+        kifsNode.AddValue("rotate", kifs.rotate);
+        kifsNode.AddVector("pivot", kifs.pivot);
+        kifsNode.AddValue("isosurface", kifs.isosurface);
+        kifsNode.AddValue("primSize", kifs.primSize);
+        kifsNode.AddValue("iterations", kifs.numIterations);
+        kifsNode.AddValue("scale", kifs.sdfScale);
 
         Json::Node isectNode = node.AddChildObject("isector");
-        isectNode.AddValue("cutoffThreshold", m_hostInstance.m_intersector.cutoffThreshold);
-        isectNode.AddValue("escapeThreshold", m_hostInstance.m_intersector.escapeThreshold);
-        isectNode.AddValue("failThreshold", m_hostInstance.m_intersector.failThreshold);
-        isectNode.AddValue("rayIncrement", m_hostInstance.m_intersector.rayIncrement);
-        isectNode.AddValue("rayKickoff", m_hostInstance.m_intersector.rayKickoff);
-        isectNode.AddValue("maxIterations", m_hostInstance.m_intersector.maxIterations);
+        const auto& isect = m_hostInstance.m_params.intersector;
+        isectNode.AddValue("cutoffThreshold", isect.cutoffThreshold);
+        isectNode.AddValue("escapeThreshold", isect.escapeThreshold);
+        isectNode.AddValue("failThreshold", isect.failThreshold);
+        isectNode.AddValue("rayIncrement", isect.rayIncrement);
+        isectNode.AddValue("rayKickoff", isect.rayKickoff);
+        isectNode.AddValue("maxIterations", isect.maxIterations);
 
         Json::Node lookNode = node.AddChildObject("look");
-        lookNode.AddValue("phase", m_hostInstance.m_look.phase);
-        lookNode.AddValue("range", m_hostInstance.m_look.range);
+        lookNode.AddValue("phase", m_hostInstance.m_params.look.phase);
+        lookNode.AddValue("range", m_hostInstance.m_params.look.range);
 
         return true;
     }
@@ -322,30 +324,32 @@ namespace Enso
         bool dirty = false;
         if (kifsNode)
         {
-            dirty |= kifsNode.GetValue("rotate", m_hostInstance.m_kifs.rotate, flags);
-            dirty |= kifsNode.GetVector("pivot", m_hostInstance.m_kifs.pivot, flags);
-            dirty |= kifsNode.GetValue("isosurface", m_hostInstance.m_kifs.isosurface, flags);
-            dirty |= kifsNode.GetValue("primSize", m_hostInstance.m_kifs.primSize, flags);
-            dirty |= kifsNode.GetValue("iterations", m_hostInstance.m_kifs.numIterations, flags);
-            dirty |= kifsNode.GetValue("scale", m_hostInstance.m_kifs.sdfScale, flags);
+            auto& kifs = m_hostInstance.m_params.kifs;
+            dirty |= kifsNode.GetValue("rotate", kifs.rotate, flags);
+            dirty |= kifsNode.GetVector("pivot", kifs.pivot, flags);
+            dirty |= kifsNode.GetValue("isosurface", kifs.isosurface, flags);
+            dirty |= kifsNode.GetValue("primSize", kifs.primSize, flags);
+            dirty |= kifsNode.GetValue("iterations", kifs.numIterations, flags);
+            dirty |= kifsNode.GetValue("scale", kifs.sdfScale, flags);
         }
 
-        Json::Node isectNode = node.GetChildObject("isector", flags);
+        Json::Node isectNode = node.GetChildObject("isect", flags);
         if (isectNode)
         {
-            dirty |= isectNode.GetValue("cutoffThreshold", m_hostInstance.m_intersector.cutoffThreshold, flags);
-            dirty |= isectNode.GetValue("escapeThreshold", m_hostInstance.m_intersector.escapeThreshold, flags);
-            dirty |= isectNode.GetValue("failThreshold", m_hostInstance.m_intersector.failThreshold, flags);
-            dirty |= isectNode.GetValue("rayIncrement", m_hostInstance.m_intersector.rayIncrement, flags);
-            dirty |= isectNode.GetValue("rayKickoff", m_hostInstance.m_intersector.rayKickoff, flags);
-            dirty |= isectNode.GetValue("maxIterations", m_hostInstance.m_intersector.maxIterations, flags);
+            auto& isect = m_hostInstance.m_params.intersector;
+            dirty |= isectNode.GetValue("cutoffThreshold", isect.cutoffThreshold, flags);
+            dirty |= isectNode.GetValue("escapeThreshold", isect.escapeThreshold, flags);
+            dirty |= isectNode.GetValue("failThreshold", isect.failThreshold, flags);
+            dirty |= isectNode.GetValue("rayIncrement", isect.rayIncrement, flags);
+            dirty |= isectNode.GetValue("rayKickoff", isect.rayKickoff, flags);
+            dirty |= isectNode.GetValue("maxIterations", isect.maxIterations, flags);
         }
 
         Json::Node lookNode = node.GetChildObject("look", flags);
         if (lookNode)
         {
-            dirty |= lookNode.GetValue("phase", m_hostInstance.m_look.phase, flags);
-            dirty |= lookNode.GetValue("range", m_hostInstance.m_look.range, flags);
+            dirty |= lookNode.GetValue("phase", m_hostInstance.m_params.look.phase, flags);
+            dirty |= lookNode.GetValue("range", m_hostInstance.m_params.look.range, flags);
         }
         
         if (dirty) { SetDirtyFlags(kDirtyMaterials); }

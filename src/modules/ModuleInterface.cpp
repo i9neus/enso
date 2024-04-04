@@ -82,8 +82,11 @@ namespace Enso
 		}
 
 		m_frameIdx = 0;
+//#define DISABLE_EXCEPTION_HANDLING
+#ifndef DISABLE_EXCEPTION_HANDLING
 		try
 		{
+#endif
 			while (m_threadSignal.load() == kRenderManagerRun)
 			{
 				HighResolutionTimer timer;
@@ -110,6 +113,8 @@ namespace Enso
 				}
 				m_meanFrameTime /= min(m_frameIdx, int(m_frameTimes.size()));
 			}
+
+#ifndef DISABLE_EXCEPTION_HANDLING
 		}
 		catch (const std::runtime_error& err)
 		{
@@ -121,6 +126,7 @@ namespace Enso
 			Log::Error("Unhandled error");
 			StackBacktrace::Print();
 		}
+#endif
 
 		// Notify that the render has completed
 		{

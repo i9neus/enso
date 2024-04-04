@@ -11,23 +11,18 @@ namespace Enso
     {
         __host__ __device__ LineStripObjects() {}
 
-        BIH2D<BIH2DFullNode>* m_bih = nullptr;
-        Generic::Vector<LineSegment>* m_lineSegments = nullptr;
-
-        __host__ __device__ LineStripObjects& operator=(const LineStripObjects& other)
-        {
-            m_bih = other.m_bih;
-            m_lineSegments = other.m_lineSegments;
-            printf("0x%x\n", m_bih);
-            return *this;
-        }
+        BIH2D<BIH2DFullNode>*           bih = nullptr;
+        Generic::Vector<LineSegment>*   lineSegments = nullptr;
     };
 
+    namespace Host { class LineStrip; }
+    
     namespace Device
     {
-        class LineStrip : public Device::Tracable,
-                          public LineStripObjects
+        class LineStrip : public Device::Tracable
         {
+            friend class Host::LineStrip;
+
         public:
             __host__ __device__ LineStrip() {}
 
@@ -35,6 +30,10 @@ namespace Enso
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
+            __device__ void Synchronise(const LineStripObjects& objects) { m_objects = objects; }
+
+        private:
+            LineStripObjects m_objects;
         };
     }
 

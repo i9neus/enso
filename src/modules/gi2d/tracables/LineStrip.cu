@@ -9,10 +9,10 @@ namespace Enso
 {
     __host__ __device__ bool Device::LineStrip::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {
-        assert(m_bih && m_lineSegments);
+        assert(m_objects.bih && m_objects.lineSegments);
 
         RayRange2D range;
-        if (!IntersectRayBBox(rayWorld, m_worldBBox, range) || range.tNear > hitWorld.tFar) { return false; }
+        if (!IntersectRayBBox(rayWorld, GetWorldBBox(), range) || range.tNear > hitWorld.tFar) { return false; }
 
         RayBasic2D& rayObject = RayToObjectSpace(rayWorld);
         HitCtx2D hitObject;
@@ -21,17 +21,17 @@ namespace Enso
         {
             for (int primIdx = startEndIdx[0]; primIdx < startEndIdx[1]; ++primIdx)
             {
-                if ((*m_lineSegments)[primIdx].IntersectRay(rayObject, hitObject) && hitObject.tFar < rangeTree.tFar && hitObject.tFar < hitWorld.tFar)
+                if ((*m_objects.lineSegments)[primIdx].IntersectRay(rayObject, hitObject) && hitObject.tFar < rangeTree.tFar && hitObject.tFar < hitWorld.tFar)
                 {
                     rangeTree.tFar = hitObject.tFar;
                 }
             }
         };
-        m_bih->TestRay(rayObject, range.tFar, onIntersect);
+        m_objects.bih->TestRay(rayObject, range.tFar, onIntersect);
 
-        /*for (int primIdx = 0; primIdx < m_lineSegments->Size(); ++primIdx)
+        /*for (int primIdx = 0; primIdx < m_objects.lineSegments->Size(); ++primIdx)
         {
-            (*m_lineSegments)[primIdx].IntersectRay(rayObject, hitObject);
+            (*m_objects.lineSegments)[primIdx].IntersectRay(rayObject, hitObject);
         }*/
 
         if (hitObject.tFar < hitWorld.tFar)
@@ -61,15 +61,15 @@ namespace Enso
 
     __host__ __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        if (!m_bih) { return vec4(0.0f); }
+        if (!m_objects.bih) { return vec4(0.0f); }
 
-        const vec2 pLocal = pWorld - m_transform.trans;
+        const vec2 pLocal = pWorld - GetTransform().trans;
         vec4 L(0.0f);
-        m_bih->TestPoint(pLocal, [&, this](const uint* idxRange) -> bool
+        m_objects.bih->TestPoint(pLocal, [&, this](const uint* idxRange) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    const auto& segment = (*m_lineSegments)[idx];
+                    const auto& segment = (*m_objects.lineSegments)[idx];
                     const float line = segment.EvaluateOverlay(pLocal, viewCtx.dPdXY);
                     if (line > 0.f)
                     {
@@ -97,12 +97,12 @@ namespace Enso
 
         cu_deviceInstance = InstantiateOnDevice<Device::LineStrip>();
 
-        m_deviceObjects.m_bih = m_hostBIH->GetDeviceInstance();
-        m_deviceObjects.m_lineSegments = m_hostLineSegments->GetDeviceInstance();
+        m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
-        m_hostInstance.m_bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_hostInstance.m_lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.get());
+        m_hostInstance.m_objects.bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
+        m_hostInstance.m_objects.lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.get());
 
         Synchronise(kSyncObjects);
     }
@@ -130,18 +130,15 @@ namespace Enso
     {
         Tracable::Synchronise(cu_deviceInstance, syncType);
 
-        if (syncType == kSyncObjects)
-        {
-            SynchroniseInheritedClass<LineStripObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects);
-        }
+        if (syncType == kSyncObjects) { SynchroniseObjects<Device::LineStrip>(cu_deviceInstance, m_deviceObjects); }
     }
 
     __host__ uint Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - m_hostInstance.m_transform.trans;
+        const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            m_hostInstance.m_transform.trans = viewCtx.mousePos;
+            GetTransform().trans = viewCtx.mousePos;
 
             Log::Success("Opened path %s", GetAssetID());
         }

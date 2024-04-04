@@ -14,20 +14,18 @@ namespace Enso
     {
         __host__ __device__ OverlayLayerParams();
 
-        UIGridCtx           m_gridCtx;
+        UIGridCtx           gridCtx;
     };
 
     struct OverlayLayerObjects
     {
-        const Device::SceneDescription*             m_scenePtr = nullptr;
-        Device::ImageRGBW*                    m_accumBuffer = nullptr;
+        const Device::SceneDescription*     scenePtr = nullptr;
+        Device::ImageRGBW*                  accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class OverlayLayer : public Device::UILayer,
-                             public OverlayLayerParams,
-                             public OverlayLayerObjects
+        class OverlayLayer : public Device::UILayer
         {
         public:
             __host__ __device__ OverlayLayer() {}
@@ -37,16 +35,20 @@ namespace Enso
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
             __host__ __device__ virtual void OnSynchronise(const int) override final;
+            __device__ void Synchronise(const OverlayLayerParams& params) { m_params = params; }
+            __device__ void Synchronise(const OverlayLayerObjects& objects) { m_objects = objects; }
 
         private:
-            Device::SceneDescription                    m_scene;
+            OverlayLayerParams              m_params;
+            OverlayLayerObjects             m_objects;
+
+            Device::SceneDescription        m_scene;
         };
     }
 
     namespace Host
     {
-        class OverlayLayer : public UILayer,
-                        public OverlayLayerParams
+        class OverlayLayer : public UILayer
         {
         public:
             OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
@@ -65,10 +67,11 @@ namespace Enso
         private:
             //__host__ void TraceRay();
 
-            Device::OverlayLayer*                       cu_deviceInstance = nullptr;
-            OverlayLayerObjects                         m_deviceObjects;
+            Device::OverlayLayer*               cu_deviceInstance = nullptr;
+            OverlayLayerObjects                 m_deviceObjects;
+            OverlayLayerParams                  m_params;
 
-            AssetHandle<Host::ImageRGBW>          m_hostAccumBuffer;
+            AssetHandle<Host::ImageRGBW>        m_hostAccumBuffer;
         };
     }
 }

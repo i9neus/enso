@@ -1,9 +1,12 @@
 #include "PerspectiveCamera.cuh"
 
 #include "../primitives/Ellipse.cuh"
+#include "../primitives/LineSegment.cuh"
 #include "../primitives/GenericIntersector.cuh"
 #include "io/json/JsonUtils.h"
 #include "../primitives/SDF.cuh"
+#include "core/UIButtonMap.h"
+#include "core/Vector.cuh"
 
 namespace Enso
 {
@@ -19,24 +22,20 @@ namespace Enso
     
     __host__ __device__ vec4 Device::PerspectiveCamera::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
+        assert(m_objects.ui.lineSegments);
+
+        const vec2 pLocal = pWorld - GetTransform().trans;
         vec4 L(0.f);
-
-        L = vec4(kOne, SDF::Renderer::Line(pWorld, m_transform.trans, m_direction, 3.f, viewCtx.dPdXY));
-
+        for (int idx = 0; idx < m_objects.ui.lineSegments->Size(); ++idx)
+        {
+            L = Blend(L, vec4(kOne, (*m_objects.ui.lineSegments)[idx].EvaluateOverlay(pLocal, viewCtx.dPdXY)));
+        }
         return L;
     }
 
     __host__ __device__ uint Device::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
     {
         return kSceneObjectDelegatedAction;
-    }
-
-    __host__ __device__ void Device::PerspectiveCamera::OnSynchronise(const int syncFlags)
-    {
-        if (syncFlags == kSyncParams)
-        {
-            
-        }
     }
 
     __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&)
@@ -47,7 +46,13 @@ namespace Enso
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id) :
         Host::Camera2D(id, m_hostInstance)
     {
-        cu_deviceInstance = InstantiateOnDevice<Device::PerspectiveCamera>();
+        m_ui.hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
+        m_ui.hostEllipses = CreateChildAsset<Host::Vector<Ellipse>>("uiEllipses", kVectorHostAlloc);
+        
+        cu_deviceInstance = InstantiateOnDevice<Device::PerspectiveCamera>();        
+
+        m_hostInstance.m_objects.ui.lineSegments = m_ui.hostLineSegments->GetDeviceInstance();
+        m_hostInstance.m_objects.ui.ellipses = m_ui.hostEllipses->GetDeviceInstance();
 
         Synchronise(kSyncObjects);
     }
@@ -64,6 +69,9 @@ namespace Enso
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
     {
         DestroyOnDevice(cu_deviceInstance);
+
+        m_ui.hostLineSegments.DestroyAsset();
+        m_ui.hostEllipses.DestroyAsset();
     }
 
     __host__ void Host::PerspectiveCamera::Synchronise(const int syncFlags)
@@ -72,8 +80,14 @@ namespace Enso
 
         if (syncFlags & kSyncParams)
         {
-            SynchroniseInheritedClass<PerspectiveCameraParams>(cu_deviceInstance, m_hostInstance, kSyncParams);
-            m_hostInstance.OnSynchronise(syncFlags);
+            SynchroniseObjects<>(cu_deviceInstance, m_hostInstance.m_params); 
+        }
+        if (syncFlags & kSyncObjects)
+        {        
+            m_ui.hostLineSegments->Synchronise(kVectorSyncUpload);
+            m_ui.hostEllipses->Synchronise(kVectorSyncUpload);
+
+            SynchroniseObjects<>(cu_deviceInstance, m_hostInstance.m_objects);
         }
     }
 
@@ -99,25 +113,25 @@ namespace Enso
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
-            m_hostInstance.m_transform.trans = viewCtx.mousePos;
-            m_hostInstance.m_direction = vec2(0.f, 1.f);
+            GetTransform().trans = viewCtx.mousePos;
+            m_hostInstance.m_params.direction = vec2(0.f, 0.f);
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
-                m_hostInstance.m_direction = viewCtx.mousePos - m_hostInstance.m_transform.trans;
+                m_hostInstance.m_params.direction = viewCtx.mousePos - GetTransform().trans;
             }
             else
             {
-                m_hostInstance.m_transform.trans = viewCtx.mousePos;
+                GetTransform().trans = viewCtx.mousePos;
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             if (!m_onCreate.isCentroidSet)
             {
-                m_hostInstance.m_transform.trans = viewCtx.mousePos;
+                GetTransform().trans = viewCtx.mousePos;
                 m_onCreate.isCentroidSet = true;
             }
             else
@@ -132,6 +146,13 @@ namespace Enso
 
         // If the object is dirty, recompute the bounding box
         SetDirtyFlags(kDirtyObjectBounds);
+        UpdateUIElements();
+
+        return m_dirtyFlags;
+    }
+
+    __host__ uint Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
+    {
         return m_dirtyFlags;
     }
 
@@ -144,6 +165,7 @@ namespace Enso
         if (m_dirtyFlags & kDirtyObjectBounds)
         {
             RecomputeBoundingBoxes();
+            Synchronise(kSyncObjects);
         }
 
         Synchronise(kSyncParams);
@@ -155,9 +177,7 @@ namespace Enso
     {
         Camera2D::Serialise(node, flags);
 
-        //node.AddValue("radius", m_hostInstance.m_lightRadius);
-        //node.AddVector("colour", m_hostInstance.m_lightColour);
-        //node.AddValue("intensity", m_hostInstance.m_lightIntensity);
+        node.AddValue("fov", m_hostInstance.m_params.fov);
         return true;
     }
 
@@ -165,9 +185,7 @@ namespace Enso
     {
         Camera2D::Deserialise(node, flags);
 
-        //if (node.GetValue("radius", m_hostInstance.m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
-        //if (node.GetVector("colour", m_hostInstance.m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
-        //if (node.GetValue("intensity", m_hostInstance.m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        if (node.GetValue("fov", m_hostInstance.m_params.fov, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
 
         return m_dirtyFlags;
     }
@@ -179,7 +197,26 @@ namespace Enso
 
     __host__ BBox2f Host::PerspectiveCamera::RecomputeObjectSpaceBoundingBox()
     {
+        // NOTE: UpdateUIElements() must be called before this method
+        
         BBox2f bBox;
-        return Union(bBox, LineBBox2(vec2(0.f), m_hostInstance.m_direction));
+        for (const auto& segment : *m_ui.hostLineSegments)
+        {
+            bBox = Union(bBox, segment.GetBoundingBox());
+        }
+        return bBox;
+    }
+
+    __host__ void Host::PerspectiveCamera::UpdateUIElements()
+    {
+        // Create an orthonomal basis
+        vec2 dir = normalize(m_hostInstance.m_params.direction) * 0.1f;
+        mat2 basis(dir, vec2(-dir.y, dir.x));
+
+        m_ui.hostLineSegments->Clear();
+        m_ui.hostLineSegments->EmplaceBack(vec2(0.f), dir);
+        //m_ui.hostLineSegments->EmplaceBack(vec2(0.f), vec2(-dir.y, dir.x));
+
+        // NOTE: Synchronise is called later when the scene is rebuilt
     }
 }

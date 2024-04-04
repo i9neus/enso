@@ -25,7 +25,7 @@ namespace Enso
 
         cu_deviceInstance = InstantiateOnDevice<Device::SceneDescription>();
 
-        SynchroniseInheritedClass<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects, 0);
+        SynchroniseObjects<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects);
     }
 
     __host__ void Host::SceneDescription::OnDestroyAsset()
@@ -67,7 +67,7 @@ namespace Enso
     }
 
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
-    {
+    {        
         // Only rebuilid if the object bounds have changed through insertion, deletion or movement
         if (!(dirtyFlags & kDirtyIntegrators)) { return; }
         

@@ -12,6 +12,7 @@ namespace Enso
         {
             __device__ SceneDescription() {}
             __device__ void OnSynchronise(const uint) {}
+            __device__ void Synchronise(const SceneDescription& objects) { *this = objects; }
 
             const Vector<Device::Tracable*>* tracables = nullptr;
             const Vector<Device::Light*>* lights = nullptr;

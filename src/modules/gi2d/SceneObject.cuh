@@ -7,43 +7,10 @@
 
 #include "core/GenericObject.cuh"
 #include "core/math/Math.cuh"
+#include "FwdDecl.cuh"
 
 namespace Enso
-{
-    template<typename ObjectType, typename ParamsType>
-    __global__ static void KernelSynchroniseInheritedClass(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params, const int syncFlags)
-    {
-        // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-        assert(cu_object);
-        assert(cu_params);
-        assert(sizeof(ParamsType) == hostParamsSize);
-
-        ParamsType& cast = static_cast<ParamsType&>(*cu_object);
-        cast = *cu_params;
-
-        cu_object->OnSynchronise(syncFlags);
-    }
-
-    template<typename ParamsType, typename ObjectType>
-    __host__ void SynchroniseInheritedClass(ObjectType* cu_object, const ParamsType& params, const int syncFlags)
-    {
-        //AssertIsTransferrableType<ParamsType>();
-        Assert(cu_object);
-        static_assert(std::is_standard_layout< ParamsType>::value, "SynchroniseInheritedClass: ParamsType is not standard layout type");
-        static_assert(std::is_base_of<ParamsType, ObjectType>::value, "SynchroniseInheritedClass: ObjectType not derived from ParamsType");
-        //static_assert(std::is_base_of<Device::SceneObject, ObjectType>::value, "cu_object not derived from Device::SceneObject");
-
-        ParamsType* cu_params;
-        IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
-        IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
-
-        IsOk(cudaDeviceSynchronize());
-        KernelSynchroniseInheritedClass << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params, syncFlags);
-        IsOk(cudaDeviceSynchronize());
-
-        IsOk(cudaFree(cu_params));
-    }
-
+{   
     enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
 
     enum SceneObjectFlags : uint
@@ -63,11 +30,11 @@ namespace Enso
     {
         __host__ __device__ SceneObjectParams() {}
 
-        BBox2f                      m_objectBBox;
-        BBox2f                      m_worldBBox;
+        BBox2f                      objectBBox;
+        BBox2f                      worldBBox;
 
-        BidirectionalTransform2D    m_transform;
-        uint                        m_attrFlags;
+        BidirectionalTransform2D    transform;
+        uint                        attrFlags;
     };
 
     namespace Host { class SceneObject; }
@@ -75,7 +42,7 @@ namespace Enso
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
-        class SceneObject : public SceneObjectParams
+        class SceneObject
         {
             friend Host::SceneObject;
 
@@ -83,15 +50,23 @@ namespace Enso
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const { return false; };
 
-            __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_objectBBox; };
-            __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_worldBBox; };
+            __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
+            __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
 
             __host__ __device__ virtual void    OnSynchronise(const int) {}
+            __device__ void                     Synchronise(const SceneObjectParams& params) { m_params = params; }
+            
+            __host__ __device__ const BidirectionalTransform2D& GetTransform() const { return m_params.transform; }
+            __host__ __device__ const BBox2f&            GetWorldBBox() const { return m_params.worldBBox; }
+            __host__ __device__ const BBox2f&            GetObjectBBox() const { return m_params.objectBBox; }
 
         protected:
             __device__ SceneObject() {}
 
-            __device__ bool                                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
+            __device__ bool                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
+            __host__ __device__ BidirectionalTransform2D& GetTransform() { return m_params.transform; }
+
+            SceneObjectParams m_params;
 
         private:
             BBox2f m_handleInnerBBox;
@@ -110,17 +85,18 @@ namespace Enso
             __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual uint       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
+            __host__ virtual uint       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return 0u; }
 
             __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
-            __host__ virtual bool       IsSelected() const { return m_hostInstance.m_attrFlags & kSceneObjectSelected; }
+            __host__ virtual bool       IsSelected() const { return m_hostInstance.m_params.attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual bool       HasOverlay() const { return false; }
             __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
             __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
-
-            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_objectBBox; }
-            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_worldBBox; }
+            
+            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_params.objectBBox; }
+            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_params.worldBBox; }
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
@@ -152,7 +128,7 @@ namespace Enso
             {
                 if (syncFlags & kSyncParams)
                 { 
-                    SynchroniseInheritedClass<SceneObjectParams>(cu_object, m_hostInstance, kSyncParams);
+                    SynchroniseObjects<Device::SceneObject>(cu_object, m_hostInstance.m_params);
                     m_hostInstance.OnSynchronise(syncFlags);
                 }
             }
@@ -160,6 +136,7 @@ namespace Enso
             __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() = 0;
             __host__ void RecomputeWorldSpaceBoundingBox();
             __host__ void RecomputeBoundingBoxes();
+            __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
 
             __host__ void SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); }
             __host__ void ClearDirtyFlags() { m_dirtyFlags = 0; }

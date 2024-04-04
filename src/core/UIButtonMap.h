@@ -7,7 +7,6 @@
 
 namespace Enso
 {
-
     enum UIButtonStates : uint
     {
         kButtonUp = 1,

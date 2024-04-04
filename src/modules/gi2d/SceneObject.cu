@@ -41,7 +41,7 @@ namespace Enso
 
     __host__ uint Host::SceneObject::OnSelect(const bool isSelected)
     {
-        if (SetGenericFlags(m_hostInstance.m_attrFlags, uint(kSceneObjectSelected), isSelected))
+        if (SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kSceneObjectSelected), isSelected))
         {
             SetDirtyFlags(kDirtyUI, true);
         }
@@ -62,8 +62,8 @@ namespace Enso
 
             const vec2 delta = viewCtx.mousePos - m_onMove.dragAnchor;
             m_onMove.dragAnchor = viewCtx.mousePos;
-            m_hostInstance.m_transform.trans += delta;
-            m_hostInstance.m_worldBBox += delta;
+            m_hostInstance.m_params.transform.trans += delta;
+            m_hostInstance.m_params.worldBBox += delta;
 
             // The geometry internal to this object hasn't changed, but it will affect the 
             Log::Warning("kMoveSceneObjectDragging");
@@ -82,7 +82,7 @@ namespace Enso
     {
         Json::Node sceneNode = node.AddChildObject("sceneobject");
 
-        m_hostInstance.m_transform.Serialise(sceneNode, flags);
+        m_hostInstance.m_params.transform.Serialise(sceneNode, flags);
         return true;
     }
 
@@ -92,21 +92,21 @@ namespace Enso
 
         if (sceneNode)
         {
-            if (m_hostInstance.m_transform.Deserialise(sceneNode, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+            if (m_hostInstance.m_params.transform.Deserialise(sceneNode, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
         }
         return m_dirtyFlags;
     }
 
-    __host__ void Host::SceneObject::RecomputeWorldSpaceBoundingBox()
+    __host__ void Host::SceneObject::RecomputeWorldSpaceBoundingBox() 
     {
-        m_hostInstance.m_worldBBox = m_hostInstance.m_objectBBox + m_hostInstance.m_transform.trans;
-        Log::Warning("Rebuilt world bbox: %s", m_hostInstance.m_worldBBox.Format());
+        m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
+        Log::Warning("Rebuilt world bbox: %s", m_hostInstance.m_params.worldBBox.Format());
 
     }
 
     __host__ void Host::SceneObject::RecomputeBoundingBoxes()
     {
-        m_hostInstance.m_objectBBox = RecomputeObjectSpaceBoundingBox();
+        m_hostInstance.m_params.objectBBox = RecomputeObjectSpaceBoundingBox();
         RecomputeWorldSpaceBoundingBox();
     }
 

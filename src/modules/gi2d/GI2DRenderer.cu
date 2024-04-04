@@ -415,6 +415,9 @@ namespace Enso
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
 
+        Assert(m_delegatedObject);
+        SetDirtyFlags(m_delegatedObject->OnDelegateAction(stateID, keyMap, m_viewCtx));
+
         if (stateID == "kDelegateSceneObjectEnd")
         {
             m_delegatedObject = nullptr;

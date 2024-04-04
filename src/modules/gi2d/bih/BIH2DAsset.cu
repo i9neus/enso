@@ -56,7 +56,7 @@ namespace Enso
         m_params.nodes = m_hostNodes->GetDeviceInstance();
         m_params.numPrims = uint(m_primitiveIdxs.size());
 
-        SynchroniseObjects(cu_deviceInstance, m_params);
+        SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_params);
     }
 
     __host__ void Host::BIH2DAsset::CheckTreeNodes() const

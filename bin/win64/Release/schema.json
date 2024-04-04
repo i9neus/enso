@@ -123,7 +123,7 @@
         }
     },
     "perspectivecamera": {
-        "camera/fov": {
+        "fov": {
             "dataType": "float",
             "widgetLabel": "FOV",
             "dataRange": [ 1.0, 90.0 ],

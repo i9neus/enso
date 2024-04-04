@@ -21,28 +21,28 @@ namespace Enso
     {
         if (syncFlags == kSyncObjects)
         {
-            assert(m_scenePtr);
-            m_scene = *m_scenePtr;
+            assert(m_objects.scenePtr);
+            m_scene = *m_objects.scenePtr;
         }
     }
 
     __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
     {
-        int accumIdx = kKernelIdx * m_grid.numHarmonics;
+        int accumIdx = kKernelIdx * m_params.grid.numHarmonics;
 
-        for (int harIdx = 0; harIdx < m_grid.numHarmonics; ++harIdx)
+        for (int harIdx = 0; harIdx < m_params.grid.numHarmonics; ++harIdx)
         {
-            (*m_accumBuffer)[accumIdx + harIdx] += L.xyz; 
+            (*m_objects.accumBuffer)[accumIdx + harIdx] += L.xyz; 
         }
     }
 
     __device__ bool Device::VoxelProxyGridLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
-        const uint probeIdx = kKernelIdx / m_grid.subprobesPerProbe;
-        const vec2 probePosNorm = vec2(float(0.5f + probeIdx % m_grid.size.x), float(0.5f + probeIdx / m_grid.size.x));
+        const uint probeIdx = kKernelIdx / m_params.grid.subprobesPerProbe;
+        const vec2 probePosNorm = vec2(float(0.5f + probeIdx % m_params.grid.size.x), float(0.5f + probeIdx / m_params.grid.size.x));
 
         // Transform from screen space to view space
-        ray.o = m_cameraTransform.PointToWorldSpace(probePosNorm);
+        ray.o = m_params.cameraTransform.PointToWorldSpace(probePosNorm);
 
         // Randomly scatter the ray
         const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
@@ -51,7 +51,7 @@ namespace Enso
         /*if (renderCtx.IsDebug())
         {
             ray.o = vec2(0.0f);
-            ray.d = normalize(m_viewCtx.mousePos - ray.o);
+            ray.d = normalize(UILayer::m_params.viewCtx.mousePos - ray.o);
         }*/
 
         ray.throughput = vec3(1.0f);
@@ -69,13 +69,13 @@ namespace Enso
 
     __device__ void Device::VoxelProxyGridLayer::Render()
     {
-        if (kKernelIdx >= m_grid.totalSubprobes) { return; }
+        if (kKernelIdx >= m_params.grid.totalSubprobes) { return; }
          
-        const int subprobeIdx = ((kKernelIdx / m_grid.numHarmonics) % m_grid.subprobesPerProbe);
-        const int probeIdx = kKernelIdx / m_grid.unitsPerProbe;
+        const int subprobeIdx = ((kKernelIdx / m_params.grid.numHarmonics) % m_params.grid.subprobesPerProbe);
+        const int probeIdx = kKernelIdx / m_params.grid.unitsPerProbe;
 
-        const uchar ctxFlags = (probeIdx / m_grid.size.x == m_grid.size.y / 2 && 
-                               probeIdx % m_grid.size.x == m_grid.size.x / 2 &&
+        const uchar ctxFlags = (probeIdx / m_params.grid.size.x == m_params.grid.size.y / 2 && 
+                               probeIdx % m_params.grid.size.x == m_params.grid.size.x / 2 &&
                                subprobeIdx == 0) ? kRenderCtxDebug : 0;
         
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, ctxFlags);
@@ -90,14 +90,14 @@ namespace Enso
 
     __device__ void Device::VoxelProxyGridLayer::ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange)
     {
-        if (kKernelIdx >= m_grid.totalAccumUnits) { return; }
+        if (kKernelIdx >= m_params.grid.totalAccumUnits) { return; }
 
         assert(m_reduceBuffer);
         assert(m_accumBuffer);
 
-        auto& accumBuffer = *m_accumBuffer;
-        auto& reduceBuffer = *m_reduceBuffer;
-        const int subprobeIdx = (kKernelIdx / m_grid.numHarmonics) % m_grid.subprobesPerProbe; 
+        auto& accumBuffer = *m_objects.accumBuffer;
+        auto& reduceBuffer = *m_objects.reduceBuffer;
+        const int subprobeIdx = (kKernelIdx / m_params.grid.numHarmonics) % m_params.grid.subprobesPerProbe; 
 
         for (uint iterationSize = batchRange[0] / 2; iterationSize > batchRange[1] / 2; iterationSize >>= 1)
         {
@@ -109,18 +109,18 @@ namespace Enso
                     auto& texel = reduceBuffer[kKernelIdx];
                     texel = accumBuffer[kKernelIdx];
 
-                    if (subprobeIdx + iterationSize < m_grid.subprobesPerProbe)
+                    if (subprobeIdx + iterationSize < m_params.grid.subprobesPerProbe)
                     {
-                        assert(kKernelIdx + iterationSize * m_grid.numHarmonics < kAccumBufferSize);                       
-                        texel += accumBuffer[kKernelIdx + iterationSize * m_grid.numHarmonics];
+                        assert(kKernelIdx + iterationSize * m_params.grid.numHarmonics < kAccumBufferSize);                       
+                        texel += accumBuffer[kKernelIdx + iterationSize * m_params.grid.numHarmonics];
                     }                 
                 }
                 else
                 {
-                    assert(kKernelIdx + iterationSize * m_grid.numHarmonics < kAccumBufferSize);
-                    assert(subprobeIdx + iterationSize < m_grid.subprobesPerProbe);
+                    assert(kKernelIdx + iterationSize * m_params.grid.numHarmonics < kAccumBufferSize);
+                    assert(subprobeIdx + iterationSize < m_params.grid.subprobesPerProbe);
 
-                    reduceBuffer[kKernelIdx] += reduceBuffer[kKernelIdx + iterationSize * m_grid.numHarmonics];
+                    reduceBuffer[kKernelIdx] += reduceBuffer[kKernelIdx + iterationSize * m_params.grid.numHarmonics];
                 }
             }
 
@@ -130,12 +130,12 @@ namespace Enso
         // After the last operation, cache the accumulated value in the probe grid
         if (subprobeIdx == 0 && batchRange[0] == 2)
         {
-            const int probeIdx = kKernelIdx / m_grid.unitsPerProbe;
-            const int coeffIdx = kKernelIdx % m_grid.numHarmonics;
+            const int probeIdx = kKernelIdx / m_params.grid.unitsPerProbe;
+            const int coeffIdx = kKernelIdx % m_params.grid.numHarmonics;
 
-            assert(probeIdx < m_grid.numProbes && coeffIdx < m_grid.numHarmonics);
+            assert(probeIdx < m_params.grid.numProbes && coeffIdx < m_params.grid.numHarmonics);
 
-            (*m_gridBuffer)[probeIdx * m_grid.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx];
+            (*m_objects.gridBuffer)[probeIdx * m_params.grid.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx];
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(ReduceAccumulationBuffer);
@@ -145,8 +145,8 @@ namespace Enso
         if (dirtyFlags & kDirtyIntegrators)
         {
             // Save ourselves a deference here by caching the scene pointers
-            assert(m_scenePtr);
-            m_scene = *m_scenePtr;
+            assert(m_objects.scenePtr);
+            m_scene = *m_objects.scenePtr;
             m_frameIdx = 0;
         }
         else
@@ -159,23 +159,23 @@ namespace Enso
 
     __device__ vec3 Device::VoxelProxyGridLayer::Evaluate(const vec2& posWorld) const
     {
-        const ivec2 probeIdx = ivec2(m_cameraTransform.PointToObjectSpace(posWorld));
+        const ivec2 probeIdx = ivec2(m_params.cameraTransform.PointToObjectSpace(posWorld));
 
-        if (probeIdx.x < 0 || probeIdx.x >= m_grid.size.x || probeIdx.y < 0 || probeIdx.y >= m_grid.size.y) { return kOne * 0.2; }
+        if (probeIdx.x < 0 || probeIdx.x >= m_params.grid.size.x || probeIdx.y < 0 || probeIdx.y >= m_params.grid.size.y) { return kOne * 0.2; }
 
-        vec3 L = (*m_gridBuffer)[(probeIdx.y * m_grid.size.x + probeIdx.x) * m_grid.numHarmonics] / float(m_grid.subprobesPerProbe * max(1, m_frameIdx));
+        vec3 L = (*m_objects.gridBuffer)[(probeIdx.y * m_params.grid.size.x + probeIdx.x) * m_params.grid.numHarmonics] / float(m_params.grid.subprobesPerProbe * max(1, m_frameIdx));
 
-        /*if (length(posWorld - m_kifsDebug.pNear) < m_viewCtx.dPdXY * 4.0f) { L += kRed; }
-        if (length(posWorld - m_kifsDebug.pFar) < m_viewCtx.dPdXY * 4.0f) { L += kYellow; }
+        /*if (length(posWorld - m_kifsDebug.pNear) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kRed; }
+        if (length(posWorld - m_kifsDebug.pFar) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kYellow; }
         for (int idx = 0; idx < KIFSDebugData::kMaxPoints; ++idx)
         {
-            if (length(posWorld - m_kifsDebug.marchPts[idx]) < m_viewCtx.dPdXY * 4.0f) { L += kGreen; }
+            if (length(posWorld - m_kifsDebug.marchPts[idx]) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kGreen; }
         }*/
 
         /*if (m_kifsDebug.isHit)
         {
-            if (length(posWorld - m_kifsDebug.hit) < m_viewCtx.dPdXY * 5.0f) { L += kRed; }
-            if (SDFLine(posWorld, m_kifsDebug.hit, m_kifsDebug.normal * m_viewCtx.dPdXY * 100.0f).x < m_viewCtx.dPdXY * 1.f) { L += kRed; }
+            if (length(posWorld - m_kifsDebug.hit) < UILayer::m_params.viewCtx.dPdXY * 5.0f) { L += kRed; }
+            if (SDFLine(posWorld, m_kifsDebug.hit, m_kifsDebug.normal * UILayer::m_params.viewCtx.dPdXY * 100.0f).x < UILayer::m_params.viewCtx.dPdXY * 1.f) { L += kRed; }
         }*/
 
         return L;
@@ -189,9 +189,9 @@ namespace Enso
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = UILayer::m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
-        if (!m_viewCtx.sceneBounds.Contains(xyView))
+        if (!UILayer::m_params.viewCtx.sceneBounds.Contains(xyView))
         {
             deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return;
@@ -212,31 +212,31 @@ namespace Enso
         constexpr uint kNumHarmonics = 1;
 
         // Establish the properties of the grid
-        m_grid.size = ivec2(kGridWidth, kGridHeight);
-        m_grid.numProbes = Area(m_grid.size);
-        m_grid.numHarmonics = (kNumHarmonics - 1) * 2 + 1;
-        m_grid.totalGridUnits = m_grid.numProbes * m_grid.numHarmonics;
+        m_params.grid.size = ivec2(kGridWidth, kGridHeight);
+        m_params.grid.numProbes = Area(m_params.grid.size);
+        m_params.grid.numHarmonics = (kNumHarmonics - 1) * 2 + 1;
+        m_params.grid.totalGridUnits = m_params.grid.numProbes * m_params.grid.numHarmonics;
 
         // Derive some more properties used when accumulating and reducing.
-        m_grid.subprobesPerProbe = std::min(kAccumBufferSize / m_grid.numProbes,
-            kAccumBufferSize / m_grid.totalGridUnits);
-        m_grid.unitsPerProbe = m_grid.subprobesPerProbe * m_grid.numHarmonics;
-        m_grid.totalSubprobes = m_grid.subprobesPerProbe * m_grid.numProbes;
-        m_grid.totalAccumUnits = m_grid.totalSubprobes * m_grid.numHarmonics;
+        m_params.grid.subprobesPerProbe = std::min(kAccumBufferSize / m_params.grid.numProbes,
+            kAccumBufferSize / m_params.grid.totalGridUnits);
+        m_params.grid.unitsPerProbe = m_params.grid.subprobesPerProbe * m_params.grid.numHarmonics;
+        m_params.grid.totalSubprobes = m_params.grid.subprobesPerProbe * m_params.grid.numProbes;
+        m_params.grid.totalAccumUnits = m_params.grid.totalSubprobes * m_params.grid.numHarmonics;
 
         // Construct the camera transform
-        m_cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));
+        m_params.cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));
 
         // Create some assets
         m_hostAccumBuffer = CreateChildAsset<Host::Vector<vec3>>("accumBuffer", kAccumBufferSize, kVectorHostAlloc);
         m_hostReduceBuffer = CreateChildAsset<Host::Vector<vec3>>("reduceBuffer", kAccumBufferSize, kVectorHostAlloc);
-        m_hostProxyGrid = CreateChildAsset<Host::Vector<vec3>>("proxyGrid", m_grid.totalGridUnits, kVectorHostAlloc);
+        m_hostProxyGrid = CreateChildAsset<Host::Vector<vec3>>("proxyGrid", m_params.grid.totalGridUnits, kVectorHostAlloc);
 
         // Set the device objects
-        m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.m_reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
-        m_deviceObjects.m_gridBuffer = m_hostProxyGrid->GetDeviceInstance();
-        m_deviceObjects.m_scenePtr = m_scene->GetDeviceInstance();
+        m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.reduceBuffer = m_hostReduceBuffer->GetDeviceInstance();
+        m_deviceObjects.gridBuffer = m_hostProxyGrid->GetDeviceInstance();
+        m_deviceObjects.scenePtr = m_scene->GetDeviceInstance();
 
         // Instantiate and sync
         cu_deviceInstance = InstantiateOnDevice<Device::VoxelProxyGridLayer>();
@@ -244,8 +244,8 @@ namespace Enso
 
         // Set the parameters for the accumulate and reduce kernels
         m_kernelParams.blockSize = 256;
-        m_kernelParams.grids.accumSize = (m_grid.totalSubprobes + m_kernelParams.blockSize - 1) / m_kernelParams.blockSize;
-        m_kernelParams.grids.reduceSize = (m_grid.totalAccumUnits + m_kernelParams.blockSize - 1) / m_kernelParams.blockSize;
+        m_kernelParams.grids.accumSize = (m_params.grid.totalSubprobes + m_kernelParams.blockSize - 1) / m_kernelParams.blockSize;
+        m_kernelParams.grids.reduceSize = (m_params.grid.totalAccumUnits + m_kernelParams.blockSize - 1) / m_kernelParams.blockSize;
     }
 
     Host::VoxelProxyGridLayer::~VoxelProxyGridLayer()
@@ -256,7 +256,7 @@ namespace Enso
     __host__ void Host::VoxelProxyGridLayer::Integrate()
     {
         // Used when parallel reducing the accumluation buffer
-        const uint reduceBatchSizePow2 = NearestPow2Ceil(m_grid.subprobesPerProbe);
+        const uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.grid.subprobesPerProbe);
 
         // Reduce until the batch range is equal to the size of the block
         uint batchSize = reduceBatchSizePow2;
@@ -281,8 +281,8 @@ namespace Enso
     {
         UILayer::Synchronise(cu_deviceInstance, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<VoxelProxyGridLayerObjects>(cu_deviceInstance, m_deviceObjects, kSyncObjects); }
-        if (syncType & kSyncParams) { SynchroniseInheritedClass<VoxelProxyGridLayerParams>(cu_deviceInstance, *this, kSyncParams); }
+        if (syncType & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_params); }
     }
 
     __host__ void Host::VoxelProxyGridLayer::OnDestroyAsset()

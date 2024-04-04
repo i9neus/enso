@@ -32,7 +32,7 @@ namespace Enso
 		cu_object->Synchronise(pack...);
 	}
 
-	template<typename ObjectType, typename ParamsType>
+	template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
 	__global__ static void KernelSynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
 	{
 		// Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
@@ -40,7 +40,7 @@ namespace Enso
 		assert(cu_params);
 		assert(sizeof(ParamsType) == hostParamsSize);
 
-		cu_object->Synchronise(*cu_params);
+		cu_object->SuperType::Synchronise(*cu_params);
 	}
 
 	template<typename ObjectType>
@@ -207,7 +207,7 @@ namespace Enso
 				IsOk(cudaDeviceSynchronize());
 			}
 
-			template<typename ObjectType, typename ParamsType>
+			template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
 			__host__ void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params) const
 			{
 				AssertIsTransferrableType<ParamsType>();				
@@ -218,7 +218,25 @@ namespace Enso
 				IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
 				IsOk(cudaDeviceSynchronize());
-				KernelSynchroniseObjects << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
+				KernelSynchroniseObjects <SuperType> << <1, 1 >> >(cu_object, sizeof(ParamsType), cu_params);
+				IsOk(cudaDeviceSynchronize());
+
+				IsOk(cudaFree(cu_params));
+			}
+			
+			// FIXME: This needs to go away. Fix the Vector class first.
+			template<typename ObjectType, typename ParamsType>
+			__host__ void LegacySynchroniseObjects(ObjectType* cu_object, const ParamsType& params) const
+			{
+				AssertIsTransferrableType<ParamsType>();
+				Assert(cu_object);
+
+				ParamsType* cu_params;
+				IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
+				IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
+
+				IsOk(cudaDeviceSynchronize());
+				KernelSynchroniseObjects <ObjectType> << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
 				IsOk(cudaDeviceSynchronize());
 
 				IsOk(cudaFree(cu_params));

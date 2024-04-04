@@ -9,6 +9,9 @@ namespace Enso
     struct BIH2DNodeDataFull;
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
+    
+    template<size_t> class UIButtonMap;
+    using VirtualKeyMap = UIButtonMap<256>;
 
     namespace Generic
     {

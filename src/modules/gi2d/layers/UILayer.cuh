@@ -15,22 +15,27 @@ namespace Enso
     {
         __host__ __device__ UILayerParams()
         {
-            m_selectionCtx.isLassoing = false;
+            selectionCtx.isLassoing = false;
         }
         
-        UIViewCtx           m_viewCtx;
-        UISelectionCtx      m_selectionCtx;
+        UIViewCtx           viewCtx;
+        UISelectionCtx      selectionCtx;
     };
 
     namespace Device
     {
-        class UILayer : public Device::Asset,
-                        public UILayerParams
+        class UILayer : public Device::Asset
         {
         public:
             __device__ UILayer() {}
 
+            __device__ void Synchronise(const UILayerParams& params) { m_params = params; }
             __host__ __device__ virtual void OnSynchronise(const int) {};
+
+        protected:
+            __device__ __forceinline__ const UISelectionCtx& GetSelectionCtx() const { return m_params.selectionCtx; }
+
+            UILayerParams m_params;
         };
     }
 
@@ -39,8 +44,7 @@ namespace Enso
         template<typename, typename> class AssetVector;
         class BIH2DAsset;
         
-        class UILayer : public Host::AssetAllocator,
-                        public UILayerParams
+        class UILayer : public Host::AssetAllocator
         {
         public:
             UILayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene) :
@@ -57,8 +61,8 @@ namespace Enso
 
             __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
             { 
-                m_viewCtx = viewCtx;  
-                m_selectionCtx = selectionCtx;
+                m_params.viewCtx = viewCtx;  
+                m_params.selectionCtx = selectionCtx;
                 m_dirtyFlags = dirtyFlags;
             }
 
@@ -68,7 +72,7 @@ namespace Enso
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int syncType)
             {
-                if (syncType & kSyncParams)  { SynchroniseInheritedClass<UILayerParams>(cu_object, *this, kSyncParams); }
+                if (syncType & kSyncParams) { SynchroniseObjects<Device::UILayer>(cu_object, m_params); }
             }
             
             template<typename T>
@@ -81,6 +85,7 @@ namespace Enso
 
         protected:   
             AssetHandle<Host::SceneDescription>                     m_scene;
+            UILayerParams                                           m_params;
 
             uint                                                    m_dirtyFlags;
         };

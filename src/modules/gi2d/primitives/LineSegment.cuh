@@ -13,6 +13,8 @@ namespace Enso
         vec2 m_dv;
     public:
         __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
+        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1) noexcept :
+            Primitive2D(0, kOne), m_v{ v0, v1 }, m_dv(v1 - v0) {}
         __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags, const vec3& col) noexcept :
             Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
         

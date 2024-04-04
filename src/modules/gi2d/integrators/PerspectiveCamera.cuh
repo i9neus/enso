@@ -7,23 +7,26 @@
 namespace Enso
 {
     class LineSegment;
+    class Ellipse;
 
     struct PerspectiveCameraObjects
     {
         __host__ __device__ PerspectiveCameraObjects() {}
 
-        __host__ __device__ PerspectiveCameraObjects& operator=(const PerspectiveCameraObjects& other)
-        {            
-            return *this;
+        struct
+        {
+            Generic::Vector<LineSegment>* lineSegments = nullptr;
+            Generic::Vector<Ellipse>* ellipses = nullptr;
         }
+        ui;
     };
 
     struct PerspectiveCameraParams
     {
-        __host__ __device__ PerspectiveCameraParams() : m_direction(0.0f), m_fov(0.0f) {}
+        __host__ __device__ PerspectiveCameraParams() : direction(0.0f), fov(0.0f) {}
 
-        vec2    m_direction;
-        float   m_fov;
+        vec2    direction;
+        float   fov;
     };
 
     namespace Host
@@ -33,9 +36,7 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::Camera2D,
-                                  public PerspectiveCameraParams,
-                                  public PerspectiveCameraObjects
+        class PerspectiveCamera : public Device::Camera2D
         {
             friend class Host::PerspectiveCamera;
 
@@ -47,11 +48,13 @@ namespace Enso
 
             __host__ __device__ virtual uint            OnMouseClick(const UIViewCtx& viewCtx) const override final;
             __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __device__ void                             Synchronise(const PerspectiveCameraParams& params) { m_params = params; }
+            __device__ void                             Synchronise(const PerspectiveCameraObjects& objects) { m_objects = objects; }
 
-            __host__ __device__ virtual void            OnSynchronise(const int) override final;
 
         private:
-
+            PerspectiveCameraParams m_params;
+            PerspectiveCameraObjects m_objects;
         };
     }
 
@@ -70,6 +73,7 @@ namespace Enso
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
             //__host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+            __host__ virtual uint       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
@@ -92,8 +96,17 @@ namespace Enso
             __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
-            Device::PerspectiveCamera* cu_deviceInstance = nullptr;
-            Device::PerspectiveCamera           m_hostInstance;
+            __host__ void               UpdateUIElements();
+
+            Device::PerspectiveCamera*  cu_deviceInstance = nullptr;
+            Device::PerspectiveCamera   m_hostInstance;
+
+            struct
+            {
+                AssetHandle<Host::Vector<LineSegment>>  hostLineSegments;
+                AssetHandle<Host::Vector<Ellipse>>  hostEllipses;
+            }
+            m_ui;
 
             struct
             {

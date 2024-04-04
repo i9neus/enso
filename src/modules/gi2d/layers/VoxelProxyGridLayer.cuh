@@ -12,7 +12,7 @@ namespace Enso
     {
         __host__ __device__ VoxelProxyGridLayerParams();
 
-        BidirectionalTransform2D        m_cameraTransform;
+        BidirectionalTransform2D        cameraTransform;
 
         struct
         {
@@ -26,37 +26,37 @@ namespace Enso
             int             totalAccumUnits; //		        <-- The total number of accumulation units in the grid
             int             totalSubprobes; //				<-- The total number of subprobes in the grid
         }
-        m_grid;
+        grid;
     };
 
     struct VoxelProxyGridLayerObjects
     {
-        const Device::SceneDescription* m_scenePtr = nullptr;
+        const Device::SceneDescription* scenePtr = nullptr;
         
-        Device::Vector<vec3>* m_accumBuffer = nullptr;
-        Device::Vector<vec3>* m_reduceBuffer = nullptr;
-        Device::Vector<vec3>* m_gridBuffer = nullptr;
+        Device::Vector<vec3>* accumBuffer = nullptr;
+        Device::Vector<vec3>* reduceBuffer = nullptr;
+        Device::Vector<vec3>* gridBuffer = nullptr;
     };
 
     namespace Device
     {
         class VoxelProxyGridLayer : public UILayer,
-                                public VoxelProxyGridLayerParams,
-                                public VoxelProxyGridLayerObjects,
-                                public Camera2D
+                                    public Camera2D
         {
         public:
             __device__ VoxelProxyGridLayer() : m_voxelTracer(m_scene) {}
 
-            __device__ __forceinline__ void Prepare(const uint dirtyFlags);
-            __device__ __forceinline__ void Render();
-            __device__ __forceinline__ void Composite(Device::ImageRGBA* outputImage) const;
-            __device__ __forceinline__ vec3 Evaluate(const vec2& posWorld) const;
+            __device__ __forceinline__ void     Prepare(const uint dirtyFlags);
+            __device__ __forceinline__ void     Render();
+            __device__ __forceinline__ void     Composite(Device::ImageRGBA* outputImage) const;
+            __device__ __forceinline__ vec3     Evaluate(const vec2& posWorld) const;
 
-            __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
-            __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
+            __device__ virtual bool             CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
+            __device__ virtual void             Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
-            __host__ __device__ virtual void OnSynchronise(const int) override final;
+            __host__ __device__ virtual void    OnSynchronise(const int) override final;
+            __device__ void                     Synchronise(const VoxelProxyGridLayerParams& params) { m_params = params; }
+            __device__ void                     Synchronise(const VoxelProxyGridLayerObjects& objects) { m_objects = objects; }
 
             __device__ void ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange);
 
@@ -64,6 +64,8 @@ namespace Enso
             PathTracer2D                            m_voxelTracer;
             int                                     m_frameIdx;
 
+            VoxelProxyGridLayerParams               m_params;
+            VoxelProxyGridLayerObjects              m_objects;
             Device::SceneDescription                m_scene;
 
             KIFSDebugData                           m_kifsDebug;
@@ -91,12 +93,13 @@ namespace Enso
             __host__ void Integrate();
 
         private:
-            Device::VoxelProxyGridLayer*          cu_deviceInstance = nullptr;
-            VoxelProxyGridLayerObjects            m_deviceObjects;
+            Device::VoxelProxyGridLayer*            cu_deviceInstance = nullptr;
+            VoxelProxyGridLayerObjects              m_deviceObjects;
+            VoxelProxyGridLayerParams               m_params;
 
-            AssetHandle<Host::Vector<vec3>>       m_hostAccumBuffer;
-            AssetHandle<Host::Vector<vec3>>       m_hostReduceBuffer;
-            AssetHandle<Host::Vector<vec3>>       m_hostProxyGrid;
+            AssetHandle<Host::Vector<vec3>>         m_hostAccumBuffer;
+            AssetHandle<Host::Vector<vec3>>         m_hostReduceBuffer;
+            AssetHandle<Host::Vector<vec3>>         m_hostProxyGrid;
 
             struct
             {

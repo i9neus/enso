@@ -48,8 +48,20 @@ namespace Enso
                 return saturatef(1.0f - (length(p - PerpLine(p, v, dv)) - dPdXY * thickness) / dPdXY);
             }
 
-            // Render a circle
-            __host__ __device__ __forceinline__ float Circle(vec2 p, const vec2& origin, const float& radius, const float& thickness, const float& dPdXY)
+            // Render an ellipse
+            __host__ __device__ __forceinline__ float Ellipse(vec2 p, const vec2& origin, const float& radius, const float& dPdXY)
+            {
+                p -= origin;
+                float distance = length2(p);
+
+                float outerRadius = radius - dPdXY;
+                if (distance > sqr(outerRadius)) { return 0.f; }                
+
+                return saturatef((outerRadius - sqrt(distance)) / dPdXY);
+            }
+
+            // Render a torus
+            __host__ __device__ __forceinline__ float Torus(vec2 p, const vec2& origin, const float& radius, const float& thickness, const float& dPdXY)
             {
                 p -= origin;
                 float distance = length2(p);

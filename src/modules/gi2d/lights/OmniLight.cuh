@@ -10,12 +10,12 @@ namespace Enso
 
     struct OmniLightParams
     {
-        __host__ __device__ OmniLightParams() : m_lightRadius(0.0f), m_lightColour(1.0f), m_lightIntensity(0.0f) {}
+        __host__ __device__ OmniLightParams() : lightRadius(0.0f), lightColour(1.0f), lightIntensity(0.0f) {}
 
-        float   m_lightRadius;
+        float   lightRadius;
 
-        vec3    m_lightColour;
-        float   m_lightIntensity;
+        vec3    lightColour;
+        float   lightIntensity;
     };
 
     namespace Host
@@ -25,8 +25,7 @@ namespace Enso
 
     namespace Device
     {
-        class OmniLight : public Device::Light,
-                          public OmniLightParams
+        class OmniLight : public Device::Light
         {  
             friend class Host::OmniLight;
 
@@ -40,11 +39,18 @@ namespace Enso
             __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const override final;
             __device__ virtual float                    Estimate(const Ray2D& parentRay, const HitCtx2D& hit) const override final;
 
-            __host__ __device__ virtual vec4                     EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
 
             __host__ __device__ virtual void            OnSynchronise(const int) override final;
+            __device__ void                             Synchronise(const OmniLightParams& params)
+            { 
+                m_params = params; 
+                OnSynchronise(kSyncParams);
+            }
 
         private:
+            OmniLightParams m_params;
+
             Ellipse m_primitive;
         };
     }

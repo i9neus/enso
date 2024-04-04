@@ -6,7 +6,7 @@ namespace Enso
 {
     __host__ __device__ bool Device::Tracable::IntersectBBox(const BBox2f& bBox) const
     {
-        return bBox.Intersects(m_objectBBox);
+        return bBox.Intersects(SceneObject::m_params.objectBBox);
     }
 
     __host__ bool Host::Tracable::Serialise(Json::Node& node, const int flags) const

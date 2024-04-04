@@ -29,8 +29,8 @@ namespace Enso
             int         numIterations;             
             float       objectBounds;
             float       primSize;
-        }
-        m_kifs;
+
+        } kifs;
       
         struct
         {
@@ -41,33 +41,40 @@ namespace Enso
             float       rayKickoff;
             int         maxIterations;
 
-        } m_intersector;
+        } intersector;
 
         struct
         {
             float       phase;
             float       range;
-        } 
-        m_look;
+
+        } look;
     };
 
+    namespace Host { class KIFS; }
+
     namespace Device
-    {
-        class KIFS : public Device::Tracable,
-                     public KIFSParams
+    {         
+        class KIFS : public Device::Tracable
         {
+            friend class Host::KIFS;
+
         public:
             __host__ __device__ KIFS();
 
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
-            __host__ __device__ virtual vec4             EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            
             __host__ __device__ virtual void    OnSynchronise(const int) override final;
+            __device__ void                     Synchronise(const KIFSParams& params) { m_params = params; }
 
             __host__ __device__ __forceinline__ vec3 EvaluateSDF(vec2 z, const mat2& basis, uint& code) const;
 
         private:
+            KIFSParams m_params;
+
             const mat2 m_kBary;
             const mat2 m_kBaryInv;
             

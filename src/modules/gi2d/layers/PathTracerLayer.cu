@@ -10,7 +10,7 @@ namespace Enso
 {        
     __host__ __device__ PathTracerLayerParams::PathTracerLayerParams()
     {
-        m_accum.downsample = 1;
+        accum.downsample = 1;
     }
 
     __device__ void Device::PathTracerLayer::OnSynchronise(const int syncFlags)
@@ -20,14 +20,14 @@ namespace Enso
 
     __device__ void Device::PathTracerLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
     {
-        m_accumBuffer->At(kKernelPos<ivec2>()) += L;
+        m_objects.accumBuffer->At(kKernelPos<ivec2>()) += L;
     }
 
     __device__ bool Device::PathTracerLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
         // Transform from screen space to view space
-        ray.o = m_viewCtx.transform.matrix * vec2(kKernelPos<ivec2>() * m_accum.downsample);
-        if (!m_viewCtx.sceneBounds.Contains(ray.o)) { return false; }
+        ray.o = UILayer::m_params.viewCtx.transform.matrix * vec2(kKernelPos<ivec2>() * m_params.accum.downsample);
+        if (!UILayer::m_params.viewCtx.sceneBounds.Contains(ray.o)) { return false; }
 
         // Randomly scatter
         const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
@@ -41,7 +41,7 @@ namespace Enso
         return;
         
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x < 0 || xyScreen.x >= m_accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_accumBuffer->Height()) { return; }
+        if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         RenderCtx renderCtx(kKernelY * kKernelWidth + kKernelX, uint(m_frameIdx), 0, *this);
 
@@ -55,8 +55,8 @@ namespace Enso
         m_frameIdx++;
 
         // Save ourselves a deference here by caching the scene pointers
-        assert(m_scenePtr);
-        m_scene = *m_scenePtr;
+        assert(m_objects.scenePtr);
+        m_scene = *m_objects.scenePtr;
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
@@ -68,9 +68,9 @@ namespace Enso
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = m_viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = UILayer::m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
-        if (!m_viewCtx.sceneBounds.Contains(xyView)) 
+        if (!UILayer::m_params.viewCtx.sceneBounds.Contains(xyView))
         { 
             deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return; 
@@ -78,8 +78,8 @@ namespace Enso
 
         vec4 L(0.0f);
 
-        const vec2 uv = vec2(xyScreen) * vec2(m_accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
-        L = m_accumBuffer->Lerp(uv);
+        const vec2 uv = vec2(xyScreen) * vec2(m_objects.accumBuffer->Dimensions()) / vec2(deviceOutputImage->Dimensions());
+        L = m_objects.accumBuffer->Lerp(uv);
         L.xyz /= fmaxf(L.w, 1.0f);
 
         //L.xyz += m_scene.voxelProxy->Evaluate(xyView);
@@ -94,10 +94,10 @@ namespace Enso
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>("id_2dgiAccumBuffer", width / downsample, height / downsample, renderStream);
 
-        m_deviceObjects.m_scenePtr = scene->GetDeviceInstance(); 
-        m_deviceObjects.m_accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.scenePtr = scene->GetDeviceInstance(); 
+        m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
-        m_accum.downsample = downsample;
+        m_params.accum.downsample = downsample;
 
         cu_deviceData = InstantiateOnDevice<Device::PathTracerLayer>();
 
@@ -122,8 +122,8 @@ namespace Enso
     {
         UILayer::Synchronise(cu_deviceData, syncType);
 
-        if (syncType & kSyncObjects) { SynchroniseInheritedClass<PathTracerLayerObjects>(cu_deviceData, m_deviceObjects, kSyncObjects); }
-        if (syncType & kSyncParams) { SynchroniseInheritedClass<PathTracerLayerParams>(cu_deviceData, *this, kSyncParams); }
+        if (syncType & kSyncObjects) { SynchroniseObjects<Device::PathTracerLayer>(cu_deviceData, m_deviceObjects); }
+        if (syncType & kSyncParams) { SynchroniseObjects<Device::PathTracerLayer>(cu_deviceData, m_params); }
     }
 
     __host__ void Host::PathTracerLayer::OnDestroyAsset()
