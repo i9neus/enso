@@ -26,7 +26,7 @@ namespace Enso
 
         __host__ __device__ __forceinline__ virtual BBox2f  GetBoundingBox() const override final
         {
-            return BBox2f(m_origin - m_radius * 0.5f, m_origin + m_radius * 0.5f);
+            return CircleBBox2(m_origin, m_radius);
         }
     };
 

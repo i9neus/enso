@@ -132,6 +132,10 @@ namespace Enso
             {
                 m_hostInstance.m_lightRadius = length(m_hostInstance.m_transform.trans - viewCtx.mousePos);
             }
+            else
+            {
+                m_hostInstance.m_transform.trans = viewCtx.mousePos;
+            }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {

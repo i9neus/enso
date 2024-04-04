@@ -3,6 +3,7 @@
 #include "../primitives/Ellipse.cuh"
 #include "../primitives/GenericIntersector.cuh"
 #include "io/json/JsonUtils.h"
+#include "../primitives/SDF.cuh"
 
 namespace Enso
 {
@@ -18,21 +19,23 @@ namespace Enso
     
     __host__ __device__ vec4 Device::PerspectiveCamera::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        if (!m_worldBBox.Contains(pWorld)) { return vec4(0.f); }
+        vec4 L(0.f);
 
-        return vec4(kOne, m_primitive.EvaluateOverlay(pWorld - m_transform.trans, viewCtx.dPdXY));
+        L = vec4(kOne, SDF::Renderer::Line(pWorld, m_transform.trans, m_direction, 3.f, viewCtx.dPdXY));
+
+        return L;
     }
 
     __host__ __device__ uint Device::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return (m_primitive.Contains(viewCtx.mousePos - m_transform.trans, viewCtx.dPdXY) > 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+        return kSceneObjectInvalidSelect;
     }
 
     __host__ __device__ void Device::PerspectiveCamera::OnSynchronise(const int syncFlags)
     {
         if (syncFlags == kSyncParams)
         {
-            m_primitive = Ellipse(vec2(0.f), m_lightRadius);
+            
         }
     }
 
@@ -97,13 +100,17 @@ namespace Enso
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
             m_hostInstance.m_transform.trans = viewCtx.mousePos;
-            m_hostInstance.m_lightRadius = viewCtx.dPdXY;
+            m_hostInstance.m_direction = vec2(0.f, 1.f);
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
-                m_hostInstance.m_lightRadius = length(m_hostInstance.m_transform.trans - viewCtx.mousePos);
+                m_hostInstance.m_direction = viewCtx.mousePos - m_hostInstance.m_transform.trans;
+            }
+            else
+            {
+                m_hostInstance.m_transform.trans = viewCtx.mousePos;
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
@@ -111,7 +118,6 @@ namespace Enso
             if (!m_onCreate.isCentroidSet)
             {
                 m_hostInstance.m_transform.trans = viewCtx.mousePos;
-                m_hostInstance.m_lightRadius = viewCtx.dPdXY;
                 m_onCreate.isCentroidSet = true;
             }
             else
@@ -149,9 +155,9 @@ namespace Enso
     {
         Camera2D::Serialise(node, flags);
 
-        node.AddValue("radius", m_hostInstance.m_lightRadius);
-        node.AddVector("colour", m_hostInstance.m_lightColour);
-        node.AddValue("intensity", m_hostInstance.m_lightIntensity);
+        //node.AddValue("radius", m_hostInstance.m_lightRadius);
+        //node.AddVector("colour", m_hostInstance.m_lightColour);
+        //node.AddValue("intensity", m_hostInstance.m_lightIntensity);
         return true;
     }
 
@@ -159,9 +165,9 @@ namespace Enso
     {
         Camera2D::Deserialise(node, flags);
 
-        if (node.GetValue("radius", m_hostInstance.m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
-        if (node.GetVector("colour", m_hostInstance.m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
-        if (node.GetValue("intensity", m_hostInstance.m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        //if (node.GetValue("radius", m_hostInstance.m_lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+        //if (node.GetVector("colour", m_hostInstance.m_lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        //if (node.GetValue("intensity", m_hostInstance.m_lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
 
         return m_dirtyFlags;
     }
@@ -173,6 +179,7 @@ namespace Enso
 
     __host__ BBox2f Host::PerspectiveCamera::RecomputeObjectSpaceBoundingBox()
     {
-        return BBox2f(-vec2(m_hostInstance.m_lightRadius), vec2(m_hostInstance.m_lightRadius));
+        BBox2f bBox;
+        return Union(bBox, LineBBox2(vec2(0.f), m_hostInstance.m_direction));
     }
 }

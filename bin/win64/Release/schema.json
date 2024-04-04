@@ -121,5 +121,13 @@
             "dataRange": [ 0.0, 1.0 ],
             "widgetType": "slider"
         }
+    },
+    "perspectivecamera": {
+        "camera/fov": {
+            "dataType": "float",
+            "widgetLabel": "FOV",
+            "dataRange": [ 1.0, 90.0 ],
+            "widgetType": "drag"
+        }
     }
 }

@@ -1,5 +1,6 @@
 #include "LineSegment.cuh"
 #include "core/Vector.cuh"
+#include "SDF.cuh"
 
 #include <random>
 
@@ -7,17 +8,17 @@ namespace Enso
 {    
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
-        return m_v[0] + saturatef((dot(p, m_dv) - dot(m_v[0], m_dv)) / dot(m_dv, m_dv)) * m_dv;
+        return SDF::PerpLine(p, m_v[0], m_dv);
     }
-
+    
     __host__ __device__ float LineSegment::EvaluateOverlay(const vec2& p, const float& dPdXY) const
     {
-        return saturatef(1.0f - (length(p - PerpendicularPoint(p)) - dPdXY * 3.0f) / dPdXY);
+        return SDF::Renderer::Line(p, m_v[0], m_dv, 3.f, dPdXY);
     }
 
     __host__ __device__ bool LineSegment::TestPoint(const vec2& p, const float& thickness) const
     {
-        return length2(p - PerpendicularPoint(p)) < sqr(thickness);
+        return length2(p - SDF::PerpLine(p, m_v[0], m_dv)) < sqr(thickness);
     }
 
     __host__ __device__ bool LineSegment::IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const

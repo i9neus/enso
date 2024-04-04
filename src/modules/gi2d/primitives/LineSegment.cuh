@@ -15,7 +15,7 @@ namespace Enso
         __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
         __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags, const vec3& col) noexcept :
             Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
-
+        
         __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const override final;
         __host__ __device__ virtual float                   EvaluateOverlay(const vec2& p, const float& dPdXY) const override final;
         __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
@@ -26,8 +26,7 @@ namespace Enso
 
         __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
         {
-            return BBox2f(vec2(fminf(m_v[0].x, m_v[1].x), fminf(m_v[0].y, m_v[1].y)),
-                vec2(fmaxf(m_v[0].x, m_v[1].x), fmaxf(m_v[0].y, m_v[1].y)));
+            return LineBBox2(m_v[0], m_v[1]);
         }
 
         __host__ __device__ void Set(const uint& idx, const vec2& v)

@@ -20,12 +20,10 @@ namespace Enso
 
     struct PerspectiveCameraParams
     {
-        __host__ __device__ PerspectiveCameraParams() : m_lightRadius(0.0f), m_lightColour(1.0f), m_lightIntensity(0.0f) {}
+        __host__ __device__ PerspectiveCameraParams() : m_direction(0.0f), m_fov(0.0f) {}
 
-        float   m_lightRadius;
-
-        vec3    m_lightColour;
-        float   m_lightIntensity;
+        vec2    m_direction;
+        float   m_fov;
     };
 
     namespace Host
@@ -53,7 +51,7 @@ namespace Enso
             __host__ __device__ virtual void            OnSynchronise(const int) override final;
 
         private:
-            Ellipse m_primitive;
+
         };
     }
 

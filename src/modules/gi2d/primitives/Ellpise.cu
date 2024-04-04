@@ -2,6 +2,7 @@
 #include "core/Vector.cuh"
 #include "core/math/Math.cuh"
 #include "GenericIntersector.cuh"
+#include "SDF.cuh"
 
 #include <random>
 
@@ -9,15 +10,7 @@ namespace Enso
 {
     __host__ __device__ float Ellipse::EvaluateOverlay(const vec2& p, const float& dPdXY) const
     {
-        float distance = length2(p);
-
-        float outerRadius = m_radius - dPdXY;
-        if (distance > sqr(outerRadius)) { return 0.f; }
-        float innerRadius = m_radius - dPdXY * 6.0f;
-        if (distance < sqr(innerRadius)) { return 0.f; }
-
-        distance = sqrt(distance);
-        return saturatef((outerRadius - distance) / dPdXY) * saturatef((distance - innerRadius) / dPdXY);
+        return SDF::Renderer::Circle(p, vec2(0.f), m_radius, 6.f, dPdXY);
     }    
 
     __host__ __device__ bool Ellipse::Contains(const vec2& p, const float&) const

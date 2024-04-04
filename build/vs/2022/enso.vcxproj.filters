@@ -611,8 +611,11 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericIntersector.cuh">
       <Filter>modules\gi2d\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericSDF.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\SDF.cuh">
       <Filter>modules\gi2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
+      <Filter>core\math\bbox</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

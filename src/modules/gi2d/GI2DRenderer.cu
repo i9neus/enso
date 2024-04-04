@@ -118,11 +118,11 @@ namespace Enso
 
         //m_primitiveContainer.Create(m_renderStream);
 
-        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/renderObjects");
+        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/sceneObjects");
         m_scene = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
 
         m_overlayRenderer = CreateAsset<Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
-        m_pathTracerLayer = CreateAsset<Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
+        //m_pathTracerLayer = CreateAsset<Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
         m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>(":gi2d/voxelProxyGridLayer", m_scene, 100, 100);
 
         //m_isosurfaceExplorer = CreateAsset<Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_scene, m_clientWidth, m_clientHeight, 1, m_renderStream);
@@ -138,7 +138,7 @@ namespace Enso
     __host__ void GI2DRenderer::OnDestroy()
     {
         m_overlayRenderer.DestroyAsset();
-        m_pathTracerLayer.DestroyAsset();
+        //m_pathTracerLayer.DestroyAsset();
         m_voxelProxyGridLayer.DestroyAsset();
         //m_isosurfaceExplorer.DestroyAsset();
 
@@ -158,7 +158,7 @@ namespace Enso
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-        m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+        //m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
         m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
         //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
@@ -575,7 +575,7 @@ namespace Enso
     __host__ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
-        if (code == VK_MBUTTON)
+        if (isDown && IsKeyDown(VK_SHIFT))
         {
             m_viewCtx.dragAnchor = vec2(m_mouse.pos);
             m_viewCtx.rotAxis = normalize(m_viewCtx.dragAnchor - vec2(m_clientWidth, m_clientHeight) * 0.5f);
@@ -588,7 +588,7 @@ namespace Enso
     __host__ void GI2DRenderer::OnMouseMove()
     {
         // Dragging?
-        if (IsMouseButtonDown(VK_MBUTTON))
+        if (IsKeyDown(VK_SHIFT) && (IsMouseButtonDown(VK_LBUTTON) || IsMouseButtonDown(VK_MBUTTON) || IsMouseButtonDown(VK_RBUTTON)))
         {
             OnViewChange();
         }
@@ -604,7 +604,7 @@ namespace Enso
         auto& transform = m_viewCtx.transform;
 
         // Zooming?
-        if (IsKeyDown(VK_CONTROL))
+        if (IsMouseButtonDown(VK_MBUTTON))
         {
             float logScaleAnchor = std::log2(std::max(1e-10f, m_viewCtx.scaleAnchor));
             logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
@@ -613,7 +613,7 @@ namespace Enso
             //Log::Write("Scale: %f", transform.scale);
         }
         // Rotating?
-        else if (IsKeyDown(VK_SHIFT))
+        else if (IsMouseButtonDown(VK_RBUTTON))
         {
             const vec2 delta = normalize(vec2(m_mouse.pos) - vec2(m_clientWidth, m_clientHeight) * 0.5f);
             const float theta = std::acos(dot(delta, m_viewCtx.rotAxis)) * (float(dot(delta, vec2(m_viewCtx.rotAxis.y, -m_viewCtx.rotAxis.x)) < 0.0f) * 2.0 - 1.0f);
@@ -624,7 +624,7 @@ namespace Enso
             //Log::Write("Theta: %f", transform.rotate);
         }
         // Translating
-        else
+        else if(IsMouseButtonDown(VK_LBUTTON))
         {
             // Update the transformation
             const mat3 newMat = ConstructViewMatrix(m_viewCtx.transAnchor, transform.rotate, transform.scale) * m_clientToNormMatrix;

@@ -1,7 +1,7 @@
 #include "KIFS.cuh"
 
 #include "../primitives/GenericIntersector.cuh"
-#include "../primitives/GenericSDF.cuh"
+#include "../primitives/SDF.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "../bih/BIH2DAsset.cuh"
 #include "io/json/JsonUtils.h"
@@ -91,7 +91,7 @@ namespace Enso
         }
 
         // Compute the properties of the field
-        vec3 F = SDFLine(z, vec2(-0.5f * m_kifs.primSize, 0.0), vec2(1.0f * m_kifs.primSize, 0.0)) / m_kifs.sdfScale;
+        vec3 F = SDF::Line(z, vec2(-0.5f * m_kifs.primSize, 0.0), vec2(1.0f * m_kifs.primSize, 0.0)) / m_kifs.sdfScale;
         //vec3 F = SDFPoint(z, vec2(0.0f), 1.0f) / m_kifs.sdfScale;
 
         // Return the field strength relative to the iso-surface, plus the gradient

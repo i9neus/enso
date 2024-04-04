@@ -70,6 +70,7 @@
     <ClInclude Include="..\..\..\src\core\Image.cuh" />
     <ClInclude Include="..\..\..\src\core\Lexer.h" />
     <ClInclude Include="..\..\..\src\core\math\bbox\BBox2.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh" />
     <ClInclude Include="..\..\..\src\core\math\ColourUtils.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Complex.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Constants.h" />
@@ -126,7 +127,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Ellipse.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericIntersector.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericSDF.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\SDF.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Primitive2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\Ray2D.cuh" />

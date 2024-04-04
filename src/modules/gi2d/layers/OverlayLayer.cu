@@ -68,10 +68,13 @@ namespace Enso
             assert(elementList[idx]);
 
             const auto& drawable = *elementList[idx];
-            vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
-            if (LPrim.w > 0.0f)
+            if (drawable.GetWorldSpaceBoundingBox().Contains(xyView))
             {
-                L = Blend(L, LPrim);
+                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
+                if (LPrim.w > 0.0f)
+                {
+                    L = Blend(L, LPrim);
+                }
             }
 
             if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
