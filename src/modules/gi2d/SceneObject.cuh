@@ -56,7 +56,7 @@ namespace Enso
     {
         kSceneObjectInvalidSelect = 0,
         kSceneObjectPrecisionDrag = 1,
-        kSceneObjectDelegatedSelect = 2
+        kSceneObjectDelegatedAction = 2
     };
 
     struct SceneObjectParams

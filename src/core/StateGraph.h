@@ -147,7 +147,7 @@ namespace Enso
             }
 
             // Generate a hash from the origin state's ID and the trigger required to transition away from it
-            const uint hash = HashCombine(HashOf(sourceState->idx), keyTrigger.HashOf(), HashOf(triggerFlags));
+            const uint hash = MakeHash(sourceState->idx, keyTrigger, triggerFlags);
 
             //Log::Error("Hash: 0x%x, 0x%x, 0x%x -> 0x%x", uint(std::hash<uint>{}(0)), keyTrigger.HashOf(), mouseTrigger.HashOf(), hash);
 
@@ -194,14 +194,14 @@ namespace Enso
 
         inline void DeclareDeterministicAutoTransition(const std::string& sourceStateID, const std::string& targetStateID)
         {
-            DeclareTransitionImpl(sourceStateID, targetStateID, nullptr, 0, true);
+            DeclareTransitionImpl(sourceStateID, targetStateID, VirtualKeyMap::Nothing(), 0, true);
         }
 
         template<class HostClass, typename GetTransitionState>
         inline void DeclareNonDeterministicAutoTransition(const std::string& sourceStateID, const std::string& targetStateID,
             HostClass* hostClass, GetTransitionState getTargetState)
         {
-            DeclareTransitionImpl(sourceStateID, "", nullptr, 0, true);
+            DeclareTransitionImpl(sourceStateID, "", VirtualKeyMap::Nothing(), 0, true);
 
             m_uiTransitionList.back().getTargetState = std::bind(getTargetState, hostClass, std::placeholders::_1);
         }
@@ -270,9 +270,25 @@ namespace Enso
             return true;
         }
 
+        uint MakeHash(const uint state, const VirtualKeyMap& keyTrigger, const uint& triggerFlags)
+        {
+            //return HashCombine(HashOf(state), keyTrigger.HashOf(), HashOf(triggerFlags));
+            
+            uint hash = HashOf(state);
+            if (!keyTrigger.IsWildcard())
+            {
+                hash = HashCombine(hash, keyTrigger.HashOf());
+            }
+            if (triggerFlags != 0)
+            {
+                hash = HashCombine(hash, HashOf(triggerFlags));
+            }
+            return hash;
+        }
+
         void OnTriggerTransition(const uint triggerFlags)
         {
-            uint hash = HashCombine(HashOf(m_currentState), m_keyCodes.HashOf(), HashOf(triggerFlags));
+            uint hash = MakeHash(m_currentState, m_keyCodes, triggerFlags);
 
             //Log::Write(m_uiStateList[m_currentState].id);
 

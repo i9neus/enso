@@ -57,13 +57,21 @@ namespace Enso
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
-
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectOpen", "kCreateSceneObjectHover");
-        m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectHover", nullptr, kUITriggerOnMouseMove);
+        m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectHover", VirtualKeyMap::Nothing(), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectAppend", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectAppend", "kCreateSceneObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateSceneObjectHover", "kCreateSceneObjectClose", VirtualKeyMap(VK_RBUTTON, kOnButtonDepressed), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectClose", "kIdleState");
+
+        // Delegate mouse actions to scene objects
+        m_uiGraph.DeclareState("kDelegateSceneObjectBegin", this, &GI2DRenderer::OnDelegateSceneObject);
+        m_uiGraph.DeclareState("kDelegateSceneObjectEnd", this, &GI2DRenderer::OnDelegateSceneObject);
+        m_uiGraph.DeclareState("kDelegateSceneObjectDragging", this, &GI2DRenderer::OnDelegateSceneObject);
+        m_uiGraph.DeclareDeterministicAutoTransition("kDelegateSceneObjectBegin", "kDelegateSceneObjectDragging");
+        m_uiGraph.DeclareDeterministicTransition("kDelegateSceneObjectDragging", "kDelegateSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+        m_uiGraph.DeclareDeterministicTransition("kDelegateSceneObjectDragging", "kDelegateSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+        m_uiGraph.DeclareDeterministicAutoTransition("kDelegateSceneObjectEnd", "kIdleState");
 
         // Select/deselect scene object
         m_uiGraph.DeclareState("kSelectSceneObjectDragging", this, &GI2DRenderer::OnSelectSceneObjects);
@@ -332,27 +340,52 @@ namespace Enso
         {
             auto& sceneObjects = m_scene->SceneObjects();
             int hitIdx = -1;
+            uint hitResult = kSceneObjectInvalidSelect;
             auto onContainsPrim = [&, this](const uint* primRange) -> bool
             {
                 for (int primIdx = primRange[0]; primIdx < primRange[1]; ++primIdx)
                 {
-                    if (sceneObjects[primIdx]->OnMouseClick(m_viewCtx) == kSceneObjectPrecisionDrag)
+                    if (sceneObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
                     {
-                        hitIdx = primIdx;
-                        return true;
+                        hitResult = sceneObjects[primIdx]->OnMouseClick(m_viewCtx);
+                        if (hitResult != kSceneObjectInvalidSelect)
+                        {
+                            hitIdx = primIdx;
+                            return true;
+                        }
                     }
                 }
                 return false;
             };
             m_scene->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
-            // If we've intersected something, select it and go straight to the move state.
+            // If we've intersected something...
             if (hitIdx != -1)
             {
-                DeselectAll();
-                m_selectedObjects.push_back(sceneObjects[hitIdx]);
-                m_selectedObjects.back()->OnSelect(true);
-                return "kMoveSceneObjectBegin";
+                // Precision dragging instantaneously selects the object and goes into the object move state
+                if(hitResult == kSceneObjectPrecisionDrag)
+                {
+                    DeselectAll();
+
+                    m_selectedObjects.push_back(sceneObjects[hitIdx]);
+                    m_selectedObjects.back()->OnSelect(true);
+
+                    m_selectionCtx.isLassoing = false;
+                    m_selectionCtx.numSelected = 1;
+                    m_selectionCtx.selectedBBox = sceneObjects[hitIdx]->GetWorldSpaceBoundingBox();
+
+                    return "kMoveSceneObjectBegin";
+                }
+                // Otherwise, start delegating mouse movements directly to the scene object until the button is lifted
+                else if (hitResult == kSceneObjectDelegatedAction)
+                {
+                    m_delegatedObject = sceneObjects[hitIdx];
+                    return "kDelegateSceneObjectBegin";
+                }
+                else
+                {
+                    AssertMsgFmt(false, "Invalid hit result: %i", hitResult);
+                }
             }
         }
         
@@ -376,6 +409,18 @@ namespace Enso
             }
         }
         return "kSelectSceneObjectDragging";
+    }
+
+    __host__ uint GI2DRenderer::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    {
+        const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
+
+        if (stateID == "kDelegateSceneObjectEnd")
+        {
+            m_delegatedObject = nullptr;
+        }
+        
+        return kUIStateOkay;
     }
 
     __host__ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)

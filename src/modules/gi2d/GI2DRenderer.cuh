@@ -68,6 +68,7 @@ namespace Enso
         __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+        __host__ uint                    OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
@@ -114,6 +115,7 @@ namespace Enso
         m_onMove;
 
         std::vector<AssetHandle<Host::SceneObject>> m_selectedObjects;
+        AssetHandle<Host::SceneObject>              m_delegatedObject;
         CommandManager                              m_commandManager;
 
         bool                                        m_isRunning;

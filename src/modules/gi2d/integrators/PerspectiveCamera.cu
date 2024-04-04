@@ -28,7 +28,7 @@ namespace Enso
 
     __host__ __device__ uint Device::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return kSceneObjectInvalidSelect;
+        return kSceneObjectDelegatedAction;
     }
 
     __host__ __device__ void Device::PerspectiveCamera::OnSynchronise(const int syncFlags)

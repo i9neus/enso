@@ -41,14 +41,19 @@ namespace Enso
     class UIButtonMap
     {
         enum _attrs : uint { kAllKeysUp = 0x0, kAllKeysDown = 0xaaaaaaaa, kKeyCodeArraySize = 1 + ((NumButtons - 1) >> 4) };
+        enum _flags : uint { kUndefined = 0u, kWildcard = 1u };
 
-    public:
-        UIButtonMap()
+        UIButtonMap(uint flags) : UIButtonMap() 
+        {
+            m_flags = flags;
+        }
+
+    public:        
+
+        UIButtonMap() : m_flags(kUndefined)
         {
             std::memset(m_codes.data(), 0, sizeof(uint) * kKeyCodeArraySize);
         }
-
-        UIButtonMap(nullptr_t) : UIButtonMap() { }
 
         UIButtonMap(const uint code, const uint state = kOnButtonDepressed) : UIButtonMap()
         {
@@ -160,6 +165,11 @@ namespace Enso
             m_codes[blockIdx] = (m_codes[blockIdx] & ~(3 << bitIdx)) | (StateToBits(state) << bitIdx);
         }
 
+        inline static UIButtonMap Nothing() { return UIButtonMap(); }
+        inline static UIButtonMap Wildcard() { return UIButtonMap(kWildcard); }
+
+        const bool IsWildcard() const { return m_flags == kWildcard; }
+
         inline bool operator==(const UIButtonMap& rhs) const
         {
             for (int idx = 0; idx < kKeyCodeArraySize; ++idx)
@@ -197,7 +207,8 @@ namespace Enso
         }
 
     private:
-        std::array < uint, kKeyCodeArraySize > m_codes;
+        std::array < uint, kKeyCodeArraySize > m_codes; 
+        uint m_flags;
     };
 
     // ORs two maps together
