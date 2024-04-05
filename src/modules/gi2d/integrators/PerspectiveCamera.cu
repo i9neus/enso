@@ -26,9 +26,10 @@ namespace Enso
 
         const vec2 pLocal = pWorld - GetTransform().trans;
         vec4 L(0.f);
+        const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
         for (int idx = 0; idx < m_objects.ui.lineSegments->Size(); ++idx)
         {
-            L = Blend(L, vec4(kOne, (*m_objects.ui.lineSegments)[idx].EvaluateOverlay(pLocal, viewCtx.dPdXY)));
+            L = Blend(L, (*m_objects.ui.lineSegments)[idx].EvaluateOverlay(pLocal, overlayCtx));
         }
         return L;
     }
@@ -215,7 +216,7 @@ namespace Enso
 
         m_ui.hostLineSegments->Clear();
         m_ui.hostLineSegments->EmplaceBack(vec2(0.f), dir);
-        //m_ui.hostLineSegments->EmplaceBack(vec2(0.f), vec2(-dir.y, dir.x));
+        m_ui.hostLineSegments->EmplaceBack(vec2(0.f), vec2(-dir.y, dir.x));
 
         // NOTE: Synchronise is called later when the scene is rebuilt
     }

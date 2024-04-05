@@ -11,9 +11,9 @@ namespace Enso
         return SDF::PerpLine(p, m_v[0], m_dv);
     }
     
-    __host__ __device__ float LineSegment::EvaluateOverlay(const vec2& p, const float& dPdXY) const
+    __host__ __device__ vec4 LineSegment::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const
     {
-        return SDF::Renderer::Line(p, m_v[0], m_dv, 3.f, dPdXY);
+        return SDF::Renderer::Line(p, m_v[0], m_dv, ctx.strokeThickness, ctx.dPdXY) * ctx.strokeColour;
     }
 
     __host__ __device__ bool LineSegment::TestPoint(const vec2& p, const float& thickness) const
@@ -89,7 +89,7 @@ namespace Enso
             const float size = 0.5f * mix(sizeRange[0], sizeRange[1], std::pow(realRng(mt), 2.0f));
             const vec2 m_dv = vec2(std::cos(theta), std::sin(theta)) * size;
 
-            segments[segIdx] = LineSegment(p + m_dv, p - m_dv, 0, kOne);
+            segments[segIdx] = LineSegment(p + m_dv, p - m_dv);
         }
     }
 }

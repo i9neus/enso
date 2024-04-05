@@ -46,6 +46,17 @@ namespace Enso
         return false;
     }
 
+    __host__ __device__ void Device::LineStrip::Print() const
+    {
+        printf("LineStrip::Print()\n");
+        for (int idx = 0; idx < m_objects.lineSegments->Size(); ++idx)
+        {
+            const vec2& v0 = (*m_objects.lineSegments)[idx][0];
+            const vec2& v1 = (*m_objects.lineSegments)[idx][1];
+            printf("%i: [%f, %f] -> [%f, %f]\n", idx, v0.x, v0.y, v1.x, v1.y);
+        }
+    }
+
     /*__host__ __device__ bool Device::LineStrip::InteresectPoint(const vec2& p, const float& thickness) const
     {
     }*/
@@ -55,7 +66,7 @@ namespace Enso
     }*/
 
     __host__ __device__ uint Device::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const
-    {
+    {        
         return (EvaluateOverlay(viewCtx.mousePos, viewCtx).w > 0.f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
@@ -65,16 +76,15 @@ namespace Enso
 
         const vec2 pLocal = pWorld - GetTransform().trans;
         vec4 L(0.0f);
+        const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
+
         m_objects.bih->TestPoint(pLocal, [&, this](const uint* idxRange) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
                     const auto& segment = (*m_objects.lineSegments)[idx];
-                    const float line = segment.EvaluateOverlay(pLocal, viewCtx.dPdXY);
-                    if (line > 0.f)
-                    {
-                        L = Blend(L, segment.IsSelected() ? vec3(1.0f, 0.1f, 0.0f) : kOne, line);
-                    }
+                    const vec4 line = segment.EvaluateOverlay(pLocal, overlayCtx);
+                    if (line.w > 0.f) { L = Blend(L, line); }
                 }
                 return false;
             });
@@ -125,12 +135,46 @@ namespace Enso
         m_hostBIH.DestroyAsset();
         m_hostLineSegments.DestroyAsset();
     }
+     
+
+    template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
+    __global__ static void KernelSynchroniseObjectsLocal(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
+    {
+        // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
+        assert(cu_object);
+        assert(cu_params);
+        assert(sizeof(ParamsType) == hostParamsSize);
+
+        printf("Here\n");
+
+        cu_object->SuperType::Synchronise(*cu_params);
+    }
 
     __host__ void Host::LineStrip::Synchronise(const int syncType)
     {
         Tracable::Synchronise(cu_deviceInstance, syncType);
 
-        if (syncType == kSyncObjects) { SynchroniseObjects<Device::LineStrip>(cu_deviceInstance, m_deviceObjects); }
+        if (syncType & kSyncObjects)
+        {
+            //SynchroniseObjectsLocal<Device::LineStrip>(cu_deviceInstance, m_deviceObjects);
+
+            Device::LineStrip* cu_object = cu_deviceInstance;
+            const LineStripObjects& params = m_deviceObjects;
+
+            Assert(cu_object);
+
+            LineStripObjects* cu_params;
+            IsOk(cudaMalloc(&cu_params, sizeof(LineStripObjects)));
+            IsOk(cudaMemcpy(cu_params, &params, sizeof(LineStripObjects), cudaMemcpyHostToDevice));
+
+            IsOk(cudaDeviceSynchronize());
+            KernelSynchroniseObjectsLocal <Device::LineStrip> << <1, 1 >> > (cu_object, sizeof(LineStripObjects), cu_params);
+            IsOk(cudaDeviceSynchronize());
+
+            IsOk(cudaFree(cu_params));
+
+            Log::Error("Resync...");
+        }
     }
 
     __host__ uint Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
@@ -157,12 +201,12 @@ namespace Enso
             if (m_hostLineSegments->IsEmpty())
             {
                 // Create a zero-length segment that will be manipulated later
-                m_hostLineSegments->EmplaceBack(mousePosLocal, mousePosLocal, 0, colour);
+                m_hostLineSegments->PushBack(LineSegment(mousePosLocal, mousePosLocal));
             }
             else
             {
                 // Any more and we simply reuse the last vertex on the path as the start of the next segment
-                m_hostLineSegments->EmplaceBack(m_hostLineSegments->Back()[1], mousePosLocal, 0, colour);
+                m_hostLineSegments->PushBack(LineSegment(m_hostLineSegments->Back()[1], mousePosLocal));
             }
 
             SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
@@ -205,8 +249,8 @@ namespace Enso
 
         // If the geometry has changed, rebuild the BIH
         if (m_dirtyFlags & kDirtyObjectBVH)
-        {
-            // Sync the line segmentsb
+        {            
+            // Sync the line segments
             auto& segments = *m_hostLineSegments;
             segments.Synchronise(kVectorSyncUpload);
 
@@ -238,7 +282,7 @@ namespace Enso
             // Update the tracable bounding boxes
             RecomputeBoundingBoxes();
 
-            Synchronise(kSyncParams);
+            Synchronise(kSyncParams | kSyncObjects);
         }
 
         ClearDirtyFlags();

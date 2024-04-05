@@ -8,9 +8,9 @@
 
 namespace Enso
 {
-    __host__ __device__ float Ellipse::EvaluateOverlay(const vec2& p, const float& dPdXY) const
+    __host__ __device__ vec4 Ellipse::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const
     {
-        return SDF::Renderer::Torus(p, vec2(0.f), m_radius, 6.f, dPdXY);
+        return SDF::Renderer::Torus(p, vec2(0.f), m_radius, ctx.strokeThickness, ctx.dPdXY) * ctx.strokeColour;
     }    
 
     __host__ __device__ bool Ellipse::Contains(const vec2& p, const float&) const

@@ -149,8 +149,10 @@ namespace Enso
 				m_localParams.flags = flags;
 				m_deviceParams = VectorParams{ 0, 0, 0 };
 
-				static_assert(std::is_trivial<HostType>::value || std::is_move_assignable<HostType>::value,
-					"HostType is neither trivial not move-assignable");
+				//static_assert(std::is_trivial<HostType>::value && std::is_move_assignable<HostType>::value,
+				//	"HostType must be trivial and move-assignable");
+				static_assert(std::is_standard_layout<HostType>::value, "HostType must be standard layout");
+				static_assert(std::is_move_assignable<HostType>::value, "HostType must be move assignable");
 
 				AssertMsg(!((m_localParams.flags & kVectorUnifiedMemory) && !(m_localParams.flags & kVectorHostAlloc)),
 					"Must specify kVectorHostAlloc when using kVectorUnifiedMemory.");

@@ -6,27 +6,26 @@ namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
 
-    class LineSegment : public Primitive2D
+    class LineSegment
     {
     private:
         vec2 m_v[2];
         vec2 m_dv;
+
     public:
-        __host__ __device__ LineSegment() noexcept : Primitive2D(), m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
+        __host__ __device__ LineSegment() noexcept : 
+            m_v{ vec2(0.0f), vec2(0.0f) }, m_dv(0.0f) {}
         __host__ __device__ LineSegment(const vec2& v0, const vec2& v1) noexcept :
-            Primitive2D(0, kOne), m_v{ v0, v1 }, m_dv(v1 - v0) {}
-        __host__ __device__ LineSegment(const vec2& v0, const vec2& v1, const uchar flags, const vec3& col) noexcept :
-            Primitive2D(flags, col), m_v{ v0, v1 }, m_dv(v1 - v0) {}
+            m_v{ v0, v1 }, m_dv(v1 - v0) {}
         
-        __host__ __device__ virtual vec2                    PerpendicularPoint(const vec2& p) const override final;
-        __host__ __device__ virtual float                   EvaluateOverlay(const vec2& p, const float& dPdXY) const override final;
-        __host__ __device__ virtual bool                    TestPoint(const vec2& p, const float& thickness) const override final;
-        __host__ __device__ virtual bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const override final;
-        __host__ __device__ virtual bool                    Intersects(const BBox2f& bBox) const override final;
-
-        __host__ __device__ vec2                            PointAt(const float& t) const { return m_v[0] + m_dv * t; }
-
-        __host__ __device__ __forceinline__ virtual BBox2f GetBoundingBox() const override final
+        __host__ __device__ vec2                    PerpendicularPoint(const vec2& p) const;
+        __host__ __device__ vec4                    EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const;
+        __host__ __device__ bool                    TestPoint(const vec2& p, const float& thickness) const;
+        __host__ __device__ bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const;
+        __host__ __device__ bool                    Intersects(const BBox2f& bBox) const;
+        __host__ __device__ vec2                    PointAt(const float& t) const { return m_v[0] + m_dv * t; }
+        
+        __host__ __device__ __forceinline__ BBox2f  GetBoundingBox() const
         {
             return LineBBox2(m_v[0], m_v[1]);
         }

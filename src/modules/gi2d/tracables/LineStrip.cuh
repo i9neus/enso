@@ -29,8 +29,9 @@ namespace Enso
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ void            Print() const;
 
-            __device__ void Synchronise(const LineStripObjects& objects) { m_objects = objects; }
+            __device__ void                     Synchronise(const LineStripObjects& objects) { m_objects = objects; }
 
         private:
             LineStripObjects m_objects;
@@ -73,9 +74,9 @@ namespace Enso
             __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
-            Device::LineStrip* cu_deviceInstance = nullptr;
-            Device::LineStrip                                   m_hostInstance;
-            LineStripObjects                                    m_deviceObjects;
+            Device::LineStrip*                              cu_deviceInstance = nullptr;
+            Device::LineStrip                               m_hostInstance;
+            LineStripObjects                                m_deviceObjects;
 
             AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
             AssetHandle<Host::Vector<LineSegment>>          m_hostLineSegments;

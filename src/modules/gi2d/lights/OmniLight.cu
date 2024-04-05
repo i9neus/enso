@@ -10,7 +10,7 @@ namespace Enso
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.f); }
 
-        return vec4(kOne, m_primitive.EvaluateOverlay(pWorld - GetTransform().trans, viewCtx.dPdXY));
+        return m_primitive.EvaluateOverlay(pWorld - GetTransform().trans, OverlayCtx::MakeStroke(viewCtx, vec4(1.), 3.f));
     }
 
     __host__ __device__ uint Device::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const
