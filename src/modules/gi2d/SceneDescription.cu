@@ -11,7 +11,7 @@ namespace Enso
     {
         m_hostTracables = CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
         m_hostLights = CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
-        //m_hostCameras = CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
+        m_hostCameras = CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
         m_hostSceneObjects = CreateChildAsset<Host::SceneObjectContainer>("widgets", kVectorHostAlloc);
 
         m_hostTracableBIH = CreateChildAsset<Host::BIH2DAsset>("tracablebih", 1);
@@ -34,7 +34,7 @@ namespace Enso
 
         m_hostTracables.DestroyAsset();
         m_hostLights.DestroyAsset();
-        //m_hostCameras.DestroyAsset();
+        m_hostCameras.DestroyAsset();
         m_hostTracableBIH.DestroyAsset();
         m_hostSceneBIH.DestroyAsset();
     }
@@ -75,6 +75,7 @@ namespace Enso
         int lightIdx = 0;
         m_hostTracables->Clear();
         m_hostLights->Clear();
+        m_hostCameras->Clear();
         m_hostSceneObjects->Clear();
 
         genericObjects->ForEachOfType<Host::SceneObject>([&, this](AssetHandle<Host::SceneObject>& sceneObject) -> bool
@@ -105,9 +106,19 @@ namespace Enso
                 return true;
             }); 
 
+        // Build a list of scene cameras for rendering
+        genericObjects->ForEachOfType<Host::ICamera2D>([&, this](AssetHandle<Host::ICamera2D>& cameraObject) -> bool
+            {
+                if (cameraObject->Rebuild(dirtyFlags, viewCtx))
+                {
+                    m_hostCameras->EmplaceBack(cameraObject);
+                }
+            });
+
         // Sync the scene objects with the device
         m_hostTracables->Synchronise(kVectorSyncUpload);
         m_hostLights->Synchronise(kVectorSyncUpload);
+        m_hostCameras->Synchronise(kVectorSyncUpload);
         m_hostSceneObjects->Synchronise(kVectorSyncUpload);
 
         // Rebuild the BIHs
@@ -116,6 +127,7 @@ namespace Enso
 
         {
             Log::Indent("Rebuild scene:");
+            Log::Write("%i cameras", m_hostCameras->Size());
             Log::Write("Tracable BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
             Log::Write("Scene BIH: %s", m_hostSceneBIH->GetBoundingBox().Format());
         }

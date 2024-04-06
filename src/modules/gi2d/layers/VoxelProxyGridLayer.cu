@@ -292,12 +292,14 @@ namespace Enso
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx)
     {
         m_dirtyFlags = dirtyFlags;
         m_params.viewCtx = viewCtx;
 
         Synchronise(kSyncParams);
+
+        return true;
     }
 
     __host__ void Host::VoxelProxyGridLayer::Synchronise(const int syncType)

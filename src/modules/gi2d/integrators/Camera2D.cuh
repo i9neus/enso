@@ -7,6 +7,7 @@ namespace Enso
     class Ray2D;
     class HitCtx2D;
     class RenderCtx;
+    class UIViewCtx;
     
     namespace Device
     {
@@ -26,7 +27,11 @@ namespace Enso
         class ICamera2D
         {
         public:
-            ICamera2D() = delete;
+            __host__ virtual void Render() = 0;
+            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
+            __host__ virtual Device::ICamera2D* GetDeviceInstance() const = 0;
+        protected:
+            ICamera2D() = default;           
         };
     };
 }      

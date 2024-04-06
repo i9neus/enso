@@ -138,10 +138,6 @@ namespace Enso
         m_viewCtx.zoomSpeed = 10.0f;
         m_viewCtx.sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
 
-        //m_primitiveContainer.Create(m_renderStream);
-
-       
-        
         LoadScene();
 
         SetDirtyFlags(kDirtyAll);
@@ -168,12 +164,7 @@ namespace Enso
     __host__ void GI2DRenderer::OnDestroy()
     {
         m_overlayRenderer.DestroyAsset();
-        //m_pathTracerLayer.DestroyAsset();
         m_voxelProxyGridLayer.DestroyAsset();
-        //m_isosurfaceExplorer.DestroyAsset();
-
-        //m_sceneDescription->voxelProxy.DestroyAsset();
-
         m_sceneDescription.DestroyAsset();
         m_sceneObjects.DestroyAsset();
     }
@@ -203,11 +194,6 @@ namespace Enso
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-        //m_pathTracerLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-        m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-        //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-
-        //m_sceneDescription->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
         SetDirtyFlags(kDirtyAll, false);
     }
@@ -633,7 +619,10 @@ namespace Enso
         {
             //if (m_renderTimer.Get() > 0.1f)
             {
-                m_voxelProxyGridLayer->Render();
+                for (auto& camera : m_sceneDescription->Cameras())
+                {
+                    camera->Render();
+                }
                 //m_renderTimer.Reset();
                 //Log::Write("-----");
             }
@@ -648,9 +637,7 @@ namespace Enso
         if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
 
         //m_compositeImage->Clear(vec4(kZero, 1.0f));
-        //m_pathTracerLayer->Composite(m_compositeImage);
         m_voxelProxyGridLayer->Composite(m_compositeImage);
-        //m_isosurfaceExplorer->Composite(m_compositeImage);    
         m_overlayRenderer->Composite(m_compositeImage);
 
         m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);

@@ -84,14 +84,15 @@ namespace Enso
     namespace Host
     {
         class VoxelProxyGridLayer : public Host::UILayer, 
-                                    public Host::GenericObject
+                                    public Host::GenericObject,
+                                    public Host::ICamera2D
         {
         public:
             VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
             virtual ~VoxelProxyGridLayer();
            
             __host__ virtual void Render() override final;
-            __host__ virtual void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
+            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
@@ -99,7 +100,7 @@ namespace Enso
             __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygridlayer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
-            //__host__ virtual Device::VoxelProxyGridLayer* GetDeviceInstance() const override final { return cu_deviceInstance; }
+            __host__ virtual Device::VoxelProxyGridLayer* GetDeviceInstance() const override final { return cu_deviceInstance; }
 
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
             __host__ virtual uint Deserialise(const Json::Node& rootNode, const int flags) override;
