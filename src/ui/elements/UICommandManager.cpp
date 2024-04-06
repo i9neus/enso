@@ -16,23 +16,24 @@ namespace Enso
     // Create a UI object that conforms to the specified schema
     void UICommandManager::OnCreateObject(const Json::Node& node)
     {
-        AssertMsg(node.IsObject() && node.NumMembers() == 1, "OnCreateObject: Expecting an object with 1 member.");
-        auto nodeIt = node.begin();
-        
-        AssertMsgFmt(!ObjectExists(nodeIt.Name()), "OnCreateObject: UI object with name '%s' already exists.", nodeIt.Name().c_str());
+        AssertMsg(node.IsObject(), "OnUpdateObject: Expected an object.");
+        for (auto nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        {
+            AssertMsgFmt(!ObjectExists(nodeIt.Name()), "OnCreateObject: UI object with name '%s' already exists.", nodeIt.Name().c_str());
 
-        // Get the class of the object
-        const Json::Node objectJson = *nodeIt;
-        std::string objectClass;       
-        objectJson.GetValue("class", objectClass, Json::kRequiredAssert | Json::kNotBlank);
+            // Get the class of the object
+            const Json::Node objectJson = *nodeIt;
+            std::string objectClass;
+            objectJson.GetValue("class", objectClass, Json::kRequiredAssert | Json::kNotBlank);
 
-        // Get a handle to the schema
-        auto schema = SerialisableObjectSchemaContainer::FindSchema(objectClass);
-        AssertMsgFmt(schema, "OnCreateObject: schema for class '%s' has not been registered.", objectClass.c_str());
+            // Get a handle to the schema
+            auto schema = SerialisableObjectSchemaContainer::FindSchema(objectClass);
+            AssertMsgFmt(schema, "OnCreateObject: schema for class '%s' has not been registered.", objectClass.c_str());
 
-        // Create and emplace the new object
-        m_objectContainer.emplace(nodeIt.Name(), std::make_shared<UIGenericObject>(nodeIt.Name(), *schema, objectJson));
-        Log::Debug("OnCreateObject: Created new UI objects '%s'.", nodeIt.Name());
+            // Create and emplace the new object
+            m_objectContainer.emplace(nodeIt.Name(), std::make_shared<UIGenericObject>(nodeIt.Name(), *schema, objectJson));
+            Log::Debug("OnCreateObject: Created new UI objects '%s'.", nodeIt.Name());
+        }
     }
 
     // Updates the properties of one or more objects

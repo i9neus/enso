@@ -129,5 +129,16 @@
             "dataRange": [ 1.0, 90.0 ],
             "widgetType": "drag"
         }
+    },
+    "overlaylayer": {
+
+    },
+    "voxelproxygridlayer": {
+        "maxsamples": {
+            "dataType": "int",
+            "dataRange": [ -1, 100000 ],
+            "widgetLabel": "Max samples",
+            "widgetType": "drag"
+        }
     }
 }

@@ -70,6 +70,9 @@ namespace Enso
 
             __host__ virtual void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
 
+            __host__ static const std::string  GetAssetClassStatic() { return "overlaylayer"; }
+            __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
+
             __host__ void OnDestroyAsset();
 
         protected:

@@ -140,19 +140,29 @@ namespace Enso
 
         //m_primitiveContainer.Create(m_renderStream);
 
-        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/sceneObjects");
-        m_sceneDescription = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
-
-        // Create some default scene objects
-        Json::Node emptyDocument;
-        m_overlayRenderer = CreateAsset<Host::OverlayLayer>(":gi2d/overlay", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
-        m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
-        m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>(":gi2d/voxelProxyGridLayer", emptyDocument, m_sceneDescription);
-        m_sceneObjects->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
+       
+        
+        LoadScene();
 
         SetDirtyFlags(kDirtyAll);
 
         Rebuild();        
+    }
+
+    __host__ void GI2DRenderer::LoadScene()
+    {
+        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/sceneObjects");
+        m_sceneDescription = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
+        
+        // Create some default scene objects
+        Json::Node emptyDocument;
+        m_overlayRenderer = CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
+        m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneDescription);
+
+        // Emplace them into the scene object list and enqueue them
+        m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
+        m_sceneObjects->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
+        EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
     }
 
     __host__ void GI2DRenderer::OnDestroy()
@@ -181,7 +191,7 @@ namespace Enso
         std::lock_guard<std::mutex> lock(m_resourceMutex);
 
         if (!m_dirtyFlags) { return; }
-       
+
         // If the number of the objects in the scene has changed, do a full rebind
         if (m_dirtyFlags & kDirtyRebind)
         {
@@ -220,13 +230,15 @@ namespace Enso
         }
     }
 
-    __host__ void GI2DRenderer::EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::SceneObject> asset)
+    __host__ void GI2DRenderer::EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
     {
+        // TODO: This should be smarter and happen automatically whenever an object is dirtied. 
+        
         if (!m_outboundCmdQueue->IsRegistered(eventId)) { return; }
 
         // Lambda to do the actual serialisation
-        auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::SceneObject>& obj) -> void
-        {
+        auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::GenericObject>& obj) -> void
+        {           
             // Create a new child object and add its class ID for the schema
             Json::Node childNode = node.AddChildObject(obj->GetAssetID());
             const std::string assetClass = obj->GetAssetClass();
@@ -243,11 +255,11 @@ namespace Enso
         Json::Node node = m_outboundCmdQueue->Create(eventId);
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : *m_sceneObjects) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
+            for (auto& obj : *m_sceneObjects) { SerialiseImpl(node, obj); }
         }
         else if (flags & kEnqueueSelected)
         {
-            for (auto& obj : m_selectedObjects) { SerialiseImpl(node, obj.DynamicCast<Host::SceneObject>()); }
+            for (auto& obj : m_selectedObjects) { SerialiseImpl(node, obj); }
         }
         else if (flags & kEnqueueOne)
         {
@@ -301,7 +313,7 @@ namespace Enso
         sceneObjects.Resize(sceneObjects.Size() - numDeleted);
         Log::Error("Delete!");
 
-        EnqueueObjects("OnDeleteObject", kEnqueueSelected | kEnqueueIdOnly);
+        EnqueueOutboundSerialisation("OnDeleteObject", kEnqueueSelected | kEnqueueIdOnly);
 
         // Clear the selected object list
         m_selectedObjects.clear();
@@ -340,7 +352,7 @@ namespace Enso
         }
 
         // Enqueue the list of selected scene objects
-        EnqueueObjects("OnUpdateObject", kEnqueueSelected);
+        EnqueueOutboundSerialisation("OnUpdateObject", kEnqueueSelected);
 
         return kUIStateOkay;
     }
@@ -390,7 +402,7 @@ namespace Enso
             if (hitIdx != -1)
             {
                 // Precision dragging instantaneously selects the object and goes into the object move state
-                if(hitResult == kSceneObjectPrecisionDrag)
+                if (hitResult == kSceneObjectPrecisionDrag)
                 {
                     DeselectAll();
 
@@ -415,7 +427,7 @@ namespace Enso
                 }
             }
         }
-        
+
         // If there are no paths selected, enter selection state. Otherwise, enter moving state.
         if (m_selectionCtx.numSelected == 0)
         {
@@ -449,7 +461,7 @@ namespace Enso
         {
             m_delegatedObject = nullptr;
         }
-        
+
         return kUIStateOkay;
     }
 
@@ -553,7 +565,7 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateSceneObjectOpen")
         {
-            // Try and instante the objerct
+            // Try and instantiate the objerct
             auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneDescription, m_sceneObjects);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
 
@@ -567,7 +579,7 @@ namespace Enso
         // Some objects will automatically finalise themselves. If this happens, we're done.
         if (m_onCreate.newObject->IsFinalised())
         {
-            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
             m_uiGraph.SetState("kIdleState");
             return kUIStateOkay;
         }
@@ -595,7 +607,7 @@ namespace Enso
         else
         {
             // Serialise the new object to the outbound queue
-            EnqueueObjects("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
         } 
 
         m_onCreate.newObject = nullptr;

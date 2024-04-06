@@ -67,6 +67,7 @@ namespace Enso
 
         __host__ void                    Bind();
         __host__ void                    Rebuild();
+        __host__ void                    LoadScene();
 
         __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
         __host__ uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
@@ -80,7 +81,7 @@ namespace Enso
         __host__ std::string             DecideOnClickState(const uint& sourceStateIdx);
         __host__ void                    DeselectAll();
 
-        __host__ void                    EnqueueObjects(const std::string& eventId, const int flags, const AssetHandle<Host::SceneObject> asset = nullptr);
+        __host__ void                    EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
         __host__ void                    FinaliseNewSceneObject();
 
 
