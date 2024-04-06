@@ -36,9 +36,7 @@ namespace Enso
     namespace Device
     {
         class VoxelProxyGrid : public Device::SceneObject,
-                               public VoxelProxyGridParams,
-                               public VoxelProxyGridObjects,
-                               public Camera2D
+                               public ICamera2D
         {
         public:
             __device__ VoxelProxyGrid();
@@ -63,8 +61,7 @@ namespace Enso
 
     namespace Host
     {
-        class VoxelProxyGrid : public Host::SceneObject,
-                               public VoxelProxyGridParams
+        class VoxelProxyGrid : public Host::SceneObject
         {
         public:
             __host__ VoxelProxyGrid(const std::string& id, AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height);

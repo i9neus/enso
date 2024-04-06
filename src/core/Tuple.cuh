@@ -21,7 +21,8 @@ namespace Enso
             template<typename Type, typename... Args>
             TupleImpl(const Type& data, Args... args) : Super(args...), m_element(data) {}
 
-            __host__ __device__ Type& GetElement() { return m_element; }
+            __device__ void                 Validate() const {}
+            __host__ __device__ Type&       GetElement() { return m_element; }
             __host__ __device__ const Type& GetElement() const { return m_element; }
 
         private:

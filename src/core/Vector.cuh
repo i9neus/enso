@@ -8,6 +8,8 @@ namespace Enso
 {
 	struct VectorParams
 	{
+		__device__ void Validate() const {}
+
 		uint size;
 		uint capacity;
 		uint flags;

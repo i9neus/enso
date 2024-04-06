@@ -93,7 +93,7 @@ namespace Enso
     }
 
     __host__ Host::LineStrip::LineStrip(const std::string& id) :
-        Tracable(id, m_hostInstance),
+        Tracable(id, m_hostInstance, nullptr),
         cu_deviceInstance(nullptr)
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
@@ -117,7 +117,7 @@ namespace Enso
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&)
+    __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
     {
         return CreateAsset<Host::LineStrip>(id);
     }

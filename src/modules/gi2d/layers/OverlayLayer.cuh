@@ -13,19 +13,28 @@ namespace Enso
     struct OverlayLayerParams
     {
         __host__ __device__ OverlayLayerParams();
+        __device__ void Validate() const {}
 
         UIGridCtx           gridCtx;
+        UIViewCtx           viewCtx;
+        UISelectionCtx      selectionCtx;
     };
 
     struct OverlayLayerObjects
     {
-        const Device::SceneDescription*     scenePtr = nullptr;
+        __device__ void Validate() const
+        {
+            assert(scene);
+            assert(accumBuffer);
+        }
+        
+        const Device::SceneDescription*     scene = nullptr;
         Device::ImageRGBW*                  accumBuffer = nullptr;
     };
 
     namespace Device
     {
-        class OverlayLayer : public Device::UILayer
+        class OverlayLayer : public Device::GenericObject
         {
         public:
             __host__ __device__ OverlayLayer() {}
@@ -36,7 +45,7 @@ namespace Enso
 
             __host__ __device__ virtual void OnSynchronise(const int) override final;
             __device__ void Synchronise(const OverlayLayerParams& params) { m_params = params; }
-            __device__ void Synchronise(const OverlayLayerObjects& objects) { m_objects = objects; }
+            __device__ void Synchronise(const OverlayLayerObjects& objects) { objects.Validate(); m_objects = objects; }
 
         private:
             OverlayLayerParams              m_params;
@@ -48,16 +57,18 @@ namespace Enso
 
     namespace Host
     {
-        class OverlayLayer : public UILayer
+        class OverlayLayer : public Host::UILayer,
+                             public Host::GenericObject
         {
         public:
-            OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
+            OverlayLayer(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~OverlayLayer();
 
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final; 
-            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
+
+            __host__ virtual void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
 
             __host__ void OnDestroyAsset();
 
@@ -65,9 +76,10 @@ namespace Enso
             __host__ void Synchronise(const int syncType);
 
         private:
-            //__host__ void TraceRay();
+            const AssetHandle<const Host::SceneDescription>& m_scene;
 
             Device::OverlayLayer*               cu_deviceInstance = nullptr;
+            Device::OverlayLayer                m_hostInstance;
             OverlayLayerObjects                 m_deviceObjects;
             OverlayLayerParams                  m_params;
 

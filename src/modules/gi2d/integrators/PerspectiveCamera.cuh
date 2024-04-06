@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera2D.cuh"
+#include "../SceneObject.cuh"
 #include "../FwdDecl.cuh"
 #include "../primitives/Ellipse.cuh"
 
@@ -13,6 +14,12 @@ namespace Enso
     {
         __host__ __device__ PerspectiveCameraObjects() {}
 
+        __device__ void Validate() const
+        {
+            assert(lineSegments);
+            assert(ellipses);
+        }
+
         struct
         {
             Generic::Vector<LineSegment>* lineSegments = nullptr;
@@ -24,6 +31,7 @@ namespace Enso
     struct PerspectiveCameraParams
     {
         __host__ __device__ PerspectiveCameraParams() : direction(0.0f), fov(0.0f) {}
+        __device__ void Validate() const {}
 
         vec2    direction;
         float   fov;
@@ -36,7 +44,8 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::Camera2D
+        class PerspectiveCamera : public Device::ICamera2D,
+                                  public Device::SceneObject
         {
             friend class Host::PerspectiveCamera;
 
@@ -62,7 +71,7 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::Camera2D
+        class PerspectiveCamera : public Host::SceneObject
         {
         public:
             __host__ PerspectiveCamera(const std::string& id);
@@ -78,7 +87,7 @@ namespace Enso
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
 
-            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&);
             __host__ static const std::string  GetAssetClassStatic() { return "perspectivecamera"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 

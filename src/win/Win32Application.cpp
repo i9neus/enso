@@ -237,6 +237,7 @@ int main(int argc, char* argv[])
 	Log::EnableLevel(kLogDebug, true);
 
 	// For some reason, MSVC's debugger won't catch certain handled exceptions (possibly something to do with CUDA?)
+#define DISABLE_EXCEPTION_HANDLING
 #ifndef DISABLE_EXCEPTION_HANDLING
 	try
 	{

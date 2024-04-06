@@ -2,7 +2,7 @@
 
 #include "../bih/BIH2DAsset.cuh"
 #include "../SceneDescription.cuh"
-#include "Camera2D.cuh"
+#include "../RenderCtx.cuh"
 
 namespace Enso
 {

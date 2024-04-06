@@ -24,7 +24,7 @@ namespace Enso
         class Tracable;
         class Light;
         class SceneObject;
-        class Camera2D;
+        class ICamera2D;
         class VoxelProxyGrid;
         template<typename> class Vector;
     }

@@ -30,7 +30,7 @@ namespace Enso
         {
         public:
             __host__ Light(const std::string& id, Device::Light& hostInstance) :
-                Tracable(id, hostInstance),
+                Tracable(id, hostInstance, nullptr),
                 m_hostInstance(hostInstance)
             {}
 

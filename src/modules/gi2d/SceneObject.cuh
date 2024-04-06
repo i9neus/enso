@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.cuh"
+#include "Dirtiness.cuh"
 
 #include "Transform2D.cuh"
 #include "UICtx.cuh"
@@ -29,6 +29,7 @@ namespace Enso
     struct SceneObjectParams
     {
         __host__ __device__ SceneObjectParams() {}
+        __device__ void Validate() const {}
 
         BBox2f                      objectBBox;
         BBox2f                      worldBBox;
@@ -42,7 +43,7 @@ namespace Enso
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
-        class SceneObject
+        class SceneObject : public Device::GenericObject
         {
             friend Host::SceneObject;
 
@@ -53,7 +54,6 @@ namespace Enso
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
             __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
 
-            __host__ __device__ virtual void    OnSynchronise(const int) {}
             __device__ void                     Synchronise(const SceneObjectParams& params) { m_params = params; }
             
             __host__ __device__ const BidirectionalTransform2D& GetTransform() const { return m_params.transform; }
@@ -121,7 +121,7 @@ namespace Enso
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance);
+            __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
 
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int syncFlags)
@@ -138,22 +138,16 @@ namespace Enso
             __host__ void RecomputeBoundingBoxes();
             __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
 
-            __host__ void SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); }
-            __host__ void ClearDirtyFlags() { m_dirtyFlags = 0; }
-
         protected:
-            uint                        m_dirtyFlags;
-            bool                        m_isFinalised;
-            bool                        m_isConstructed;
-
             struct
             {
-                vec2                        dragAnchor;
-                bool                        isDragging;
+                vec2                                    dragAnchor;
+                bool                                    isDragging;
             }
             m_onMove;
 
-            Device::SceneObject&        m_hostInstance;
+            Device::SceneObject&                        m_hostInstance;
+            AssetHandle<const Host::SceneDescription>   m_scene;
         };
     }
 }

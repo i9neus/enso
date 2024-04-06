@@ -7,6 +7,8 @@
 #include "../primitives/LineSegment.cuh"
 #include "../SceneDescription.cuh"
 
+#include "io/json/JsonUtils.h"
+
 namespace Enso
 {    
     __host__ __device__ OverlayLayerParams::OverlayLayerParams()
@@ -89,14 +91,14 @@ namespace Enso
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = UILayer::m_params.viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
         //m_objects.accumBuffer->At(xyScreen) = vec4(xyView, 0.0f, 1.0f);
         //return;
 
         vec4 L(0.0f, 0.0f, 0.0f, 0.0f);
 
-        if (!UILayer::m_params.viewCtx.sceneBounds.Contains(xyView)) 
+        if (!m_params.viewCtx.sceneBounds.Contains(xyView)) 
         { 
             L = vec4(0.0f);
         }
@@ -104,46 +106,47 @@ namespace Enso
         {
             // Draw the grid
             vec2 xyGrid = fract(xyView / vec2(m_params.gridCtx.majorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < UILayer::m_params.viewCtx.dPdXY / m_params.gridCtx.majorLineSpacing * mix(1.0f, 3.0f, m_params.gridCtx.lineAlpha)) 
+            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.majorLineSpacing * mix(1.0f, 3.0f, m_params.gridCtx.lineAlpha)) 
             { 
-                L = Blend(L, kOne, 0.5 * (1 - m_params.gridCtx.lineAlpha));
+                L = Blend(L, kOne, 0.1 * (1 - m_params.gridCtx.lineAlpha));
             }
             xyGrid = fract(xyView / vec2(m_params.gridCtx.minorLineSpacing)) * sign(xyView);
-            if (cwiseMin(xyGrid) < UILayer::m_params.viewCtx.dPdXY / m_params.gridCtx.minorLineSpacing * 1.5f)
+            if (cwiseMin(xyGrid) < m_params.viewCtx.dPdXY / m_params.gridCtx.minorLineSpacing * 1.5f)
             { 
-                L = Blend(L, kOne, 0.5 * m_params.gridCtx.lineAlpha);
+                L = Blend(L, kOne, 0.1 * m_params.gridCtx.lineAlpha);
             }
         }  
 
         // Draw the tracables and widgets    
-        DrawOverlayElements(xyView, UILayer::m_params.viewCtx, m_scene.sceneBIH, m_scene.sceneObjects, L);
+        DrawOverlayElements(xyView, m_params.viewCtx, m_objects.scene->sceneBIH, m_objects.scene->sceneObjects, L);
 
         // Draw the lasso 
-        if (GetSelectionCtx().isLassoing && GetSelectionCtx().lassoBBox.PointOnPerimiter(xyView, UILayer::m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
+        if (m_params.selectionCtx.isLassoing && m_params.selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
 
         // Draw the selected object's bounding box
-        if (GetSelectionCtx().numSelected > 0 && GetSelectionCtx().selectedBBox.PointOnPerimiter(xyView, UILayer::m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
+        if (m_params.selectionCtx.numSelected > 0 && m_params.selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
 
         m_objects.accumBuffer->At(xyScreen) = L;
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    __device__ void Device::OverlayLayer::Prepare(const uint dirtyFlags)
+    /*__device__ void Device::OverlayLayer::Prepare(const uint dirtyFlags)
     {
         // Save ourselves a deference here by caching the scene pointers
-        assert(m_scenePtr);
+        assert(m_objects.scenePtr);
         m_scene = *m_objects.scenePtr;
     }
-    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);*/
 
-    Host::OverlayLayer::OverlayLayer(const std::string& id, const AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream) :
-        UILayer(id, scene)
-    {        
+    Host::OverlayLayer::OverlayLayer(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream):
+        GenericObject(id),
+        m_scene(scene)
+    {                
         // Create some Cuda objects
         m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
-        m_deviceObjects.scenePtr = m_scene->GetDeviceInstance();
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
         cu_deviceInstance = InstantiateOnDevice<Device::OverlayLayer>();
 
@@ -157,8 +160,6 @@ namespace Enso
 
     __host__ void Host::OverlayLayer::Synchronise(const int syncType)
     {
-        UILayer::Synchronise(cu_deviceInstance, syncType);
-
         if (syncType & kSyncObjects) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_deviceObjects); }
         if (syncType & kSyncParams) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_params); }
     }
@@ -173,7 +174,7 @@ namespace Enso
     {
         if (!m_dirtyFlags) { return; }
 
-        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+        //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
@@ -216,20 +217,21 @@ namespace Enso
     }*/
 
     __host__ void Host::OverlayLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
-    {
-        UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
-        
-        if (!m_dirtyFlags) { return; } 
+    {        
+        if (SetDirtyFlags(dirtyFlags) == kClean) { return; }
+
+        m_params.viewCtx = viewCtx;
+        m_params.selectionCtx = selectionCtx;
          
         // Calculate some values for the guide grid
-        const float logScale = std::log10(UILayer::m_params.viewCtx.transform.scale);
+        const float logScale = std::log10(m_params.viewCtx.transform.scale);
         constexpr float kGridScale = 0.05f;        
         m_params.gridCtx.majorLineSpacing = kGridScale * std::pow(10.0f, std::ceil(logScale));
         m_params.gridCtx.minorLineSpacing = kGridScale * std::pow(10.0f, std::floor(logScale));
         m_params.gridCtx.lineAlpha = 1 - (logScale - std::floor(logScale));
-        m_params.gridCtx.show = false;
-        UILayer::m_params.selectionCtx.lassoBBox.Rectify();
-        UILayer::m_params.selectionCtx.selectedBBox.Rectify();
+        m_params.gridCtx.show = true;
+        m_params.selectionCtx.lassoBBox.Rectify();
+        m_params.selectionCtx.selectedBBox.Rectify();
 
         // Upload to the device
         Synchronise(kSyncParams);

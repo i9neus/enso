@@ -21,7 +21,6 @@ namespace Enso
     {
         if (syncFlags == kSyncObjects)
         {
-            assert(m_objects.scenePtr);
             m_scene = *m_objects.scenePtr;
         }
     }
@@ -144,7 +143,7 @@ namespace Enso
     {
         if (dirtyFlags & kDirtyIntegrators)
         {
-            // Save ourselves a deference here by caching the scene pointers
+            // Save ourselves a dereference here by caching the scene pointers
             assert(m_objects.scenePtr);
             m_scene = *m_objects.scenePtr;
             m_frameIdx = 0;
@@ -189,9 +188,9 @@ namespace Enso
         if (xyScreen.x < 0 || xyScreen.x >= deviceOutputImage->Width() || xyScreen.y < 0 || xyScreen.y >= deviceOutputImage->Height()) { return; }
 
         // Transform from screen space to view space
-        const vec2 xyView = UILayer::m_params.viewCtx.transform.matrix * vec2(xyScreen);
+        const vec2 xyView = m_params.viewCtx.transform.matrix * vec2(xyScreen);
 
-        if (!UILayer::m_params.viewCtx.sceneBounds.Contains(xyView))
+        if (!m_params.viewCtx.sceneBounds.Contains(xyView))
         {
             deviceOutputImage->At(xyScreen) = vec4(0.1f, 0.1f, 0.1f, 1.0f);
             return;
@@ -201,9 +200,9 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, AssetHandle<Host::SceneDescription>& scene,
-        const uint width, const uint height) :
-        UILayer(id, scene)
+    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
+        GenericObject(id),
+        m_scene(scene)
     {
         Assert(m_scene);
 
@@ -248,12 +247,37 @@ namespace Enso
         m_kernelParams.grids.reduceSize = (m_params.grid.totalAccumUnits + m_kernelParams.blockSize - 1) / m_kernelParams.blockSize;
     }
 
+    __host__ bool Host::VoxelProxyGridLayer::Serialise(Json::Node& node, const int flags) const
+    {
+        
+        return true;
+    }
+
+    __host__ uint Host::VoxelProxyGridLayer::Deserialise(const Json::Node& node, const int flags)
+    {
+       
+        return m_dirtyFlags;
+    }
+
+    /*void Host::VoxelProxyGridLayer::Bind()
+    {
+        m_scene = scene;
+        m_deviceObjects.scenePtr = m_scene->GetDeviceInstance();
+
+        Synchronise(kSyncParams | kSyncObjects);
+    }*/
+
     Host::VoxelProxyGridLayer::~VoxelProxyGridLayer()
     {
         OnDestroyAsset();
     }
 
-    __host__ void Host::VoxelProxyGridLayer::Integrate()
+    /*__host__ AssetHandle<Host::GenericObject> Host::VoxelProxyGridLayer::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene)
+    {
+        return CreateAsset<Host::VoxelProxyGridLayer>(id, json, scene);
+    }*/
+
+    __host__ void Host::VoxelProxyGridLayer::Reduce()
     {
         // Used when parallel reducing the accumluation buffer
         const uint reduceBatchSizePow2 = NearestPow2Ceil(m_params.grid.subprobesPerProbe);
@@ -271,16 +295,13 @@ namespace Enso
     __host__ void Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
         m_dirtyFlags = dirtyFlags;
-
-        UILayer::Rebuild(dirtyFlags, viewCtx, selectionCtx);
+        m_params.viewCtx = viewCtx;
 
         Synchronise(kSyncParams);
     }
 
     __host__ void Host::VoxelProxyGridLayer::Synchronise(const int syncType)
     {
-        UILayer::Synchronise(cu_deviceInstance, syncType);
-
         if (syncType & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_deviceObjects); }
         if (syncType & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_params); }
     }
@@ -309,7 +330,7 @@ namespace Enso
                 KernelRender << <m_kernelParams.grids.accumSize, m_kernelParams.blockSize >> > (cu_deviceInstance);
             });
 
-        Integrate();
+        Reduce();
 
         IsOk(cudaDeviceSynchronize());
     }

@@ -30,11 +30,8 @@ namespace Enso
         return false;
     }
 
-    __host__ Host::SceneObject::SceneObject(const std::string& id, Device::SceneObject& hostInstance) :
+    __host__ Host::SceneObject::SceneObject(const std::string& id, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
         GenericObject(id),
-        m_dirtyFlags(kDirtyAll),
-        m_isFinalised(false),
-        m_isConstructed(false),
         m_hostInstance(hostInstance)
     {
     }

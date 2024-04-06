@@ -11,8 +11,10 @@ namespace Enso
     struct VoxelProxyGridLayerParams
     {
         __host__ __device__ VoxelProxyGridLayerParams();
+        __device__ void Validate() const {}
 
         BidirectionalTransform2D        cameraTransform;
+        UIViewCtx                       viewCtx;
 
         struct
         {
@@ -31,17 +33,24 @@ namespace Enso
 
     struct VoxelProxyGridLayerObjects
     {
-        const Device::SceneDescription* scenePtr = nullptr;
+        __device__ void Validate() const
+        {
+            assert(scenePtr);
+            assert(accumBuffer);
+            assert(reduceBuffer);
+            assert(gridBuffer);
+        }
         
-        Device::Vector<vec3>* accumBuffer = nullptr;
-        Device::Vector<vec3>* reduceBuffer = nullptr;
-        Device::Vector<vec3>* gridBuffer = nullptr;
+        const Device::SceneDescription*     scenePtr = nullptr;        
+        Device::Vector<vec3>*               accumBuffer = nullptr;
+        Device::Vector<vec3>*               reduceBuffer = nullptr;
+        Device::Vector<vec3>*               gridBuffer = nullptr;
     };
 
     namespace Device
     {
-        class VoxelProxyGridLayer : public UILayer,
-                                    public Camera2D
+        class VoxelProxyGridLayer : public Device::ICamera2D, 
+                                    public Device::GenericObject
         {
         public:
             __device__ VoxelProxyGridLayer() : m_voxelTracer(m_scene) {}
@@ -56,7 +65,7 @@ namespace Enso
 
             __host__ __device__ virtual void    OnSynchronise(const int) override final;
             __device__ void                     Synchronise(const VoxelProxyGridLayerParams& params) { m_params = params; }
-            __device__ void                     Synchronise(const VoxelProxyGridLayerObjects& objects) { m_objects = objects; }
+            __device__ void                     Synchronise(const VoxelProxyGridLayerObjects& objects) { objects.Validate(); m_objects = objects; }
 
             __device__ void ReduceAccumulationBuffer(const uint batchSize, const uvec2 batchRange);
 
@@ -74,32 +83,43 @@ namespace Enso
 
     namespace Host
     {
-        class VoxelProxyGridLayer : public UILayer,
-                                    public VoxelProxyGridLayerParams
+        class VoxelProxyGridLayer : public Host::UILayer, 
+                                    public Host::GenericObject
         {
         public:
-            VoxelProxyGridLayer(const std::string& id, AssetHandle<Host::SceneDescription>& scene, const uint width, const uint height);
+            VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
             virtual ~VoxelProxyGridLayer();
            
             __host__ virtual void Render() override final;
+            __host__ virtual void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ void OnDestroyAsset();
 
-            __host__ void Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
+            //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygridlayer"; }
+            __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
+
+            //__host__ virtual Device::VoxelProxyGridLayer* GetDeviceInstance() const override final { return cu_deviceInstance; }
+
+            __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
+            __host__ virtual uint Deserialise(const Json::Node& rootNode, const int flags) override;
 
         protected:
             __host__ void Synchronise(const int syncType);
 
-            __host__ void Integrate();
+            __host__ void Reduce();
 
         private:
             Device::VoxelProxyGridLayer*            cu_deviceInstance = nullptr;
+            Device::VoxelProxyGridLayer             m_hostInstance;
             VoxelProxyGridLayerObjects              m_deviceObjects;
             VoxelProxyGridLayerParams               m_params;
 
             AssetHandle<Host::Vector<vec3>>         m_hostAccumBuffer;
             AssetHandle<Host::Vector<vec3>>         m_hostReduceBuffer;
             AssetHandle<Host::Vector<vec3>>         m_hostProxyGrid;
+
+            const AssetHandle<const Host::SceneDescription>& m_scene;
 
             struct
             {

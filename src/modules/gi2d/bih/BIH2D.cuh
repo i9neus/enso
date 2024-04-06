@@ -13,6 +13,11 @@ namespace Enso
     template<typename NodeDataType>
     struct BIH2DParams
     {
+        __device__ void Validate() const 
+        {
+            assert(params.nodes);
+        }
+
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;

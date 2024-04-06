@@ -13,7 +13,8 @@ namespace Enso
     
     __host__ __device__ vec4 LineSegment::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const
     {
-        return SDF::Renderer::Line(p, m_v[0], m_dv, ctx.strokeThickness, ctx.dPdXY) * ctx.strokeColour;
+        const float stroke = SDF::Renderer::Line(p, m_v[0], m_dv, ctx.strokeThickness, ctx.dPdXY);
+        return vec4(ctx.strokeColour.xyz, ctx.strokeColour.w * stroke);
     }
 
     __host__ __device__ bool LineSegment::TestPoint(const vec2& p, const float& thickness) const

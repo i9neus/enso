@@ -47,7 +47,6 @@ namespace Enso
         __host__ virtual void OnResizeClient() override final;
         __host__ virtual void OnFocusChange(const bool isSet) override final;
 
-
         //__host__ virtual void OnResizeClient() override final;
         __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
 
@@ -63,6 +62,10 @@ namespace Enso
         __host__ void                    OnViewChange();
         __host__ void                    OnCommandsWaiting(CommandQueue& inbound) override final;
 
+        __host__ void                    RegisterInstantiators();
+        __host__ void                    DeclareStateTransitionGraph();
+
+        __host__ void                    Bind();
         __host__ void                    Rebuild();
 
         __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
@@ -85,22 +88,18 @@ namespace Enso
         enum JobIDs : uint { kJobDraw };
 
         AssetHandle<Host::OverlayLayer>       m_overlayRenderer;
-        AssetHandle<Host::PathTracerLayer>    m_pathTracerLayer;
         AssetHandle<Host::VoxelProxyGridLayer> m_voxelProxyGridLayer;
-        //AssetHandle<Host::IsosurfaceExplorer> m_isosurfaceExplorer;
-
-        AssetHandle<Host::SceneDescription>   m_scene;
-        //std::vector<BBox2f>                   m_tracableBBoxes;
-
-        std::unique_ptr<ViewTransform2D>      m_viewTransform;
 
         AssetHandle<GenericObjectContainer>   m_sceneObjects;
+        AssetHandle<Host::SceneDescription>   m_sceneDescription;
+
+        std::unique_ptr<ViewTransform2D>      m_viewTransform;
 
         UIGridCtx                             m_gridCtx;
         UIViewCtx                             m_viewCtx;
         UISelectionCtx                        m_selectionCtx;
 
-        GenericObjectFactory                  m_sceneObjectFactory;
+        GenericObjectFactory<const std::string&, const Json::Node&, const AssetHandle<const Host::SceneDescription>&> m_sceneObjectFactory;
 
         struct
         {

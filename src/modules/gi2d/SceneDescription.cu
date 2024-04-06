@@ -66,7 +66,7 @@ namespace Enso
         bih->Build(getPrimitiveBBox);
     }
 
-    __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
+    __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& genericObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {        
         // Only rebuilid if the object bounds have changed through insertion, deletion or movement
         if (!(dirtyFlags & kDirtyIntegrators)) { return; }
@@ -77,7 +77,7 @@ namespace Enso
         m_hostLights->Clear();
         m_hostSceneObjects->Clear();
 
-        renderObjects->ForEachOfType<Host::SceneObject>([&, this](AssetHandle<Host::SceneObject>& sceneObject) -> bool
+        genericObjects->ForEachOfType<Host::SceneObject>([&, this](AssetHandle<Host::SceneObject>& sceneObject) -> bool
             {
                 // Rebuild the scene object (it will decide whether any action needs to be taken)
                 if (sceneObject->Rebuild(dirtyFlags, viewCtx))

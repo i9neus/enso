@@ -16,7 +16,6 @@
 #include "SceneDescription.cuh"
 //#include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
-#include "layers/PathTracerLayer.cuh"
 #include "layers/VoxelProxyGridLayer.cuh"
 
 #include "io/SerialisableObjectSchema.h"
@@ -41,11 +40,31 @@ namespace Enso
         // Register the inbound command handlers
         m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
 
+        // Register the scene object instantiators
+        RegisterInstantiators();
+
+        // Declare the transition graph that will drive the UI
+        DeclareStateTransitionGraph();   
+    }
+
+    __host__ GI2DRenderer::~GI2DRenderer()
+    {
+        Destroy();
+    }
+
+    __host__ void GI2DRenderer::RegisterInstantiators()
+    {
         m_sceneObjectFactory.RegisterInstantiator<Host::LineStrip>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::PerspectiveCamera>(VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());        
+        m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
 
+        //m_sceneObjectFactory.RegisterInstantiator<Host::OverlayLayer>();
+        //m_sceneObjectFactory.RegisterInstantiator<Host::VoxelProxyGridLayer>();
+    }
+
+    __host__ void GI2DRenderer::DeclareStateTransitionGraph()
+    {
         m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
 
         // Create scene object
@@ -107,11 +126,6 @@ namespace Enso
         m_uiGraph.Finalise();
     }
 
-    __host__ GI2DRenderer::~GI2DRenderer()
-    {
-        Destroy();
-    }
-
     std::shared_ptr<ModuleInterface> GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
     {
         return std::make_shared<GI2DRenderer>(outQueue);
@@ -127,20 +141,18 @@ namespace Enso
         //m_primitiveContainer.Create(m_renderStream);
 
         m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/sceneObjects");
-        m_scene = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
+        m_sceneDescription = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
 
-        m_overlayRenderer = CreateAsset<Host::OverlayLayer>(":gi2d/overlay", m_scene, m_clientWidth, m_clientHeight, m_renderStream);
-        //m_pathTracerLayer = CreateAsset<Host::PathTracerLayer>(":gi2d/pathTracerLayer", m_scene, m_clientWidth, m_clientHeight, 2, m_renderStream);
-        m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>(":gi2d/voxelProxyGridLayer", m_scene, 100, 100);
-
-        //m_isosurfaceExplorer = CreateAsset<Host::IsosurfaceExplorer>(":gi2d/isosurfaceExplorer", m_scene, m_clientWidth, m_clientHeight, 1, m_renderStream);
+        // Create some default scene objects
+        Json::Node emptyDocument;
+        m_overlayRenderer = CreateAsset<Host::OverlayLayer>(":gi2d/overlay", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
+        m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
+        m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>(":gi2d/voxelProxyGridLayer", emptyDocument, m_sceneDescription);
+        m_sceneObjects->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
 
         SetDirtyFlags(kDirtyAll);
 
-        if (m_dirtyFlags)
-        {
-            Rebuild();
-        }
+        Rebuild();        
     }
 
     __host__ void GI2DRenderer::OnDestroy()
@@ -150,10 +162,18 @@ namespace Enso
         m_voxelProxyGridLayer.DestroyAsset();
         //m_isosurfaceExplorer.DestroyAsset();
 
-        //m_scene->voxelProxy.DestroyAsset();
+        //m_sceneDescription->voxelProxy.DestroyAsset();
 
-        m_scene.DestroyAsset();
+        m_sceneDescription.DestroyAsset();
         m_sceneObjects.DestroyAsset();
+    }
+
+    __host__ void GI2DRenderer::Bind()
+    {
+        for (auto& object : *m_sceneObjects)
+        {
+            object->Bind();
+        }
     }
 
     __host__ void GI2DRenderer::Rebuild()
@@ -161,8 +181,15 @@ namespace Enso
         std::lock_guard<std::mutex> lock(m_resourceMutex);
 
         if (!m_dirtyFlags) { return; }
+       
+        // If the number of the objects in the scene has changed, do a full rebind
+        if (m_dirtyFlags & kDirtyRebind)
+        {
+            Bind();
+        }
 
-        m_scene->Rebuild(m_sceneObjects, m_viewCtx, m_dirtyFlags);
+        // Rebuild the scene description structure
+        m_sceneDescription->Rebuild(m_sceneObjects, m_viewCtx, m_dirtyFlags);
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
@@ -170,7 +197,7 @@ namespace Enso
         m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
         //m_isosurfaceExplorer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
-        //m_scene->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
+        //m_sceneDescription->voxelProxy->Rebuild(m_dirtyFlags, m_viewCtx);
 
         SetDirtyFlags(kDirtyAll, false);
     }
@@ -251,7 +278,7 @@ namespace Enso
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        auto& sceneObjects = m_scene->SceneObjects();
+        auto& sceneObjects = m_sceneDescription->SceneObjects();
         int emptyIdx = -1;
         int numDeleted = 0;
         for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
@@ -280,7 +307,7 @@ namespace Enso
         m_selectedObjects.clear();
         m_selectionCtx.numSelected = 0;
 
-        SetDirtyFlags(kDirtyObjectBounds);
+        SetDirtyFlags(kDirtyObjectBounds | kDirtyRebind);
 
         return kUIStateOkay;
     }
@@ -322,7 +349,7 @@ namespace Enso
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        for (auto obj : m_scene->SceneObjects())
+        for (auto obj : m_sceneDescription->SceneObjects())
         {
             obj->OnSelect(false);
         }
@@ -336,9 +363,9 @@ namespace Enso
     __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
-        if (m_scene->SceneBIH().IsConstructed())
+        if (m_sceneDescription->SceneBIH().IsConstructed())
         {
-            auto& sceneObjects = m_scene->SceneObjects();
+            auto& sceneObjects = m_sceneDescription->SceneObjects();
             int hitIdx = -1;
             uint hitResult = kSceneObjectInvalidSelect;
             auto onContainsPrim = [&, this](const uint* primRange) -> bool
@@ -357,7 +384,7 @@ namespace Enso
                 }
                 return false;
             };
-            m_scene->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            m_sceneDescription->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
             if (hitIdx != -1)
@@ -431,7 +458,7 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
         {
-            auto& sceneObjects = m_scene->SceneObjects();
+            auto& sceneObjects = m_sceneDescription->SceneObjects();
             const bool wasLassoing = m_selectionCtx.isLassoing;
 
             if (!m_selectionCtx.isLassoing)
@@ -449,7 +476,7 @@ namespace Enso
             m_selectedObjects.clear();
 
             std::lock_guard <std::mutex> lock(m_resourceMutex);
-            if (m_scene->SceneBIH().IsConstructed())
+            if (m_sceneDescription->SceneBIH().IsConstructed())
             {
                 const uint lastNumSelected = m_selectionCtx.numSelected;
 
@@ -481,7 +508,7 @@ namespace Enso
                         }
                     }
                 };
-                m_scene->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                m_sceneDescription->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.numSelected)
@@ -527,8 +554,10 @@ namespace Enso
         if (stateID == "kCreateSceneObjectOpen")
         {
             // Try and instante the objerct
-            auto newObject = m_sceneObjectFactory.InstantiateFromHash(trigger.HashOf(), m_sceneObjects);
+            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneDescription, m_sceneObjects);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
+
+            SetDirtyFlags(kDirtyRebind);
         }
 
         // Invoke the event handler of the new object
@@ -584,7 +613,7 @@ namespace Enso
             Rebuild();
         }
 
-        //m_scene->voxelProxy->Render();
+        //m_sceneDescription->voxelProxy->Render();
 
         // Render the pass
         //m_pathTracerLayer->Render();

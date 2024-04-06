@@ -32,17 +32,6 @@ namespace Enso
 		cu_object->Synchronise(pack...);
 	}
 
-	template<typename ObjectType, typename ParamsType>
-	__global__ static void KernelLegacySynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
-	{
-		// Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-		assert(cu_object);
-		assert(cu_params);
-		assert(sizeof(ParamsType) == hostParamsSize);
-
-		cu_object->Synchronise(*cu_params);
-	}
-
 	template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
 	__global__ static void KernelSynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
 	{
@@ -51,6 +40,10 @@ namespace Enso
 		assert(cu_params);
 		assert(sizeof(ParamsType) == hostParamsSize);
 
+		// Force a validation check on the structure to make sure there aren't any dead pointers
+		cu_params->Validate();
+
+		// Push the data to the owning class
 		cu_object->SuperType::Synchronise(*cu_params);
 	}
 
@@ -247,7 +240,7 @@ namespace Enso
 				IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
 
 				IsOk(cudaDeviceSynchronize());
-				KernelLegacySynchroniseObjects << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
+				KernelSynchroniseObjects <ObjectType> << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
 				IsOk(cudaDeviceSynchronize());
 
 				IsOk(cudaFree(cu_params));

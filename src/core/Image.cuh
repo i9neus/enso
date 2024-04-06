@@ -136,6 +136,8 @@ namespace Enso
 			__host__ virtual void OnDestroyAsset() override final;
 
 			__host__ cudaStream_t GetHostStream() const { return m_hostStream; }
+			__host__ void SetHostStream(cudaStream_t hostStream) { m_hostStream = hostStream; }
+
 			__host__ Device::Image<T>* GetDeviceInstance() const
 			{
 				AssertMsg(cu_deviceData, "Image has not been initialised!");

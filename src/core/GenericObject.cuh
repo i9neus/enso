@@ -10,28 +10,38 @@
 
 namespace Enso
 {
+    template<typename FlagType>
+    __host__ __inline__ bool SetGenericFlags(FlagType& data, const FlagType& newFlags, const bool isSet)
+    {
+        const FlagType prevData = data;
+        if (isSet) { data |= newFlags; }
+        else { data &= ~newFlags; }
+
+        return prevData != data;
+    }
+    
     class GenericObjectContainer;
 
-    enum GenericObjectFlags : uint 
-    { 
-        kGenericObjectDisabled                   = 1u << 0,
-        kGenericObjectExcludeFromBake            = 1u << 1,        
-        kGenericObjectIsChild                    = 1u << 2,
-        kGenericObjectUserFacingParameterMask    = (kGenericObjectExcludeFromBake << 1) - 1u
+    enum GenericObjectFlags : uint
+    {
+        kGenericObjectDisabled = 1u << 0,
+        kGenericObjectExcludeFromBake = 1u << 1,
+        kGenericObjectIsChild = 1u << 2,
+        kGenericObjectUserFacingParameterMask = (kGenericObjectExcludeFromBake << 1) - 1u
     };
 
     enum GenericObjectInstanceFlags : uint
     {
-        kInstanceFlagsAllowMultipleInstances    = 1u << 0,
-        kInstanceSingleton                      = 1u << 2
+        kInstanceFlagsAllowMultipleInstances = 1u << 0,
+        kInstanceSingleton = 1u << 2
     };
 
     enum GenericObjectDirtyFlags : uint
     {
-        kGenericObjectClean                      = 0u,
-        kGenericObjectDirtyRender                = 1u << 1,
-        kGenericObjectDirtyProbeGrids            = 1u << 2,
-        kGenericObjectDirtyAll                   = kGenericObjectDirtyRender | kGenericObjectDirtyProbeGrids
+        kGenericObjectClean = 0u,
+        kGenericObjectDirtyRender = 1u << 1,
+        kGenericObjectDirtyProbeGrids = 1u << 2,
+        kGenericObjectDirtyAll = kGenericObjectDirtyRender | kGenericObjectDirtyProbeGrids
     };
 
     struct GenericObjectParams
@@ -51,18 +61,23 @@ namespace Enso
         public:
             __device__ GenericObject() {}
             __device__ virtual ~GenericObject() {}
+
+            __host__ __device__ virtual void    OnSynchronise(const int) {}
         };
     }
 
     namespace Host
     {        
+        class SceneDescription;
+        
         class GenericObject : public Host::AssetAllocator,
                               public Serialisable
         {
         public:            
-            __host__ virtual void                                           Bind(GenericObjectContainer& objectContainer) {}
-            __host__ virtual std::vector<AssetHandle<Host::GenericObject>>   GetChildObjectHandles() { return std::vector<AssetHandle<Host::GenericObject>>();  }
-            __host__ virtual const GenericObjectParams*                      GetGenericObjectParams() const { return nullptr; }
+            __host__ virtual void Bind() {}
+            
+            __host__ virtual std::vector<AssetHandle<Host::GenericObject>>  GetChildObjectHandles() { return std::vector<AssetHandle<Host::GenericObject>>();  }
+            __host__ virtual const GenericObjectParams*                     GetGenericObjectParams() const { return nullptr; }
             
             __host__ void                   UpdateDAGPath(const Json::Node& node);
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
@@ -111,7 +126,7 @@ namespace Enso
             __host__ void  Unlisten(const GenericObject& owner, const std::string& eventID);
 
         protected:
-            __host__ GenericObject(const std::string& id) : AssetAllocator(id), m_renderObjectFlags(0) {}
+            __host__ GenericObject(const std::string& id);
             __host__ virtual ~GenericObject() {}
 
             template<typename ThisType, typename BindType>
@@ -139,6 +154,14 @@ namespace Enso
 
             __host__ void                   OnEvent(const std::string& eventID);
             __host__ void                   RegisterEvent(const std::string& eventID);
+
+            __host__ uint                   SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); return m_dirtyFlags; }
+            __host__ void                   ClearDirtyFlags() { m_dirtyFlags = 0; }
+
+        protected:    
+            uint                m_dirtyFlags;
+            bool                m_isFinalised;
+            bool                m_isConstructed;
 
         private:
             std::string         m_dagPath;

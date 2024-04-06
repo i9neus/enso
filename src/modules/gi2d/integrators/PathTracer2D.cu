@@ -1,6 +1,7 @@
 #include "PathTracer2D.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/Hash.h"
+#include "Camera2D.cuh"
 
 #include "../lights/Light.cuh"
 #include "../RenderCtx.cuh"

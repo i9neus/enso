@@ -39,13 +39,13 @@ namespace Enso
         return kSceneObjectDelegatedAction;
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&)
+    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
     {
         return CreateAsset<Host::PerspectiveCamera>(id);
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id) :
-        Host::Camera2D(id, m_hostInstance)
+        Host::SceneObject(id, m_hostInstance, nullptr)
     {
         m_ui.hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
         m_ui.hostEllipses = CreateChildAsset<Host::Vector<Ellipse>>("uiEllipses", kVectorHostAlloc);
@@ -77,7 +77,7 @@ namespace Enso
 
     __host__ void Host::PerspectiveCamera::Synchronise(const int syncFlags)
     {
-        Camera2D::Synchronise(cu_deviceInstance, syncFlags);
+        SceneObject::Synchronise(cu_deviceInstance, syncFlags);
 
         if (syncFlags & kSyncParams)
         {
@@ -176,7 +176,7 @@ namespace Enso
 
     __host__ bool Host::PerspectiveCamera::Serialise(Json::Node& node, const int flags) const
     {
-        Camera2D::Serialise(node, flags);
+        SceneObject::Serialise(node, flags);
 
         node.AddValue("fov", m_hostInstance.m_params.fov);
         return true;
@@ -184,7 +184,7 @@ namespace Enso
 
     __host__ uint Host::PerspectiveCamera::Deserialise(const Json::Node& node, const int flags)
     {
-        Camera2D::Deserialise(node, flags);
+        SceneObject::Deserialise(node, flags);
 
         if (node.GetValue("fov", m_hostInstance.m_params.fov, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
 

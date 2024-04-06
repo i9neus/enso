@@ -24,19 +24,12 @@ namespace Enso
         // Changes the internal BHV of an object
         kDirtyObjectBVH = 16,
 
+        // A change to the number of objects in the scene
+        kDirtyRebind = 32,
+
         // Changes that affect integrated values
         kDirtyIntegrators = kDirtyMaterials | kDirtyObjectBounds | kDirtyObjectBVH,
 
         kDirtyAll = 0xffffffff
     };
-
-    template<typename FlagType>
-    __host__ __inline__ bool SetGenericFlags(FlagType& data, const FlagType& newFlags, const bool isSet)
-    {
-        const FlagType prevData = data;
-        if (isSet) { data |= newFlags; }
-        else { data &= ~newFlags; }
-
-        return prevData != data;
-    }
 }

@@ -71,12 +71,11 @@ namespace Enso
         obj.DestroyAsset();
     } 
 
-
     __host__ void GenericObjectContainer::Bind()
     {
         for (auto& object : m_objectMap)
         {
-            object.second->Bind(*this);
+            object.second->Bind();
         }
     }
 

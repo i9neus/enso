@@ -4,7 +4,6 @@ namespace Enso
 {
     __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
     {
-        assert(params.nodes);
         m_nodes = params.nodes->Data();
         m_numNodes = params.nodes->Size();
         m_numPrims = params.numPrims;

@@ -20,6 +20,14 @@ namespace Enso
     __host__ void GenericObjectParams::Randomise(const vec2& range)
     {
     }
+    __host__ Host::GenericObject::GenericObject(const std::string& id) :
+        AssetAllocator(id),
+        m_renderObjectFlags(0),
+        m_dirtyFlags(0),
+        m_isFinalised(false),
+        m_isConstructed(false)
+    {
+    }
     
     __host__ void Host::GenericObject::UpdateDAGPath(const Json::Node& node)
     {

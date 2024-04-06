@@ -359,7 +359,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Common.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\Dirtiness.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh">
@@ -388,9 +388,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh">
       <Filter>modules\gi2d\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cuh">
-      <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh">
       <Filter>modules\gi2d\layers</Filter>
@@ -643,9 +640,6 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu">
       <Filter>modules\gi2d\lights</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\PathTracerLayer.cu">
-      <Filter>modules\gi2d\layers</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu">
       <Filter>modules\gi2d\layers</Filter>
     </CudaCompile>
@@ -665,9 +659,6 @@
       <Filter>core</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\GenericObjectContainer.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\GenericObjectFactory.cu">
       <Filter>core</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\Image.cu">
@@ -695,9 +686,6 @@
       <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\Ellpise.cu">

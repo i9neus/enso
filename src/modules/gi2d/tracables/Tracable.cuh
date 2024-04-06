@@ -12,6 +12,7 @@ namespace Enso
     struct TracableParams
     {
         __host__ __device__ TracableParams() {}
+        __device__ void Validate() const {}
 
         int lightIdx = kTracableNotALight;
     };
@@ -64,8 +65,8 @@ namespace Enso
 
 
         protected:
-            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance) : 
-                SceneObject(id, hostInstance),
+            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) : 
+                SceneObject(id, hostInstance, scene),
                 m_hostInstance(hostInstance)
             {
             }

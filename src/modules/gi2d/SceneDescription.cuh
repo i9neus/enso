@@ -13,6 +13,16 @@ namespace Enso
             __device__ SceneDescription() {}
             __device__ void OnSynchronise(const uint) {}
             __device__ void Synchronise(const SceneDescription& objects) { *this = objects; }
+            
+            __device__ void Validate() const
+            {
+                assert(tracables);
+                assert(lights);
+                assert(sceneObjects);
+
+                assert(tracableBIH);
+                assert(sceneBIH);
+            }
 
             const Vector<Device::Tracable*>* tracables = nullptr;
             const Vector<Device::Light*>* lights = nullptr;
@@ -20,7 +30,7 @@ namespace Enso
 
             const BIH2D<BIH2DFullNode>* tracableBIH = nullptr;
             const BIH2D<BIH2DFullNode>* sceneBIH = nullptr;
-
+            
             //const Device::VoxelProxyGrid*             voxelProxy = nullptr;
         };
     }
@@ -29,7 +39,7 @@ namespace Enso
     {
         using TracableContainer = Host::AssetVector<Host::Tracable, Device::Tracable>;
         using LightContainer = Host::AssetVector<Host::Light, Device::Light>;
-        using CameraContainer = Host::AssetVector<Host::Camera2D, Device::Camera2D>;
+        using CameraContainer = Host::AssetVector<Host::ICamera2D, Device::ICamera2D>;
         using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
 
         class SceneDescription : public Host::AssetAllocator
@@ -39,7 +49,7 @@ namespace Enso
             __host__ virtual        ~SceneDescription();
             __host__ virtual void   OnDestroyAsset() override final;
 
-            __host__ void           Rebuild(AssetHandle<GenericObjectContainer>& renderObjects, const UIViewCtx& viewCtx, const uint dirtyFlags);
+            __host__ void           Rebuild(AssetHandle<GenericObjectContainer>& sceneObjects, const UIViewCtx& viewCtx, const uint dirtyFlags);
             __host__ const Device::SceneDescription* GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ Host::BIH2DAsset& TracableBIH() { DAssert(m_hostTracableBIH);  return *m_hostTracableBIH; }
