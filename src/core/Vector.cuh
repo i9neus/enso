@@ -59,14 +59,14 @@ namespace Enso
 			__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
 
 			__host__ __device__ Type* Data() { return m_localData; }
-			__host__ __device__ Type& operator[](const uint idx)
+			__host__ __device__ Type& operator[](const int idx)
 			{
-				dassert(idx < m_localParams.size);
+				CudaAssertDebug(idx < m_localParams.size);
 				return m_localData[idx];
 			}
-			__host__ __device__ const Type& operator[](const uint idx) const
+			__host__ __device__ const Type& operator[](const int idx) const
 			{
-				dassert(idx < m_localParams.size);
+				CudaAssertDebug(idx < m_localParams.size);
 				return m_localData[idx];
 			}
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera2D.cuh"
+#include "AccumulationBuffer.cuh"
 #include "../SceneObject.cuh"
 #include "../FwdDecl.cuh"
 #include "../primitives/Ellipse.cuh"
@@ -16,8 +17,8 @@ namespace Enso
 
         __device__ void Validate() const
         {
-            assert(lineSegments);
-            assert(ellipses);
+            CudaAssert(ui.lineSegments);
+            CudaAssert(ui.ellipses);
         }
 
         struct
@@ -44,11 +45,9 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::ICamera2D,
-                                  public Device::SceneObject
+        class PerspectiveCamera : public Device::SceneObject, public Device::ICamera2D
         {
             friend class Host::PerspectiveCamera;
-
         public:
             __device__ PerspectiveCamera() {}
 
@@ -71,7 +70,8 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::SceneObject
+        class PerspectiveCamera : public Host::SceneObject, public Host::ICamera2D
+                                  
         {
         public:
             __host__ PerspectiveCamera(const std::string& id);
@@ -85,6 +85,7 @@ namespace Enso
             __host__ virtual uint       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
+            __host__ virtual void       Render() override final;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&);

@@ -1,6 +1,5 @@
 #include "SceneDescription.cuh"
 #include "bih/BIH2DAsset.cuh"
-#include "integrators/VoxelProxyGrid.cuh"
 #include "core/GenericObjectContainer.cuh"
 #include "lights/OmniLight.cuh"
 

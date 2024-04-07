@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../Dirtiness.cuh"
+#include "core/AssetAllocator.cuh"
+#include "../SceneDescription.cuh"
 
 namespace Enso
 {
@@ -10,8 +11,8 @@ namespace Enso
     class UIViewCtx;
     
     namespace Device
-    {
-        class ICamera2D
+    {   
+        class ICamera2D 
         {
         public:
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const = 0;
@@ -30,8 +31,9 @@ namespace Enso
             __host__ virtual void Render() = 0;
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
             __host__ virtual Device::ICamera2D* GetDeviceInstance() const = 0;
+
         protected:
-            ICamera2D() = default;           
+            ICamera2D() = default;
         };
     };
 }      

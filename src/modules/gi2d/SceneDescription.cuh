@@ -16,12 +16,12 @@ namespace Enso
             
             __device__ void Validate() const
             {
-                assert(tracables);
-                assert(lights);
-                assert(sceneObjects);
+                CudaAssert(tracables);
+                CudaAssert(lights);
+                CudaAssert(sceneObjects);
 
-                assert(tracableBIH);
-                assert(sceneBIH);
+                CudaAssert(tracableBIH);
+                CudaAssert(sceneBIH);
             }
 
             const Vector<Device::Tracable*>* tracables = nullptr;

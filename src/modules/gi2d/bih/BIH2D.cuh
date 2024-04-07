@@ -15,7 +15,7 @@ namespace Enso
     {
         __device__ void Validate() const 
         {
-            assert(params.nodes);
+            CudaAssert(nodes);
         }
 
         bool                        isConstructed = false;
@@ -106,18 +106,18 @@ namespace Enso
             int stackIdx = -1;
             uchar depth = 0;
 
-            assert(node);            
+            CudaAssertDebug(node);
 
             do
             {                
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
-                    assert(stackIdx >= 0); 
+                    CudaAssertDebug(stackIdx >= 0);
                     node = &m_nodes[stack[stackIdx].nodeIdx];
                     depth = stack[stackIdx].depth;
                     bBox = stack[stackIdx--].bBox;                    
-                    assert(node);
+                    CudaAssertDebug(node);
                 }
 
                 // Node is a leaf?
@@ -144,7 +144,7 @@ namespace Enso
                         if (p[axis] > node->data.planes[NodeType::kRight] && stackIdx < kBIH2DStackSize)
                             //if (IntersectRight(p, axis, node->data.planes[NodeType::kRight], bBox)/* && stackIdx < kBIH2DStackSize*/)
                         {
-                            assert(stackIdx < kBIH2DStackSize);
+                            CudaAssertDebug(stackIdx < kBIH2DStackSize);
                             stack[++stackIdx] = { bBox, node->GetChildIndex() + 1, uchar(depth + 1) };
                             stack[stackIdx].bBox[0][axis] = node->data.planes[NodeType::kRight];
                         }
@@ -194,18 +194,18 @@ namespace Enso
             int stackIdx = -1;
             uchar depth = 0;
 
-            assert(node);
+            CudaAssertDebug(node);
 
             do
             {
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
-                    assert(stackIdx >= 0);
+                    CudaAssertDebug(stackIdx >= 0);
                     node = &m_nodes[stack[stackIdx].nodeIdx];
                     depth = stack[stackIdx].depth;
                     nodeBBox = stack[stackIdx--].bBox;
-                    assert(node);
+                    CudaAssertDebug(node);
                 }
 
                 // Node is a leaf?
@@ -238,7 +238,7 @@ namespace Enso
                             // ...and right box hit?
                             if (p.upper[axis] > node->data.planes[NodeType::kRight])
                             {
-                                assert(stackIdx < kBIH2DStackSize);
+                                CudaAssertDebug(stackIdx < kBIH2DStackSize);
                                 stack[++stackIdx] = { nodeBBox, node->GetChildIndex() + 1, uchar(depth + 1) };
                                 stack[stackIdx].bBox[0][axis] = node->data.planes[NodeType::kRight];
                             }
@@ -283,7 +283,7 @@ namespace Enso
             {
                 if (hitFlags1/* && stackIdx < kBIH2DStackSize*/)
                 {
-                    assert(stackIdx < kBIH2DStackSize);
+                    CudaAssertDebug(stackIdx < kBIH2DStackSize);
                     BIH2DRayStackElement& element = stack[++stackIdx];
                     element.nodeIdx = node->GetChildIndex() + kPlaneIdx1;
                     element.bBox = bBox;
@@ -353,21 +353,21 @@ namespace Enso
             int stackIdx = -1;
             //uchar depth = 0;
 
-            assert(node);
+            CudaAssertDebug(node);
 
             do
             {
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
-                    assert(stackIdx >= 0);
+                    CudaAssertDebug(stackIdx >= 0);
                     const BIH2DRayStackElement& element = stack[stackIdx--];
 
                     if (range.tFar < element.range.tNear) { continue; }
                     range = element.range;
                     bBox = element.bBox;
                     node = &m_nodes[element.nodeIdx];
-                    assert(node);
+                    CudaAssertDebug(node);
                 }
 
                 // Node is a leaf?

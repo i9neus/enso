@@ -29,12 +29,12 @@ namespace Enso
 		{
 		}
 
-		uint			hash;
-		RNG				rng;
-		Device::ICamera2D& camera;
-		uchar			flags;
+		uint							hash;
+		RNG								rng;
+		Device::ICamera2D&				camera;
+		uchar							flags;
 
-		void*			debugData;
+		void*							debugData;
 
 		__device__ __inline__ bool IsDebug() const { return (flags & kRenderCtxDebug) || debugData; }
 	};

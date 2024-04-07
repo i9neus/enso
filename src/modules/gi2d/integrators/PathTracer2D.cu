@@ -77,7 +77,7 @@ namespace Enso
         lightIdx = LowerBound(1, lights.Size(), pmf, xi * pmf[lights.Size()]) - 1;
         weight = pmf[lights.Size()] / (pmf[lightIdx + 1] - pmf[lightIdx]);
 
-        assert(lightIdx >= 0 && lightIdx < lights.Size());
+        CudaAssertDebug(lightIdx >= 0 && lightIdx < lights.Size());
         return true;
     }
 
@@ -140,7 +140,7 @@ namespace Enso
 
     __device__ void Device::PathTracer2D::Integrate(RenderCtx& renderCtx) const
     {
-        assert(m_scene.tracableBIH && m_scene.tracables);
+        if(IsCudaDebug()) { m_scene.Validate(); }
 
         Ray2D ray;
         HitCtx2D hit;

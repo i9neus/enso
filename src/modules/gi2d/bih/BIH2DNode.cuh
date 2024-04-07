@@ -60,7 +60,7 @@ namespace Enso
         __host__ __device__ __forceinline__ void MakeInner(const uint& i, const uint& split, const float& left, const float& right,
             const uint& primIdxStart, const uint& primIdxEnd)
         {
-            assert(i < ~uint(3));
+            CudaAssertDebug(i < ~uint(3));
             flags = (i << 2) | (split & uint(3));
             data.planes[BIH2DNodeBase::kLeft] = left;
             data.planes[BIH2DNodeBase::kRight] = right;

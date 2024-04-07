@@ -611,6 +611,9 @@
     <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
       <Filter>core\math\bbox</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -690,6 +693,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cu">
       <Filter>modules\gi2d\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu">
+      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

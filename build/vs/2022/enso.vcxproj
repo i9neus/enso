@@ -115,6 +115,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\Dirtiness.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh" />
@@ -202,6 +203,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />

@@ -7,20 +7,20 @@ namespace Enso
 	template<typename ObjectType, typename UpcastType, typename... Pack>
 	__global__ void KernelCreateDeviceInstance(UpcastType** newInstance, Pack... args)
 	{
-		assert(newInstance);
-		assert(!*newInstance);
+		CudaAssert(newInstance);
+		CudaAssert(!*newInstance);
 
 		*newInstance = new ObjectType(args...);
 
-		assert(*newInstance);
+		CudaAssert(*newInstance);
 	}
 
 	template<typename ObjectType, typename CastType>
 	__global__ void KernelStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
 	{
-		assert(inputPtr);
-		assert(outputPtr);
-		assert(*inputPtr);
+		CudaAssert(inputPtr);
+		CudaAssert(outputPtr);
+		CudaAssert(*inputPtr);
 
 		*outputPtr = static_cast<CastType*>(*inputPtr);
 	}
@@ -28,7 +28,7 @@ namespace Enso
 	template<typename ObjectType, typename... ParameterPack>
 	__global__ static void KernelSynchroniseTrivialParams(ObjectType* cu_object, ParameterPack... pack)
 	{
-		assert(cu_object);
+		CudaAssert(cu_object);
 		cu_object->Synchronise(pack...);
 	}
 
@@ -36,9 +36,9 @@ namespace Enso
 	__global__ static void KernelSynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
 	{
 		// Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-		assert(cu_object);
-		assert(cu_params);
-		assert(sizeof(ParamsType) == hostParamsSize);
+		CudaAssert(cu_object);
+		CudaAssert(cu_params);
+		CudaAssert(sizeof(ParamsType) == hostParamsSize);
 
 		// Force a validation check on the structure to make sure there aren't any dead pointers
 		cu_params->Validate();

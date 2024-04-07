@@ -9,7 +9,7 @@ namespace Enso
 {
     __host__ __device__ bool Device::LineStrip::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
     {
-        assert(m_objects.bih && m_objects.lineSegments);
+        CudaAssertDebug(m_objects.bih && m_objects.lineSegments);
 
         RayRange2D range;
         if (!IntersectRayBBox(rayWorld, GetWorldBBox(), range) || range.tNear > hitWorld.tFar) { return false; }
@@ -135,20 +135,6 @@ namespace Enso
         m_hostBIH.DestroyAsset();
         m_hostLineSegments.DestroyAsset();
     }
-     
-
-    template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
-    __global__ static void KernelSynchroniseObjectsLocal(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
-    {
-        // Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-        assert(cu_object);
-        assert(cu_params);
-        assert(sizeof(ParamsType) == hostParamsSize);
-
-        printf("Here\n");
-
-        cu_object->SuperType::Synchronise(*cu_params);
-    }
 
     __host__ void Host::LineStrip::Synchronise(const int syncType)
     {
@@ -168,7 +154,7 @@ namespace Enso
             IsOk(cudaMemcpy(cu_params, &params, sizeof(LineStripObjects), cudaMemcpyHostToDevice));
 
             IsOk(cudaDeviceSynchronize());
-            KernelSynchroniseObjectsLocal <Device::LineStrip> << <1, 1 >> > (cu_object, sizeof(LineStripObjects), cu_params);
+            KernelSynchroniseObjects <Device::LineStrip> << <1, 1 >> > (cu_object, sizeof(LineStripObjects), cu_params);
             IsOk(cudaDeviceSynchronize());
 
             IsOk(cudaFree(cu_params));

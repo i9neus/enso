@@ -24,8 +24,8 @@ namespace Enso
     {
         __device__ void Validate() const
         {
-            assert(scene);
-            assert(accumBuffer);
+            CudaAssert(scene);
+            CudaAssert(accumBuffer);
         }
         
         const Device::SceneDescription*     scene = nullptr;

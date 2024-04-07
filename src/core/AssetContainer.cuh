@@ -49,7 +49,7 @@ namespace Enso
 		template<typename T>
 		__global__ void KernelAssertSize(T* container, uint size)
 		{
-			assert(container->Size() == size);
+			CudaAssert(container->Size() == size);
 		}
 		
 		template<typename ElementType>

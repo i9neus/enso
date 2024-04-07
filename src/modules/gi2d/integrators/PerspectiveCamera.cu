@@ -17,12 +17,11 @@ namespace Enso
 
     __device__ void Device::PerspectiveCamera::Accumulate(const vec4& L, const RenderCtx& ctx)
     {
-
     }
     
     __host__ __device__ vec4 Device::PerspectiveCamera::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
     {
-        assert(m_objects.ui.lineSegments);
+        CudaAssertDebug(m_objects.ui.lineSegments);
 
         const vec2 pLocal = pWorld - GetTransform().trans;
         vec4 L(0.f);
@@ -172,6 +171,10 @@ namespace Enso
         Synchronise(kSyncParams);
         ClearDirtyFlags();
         return IsConstructed();
+    }
+
+    __host__ void Host::PerspectiveCamera::Render()
+    {
     }
 
     __host__ bool Host::PerspectiveCamera::Serialise(Json::Node& node, const int flags) const

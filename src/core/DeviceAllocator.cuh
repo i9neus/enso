@@ -15,12 +15,12 @@
 template<typename ObjectType, typename... Pack>
 __global__ void KernelDeviceAllocCreateDeviceInstance(ObjectType** newInstance, Pack... args)
 {
-	assert(newInstance);
-	assert(!*newInstance);
+	CudaAssert(newInstance);
+	CudaAssert(!*newInstance);
 
 	*newInstance = new ObjectType(args...);
 
-	assert(*newInstance);
+	CudaAssert(*newInstance);
 }
 
 template<typename ObjectType>
@@ -32,9 +32,9 @@ __global__ void KernelDeviceAllocDestroyDeviceInstance(ObjectType* cu_instance)
 template<typename ObjectType, typename CastType>
 __global__ void KernelDeviceAllocStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
 {
-	assert(inputPtr);
-	assert(outputPtr);
-	assert(*inputPtr);
+	CudaAssert(inputPtr);
+	CudaAssert(outputPtr);
+	CudaAssert(*inputPtr);
 
 	*outputPtr = static_cast<CastType*>(*inputPtr);
 }

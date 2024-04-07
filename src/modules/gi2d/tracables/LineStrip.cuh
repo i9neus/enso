@@ -11,6 +11,12 @@ namespace Enso
     {
         __host__ __device__ LineStripObjects() {}
 
+        __device__ void Validate() const
+        {
+            CudaAssert(bih);
+            CudaAssert(lineSegments);
+        }
+
         BIH2D<BIH2DFullNode>*           bih = nullptr;
         Generic::Vector<LineSegment>*   lineSegments = nullptr;
     };

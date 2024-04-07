@@ -48,7 +48,7 @@ namespace Enso
 			}
 
 			printf("Invalid SH index L = %i, M = %i\n", L, M);
-			assert(false);
+			CudaAssert(false);
 		}
 
 		__host__ __device__ __forceinline__ float Project(const vec3& n, const uint idx)
@@ -74,7 +74,7 @@ namespace Enso
 			}
 
 			printf("Invalid SH index %u\n", idx);
-			assert(false);
+			CudaAssert(false);
 		}
 
 		__host__ __device__ __forceinline__ float Legendre(const uint idx)
@@ -100,7 +100,7 @@ namespace Enso
 			}
 
 			printf("Invalid SH index %u\n", idx);
-			assert(false);
+			CudaAssert(false);
 		}
 
 		__host__ __device__ __forceinline__ float GetLegendreCoefficient(const int L, const int M)
@@ -116,7 +116,7 @@ namespace Enso
 				case -1:	return 0.4886025119029199f;
 				case 0:		return 0.4886025119029199f;
 				case 1:		return 0.4886025119029199f;
-				default:	assert(false);
+				default:	CudaAssert(false);
 				}
 			}
 			case 2:
@@ -128,7 +128,7 @@ namespace Enso
 				case 0:		return 0.3153915652525200f;
 				case 1:		return 1.0925484305920792f;
 				case 2:		return 0.5462742152960396f;
-				default:	assert(false);
+				default:	CudaAssert(false);
 				}
 			}
 			case 3:
@@ -142,12 +142,12 @@ namespace Enso
 				case 1: return 0.4570457994644658f;
 				case 2: return 1.445305721320277f;
 				case 3: return 0.5900435899266435f;
-				default:	assert(false);
+				default:	CudaAssert(false);
 				}
 			}
 			}
 
-			assert(false);
+			CudaAssert(false);
 		}
 
 		__host__ __device__ __forceinline__ int GetNumCoefficients(const int L) { return (L + 1) * (L + 1); }

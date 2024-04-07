@@ -23,15 +23,63 @@ template<typename T> __device__ __forceinline__ T kKernelPos() { return T(typena
 template<typename T> __device__ __forceinline__ T kKernelDims() { return T(typename T::kType(kKernelWidth), typename T::kType(kKernelHeight)); }
 
 //#define CUDA_DEVICE_GLOBAL_ASSERTS
+#define CUDA_DEVICE_DEBUG_ASSERTS
 
-#ifdef _DEBUG
-#define dassert(condition) assert(condition)
+#ifdef CUDA_DEVICE_DEBUG_ASSERTS
+    #define IsCudaDebug() true
 #else
-#define dassert(condition)
+    #define IsCudaDebug() false
+#endif
+
+#ifdef __CUDA_ARCH__
+    // CUDA device-side asserts. We don't use assert() here because it's optimised out in the release build.
+    #define CudaAssert(condition) \
+        if(!(condition)) {  \
+            printf("Device assert: %s in %s (%d)\n", #condition, __FILE__, __LINE__); \
+            asm("trap;"); \
+        }
+
+    #define CudaAssertMsg(condition, message) \
+        if(!(condition)) {  \
+            printf("Device assert: %s in %s (%d)\n", message, __FILE__, __LINE__); \
+            asm("trap;"); \
+        }
+
+    #define CudaAssertFmt(condition, message, ...) \
+        if(!(condition)) {  \
+            char buffer[1024]; \
+            snprintf(buffer, 1024, message, __VA_ARGS__); \
+            printf("Device assert: %s in %s (%d)\n", buffer, __FILE__, __LINE__); \
+            asm("trap;"); \
+        }
+
+    #ifdef CUDA_DEVICE_DEBUG_ASSERTS
+        #define CudaAssertDebug(condition) CudaAssert(condition)
+        #define CudaAssertDebugMsg(condition, message) CudaAssertMsg(condition)
+        #define CudaAssertDebugFmt(condition, message, ...) CudaAssertFmt(condition)
+    #else
+        #define CudaAssertDebug(condition)
+        #define CudaAssertDebugMsg(condition, message)
+        #define CudaAssertDebugFmt(condition, message, ...)
+    #endif
+#else
+    #define CudaAssert(condition) Assert(condition)
+    #define CudaAssertMsg(condition, message) AssertMsg(condition, message)
+    #define CudaAssertFmt(condition, message, ...)  AssertMsgFmt(condition, message, ...)
+
+    #ifdef CUDA_DEVICE_DEBUG_ASSERTS
+        #define CudaAssertDebug(condition) CudaAssert(condition)
+        #define CudaAssertDebugMsg(condition, message) CudaAssertMsg(condition)
+        #define CudaAssertDebugFmt(condition, message, ...) CudaAssertFmt(condition)
+    #else
+        #define CudaAssertDebug(condition)
+        #define CudaAssertDebugMsg(condition, message)
+        #define CudaAssertDebugFmt(condition, message, ...)
+    #endif
 #endif
 
 namespace Enso
-{	    
+{	         
     template <typename T>
     __host__ inline void CudaHostAssert(T result, char const* const func, const char* const file, const int line)
     {

@@ -26,7 +26,7 @@ namespace Enso
 
     __device__ void Device::OverlayLayer::Composite(Device::ImageRGBA* deviceOutputImage)
     {
-        assert(deviceOutputImage);
+        CudaAssertDebug(deviceOutputImage);
         
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyScreen = kKernelPos<ivec2>();
@@ -67,7 +67,7 @@ namespace Enso
         bih->TestPoint(xyView, onPointIntersectLeaf);*/
         for (int idx = 0; idx < elementList.Size(); ++idx)
         {
-            assert(elementList[idx]);
+            CudaAssertDebug(elementList[idx]);
 
             const auto& drawable = *elementList[idx];
             if (drawable.GetWorldSpaceBoundingBox().Contains(xyView))
@@ -85,7 +85,7 @@ namespace Enso
 
     __device__ void Device::OverlayLayer::Render()
     {
-        assert(m_objects.accumBuffer);
+        CudaAssertDebug(m_objects.accumBuffer);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }
