@@ -45,7 +45,7 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::SceneObject, public Device::ICamera2D
+        class PerspectiveCamera : public Device::SceneObject, public Device::Camera2D
         {
             friend class Host::PerspectiveCamera;
         public:
@@ -70,7 +70,7 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::SceneObject, public Host::ICamera2D
+        class PerspectiveCamera : public Host::SceneObject, public Host::Camera2D
                                   
         {
         public:

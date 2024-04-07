@@ -74,7 +74,7 @@ namespace Enso
             __device__ void         Synchronise(const AccumulationBufferParams& params) { m_params = params; }
             __device__ void         Synchronise(const AccumulationBufferObjects& objects) { m_objects = objects; }
 
-            __device__ void         Reduce(const uint batchSize, const uvec2 batchRange);
+            __device__ void         Reduce(const uint batchSize, const uvec2 batchRange, const int norm);
             __device__ void         Accumulate(const vec3& L, const int& probeIdx, const int& subProbeIdx, const int& coeffIdx);
             
             __device__ vec3&        operator[](const uint& idx);
@@ -87,8 +87,8 @@ namespace Enso
             __device__ inline int   GetSubprobesPerProbe() const { return m_params.subprobesPerProbe; }
 
         protected:
-            AccumulationBufferParams  m_params;
-            AccumulationBufferObjects m_objects;
+            AccumulationBufferParams    m_params;
+            AccumulationBufferObjects   m_objects;
         };
     }
 
@@ -117,6 +117,8 @@ namespace Enso
             Device::AccumulationBuffer*             cu_deviceInstance;
             AccumulationBufferParams                m_params;
             AccumulationBufferObjects               m_deviceObjects;
+
+            int                                     m_norm;
         };
     };
 }

@@ -697,6 +697,9 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu">
+      <Filter>modules\gi2d\integrators</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\docs\CodeStructure.md">

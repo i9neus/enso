@@ -22,7 +22,7 @@ namespace Enso
     __device__ void Device::VoxelProxyGridLayer::Synchronise(const VoxelProxyGridLayerObjects& objects)
     {
         m_objects = objects;
-        m_voxelTracer.Synchronise(*m_objects.scene);
+        Camera2D::Synchronise(*m_objects.scene);
     }
 
     __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
@@ -66,25 +66,12 @@ namespace Enso
         return true;
     }
 
-    __device__ void Device::VoxelProxyGridLayer::Prepare(const uint dirtyFlags)
-    {
-        if (dirtyFlags & kDirtyIntegrators)
-        {
-            // Save ourselves a dereference here by caching the scene pointers
-            CudaAssert(m_objects.scene);
-            m_voxelTracer.Synchronise(*m_objects.scene);
-            m_frameIdx = 0;
-        }
-        else
-        {
-            m_frameIdx++;
-        }
-    }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
     __device__ void Device::VoxelProxyGridLayer::Render()
     {
         if (kKernelIdx >= m_params.accum.totalSubprobes) { return; }
+        CudaAssertDebug(m_objects.accumBuffer)
 
         const int subprobeIdx = ((kKernelIdx / m_params.accum.numHarmonics) % m_params.accum.subprobesPerProbe);
         const int probeIdx = kKernelIdx / m_params.accum.unitsPerProbe;
@@ -93,14 +80,7 @@ namespace Enso
             probeIdx % m_params.gridSize.x == m_params.gridSize.x / 2 &&
             subprobeIdx == 0) ? kRenderCtxDebug : 0;
 
-        CudaAssertDebug(m_objects.accumBuffer);
-        RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, ctxFlags);
-        /*if (ctxFlags & kRenderCtxDebug)
-        {
-            renderCtx.debugData = &m_kifsDebug;
-        }*/
-
-        m_voxelTracer.Integrate(renderCtx);
+        Integrate(ctxFlags);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -110,7 +90,7 @@ namespace Enso
 
         if (probeIdx.x < 0 || probeIdx.x >= m_params.gridSize.x || probeIdx.y < 0 || probeIdx.y >= m_params.gridSize.y) { return kOne * 0.2; }
 
-        vec3 L = m_objects.accumBuffer->Evaluate(probeIdx.y * m_params.gridSize.x + probeIdx.x, 0) / float(max(1, m_frameIdx));
+        vec3 L = m_objects.accumBuffer->Evaluate(probeIdx.y * m_params.gridSize.x + probeIdx.x, 0);
 
         /*if (length(posWorld - m_kifsDebug.pNear) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kRed; }
         if (length(posWorld - m_kifsDebug.pFar) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kYellow; }

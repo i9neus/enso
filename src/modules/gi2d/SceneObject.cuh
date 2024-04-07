@@ -11,8 +11,6 @@
 
 namespace Enso
 {   
-    enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
-
     enum SceneObjectFlags : uint
     {
         kSceneObjectSelected = 1u,

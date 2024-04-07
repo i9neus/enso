@@ -22,6 +22,8 @@ namespace Enso
     
     class GenericObjectContainer;
 
+    enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
+
     enum GenericObjectFlags : uint
     {
         kGenericObjectDisabled = 1u << 0,

@@ -13,6 +13,8 @@ namespace Enso
     template<size_t> class UIButtonMap;
     using VirtualKeyMap = UIButtonMap<256>;
 
+    struct UIViewCtx;    
+
     namespace Generic
     {
         template<typename> class Vector;
@@ -24,7 +26,7 @@ namespace Enso
         class Tracable;
         class Light;
         class SceneObject;
-        class ICamera2D;
+        class Camera2D;
         class VoxelProxyGrid;
         class AccumulationBuffer;
         template<typename> class Vector;
@@ -36,7 +38,7 @@ namespace Enso
         class SceneObject;
         class Light;
         class Tracable;
-        class ICamera2D;
+        class Camera2D;
         class VoxelProxyGrid;
         class SceneDescription;
 

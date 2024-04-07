@@ -32,7 +32,7 @@ namespace Enso
         return (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + harmonicIdx] / m_params.subprobesPerProbe; 
     }
 
-    __device__ void Device::AccumulationBuffer::Reduce(const uint batchSize, const uvec2 batchRange)
+    __device__ void Device::AccumulationBuffer::Reduce(const uint batchSize, const uvec2 batchRange, const int norm)
     {
         if (kKernelIdx >= m_params.totalAccumUnits) { return; }
 
@@ -79,13 +79,14 @@ namespace Enso
 
             CudaAssertDebug(probeIdx < m_params.numProbes&& coeffIdx < m_params.numHarmonics);
 
-            (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx];
+            (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx] / float(norm);
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Reduce);
 
     Host::AccumulationBuffer::AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics) :
-        GenericObject(id)
+        GenericObject(id),
+        m_norm(1)
     {
         // Establish the properties of the grid
         m_params.numProbes = numProbes;
@@ -146,15 +147,19 @@ namespace Enso
         uint batchSize = reduceBatchSizePow2;
         while (batchSize > 1)
         {
-            KernelReduce << < m_params.kernel.grids.reduceSize, m_params.kernel.blockSize >> > (cu_deviceInstance, reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1));
+            KernelReduce << < m_params.kernel.grids.reduceSize, m_params.kernel.blockSize >> > (cu_deviceInstance, reduceBatchSizePow2, uvec2(batchSize, batchSize >> 1), m_norm);
             batchSize >>= 1;
         }
         IsOk(cudaDeviceSynchronize());
+
+        //Increment the normalisation factor
+        ++m_norm;
     }
 
     // Erases the contents of the accumulation buffer bins
     __host__ void Host::AccumulationBuffer::Clear()
     {
         m_hostAccumBuffer->Wipe();
+        m_norm = 1;
     }
 }

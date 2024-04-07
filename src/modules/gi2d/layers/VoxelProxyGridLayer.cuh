@@ -1,11 +1,9 @@
 #pragma once
 
+#include "../FwdDecl.cuh""
 #include "UILayer.cuh"
-#include "../integrators/PathTracer2D.cuh"
 #include "../integrators/Camera2D.cuh"
 #include "../integrators/AccumulationBuffer.cuh"
-#include "../SceneDescription.cuh"
-#include "../tracables/KIFS.cuh"
 
 namespace Enso
 {     
@@ -40,13 +38,12 @@ namespace Enso
     };
 
     namespace Device
-    {
-        class VoxelProxyGridLayer : public Device::GenericObject, public Device::ICamera2D
+    {       
+        class VoxelProxyGridLayer : public Device::GenericObject, public Device::Camera2D
         {
         public:
             __device__ VoxelProxyGridLayer() {}
 
-            __device__ void                     Prepare(const uint dirtyFlags);
             __device__ __forceinline__ void     Render();
             __device__ __forceinline__ void     Composite(Device::ImageRGBA* outputImage) const;
             __device__ __forceinline__ vec3     Evaluate(const vec2& posWorld) const;
@@ -65,14 +62,12 @@ namespace Enso
             VoxelProxyGridLayerParams               m_params;
             VoxelProxyGridLayerObjects              m_objects;
             Device::SceneDescription                m_scene;
-
-            KIFSDebugData                           m_kifsDebug;
         };
     }
 
     namespace Host
     {
-        class VoxelProxyGridLayer : public Host::UILayer, public Host::GenericObject, public Host::ICamera2D
+        class VoxelProxyGridLayer : public Host::UILayer, public Host::GenericObject, public Host::Camera2D
         {
         public:
             VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);

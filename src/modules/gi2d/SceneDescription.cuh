@@ -1,8 +1,7 @@
 #pragma once
 
 #include "FwdDecl.cuh"
-#include "tracables/Tracable.cuh"
-#include "integrators/Camera2D.cuh"
+#include "core/GenericObject.cuh"
 
 namespace Enso
 {
@@ -39,7 +38,7 @@ namespace Enso
     {
         using TracableContainer = Host::AssetVector<Host::Tracable, Device::Tracable>;
         using LightContainer = Host::AssetVector<Host::Light, Device::Light>;
-        using CameraContainer = Host::AssetVector<Host::ICamera2D, Device::ICamera2D>;
+        using CameraContainer = Host::AssetVector<Host::Camera2D, Device::Camera2D>;
         using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
 
         class SceneDescription : public Host::AssetAllocator

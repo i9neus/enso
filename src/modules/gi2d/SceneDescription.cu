@@ -1,7 +1,9 @@
 #include "SceneDescription.cuh"
 #include "bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
-#include "lights/OmniLight.cuh"
+#include "lights/Light.cuh"
+#include "tracables/Tracable.cuh"
+#include "integrators/Camera2D.cuh"
 
 namespace Enso
 {
@@ -106,7 +108,7 @@ namespace Enso
             }); 
 
         // Build a list of scene cameras for rendering
-        genericObjects->ForEachOfType<Host::ICamera2D>([&, this](AssetHandle<Host::ICamera2D>& cameraObject) -> bool
+        genericObjects->ForEachOfType<Host::Camera2D>([&, this](AssetHandle<Host::Camera2D>& cameraObject) -> bool
             {
                 if (cameraObject->Rebuild(dirtyFlags, viewCtx))
                 {

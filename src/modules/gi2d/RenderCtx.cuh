@@ -19,7 +19,7 @@ namespace Enso
 		__device__ __forceinline__ RenderCtx(const uint& probeHash, 
 												const uint accumIdx, 
 												const uchar& depth, 
-												Device::ICamera2D& cam,
+												Device::Camera2D& cam,
 												const uchar fl = 0) :
 			hash(HashOf(probeHash, uint(depth) + 9871251u, accumIdx)),
 			rng(hash),
@@ -31,7 +31,7 @@ namespace Enso
 
 		uint							hash;
 		RNG								rng;
-		Device::ICamera2D&				camera;
+		Device::Camera2D&				camera;
 		uchar							flags;
 
 		void*							debugData;
