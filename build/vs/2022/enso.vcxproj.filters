@@ -377,7 +377,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh">
       <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh">
@@ -697,7 +697,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera2D.cu">
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
   </ItemGroup>

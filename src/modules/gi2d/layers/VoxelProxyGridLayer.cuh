@@ -2,7 +2,7 @@
 
 #include "../FwdDecl.cuh""
 #include "UILayer.cuh"
-#include "../integrators/Camera2D.cuh"
+#include "../integrators/Camera.cuh"
 #include "../integrators/AccumulationBuffer.cuh"
 
 namespace Enso
@@ -39,7 +39,7 @@ namespace Enso
 
     namespace Device
     {       
-        class VoxelProxyGridLayer : public Device::GenericObject, public Device::Camera2D
+        class VoxelProxyGridLayer : public Device::GenericObject, public Device::Camera
         {
         public:
             __device__ VoxelProxyGridLayer() {}
@@ -67,7 +67,7 @@ namespace Enso
 
     namespace Host
     {
-        class VoxelProxyGridLayer : public Host::UILayer, public Host::GenericObject, public Host::Camera2D
+        class VoxelProxyGridLayer : public Host::UILayer, public Host::GenericObject, public Host::Camera
         {
         public:
             VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);

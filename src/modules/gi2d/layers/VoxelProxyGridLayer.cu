@@ -22,7 +22,7 @@ namespace Enso
     __device__ void Device::VoxelProxyGridLayer::Synchronise(const VoxelProxyGridLayerObjects& objects)
     {
         m_objects = objects;
-        Camera2D::Synchronise(*m_objects.scene);
+        Camera::Synchronise(*m_objects.scene);
     }
 
     __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)

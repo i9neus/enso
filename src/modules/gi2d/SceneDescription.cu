@@ -3,7 +3,7 @@
 #include "core/GenericObjectContainer.cuh"
 #include "lights/Light.cuh"
 #include "tracables/Tracable.cuh"
-#include "integrators/Camera2D.cuh"
+#include "integrators/Camera.cuh"
 
 namespace Enso
 {
@@ -108,7 +108,7 @@ namespace Enso
             }); 
 
         // Build a list of scene cameras for rendering
-        genericObjects->ForEachOfType<Host::Camera2D>([&, this](AssetHandle<Host::Camera2D>& cameraObject) -> bool
+        genericObjects->ForEachOfType<Host::Camera>([&, this](AssetHandle<Host::Camera>& cameraObject) -> bool
             {
                 if (cameraObject->Rebuild(dirtyFlags, viewCtx))
                 {

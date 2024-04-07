@@ -38,7 +38,7 @@ namespace Enso
     {
         using TracableContainer = Host::AssetVector<Host::Tracable, Device::Tracable>;
         using LightContainer = Host::AssetVector<Host::Light, Device::Light>;
-        using CameraContainer = Host::AssetVector<Host::Camera2D, Device::Camera2D>;
+        using CameraContainer = Host::AssetVector<Host::Camera, Device::Camera>;
         using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
 
         class SceneDescription : public Host::AssetAllocator

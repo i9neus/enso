@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Camera2D.cuh"
+#include "Camera.cuh"
 #include "AccumulationBuffer.cuh"
 #include "../SceneObject.cuh"
 #include "../FwdDecl.cuh"
@@ -45,7 +45,7 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::SceneObject, public Device::Camera2D
+        class PerspectiveCamera : public Device::SceneObject, public Device::Camera
         {
             friend class Host::PerspectiveCamera;
         public:
@@ -70,7 +70,7 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::SceneObject, public Host::Camera2D
+        class PerspectiveCamera : public Host::SceneObject, public Host::Camera
                                   
         {
         public:

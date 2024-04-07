@@ -13,7 +13,7 @@ namespace Enso
     
     namespace Device
     {   
-        class Camera2D 
+        class Camera 
         {
         public:
             __device__ virtual void Prepare(const uint dirtyFlags);
@@ -22,7 +22,7 @@ namespace Enso
             __device__ void Synchronise(const Device::SceneDescription& scene);
 
         protected:
-            __device__ Camera2D();
+            __device__ Camera();
 
             __device__ virtual void Integrate(const uchar flags);
 
@@ -34,15 +34,15 @@ namespace Enso
 
     namespace Host
     {
-        class Camera2D
+        class Camera
         {
         public:
             __host__ virtual void Render() = 0;
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual Device::Camera2D* GetDeviceInstance() const = 0;
+            __host__ virtual Device::Camera* GetDeviceInstance() const = 0;
 
         protected:
-            Camera2D() = default;
+            Camera() = default;
         };
     };
 }      
