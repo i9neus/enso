@@ -117,7 +117,7 @@ namespace Enso
 	namespace Host
 	{
 		template<typename T>
-		class Image : public Host::AssetAllocator, public AssetTags<Host::Image<T>, Device::Image<T>>
+		class Image : public Host::Asset, public AssetTags<Host::Image<T>, Device::Image<T>>
 		{
 		protected:
 			Device::Image<T>* cu_deviceData;
@@ -126,6 +126,8 @@ namespace Enso
 			cudaStream_t	  m_hostStream;
 			dim3			  m_block;
 			dim3		      m_grid;
+
+			AssetAllocator    m_allocator;
 
 		public:
 			using Pixel = T;

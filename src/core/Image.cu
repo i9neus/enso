@@ -47,7 +47,8 @@ namespace Enso
 
 	template<typename T>
 	__host__ Host::Image<T>::Image(const std::string& id, unsigned int width, unsigned int height, cudaStream_t hostStream) :
-		AssetAllocator(id),
+		Asset(id),
+		m_allocator(*this),
 		cu_deviceData(nullptr)
 	{		
 		// Prepare the host data
@@ -55,9 +56,9 @@ namespace Enso
 		m_hostData.m_height = height;
 		m_hostData.m_accessSignal = kImageUnlocked;
 
-		GuardedAllocDeviceArray(width * height, &m_hostData.cu_data);
+		m_allocator.GuardedAllocDeviceArray(width * height, &m_hostData.cu_data);
 
-		cu_deviceData = InstantiateOnDevice<Device::Image<T>>(width, height, m_hostData.cu_data);
+		cu_deviceData = m_allocator.InstantiateOnDevice<Device::Image<T>>(width, height, m_hostData.cu_data);
 
 		m_hostStream = hostStream;
 		m_block = dim3(16, 16, 1);
@@ -80,8 +81,8 @@ namespace Enso
 	template<typename T>
 	__host__ void Host::Image<T>::OnDestroyAsset()
 	{		
-		DestroyOnDevice(cu_deviceData);
-		GuardedFreeDeviceArray(m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
+		m_allocator.DestroyOnDevice(cu_deviceData);
+		m_allocator.GuardedFreeDeviceArray(m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
 	}
 
 	template<typename T>

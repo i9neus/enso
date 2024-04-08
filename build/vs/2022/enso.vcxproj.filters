@@ -614,6 +614,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\AssetSynchronise.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

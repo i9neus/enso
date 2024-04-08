@@ -41,6 +41,8 @@ namespace Enso
         class Camera;
         class VoxelProxyGrid;
         class SceneDescription;
+        class AccumulationBuffer;
+        class GenericObjectContainer;
 
         class OverlayLayer;
         class PathTracerLayer;

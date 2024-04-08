@@ -3,7 +3,6 @@
 #include "../FwdDecl.cuh""
 #include "UILayer.cuh"
 #include "../integrators/Camera.cuh"
-#include "../integrators/AccumulationBuffer.cuh"
 
 namespace Enso
 {     
@@ -13,38 +12,32 @@ namespace Enso
         
         __device__ void Validate() const 
         {
-            CudaAssert(gridSize.x > 0 && gridSize.y > 0);            
-
-            accum.Validate();
+            CudaAssert(gridSize.x > 0 && gridSize.y > 0);
         }
 
         BidirectionalTransform2D        cameraTransform;
         UIViewCtx                       viewCtx;
 
         ivec2                           gridSize;
-        AccumulationBufferParams        accum;
     };
 
     struct VoxelProxyGridLayerObjects
     {
         __device__ void Validate() const
         {
-            CudaAssert(scene);
             CudaAssert(accumBuffer);
         }
         
         Device::AccumulationBuffer*         accumBuffer = nullptr;
-        const Device::SceneDescription*     scene = nullptr;  
     };
 
     namespace Device
     {       
-        class VoxelProxyGridLayer : public Device::GenericObject, public Device::Camera
+        class VoxelProxyGridLayer : public Device::Camera
         {
         public:
             __device__ VoxelProxyGridLayer() {}
 
-            __device__ __forceinline__ void     Render();
             __device__ __forceinline__ void     Composite(Device::ImageRGBA* outputImage) const;
             __device__ __forceinline__ vec3     Evaluate(const vec2& posWorld) const;
 
@@ -53,30 +46,28 @@ namespace Enso
 
             //__host__ __device__ virtual void    OnSynchronise(const int) override final;
             __device__ void                     Synchronise(const VoxelProxyGridLayerParams& params) { m_params = params; }
-            __device__ void                     Synchronise(const VoxelProxyGridLayerObjects& objects);
+            __device__ void                     Synchronise(const VoxelProxyGridLayerObjects& objects) { m_objects = objects; }
 
         private:
-            PathTracer2D                            m_voxelTracer;
-            int                                     m_frameIdx;
-
             VoxelProxyGridLayerParams               m_params;
             VoxelProxyGridLayerObjects              m_objects;
-            Device::SceneDescription                m_scene;
         };
     }
 
     namespace Host
     {
-        class VoxelProxyGridLayer : public Host::UILayer, public Host::GenericObject, public Host::Camera
+        class VoxelProxyGridLayer : public Host::GenericObject,
+                                    public Host::UILayer, 
+                                    public Host::Camera
         {
         public:
             VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
             virtual ~VoxelProxyGridLayer();
-           
+            
             __host__ virtual void Render() override final;
-            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) override final;
+            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
-            __host__ void OnDestroyAsset();
+            __host__ virtual void OnDestroyAsset() override final;
 
             //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygridlayer"; }
@@ -95,10 +86,6 @@ namespace Enso
             Device::VoxelProxyGridLayer             m_hostInstance;
             VoxelProxyGridLayerObjects              m_deviceObjects;
             VoxelProxyGridLayerParams               m_params;
-
-            AssetHandle<Host::AccumulationBuffer>   m_accumBuffer;
-
-            const AssetHandle<const Host::SceneDescription>& m_scene;
         };
 
     }

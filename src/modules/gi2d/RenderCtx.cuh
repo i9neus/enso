@@ -17,22 +17,25 @@ namespace Enso
 	struct RenderCtx
 	{
 		__device__ __forceinline__ RenderCtx(const uint& probeHash, 
-												const uint accumIdx, 
+												const uint sample, 
+												//const uint accum,
 												const uchar& depth, 
 												Device::Camera& cam,
 												const uchar fl = 0) :
-			hash(HashOf(probeHash, uint(depth) + 9871251u, accumIdx)),
-			rng(hash),
+			rng(HashOf(probeHash, uint(depth) + 9871251u, sample)),
+			//sampleIdx(sample),
+			//accumIdx(accum),
 			camera(cam),
 			flags(fl),
 			debugData(nullptr)
 		{
 		}
 
-		uint							hash;
 		RNG								rng;
-		Device::Camera&				camera;
+		Device::Camera&					camera;
 		uchar							flags;
+		//uint							sampleIdx;
+		//uint							accumIdx;
 
 		void*							debugData;
 

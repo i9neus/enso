@@ -21,7 +21,8 @@ namespace Enso
     {
     }
     __host__ Host::GenericObject::GenericObject(const std::string& id) :
-        AssetAllocator(id),
+        Asset(id),
+        m_allocator(*this),
         m_renderObjectFlags(0),
         m_dirtyFlags(0),
         m_isFinalised(false),

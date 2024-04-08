@@ -2,7 +2,7 @@
 
 namespace Enso
 {
-    __host__ void GenericObjectContainer::Finalise() const
+    __host__ void Host::GenericObjectContainer::Finalise() const
     {
         Log::Debug("Finalising...\n");
         Log::Indent indent;
@@ -17,7 +17,7 @@ namespace Enso
         }
     }
 
-    __host__ void GenericObjectContainer::Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath)
+    __host__ void Host::GenericObjectContainer::Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath)
     {
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
@@ -45,12 +45,12 @@ namespace Enso
         }
     }
 
-    __host__ void GenericObjectContainer::Erase(const Host::GenericObject& obj)
+    __host__ void Host::GenericObjectContainer::Erase(const Host::GenericObject& obj)
     {
         Erase(obj.GetAssetID());
     }   
 
-    __host__ void GenericObjectContainer::Erase(const std::string& id)
+    __host__ void Host::GenericObjectContainer::Erase(const std::string& id)
     {
         // Get the handle to the object
         auto it = m_objectMap.find(id);
@@ -71,7 +71,7 @@ namespace Enso
         obj.DestroyAsset();
     } 
 
-    __host__ void GenericObjectContainer::Bind()
+    __host__ void Host::GenericObjectContainer::Bind()
     {
         for (auto& object : m_objectMap)
         {
@@ -79,7 +79,7 @@ namespace Enso
         }
     }
 
-    __host__ void GenericObjectContainer::Synchronise()
+    __host__ void Host::GenericObjectContainer::Synchronise()
     {
         for (auto& object : m_objectMap)
         {
@@ -87,7 +87,7 @@ namespace Enso
         }
     }
 
-    __host__ void GenericObjectContainer::OnDestroyAsset()
+    __host__ void Host::GenericObjectContainer::OnDestroyAsset()
     {
         Log::Debug("Unloading scene graph...");
         

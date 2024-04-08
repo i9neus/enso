@@ -1,9 +1,20 @@
 #pragma once
 
 #include "Asset.cuh"
+#include "AssetSynchronise.cuh"
 
 namespace Enso
 {
+	template<typename ObjectType, typename CastType>
+	__global__ void KernelStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
+	{
+		CudaAssert(inputPtr);
+		CudaAssert(outputPtr);
+		CudaAssert(*inputPtr);
+
+		*outputPtr = static_cast<CastType*>(*inputPtr);
+	}
+	
 	template<typename ObjectType, typename UpcastType, typename... Pack>
 	__global__ void KernelCreateDeviceInstance(UpcastType** newInstance, Pack... args)
 	{
@@ -14,76 +25,76 @@ namespace Enso
 
 		CudaAssert(*newInstance);
 	}
-
-	template<typename ObjectType, typename CastType>
-	__global__ void KernelStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
-	{
-		CudaAssert(inputPtr);
-		CudaAssert(outputPtr);
-		CudaAssert(*inputPtr);
-
-		*outputPtr = static_cast<CastType*>(*inputPtr);
-	}
-
-	template<typename ObjectType, typename... ParameterPack>
-	__global__ static void KernelSynchroniseTrivialParams(ObjectType* cu_object, ParameterPack... pack)
-	{
-		CudaAssert(cu_object);
-		cu_object->Synchronise(pack...);
-	}
-
-	template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
-	__global__ static void KernelSynchroniseObjects(ObjectType* cu_object, const size_t hostParamsSize, const ParamsType* cu_params)
-	{
-		// Check that the size of the object in the device matches that of the host. Empty base optimisation can bite us here. 
-		CudaAssert(cu_object);
-		CudaAssert(cu_params);
-		CudaAssert(sizeof(ParamsType) == hostParamsSize);
-
-		// Force a validation check on the structure to make sure there aren't any dead pointers
-		cu_params->Validate();
-
-		// Push the data to the owning class
-		cu_object->SuperType::Synchronise(*cu_params);
-	}
-
-	template<typename ObjectType>
-	__global__ void KernelDestroyDeviceInstance(ObjectType* cu_instance)
-	{
-		if (cu_instance != nullptr) { delete cu_instance; }
-	}
 	
 	enum MemoryAllocFlags : uint { kCudaMemoryManaged = 1 };
+
+	template<typename AssetType, typename... Args>
+	__host__ inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
+	{
+		static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+
+		auto& registry = GlobalResourceRegistry::Get();
+		AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
+
+		AssetHandle<AssetType> newAsset;
+		newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
+
+		registry.RegisterAsset(newAsset.m_ptr, newId);
+		return newAsset;
+	}
+
+	template<typename CastType, typename ObjectType>
+	__host__ inline CastType* StaticCastOnDevice(ObjectType* object)
+	{
+		static_assert(std::is_convertible<ObjectType*, CastType*>::value, "Can't statically cast between these inputs.");
+
+		ObjectType** cu_inputPtr;
+		IsOk(cudaMalloc((void***)&cu_inputPtr, sizeof(ObjectType*)));
+		IsOk(cudaMemcpy(cu_inputPtr, &object, sizeof(ObjectType*), cudaMemcpyHostToDevice));
+		CastType** cu_outputPtr;
+		IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
+		IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
+
+		KernelStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
+		IsOk(cudaDeviceSynchronize());
+
+		CastType* outputPtr = nullptr;
+		IsOk(cudaMemcpy(&outputPtr, cu_outputPtr, sizeof(CastType*), cudaMemcpyDeviceToHost));
+		IsOk(cudaFree(cu_inputPtr));
+		IsOk(cudaFree(cu_outputPtr));
+
+		return outputPtr;
+	}
 	
 	namespace Host
     {
-        class AssetAllocator : public Host::Asset
+        class AssetAllocator
         {
-        public:            
-			AssetAllocator(const std::string& id) : Asset(id) {}
-
 		private:
-			template<typename ObjectType> __host__ void AssertIsTransferrableType() const
+			const Asset & const m_parentAsset;
+
+        public:            
+			AssetAllocator(const Asset& asset) : m_parentAsset(asset) {}
+
+			template<typename AssetType, typename... Args>
+			__host__ inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, Args... args) const
 			{
-				//static_assert(std::is_standard_layout<ParamsType>::value, "Object must be standard layout type.");
-				static_assert(!std::is_polymorphic<ObjectType>::value, "Object cannot be a polymorphic type.");
+				static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+
+				// Concatenate new asset ID with its parent ID 
+				const std::string& concatId = m_parentAsset.GetAssetID() + "/" + newId;
+
+				auto& registry = GlobalResourceRegistry::Get();
+				AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());
+
+				AssetHandle<AssetType> newAsset;
+				newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
+				newAsset->m_parentAssetId = m_parentAsset.GetAssetID();
+
+				registry.RegisterAsset(newAsset.m_ptr, concatId);
+				return newAsset;
 			}
 
-			template<typename ObjectType>
-			__host__ inline void AssertAllAreTrivialArguments(const ObjectType& t) const
-			{
-				static_assert(std::is_trivial<ObjectType>::value, "Cannot sychronise because at least one parameter type is non-trivial.");
-			}
-
-			template<typename ObjectType, typename... Pack>
-			__host__ inline void AssertAllAreTrivialArguments(const ObjectType& t, const Pack... pack) const
-			{
-				AssertAllAreTrivialArguments(t);
-				AssertAllAreTrivialArguments(pack...);
-			}
-
-
-        protected:
 			template<typename ObjectType>
 			__host__ void GuardedFreeDeviceArray(const size_t numElements, ObjectType** deviceData) const
 			{
@@ -93,7 +104,7 @@ namespace Enso
 					IsOk(cudaFree(*deviceData));
 					*deviceData = nullptr;
 
-					GlobalResourceRegistry::Get().DeregisterDeviceMemory(GetAssetID(), sizeof(ObjectType) * numElements);
+					GlobalResourceRegistry::Get().DeregisterDeviceMemory(m_parentAsset.GetAssetID(), sizeof(ObjectType) * numElements);
 				}
 			}
 
@@ -122,7 +133,7 @@ namespace Enso
 					IsOk(cudaMalloc((void**)deviceObject, arraySize));
 				}
 
-				GlobalResourceRegistry::Get().RegisterDeviceMemory(GetAssetID(), arraySize);
+				GlobalResourceRegistry::Get().RegisterDeviceMemory(m_parentAsset.GetAssetID(), arraySize);
 			}
 
 			template<typename ObjectType>
@@ -140,7 +151,7 @@ namespace Enso
 
 				IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(ObjectType) * numElements, cudaMemcpyHostToDevice));
 			}
-						
+
 			template<typename ObjectType, typename UpcastType = ObjectType, typename... Pack>
 			__host__ inline ObjectType* InstantiateOnDevice(Pack... args) const
 			{
@@ -155,7 +166,7 @@ namespace Enso
 				IsOk(cudaMemcpy(&cu_data, cu_tempBuffer, sizeof(ObjectType*), cudaMemcpyDeviceToHost));
 				IsOk(cudaFree(cu_tempBuffer));
 
-				GlobalResourceRegistry::Get().RegisterDeviceMemory(GetAssetID(), sizeof(ObjectType));
+				GlobalResourceRegistry::Get().RegisterDeviceMemory(m_parentAsset.GetAssetID(), sizeof(ObjectType));
 
 				Log::System("Instantiated device object at 0x%x\n", cu_data);
 				return cu_data;
@@ -175,76 +186,7 @@ namespace Enso
 
 				IsOk(cudaFree(cu_params));
 				return cu_data;
-			}
-
-			template<typename CastType, typename ObjectType>
-			__host__ inline CastType* StaticCastOnDevice(ObjectType* object) const
-			{
-				static_assert(std::is_convertible<ObjectType*, CastType*>::value, "Can't statically cast between these inputs.");
-
-				ObjectType** cu_inputPtr;
-				IsOk(cudaMalloc((void***)&cu_inputPtr, sizeof(ObjectType*)));
-				IsOk(cudaMemcpy(cu_inputPtr, &object, sizeof(ObjectType*), cudaMemcpyHostToDevice));
-				CastType** cu_outputPtr;
-				IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
-				IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
-
-				KernelStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
-				IsOk(cudaDeviceSynchronize());
-
-				CastType* outputPtr = nullptr;
-				IsOk(cudaMemcpy(&outputPtr, cu_outputPtr, sizeof(CastType*), cudaMemcpyDeviceToHost));
-				IsOk(cudaFree(cu_inputPtr));
-				IsOk(cudaFree(cu_outputPtr));
-
-				return outputPtr;
-			}
-
-			template<typename ObjectType, typename... ParameterPack>
-			__host__ void SynchroniseTrivialParams(ObjectType* cu_object, ParameterPack... pack) const
-			{
-				Assert(cu_object);
-
-				AssertAllAreTrivialArguments(pack...);
-
-				KernelSynchroniseTrivialParams << <1, 1 >> > (cu_object, pack...);
-				IsOk(cudaDeviceSynchronize());
-			}
-
-			template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
-			__host__ void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params) const
-			{
-				AssertIsTransferrableType<ParamsType>();				
-				Assert(cu_object);
-
-				ParamsType* cu_params;
-				IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
-				IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
-
-				IsOk(cudaDeviceSynchronize());
-				KernelSynchroniseObjects <SuperType> << <1, 1 >> >(cu_object, sizeof(ParamsType), cu_params);
-				IsOk(cudaDeviceSynchronize());
-
-				IsOk(cudaFree(cu_params));
-			}
-			
-			// FIXME: This needs to go away. Fix the Vector class first.
-			template<typename ObjectType, typename ParamsType>
-			__host__ void LegacySynchroniseObjects(ObjectType* cu_object, const ParamsType& params) const
-			{
-				AssertIsTransferrableType<ParamsType>();
-				Assert(cu_object);
-
-				ParamsType* cu_params;
-				IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));
-				IsOk(cudaMemcpy(cu_params, &params, sizeof(ParamsType), cudaMemcpyHostToDevice));
-
-				IsOk(cudaDeviceSynchronize());
-				KernelSynchroniseObjects <ObjectType> << <1, 1 >> > (cu_object, sizeof(ParamsType), cu_params);
-				IsOk(cudaDeviceSynchronize());
-
-				IsOk(cudaFree(cu_params));
-			}
+			}			
 
 			template<typename ObjectType>
 			__host__ void DestroyOnDevice(ObjectType*& cu_data) const
@@ -254,10 +196,10 @@ namespace Enso
 				KernelDestroyDeviceInstance << <1, 1 >> > (cu_data);
 				IsOk(cudaDeviceSynchronize());
 
-				GlobalResourceRegistry::Get().DeregisterDeviceMemory(GetAssetID(), sizeof(ObjectType));
+				GlobalResourceRegistry::Get().DeregisterDeviceMemory(m_parentAsset.GetAssetID(), sizeof(ObjectType));
 
 				cu_data = nullptr;
 			}
-        };
+        };		
     }
 }

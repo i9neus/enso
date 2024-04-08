@@ -100,7 +100,7 @@ namespace Enso
         template<typename ObjectType, typename... Pack>\
         __global__ void Kernel##FunctionName(ObjectType* object, Pack... pack) \
         { \
-            assert(object); \
+            CudaAssert(object); \
             object->FunctionName(pack...); \
         }
 
@@ -108,7 +108,7 @@ namespace Enso
         template<typename ObjectType>\
         __global__ void Kernel##FunctionName(ObjectType* object) \
         { \
-            assert(object); \
+            CudaAssert(object); \
             object->FunctionName(); \
         }
 

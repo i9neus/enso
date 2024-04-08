@@ -7,6 +7,7 @@
 #include "../primitives/SDF.cuh"
 #include "core/UIButtonMap.h"
 #include "core/Vector.cuh"
+#include "AccumulationBuffer.cuh"
 
 namespace Enso
 {
@@ -38,18 +39,26 @@ namespace Enso
         return kSceneObjectDelegatedAction;
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
+    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene)
     {
-        return CreateAsset<Host::PerspectiveCamera>(id);
+        return CreateAsset<Host::PerspectiveCamera>(id, scene);
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id) :
-        Host::SceneObject(id, m_hostInstance, nullptr)
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene) :
+        Host::SceneObject(id, m_hostInstance, nullptr),
+        Camera(id, scene, m_allocator)
     {
-        m_ui.hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
-        m_ui.hostEllipses = CreateChildAsset<Host::Vector<Ellipse>>("uiEllipses", kVectorHostAlloc);
+        m_ui.hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
+        m_ui.hostEllipses = m_allocator.CreateChildAsset<Host::Vector<Ellipse>>("uiEllipses", kVectorHostAlloc);
+
+        constexpr uint kGridWidth = 100;
+        constexpr uint kGridHeight = 1;
+        constexpr uint kNumHarmonics = 1;
+        constexpr size_t kAccumBufferSize = 1000;
+
+        m_accumBuffer = m_allocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize);
         
-        cu_deviceInstance = InstantiateOnDevice<Device::PerspectiveCamera>();        
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::PerspectiveCamera>();        
 
         m_hostInstance.m_objects.ui.lineSegments = m_ui.hostLineSegments->GetDeviceInstance();
         m_hostInstance.m_objects.ui.ellipses = m_ui.hostEllipses->GetDeviceInstance();
@@ -68,7 +77,9 @@ namespace Enso
 
     __host__ void Host::PerspectiveCamera::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
+
+        m_accumBuffer.DestroyAsset();
 
         m_ui.hostLineSegments.DestroyAsset();
         m_ui.hostEllipses.DestroyAsset();
@@ -141,28 +152,28 @@ namespace Enso
         }
         else
         {
-            return m_dirtyFlags;
+            return GenericObject::m_dirtyFlags;
         }
 
         // If the object is dirty, recompute the bounding box
         SetDirtyFlags(kDirtyObjectBounds);
         UpdateUIElements();
 
-        return m_dirtyFlags;
+        return GenericObject::m_dirtyFlags;
     }
 
     __host__ uint Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
     {
-        return m_dirtyFlags;
+        return GenericObject::m_dirtyFlags;
     }
 
     __host__ bool Host::PerspectiveCamera::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
     {
         //AssertInThread("kRenderThread");
 
-        if (!m_dirtyFlags) { return IsConstructed(); }
+        if (GenericObject::m_dirtyFlags) { return IsConstructed(); }
 
-        if (m_dirtyFlags & kDirtyObjectBounds)
+        if (GenericObject::m_dirtyFlags & kDirtyObjectBounds)
         {
             RecomputeBoundingBoxes();
             Synchronise(kSyncObjects);
@@ -171,10 +182,6 @@ namespace Enso
         Synchronise(kSyncParams);
         ClearDirtyFlags();
         return IsConstructed();
-    }
-
-    __host__ void Host::PerspectiveCamera::Render()
-    {
     }
 
     __host__ bool Host::PerspectiveCamera::Serialise(Json::Node& node, const int flags) const
@@ -191,7 +198,7 @@ namespace Enso
 
         if (node.GetValue("fov", m_hostInstance.m_params.fov, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
 
-        return m_dirtyFlags;
+        return GenericObject::m_dirtyFlags;
     }
 
     __host__ uint Host::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const

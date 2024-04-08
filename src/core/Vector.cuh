@@ -98,14 +98,14 @@ namespace Enso
 	{
 		template<typename HostType, typename DeviceType>
 		class VectorBase : public Generic::Vector<HostType>,
-						   public Host::AssetAllocator
+						   public Host::Asset
 		{
 		protected:
-			Device::Vector<DeviceType>* cu_deviceInstance;
-			Vector<DeviceType>* cu_deviceInterface;
-
-			DeviceType* cu_deviceData;
-			VectorParams				m_deviceParams;
+			Device::Vector<DeviceType>*		cu_deviceInstance;
+			Vector<DeviceType>*				cu_deviceInterface;
+			AssetAllocator					m_allocator;
+			DeviceType*						cu_deviceData;
+			VectorParams					m_deviceParams;
 
 		public:
 
@@ -143,7 +143,8 @@ namespace Enso
 
 		public:
 			__host__ VectorBase(const std::string& id, const uint flags) :
-				AssetAllocator(id),
+				Asset(id),
+				m_allocator(*this),
 				cu_deviceInstance(nullptr),
 				cu_deviceInterface(nullptr),
 				cu_deviceData(nullptr)
@@ -163,7 +164,7 @@ namespace Enso
 				//	"kVectorUnifiedMemory can only be used when host and device types are the same.");
 
 				// Create a device instance
-				//cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>(id);
+				//cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::Vector<DeviceType>>(id);
 			}
 
 			__host__ VectorBase(const std::string& id, const uint size, const uint flags) :
@@ -208,7 +209,7 @@ namespace Enso
 				Log::Error("Destroying %s", GetAssetID());
 
 				// Clean up device memory
-				GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
+				m_allocator.GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
 				m_deviceParams.size = 0;
 				m_deviceParams.capacity = 0;
 
@@ -232,7 +233,7 @@ namespace Enso
 				}
 
 				// Destroy the device instance
-				DestroyOnDevice(cu_deviceInstance);
+				m_allocator.DestroyOnDevice(cu_deviceInstance);
 			}
 
 			__host__ inline void Prepare()
@@ -358,7 +359,7 @@ namespace Enso
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
 				{
-					cu_deviceInstance = InstantiateOnDevice<Device::Vector<DeviceType>>();
+					cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::Vector<DeviceType>>();
 				}
 				return cu_deviceInstance;
 			}
@@ -410,7 +411,7 @@ namespace Enso
 
 					// Allocate a new block of memory
 					DeviceType* newDeviceData = nullptr;
-					GuardedAllocDeviceArray(newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
+					m_allocator.GuardedAllocDeviceArray(newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
 
 					// If we're syncing from host to device, don't copy the data from the old device buffer because it'll just get overwritten anyway
 					if (cu_deviceData)
@@ -421,7 +422,7 @@ namespace Enso
 						}
 
 						// Deallocate the old memory
-						GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
+						m_allocator.GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
 					}
 
 					m_deviceParams.capacity = newCapacity;

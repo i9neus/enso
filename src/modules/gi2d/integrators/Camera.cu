@@ -3,24 +3,37 @@
 #include "io/json/JsonUtils.h"
 #include "core/Vector.cuh"
 #include "../Dirtiness.cuh"
+#include "AccumulationBuffer.cuh"
 
 namespace Enso
 {
     __device__ Device::Camera::Camera() : m_frameIdx(1) {}
 
-    __device__ void Device::Camera::Synchronise(const Device::SceneDescription& scene)
-    {
-        m_voxelTracer.Synchronise(scene);
-    }
-
     __device__ void Device::Camera::Prepare(const uint dirtyFlags)
     {
         m_frameIdx = (dirtyFlags & kDirtyIntegrators) ? 0 : (m_frameIdx + 1);
     }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
-    __device__ void Device::Camera::Integrate(const uchar ctxFlags)
+    __device__ void Device::Camera::Synchronise(const CameraObjects& objects) 
+    { 
+        m_objects = objects; 
+        m_voxelTracer.Synchronise(*m_objects.scene);
+    }
+
+    __device__ void Device::Camera::Integrate()
     {
-        RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, ctxFlags);
+        if (kKernelIdx >= m_params.totalSubprobes) { return; }
+        CudaAssertDebug(m_objects.accumBuffer)
+
+        //const int probeIdx = kKernelIdx / m_params.unitsPerProbe;
+        //const int subprobeIdx = ((kKernelIdx / m_params.numHarmonics) % m_params.subprobesPerProbe);
+
+        /*const uchar ctxFlags = (probeIdx / m_params.gridSize.x == m_params.gridSize.y / 2 &&
+            probeIdx % m_params.gridSize.x == m_params.gridSize.x / 2 &&
+            subprobeIdx == 0) ? kRenderCtxDebug : 0;*/
+        
+        RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, 0);
 
         /*if (ctxFlags & kRenderCtxDebug)
         {
@@ -28,5 +41,71 @@ namespace Enso
         }*/
 
         m_voxelTracer.Integrate(renderCtx);
+    }
+    DEFINE_KERNEL_PASSTHROUGH(Integrate);
+
+    __host__ Host::Camera::Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator) :
+        m_scene(scene),
+        m_parentAllocator(allocator),
+        m_dirtyFlags(0)
+    {
+
+    }
+
+    __host__ Host::Camera::~Camera()
+    {
+        OnDestroyAsset();
+    }
+
+    __host__ void Host::Camera::OnDestroyAsset()
+    {
+        m_accumBuffer.DestroyAsset();
+    }
+
+    __host__ void Host::Camera::Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize, Device::Camera* deviceInstance)
+    {
+        cu_deviceInstance = deviceInstance;
+
+        m_accumBuffer = m_parentAllocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", numProbes, numHarmonics, accumBufferSize);
+        m_params = m_accumBuffer->GetParams();
+
+        m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
+        m_deviceObjects.scene = m_scene->GetDeviceInstance();
+
+        Synchronise(kSyncParams | kSyncObjects);
+    }
+
+    __host__ bool Host::Camera::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx)
+    {
+        m_dirtyFlags = dirtyFlags;
+        return true;
+    }
+
+    __host__ void Host::Camera::Integrate()
+    {
+        Synchronise(kSyncParams | kSyncObjects);
+        
+        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+
+        if (m_dirtyFlags & kDirtyIntegrators)
+        {
+            m_accumBuffer->Clear();
+        }
+        m_dirtyFlags = 0;
+
+        ScopedDeviceStackResize(1024 * 10, [this]() -> void
+            {
+                KernelIntegrate << <m_params.kernel.grids.accumSize, m_params.kernel.blockSize >> > (cu_deviceInstance);
+            });
+
+        m_accumBuffer->Reduce();
+
+        IsOk(cudaDeviceSynchronize());
+    }
+
+    __host__ void Host::Camera::Synchronise(const int syncFlags)
+    {
+        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_deviceObjects); }
+        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_params); }
     }
 }

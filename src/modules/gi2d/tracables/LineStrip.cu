@@ -102,10 +102,10 @@ namespace Enso
 
         constexpr uint kMinTreePrims = 3;
 
-        m_hostBIH = CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
+        m_hostBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
+        m_hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
 
-        cu_deviceInstance = InstantiateOnDevice<Device::LineStrip>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::LineStrip>();
 
         m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.lineSegments = m_hostLineSegments->GetDeviceInstance();
@@ -130,7 +130,7 @@ namespace Enso
 
     __host__ void Host::LineStrip::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
 
         m_hostBIH.DestroyAsset();
         m_hostLineSegments.DestroyAsset();

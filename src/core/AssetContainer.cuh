@@ -54,7 +54,7 @@ namespace Enso
 		
 		template<typename ElementType>
 		class AssetContainer<ElementType, typename std::enable_if<std::is_base_of<Host::Asset, ElementType>::value>::type> :
-			public Host::AssetAllocator, 
+			public Host::Asset, 
 			public AssetTags<Host::AssetContainer<typename ElementType::HostVariant>, Device::AssetContainer<typename ElementType::DeviceVariant>>
 		{
 			using SortFunctor = std::function<bool(const AssetHandle<ElementType>&, AssetHandle<ElementType>&)>;
@@ -80,10 +80,15 @@ namespace Enso
 			std::map<std::string, AssetHandle<ElementType>>		m_assetMap;
 			SortFunctor											m_sortFunctor;
 
+			AssetAllocator										m_allocator;
+
 		public:
-			__host__ AssetContainer(const std::string& id) : AssetAllocator(id), cu_deviceData(nullptr) 
+			__host__ AssetContainer(const std::string& id) : 
+				Asset(id),
+				m_allocator(*this), 
+				cu_deviceData(nullptr)
 			{
-				cu_deviceData = InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
+				cu_deviceData = m_allocator.InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
 			}
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
@@ -167,7 +172,7 @@ namespace Enso
 
 			__host__ void Destroy()
 			{
-				DestroyOnDevice(cu_deviceData);
+				m_allocator.DestroyOnDevice(cu_deviceData);
 				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 			}
 

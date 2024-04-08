@@ -71,7 +71,7 @@ namespace Enso
     __host__ Host::OmniLight::OmniLight(const std::string& id) :
         Host::Light(id, m_hostInstance)
     {
-        cu_deviceInstance = InstantiateOnDevice<Device::OmniLight>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::OmniLight>();
 
         Synchronise(kSyncObjects);
     }
@@ -87,7 +87,7 @@ namespace Enso
 
     __host__ void Host::OmniLight::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::OmniLight::Synchronise(const int syncFlags)

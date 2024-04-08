@@ -147,7 +147,7 @@ namespace Enso
 
     __host__ void GI2DRenderer::LoadScene()
     {
-        m_sceneObjects = CreateAsset<GenericObjectContainer>(":gi2d/sceneObjects");
+        m_sceneObjects = CreateAsset<Host::GenericObjectContainer>(":gi2d/sceneObjects");
         m_sceneDescription = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
         
         // Create some default scene objects
@@ -194,6 +194,7 @@ namespace Enso
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
+        m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
 
         SetDirtyFlags(kDirtyAll, false);
     }
@@ -621,7 +622,7 @@ namespace Enso
             {
                 for (auto& camera : m_sceneDescription->Cameras())
                 {
-                    camera->Render();
+                    camera->Integrate();
                 }
                 //m_renderTimer.Reset();
                 //Log::Write("-----");

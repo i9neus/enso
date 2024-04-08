@@ -207,7 +207,7 @@ namespace Enso
         cu_deviceInstance(nullptr)
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
-        cu_deviceInstance = InstantiateOnDevice<Device::KIFS>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::KIFS>();
         Synchronise(kSyncObjects);
     }
 
@@ -223,7 +223,7 @@ namespace Enso
 
     __host__ void Host::KIFS::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::KIFS::Synchronise(const int syncType)

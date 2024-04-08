@@ -18,6 +18,8 @@ namespace Enso
         {
             CudaAssert(numProbes > 0);
             CudaAssert(numHarmonics > 0);
+            CudaAssert(accumBufferSize > 0);
+
             CudaAssert(totalGridUnits > 0);
             CudaAssert(subprobesPerProbe > 0);
             CudaAssert(unitsPerProbe > 0);
@@ -30,6 +32,7 @@ namespace Enso
 
         int      numProbes = 0;
         int      numHarmonics = 0;
+        size_t   accumBufferSize = 0;
 
         int      totalGridUnits = 0; //             <-- The total number of units in the reduced grid
         int	     subprobesPerProbe = 0;	//			<-- A sub-probe is a set of SH coefficients + data. Multiple sub-probes are accumulated to make a full probe. 
@@ -97,7 +100,7 @@ namespace Enso
         class AccumulationBuffer : public Host::GenericObject
         {
         public:
-            AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics);
+            AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics, const size_t accumBufferSize);
             virtual ~AccumulationBuffer();
 
             __host__ void Reduce();

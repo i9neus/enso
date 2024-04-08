@@ -70,20 +70,12 @@ namespace Enso
 
             __host__ static std::string                  MakeTemporaryID();
 
-            //template<typename AssetType, typename... Args>
-            //__host__ static AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args);
-
         protected:
             cudaStream_t            m_hostStream;
             template<typename AssetType> friend class AssetHandle;
             
-            __host__ virtual void OnDestroyAsset() = 0;
-
-            template<typename AssetType, typename... Args>
-            __host__ inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, Args... args);
-
-        private:
             __host__ Asset(const std::string& id) : m_assetId(id), m_hostStream(0) {  }
+            __host__ virtual void OnDestroyAsset() = 0;
         };
     }
 
@@ -102,6 +94,8 @@ namespace Enso
     class AssetHandle
     {
         friend class Host::Asset;
+        friend class Host::AssetAllocator;
+
         template<typename T> friend class AssetHandle;
         template<typename AssetType, typename... Args> friend AssetHandle<AssetType> CreateAsset(const std::string&, Args...);
 
@@ -204,38 +198,4 @@ namespace Enso
             return true;
         }
     };
-
-    template<typename AssetType, typename... Args>
-    __host__ inline AssetHandle<AssetType> Host::Asset::CreateChildAsset(const std::string& newId, Args... args)
-    {
-        static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
-
-        // Concatenate new asset ID with its parent ID 
-        const std::string& concatId = GetAssetID() + "/" + newId;
-        
-        auto& registry = GlobalResourceRegistry::Get();
-        AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());
-        
-        AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
-        newAsset->m_parentAssetId = GetAssetID();
-
-        registry.RegisterAsset(newAsset.m_ptr, concatId);
-        return newAsset;
-    }
-
-    template<typename AssetType, typename... Args>
-    __host__ inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
-    {
-        static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
-
-        auto& registry = GlobalResourceRegistry::Get();
-        AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
-        
-        AssetHandle<AssetType> newAsset;
-        newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
-
-        registry.RegisterAsset(newAsset.m_ptr, newId);
-        return newAsset;
-    }
 }

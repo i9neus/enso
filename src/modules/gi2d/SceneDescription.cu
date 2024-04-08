@@ -8,15 +8,16 @@
 namespace Enso
 {
     __host__ Host::SceneDescription::SceneDescription(const std::string& id) :
-        Host::AssetAllocator(id)
+        Host::Asset(id),
+        m_allocator(*this)
     {
-        m_hostTracables = CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
-        m_hostLights = CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
-        m_hostCameras = CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
-        m_hostSceneObjects = CreateChildAsset<Host::SceneObjectContainer>("widgets", kVectorHostAlloc);
+        m_hostTracables = m_allocator.CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
+        m_hostLights = m_allocator.CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
+        m_hostCameras = m_allocator.CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
+        m_hostSceneObjects = m_allocator.CreateChildAsset<Host::SceneObjectContainer>("widgets", kVectorHostAlloc);
 
-        m_hostTracableBIH = CreateChildAsset<Host::BIH2DAsset>("tracablebih", 1);
-        m_hostSceneBIH = CreateChildAsset<Host::BIH2DAsset>("widgetbih", 1);
+        m_hostTracableBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("tracablebih", 1);
+        m_hostSceneBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("widgetbih", 1);
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -24,14 +25,14 @@ namespace Enso
         m_deviceObjects.tracableBIH = m_hostTracableBIH->GetDeviceInstance();
         m_deviceObjects.sceneBIH = m_hostSceneBIH->GetDeviceInstance();
 
-        cu_deviceInstance = InstantiateOnDevice<Device::SceneDescription>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::SceneDescription>();
 
         SynchroniseObjects<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects);
     }
 
     __host__ void Host::SceneDescription::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
 
         m_hostTracables.DestroyAsset();
         m_hostLights.DestroyAsset();
@@ -67,7 +68,7 @@ namespace Enso
         bih->Build(getPrimitiveBBox);
     }
 
-    __host__ void Host::SceneDescription::Rebuild(AssetHandle<GenericObjectContainer>& genericObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
+    __host__ void Host::SceneDescription::Rebuild(AssetHandle<Host::GenericObjectContainer>& genericObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)
     {        
         // Only rebuilid if the object bounds have changed through insertion, deletion or movement
         if (!(dirtyFlags & kDirtyIntegrators)) { return; }

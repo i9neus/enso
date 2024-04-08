@@ -72,7 +72,7 @@ namespace Enso
     {        
         class SceneDescription;
         
-        class GenericObject : public Host::AssetAllocator,
+        class GenericObject : public Host::Asset,
                               public Serialisable
         {
         public:            
@@ -164,6 +164,8 @@ namespace Enso
             uint                m_dirtyFlags;
             bool                m_isFinalised;
             bool                m_isConstructed;
+
+            const AssetAllocator m_allocator;
 
         private:
             std::string         m_dagPath;

@@ -91,7 +91,7 @@ namespace Enso
         AssetHandle<Host::OverlayLayer>       m_overlayRenderer;
         AssetHandle<Host::VoxelProxyGridLayer> m_voxelProxyGridLayer;
 
-        AssetHandle<GenericObjectContainer>   m_sceneObjects;
+        AssetHandle<Host::GenericObjectContainer> m_sceneObjects;
         AssetHandle<Host::SceneDescription>   m_sceneDescription;
 
         std::unique_ptr<ViewTransform2D>      m_viewTransform;
@@ -100,7 +100,7 @@ namespace Enso
         UIViewCtx                             m_viewCtx;
         UISelectionCtx                        m_selectionCtx;
 
-        GenericObjectFactory<const std::string&, const Json::Node&, const AssetHandle<const Host::SceneDescription>&> m_sceneObjectFactory;
+        Host::GenericObjectFactory<const std::string&, const Json::Node&, const AssetHandle<const Host::SceneDescription>&> m_sceneObjectFactory;
 
         struct
         {

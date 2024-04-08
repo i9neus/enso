@@ -5,9 +5,7 @@
 #include "core/Vector.cuh"
 
 namespace Enso
-{
-    constexpr size_t kAccumBufferSize = 1024 * 1024;
-     
+{     
     /*
     * Memory ordering from smallest to largest:
     *  - RGBW tuples (as vec3s)
@@ -55,13 +53,13 @@ namespace Enso
 
                     if (subprobeIdx + iterationSize < m_params.subprobesPerProbe)
                     {
-                        CudaAssertDebug(kKernelIdx + iterationSize * m_params.numHarmonics < kAccumBufferSize);
+                        CudaAssertDebug(kKernelIdx + iterationSize * m_params.numHarmonics < m_params.accumBufferSize);
                         texel += accumBuffer[kKernelIdx + iterationSize * m_params.numHarmonics];
                     }
                 }
                 else
                 {
-                    CudaAssertDebug(kKernelIdx + iterationSize * m_params.numHarmonics < kAccumBufferSize);
+                    CudaAssertDebug(kKernelIdx + iterationSize * m_params.numHarmonics < m_params.accumBufferSize);
                     CudaAssertDebug(subprobeIdx + iterationSize < m_params.subprobesPerProbe);
 
                     reduceBuffer[kKernelIdx] += reduceBuffer[kKernelIdx + iterationSize * m_params.numHarmonics];
@@ -84,26 +82,29 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Reduce);
 
-    Host::AccumulationBuffer::AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics) :
+    Host::AccumulationBuffer::AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics, const size_t accumBufferSize) :
         GenericObject(id),
         m_norm(1)
     {
+        Assert(accumBufferSize >= numProbes * numHarmonics);
+        
         // Establish the properties of the grid
         m_params.numProbes = numProbes;
         m_params.numHarmonics = (numHarmonics - 1) * 2 + 1;
+        m_params.accumBufferSize = accumBufferSize;
         m_params.totalGridUnits = m_params.numProbes * m_params.numHarmonics;
 
         // Derive some more properties used when accumulating and reducing.
-        m_params.subprobesPerProbe = std::min(kAccumBufferSize / m_params.numProbes,
-            kAccumBufferSize / m_params.totalGridUnits);
+        m_params.subprobesPerProbe = std::min(m_params.accumBufferSize / m_params.numProbes,
+            m_params.accumBufferSize / m_params.totalGridUnits);
         m_params.unitsPerProbe = m_params.subprobesPerProbe * m_params.numHarmonics;
         m_params.totalSubprobes = m_params.subprobesPerProbe * m_params.numProbes;
         m_params.totalAccumUnits = m_params.totalSubprobes * m_params.numHarmonics;
 
         // Create some assets
-        m_hostAccumBuffer = CreateChildAsset<Host::Vector<vec3>>("accumBuffer", kAccumBufferSize, kVectorHostAlloc);
-        m_hostReduceBuffer = CreateChildAsset<Host::Vector<vec3>>("reduceBuffer", kAccumBufferSize, kVectorHostAlloc);
-        m_hostOutputBuffer = CreateChildAsset<Host::Vector<vec3>>("outputBuffer", m_params.totalGridUnits, kVectorHostAlloc);
+        m_hostAccumBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("accumBuffer", m_params.accumBufferSize, kVectorHostAlloc);
+        m_hostReduceBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("reduceBuffer", m_params.accumBufferSize, kVectorHostAlloc);
+        m_hostOutputBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("outputBuffer", m_params.totalGridUnits, kVectorHostAlloc);
 
         // Set the device objects
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -115,7 +116,7 @@ namespace Enso
         m_params.kernel.grids.accumSize = (m_params.totalSubprobes + m_params.kernel.blockSize - 1) / m_params.kernel.blockSize;
         m_params.kernel.grids.reduceSize = (m_params.totalAccumUnits + m_params.kernel.blockSize - 1) / m_params.kernel.blockSize;
 
-        cu_deviceInstance = InstantiateOnDevice<Device::AccumulationBuffer>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::AccumulationBuffer>();
         Synchronise(kSyncParams | kSyncObjects);
     }
 

@@ -56,6 +56,7 @@
     <ClInclude Include="..\..\..\src\core\Asset.cuh" />
     <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh" />
     <ClInclude Include="..\..\..\src\core\AssetContainer.cuh" />
+    <ClInclude Include="..\..\..\src\core\AssetSynchronise.cuh" />
     <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh" />
     <ClInclude Include="..\..\..\src\core\debug\Backtrace.h" />
     <ClInclude Include="..\..\..\src\core\debug\GlobalThreadMap.h" />

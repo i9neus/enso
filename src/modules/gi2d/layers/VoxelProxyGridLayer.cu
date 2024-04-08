@@ -9,35 +9,19 @@
 
 namespace Enso
 {
-    constexpr size_t kAccumBufferSize = 1024 * 1024;
-    
-    /*__host__ __device__ void Device::VoxelProxyGridLayer::OnSynchronise(const int syncFlags)
-    {
-        if (syncFlags == kSyncObjects)
-        {
-            m_scene = *m_objects.scene;
-        }
-    }*/
-
-    __device__ void Device::VoxelProxyGridLayer::Synchronise(const VoxelProxyGridLayerObjects& objects)
-    {
-        m_objects = objects;
-        Camera::Synchronise(*m_objects.scene);
-    }
-
     __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
     {       
-        int accumIdx = kKernelIdx * m_params.accum.numHarmonics;  
-
-        for (int harIdx = 0; harIdx < m_params.accum.numHarmonics; ++harIdx)
+        const int accumIdx = kKernelIdx * Camera::m_params.numHarmonics;
+        
+        for (int harIdx = 0; harIdx < Camera::m_params.numHarmonics; ++harIdx)
         {
-            (*m_objects.accumBuffer)[accumIdx + harIdx] += L.xyz; 
+            (*m_objects.accumBuffer)[accumIdx + harIdx] += L.xyz;
         }
     }
 
     __device__ bool Device::VoxelProxyGridLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
-        const uint probeIdx = kKernelIdx / m_params.accum.subprobesPerProbe;
+        const uint probeIdx = kKernelIdx / Camera::m_params.subprobesPerProbe;
         const vec2 probePosNorm = vec2(float(0.5f + probeIdx % m_params.gridSize.x), float(0.5f + probeIdx / m_params.gridSize.x));
 
         // Transform from screen space to view space
@@ -66,46 +50,13 @@ namespace Enso
         return true;
     }
 
-    DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
-
-    __device__ void Device::VoxelProxyGridLayer::Render()
-    {
-        if (kKernelIdx >= m_params.accum.totalSubprobes) { return; }
-        CudaAssertDebug(m_objects.accumBuffer)
-
-        const int subprobeIdx = ((kKernelIdx / m_params.accum.numHarmonics) % m_params.accum.subprobesPerProbe);
-        const int probeIdx = kKernelIdx / m_params.accum.unitsPerProbe;
-
-        const uchar ctxFlags = (probeIdx / m_params.gridSize.x == m_params.gridSize.y / 2 &&
-            probeIdx % m_params.gridSize.x == m_params.gridSize.x / 2 &&
-            subprobeIdx == 0) ? kRenderCtxDebug : 0;
-
-        Integrate(ctxFlags);
-    }
-    DEFINE_KERNEL_PASSTHROUGH(Render);
-
     __device__ vec3 Device::VoxelProxyGridLayer::Evaluate(const vec2& posWorld) const
     {
         const ivec2 probeIdx = ivec2(m_params.cameraTransform.PointToObjectSpace(posWorld));
 
         if (probeIdx.x < 0 || probeIdx.x >= m_params.gridSize.x || probeIdx.y < 0 || probeIdx.y >= m_params.gridSize.y) { return kOne * 0.2; }
 
-        vec3 L = m_objects.accumBuffer->Evaluate(probeIdx.y * m_params.gridSize.x + probeIdx.x, 0);
-
-        /*if (length(posWorld - m_kifsDebug.pNear) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kRed; }
-        if (length(posWorld - m_kifsDebug.pFar) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kYellow; }
-        for (int idx = 0; idx < KIFSDebugData::kMaxPoints; ++idx)
-        {
-            if (length(posWorld - m_kifsDebug.marchPts[idx]) < UILayer::m_params.viewCtx.dPdXY * 4.0f) { L += kGreen; }
-        }*/
-
-        /*if (m_kifsDebug.isHit)
-        {
-            if (length(posWorld - m_kifsDebug.hit) < UILayer::m_params.viewCtx.dPdXY * 5.0f) { L += kRed; }
-            if (SDFLine(posWorld, m_kifsDebug.hit, m_kifsDebug.normal * UILayer::m_params.viewCtx.dPdXY * 100.0f).x < UILayer::m_params.viewCtx.dPdXY * 1.f) { L += kRed; }
-        }*/
-
-        return L;
+        return Camera::m_objects.accumBuffer->Evaluate(probeIdx.y * m_params.gridSize.x + probeIdx.x, 0);
     }
 
     __device__ void Device::VoxelProxyGridLayer::Composite(Device::ImageRGBA* deviceOutputImage)  const
@@ -130,29 +81,29 @@ namespace Enso
 
     Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
         GenericObject(id),
-        m_scene(scene)
+        Camera(id, scene, m_allocator)
     {
-        Assert(m_scene);
-
         constexpr uint kGridWidth = 100;
         constexpr uint kGridHeight = 100;
         constexpr uint kNumHarmonics = 1;
+        constexpr size_t kAccumBufferSize = 1024 * 1024;
 
-        m_accumBuffer = CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", kGridWidth * kGridHeight, kNumHarmonics);
+        // Instantiate and sync
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>();
+
+        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize, StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
 
         // Construct the camera transform
         m_params.cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));      
 
         // Set the device objects
-        m_deviceObjects.scene = m_scene->GetDeviceInstance();
-        m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
+        m_deviceObjects.accumBuffer = Camera::m_accumBuffer->GetDeviceInstance();
 
         // Cache some parameters used for the accumulator
         m_params.gridSize = ivec2(kGridWidth, kGridHeight);
-        m_params.accum = m_accumBuffer->GetParams();
 
-        // Instantiate and sync
-        cu_deviceInstance = InstantiateOnDevice<Device::VoxelProxyGridLayer>();
+
+
         Synchronise(kSyncParams | kSyncObjects);
     }
 
@@ -163,7 +114,7 @@ namespace Enso
 
     __host__ uint Host::VoxelProxyGridLayer::Deserialise(const Json::Node& node, const int flags)
     {
-        return m_dirtyFlags;
+        return GenericObject::m_dirtyFlags;
     }
 
     /*void Host::VoxelProxyGridLayer::Bind()
@@ -184,9 +135,14 @@ namespace Enso
         return CreateAsset<Host::VoxelProxyGridLayer>(id, json, scene);
     }*/
 
-    __host__ bool Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx)
+    __host__ void Host::VoxelProxyGridLayer::Render()
     {
-        m_dirtyFlags = dirtyFlags;
+    }
+
+    __host__ bool Host::VoxelProxyGridLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    {           
+        Camera::Rebuild(dirtyFlags, viewCtx);
+        
         m_params.viewCtx = viewCtx;
 
         Synchronise(kSyncParams);
@@ -196,33 +152,17 @@ namespace Enso
 
     __host__ void Host::VoxelProxyGridLayer::Synchronise(const int syncType)
     {
+        Camera::Synchronise(syncType);
+        
         if (syncType & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_deviceObjects); }
         if (syncType & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_params); }
     }
 
     __host__ void Host::VoxelProxyGridLayer::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
-    }
-
-    __host__ void Host::VoxelProxyGridLayer::Render()
-    {
-        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+        Camera::OnDestroyAsset();   
         
-        if (m_dirtyFlags & kDirtyIntegrators)
-        {
-            m_accumBuffer->Clear();
-        }
-        m_dirtyFlags = 0;
-
-        ScopedDeviceStackResize(1024 * 10, [this]() -> void
-            {
-                KernelRender << <m_params.accum.kernel.grids.accumSize, m_params.accum.kernel.blockSize >> > (cu_deviceInstance);
-            });
-
-        m_accumBuffer->Reduce();
-
-        IsOk(cudaDeviceSynchronize());
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::VoxelProxyGridLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const

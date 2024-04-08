@@ -143,12 +143,12 @@ namespace Enso
         m_scene(scene)
     {                
         // Create some Cuda objects
-        m_hostAccumBuffer = CreateChildAsset<Host::ImageRGBW>("accumBuffer", width, height, renderStream);
+        m_hostAccumBuffer = m_allocator.CreateChildAsset<Host::ImageRGBW>("accumBuffer", width, height, renderStream);
 
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
-        cu_deviceInstance = InstantiateOnDevice<Device::OverlayLayer>();
+        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::OverlayLayer>();
 
         Synchronise(kSyncObjects);
     }
@@ -166,7 +166,7 @@ namespace Enso
 
     __host__ void Host::OverlayLayer::OnDestroyAsset()
     {
-        DestroyOnDevice(cu_deviceInstance);
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();
     }
 
@@ -216,9 +216,9 @@ namespace Enso
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
     }*/
 
-    __host__ void Host::OverlayLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::OverlayLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {        
-        if (SetDirtyFlags(dirtyFlags) == kClean) { return; }
+        if (SetDirtyFlags(dirtyFlags) == kClean) { return false; }
 
         m_params.viewCtx = viewCtx;
         m_params.selectionCtx = selectionCtx;
@@ -235,5 +235,6 @@ namespace Enso
 
         // Upload to the device
         Synchronise(kSyncParams);
+        return true;
     }
 }
