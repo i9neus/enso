@@ -38,8 +38,10 @@ namespace Enso
     {
     }
 
-    __host__ __device__ void Device::KIFS::OnSynchronise(const int flags)
-    {
+    __host__ __device__ void Device::KIFS::Synchronise(const KIFSParams& params) 
+    {  
+        m_params = params; 
+
         m_rot1 = mat2(vec2(cos(m_params.kifs.rotate), -sin(m_params.kifs.rotate)), vec2(sin(m_params.kifs.rotate), cos(m_params.kifs.rotate)));
         m_rot2 = mat2(vec2(1.0, 0.0), vec2(0.0, 1.0));
     }
@@ -233,6 +235,7 @@ namespace Enso
         if (syncType & kSyncParams)
         {
             SynchroniseObjects<Device::KIFS>(cu_deviceInstance, m_hostInstance.m_params);
+            m_hostInstance.Synchronise(m_hostInstance.m_params);
         }
     }
 

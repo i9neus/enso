@@ -47,7 +47,6 @@ namespace Enso
 
         public:
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx, const bool isMouseTest) const { return vec4(0.0f); }
-            __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const { return false; };
 
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
             __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
@@ -135,6 +134,7 @@ namespace Enso
             __host__ void RecomputeWorldSpaceBoundingBox();
             __host__ void RecomputeBoundingBoxes();
             __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
+            __host__ const BidirectionalTransform2D& GetTransform() const { return m_hostInstance.m_params.transform; }
 
         protected:
             struct

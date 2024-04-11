@@ -23,7 +23,9 @@ namespace Enso
         __host__ __device__ bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const;
 
         __host__ void                               SetOrigin(const vec2& origin) { m_origin = origin; }
+        __host__ const vec2&                        GetOrigin() const { return m_origin; }
         __host__ void                               SetRadius(const float& radius) { m_radius = radius; }
+        __host__ float                              GetRadius() const { return m_radius; }
 
         __host__ __device__ __forceinline__ BBox2f  GetBoundingBox() const
         {

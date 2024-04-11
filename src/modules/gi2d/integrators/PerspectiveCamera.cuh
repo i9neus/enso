@@ -60,7 +60,6 @@ namespace Enso
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const override final;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
-            __host__ __device__ virtual uint            OnMouseClick(const UIViewCtx& viewCtx) const override final;
             __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
             __device__ void                             Synchronise(const PerspectiveCameraParams& params) { m_params = params; }
             __device__ void                             Synchronise(const PerspectiveCameraObjects& objects) { m_objects = objects; }
@@ -111,7 +110,11 @@ namespace Enso
             __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
-            __host__ void               UpdateUIElements();
+            __host__ void               UpdateUIWireframes();
+            __host__ void               UpdateUIHandles(const vec2& cameraAxis);
+
+            __host__ UIHandle&          GetOriginHandle();
+            __host__ UIHandle&          GetAxisHandle();
 
             Device::PerspectiveCamera*  cu_deviceInstance = nullptr;
             Device::PerspectiveCamera   m_hostInstance;

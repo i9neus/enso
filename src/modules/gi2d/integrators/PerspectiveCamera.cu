@@ -88,14 +88,6 @@ namespace Enso
         return L;
     }
 
-    __host__ __device__ uint Device::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
-    {
-        CudaAssertDebug(m_objects.ui.handles->Size() == 2);
-
-        const vec2 pObject = viewCtx.mousePos - GetTransform().trans;
-        return ((*m_objects.ui.handles)[0].EvaluateOverlay(pObject, viewCtx).w > 0.f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
-    }
-
     __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene)
     {
         return CreateAsset<Host::PerspectiveCamera>(id, scene);
@@ -223,7 +215,8 @@ namespace Enso
 
         // If the object is dirty, recompute the bounding box
         SetDirtyFlags(kDirtyObjectBounds);
-        UpdateUIElements();
+        UpdateUIHandles(m_hostInstance.m_params.cameraAxis);
+        UpdateUIWireframes();
 
         return GenericObject::m_dirtyFlags;
     }
@@ -233,11 +226,9 @@ namespace Enso
         const vec2 mouseLocal = viewCtx.mousePos - GetTransform().trans;
 
         // Render the control handles
-        for (int idx = 0; idx < m_ui.hostUIHandles->Size(); ++idx)
-        {
-            (*m_ui.hostUIHandles)[idx].OnDelegateAction(stateID, keyMap, mouseLocal);
-        }
-        
+        GenericObject::m_dirtyFlags = GetAxisHandle().OnDelegateAction(stateID, keyMap, mouseLocal);
+        UpdateUIWireframes();
+              
         return GenericObject::m_dirtyFlags;
     }
 
@@ -247,15 +238,15 @@ namespace Enso
 
         //if (!GenericObject::m_dirtyFlags) { return IsConstructed(); }
 
-        // Create an orthonomal basis
-        const vec2& dir = m_hostInstance.m_params.cameraAxis;
+        // Create an orthonomal basis from the 
+        const vec2 dir = SafeNormalize(GetAxisHandle().GetCentroid());
         m_hostInstance.m_params.fwdBasis = mat2(dir, vec2(-dir.y, dir.x));
         m_hostInstance.m_params.invBasis = transpose(m_hostInstance.m_params.fwdBasis);
         m_hostInstance.m_params.cameraPos = GetTransform().trans;
 
         if (GenericObject::m_dirtyFlags & kDirtyObjectBounds)
         {
-            UpdateUIElements();
+            UpdateUIWireframes();
             RecomputeBoundingBoxes();
             Synchronise(kSyncObjects);
         }
@@ -288,7 +279,19 @@ namespace Enso
 
     __host__ uint Host::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.OnMouseClick(viewCtx);
+        Assert(m_hostInstance.m_objects.ui.handles->Size() == 2);
+        const vec2 pObject = viewCtx.mousePos - GetTransform().trans;
+
+        if ((*m_hostInstance.m_objects.ui.handles)[0].EvaluateOverlay(pObject, viewCtx).w > 0.f)
+        {
+            return kSceneObjectPrecisionDrag;
+        }
+        else if ((*m_hostInstance.m_objects.ui.handles)[1].EvaluateOverlay(pObject, viewCtx).w != 0.f)
+        {
+            return kSceneObjectDelegatedAction;
+        }
+
+        return kSceneObjectInvalidSelect;
     }
 
     __host__ BBox2f Host::PerspectiveCamera::RecomputeObjectSpaceBoundingBox()
@@ -301,25 +304,34 @@ namespace Enso
         return bBox;
     }
 
-    __host__ void Host::PerspectiveCamera::UpdateUIElements()
+    __host__ void Host::PerspectiveCamera::UpdateUIWireframes()
     {
         constexpr float kFrustumExtent = 0.5f;
         constexpr float kViewPlane = 0.1f;
-        constexpr float kHandleRadius = 0.005f;
 
         const float theta = toRad(m_hostInstance.m_params.fov * 0.5);
         const vec2 frustum = vec2(cos(theta), sin(theta)) * kFrustumExtent;
         const vec2 viewPlane = vec2(1.f, tan(theta)) * kViewPlane;
 
-        m_ui.hostLineSegments->Clear();
-        m_ui.hostLineSegments->EmplaceBack(vec2(0.f), m_hostInstance.m_params.invBasis * frustum);
-        m_ui.hostLineSegments->EmplaceBack(vec2(0.f), m_hostInstance.m_params.invBasis * vec2(frustum.x, -frustum.y));
-        m_ui.hostLineSegments->EmplaceBack(m_hostInstance.m_params.invBasis * viewPlane, m_hostInstance.m_params.invBasis * vec2(viewPlane.x, -viewPlane.y));
-
-        m_ui.hostUIHandles->Clear();
-        m_ui.hostUIHandles->EmplaceBack(vec2(0.f), kHandleRadius);
-        m_ui.hostUIHandles->EmplaceBack(m_hostInstance.m_params.cameraAxis * kViewPlane, kHandleRadius);
+        m_ui.hostLineSegments->Resize(3);
+        (*m_ui.hostLineSegments)[0] = LineSegment(vec2(0.f), m_hostInstance.m_params.invBasis * frustum);
+        (*m_ui.hostLineSegments)[1] = LineSegment(vec2(0.f), m_hostInstance.m_params.invBasis * vec2(frustum.x, -frustum.y));
+        (*m_ui.hostLineSegments)[2] = LineSegment(m_hostInstance.m_params.invBasis * viewPlane, m_hostInstance.m_params.invBasis * vec2(viewPlane.x, -viewPlane.y));
 
         // NOTE: Synchronise is called later when the scene is rebuilt
     }
+
+    __host__ void Host::PerspectiveCamera::UpdateUIHandles(const vec2& cameraAxis)
+    {
+        constexpr float kHandleRadius = 0.005f;
+        constexpr float kViewPlane = 0.1f;
+
+        m_ui.hostUIHandles->Resize(2);
+        (*m_ui.hostUIHandles)[0] = UIHandle(vec2(0.f), kHandleRadius);
+        (*m_ui.hostUIHandles)[1] = UIHandle(cameraAxis * kViewPlane, kHandleRadius);
+    }
+
+    __host__ UIHandle& Host::PerspectiveCamera::GetOriginHandle() { return (*m_ui.hostUIHandles)[0]; }
+    __host__ UIHandle& Host::PerspectiveCamera::GetAxisHandle() { return (*m_ui.hostUIHandles)[1]; }
+
 }

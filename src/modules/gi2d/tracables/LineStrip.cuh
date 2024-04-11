@@ -34,7 +34,7 @@ namespace Enso
 
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
-            __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
             __host__ __device__ void            Print() const;
 
             __device__ void                     Synchronise(const LineStripObjects& objects) { m_objects = objects; }

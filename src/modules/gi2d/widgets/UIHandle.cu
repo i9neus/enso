@@ -29,7 +29,7 @@ namespace Enso
             }
             else
             {
-                m_ellipse.SetOrigin(mousePosObject);
+                m_ellipse.SetOrigin(mousePosObject);                
                 return kDirtyObjectBounds;
             }
         }
