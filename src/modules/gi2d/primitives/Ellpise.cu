@@ -10,8 +10,16 @@ namespace Enso
 {
     __host__ __device__ vec4 Ellipse::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const
     {
-        float stroke = SDF::Renderer::Torus(p, vec2(0.f), m_radius, ctx.strokeThickness, ctx.dPdXY);
-        return vec4(ctx.strokeColour.xyz, ctx.strokeColour.w * stroke);
+        vec4 L(0.f);
+        if (ctx.HasFill())
+        {
+            L = Blend(L, ctx.fillColour * SDF::Renderer::Ellipse(p, m_origin, m_radius, ctx.dPdXY));
+        }
+        if (ctx.HasStroke())
+        {
+            L = Blend(L, ctx.strokeColour * SDF::Renderer::Torus(p, m_origin, m_radius, ctx.strokeThickness, ctx.dPdXY));
+        }
+        return L;
     }    
 
     __host__ __device__ bool Ellipse::Contains(const vec2& p, const float&) const

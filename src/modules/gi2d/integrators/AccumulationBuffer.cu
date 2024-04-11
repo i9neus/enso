@@ -19,6 +19,11 @@ namespace Enso
         (*m_objects.accumBuffer)[(probeIdx * m_params.subprobesPerProbe + subProbeIdx) * m_params.numHarmonics + coeffIdx] += L;
     }
 
+    __device__ void Device::AccumulationBuffer::Accumulate(const vec3& L, const int& probeIdx, const int& subProbeIdx)
+    {
+        (*m_objects.accumBuffer)[probeIdx * m_params.subprobesPerProbe + subProbeIdx] += L;
+    }
+
     // Directly indexes the accumulation buffer
     __device__ vec3& Device::AccumulationBuffer::operator[](const uint& sampleIdx) { return (*m_objects.accumBuffer)[sampleIdx]; }
     __device__ const vec3& Device::AccumulationBuffer::operator[](const uint& sampleIdx) const { return (*m_objects.accumBuffer)[sampleIdx]; }
@@ -27,7 +32,13 @@ namespace Enso
     // FIXME: Pre-divide during reduce operation, not here.
     __device__ const vec3 Device::AccumulationBuffer::Evaluate(const int probeIdx, const int harmonicIdx) const 
     { 
-        return (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + harmonicIdx] / m_params.subprobesPerProbe; 
+        return (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + harmonicIdx] / m_params.subprobesPerProbe;
+    }
+    
+    // Evaluates the output buffer assuming only a single harmonic
+    __device__ const vec3 Device::AccumulationBuffer::Evaluate(const int probeIdx) const
+    {
+        return (*m_objects.outputBuffer)[probeIdx] / m_params.subprobesPerProbe;
     }
 
     __device__ void Device::AccumulationBuffer::Reduce(const uint batchSize, const uvec2 batchRange, const int norm)
@@ -77,14 +88,14 @@ namespace Enso
 
             CudaAssertDebug(probeIdx < m_params.numProbes&& coeffIdx < m_params.numHarmonics);
 
-            (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx] / float(norm);
+            (*m_objects.outputBuffer)[probeIdx * m_params.numHarmonics + coeffIdx] = reduceBuffer[kKernelIdx] / float(max(1, norm));
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Reduce);
 
     Host::AccumulationBuffer::AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics, const size_t accumBufferSize) :
         GenericObject(id),
-        m_norm(1)
+        m_norm(0)
     {
         Assert(accumBufferSize >= numProbes * numHarmonics);
         
@@ -161,6 +172,11 @@ namespace Enso
     __host__ void Host::AccumulationBuffer::Clear()
     {
         m_hostAccumBuffer->Wipe();
-        m_norm = 1;
+        m_norm = 0;
+    }
+
+    __host__ int Host::AccumulationBuffer::GetTotalAccumulatedSamples() const
+    {
+        return m_norm * m_params.subprobesPerProbe;
     }
 }

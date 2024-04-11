@@ -129,6 +129,7 @@ namespace Enso
 
         {
             Log::Indent("Rebuild scene:");
+            Log::Write("%i scene objects", m_hostSceneObjects->Size());
             Log::Write("%i cameras", m_hostCameras->Size());
             Log::Write("Tracable BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
             Log::Write("Scene BIH: %s", m_hostSceneBIH->GetBoundingBox().Format());

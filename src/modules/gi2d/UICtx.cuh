@@ -41,13 +41,13 @@ namespace Enso
         BBox2f                  sceneBounds;
         float                   dPdXY;
      
-        vec2              dragAnchor;
-        vec2              rotAxis;
-        vec2              transAnchor;
+        vec2                    dragAnchor;
+        vec2                    rotAxis;
+        vec2                    transAnchor;
         float                   rotAnchor;
         float                   scaleAnchor;
 
-        vec2              mousePos;
+        vec2                    mousePos;
         float                   zoomSpeed;
     };
 }

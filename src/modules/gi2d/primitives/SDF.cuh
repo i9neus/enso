@@ -20,6 +20,16 @@ namespace Enso
             return v0 + saturatef((dot(p, dv) - dot(v0, dv)) / dot(dv, dv)) * dv;
         }
 
+        // Penpendicular distance to a hashed line
+        __host__ __device__ __forceinline__ vec2 PerpLineHashed(const vec2& p, const vec2& v0, const vec2& dv, const float hashFreq)
+        {
+            float t = saturatef((dot(p, dv) - dot(v0, dv)) / dot(dv, dv)) * hashFreq;
+            float f = fract(t);
+            if (f < 0.5f) { t -= f; }
+
+            return v0 + (t / hashFreq) * dv;
+        }
+
         // SDF for a line
         __host__ __device__ __forceinline__ vec3 Line(const vec2& p, const vec2& v0, const vec2& dv)
         {
@@ -45,34 +55,25 @@ namespace Enso
             // Render a line
             __host__ __device__ __forceinline__ float Line(const vec2& p, const vec2& v, const vec2& dv, const float& thickness, const float& dPdXY)
             {
-                return saturatef(1.0f - (length(p - PerpLine(p, v, dv)) - dPdXY * thickness) / dPdXY);
+                return saturatef(1.0f - (length(p - PerpLine(p, v, dv)) - dPdXY * thickness * 0.5f) / dPdXY);
+            }
+
+            // Render a hashed line
+            __host__ __device__ __forceinline__ float HashedLine(const vec2& p, const vec2& v, const vec2& dv, const float& thickness, const float& hashFreq, const float& dPdXY)
+            {
+                return saturatef(1.0f - (length(p - PerpLineHashed(p, v, dv, hashFreq)) - dPdXY * thickness * 0.5f) / dPdXY);
             }
 
             // Render an ellipse
-            __host__ __device__ __forceinline__ float Ellipse(vec2 p, const vec2& origin, const float& radius, const float& dPdXY)
+            __host__ __device__ __forceinline__ float Ellipse(const vec2& p, const vec2& origin, const float& radius, const float& dPdXY)
             {
-                p -= origin;
-                float distance = length2(p);
-
-                float outerRadius = radius - dPdXY;
-                if (distance > sqr(outerRadius)) { return 0.f; }                
-
-                return saturatef((outerRadius - sqrt(distance)) / dPdXY);
+                return saturatef(((radius + dPdXY) - length(p - origin)) / dPdXY);
             }
 
             // Render a torus
-            __host__ __device__ __forceinline__ float Torus(vec2 p, const vec2& origin, const float& radius, const float& thickness, const float& dPdXY)
+            __host__ __device__ __forceinline__ float Torus(const vec2& p, const vec2& origin, const float& radius, const float& thickness, const float& dPdXY)
             {
-                p -= origin;
-                float distance = length2(p);
-
-                float outerRadius = radius - dPdXY;
-                if (distance > sqr(outerRadius)) { return 0.f; }
-                float innerRadius = radius - dPdXY * thickness;
-                if (distance < sqr(innerRadius)) { return 0.f; }
-
-                distance = sqrt(distance);
-                return saturatef((outerRadius - distance) / dPdXY) * saturatef((distance - innerRadius) / dPdXY);
+                return saturatef(((dPdXY * thickness * 0.5f) - fabsf(fabs(length(p - origin)) - radius)) / dPdXY);
             }
         }
     }    

@@ -22,15 +22,15 @@ namespace Enso
     }
 
     __device__ void Device::Camera::Integrate()
-    {
-        if (kKernelIdx >= m_params.totalSubprobes) { return; }
+    {        
+        if (kKernelIdx >= m_params.accum.totalSubprobes) { return; }
         CudaAssertDebug(m_objects.accumBuffer)
 
-        //const int probeIdx = kKernelIdx / m_params.unitsPerProbe;
-        //const int subprobeIdx = ((kKernelIdx / m_params.numHarmonics) % m_params.subprobesPerProbe);
+        //const int probeIdx = kKernelIdx / m_params.accum.unitsPerProbe;
+        //const int subprobeIdx = ((kKernelIdx / m_params.accum.numHarmonics) % m_params.accum.subprobesPerProbe);
 
-        /*const uchar ctxFlags = (probeIdx / m_params.gridSize.x == m_params.gridSize.y / 2 &&
-            probeIdx % m_params.gridSize.x == m_params.gridSize.x / 2 &&
+        /*const uchar ctxFlags = (probeIdx / m_params.accum.gridSize.x == m_params.accum.gridSize.y / 2 &&
+            probeIdx % m_params.accum.gridSize.x == m_params.accum.gridSize.x / 2 &&
             subprobeIdx == 0) ? kRenderCtxDebug : 0;*/
         
         RenderCtx renderCtx(kKernelIdx, uint(m_frameIdx), 0, *this, 0);
@@ -47,7 +47,8 @@ namespace Enso
     __host__ Host::Camera::Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator) :
         m_scene(scene),
         m_parentAllocator(allocator),
-        m_dirtyFlags(0)
+        m_dirtyFlags(0), 
+        cu_deviceInstance(nullptr)
     {
 
     }
@@ -64,10 +65,11 @@ namespace Enso
 
     __host__ void Host::Camera::Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize, Device::Camera* deviceInstance)
     {
+        AssertMsg(!cu_deviceInstance, "Already initialised");        
         cu_deviceInstance = deviceInstance;
 
         m_accumBuffer = m_parentAllocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", numProbes, numHarmonics, accumBufferSize);
-        m_params = m_accumBuffer->GetParams();
+        m_params.accum = m_accumBuffer->GetParams();
 
         m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
         m_deviceObjects.scene = m_scene->GetDeviceInstance();
@@ -77,25 +79,26 @@ namespace Enso
 
     __host__ bool Host::Camera::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx)
     {
-        m_dirtyFlags = dirtyFlags;
+        m_dirtyFlags = dirtyFlags;        
         return true;
     }
 
     __host__ void Host::Camera::Integrate()
     {
-        Synchronise(kSyncParams | kSyncObjects);
-        
-        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
-
         if (m_dirtyFlags & kDirtyIntegrators)
         {
             m_accumBuffer->Clear();
         }
         m_dirtyFlags = 0;
 
+        // If we've already accumuated the specified number of samples, we're done
+        if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples) { return; }
+
+        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+
         ScopedDeviceStackResize(1024 * 10, [this]() -> void
             {
-                KernelIntegrate << <m_params.kernel.grids.accumSize, m_params.kernel.blockSize >> > (cu_deviceInstance);
+                KernelIntegrate << <m_params.accum.kernel.grids.accumSize, m_params.accum.kernel.blockSize >> > (cu_deviceInstance);
             });
 
         m_accumBuffer->Reduce();
@@ -107,5 +110,27 @@ namespace Enso
     {
         if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_deviceObjects); }
         if (syncFlags & kSyncParams) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_params); }
+    }
+
+    __host__ bool Host::Camera::Serialise(Json::Node& node, const int flags) const
+    {
+        Json::Node cameraNode = node.AddChildObject("camera");
+        cameraNode.AddValue("maxSamples", m_params.maxSamples);
+        return true;
+    }
+
+    __host__ uint Host::Camera::Deserialise(const Json::Node& node, const int flags)
+    {
+        uint dirtyFlags = 0u;
+
+        const Json::Node cameraNode = node.GetChildObject("camera", flags);
+        if (cameraNode)
+        {
+            if (cameraNode.GetValue("maxSamples", m_params.maxSamples, flags)) { dirtyFlags |= kDirtyIntegrators; }
+        }
+
+        m_params.maxSamples = max(0, m_params.maxSamples);
+
+        return dirtyFlags;
     }
 }

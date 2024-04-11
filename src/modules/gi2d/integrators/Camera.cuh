@@ -23,6 +23,19 @@ namespace Enso
         Device::AccumulationBuffer* accumBuffer = nullptr;
         const Device::SceneDescription* scene = nullptr;
     };
+
+    struct CameraParams
+    {
+        __device__ void Validate() const
+        {
+            accum.Validate();
+            CudaAssert(maxSamples >= 0);            
+        }
+        
+        int maxSamples = 100;
+
+        AccumulationBufferParams accum;
+    };
     
     namespace Device
     {   
@@ -35,13 +48,13 @@ namespace Enso
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const = 0;
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) = 0;
             __device__ void Synchronise(const CameraObjects& objects);
-            __device__ void Synchronise(const AccumulationBufferParams& params) { m_params = params; }
+            __device__ void Synchronise(const CameraParams& params) { m_params = params; }
 
         protected:
             __device__ Camera();
 
             CameraObjects                           m_objects;
-            AccumulationBufferParams                m_params;
+            CameraParams                            m_params;
 
         private:
             Device::PathTracer2D                    m_voxelTracer;
@@ -51,7 +64,7 @@ namespace Enso
 
     namespace Host
     {
-        class Camera
+        class Camera : public Serialisable
         {
         public:
             __host__ virtual void Integrate();
@@ -67,10 +80,13 @@ namespace Enso
             __host__ void OnDestroyAsset();
             __host__ void Synchronise(const int syncFlags);
 
+            __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
+            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override;
+
         protected:            
             AssetHandle<Host::AccumulationBuffer>                   m_accumBuffer;
             AssetHandle<const Host::SceneDescription>               m_scene;
-            AccumulationBufferParams                                m_params;
+            CameraParams                                            m_params;
 
             CameraObjects                                           m_deviceObjects;
             Device::Camera*                                         cu_deviceInstance;

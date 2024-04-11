@@ -19,7 +19,7 @@ namespace Enso
         m_minBuildablePrims(minBuildablePrims)
     {
         cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::BIH2DAsset>();
-        cu_deviceInterface = StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
+        cu_deviceInterface = m_allocator.StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
         m_hostNodes = m_allocator.CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc);
     }

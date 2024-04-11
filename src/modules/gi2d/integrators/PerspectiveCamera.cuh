@@ -8,36 +8,39 @@ namespace Enso
 {
     class LineSegment;
     class Ellipse;
+    class UIHandle;
 
     struct PerspectiveCameraObjects
     {
         __host__ __device__ PerspectiveCameraObjects() {}
 
-        __device__ void Validate() const
+        __host__ __device__ void Validate() const
         {
             CudaAssert(accumBuffer);
-            
             CudaAssert(ui.lineSegments);
-            CudaAssert(ui.ellipses);
+            CudaAssert(ui.handles);
         }
-
+        
         Device::AccumulationBuffer* accumBuffer = nullptr;
-
         struct
         {
             Generic::Vector<LineSegment>* lineSegments = nullptr;
-            Generic::Vector<Ellipse>* ellipses = nullptr;
+            Generic::Vector<UIHandle>* handles = nullptr;
         }
         ui;
     };
 
     struct PerspectiveCameraParams
     {
-        __host__ __device__ PerspectiveCameraParams() : direction(0.0f), fov(0.0f) {}
+        __host__ __device__ PerspectiveCameraParams() : cameraPos(0.0f), fov(50.0f) {}
         __device__ void Validate() const {}
 
-        vec2    direction;
-        float   fov;
+        vec2    cameraPos;          // Position of the camera
+        vec2    cameraAxis;         // View axis of the camera
+        float   fov;                // Field of view in degrees
+
+        mat2    fwdBasis;
+        mat2    invBasis;
     };
 
     namespace Host
@@ -58,10 +61,9 @@ namespace Enso
             __device__ virtual void Accumulate(const vec4& L, const RenderCtx& ctx) override final;
 
             __host__ __device__ virtual uint            OnMouseClick(const UIViewCtx& viewCtx) const override final;
-            __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
             __device__ void                             Synchronise(const PerspectiveCameraParams& params) { m_params = params; }
             __device__ void                             Synchronise(const PerspectiveCameraObjects& objects) { m_objects = objects; }
-
 
         private:
             PerspectiveCameraParams m_params;
@@ -113,13 +115,12 @@ namespace Enso
 
             Device::PerspectiveCamera*  cu_deviceInstance = nullptr;
             Device::PerspectiveCamera   m_hostInstance;
-
-            AssetHandle<Host::AccumulationBuffer>   m_accumBuffer;
+            PerspectiveCameraObjects    m_deviceObjects;
 
             struct
             {
                 AssetHandle<Host::Vector<LineSegment>>  hostLineSegments;
-                AssetHandle<Host::Vector<Ellipse>>  hostEllipses;
+                AssetHandle<Host::Vector<UIHandle>>     hostUIHandles;
             }
             m_ui;
 

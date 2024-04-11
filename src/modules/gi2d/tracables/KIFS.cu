@@ -190,7 +190,7 @@ namespace Enso
         return (EvaluateSDF(viewCtx.mousePos - GetTransform().trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
-    __host__ __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
         

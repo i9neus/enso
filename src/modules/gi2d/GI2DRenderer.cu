@@ -652,7 +652,7 @@ namespace Enso
     __host__ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
-        if (isDown && IsKeyDown(VK_SHIFT))
+        if (isDown && (code == VK_MBUTTON || code == VK_RBUTTON || IsKeyDown(VK_SHIFT)))
         {
             m_viewCtx.dragAnchor = vec2(m_mouse.pos);
             m_viewCtx.rotAxis = normalize(m_viewCtx.dragAnchor - vec2(m_clientWidth, m_clientHeight) * 0.5f);
@@ -664,11 +664,7 @@ namespace Enso
 
     __host__ void GI2DRenderer::OnMouseMove()
     {
-        // Dragging?
-        if (IsKeyDown(VK_SHIFT) && (IsMouseButtonDown(VK_LBUTTON) || IsMouseButtonDown(VK_MBUTTON) || IsMouseButtonDown(VK_RBUTTON)))
-        {
-            OnViewChange();
-        }
+        OnViewChange();
 
         {
             std::lock_guard <std::mutex> lock(m_resourceMutex);
@@ -681,7 +677,7 @@ namespace Enso
         auto& transform = m_viewCtx.transform;
 
         // Zooming?
-        if (IsMouseButtonDown(VK_MBUTTON))
+        if (IsMouseButtonDown(VK_RBUTTON))
         {
             float logScaleAnchor = std::log2(std::max(1e-10f, m_viewCtx.scaleAnchor));
             logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
@@ -690,7 +686,7 @@ namespace Enso
             //Log::Write("Scale: %f", transform.scale);
         }
         // Rotating?
-        else if (IsMouseButtonDown(VK_RBUTTON))
+        else if (IsKeyDown(VK_SHIFT) && IsMouseButtonDown(VK_LBUTTON))
         {
             const vec2 delta = normalize(vec2(m_mouse.pos) - vec2(m_clientWidth, m_clientHeight) * 0.5f);
             const float theta = std::acos(dot(delta, m_viewCtx.rotAxis)) * (float(dot(delta, vec2(m_viewCtx.rotAxis.y, -m_viewCtx.rotAxis.x)) < 0.0f) * 2.0 - 1.0f);
@@ -701,7 +697,7 @@ namespace Enso
             //Log::Write("Theta: %f", transform.rotate);
         }
         // Translating
-        else if(IsMouseButtonDown(VK_LBUTTON))
+        else if(IsMouseButtonDown(VK_MBUTTON))
         {
             // Update the transformation
             const mat3 newMat = ConstructViewMatrix(m_viewCtx.transAnchor, transform.rotate, transform.scale) * m_clientToNormMatrix;

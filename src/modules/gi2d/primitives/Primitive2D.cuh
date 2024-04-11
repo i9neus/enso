@@ -18,7 +18,12 @@ namespace Enso
 
     struct OverlayCtx
     {
-        enum __flags : unsigned char { kOverlayStroke = 1, kOverlayFill = 2 };
+        enum __flags : uint 
+        { 
+            kStroke = 1u,
+            kFill = 2u, 
+            kStrokeHashed = 4u
+        };
         
         __host__ __device__ OverlayCtx(const UIViewCtx& viewCtx) :
             flags(0),
@@ -27,30 +32,53 @@ namespace Enso
             strokeColour(0.f),
             strokeThickness(1e-10f) {} 
 
-        __host__ __device__ static OverlayCtx MakeStroke(const UIViewCtx& viewCtx, const vec4& colour, const float& thickness)
+        __host__ __device__ static OverlayCtx MakeStroke(const UIViewCtx& viewCtx, const vec4& colour, const float& thickness, const uint fl = 0u)
         {
             OverlayCtx ctx(viewCtx);
-            return ctx.SetStroke(colour, thickness);
+            return ctx.SetStroke(colour, thickness, fl);
         }
 
-        __host__ __device__ static OverlayCtx MakeFill(const UIViewCtx& viewCtx, const vec4& colour)
+        __host__ __device__ static OverlayCtx MakeFill(const UIViewCtx& viewCtx, const vec4& colour, const uint fl = 0u)
         {
             OverlayCtx ctx(viewCtx);
-            return ctx.SetFill(colour);
+            return ctx.SetFill(colour, fl);
         }
 
-        __host__ __device__ OverlayCtx& SetStroke(const vec4& colour, const float& thickness) { strokeColour = colour; strokeThickness = thickness; flags |= kOverlayStroke; return *this; }
-        __host__ __device__ OverlayCtx& SetFill(const vec4& colour) { fillColour = colour; flags |= kOverlayFill; return *this; }
+        __host__ __device__ OverlayCtx& SetStroke(const vec4& colour, const float& thickness, const uint fl = 0u)
+        { 
+            strokeColour = colour; 
+            strokeThickness = thickness;  
+            flags |= kStroke | fl;
+            return *this; 
+        }
 
-        __host__ __device__ __forceinline__ bool HasStroke() const { return flags & kOverlayStroke; }
-        __host__ __device__ __forceinline__ bool HasFill() const { return flags & kOverlayFill; }
+        __host__ __device__ OverlayCtx& SetFill(const vec4& colour, const uint fl = 0u)
+        { 
+            fillColour = colour; 
+            flags |= kFill | fl;
+            return *this; 
+        }
 
-        unsigned char   flags;
+        __host__ __device__ __forceinline__ bool HasStroke() const { return flags & kStroke; }
+        __host__ __device__ __forceinline__ bool HasFill() const { return flags & kFill; }
+
+        uint            flags;
         float           dPdXY;
         vec4            fillColour;
         vec4            strokeColour;
         float           strokeThickness;
     };
+
+    // Evaluates the overlays of a range of primitives in the specified container and blends them together
+    template<typename ContainerType>
+    __host__ __device__ __forceinline__ void EvaluateRange(const ContainerType& container, const uint start, const uint end, const vec2& pLocal, const OverlayCtx& overlayCtx, vec4& L)
+    {
+        CudaAssertDebug(end <= container.Size());
+        for (uint idx = start; idx < end; ++idx)
+        {
+            L = Blend(L, container[idx].EvaluateOverlay(pLocal, overlayCtx));
+        }
+    }
 
     /*class Primitive2D
     {

@@ -79,11 +79,13 @@ namespace Enso
 
             __device__ void         Reduce(const uint batchSize, const uvec2 batchRange, const int norm);
             __device__ void         Accumulate(const vec3& L, const int& probeIdx, const int& subProbeIdx, const int& coeffIdx);
+            __device__ void         Accumulate(const vec3& L, const int& probeIdx, const int& subProbeIdx);
             
             __device__ vec3&        operator[](const uint& idx);
             __device__ const vec3&  operator[](const uint& idx) const;
 
             __device__ const vec3   Evaluate(const int probeIdx, const int harmonicIdx) const;
+            __device__ const vec3   Evaluate(const int probeIdx) const;
 
             __device__ inline int   GetNumHarmonics() const { return m_params.numHarmonics; }
             __device__ inline int   GetNumProbes() const { return m_params.numProbes; }
@@ -106,6 +108,7 @@ namespace Enso
             __host__ void Reduce();
             __host__ void Clear();  
             __host__ void OnDestroyAsset();
+            __host__ int  GetTotalAccumulatedSamples() const;
             
             __host__ const AccumulationBufferParams& GetParams() const { return m_params; }
             __host__ Device::AccumulationBuffer* GetDeviceInstance() const { return cu_deviceInstance; }

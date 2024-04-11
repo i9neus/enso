@@ -98,7 +98,6 @@ namespace Enso
     {
         m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
         Log::Warning("Rebuilt world bbox: %s", m_hostInstance.m_params.worldBBox.Format());
-
     }
 
     __host__ void Host::SceneObject::RecomputeBoundingBoxes()

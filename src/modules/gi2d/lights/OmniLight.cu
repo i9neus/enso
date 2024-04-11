@@ -6,7 +6,7 @@
 
 namespace Enso
 {
-    __host__ __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ vec4 Device::OmniLight::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.f); }
 

@@ -19,9 +19,11 @@ namespace Enso
             m_radius(r) {}
 
         __host__ __device__ vec4                    EvaluateOverlay(const vec2& p, const OverlayCtx & ctx) const;
-        __host__ __device__ bool                    Contains(const vec2& p, const float& dPdXY) const;
-
+        __host__ __device__ bool                    Contains(const vec2& p, const float& dPdXY) const;        
         __host__ __device__ bool                    IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const;
+
+        __host__ void                               SetOrigin(const vec2& origin) { m_origin = origin; }
+        __host__ void                               SetRadius(const float& radius) { m_radius = radius; }
 
         __host__ __device__ __forceinline__ BBox2f  GetBoundingBox() const
         {

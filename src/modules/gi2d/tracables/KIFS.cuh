@@ -66,7 +66,7 @@ namespace Enso
             __host__ __device__ virtual bool    IntersectRay(const Ray2D& ray, HitCtx2D& hit) const override final;
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
-            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
             
             __host__ __device__ virtual void    OnSynchronise(const int) override final;
             __device__ void                     Synchronise(const KIFSParams& params) { m_params = params; }

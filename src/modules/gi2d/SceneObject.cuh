@@ -46,7 +46,7 @@ namespace Enso
             friend Host::SceneObject;
 
         public:
-            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx) const { return vec4(0.0f); }
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx, const bool isMouseTest) const { return vec4(0.0f); }
             __host__ __device__ virtual uint    OnMouseClick(const UIViewCtx& viewCtx) const { return false; };
 
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };

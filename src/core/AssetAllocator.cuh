@@ -42,29 +42,6 @@ namespace Enso
 		registry.RegisterAsset(newAsset.m_ptr, newId);
 		return newAsset;
 	}
-
-	template<typename CastType, typename ObjectType>
-	__host__ inline CastType* StaticCastOnDevice(ObjectType* object)
-	{
-		static_assert(std::is_convertible<ObjectType*, CastType*>::value, "Can't statically cast between these inputs.");
-
-		ObjectType** cu_inputPtr;
-		IsOk(cudaMalloc((void***)&cu_inputPtr, sizeof(ObjectType*)));
-		IsOk(cudaMemcpy(cu_inputPtr, &object, sizeof(ObjectType*), cudaMemcpyHostToDevice));
-		CastType** cu_outputPtr;
-		IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
-		IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
-
-		KernelStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
-		IsOk(cudaDeviceSynchronize());
-
-		CastType* outputPtr = nullptr;
-		IsOk(cudaMemcpy(&outputPtr, cu_outputPtr, sizeof(CastType*), cudaMemcpyDeviceToHost));
-		IsOk(cudaFree(cu_inputPtr));
-		IsOk(cudaFree(cu_outputPtr));
-
-		return outputPtr;
-	}
 	
 	namespace Host
     {
@@ -186,7 +163,32 @@ namespace Enso
 
 				IsOk(cudaFree(cu_params));
 				return cu_data;
-			}			
+			}	
+
+			template<typename CastType, typename ObjectType>
+			__host__ inline CastType* StaticCastOnDevice(ObjectType* object) const
+			{
+				static_assert(std::is_convertible<ObjectType*, CastType*>::value, "Can't statically cast between these inputs.");
+
+				AssertMsgFmt(object, "Device object belonging to '%s' is nullptr.", m_parentAsset.GetAssetID());
+
+				ObjectType** cu_inputPtr;
+				IsOk(cudaMalloc((void***)&cu_inputPtr, sizeof(ObjectType*)));
+				IsOk(cudaMemcpy(cu_inputPtr, &object, sizeof(ObjectType*), cudaMemcpyHostToDevice));
+				CastType** cu_outputPtr;
+				IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
+				IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
+
+				KernelStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
+				IsOk(cudaDeviceSynchronize());
+
+				CastType* outputPtr = nullptr;
+				IsOk(cudaMemcpy(&outputPtr, cu_outputPtr, sizeof(CastType*), cudaMemcpyDeviceToHost));
+				IsOk(cudaFree(cu_inputPtr));
+				IsOk(cudaFree(cu_outputPtr));
+
+				return outputPtr;
+			}
 
 			template<typename ObjectType>
 			__host__ void DestroyOnDevice(ObjectType*& cu_data) const

@@ -128,15 +128,21 @@
             "widgetLabel": "FOV",
             "dataRange": [ 1.0, 90.0 ],
             "widgetType": "drag"
+        },
+        "camera/maxSamples": {
+            "dataType": "int",
+            "dataRange": [ -1, 100000 ],
+            "widgetLabel": "Max samples",
+            "widgetType": "drag"
         }
     },
     "overlaylayer": {
 
     },
     "voxelproxygridlayer": {
-        "maxsamples": {
+        "camera/maxSamples": {
             "dataType": "int",
-            "dataRange": [ -1, 100000 ],
+            "dataRange": [ 0, 100000 ],
             "widgetLabel": "Max samples",
             "widgetType": "drag"
         }

@@ -40,7 +40,7 @@ namespace Enso
             __device__ virtual bool                     Evaluate(const Ray2D& parentRay, const HitCtx2D& hit, vec3& L, float& pdfLight) const override final;
             __device__ virtual float                    Estimate(const Ray2D& parentRay, const HitCtx2D& hit) const override final;
 
-            __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const override final;
+            __host__ __device__ virtual vec4            EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
             __host__ __device__ virtual void            OnSynchronise(const int) override final;
             __device__ void                             Synchronise(const OmniLightParams& params)

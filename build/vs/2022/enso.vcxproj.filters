@@ -103,6 +103,9 @@
     <Filter Include="modules\gi2d\primitives">
       <UniqueIdentifier>{e624d2c9-3eed-4466-9a7b-fa7e47356b61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gi2d\widgets">
+      <UniqueIdentifier>{170f97db-0c4d-4f49-8c0f-adc1e2ead725}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -617,6 +620,12 @@
     <ClInclude Include="..\..\..\src\core\AssetSynchronise.cuh">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh">
+      <Filter>modules\gi2d\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -703,6 +712,9 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu">
+      <Filter>modules\gi2d\widgets</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\docs\CodeStructure.md">
@@ -716,6 +728,9 @@
     </None>
     <None Include="..\..\..\docs\protocols\Messages.json">
       <Filter>docs\protocols</Filter>
+    </None>
+    <None Include="..\..\..\src\modules\gi2d\ControlFlow.md">
+      <Filter>modules\gi2d</Filter>
     </None>
   </ItemGroup>
 </Project>

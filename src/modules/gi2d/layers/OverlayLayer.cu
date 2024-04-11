@@ -46,7 +46,7 @@ namespace Enso
         if (!bih || !elementListPtr) { return; }
 
         const ContainerType& elementList = *elementListPtr;
-        /*auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
+        auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
         {
             for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
             {
@@ -54,7 +54,7 @@ namespace Enso
                 assert(elementList[idx]);
 
                 const auto& drawable = *elementList[idx];
-                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
+                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx, false);
                 if (LPrim.w > 0.0f)
                 {
                     L = Blend(L, LPrim);
@@ -64,15 +64,16 @@ namespace Enso
             }
             return false;
         };
-        bih->TestPoint(xyView, onPointIntersectLeaf);*/
-        for (int idx = 0; idx < elementList.Size(); ++idx)
+        bih->TestPoint(xyView, onPointIntersectLeaf);
+        
+        /*for (int idx = 0; idx < elementList.Size(); ++idx)
         {
             CudaAssertDebug(elementList[idx]);
 
             const auto& drawable = *elementList[idx];
             if (drawable.GetWorldSpaceBoundingBox().Contains(xyView))
             {
-                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx);
+                vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx, false);
                 if (LPrim.w > 0.0f)
                 {
                     L = Blend(L, LPrim);
@@ -80,7 +81,7 @@ namespace Enso
             }
 
             if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
-        }
+        }*/
     }
 
     __device__ void Device::OverlayLayer::Render()

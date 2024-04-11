@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -99,6 +99,7 @@
     <ClInclude Include="..\..\..\src\core\UIButtonMap.h" />
     <ClInclude Include="..\..\..\src\core\StateGraph.h" />
     <ClInclude Include="..\..\..\src\core\Vector.cuh" />
+    <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h" />
     <ClInclude Include="..\..\..\src\io\CommandManager.h" />
     <ClInclude Include="..\..\..\src\io\CommandQueue.h" />
     <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
@@ -139,6 +140,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleInterface.h" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -219,6 +221,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -230,6 +233,7 @@
     <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\docs\FixMe.md" />
     <None Include="..\..\..\docs\protocols\Messages.json" />
+    <None Include="..\..\..\src\modules\gi2d\ControlFlow.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>

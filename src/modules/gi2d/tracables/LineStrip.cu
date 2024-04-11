@@ -67,10 +67,10 @@ namespace Enso
 
     __host__ __device__ uint Device::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const
     {        
-        return (EvaluateOverlay(viewCtx.mousePos, viewCtx).w > 0.f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+        return (EvaluateOverlay(viewCtx.mousePos, viewCtx, true).w > 0.f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
     }
 
-    __host__ __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx) const
+    __host__ __device__ vec4 Device::LineStrip::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
         if (!m_objects.bih) { return vec4(0.0f); }
 

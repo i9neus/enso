@@ -46,6 +46,14 @@ namespace Enso
 		return vec3(sin(polar.y) * sinTheta, cos(polar.x), cos(polar.y) * sinTheta);
 	}
 
+	template<typename VecType>
+	__host__ __device__ __forceinline__ VecType SafeNormalize(const VecType& v)
+	{
+		constexpr float kSafeNormEpsilon = 1e-20f;
+		const float l2 = length2(v);
+		return (l2 < kSafeNormEpsilon) ? VecType(0.f) : v / sqrtf(l2);
+	}
+
 	#define kOne vec3(1.0f)
 	#define kZero vec3(0.0f)
 

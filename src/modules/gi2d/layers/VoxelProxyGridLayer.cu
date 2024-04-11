@@ -9,19 +9,9 @@
 
 namespace Enso
 {
-    __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
-    {       
-        const int accumIdx = kKernelIdx * Camera::m_params.numHarmonics;
-        
-        for (int harIdx = 0; harIdx < Camera::m_params.numHarmonics; ++harIdx)
-        {
-            (*m_objects.accumBuffer)[accumIdx + harIdx] += L.xyz;
-        }
-    }
-
     __device__ bool Device::VoxelProxyGridLayer::CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const
     {
-        const uint probeIdx = kKernelIdx / Camera::m_params.subprobesPerProbe;
+        const uint probeIdx = kKernelIdx / Camera::m_params.accum.subprobesPerProbe;
         const vec2 probePosNorm = vec2(float(0.5f + probeIdx % m_params.gridSize.x), float(0.5f + probeIdx / m_params.gridSize.x));
 
         // Transform from screen space to view space
@@ -48,6 +38,15 @@ namespace Enso
         hit.depth = 0;
 
         return true;
+    }
+
+    __device__ void Device::VoxelProxyGridLayer::Accumulate(const vec4& L, const RenderCtx& ctx)
+    {
+        const int accumIdx = kKernelIdx * Camera::m_params.accum.numHarmonics;
+        for (int harIdx = 0; harIdx < Camera::m_params.accum.numHarmonics; ++harIdx)
+        {
+            (*m_objects.accumBuffer)[accumIdx + harIdx] += L.xyz;
+        }
     }
 
     __device__ vec3 Device::VoxelProxyGridLayer::Evaluate(const vec2& posWorld) const
@@ -91,7 +90,7 @@ namespace Enso
         // Instantiate and sync
         cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>();
 
-        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize, StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
+        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize, m_allocator.StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
 
         // Construct the camera transform
         m_params.cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));      
@@ -102,18 +101,19 @@ namespace Enso
         // Cache some parameters used for the accumulator
         m_params.gridSize = ivec2(kGridWidth, kGridHeight);
 
-
-
         Synchronise(kSyncParams | kSyncObjects);
     }
 
     __host__ bool Host::VoxelProxyGridLayer::Serialise(Json::Node& node, const int flags) const
     {
+        Camera::Serialise(node, flags);        
         return true;
     }
 
     __host__ uint Host::VoxelProxyGridLayer::Deserialise(const Json::Node& node, const int flags)
     {
+        GenericObject::m_dirtyFlags |= Camera::Deserialise(node, flags);
+
         return GenericObject::m_dirtyFlags;
     }
 
