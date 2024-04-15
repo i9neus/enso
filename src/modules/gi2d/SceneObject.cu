@@ -36,6 +36,12 @@ namespace Enso
     {
     }
 
+    __host__ void Host::SceneObject::SetDeviceInstance(Device::SceneObject* deviceInstance)
+    {
+        GenericObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::GenericObject>(deviceInstance));
+        cu_deviceInstance = deviceInstance;
+    }
+
     __host__ uint Host::SceneObject::OnSelect(const bool isSelected)
     {
         if (SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kSceneObjectSelected), isSelected))

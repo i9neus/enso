@@ -206,10 +206,11 @@ namespace Enso
 
     __host__ Host::KIFS::KIFS(const std::string& id) :
         Tracable(id, m_hostInstance, nullptr),
-        cu_deviceInstance(nullptr)
+        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::KIFS>())
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::KIFS>();
+        Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
+
         Synchronise(kSyncObjects);
     }
 

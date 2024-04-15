@@ -130,6 +130,7 @@ namespace Enso
         protected:
             __host__ GenericObject(const std::string& id);
             __host__ virtual ~GenericObject() {}
+            __host__ void SetDeviceInstance(Device::GenericObject* deviceInstance);
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(GenericObjectContainer& objectContainer, const std::string& otherId)
@@ -168,8 +169,9 @@ namespace Enso
             const AssetAllocator m_allocator;
 
         private:
-            std::string         m_dagPath;
-            uint                m_renderObjectFlags;
+            std::string             m_dagPath;
+            uint                    m_renderObjectFlags;
+            Device::GenericObject*  cu_deviceInstance;
 
             struct EventDeligate
             {

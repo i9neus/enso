@@ -69,9 +69,10 @@ namespace Enso
     }
 
     __host__ Host::OmniLight::OmniLight(const std::string& id) :
-        Host::Light(id, m_hostInstance)
+        Host::Light(id, m_hostInstance),
+        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::OmniLight>())
     {
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::OmniLight>();
+        Light::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Light>(cu_deviceInstance));
 
         Synchronise(kSyncObjects);
     }

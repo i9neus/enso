@@ -75,6 +75,7 @@ namespace Enso
         protected:
             __host__ Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator);
             __host__ virtual ~Camera();
+            __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 
             __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize, Device::Camera* deviceInstance);
             __host__ void OnDestroyAsset();
@@ -89,11 +90,12 @@ namespace Enso
             CameraParams                                            m_params;
 
             CameraObjects                                           m_deviceObjects;
-            Device::Camera*                                         cu_deviceInstance;
         
         private:
             int                                                     m_dirtyFlags;
             const AssetAllocator&                                   m_parentAllocator;
+            
+            Device::Camera*                                         cu_deviceInstance = nullptr;
         };
     };
 }      

@@ -94,9 +94,10 @@ namespace Enso
 
     __host__ Host::LineStrip::LineStrip(const std::string& id) :
         Tracable(id, m_hostInstance, nullptr),
-        cu_deviceInstance(nullptr)
+        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::LineStrip>())
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
+        Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
 
         Log::Success("Host::LineStrip::LineStrip");
 
@@ -105,7 +106,6 @@ namespace Enso
         m_hostBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
         m_hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
 
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::LineStrip>();
 
         m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.lineSegments = m_hostLineSegments->GetDeviceInstance();

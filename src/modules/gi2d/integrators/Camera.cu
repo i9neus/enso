@@ -47,10 +47,13 @@ namespace Enso
     __host__ Host::Camera::Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator) :
         m_scene(scene),
         m_parentAllocator(allocator),
-        m_dirtyFlags(0), 
-        cu_deviceInstance(nullptr)
+        m_dirtyFlags(0)
     {
+    }
 
+    __host__ void Host::Camera::SetDeviceInstance(Device::Camera* deviceInstance)
+    {
+        cu_deviceInstance = deviceInstance;
     }
 
     __host__ Host::Camera::~Camera()

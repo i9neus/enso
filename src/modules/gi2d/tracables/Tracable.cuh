@@ -65,11 +65,8 @@ namespace Enso
 
 
         protected:
-            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) : 
-                SceneObject(id, hostInstance, scene),
-                m_hostInstance(hostInstance)
-            {
-            }
+            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ void SetDeviceInstance(Device::Tracable* deviceInstance);
             
             template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncFlags) 
             { 
@@ -91,6 +88,7 @@ namespace Enso
             m_onMove;
 
             Device::Tracable&               m_hostInstance;
+            Device::Tracable*               cu_deviceInstance;
         };
     }
 }

@@ -29,6 +29,11 @@ namespace Enso
         m_isConstructed(false)
     {
     }
+
+    __host__ void Host::GenericObject::SetDeviceInstance(Device::GenericObject* deviceInstance)
+    {
+        cu_deviceInstance = deviceInstance;
+    }
     
     __host__ void Host::GenericObject::UpdateDAGPath(const Json::Node& node)
     {

@@ -29,20 +29,26 @@ namespace Enso
         class Light : public Host::Tracable
         {
         public:
+            __host__ virtual ~Light() {}
+            __host__ virtual Device::Light* GetDeviceInstance() const = 0;
+
+        protected:
             __host__ Light(const std::string& id, Device::Light& hostInstance) :
                 Tracable(id, hostInstance, nullptr),
                 m_hostInstance(hostInstance)
             {}
 
-            __host__ virtual ~Light() {}
-
-            __host__ virtual Device::Light* GetDeviceInstance() const = 0;
-
-        protected:
             template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Tracable::Synchronise(deviceData, syncType); }
 
+            __host__ void SetDeviceInstance(Device::Light* deviceInstance)
+            {
+                Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(deviceInstance));
+                cu_deviceInstance = deviceInstance;
+            }
+
         private:
-            Device::Light& m_hostInstance;
+            Device::Light&      m_hostInstance;
+            Device::Light*      cu_deviceInstance = nullptr;
         };
     }
 }

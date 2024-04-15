@@ -9,6 +9,18 @@ namespace Enso
         return bBox.Intersects(SceneObject::m_params.objectBBox);
     }
 
+    __host__ Host::Tracable::Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
+        SceneObject(id, hostInstance, scene),
+        m_hostInstance(hostInstance)
+    {
+    }
+
+    __host__ void Host::Tracable::SetDeviceInstance(Device::Tracable* deviceInstance)
+    {
+        SceneObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::SceneObject>(deviceInstance));
+        cu_deviceInstance = deviceInstance;
+    }
+
     __host__ bool Host::Tracable::Serialise(Json::Node& node, const int flags) const
     {
         Json::Node tracableNode = node.AddChildObject("tracable");

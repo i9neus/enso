@@ -119,6 +119,7 @@ namespace Enso
 
         protected:
             __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
 
             template<typename SubType>
             __host__ void Synchronise(SubType* cu_object, const int syncFlags)
@@ -146,6 +147,9 @@ namespace Enso
 
             Device::SceneObject&                        m_hostInstance;
             AssetHandle<const Host::SceneDescription>   m_scene;
+
+        private:
+            Device::SceneObject*                        cu_deviceInstance = nullptr;
         };
     }
 }
