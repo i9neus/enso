@@ -94,7 +94,7 @@ namespace Enso
             __host__ virtual void           OnPostRenderPass() {}
             __host__ virtual void           OnUpdateSceneGraph(GenericObjectContainer& sceneObjects, const uint dirtyFlags) {}
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
-            __host__ virtual void           Synchronise() {}
+            __host__ virtual void           Synchronise(const uint flags) {}
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
             __host__ void SetGenericObjectFlags(const uint flags, const bool set = true)

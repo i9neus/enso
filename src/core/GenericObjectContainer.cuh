@@ -118,7 +118,7 @@ namespace Enso
 
             __host__ void Bind();
             __host__ void Finalise() const;
-            __host__ void Synchronise();
+            __host__ void Synchronise(const uint flags);
             __host__ uint GetUniqueIndex() { return m_uniqueIdx; }
 
             __host__ size_t Size() const { return m_objectMap.size(); }

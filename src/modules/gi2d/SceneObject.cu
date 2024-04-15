@@ -81,6 +81,17 @@ namespace Enso
         return m_dirtyFlags;
     }
 
+    __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
+    {
+        GenericObject::Synchronise(syncFlags);
+
+        if (syncFlags & kSyncParams)
+        {
+            SynchroniseObjects<Device::SceneObject>(cu_deviceInstance, m_hostInstance.m_params);
+            m_hostInstance.OnSynchronise(syncFlags);
+        }
+    }
+
     __host__ bool Host::SceneObject::Serialise(Json::Node& node, const int flags) const
     {
         Json::Node sceneNode = node.AddChildObject("sceneobject");

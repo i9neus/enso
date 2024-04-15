@@ -68,16 +68,7 @@ namespace Enso
             __host__ Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ void SetDeviceInstance(Device::Tracable* deviceInstance);
             
-            template<typename SubType> __host__ inline void Synchronise(SubType* deviceInstance, const int syncFlags) 
-            { 
-                SceneObject::Synchronise(deviceInstance, syncFlags); 
-
-                if (syncFlags & kSyncParams) 
-                { 
-                    SynchroniseObjects<Device::Tracable>(deviceInstance, m_hostInstance.m_params);
-                    m_hostInstance.OnSynchronise(syncFlags);
-                }
-            }
+            __host__ virtual void Synchronise(const uint syncFlags) override;
 
         protected:
             struct

@@ -91,9 +91,9 @@ namespace Enso
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
-    __host__ void Host::OmniLight::Synchronise(const int syncFlags)
+    __host__ void Host::OmniLight::Synchronise(const uint syncFlags)
     {
-        Light::Synchronise(cu_deviceInstance, syncFlags);
+        Light::Synchronise(syncFlags);
 
         if (syncFlags & kSyncParams) 
         { 

@@ -79,11 +79,11 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GenericObjectContainer::Synchronise()
+    __host__ void Host::GenericObjectContainer::Synchronise(const uint flags)
     {
         for (auto& object : m_objectMap)
         {
-            object.second->Synchronise();
+            object.second->Synchronise(flags);
         }
     }
 

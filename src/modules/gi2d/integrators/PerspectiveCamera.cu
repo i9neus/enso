@@ -141,9 +141,9 @@ namespace Enso
         m_ui.hostUIHandles.DestroyAsset();
     }
 
-    __host__ void Host::PerspectiveCamera::Synchronise(const int syncFlags)
+    __host__ void Host::PerspectiveCamera::Synchronise(const uint syncFlags)
     {
-        SceneObject::Synchronise(cu_deviceInstance, syncFlags);
+        SceneObject::Synchronise(syncFlags);
 
         if (syncFlags & kSyncParams)
         {

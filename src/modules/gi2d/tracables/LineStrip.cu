@@ -136,15 +136,15 @@ namespace Enso
         m_hostLineSegments.DestroyAsset();
     }
 
-    __host__ void Host::LineStrip::Synchronise(const int syncType)
+    __host__ void Host::LineStrip::Synchronise(const uint syncType)
     {
-        Tracable::Synchronise(cu_deviceInstance, syncType);
+        Tracable::Synchronise(syncType);
 
         if (syncType & kSyncObjects)
         {
-            //SynchroniseObjectsLocal<Device::LineStrip>(cu_deviceInstance, m_deviceObjects);
+            SynchroniseObjects<Device::LineStrip>(cu_deviceInstance, m_deviceObjects);
 
-            Device::LineStrip* cu_object = cu_deviceInstance;
+            /*Device::LineStrip* cu_object = cu_deviceInstance;
             const LineStripObjects& params = m_deviceObjects;
 
             Assert(cu_object);
@@ -159,7 +159,7 @@ namespace Enso
 
             IsOk(cudaFree(cu_params));
 
-            Log::Error("Resync...");
+            Log::Error("Resync...");*/
         }
     }
 

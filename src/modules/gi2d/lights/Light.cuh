@@ -38,7 +38,7 @@ namespace Enso
                 m_hostInstance(hostInstance)
             {}
 
-            template<typename SubType> __host__ inline void Synchronise(SubType* deviceData, const int syncType) { Tracable::Synchronise(deviceData, syncType); }
+            __host__ virtual void Synchronise(const uint syncType) override { Tracable::Synchronise(syncType); }
 
             __host__ void SetDeviceInstance(Device::Light* deviceInstance)
             {

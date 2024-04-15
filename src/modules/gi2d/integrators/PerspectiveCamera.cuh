@@ -96,7 +96,7 @@ namespace Enso
             __host__ static const std::string  GetAssetClassStatic() { return "perspectivecamera"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
-            __host__ void               Synchronise(const int syncType);
+            __host__ virtual void              Synchronise(const uint syncType) override final;
 
             __host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final
             {

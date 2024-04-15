@@ -229,9 +229,9 @@ namespace Enso
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
-    __host__ void Host::KIFS::Synchronise(const int syncType)
+    __host__ void Host::KIFS::Synchronise(const uint syncType)
     {
-        Tracable::Synchronise(cu_deviceInstance, syncType);
+        Tracable::Synchronise(syncType);
 
         if (syncType & kSyncParams)
         {

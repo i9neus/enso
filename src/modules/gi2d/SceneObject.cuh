@@ -120,17 +120,8 @@ namespace Enso
         protected:
             __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
-
-            template<typename SubType>
-            __host__ void Synchronise(SubType* cu_object, const int syncFlags)
-            {
-                if (syncFlags & kSyncParams)
-                { 
-                    SynchroniseObjects<Device::SceneObject>(cu_object, m_hostInstance.m_params);
-                    m_hostInstance.OnSynchronise(syncFlags);
-                }
-            }
-
+            __host__ virtual void           Synchronise(const uint flags) override;
+           
             __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() = 0;
             __host__ void RecomputeWorldSpaceBoundingBox();
             __host__ void RecomputeBoundingBoxes();
