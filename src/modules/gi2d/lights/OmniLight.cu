@@ -65,7 +65,7 @@ namespace Enso
 
     __host__ AssetHandle<Host::GenericObject> Host::OmniLight::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
     {
-        return CreateAsset<Host::OmniLight>(id);
+        return AssetAllocator::CreateAsset<Host::OmniLight>(id);
     }
 
     __host__ Host::OmniLight::OmniLight(const std::string& id) :
@@ -81,14 +81,9 @@ namespace Enso
     {
         BEGIN_EXCEPTION_FENCE
 
-            OnDestroyAsset();
+            m_allocator.DestroyOnDevice(cu_deviceInstance);
 
         END_EXCEPTION_FENCE
-    }
-
-    __host__ void Host::OmniLight::OnDestroyAsset()
-    {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::OmniLight::Synchronise(const uint syncFlags)

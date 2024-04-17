@@ -225,7 +225,6 @@ namespace Enso
 	}
 }
 
-
 int main(int argc, char* argv[])
 {
 	using namespace Enso;

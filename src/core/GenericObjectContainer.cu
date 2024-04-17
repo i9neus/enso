@@ -87,7 +87,7 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GenericObjectContainer::OnDestroyAsset()
+    __host__ Host::GenericObjectContainer::~GenericObjectContainer()
     {
         Log::Debug("Unloading scene graph...");
         

@@ -30,22 +30,17 @@ namespace Enso
         SynchroniseObjects<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects);
     }
 
-    __host__ void Host::SceneDescription::OnDestroyAsset()
-    {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
-
-        m_hostTracables.DestroyAsset();
-        m_hostLights.DestroyAsset();
-        m_hostCameras.DestroyAsset();
-        m_hostTracableBIH.DestroyAsset();
-        m_hostSceneBIH.DestroyAsset();
-    }
-
     __host__ Host::SceneDescription::~SceneDescription()
     {
         BEGIN_EXCEPTION_FENCE
 
-            OnDestroyAsset();
+            m_allocator.DestroyOnDevice(cu_deviceInstance);
+
+            m_hostTracables.DestroyAsset();
+            m_hostLights.DestroyAsset();
+            m_hostCameras.DestroyAsset();
+            m_hostTracableBIH.DestroyAsset();
+            m_hostSceneBIH.DestroyAsset();
 
         END_EXCEPTION_FENCE
     }
@@ -80,42 +75,49 @@ namespace Enso
         m_hostCameras->Clear();
         m_hostSceneObjects->Clear();
 
-        genericObjects->ForEachOfType<Host::SceneObject>([&, this](AssetHandle<Host::SceneObject>& sceneObject) -> bool
+        genericObjects->ForEach([&, this](AssetHandle<Host::GenericObject>& genericObject) -> bool
             {
-                // Rebuild the scene object (it will decide whether any action needs to be taken)
-                if (sceneObject->Rebuild(dirtyFlags, viewCtx))
+                // If this is a camera object, add it to the list of cameras
+                auto camera = genericObject.DynamicCast<Host::Camera>();
+                if (camera)
                 {
-                    // Ordinary objects go into the universal BIH
-                    m_hostSceneObjects->EmplaceBack(sceneObject);
-
-                    // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
-                    auto tracable = sceneObject.DynamicCast<Host::Tracable>();
-                    if (tracable)
+                    if (camera->Rebuild(dirtyFlags, viewCtx))
                     {
-                        // Add the tracable to the list
-                        m_hostTracables->EmplaceBack(tracable);
+                        m_hostCameras->EmplaceBack(camera);
+                    }
+                    return true;
+                }              
 
-                        // Tracables that are also lights are separated out into their own container
-                        auto light = tracable.DynamicCast<Host::Light>();
-                        if (light)
+                auto sceneObject = genericObject.DynamicCast<Host::SceneObject>();                
+                // Rebuild the scene object (it will decide whether any action needs to be taken)
+                if (sceneObject && sceneObject->Rebuild(dirtyFlags, viewCtx))
+                {
+                    // If the object can be transformed, add it to the list of scene objects
+                    if (sceneObject->IsTransformable())
+                    {
+                        // Ordinary objects go into the universal BIH
+                        m_hostSceneObjects->EmplaceBack(sceneObject);
+
+                        // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
+                        auto tracable = genericObject.DynamicCast<Host::Tracable>();
+                        if (tracable)
                         {
-                            tracable->SetLightIdx(lightIdx++);
-                            m_hostLights->EmplaceBack(light);
+                            // Add the tracable to the list
+                            m_hostTracables->EmplaceBack(tracable);
+
+                            // Tracables that are also lights are separated out into their own container
+                            auto light = genericObject.DynamicCast<Host::Light>();
+                            if (light)
+                            {
+                                tracable->SetLightIdx(lightIdx++);
+                                m_hostLights->EmplaceBack(light);
+                            }
                         }
                     }
                 }
 
                 return true;
             }); 
-
-        // Build a list of scene cameras for rendering
-        genericObjects->ForEachOfType<Host::Camera>([&, this](AssetHandle<Host::Camera>& cameraObject) -> bool
-            {
-                if (cameraObject->Rebuild(dirtyFlags, viewCtx))
-                {
-                    m_hostCameras->EmplaceBack(cameraObject);
-                }
-            });
 
         // Sync the scene objects with the device
         m_hostTracables->Synchronise(kVectorSyncUpload);

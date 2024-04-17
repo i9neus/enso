@@ -12,6 +12,13 @@ namespace Enso
 		
 		image->Clear(kKernelPos<ivec2>(), value);
 	}
+
+	template<typename T>
+	__host__ Host::Image<T>::~Image()
+	{
+		m_allocator.DestroyOnDevice(cu_deviceData);
+		m_allocator.GuardedFreeDeviceArray(m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
+	}
 	
 	template<typename T>
 	__device__ void Device::Image<T>::Clear(const ivec2& xy, const T& value)
@@ -76,13 +83,6 @@ namespace Enso
 	__host__ void Host::Image<T>::Clear(const T& value)
 	{ 
 		KernelClear << < m_grid, m_block, 0, m_hostStream >> > (cu_deviceData, value);
-	}
-
-	template<typename T>
-	__host__ void Host::Image<T>::OnDestroyAsset()
-	{		
-		m_allocator.DestroyOnDevice(cu_deviceData);
-		m_allocator.GuardedFreeDeviceArray(m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
 	}
 
 	template<typename T>

@@ -119,16 +119,10 @@ namespace Enso
 
     __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
     {
-        return CreateAsset<Host::LineStrip>(id);
+        return AssetAllocator::CreateAsset<Host::LineStrip>(id);
     }
 
     __host__ Host::LineStrip::~LineStrip()
-    {
-        Log::Error("Host::LineStrip::~LineStrip");
-        OnDestroyAsset();
-    }
-
-    __host__ void Host::LineStrip::OnDestroyAsset()
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
 

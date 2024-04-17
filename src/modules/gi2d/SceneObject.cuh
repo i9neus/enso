@@ -83,6 +83,7 @@ namespace Enso
             __host__ virtual uint       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
             __host__ virtual uint       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return 0u; }
+            __host__ virtual bool       IsTransformable() const { return true; }
 
             __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }

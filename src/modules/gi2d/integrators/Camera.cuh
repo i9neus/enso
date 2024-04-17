@@ -4,6 +4,7 @@
 #include "core/AssetAllocator.cuh"
 #include "PathTracer2D.cuh"
 #include "AccumulationBuffer.cuh"
+#include "../SceneObject.cuh"
 
 namespace Enso
 {
@@ -39,7 +40,7 @@ namespace Enso
     
     namespace Device
     {   
-        class Camera
+        class Camera : public Device::SceneObject
         {
         public:
             __device__ virtual void Prepare(const uint dirtyFlags);
@@ -64,21 +65,20 @@ namespace Enso
 
     namespace Host
     {
-        class Camera : public Serialisable
+        class Camera : public Host::SceneObject
         {
         public:
             __host__ virtual void Integrate();
             //__host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
-            __host__ virtual Device::Camera* GetDeviceInstance() const = 0;
+            __host__ virtual Device::Camera* GetDeviceInstance() const override { return cu_deviceInstance; }
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx);
 
         protected:
-            __host__ Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator);
+            __host__ Camera(const std::string& id, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ virtual ~Camera();
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 
-            __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize, Device::Camera* deviceInstance);
-            __host__ void OnDestroyAsset();
+            __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize);
             __host__ void Synchronise(const int syncFlags);
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
@@ -93,7 +93,6 @@ namespace Enso
         
         private:
             int                                                     m_dirtyFlags;
-            const AssetAllocator&                                   m_parentAllocator;
             
             Device::Camera*                                         cu_deviceInstance = nullptr;
         };

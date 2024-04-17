@@ -50,8 +50,7 @@ namespace Enso
 
     namespace Device
     {
-        class PerspectiveCamera : public Device::SceneObject, 
-                                  public Device::Camera
+        class PerspectiveCamera : public Device::Camera
         {
             friend class Host::PerspectiveCamera;
         public:
@@ -74,15 +73,12 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::SceneObject, 
-                                  public Host::Camera
+        class PerspectiveCamera : public Host::Camera
                                   
         {
         public:
             __host__ PerspectiveCamera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ virtual ~PerspectiveCamera();
-
-            __host__ virtual void       OnDestroyAsset() override final;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;

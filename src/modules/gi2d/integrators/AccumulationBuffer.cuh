@@ -107,7 +107,6 @@ namespace Enso
 
             __host__ void Reduce();
             __host__ void Clear();  
-            __host__ void OnDestroyAsset();
             __host__ int  GetTotalAccumulatedSamples() const;
             
             __host__ const AccumulationBufferParams& GetParams() const { return m_params; }

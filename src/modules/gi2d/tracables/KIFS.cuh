@@ -94,7 +94,6 @@ namespace Enso
             __host__ KIFS(const std::string& id);
             __host__ virtual ~KIFS();
 
-            __host__ virtual void       OnDestroyAsset() override final;
             __host__ virtual void       Synchronise(const uint syncType) override final;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;

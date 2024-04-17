@@ -216,15 +216,10 @@ namespace Enso
 
     __host__ AssetHandle<Host::GenericObject> Host::KIFS::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
     {
-        return CreateAsset<Host::KIFS>(id);
+        return AssetAllocator::CreateAsset<Host::KIFS>(id);
     }
 
     __host__ Host::KIFS::~KIFS()
-    {
-        OnDestroyAsset();
-    }
-
-    __host__ void Host::KIFS::OnDestroyAsset()
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }

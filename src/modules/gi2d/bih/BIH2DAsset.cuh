@@ -25,8 +25,6 @@ namespace Enso
             __host__ BIH2DAsset(const std::string& id, const uint& minBuildablePrims);
             __host__ virtual ~BIH2DAsset();
 
-            __host__ virtual void                   OnDestroyAsset() override final;
-
             __host__ inline std::vector<uint>& GetPrimitiveIndices() { return m_primitiveIdxs; }
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);
             __host__ Device::BIH2DAsset* GetDeviceInstance() const { return cu_deviceInstance; }

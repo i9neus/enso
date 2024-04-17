@@ -56,9 +56,8 @@ namespace Enso
 
     namespace Host
     {
-        class VoxelProxyGridLayer : public Host::GenericObject,
-                                    public Host::UILayer, 
-                                    public Host::Camera
+        class VoxelProxyGridLayer : public Host::Camera,
+                                    public Host::UILayer
         {
         public:
             VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
@@ -67,7 +66,7 @@ namespace Enso
             __host__ virtual void Render() override final;
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
-            __host__ virtual void OnDestroyAsset() override final;
+            __host__ virtual bool IsTransformable() const override final { return false; }
 
             //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygridlayer"; }
@@ -80,6 +79,7 @@ namespace Enso
 
         protected:
             __host__ void Synchronise(const int syncType);
+            __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() override final { return BBox2f::MakeInvalid(); }
 
         private:
             Device::VoxelProxyGridLayer*            cu_deviceInstance = nullptr;

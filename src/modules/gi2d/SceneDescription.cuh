@@ -46,7 +46,6 @@ namespace Enso
         public:
             __host__                SceneDescription(const std::string& id);
             __host__ virtual        ~SceneDescription();
-            __host__ virtual void   OnDestroyAsset() override final;
 
             __host__ void           Rebuild(AssetHandle<Host::GenericObjectContainer>& sceneObjects, const UIViewCtx& viewCtx, const uint dirtyFlags);
             __host__ const Device::SceneDescription* GetDeviceInstance() const { return cu_deviceInstance; }

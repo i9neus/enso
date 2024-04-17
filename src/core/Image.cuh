@@ -133,9 +133,7 @@ namespace Enso
 			using Pixel = T;
 
 			__host__ Image(const std::string& id, unsigned int width, unsigned int height, cudaStream_t hostStream);
-			__host__ virtual ~Image() { OnDestroyAsset(); }
-
-			__host__ virtual void OnDestroyAsset() override final;
+			__host__ virtual ~Image();
 
 			__host__ cudaStream_t GetHostStream() const { return m_hostStream; }
 			__host__ void SetHostStream(cudaStream_t hostStream) { m_hostStream = hostStream; }

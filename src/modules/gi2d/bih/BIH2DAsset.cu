@@ -26,11 +26,6 @@ namespace Enso
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()
     {
-        OnDestroyAsset();
-    }
-
-    void Host::BIH2DAsset::OnDestroyAsset()
-    {
         m_hostNodes.DestroyAsset();
 
         m_allocator.DestroyOnDevice(cu_deviceInstance);

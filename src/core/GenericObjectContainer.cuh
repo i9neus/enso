@@ -49,7 +49,7 @@ namespace Enso
             __host__ GenericObjectContainer(const std::string& id) : Asset(id), m_allocator(*this), m_uniqueIdx(0) {}
             __host__ GenericObjectContainer(const GenericObjectContainer&) = delete;
             __host__ GenericObjectContainer(const GenericObjectContainer&&) = delete;
-            __host__ virtual void OnDestroyAsset() override final;
+            __host__ ~GenericObjectContainer();
 
             __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
             __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }

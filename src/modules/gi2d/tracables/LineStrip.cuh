@@ -54,7 +54,6 @@ namespace Enso
             __host__ LineStrip(const std::string& id);
             __host__ virtual ~LineStrip();
 
-            __host__ virtual void       OnDestroyAsset() override final;
             __host__ virtual void       Synchronise(const uint syncType) override final;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;

@@ -25,33 +25,35 @@ namespace Enso
 
 		CudaAssert(*newInstance);
 	}
-	
-	enum MemoryAllocFlags : uint { kCudaMemoryManaged = 1 };
 
-	template<typename AssetType, typename... Args>
-	__host__ inline AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
-	{
-		static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
-
-		auto& registry = GlobalResourceRegistry::Get();
-		AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
-
-		AssetHandle<AssetType> newAsset;
-		newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
-
-		registry.RegisterAsset(newAsset.m_ptr, newId);
-		return newAsset;
-	}
-	
 	namespace Host
     {
-        class AssetAllocator
+		enum MemoryAllocFlags : uint { kCudaMemoryManaged = 1 };
+		
+		class AssetAllocator
         {
 		private:
 			const Asset & const m_parentAsset;
 
         public:            
-			AssetAllocator(const Asset& asset) : m_parentAsset(asset) {}
+			AssetAllocator(const Asset& parent) : m_parentAsset(parent) {}
+
+			template<typename AssetType, typename... Args>
+			__host__ static AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
+			{
+				static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+
+				auto& registry = GlobalResourceRegistry::Get();
+				AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
+
+				// Instantiate the new asset and set some handles
+				AssetHandle<AssetType> newAsset;
+				newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
+				newAsset->m_thisAssetHandle = newAsset.m_ptr;
+
+				registry.RegisterAsset(newAsset.m_ptr, newId);
+				return newAsset;
+			}
 
 			template<typename AssetType, typename... Args>
 			__host__ inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, Args... args) const
@@ -64,9 +66,11 @@ namespace Enso
 				auto& registry = GlobalResourceRegistry::Get();
 				AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());
 
+				// Instantiate the new asset and set some handles
 				AssetHandle<AssetType> newAsset;
 				newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
-				newAsset->m_parentAssetId = m_parentAsset.GetAssetID();
+				newAsset->m_thisAssetHandle = newAsset.m_ptr;
+				newAsset->m_parentAssetHandle = m_parentAsset.m_thisAssetHandle;
 
 				registry.RegisterAsset(newAsset.m_ptr, concatId);
 				return newAsset;

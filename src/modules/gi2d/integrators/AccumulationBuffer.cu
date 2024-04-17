@@ -133,20 +133,15 @@ namespace Enso
 
     Host::AccumulationBuffer::~AccumulationBuffer()
     {
-        OnDestroyAsset();
+        m_hostAccumBuffer.DestroyAsset();
+        m_hostOutputBuffer.DestroyAsset();
+        m_hostReduceBuffer.DestroyAsset();
     }
 
     __host__ void Host::AccumulationBuffer::Synchronise(const int syncFlags)
     {
         if (syncFlags & kSyncParams) { SynchroniseObjects<Device::AccumulationBuffer>(cu_deviceInstance, m_params); }
         if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::AccumulationBuffer>(cu_deviceInstance, m_deviceObjects); }
-    }
-
-    void Host::AccumulationBuffer::OnDestroyAsset()
-    {
-        m_hostAccumBuffer.DestroyAsset();
-        m_hostOutputBuffer.DestroyAsset();
-        m_hostReduceBuffer.DestroyAsset();
     }
 
     // Reduces the contents of the bins down into a single array of values

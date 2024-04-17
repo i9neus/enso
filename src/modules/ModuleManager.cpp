@@ -17,7 +17,7 @@ namespace Enso
         InitialiseCuda(dx12DeviceLUID, clientWidth, clientHeight);
 
         // Create some Cuda objects
-        m_compositeImage = CreateAsset<Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
+        m_compositeImage = Host::AssetAllocator::CreateAsset<Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
     }
 
     void ModuleManager::Destroy()

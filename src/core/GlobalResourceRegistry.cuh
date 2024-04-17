@@ -25,7 +25,7 @@ namespace Enso
         static GlobalResourceRegistry& Get();
 
         void RegisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId);
-        void DeregisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId);
+        void DeregisterAsset(const std::string& assetId);
         void RegisterDeviceMemory(const std::string& assetId, const int64_t bytes);
         void DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes);
         void VerifyEmpty();

@@ -90,12 +90,11 @@ namespace Enso
 
     __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene)
     {
-        return CreateAsset<Host::PerspectiveCamera>(id, scene);
+        return AssetAllocator::CreateAsset<Host::PerspectiveCamera>(id, scene);
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene) :
-        Host::SceneObject(id, m_hostInstance, nullptr),
-        Camera(id, scene, m_allocator)
+        Host::Camera(id, m_hostInstance, scene)
     {
         m_ui.hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
         m_ui.hostUIHandles = m_allocator.CreateChildAsset<Host::Vector<UIHandle>>("uiHandles", kVectorHostAlloc);
@@ -108,7 +107,7 @@ namespace Enso
         cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::PerspectiveCamera>();
 
         // Construct the camera
-        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize, m_allocator.StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
+        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize);
 
         // Set device object pointers
         m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
@@ -126,19 +125,12 @@ namespace Enso
     {
         BEGIN_EXCEPTION_FENCE
 
-            OnDestroyAsset();
-
-        END_EXCEPTION_FENCE
-    }
-
-    __host__ void Host::PerspectiveCamera::OnDestroyAsset()
-    {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
-
-        m_accumBuffer.DestroyAsset();
 
         m_ui.hostLineSegments.DestroyAsset();
         m_ui.hostUIHandles.DestroyAsset();
+
+        END_EXCEPTION_FENCE
     }
 
     __host__ void Host::PerspectiveCamera::Synchronise(const uint syncFlags)

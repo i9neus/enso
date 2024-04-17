@@ -156,19 +156,14 @@ namespace Enso
 
     Host::OverlayLayer::~OverlayLayer()
     {
-        OnDestroyAsset();
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        m_hostAccumBuffer.DestroyAsset();
     }
 
     __host__ void Host::OverlayLayer::Synchronise(const int syncType)
     {
         if (syncType & kSyncObjects) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_deviceObjects); }
         if (syncType & kSyncParams) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_params); }
-    }
-
-    __host__ void Host::OverlayLayer::OnDestroyAsset()
-    {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
-        m_hostAccumBuffer.DestroyAsset();
     }
 
     __host__ void Host::OverlayLayer::Render()

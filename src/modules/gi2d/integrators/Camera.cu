@@ -44,34 +44,29 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Integrate);
 
-    __host__ Host::Camera::Camera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const AssetAllocator& allocator) :
+    __host__ Host::Camera::Camera(const std::string& id, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
+        SceneObject(id, m_hostInstance, scene),
         m_scene(scene),
-        m_parentAllocator(allocator),
         m_dirtyFlags(0)
     {
     }
 
     __host__ void Host::Camera::SetDeviceInstance(Device::Camera* deviceInstance)
     {
+        SceneObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::SceneObject>(deviceInstance));
         cu_deviceInstance = deviceInstance;
     }
 
     __host__ Host::Camera::~Camera()
     {
-        OnDestroyAsset();
-    }
-
-    __host__ void Host::Camera::OnDestroyAsset()
-    {
         m_accumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::Camera::Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize, Device::Camera* deviceInstance)
+    __host__ void Host::Camera::Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize)
     {
-        AssertMsg(!cu_deviceInstance, "Already initialised");        
-        cu_deviceInstance = deviceInstance;
+        Assert(cu_deviceInstance);        
 
-        m_accumBuffer = m_parentAllocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", numProbes, numHarmonics, accumBufferSize);
+        m_accumBuffer = m_allocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", numProbes, numHarmonics, accumBufferSize);
         m_params.accum = m_accumBuffer->GetParams();
 
         m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();

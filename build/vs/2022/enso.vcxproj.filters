@@ -626,6 +626,9 @@
     <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Dirtyable.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

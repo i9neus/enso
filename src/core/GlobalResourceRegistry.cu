@@ -23,8 +23,9 @@ namespace Enso
         Log::Debug("Registered asset '%s'.\n", assetId.c_str());
     }
 
-    void GlobalResourceRegistry::DeregisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId)
+    void GlobalResourceRegistry::DeregisterAsset(const std::string& assetId)
     {
+        // NOTE: By this point, the asset ought to have been deleted so the weak pointer in the asset map will have expired.
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         if (m_assetMap.find(assetId) == m_assetMap.end())

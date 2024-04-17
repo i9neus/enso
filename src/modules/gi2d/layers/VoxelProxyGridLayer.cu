@@ -79,18 +79,17 @@ namespace Enso
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
-        GenericObject(id),
-        Camera(id, scene, m_allocator)
+        Camera(id, m_hostInstance, scene),
+        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>())
     {
+        Camera::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
+
         constexpr uint kGridWidth = 100;
         constexpr uint kGridHeight = 100;
         constexpr uint kNumHarmonics = 1;
-        constexpr size_t kAccumBufferSize = 1024 * 1024;
+        constexpr size_t kAccumBufferSize = 1024 * 1024;        
 
-        // Instantiate and sync
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>();
-
-        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize, m_allocator.StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
+        Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize);
 
         // Construct the camera transform
         m_params.cameraTransform.Construct(vec2(-0.5f), 0.0f, float(kGridWidth));      
@@ -127,7 +126,7 @@ namespace Enso
 
     Host::VoxelProxyGridLayer::~VoxelProxyGridLayer()
     {
-        OnDestroyAsset();
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     /*__host__ AssetHandle<Host::GenericObject> Host::VoxelProxyGridLayer::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene)
@@ -156,13 +155,6 @@ namespace Enso
         
         if (syncType & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_deviceObjects); }
         if (syncType & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGridLayer>(cu_deviceInstance, m_params); }
-    }
-
-    __host__ void Host::VoxelProxyGridLayer::OnDestroyAsset()
-    {
-        Camera::OnDestroyAsset();   
-        
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::VoxelProxyGridLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const

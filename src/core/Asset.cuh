@@ -19,27 +19,9 @@ namespace Enso
         using HostVariant = HostType;
     };
 
-    enum class AssetType : int 
-    { 
-        kUnknown = -1, 
-        kTracable, 
-        kBxDF, 
-        kMaterial, 
-        kLight, 
-        kCamera, 
-        kIntegrator, 
-        kLightProbeFilter
-    };
-
-    struct NullParams
-    {
-        __host__ __device__ NullParams() {}
-
-        __host__ void ToJson(Json::Node&) const {}
-        __host__ uint FromJson(const Json::Node&, const uint) { return 0u; }
-
-        bool operator==(const NullParams&) const { return true; }
-    };
+    // FIXME: Integrate weak asset handles into their own class
+    template<typename AssetType> class AssetHandle;
+    template<typename T> using WeakAssetHandle = std::weak_ptr<T>;
     
     namespace Device
     { 
@@ -56,26 +38,30 @@ namespace Enso
 
         private:
             const std::string       m_assetId;
-            std::string             m_parentAssetId;
+
+            // Weak references to the shared handles that own this instance
+            WeakAssetHandle<Asset>  m_thisAssetHandle;
+            WeakAssetHandle<Asset>  m_parentAssetHandle;
 
         public:
             __host__ virtual ~Asset() {}
 
             __host__ virtual uint               FromJson(const Json::Node& jsonNode, const uint flags) { return 0u; }
-            __host__ virtual AssetType          GetAssetType() const { return AssetType::kUnknown; }
             __host__ virtual std::string        GetAssetClass() const { return ""; }
             __host__ const inline std::string&  GetAssetID() const { return m_assetId; }
-            __host__ const inline std::string&  GetParentAssetID() const { return m_parentAssetId; }
+            __host__ std::string                GetParentAssetID() const;
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
 
-            __host__ static std::string                  MakeTemporaryID();
+            __host__ const WeakAssetHandle<Asset>& GetAssetHandle() const { return m_thisAssetHandle; }
+            __host__ const WeakAssetHandle<Asset>& GetParentAssetHandle() const { return m_parentAssetHandle; }
+
+            __host__ static std::string         MakeTemporaryID();
 
         protected:
-            cudaStream_t            m_hostStream;
+            cudaStream_t                        m_hostStream;
             template<typename AssetType> friend class AssetHandle;
             
             __host__ Asset(const std::string& id) : m_assetId(id), m_hostStream(0) {  }
-            __host__ virtual void OnDestroyAsset() = 0;
         };
     }
 
@@ -87,9 +73,6 @@ namespace Enso
         kAssetAssertOnError = 1 << 3
     };
 
-    // FIXME: Integrate weak asset handles into their own class
-    template<typename T> using WeakAssetHandle = std::weak_ptr<T>;
-
     template<typename AssetType/*, typename = std::enable_if<std::is_base_of<AssetBase, T>::value>::type*/>
     class AssetHandle
     {
@@ -97,7 +80,7 @@ namespace Enso
         friend class Host::AssetAllocator;
 
         template<typename T> friend class AssetHandle;
-        template<typename AssetType, typename... Args> friend AssetHandle<AssetType> CreateAsset(const std::string&, Args...);
+        //template<typename AssetType, typename... Args> friend AssetHandle<AssetType> CreateAsset(const std::string&, Args...);
 
     private:
         std::shared_ptr<AssetType>          m_ptr;
@@ -189,10 +172,9 @@ namespace Enso
 
             const std::string assetId = m_ptr->GetAssetID();
 
-            // Notify the asset that it's about to be destroyed, then deregister and delete the host object.
-            m_ptr->OnDestroyAsset();
-            GlobalResourceRegistry::Get().DeregisterAsset(m_ptr, assetId);
+            // Delete then deregister the host object.
             m_ptr.reset();
+            GlobalResourceRegistry::Get().DeregisterAsset(assetId);
 
             Log::Debug("Destroyed '%s'.\n", assetId);
             return true;

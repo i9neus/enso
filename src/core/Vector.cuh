@@ -179,33 +179,6 @@ namespace Enso
 
 			__host__  ~VectorBase()
 			{
-				OnDestroyAsset();
-			}
-
-			__host__ __inline__ VectorBase& operator=(const std::vector<HostType>& rhs)
-			{
-				CopyImpl(rhs.data(), rhs.size());
-				return *this;
-			}
-
-			__host__ __inline__ VectorBase& operator=(const VectorBase& rhs)
-			{
-				CopyImpl(rhs.m_localData, rhs.Size());
-				return *this;
-			}
-
-			__host__ VectorBase& operator=(VectorBase&& rhs)
-			{
-				m_localParams = rhs.m_localParams;
-				m_deviceParams = rhs.m_deviceParams;
-				m_localData = rhs.m_localData;
-				cu_deviceData = rhs.cu_deviceData;
-
-				rhs.Invalidate();
-			}
-
-			__host__  virtual void OnDestroyAsset() override final
-			{
 				Log::Error("Destroying %s", GetAssetID());
 
 				// Clean up device memory
@@ -234,6 +207,28 @@ namespace Enso
 
 				// Destroy the device instance
 				m_allocator.DestroyOnDevice(cu_deviceInstance);
+			}
+
+			__host__ __inline__ VectorBase& operator=(const std::vector<HostType>& rhs)
+			{
+				CopyImpl(rhs.data(), rhs.size());
+				return *this;
+			}
+
+			__host__ __inline__ VectorBase& operator=(const VectorBase& rhs)
+			{
+				CopyImpl(rhs.m_localData, rhs.Size());
+				return *this;
+			}
+
+			__host__ VectorBase& operator=(VectorBase&& rhs)
+			{
+				m_localParams = rhs.m_localParams;
+				m_deviceParams = rhs.m_deviceParams;
+				m_localData = rhs.m_localData;
+				cu_deviceData = rhs.cu_deviceData;
+
+				rhs.Invalidate();
 			}
 
 			__host__ inline void Prepare()

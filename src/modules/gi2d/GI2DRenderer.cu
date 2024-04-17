@@ -147,13 +147,13 @@ namespace Enso
 
     __host__ void GI2DRenderer::LoadScene()
     {
-        m_sceneObjects = CreateAsset<Host::GenericObjectContainer>(":gi2d/sceneObjects");
-        m_sceneDescription = CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
-        
+        m_sceneObjects = Host::AssetAllocator::CreateAsset<Host::GenericObjectContainer>(":gi2d/sceneObjects");
+        m_sceneDescription = Host::AssetAllocator::CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
+
         // Create some default scene objects
         Json::Node emptyDocument;
-        m_overlayRenderer = CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
-        m_voxelProxyGridLayer = CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneDescription);
+        m_overlayRenderer = Host::AssetAllocator::CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
+        m_voxelProxyGridLayer = Host::AssetAllocator::CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneDescription);
 
         // Emplace them into the scene object list and enqueue them
         m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());

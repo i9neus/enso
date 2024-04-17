@@ -91,6 +91,12 @@ namespace Enso
 				cu_deviceData = m_allocator.InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
 			}
 
+			__host__ ~AssetContainer()
+			{
+				m_allocator.DestroyOnDevice(cu_deviceData);
+				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
+			}
+
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
 
 			__host__ void Clear()
@@ -168,17 +174,6 @@ namespace Enso
 
 				// Synchronise the object list to the device
 				SynchroniseObjects<Device::AssetContainer>(cu_deviceData, m_deviceObjects);
-			}
-
-			__host__ void Destroy()
-			{
-				m_allocator.DestroyOnDevice(cu_deviceData);
-				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
-			}
-
-			__host__ virtual void OnDestroyAsset() override final
-			{
-				Destroy();
 			}
 
 			__host__ Device::AssetContainer<typename ElementType::DeviceVariant>* GetDeviceInstance()
