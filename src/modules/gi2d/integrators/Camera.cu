@@ -44,8 +44,8 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Integrate);
 
-    __host__ Host::Camera::Camera(const std::string& id, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
-        SceneObject(id, m_hostInstance, scene),
+    __host__ Host::Camera::Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
+        SceneObject(initCtx, m_hostInstance, scene),
         m_scene(scene),
         m_dirtyFlags(0)
     {

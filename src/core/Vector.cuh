@@ -142,8 +142,8 @@ namespace Enso
 			};*/
 
 		public:
-			__host__ VectorBase(const std::string& id, const uint flags) :
-				Asset(id),
+			__host__ VectorBase(const Asset::InitCtx& initCtx, const uint flags) :
+				Asset(initCtx),
 				m_allocator(*this),
 				cu_deviceInstance(nullptr),
 				cu_deviceInterface(nullptr),
@@ -167,8 +167,8 @@ namespace Enso
 				//cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::Vector<DeviceType>>(id);
 			}
 
-			__host__ VectorBase(const std::string& id, const uint size, const uint flags) :
-				VectorBase(id, flags)
+			__host__ VectorBase(const Asset::InitCtx& initCtx, const uint size, const uint flags) :
+				VectorBase(initCtx, flags)
 			{
 				// Allocate and sync the memory
 				ResizeImpl(size, true, false);
@@ -510,8 +510,8 @@ namespace Enso
 		{
 		public:
 			__host__ Vector(const uint flags) : VectorBase<CommonType, CommonType>(Asset::MakeTemporaryID(), flags) {}
-			__host__ Vector(const std::string& id, const uint flags) : VectorBase<CommonType, CommonType>(id, flags) {}
-			__host__ Vector(const std::string& id, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(id, size, flags)
+			__host__ Vector(const Asset::InitCtx& initCtx, const uint flags) : VectorBase<CommonType, CommonType>(initCtx, flags) {}
+			__host__ Vector(const Asset::InitCtx& initCtx, const uint size, const uint flags) : VectorBase<CommonType, CommonType>(initCtx, size, flags)
 			{
 				if (flags & kVectorHostAlloc)
 				{
@@ -570,7 +570,7 @@ namespace Enso
 			DeviceType** m_deviceSyncData;
 
 		public:
-			__host__ AssetVector(const std::string& id, const uint flags) : VectorBase<HostType, DeviceType*>(id, flags)
+			__host__ AssetVector(const Asset::InitCtx& initCtx, const uint flags) : VectorBase<HostType, DeviceType*>(initCtx, flags)
 			{
 				//static_assert(is_base_of_template<AssetTags, HostType>, "AssetVector type must inherit AssetTags");
 				static_assert(std::is_trivial<DeviceType*>::value, "Sanity check failed. Device type is non-trivial.");

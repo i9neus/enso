@@ -61,7 +61,7 @@ namespace Enso
                              public Host::GenericObject
         {
         public:
-            OverlayLayer(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
+            OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
 
             virtual ~OverlayLayer();
 

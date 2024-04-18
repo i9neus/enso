@@ -102,7 +102,7 @@ namespace Enso
         class AccumulationBuffer : public Host::GenericObject
         {
         public:
-            AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics, const size_t accumBufferSize);
+            AccumulationBuffer(const Asset::InitCtx& initCtx, const int numProbes, const int numHarmonics, const size_t accumBufferSize);
             virtual ~AccumulationBuffer();
 
             __host__ void Reduce();

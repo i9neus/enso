@@ -36,6 +36,14 @@ namespace Enso
         {
             friend class AssetAllocator;
 
+        public:
+            struct InitCtx
+            {
+                std::string                 id;
+                WeakAssetHandle<Asset>      thisAssetHandle;
+                WeakAssetHandle<Asset>      parentAssetHandle;
+            };
+
         private:
             const std::string       m_assetId;
 
@@ -52,16 +60,20 @@ namespace Enso
             __host__ std::string                GetParentAssetID() const;
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
 
-            __host__ const WeakAssetHandle<Asset>& GetAssetHandle() const { return m_thisAssetHandle; }
-            __host__ const WeakAssetHandle<Asset>& GetParentAssetHandle() const { return m_parentAssetHandle; }
-
             __host__ static std::string         MakeTemporaryID();
 
         protected:
             cudaStream_t                        m_hostStream;
             template<typename AssetType> friend class AssetHandle;
             
-            __host__ Asset(const std::string& id) : m_assetId(id), m_hostStream(0) {  }
+            __host__ Asset(const InitCtx& initCtx) : 
+                m_assetId(initCtx.id), 
+                m_thisAssetHandle(initCtx.thisAssetHandle), 
+                m_parentAssetHandle(initCtx.parentAssetHandle),
+                m_hostStream(0) {  }
+
+            __host__ WeakAssetHandle<Asset>& GetAssetHandle() { return m_thisAssetHandle; }
+            __host__ WeakAssetHandle<Asset>& GetParentAssetHandle() { return m_parentAssetHandle; }
         };
     }
 

@@ -139,8 +139,8 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);*/
 
-    Host::OverlayLayer::OverlayLayer(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream):
-        GenericObject(id),
+    Host::OverlayLayer::OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream):
+        GenericObject(initCtx),
         m_scene(scene)
     {                
         // Create some Cuda objects

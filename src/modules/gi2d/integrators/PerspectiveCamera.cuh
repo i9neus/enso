@@ -77,7 +77,7 @@ namespace Enso
                                   
         {
         public:
-            __host__ PerspectiveCamera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ virtual ~PerspectiveCamera();
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;

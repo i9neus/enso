@@ -92,8 +92,8 @@ namespace Enso
         return L;
     }
 
-    __host__ Host::LineStrip::LineStrip(const std::string& id) :
-        Tracable(id, m_hostInstance, nullptr),
+    __host__ Host::LineStrip::LineStrip(const Asset::InitCtx& initCtx) :
+        Tracable(initCtx, m_hostInstance, nullptr),
         cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::LineStrip>())
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);

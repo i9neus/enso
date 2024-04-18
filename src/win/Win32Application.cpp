@@ -226,7 +226,7 @@ namespace Enso
 }
 
 int main(int argc, char* argv[])
-{
+{	
 	using namespace Enso;
 	
 	// Initialise any objects that have global scope. 

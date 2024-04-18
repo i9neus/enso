@@ -7,8 +7,8 @@
 
 namespace Enso
 {
-    __host__ Host::SceneDescription::SceneDescription(const std::string& id) :
-        Host::Asset(id),
+    __host__ Host::SceneDescription::SceneDescription(const Asset::InitCtx& initCtx) :
+        Host::Dirtyable(initCtx),
         m_allocator(*this)
     {
         m_hostTracables = m_allocator.CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);

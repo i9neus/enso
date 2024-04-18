@@ -47,10 +47,32 @@ namespace Enso
 				AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
 
 				// Instantiate the new asset and set some handles
-				AssetHandle<AssetType> newAsset;
-				newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
-				newAsset->m_thisAssetHandle = newAsset.m_ptr;
+				//AssetHandle<AssetType> newAsset;
+				//newAsset.m_ptr = std::make_shared<AssetType>(newId, args...);
 
+				// Allocate memory for the new object
+				// NOTE: For compilers other than msvc++, this function should be replaced with std::aligned_alloc()
+				AssetType* naked = (AssetType*)_aligned_malloc(sizeof(AssetType), alignof(AssetType));
+				Assert(naked);
+
+				// Reset the shared pointer with a custom deleter for clean-up
+				auto deleter = [](AssetType* ptr)
+				{
+					ptr->AssetType::~AssetType();
+					_aligned_free(ptr);
+				};
+				AssetHandle<AssetType> newAsset;
+				newAsset.m_ptr.reset(static_cast<AssetType*>(naked), deleter);
+
+				// Create an initialisation context
+				Asset::InitCtx initCtx;
+				initCtx.id = newId;
+				initCtx.thisAssetHandle = newAsset.m_ptr;
+
+				// Placement-new the object to construct it
+				new (naked) AssetType(initCtx, args...);
+
+				// Register the asset and return
 				registry.RegisterAsset(newAsset.m_ptr, newId);
 				return newAsset;
 			}
@@ -66,11 +88,32 @@ namespace Enso
 				auto& registry = GlobalResourceRegistry::Get();
 				AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());
 
-				// Instantiate the new asset and set some handles
+				// Instantiate the new asset and set some handles 
+				// AssetHandle<AssetType> newAsset;
+				//newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
+
+				// Allocate memory for the new object
+				// NOTE: For compilers other than msvc++, this function should be replaced with std::aligned_alloc()
 				AssetHandle<AssetType> newAsset;
-				newAsset.m_ptr = std::make_shared<AssetType>(concatId, args...);
-				newAsset->m_thisAssetHandle = newAsset.m_ptr;
-				newAsset->m_parentAssetHandle = m_parentAsset.m_thisAssetHandle;
+				AssetType* naked = (AssetType*)_aligned_malloc(sizeof(AssetType), alignof(AssetType));
+				Assert(naked);
+
+				// Reset the shared pointer with a custom deleter for clean-up
+				auto deleter = [](AssetType* ptr)
+				{
+					ptr->AssetType::~AssetType();
+					_aligned_free(ptr);
+				};
+				newAsset.m_ptr.reset(static_cast<AssetType*>(naked), deleter);
+
+				// Create an initialisation context
+				Asset::InitCtx initCtx;
+				initCtx.id = newId;
+				initCtx.thisAssetHandle = newAsset.m_ptr;
+				initCtx.parentAssetHandle = m_parentAsset.m_thisAssetHandle;
+
+				// Placement-new the object to construct it
+				new (naked) AssetType(initCtx, args...);
 
 				registry.RegisterAsset(newAsset.m_ptr, concatId);
 				return newAsset;

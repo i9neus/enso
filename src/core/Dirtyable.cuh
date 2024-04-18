@@ -9,57 +9,53 @@
 
 namespace Enso
 {
-    class GenericObject;
-    class DirtinessGraph;
-    class Dirtyable;
-
-    using DirtinessKey = uint;
-
     namespace Host
-    {
-        class Dirtyable {};
-        /*
+    {       
+        class GenericObject;
+        class DirtinessGraph;
+        class Dirtyable;
+
+        using DirtinessKey = uint;
         
-        class Dirtyable
+        class Dirtyable : public Host::Asset
         {
             friend DirtinessGraph;
         public:
-            __host__ Dirtyable(const std::string& id, DirtinessGraph& graph) : m_dirtinessGraph(graph) {}
+            __host__ Dirtyable(const Asset::InitCtx& initCtx);
 
             __host__ bool               IsDirty(const DirtinessKey& id);
             __host__ void               Clean();
 
         protected:
-            __host__ virtual void       OnDirty(const DirtinessKey& id) = 0;
+            __host__ virtual void       OnDirty(const DirtinessKey& id, const WeakAssetHandle<Dirtyable>& asset) {}
             __host__ void               SetDirty(const DirtinessKey& id);
             __host__ void               Listen(const DirtinessKey& id);
 
         private:
             std::set<DirtinessKey>      m_dirtyFlags;
-            DirtinessGraph&             m_dirtinessGraph;
-            Host::Asset&                m_parentAsset;
         };
 
         class DirtinessGraph
         {
-        private:
-            // TODO: use 
-            std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_listeners;
+        private:           
+            std::mutex                                                  m_mutex;
+            std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_listenerHandles;            
+            std::multimap <std::string, DirtinessKey>                   m_listenerKeys;
             std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_eventQueue;
 
         public:
             __host__ DirtinessGraph() = default;
 
-            __host__ void Flush();
-            __host__ void AddListener(Dirtyable& owner, const DirtinessKey& eventID);
+            __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& eventId);
             __host__ void OnEvent(const DirtinessKey& flag);
 
             __host__ void Clear() { m_eventQueue.clear(); }
             __host__ void Flush();
 
-
         private:
             __host__ bool ListenerExists(Dirtyable& owner, const DirtinessKey& eventID) const;
-        };*/
+            __host__ void GarbageCollect();
+        };
+
     }
 }

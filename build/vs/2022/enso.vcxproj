@@ -197,6 +197,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\core\Asset.cu" />
+    <CudaCompile Include="..\..\..\src\core\Dirtyable.cu" />
     <CudaCompile Include="..\..\..\src\core\GenericObject.cu" />
     <CudaCompile Include="..\..\..\src\core\GenericObjectContainer.cu" />
     <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu" />

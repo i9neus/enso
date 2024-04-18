@@ -12,8 +12,8 @@ namespace Enso
         m_testAsList = params.testAsList;
     }
 
-    __host__ Host::BIH2DAsset::BIH2DAsset(const std::string& id, const uint& minBuildablePrims) :
-        Asset(id),
+    __host__ Host::BIH2DAsset::BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims) :
+        Asset(initCtx),
         m_allocator(*this),
         cu_deviceInstance(nullptr),
         m_minBuildablePrims(minBuildablePrims)
@@ -21,7 +21,7 @@ namespace Enso
         cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::BIH2DAsset>();
         cu_deviceInterface = m_allocator.StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = m_allocator.CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", id), kVectorHostAlloc);
+        m_hostNodes = m_allocator.CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", initCtx.id), kVectorHostAlloc);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset()

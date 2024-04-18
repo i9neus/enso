@@ -5,6 +5,7 @@
 namespace Enso
 {
     UIGenericObject::UIGenericObject(const std::string& id, const SerialisableObjectSchema& schema, const Json::Node& node) :
+        m_isDirty(false),
         m_id(id)
     {
         for (auto& attribute : schema.GetAttributes())

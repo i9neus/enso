@@ -46,7 +46,7 @@ namespace Enso
             using Iterator = __Iterator<RenderObjectMap::iterator, false>;
             using ConstIterator = __Iterator<RenderObjectMap::const_iterator, true>;
 
-            __host__ GenericObjectContainer(const std::string& id) : Asset(id), m_allocator(*this), m_uniqueIdx(0) {}
+            __host__ GenericObjectContainer(const Asset::InitCtx& initCtx) : Asset(initCtx), m_allocator(*this), m_uniqueIdx(0) {}
             __host__ GenericObjectContainer(const GenericObjectContainer&) = delete;
             __host__ GenericObjectContainer(const GenericObjectContainer&&) = delete;
             __host__ ~GenericObjectContainer();

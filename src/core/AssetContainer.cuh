@@ -83,8 +83,8 @@ namespace Enso
 			AssetAllocator										m_allocator;
 
 		public:
-			__host__ AssetContainer(const std::string& id) : 
-				Asset(id),
+			__host__ AssetContainer(const InitCtx& initCtx) :
+				Asset(initCtx),
 				m_allocator(*this), 
 				cu_deviceData(nullptr)
 			{

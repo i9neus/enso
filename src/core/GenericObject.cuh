@@ -2,7 +2,7 @@
 
 #include "math/Math.cuh"
 #include "io/Serialisable.cuh"
-#include "AssetAllocator.cuh"
+#include "Dirtyable.cuh"
 
 #include <map>
 #include <unordered_set>
@@ -72,7 +72,7 @@ namespace Enso
     {        
         class SceneDescription;
         
-        class GenericObject : public Host::Asset,
+        class GenericObject : public Host::Dirtyable,
                               public Serialisable
         {
         public:            
@@ -128,7 +128,7 @@ namespace Enso
             __host__ void  Unlisten(const GenericObject& owner, const std::string& eventID);
 
         protected:
-            __host__ GenericObject(const std::string& id);
+            __host__ GenericObject(const Asset::InitCtx& initCtx);
             __host__ virtual ~GenericObject() {}
             __host__ void SetDeviceInstance(Device::GenericObject* deviceInstance);
 

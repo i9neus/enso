@@ -65,7 +65,7 @@ namespace Enso
 
 
         protected:
-            __host__ Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ Tracable(const Asset::InitCtx& initCtx, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ void SetDeviceInstance(Device::Tracable* deviceInstance);
             
             __host__ virtual void Synchronise(const uint syncFlags) override;

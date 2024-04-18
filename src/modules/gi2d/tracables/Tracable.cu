@@ -9,8 +9,8 @@ namespace Enso
         return bBox.Intersects(SceneObject::m_params.objectBBox);
     }
 
-    __host__ Host::Tracable::Tracable(const std::string& id, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
-        SceneObject(id, hostInstance, scene),
+    __host__ Host::Tracable::Tracable(const Asset::InitCtx& initCtx, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
+        SceneObject(initCtx, hostInstance, scene),
         m_hostInstance(hostInstance)
     {
     }

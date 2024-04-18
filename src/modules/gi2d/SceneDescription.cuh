@@ -41,10 +41,10 @@ namespace Enso
         using CameraContainer = Host::AssetVector<Host::Camera, Device::Camera>;
         using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
 
-        class SceneDescription : public Host::Asset
+        class SceneDescription : public Host::Dirtyable
         {
         public:
-            __host__                SceneDescription(const std::string& id);
+            __host__                SceneDescription(const Asset::InitCtx& initCtx);
             __host__ virtual        ~SceneDescription();
 
             __host__ void           Rebuild(AssetHandle<Host::GenericObjectContainer>& sceneObjects, const UIViewCtx& viewCtx, const uint dirtyFlags);

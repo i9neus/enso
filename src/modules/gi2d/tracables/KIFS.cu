@@ -204,8 +204,8 @@ namespace Enso
         //return vec4(vec3(normalize(F.yz) + 1.0f * 0.5f, 0.0f), 1.0f);
     }
 
-    __host__ Host::KIFS::KIFS(const std::string& id) :
-        Tracable(id, m_hostInstance, nullptr),
+    __host__ Host::KIFS::KIFS(const Asset::InitCtx& initCtx) :
+        Tracable(initCtx, m_hostInstance, nullptr),
         cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::KIFS>())
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);

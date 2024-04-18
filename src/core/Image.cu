@@ -53,8 +53,8 @@ namespace Enso
 	}
 
 	template<typename T>
-	__host__ Host::Image<T>::Image(const std::string& id, unsigned int width, unsigned int height, cudaStream_t hostStream) :
-		Asset(id),
+	__host__ Host::Image<T>::Image(const Asset::InitCtx& initCtx, unsigned int width, unsigned int height, cudaStream_t hostStream) :
+		Asset(initCtx),
 		m_allocator(*this),
 		cu_deviceData(nullptr)
 	{		

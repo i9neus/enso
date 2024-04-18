@@ -119,7 +119,7 @@ namespace Enso
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ SceneObject(const std::string& id, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
             __host__ virtual void           Synchronise(const uint flags) override;
            

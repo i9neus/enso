@@ -51,7 +51,7 @@ namespace Enso
         class LineStrip : public Host::Tracable
         {
         public:
-            __host__ LineStrip(const std::string& id);
+            __host__ LineStrip(const Asset::InitCtx& initCtx);
             __host__ virtual ~LineStrip();
 
             __host__ virtual void       Synchronise(const uint syncType) override final;

@@ -74,7 +74,7 @@ namespace Enso
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx);
 
         protected:
-            __host__ Camera(const std::string& id, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
             __host__ virtual ~Camera();
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 

@@ -68,8 +68,8 @@ namespace Enso
         return AssetAllocator::CreateAsset<Host::OmniLight>(id);
     }
 
-    __host__ Host::OmniLight::OmniLight(const std::string& id) :
-        Host::Light(id, m_hostInstance),
+    __host__ Host::OmniLight::OmniLight(const Asset::InitCtx& initCtx) :
+        Host::Light(initCtx, m_hostInstance),
         cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::OmniLight>())
     {
         Light::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Light>(cu_deviceInstance));

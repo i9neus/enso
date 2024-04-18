@@ -93,8 +93,8 @@ namespace Enso
         return AssetAllocator::CreateAsset<Host::PerspectiveCamera>(id, scene);
     }
 
-    __host__ Host::PerspectiveCamera::PerspectiveCamera(const std::string& id, const AssetHandle<const Host::SceneDescription>& scene) :
-        Host::Camera(id, m_hostInstance, scene)
+    __host__ Host::PerspectiveCamera::PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene) :
+        Host::Camera(initCtx, m_hostInstance, scene)
     {
         m_ui.hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
         m_ui.hostUIHandles = m_allocator.CreateChildAsset<Host::Vector<UIHandle>>("uiHandles", kVectorHostAlloc);

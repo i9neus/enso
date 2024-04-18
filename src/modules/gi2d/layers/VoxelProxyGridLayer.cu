@@ -78,8 +78,8 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
-        Camera(id, m_hostInstance, scene),
+    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
+        Camera(initCtx, m_hostInstance, scene),
         cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>())
     {
         Camera::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Camera>(cu_deviceInstance));

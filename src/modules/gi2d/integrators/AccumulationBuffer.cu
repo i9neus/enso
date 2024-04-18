@@ -93,8 +93,8 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Reduce);
 
-    Host::AccumulationBuffer::AccumulationBuffer(const std::string& id, const int numProbes, const int numHarmonics, const size_t accumBufferSize) :
-        GenericObject(id),
+    Host::AccumulationBuffer::AccumulationBuffer(const Asset::InitCtx& initCtx, const int numProbes, const int numHarmonics, const size_t accumBufferSize) :
+        GenericObject(initCtx),
         m_norm(0)
     {
         Assert(accumBufferSize >= numProbes * numHarmonics);

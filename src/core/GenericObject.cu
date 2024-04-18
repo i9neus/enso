@@ -20,8 +20,9 @@ namespace Enso
     __host__ void GenericObjectParams::Randomise(const vec2& range)
     {
     }
-    __host__ Host::GenericObject::GenericObject(const std::string& id) :
-        Asset(id),
+
+    __host__ Host::GenericObject::GenericObject(const Asset::InitCtx& initCtx) :
+        Dirtyable(initCtx),
         m_allocator(*this),
         m_renderObjectFlags(0),
         m_dirtyFlags(0),

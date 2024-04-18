@@ -60,7 +60,7 @@ namespace Enso
                                     public Host::UILayer
         {
         public:
-            VoxelProxyGridLayer(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
+            VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
             virtual ~VoxelProxyGridLayer();
             
             __host__ virtual void Render() override final;
