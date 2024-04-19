@@ -77,13 +77,9 @@ namespace Enso
         Synchronise(kSyncObjects);
     }
 
-    __host__ Host::OmniLight::~OmniLight()
+    __host__ Host::OmniLight::~OmniLight() noexcept
     {
-        BEGIN_EXCEPTION_FENCE
-
-            m_allocator.DestroyOnDevice(cu_deviceInstance);
-
-        END_EXCEPTION_FENCE
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
     __host__ void Host::OmniLight::Synchronise(const uint syncFlags)

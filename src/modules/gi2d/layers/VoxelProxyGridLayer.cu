@@ -124,7 +124,7 @@ namespace Enso
         Synchronise(kSyncParams | kSyncObjects);
     }*/
 
-    Host::VoxelProxyGridLayer::~VoxelProxyGridLayer()
+    Host::VoxelProxyGridLayer::~VoxelProxyGridLayer() noexcept
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }

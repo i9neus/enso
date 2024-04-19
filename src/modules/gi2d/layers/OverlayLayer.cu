@@ -154,7 +154,7 @@ namespace Enso
         Synchronise(kSyncObjects);
     }
 
-    Host::OverlayLayer::~OverlayLayer()
+    Host::OverlayLayer::~OverlayLayer() noexcept
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();

@@ -16,6 +16,13 @@ namespace Enso
             ((b << (a & 31u)) | (b >> (31u - (a & 31u))));
     }
 
+    // Mix and combine hashes
+    template<typename T>
+    __host__ __device__ __forceinline__ uint HashCombine(const std::hash<T>& a, const std::hash<T>& b)
+    {
+        return HashCombine(uint(a), uint(b));
+    }
+
     __host__ __device__ __forceinline__ uint HashCombine(const float& a, const float& b)
     {
         return HashCombine(*reinterpret_cast<const uint*>(&a), *reinterpret_cast<const uint*>(&b));

@@ -103,7 +103,7 @@ namespace Enso
         {
         public:
             AccumulationBuffer(const Asset::InitCtx& initCtx, const int numProbes, const int numHarmonics, const size_t accumBufferSize);
-            virtual ~AccumulationBuffer();
+            virtual ~AccumulationBuffer() noexcept;
 
             __host__ void Reduce();
             __host__ void Clear();  

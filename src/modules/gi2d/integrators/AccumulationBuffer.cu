@@ -131,7 +131,7 @@ namespace Enso
         Synchronise(kSyncParams | kSyncObjects);
     }
 
-    Host::AccumulationBuffer::~AccumulationBuffer()
+    Host::AccumulationBuffer::~AccumulationBuffer() noexcept
     {
         m_hostAccumBuffer.DestroyAsset();
         m_hostOutputBuffer.DestroyAsset();

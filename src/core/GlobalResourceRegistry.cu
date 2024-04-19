@@ -23,20 +23,22 @@ namespace Enso
         Log::Debug("Registered asset '%s'.\n", assetId.c_str());
     }
 
-    void GlobalResourceRegistry::DeregisterAsset(const std::string& assetId)
+    void GlobalResourceRegistry::DeregisterAsset(const std::string& assetId) noexcept
     {
         // NOTE: By this point, the asset ought to have been deleted so the weak pointer in the asset map will have expired.
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         if (m_assetMap.find(assetId) == m_assetMap.end())
         {
-            Log::Error("ERROR: Deregister asset: object '%s' does not exist in the registry!", assetId);
+            m_errorList.push_back(tinyformat::format("Deregister asset: object '%s' does not exist in the registry!", assetId));
+            return;
         }
 
         auto memoryIt = m_deviceMemoryMap.find(assetId);
         if (memoryIt != m_deviceMemoryMap.end())
         {
-            Log::Error("ERROR: Deregister asset: object '%s' has %i bytes of outstanding device memory that have not been deallocated.", assetId, memoryIt->second.currentBytes);
+            m_errorList.push_back(tinyformat::format("ERROR: Deregister asset: object '%s' has %i bytes of outstanding device memory that have not been deallocated.", assetId, memoryIt->second.currentBytes));
+            return;
         }
 
         m_deviceMemoryMap.erase(assetId);
@@ -62,7 +64,7 @@ namespace Enso
         Log::System("*** DEVICE ALLOC *** : %s -> %i bytes (%i in total)", assetId, newBytes, int64_t(entry.currentBytes));
     }
 
-    void GlobalResourceRegistry::DeregisterDeviceMemory(const std::string& assetId, const int64_t delBytes)
+    void GlobalResourceRegistry::DeregisterDeviceMemory(const std::string& assetId, const int64_t delBytes) noexcept
     {
         Assert(delBytes >= 0);
         if (delBytes == 0) { return; }
@@ -70,13 +72,20 @@ namespace Enso
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
         auto it = m_deviceMemoryMap.find(assetId);
-        AssertMsgFmt(it != m_deviceMemoryMap.end(), "Asset '%s' is not in the registry", assetId.c_str());
+        if (it == m_deviceMemoryMap.end())
+        {
+            m_errorList.push_back(tinyformat::format("Error: Asset '%s' is not in the registry", assetId));
+            return;
+        }
         auto& stats = it->second;
 
         Log::System("*** DEVICE FREE *** : %s -> %i (%i bytes remaining)", assetId, delBytes, int64_t(stats.currentBytes) - delBytes);
         
-        AssertMsgFmt(int64_t(stats.currentBytes) - delBytes >= 0,
-            "Asset '%s' is trying to deallocate more memory than it originally allocated.", assetId.c_str());
+        if (int64_t(stats.currentBytes) - delBytes < 0)
+        {
+            m_errorList.push_back(tinyformat::format("Asset '%s' tried to deallocate more memory than it originally allocated.", assetId));
+            return;
+        }
 
         // Decrement the allocated bytes and clean up the entry if necessary. 
         stats.currentBytes -= delBytes;
@@ -115,14 +124,26 @@ namespace Enso
     {
         std::lock_guard<std::mutex> mutexLock(m_mutex);
 
-        if (m_assetMap.empty())
+        if (m_assetMap.empty() && m_errorList.empty())
         {
             Log::Write("SUCCESS! All managed assets were sucessfully cleaned up.\n");
             return;
         }
 
-        Log::Warning("WARNING: The following %i objects were not explicitly destroyed!\n", m_assetMap.size());
-        Report();
+        if (!m_assetMap.empty())
+        {
+            Log::Error("WARNING: The following %i objects were not explicitly destroyed:\n", m_assetMap.size());
+            Report();
+        }
+
+        if (!m_errorList.empty())
+        {
+            Log::Error("WARNING: The following objects reported errors:\n", m_assetMap.size());
+            for (const auto& error : m_errorList)
+            {
+                Log::Error("  - %s", error);
+            }
+        }
 
         AssertMsg(m_assetMap.empty(), "Scene unloading resulted in errors.");
     }

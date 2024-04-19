@@ -28,21 +28,19 @@ namespace Enso
         cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::SceneDescription>();
 
         SynchroniseObjects<Device::SceneDescription>(cu_deviceInstance, m_deviceObjects);
+
+        Listen(1u);
     }
 
-    __host__ Host::SceneDescription::~SceneDescription()
+    __host__ Host::SceneDescription::~SceneDescription() noexcept
     {
-        BEGIN_EXCEPTION_FENCE
+        m_allocator.DestroyOnDevice(cu_deviceInstance);
 
-            m_allocator.DestroyOnDevice(cu_deviceInstance);
-
-            m_hostTracables.DestroyAsset();
-            m_hostLights.DestroyAsset();
-            m_hostCameras.DestroyAsset();
-            m_hostTracableBIH.DestroyAsset();
-            m_hostSceneBIH.DestroyAsset();
-
-        END_EXCEPTION_FENCE
+        m_hostTracables.DestroyAsset();
+        m_hostLights.DestroyAsset();
+        m_hostCameras.DestroyAsset();
+        m_hostTracableBIH.DestroyAsset();
+        m_hostSceneBIH.DestroyAsset();
     }
 
     template<typename ContainerType>
@@ -61,6 +59,14 @@ namespace Enso
             return Grow((*primitives)[idx]->GetWorldSpaceBoundingBox(), 0.001f);
         };
         bih->Build(getPrimitiveBBox);
+    }
+
+    __host__ void Host::SceneDescription::OnDirty(const DirtinessKey& flag)
+    {
+        if (flag == 1u)
+        {
+            Log::Error("Caught!");
+        }
     }
 
     __host__ void Host::SceneDescription::Rebuild(AssetHandle<Host::GenericObjectContainer>& genericObjects, const UIViewCtx& viewCtx, const uint dirtyFlags)

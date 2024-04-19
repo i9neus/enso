@@ -57,7 +57,7 @@ namespace Enso
         cu_deviceInstance = deviceInstance;
     }
 
-    __host__ Host::Camera::~Camera()
+    __host__ Host::Camera::~Camera() noexcept
     {
         m_accumBuffer.DestroyAsset();
     }

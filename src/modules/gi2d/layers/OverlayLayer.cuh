@@ -62,8 +62,7 @@ namespace Enso
         {
         public:
             OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene, const uint width, const uint height, cudaStream_t renderStream);
-
-            virtual ~OverlayLayer();
+            virtual ~OverlayLayer() noexcept;
 
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final; 

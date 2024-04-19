@@ -75,7 +75,7 @@ namespace Enso
 
         protected:
             __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
-            __host__ virtual ~Camera();
+            __host__ virtual ~Camera() noexcept;
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 
             __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize);

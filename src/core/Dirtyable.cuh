@@ -27,8 +27,9 @@ namespace Enso
             __host__ void               Clean();
 
         protected:
-            __host__ virtual void       OnDirty(const DirtinessKey& id, const WeakAssetHandle<Dirtyable>& asset) {}
+            __host__ virtual void       OnDirty(const DirtinessKey& id) {}
             __host__ void               SetDirty(const DirtinessKey& id);
+            __host__ void               SignalDirty(const DirtinessKey& id);
             __host__ void               Listen(const DirtinessKey& id);
 
         private:
@@ -39,22 +40,18 @@ namespace Enso
         {
         private:           
             std::mutex                                                  m_mutex;
-            std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_listenerHandles;            
-            std::multimap <std::string, DirtinessKey>                   m_listenerKeys;
-            std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_eventQueue;
+            std::multimap <DirtinessKey, WeakAssetHandle<Dirtyable>>    m_handleFromFlag;            
+            std::multimap <std::string, DirtinessKey>                   m_flagFromAssetId;
+            std::set<DirtinessKey>                                      m_eventSet;
 
         public:
             __host__ DirtinessGraph() = default;
 
-            __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& eventId);
-            __host__ void OnEvent(const DirtinessKey& flag);
+            __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& flag);
+            __host__ void OnDirty(const DirtinessKey& flag);
 
-            __host__ void Clear() { m_eventQueue.clear(); }
+            __host__ void Clear() { m_eventSet.clear(); }
             __host__ void Flush();
-
-        private:
-            __host__ bool ListenerExists(Dirtyable& owner, const DirtinessKey& eventID) const;
-            __host__ void GarbageCollect();
         };
 
     }

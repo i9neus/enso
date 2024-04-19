@@ -87,7 +87,7 @@ namespace Enso
         }
     }
 
-    __host__ Host::GenericObjectContainer::~GenericObjectContainer()
+    __host__ Host::GenericObjectContainer::~GenericObjectContainer() noexcept
     {
         Log::Debug("Unloading scene graph...");
         

@@ -15,7 +15,7 @@ namespace Enso
 	{
 	public:
 		CudaObjectManager();
-		~CudaObjectManager();
+		~CudaObjectManager() noexcept;
 
 		void						InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
 		void						DestroyCuda();

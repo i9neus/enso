@@ -47,9 +47,12 @@ namespace Enso
         DeclareStateTransitionGraph();   
     }
 
-    __host__ GI2DRenderer::~GI2DRenderer()
+    __host__ GI2DRenderer::~GI2DRenderer() noexcept
     {
-        Destroy();
+        m_overlayRenderer.DestroyAsset();
+        m_voxelProxyGridLayer.DestroyAsset();
+        m_sceneDescription.DestroyAsset();
+        m_sceneObjects.DestroyAsset();
     }
 
     __host__ void GI2DRenderer::RegisterInstantiators()
@@ -159,14 +162,6 @@ namespace Enso
         m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
         m_sceneObjects->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
-    }
-
-    __host__ void GI2DRenderer::OnDestroy()
-    {
-        m_overlayRenderer.DestroyAsset();
-        m_voxelProxyGridLayer.DestroyAsset();
-        m_sceneDescription.DestroyAsset();
-        m_sceneObjects.DestroyAsset();
     }
 
     __host__ void GI2DRenderer::Bind()

@@ -17,7 +17,7 @@ namespace Enso
 	{
 	}
 
-	CudaObjectManager::~CudaObjectManager()
+	CudaObjectManager::~CudaObjectManager() noexcept
 	{
 	}
 

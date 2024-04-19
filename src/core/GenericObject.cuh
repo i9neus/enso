@@ -129,7 +129,7 @@ namespace Enso
 
         protected:
             __host__ GenericObject(const Asset::InitCtx& initCtx);
-            __host__ virtual ~GenericObject() {}
+            __host__ virtual ~GenericObject() noexcept {}
             __host__ void SetDeviceInstance(Device::GenericObject* deviceInstance);
 
             template<typename ThisType, typename BindType>

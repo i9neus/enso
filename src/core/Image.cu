@@ -14,7 +14,7 @@ namespace Enso
 	}
 
 	template<typename T>
-	__host__ Host::Image<T>::~Image()
+	__host__ Host::Image<T>::~Image() noexcept
 	{
 		m_allocator.DestroyOnDevice(cu_deviceData);
 		m_allocator.GuardedFreeDeviceArray(m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);

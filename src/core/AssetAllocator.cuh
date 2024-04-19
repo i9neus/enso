@@ -42,6 +42,7 @@ namespace Enso
 			__host__ static AssetHandle<AssetType> CreateAsset(const std::string& newId, Args... args)
 			{
 				static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+				AssertMsg(!newId.empty(), "ID cannot be empty");
 
 				auto& registry = GlobalResourceRegistry::Get();
 				AssertMsgFmt(!registry.Exists(newId), "Object '%s' is already in asset registry!", newId.c_str());
@@ -81,6 +82,7 @@ namespace Enso
 			__host__ inline AssetHandle<AssetType> CreateChildAsset(const std::string& newId, Args... args) const
 			{
 				static_assert(std::is_base_of<Host::Asset, AssetType>::value, "Asset type must be derived from Host::Asset");
+				AssertMsg(!newId.empty(), "ID cannot be empty");
 
 				// Concatenate new asset ID with its parent ID 
 				const std::string& concatId = m_parentAsset.GetAssetID() + "/" + newId;
@@ -108,7 +110,7 @@ namespace Enso
 
 				// Create an initialisation context
 				Asset::InitCtx initCtx;
-				initCtx.id = newId;
+				initCtx.id = concatId;
 				initCtx.thisAssetHandle = newAsset.m_ptr;
 				initCtx.parentAssetHandle = m_parentAsset.m_thisAssetHandle;
 
@@ -120,7 +122,7 @@ namespace Enso
 			}
 
 			template<typename ObjectType>
-			__host__ void GuardedFreeDeviceArray(const size_t numElements, ObjectType** deviceData) const
+			__host__ void GuardedFreeDeviceArray(const size_t numElements, ObjectType** deviceData) const noexcept
 			{
 				Assert(deviceData);
 				if (*deviceData != nullptr)
@@ -133,13 +135,13 @@ namespace Enso
 			}
 
 			template<typename ObjectType>
-			__host__ inline void GuardedFreeDeviceObject(ObjectType** deviceData) const
+			__host__ inline void GuardedFreeDeviceObject(ObjectType** deviceData) const noexcept
 			{
 				GuardedFreeDeviceArray(1, deviceData);
 			}
 
 			template<typename ObjectType>
-			void GuardedAllocDeviceArray(const size_t numElements, ObjectType** deviceObject, const uint flags = 0) const
+			void GuardedAllocDeviceArray(const size_t numElements, ObjectType** deviceObject, const uint flags = 0) const noexcept
 			{
 				Assert(deviceObject);
 				AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
@@ -238,7 +240,7 @@ namespace Enso
 			}
 
 			template<typename ObjectType>
-			__host__ void DestroyOnDevice(ObjectType*& cu_data) const
+			__host__ void DestroyOnDevice(ObjectType*& cu_data) const noexcept
 			{
 				if (cu_data == nullptr) { return; }
 

@@ -121,16 +121,12 @@ namespace Enso
         Synchronise(kSyncObjects);
     }
 
-    __host__ Host::PerspectiveCamera::~PerspectiveCamera()
+    __host__ Host::PerspectiveCamera::~PerspectiveCamera() noexcept
     {
-        BEGIN_EXCEPTION_FENCE
-
         m_allocator.DestroyOnDevice(cu_deviceInstance);
 
         m_ui.hostLineSegments.DestroyAsset();
         m_ui.hostUIHandles.DestroyAsset();
-
-        END_EXCEPTION_FENCE
     }
 
     __host__ void Host::PerspectiveCamera::Synchronise(const uint syncFlags)

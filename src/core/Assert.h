@@ -16,7 +16,7 @@ namespace Enso
 
 #else
 
-#define BEGIN_EXCEPTION_FENCE try { 
+/*#define BEGIN_EXCEPTION_FENCE try { 
 
 #define END_EXCEPTION_FENCE \
     } \
@@ -27,7 +27,7 @@ namespace Enso
     catch(...) \
     { \
         Log::Error("Fenced exception in %s (%i)", __FILE__, __LINE__); \
-    } 
+    } */
 
 #ifdef DISABLE_BACKTRACE_ON_ASSERT
 #define _AssertCacheStackBacktrace

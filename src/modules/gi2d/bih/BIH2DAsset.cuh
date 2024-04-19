@@ -23,7 +23,7 @@ namespace Enso
             using SubclassType = BIH2D<NodeType>;
         public:
             __host__ BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims);
-            __host__ virtual ~BIH2DAsset();
+            __host__ virtual ~BIH2DAsset() noexcept;
 
             __host__ inline std::vector<uint>& GetPrimitiveIndices() { return m_primitiveIdxs; }
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);

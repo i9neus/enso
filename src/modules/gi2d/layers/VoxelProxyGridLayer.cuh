@@ -61,7 +61,7 @@ namespace Enso
         {
         public:
             VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
-            virtual ~VoxelProxyGridLayer();
+            virtual ~VoxelProxyGridLayer() noexcept;
             
             __host__ virtual void Render() override final;
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) override final;

@@ -29,7 +29,7 @@ namespace Enso
         class Light : public Host::Tracable
         {
         public:
-            __host__ virtual ~Light() {}
+            __host__ virtual ~Light() noexcept {}
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;
 
         protected:

@@ -92,7 +92,7 @@ namespace Enso
         {
         public:
             __host__ KIFS(const Asset::InitCtx& initCtx);
-            __host__ virtual ~KIFS();
+            __host__ virtual ~KIFS() noexcept;
 
             __host__ virtual void       Synchronise(const uint syncType) override final;
 

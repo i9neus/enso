@@ -52,7 +52,7 @@ namespace Enso
         {
         public:
             __host__ LineStrip(const Asset::InitCtx& initCtx);
-            __host__ virtual ~LineStrip();
+            __host__ virtual ~LineStrip() noexcept;
 
             __host__ virtual void       Synchronise(const uint syncType) override final;
 

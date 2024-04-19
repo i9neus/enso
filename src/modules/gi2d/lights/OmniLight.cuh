@@ -64,7 +64,7 @@ namespace Enso
         {
         public:
             __host__ OmniLight(const Asset::InitCtx& initCtx);
-            __host__ virtual ~OmniLight();
+            __host__ virtual ~OmniLight() noexcept;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;

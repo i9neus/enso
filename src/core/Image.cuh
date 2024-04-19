@@ -133,7 +133,7 @@ namespace Enso
 			using Pixel = T;
 
 			__host__ Image(const Asset::InitCtx& initCtx, unsigned int width, unsigned int height, cudaStream_t hostStream);
-			__host__ virtual ~Image();
+			__host__ virtual ~Image() noexcept;
 
 			__host__ cudaStream_t GetHostStream() const { return m_hostStream; }
 			__host__ void SetHostStream(cudaStream_t hostStream) { m_hostStream = hostStream; }

@@ -37,7 +37,7 @@ namespace Enso
         enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };
 
         __host__ GI2DRenderer(std::shared_ptr<CommandQueue> outQueue);
-        __host__ virtual ~GI2DRenderer();
+        __host__ virtual ~GI2DRenderer() noexcept;
 
         __host__ virtual void OnInitialise() override final;
         __host__ virtual void OnMouseMove() override final;
@@ -55,7 +55,6 @@ namespace Enso
         __host__ virtual bool Serialise(Json::Document& json, const int flags) override final;
 
     private:
-        __host__ virtual void            OnDestroy() override final;
         //virtual void            OnPreRender() override final;
         __host__ virtual void            OnRender() override final;
         //virtual void          OnPostRender() override final;

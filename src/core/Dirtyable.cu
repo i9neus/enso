@@ -10,13 +10,23 @@ namespace Enso
         Asset(initCtx)
     {
     }
-    
-    __host__ void Host::Dirtyable::Listen(const DirtinessKey& eventId)
+
+    __host__ void Host::Dirtyable::SetDirty(const DirtinessKey& flag)
+    {
+        m_dirtyFlags.emplace(flag);
+    }
+
+    __host__ void Host::Dirtyable::SignalDirty(const DirtinessKey& flag)
+    {
+        m_dirtyFlags.emplace(flag);
+        s_dirtinessGraph.OnDirty(flag);
+    }
+
+    __host__ void Host::Dirtyable::Listen(const DirtinessKey& flag)
     {
         // Get the asset handle for this object and upcast it
         WeakAssetHandle<Host::Dirtyable> weakHandle = std::dynamic_pointer_cast<Host::Dirtyable>(GetAssetHandle().lock());
-
-        s_dirtinessGraph.AddListener(GetAssetID(), weakHandle, eventId);
+        s_dirtinessGraph.AddListener(GetAssetID(), weakHandle, flag);
     }
 
     __host__ bool Host::Dirtyable::IsDirty(const DirtinessKey& id)
@@ -34,27 +44,27 @@ namespace Enso
     {
         // Flush the event queue by iterating through all outstanding events and invoking the triggers corresponding to them
         int numExpired = 0;
-        for (const auto& event : m_eventQueue)
+        for (const auto& event : m_eventSet)
         {
-            for (auto listener = m_listenerHandles.find(event.first); listener != m_listenerHandles.end() && listener->first == event.first; ++listener)
+            for (auto listener = m_handleFromFlag.find(event); listener != m_handleFromFlag.end() && listener->first == event; ++listener)
             {
                 if (listener->second.expired())
                 {
                     auto expiredIt = listener;
                     ++listener;
-                    m_listenerHandles.erase(expiredIt);
+                    m_handleFromFlag.erase(expiredIt);
                     ++numExpired;
                 }
                 else
                 {
-                    listener->second.lock()->OnDirty(event.first, listener->second);
+                    listener->second.lock()->OnDirty(event);
                 }
             }
         }
 
         // Empty the queue
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_eventQueue.clear();
+        m_eventSet.clear();
 
         // If any of the handles expired, do some garbage collection
         if (numExpired > 0)
@@ -63,26 +73,31 @@ namespace Enso
         }
     }
 
-    __host__ bool Host::DirtinessGraph::AddListener(const std::string& id, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& eventId)
+    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessKey& flag)
+    {
+        m_eventSet.emplace(flag);
+    }
+
+    __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& flag)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        
-        AssertMsgFmt(!handle.expired(), "Handle for asset '%s' has expired.", id.c_str());
+
+        AssertMsgFmt(!handle.expired(), "Handle for asset '%s' has expired.", assetId.c_str());
 
         // Check to make sure this object isn't already listening for this event
-        for (auto listener = m_listenerKeys.find(id); listener != m_listenerKeys.end() && listener->first == id; ++listener)
+        for (auto listener = m_flagFromAssetId.find(assetId); listener != m_flagFromAssetId.end() && listener->first == assetId; ++listener)
         {
-            if (listener->second == eventId)
+            if (listener->second == flag)
             {
-                Log::Error("Warning: object '%s' is already listening for event %i", id, eventId);
+                Log::Error("Warning: object '%s' is already listening for event %i", assetId, flag);
                 return false;
             }
         }
 
-        m_listenerHandles.emplace(eventId, handle);
-        m_listenerKeys.emplace(id, eventId);
+        m_handleFromFlag.emplace(flag, handle);
+        m_flagFromAssetId.emplace(assetId, flag);
 
-        Log::Debug("Object '%s' added as a listener to the dirtiness graph.");
+        Log::Error("Object '%s' added as a listener to the dirtiness graph.", assetId);
         return true;
     }
 

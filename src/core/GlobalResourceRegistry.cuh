@@ -25,9 +25,9 @@ namespace Enso
         static GlobalResourceRegistry& Get();
 
         void RegisterAsset(std::weak_ptr<Host::Asset> object, const std::string& assetId);
-        void DeregisterAsset(const std::string& assetId);
+        void DeregisterAsset(const std::string& assetId) noexcept;
         void RegisterDeviceMemory(const std::string& assetId, const int64_t bytes);
-        void DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes);
+        void DeregisterDeviceMemory(const std::string& assetId, const int64_t bytes) noexcept;
         void VerifyEmpty();
         void Report();
         bool Exists(const std::string& id) const;
@@ -42,6 +42,7 @@ namespace Enso
         std::unordered_map<std::string, std::weak_ptr<Host::Asset>>     m_assetMap;
         std::unordered_map<std::string, MemoryStats>                    m_deviceMemoryMap;
         std::mutex                                                      m_mutex;
+        std::vector<std::string>                                        m_errorList;
     };
 
     static inline GlobalResourceRegistry& AR() { return GlobalResourceRegistry::Get(); }

@@ -122,7 +122,7 @@ namespace Enso
         return AssetAllocator::CreateAsset<Host::LineStrip>(id);
     }
 
-    __host__ Host::LineStrip::~LineStrip()
+    __host__ Host::LineStrip::~LineStrip() noexcept
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
 
@@ -173,6 +173,7 @@ namespace Enso
                 m_hostLineSegments->Back().Set(1, mousePosLocal);
                 SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
             }
+            SignalDirty(1u);
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
@@ -190,6 +191,7 @@ namespace Enso
             }
 
             SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
+            SignalDirty(1u);
         }
         else if (stateID == "kCreateSceneObjectClose")
         {
@@ -202,6 +204,7 @@ namespace Enso
             Log::Warning("Closed path %s", GetAssetID());
             m_isFinalised = true;
             SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
+            SignalDirty(1u);
         }
         else
         {

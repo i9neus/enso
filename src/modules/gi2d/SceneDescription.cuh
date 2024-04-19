@@ -45,7 +45,7 @@ namespace Enso
         {
         public:
             __host__                SceneDescription(const Asset::InitCtx& initCtx);
-            __host__ virtual        ~SceneDescription();
+            __host__ virtual        ~SceneDescription() noexcept;
 
             __host__ void           Rebuild(AssetHandle<Host::GenericObjectContainer>& sceneObjects, const UIViewCtx& viewCtx, const uint dirtyFlags);
             __host__ const Device::SceneDescription* GetDeviceInstance() const { return cu_deviceInstance; }
@@ -58,6 +58,9 @@ namespace Enso
             __host__ TracableContainer& Lights() { DAssert(m_hostTracableBIH); return *m_hostTracables; }
 
             __host__ SceneObjectContainer& SceneObjects() { return *m_hostSceneObjects; }
+
+        protected:
+            __host__ virtual void OnDirty(const DirtinessKey& flag) override;
 
         private:    
             // Geometry

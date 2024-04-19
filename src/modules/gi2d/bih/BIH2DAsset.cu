@@ -24,7 +24,7 @@ namespace Enso
         m_hostNodes = m_allocator.CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", initCtx.id), kVectorHostAlloc);
     }
 
-    __host__ Host::BIH2DAsset::~BIH2DAsset()
+    __host__ Host::BIH2DAsset::~BIH2DAsset() noexcept
     {
         m_hostNodes.DestroyAsset();
 

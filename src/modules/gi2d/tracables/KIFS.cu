@@ -219,7 +219,7 @@ namespace Enso
         return AssetAllocator::CreateAsset<Host::KIFS>(id);
     }
 
-    __host__ Host::KIFS::~KIFS()
+    __host__ Host::KIFS::~KIFS() noexcept
     {
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
