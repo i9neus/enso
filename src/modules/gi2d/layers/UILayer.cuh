@@ -7,7 +7,7 @@
 
 #include "../tracables/Tracable.cuh"
 #include "../FwdDecl.cuh"
-#include "../SceneDescription.cuh"
+#include "../scene/SceneContainer.cuh"
 
 namespace Enso
 {

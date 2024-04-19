@@ -4,7 +4,7 @@
 #include "core/CudaHeaders.cuh"
 
 #include "../RenderCtx.cuh"
-#include "../SceneDescription.cuh"
+#include "../scene/SceneContainer.cuh"
 #include "../primitives/SDF.cuh"
 
 namespace Enso
@@ -78,7 +78,7 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene) :
+    Host::VoxelProxyGridLayer::VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene) :
         Camera(initCtx, m_hostInstance, scene),
         cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::VoxelProxyGridLayer>())
     {
@@ -129,7 +129,7 @@ namespace Enso
         m_allocator.DestroyOnDevice(cu_deviceInstance);
     }
 
-    /*__host__ AssetHandle<Host::GenericObject> Host::VoxelProxyGridLayer::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene)
+    /*__host__ AssetHandle<Host::GenericObject> Host::VoxelProxyGridLayer::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene)
     {
         return CreateAsset<Host::VoxelProxyGridLayer>(id, json, scene);
     }*/

@@ -30,7 +30,7 @@ namespace Enso
         return false;
     }
 
-    __host__ Host::SceneObject::SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneDescription>& scene) :
+    __host__ Host::SceneObject::SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
         GenericObject(initCtx),
         m_hostInstance(hostInstance)
     {

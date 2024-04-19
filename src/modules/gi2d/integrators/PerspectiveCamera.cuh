@@ -77,7 +77,7 @@ namespace Enso
                                   
         {
         public:
-            __host__ PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ virtual ~PerspectiveCamera() noexcept;
 
             __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
@@ -88,7 +88,7 @@ namespace Enso
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
 
-            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>&);
             __host__ static const std::string  GetAssetClassStatic() { return "perspectivecamera"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 

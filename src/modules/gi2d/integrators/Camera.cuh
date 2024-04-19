@@ -22,7 +22,7 @@ namespace Enso
         }
 
         Device::AccumulationBuffer* accumBuffer = nullptr;
-        const Device::SceneDescription* scene = nullptr;
+        const Device::SceneContainer* scene = nullptr;
     };
 
     struct CameraParams
@@ -74,7 +74,7 @@ namespace Enso
             __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx);
 
         protected:
-            __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneDescription>& scene);
+            __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ virtual ~Camera() noexcept;
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 
@@ -86,7 +86,7 @@ namespace Enso
 
         protected:            
             AssetHandle<Host::AccumulationBuffer>                   m_accumBuffer;
-            AssetHandle<const Host::SceneDescription>               m_scene;
+            AssetHandle<const Host::SceneContainer>               m_scene;
             CameraParams                                            m_params;
 
             CameraObjects                                           m_deviceObjects;

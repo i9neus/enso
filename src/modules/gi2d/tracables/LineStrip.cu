@@ -117,7 +117,7 @@ namespace Enso
         Synchronise(kSyncObjects);
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>&)
+    __host__ AssetHandle<Host::GenericObject> Host::LineStrip::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>&)
     {
         return AssetAllocator::CreateAsset<Host::LineStrip>(id);
     }

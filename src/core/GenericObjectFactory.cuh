@@ -36,9 +36,9 @@ namespace Enso
         public:
             __host__ GenericObjectFactory() : m_newInstanceCounter(0) {}
 
-            __host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneDescription>&, AssetHandle<Host::GenericObjectContainer>& renderObjects);
-            __host__ AssetHandle<Host::GenericObject>       Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneDescription>&, AssetHandle<Host::GenericObjectContainer>& renderObjects);
-            __host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>&, AssetHandle<Host::GenericObjectContainer>& renderObjects);
+            __host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            __host__ AssetHandle<Host::GenericObject>       Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            __host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
 
             template<typename HostClass> __host__ void RegisterInstantiator(const uint hash = 0u);
 
@@ -48,10 +48,10 @@ namespace Enso
             }
 
         private:
-            __host__ AssetHandle<Host::GenericObject>       InstantiateImpl(std::shared_ptr<Instantiator>& ptr, const Json::Node& json, const AssetHandle<const Host::SceneDescription>&, AssetHandle<Host::GenericObjectContainer>& renderObjects);
+            __host__ AssetHandle<Host::GenericObject>       InstantiateImpl(std::shared_ptr<Instantiator>& ptr, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
 
-            __host__ void InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, AssetHandle<Host::GenericObjectContainer>& renderObjects);
-            __host__ void EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, AssetHandle<Host::GenericObjectContainer>& renderObjects);
+            __host__ void InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects);
+            __host__ void EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, Host::GenericObjectContainer& renderObjects);
 
             std::map<std::string, std::shared_ptr<Instantiator>>    m_instantiators;
             std::map<uint, std::shared_ptr<Instantiator>>           m_hashMap;
@@ -85,7 +85,7 @@ namespace Enso
         }
 
         template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, AssetHandle<Host::GenericObjectContainer>& renderObjects)
+        __host__ void GenericObjectFactory<FirstType, TypePack...>::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects)
         {
             for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
             {
@@ -141,7 +141,7 @@ namespace Enso
                         // If the ID is a number, append it with an underscore to avoid breaking the DAG convention
                         const std::string instanceId = (numInstances == 1) ? newId : tfm::format("%s%i", newId, instanceIdx + 1);
 
-                        if (renderObjects->Exists(instanceId))
+                        if (renderObjects.Exists(instanceId))
                         {
                             Log::Error("Error: an object with ID '%s' has alread been instantiated.\n", instanceId);
                             continue;
@@ -169,9 +169,9 @@ namespace Enso
         }
 
         template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, AssetHandle<Host::GenericObjectContainer>& renderObjects)
+        __host__ void GenericObjectFactory<FirstType, TypePack...>::EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, Host::GenericObjectContainer& renderObjects)
         {
-            renderObjects->Emplace(newObject);
+            renderObjects.Emplace(newObject);
 
             // The render object may have generated some of its own assets. Add them to the object list. 
             std::vector<AssetHandle<Host::GenericObject>> childObjects = newObject->GetChildObjectHandles();
@@ -183,7 +183,7 @@ namespace Enso
                 {
                     AssertMsg(child, "A captured child object handle is invalid.");
                     //child->SetHostStream(m_hostStream);
-                    renderObjects->Emplace(child);
+                    renderObjects.Emplace(child);
 
                     Log::Debug("%s\n", child->GetAssetID());
                 }
@@ -191,8 +191,8 @@ namespace Enso
         }
 
         template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneDescription>& scene,
-            AssetHandle<Host::GenericObjectContainer>& renderObjects)
+        __host__ void GenericObjectFactory<FirstType, TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>& scene,
+            Host::GenericObjectContainer& renderObjects)
         {
             for (const auto& group : m_groupList)
             {
@@ -202,8 +202,8 @@ namespace Enso
         }
 
         template<typename FirstType, typename... TypePack>
-        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene,
-            AssetHandle<Host::GenericObjectContainer>& renderObjects)
+        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene,
+            Host::GenericObjectContainer& renderObjects)
         {
             // Look for an instantiator that matches the hash
             auto it = m_hashMap.find(hash);
@@ -217,8 +217,8 @@ namespace Enso
         }
 
         template<typename FirstType, typename... TypePack>
-        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene,
-            AssetHandle<Host::GenericObjectContainer>& renderObjects)
+        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene,
+            Host::GenericObjectContainer& renderObjects)
         {
             // Look for an instantiator that matches the hash
             auto it = m_instantiators.find(id);
@@ -233,8 +233,8 @@ namespace Enso
 
         template<typename FirstType, typename... TypePack>
         __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::InstantiateImpl(std::shared_ptr<Instantiator>& instantiator, const Json::Node& json,
-            const AssetHandle<const Host::SceneDescription>& scene,
-            AssetHandle<Host::GenericObjectContainer>& renderObjects)
+            const AssetHandle<const Host::SceneContainer>& scene,
+            Host::GenericObjectContainer& renderObjects)
         {
             // Instantiate the object
             AssetHandle<Host::GenericObject> newObject = instantiator->instanceFunctor(tfm::format("object%i", ++m_newInstanceCounter), json, scene);

@@ -106,6 +106,9 @@
     <Filter Include="modules\gi2d\widgets">
       <UniqueIdentifier>{170f97db-0c4d-4f49-8c0f-adc1e2ead725}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gi2d\scene">
+      <UniqueIdentifier>{eaf759a3-9559-46f2-a6ca-2b2908670e25}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -348,9 +351,6 @@
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\SceneDescription.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh">
@@ -629,15 +629,18 @@
     <ClInclude Include="..\..\..\src\core\Dirtyable.cuh">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cuh">
+      <Filter>modules\gi2d\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cuh">
+      <Filter>modules\gi2d\scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <Filter>utils</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu">
-      <Filter>modules\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneDescription.cu">
       <Filter>modules\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu">
@@ -720,6 +723,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\Dirtyable.cu">
       <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cu">
+      <Filter>modules\gi2d\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cu">
+      <Filter>modules\gi2d\scene</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

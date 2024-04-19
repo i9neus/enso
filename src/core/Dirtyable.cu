@@ -19,7 +19,8 @@ namespace Enso
     __host__ void Host::Dirtyable::SignalDirty(const DirtinessKey& flag)
     {
         m_dirtyFlags.emplace(flag);
-        s_dirtinessGraph.OnDirty(flag);
+
+        s_dirtinessGraph.OnDirty(flag, *this);
     }
 
     __host__ void Host::Dirtyable::Listen(const DirtinessKey& flag)
@@ -43,7 +44,7 @@ namespace Enso
     __host__ void Host::DirtinessGraph::Flush()
     {
         // Flush the event queue by iterating through all outstanding events and invoking the triggers corresponding to them
-        int numExpired = 0;
+        /*int numExpired = 0;
         for (const auto& event : m_eventSet)
         {
             for (auto listener = m_handleFromFlag.find(event); listener != m_handleFromFlag.end() && listener->first == event; ++listener)
@@ -70,12 +71,35 @@ namespace Enso
         if (numExpired > 0)
         {
             Log::Warning("Garbage collection removed %i listeners from dirtiness graph.", numExpired);
-        }
+        }*/
     }
 
-    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessKey& flag)
+    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessKey& flag, Host::Dirtyable& caller)
     {
-        m_eventSet.emplace(flag);
+        //m_eventSet.emplace(flag);
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        int numExpired = 0;
+        for (auto listener = m_handleFromFlag.find(flag); listener != m_handleFromFlag.end() && listener->first == flag; ++listener)
+        {
+            if (listener->second.expired())
+            {
+                auto expiredIt = listener;
+                ++listener;
+                m_handleFromFlag.erase(expiredIt);
+                ++numExpired;
+            }
+            else
+            {
+                listener->second.lock()->OnDirty(flag, caller);
+            }
+        }
+
+        // If any of the handles expired, do some garbage collection
+        if (numExpired > 0)
+        {
+            Log::Warning("Garbage collection removed %i listeners from dirtiness graph.", numExpired);
+        }
     }
 
     __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& flag)

@@ -60,7 +60,7 @@ namespace Enso
                                     public Host::UILayer
         {
         public:
-            VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneDescription>& scene);
+            VoxelProxyGridLayer(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene);
             virtual ~VoxelProxyGridLayer() noexcept;
             
             __host__ virtual void Render() override final;
@@ -68,7 +68,7 @@ namespace Enso
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final;
             __host__ virtual bool IsTransformable() const override final { return false; }
 
-            //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneDescription>& scene);
+            //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygridlayer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 

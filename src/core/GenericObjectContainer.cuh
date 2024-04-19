@@ -127,6 +127,7 @@ namespace Enso
 
             __host__ void Erase(const Host::GenericObject& obj);
             __host__ void Erase(const std::string& id);
+            __host__ void Clear();
 
             template<typename DowncastType, typename DeleteFunctor>
             __host__ void Erase(DeleteFunctor& canDelete)

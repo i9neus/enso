@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../bih/BIH2DAsset.cuh"
-#include "../SceneDescription.cuh"
+#include "../scene/SceneContainer.cuh"
 #include "../RenderCtx.cuh"
 
 namespace Enso
@@ -15,7 +15,7 @@ namespace Enso
         public:
             __device__ PathTracer2D() {}
 
-            __device__ void Synchronise(const Device::SceneDescription& scene) 
+            __device__ void Synchronise(const Device::SceneContainer& scene) 
             { 
                 scene.Validate();  
                 m_scene = scene; 
@@ -29,7 +29,7 @@ namespace Enso
             __device__ int Trace(const Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const;
             __device__ bool Shade(Ray2D& ray, const HitCtx2D& hit, RenderCtx& renderCtx) const;
 
-            Device::SceneDescription m_scene;
+            Device::SceneContainer m_scene;
         };
     }
 }

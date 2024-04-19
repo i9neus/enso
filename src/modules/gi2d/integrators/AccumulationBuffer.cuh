@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/AssetAllocator.cuh"
-#include "../SceneDescription.cuh"
+#include "../scene/SceneContainer.cuh"
 
 namespace Enso
 {

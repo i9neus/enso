@@ -13,7 +13,7 @@
 
 #include "integrators/PerspectiveCamera.cuh"
 
-#include "SceneDescription.cuh"
+#include "scene/SceneBuilder.cuh"
 //#include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
 #include "layers/VoxelProxyGridLayer.cuh"
@@ -51,8 +51,9 @@ namespace Enso
     {
         m_overlayRenderer.DestroyAsset();
         m_voxelProxyGridLayer.DestroyAsset();
-        m_sceneDescription.DestroyAsset();
-        m_sceneObjects.DestroyAsset();
+        
+        m_sceneBuilder.DestroyAsset();
+        m_sceneContainer.DestroyAsset();
     }
 
     __host__ void GI2DRenderer::RegisterInstantiators()
@@ -150,26 +151,23 @@ namespace Enso
 
     __host__ void GI2DRenderer::LoadScene()
     {
-        m_sceneObjects = Host::AssetAllocator::CreateAsset<Host::GenericObjectContainer>(":gi2d/sceneObjects");
-        m_sceneDescription = Host::AssetAllocator::CreateAsset<Host::SceneDescription>(":gi2d/sceneDescription");
+        m_sceneContainer = Host::AssetAllocator::CreateAsset<Host::SceneContainer>(":gi2d/sceneContainer");
+        m_sceneBuilder = Host::AssetAllocator::CreateAsset<Host::SceneBuilder>(":gi2d/sceneBuilder", m_sceneContainer);
 
         // Create some default scene objects
         Json::Node emptyDocument;
-        m_overlayRenderer = Host::AssetAllocator::CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneDescription, m_clientWidth, m_clientHeight, m_renderStream);
-        m_voxelProxyGridLayer = Host::AssetAllocator::CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneDescription);
+        m_overlayRenderer = Host::AssetAllocator::CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneContainer, m_clientWidth, m_clientHeight, m_renderStream);
+        m_voxelProxyGridLayer = Host::AssetAllocator::CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneContainer);
 
         // Emplace them into the scene object list and enqueue them
-        m_sceneObjects->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
-        m_sceneObjects->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
+        m_sceneContainer->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
+        m_sceneContainer->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
     }
 
     __host__ void GI2DRenderer::Bind()
     {
-        for (auto& object : *m_sceneObjects)
-        {
-            object->Bind();
-        }
+        m_sceneContainer->Bind();
     }
 
     __host__ void GI2DRenderer::Rebuild()
@@ -185,7 +183,7 @@ namespace Enso
         }
 
         // Rebuild the scene description structure
-        m_sceneDescription->Rebuild(m_sceneObjects, m_viewCtx, m_dirtyFlags);
+        m_sceneBuilder->Rebuild(m_viewCtx, m_dirtyFlags);
 
         // View has changed
         m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
@@ -199,7 +197,7 @@ namespace Enso
         for (Json::Node::ConstIterator nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
         {
             const std::string& objId = nodeIt.Name();
-            auto objectHandle = m_sceneObjects->FindByID(objId);
+            auto objectHandle = m_sceneContainer->GenericObjects().FindByID(objId);
 
             if (!objectHandle)
             {
@@ -237,7 +235,7 @@ namespace Enso
         Json::Node node = m_outboundCmdQueue->Create(eventId);
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : *m_sceneObjects) { SerialiseImpl(node, obj); }
+            for (auto& obj : m_sceneContainer->GenericObjects()) { SerialiseImpl(node, obj); }
         }
         else if (flags & kEnqueueSelected)
         {
@@ -272,7 +270,7 @@ namespace Enso
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        auto& sceneObjects = m_sceneDescription->SceneObjects();
+        auto& sceneObjects = m_sceneContainer->SceneObjects();
         int emptyIdx = -1;
         int numDeleted = 0;
         for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
@@ -280,7 +278,7 @@ namespace Enso
             if (sceneObjects[primIdx]->IsSelected())
             {
                 // Erase the object from the container
-                m_sceneObjects->Erase(sceneObjects[primIdx]->GetSceneObject().GetAssetID());
+                m_sceneContainer->GenericObjects().Erase(sceneObjects[primIdx]->GetSceneObject().GetAssetID());
 
                 ++numDeleted;
                 if (emptyIdx == -1) { emptyIdx = primIdx; }
@@ -343,7 +341,7 @@ namespace Enso
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        for (auto obj : m_sceneDescription->SceneObjects())
+        for (auto obj : m_sceneContainer->SceneObjects())
         {
             obj->OnSelect(false);
         }
@@ -357,9 +355,9 @@ namespace Enso
     __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
-        if (m_sceneDescription->SceneBIH().IsConstructed())
+        if (m_sceneContainer->SceneBIH().IsConstructed())
         {
-            auto& sceneObjects = m_sceneDescription->SceneObjects();
+            auto& sceneObjects = m_sceneContainer->SceneObjects();
             int hitIdx = -1;
             uint hitResult = kSceneObjectInvalidSelect;
             auto onContainsPrim = [&, this](const uint* primRange) -> bool
@@ -378,7 +376,7 @@ namespace Enso
                 }
                 return false;
             };
-            m_sceneDescription->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            m_sceneContainer->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
             if (hitIdx != -1)
@@ -452,7 +450,7 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
         {
-            auto& sceneObjects = m_sceneDescription->SceneObjects();
+            auto& sceneObjects = m_sceneContainer->SceneObjects();
             const bool wasLassoing = m_selectionCtx.isLassoing;
 
             if (!m_selectionCtx.isLassoing)
@@ -470,7 +468,7 @@ namespace Enso
             m_selectedObjects.clear();
 
             std::lock_guard <std::mutex> lock(m_resourceMutex);
-            if (m_sceneDescription->SceneBIH().IsConstructed())
+            if (m_sceneContainer->SceneBIH().IsConstructed())
             {
                 const uint lastNumSelected = m_selectionCtx.numSelected;
 
@@ -502,7 +500,7 @@ namespace Enso
                         }
                     }
                 };
-                m_sceneDescription->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                m_sceneContainer->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.numSelected)
@@ -548,7 +546,7 @@ namespace Enso
         if (stateID == "kCreateSceneObjectOpen")
         {
             // Try and instantiate the objerct
-            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneDescription, m_sceneObjects);
+            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneContainer, m_sceneContainer->GenericObjects());
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
 
             SetDirtyFlags(kDirtyRebind);
@@ -581,7 +579,7 @@ namespace Enso
         // If the new object has closed but has not been finalised, delete it
         if (!m_onCreate.newObject->IsFinalised())
         {
-            m_sceneObjects->Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
+            m_sceneContainer->GenericObjects().Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
             SetDirtyFlags(kDirtyObjectBounds);
 
             Log::Success("Destroyed unfinalised scene object '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
@@ -607,7 +605,7 @@ namespace Enso
             Rebuild();
         }
 
-        //m_sceneDescription->voxelProxy->Render();
+        //m_sceneContainer->voxelProxy->Render();
 
         // Render the pass
         //m_pathTracerLayer->Render();
@@ -615,7 +613,7 @@ namespace Enso
         {
             //if (m_renderTimer.Get() > 0.1f)
             {
-                for (auto& camera : m_sceneDescription->Cameras())
+                for (auto& camera : m_sceneContainer->Cameras())
                 {
                     camera->Integrate();
                 }

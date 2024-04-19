@@ -1,3 +1,5 @@
+#pragma once
+
 #include "math/Math.cuh"
 #include "io/Serialisable.cuh"
 #include "AssetAllocator.cuh"
@@ -27,7 +29,7 @@ namespace Enso
             __host__ void               Clean();
 
         protected:
-            __host__ virtual void       OnDirty(const DirtinessKey& id) {}
+            __host__ virtual void       OnDirty(const DirtinessKey& id, Host::Dirtyable& caller) {}
             __host__ void               SetDirty(const DirtinessKey& id);
             __host__ void               SignalDirty(const DirtinessKey& id);
             __host__ void               Listen(const DirtinessKey& id);
@@ -48,7 +50,7 @@ namespace Enso
             __host__ DirtinessGraph() = default;
 
             __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& flag);
-            __host__ void OnDirty(const DirtinessKey& flag);
+            __host__ void OnDirty(const DirtinessKey& flag, Host::Dirtyable& caller);
 
             __host__ void Clear() { m_eventSet.clear(); }
             __host__ void Flush();

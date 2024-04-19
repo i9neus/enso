@@ -71,6 +71,11 @@ namespace Enso
         obj.DestroyAsset();
     } 
 
+    __host__ void Host::GenericObjectContainer::Clear()
+    {
+        m_objectMap.clear();
+    }
+
     __host__ void Host::GenericObjectContainer::Bind()
     {
         for (auto& object : m_objectMap)
