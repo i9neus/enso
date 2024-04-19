@@ -1,4 +1,4 @@
-#include "Dirtyable.cuh"
+#include "DirtinessGraph.cuh"
 #include "Asset.cuh"
 
 namespace Enso

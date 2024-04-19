@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SceneContainer.cuh"
-#include "core/Dirtyable.cuh"
+#include "core/DirtinessGraph.cuh"
 
 namespace Enso
 {

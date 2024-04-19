@@ -2,7 +2,7 @@
 
 #include "math/Math.cuh"
 #include "io/Serialisable.cuh"
-#include "Dirtyable.cuh"
+#include "DirtinessGraph.cuh"
 
 #include <map>
 #include <unordered_set>
