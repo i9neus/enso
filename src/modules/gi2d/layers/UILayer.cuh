@@ -2,7 +2,7 @@
 
 #include "../UICtx.cuh"
 
-#include "../Dirtiness.cuh"
+#include "../DirtinessFlags.cuh"
 #include "core/Image.cuh"
 
 #include "../tracables/Tracable.cuh"

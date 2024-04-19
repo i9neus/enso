@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Dirtiness.cuh"
+#include "DirtinessFlags.cuh"
 
 #include "Transform2D.cuh"
 #include "UICtx.cuh"

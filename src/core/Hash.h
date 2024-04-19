@@ -10,10 +10,18 @@ namespace Enso
     constexpr uint kFNVOffset = 0x811c9dc5u;
 
     // Mix and combine hashes
-    __host__ __device__ __forceinline__ uint HashCombine(const uint& a, const uint& b)
+    template<typename T>
+    __host__ __device__ __forceinline__ T HashCombine(const T& a, const T& b)
     {
-        return (((a << (31u - (b & 31u))) | (a >> (b & 31u)))) ^
-            ((b << (a & 31u)) | (b >> (31u - (a & 31u))));
+        static_assert(std::is_integral<T>::value, "HashCombine requires integral type.");
+        
+        // Old hash function
+        constexpr uint mask = (1u << (sizeof(T) * 8u)) - 1u;
+        return (((a << (mask - (b & mask))) | (a >> (b & mask)))) ^
+            ((b << (a & mask)) | (b >> (mask - (a & mask))));
+
+        // Based on Boost's hash_combine()         
+        //return b + 0x9e3779b9 + (a << 6) + (a >> 2);
     }
 
     // Mix and combine hashes

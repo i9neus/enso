@@ -1,11 +1,10 @@
 #pragma once
 
-#include "core/math/Math.cuh"
-#include "core/AssetAllocator.cuh"
+//#include <stdio.h>
 
 namespace Enso
 {
-    enum GI2DDirtyFlags : uint
+    enum GI2DDirtyFlagsDeprecated : unsigned int
     {
         kClean = 0,
 
@@ -31,5 +30,10 @@ namespace Enso
         kDirtyIntegrators = kDirtyMaterials | kDirtyObjectBounds | kDirtyObjectBVH,
 
         kDirtyAll = 0xffffffff
+    };
+
+    enum GI2DDirtyFlags : unsigned int
+    {
+        kDirtyObjectBoundingBox            // Called whenever an objects bounding box is updated       
     };
 }

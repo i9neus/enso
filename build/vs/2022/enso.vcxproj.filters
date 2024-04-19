@@ -362,7 +362,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Dirtiness.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\DirtinessFlags.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh">
@@ -626,7 +626,7 @@
     <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Dirtyable.cuh">
+    <ClInclude Include="..\..\..\src\core\DirtinessGraph.cuh">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cuh">
@@ -721,7 +721,7 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu">
       <Filter>modules\gi2d\widgets</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\Dirtyable.cu">
+    <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu">
       <Filter>core</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cu">
