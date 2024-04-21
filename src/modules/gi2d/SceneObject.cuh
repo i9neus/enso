@@ -3,7 +3,7 @@
 #include "DirtinessFlags.cuh"
 
 #include "Transform2D.cuh"
-#include "UICtx.cuh"
+#include "Ctx.cuh"
 
 #include "core/GenericObject.cuh"
 #include "core/math/Math.cuh"

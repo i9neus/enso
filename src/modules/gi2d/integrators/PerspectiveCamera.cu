@@ -88,9 +88,9 @@ namespace Enso
         return L;
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>& scene)
+    __host__ AssetHandle<Host::GenericObject> Host::PerspectiveCamera::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene)
     {
-        return AssetAllocator::CreateAsset<Host::PerspectiveCamera>(id, scene);
+        return AssetAllocator::CreateChildAsset<Host::PerspectiveCamera>(parentAsset, id, scene);
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene) :

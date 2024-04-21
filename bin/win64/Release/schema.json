@@ -139,7 +139,7 @@
     "overlaylayer": {
 
     },
-    "voxelproxygridlayer": {
+    "voxelproxygrid": {
         "camera/maxSamples": {
             "dataType": "int",
             "dataRange": [ 0, 100000 ],

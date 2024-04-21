@@ -17,7 +17,10 @@ namespace Enso
     void UICommandManager::OnCreateObject(const Json::Node& node)
     {
         AssertMsg(node.IsObject(), "OnUpdateObject: Expected an object.");
-        for (auto nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        auto gi2dNode = node.GetChildObject("gi2d", 0u);
+        AssertMsg(gi2dNode && gi2dNode.IsObject(), "OnUpdateObject: Expected object 'gi2d'.");
+
+        for (auto nodeIt = gi2dNode.begin(); nodeIt != gi2dNode.end(); ++nodeIt)
         {
             AssertMsgFmt(!ObjectExists(nodeIt.Name()), "OnCreateObject: UI object with name '%s' already exists.", nodeIt.Name().c_str());
 
@@ -40,7 +43,10 @@ namespace Enso
     void UICommandManager::OnUpdateObject(const Json::Node& node)
     {
         AssertMsg(node.IsObject(), "OnUpdateObject: Expected an object.");
-        for (auto nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        auto gi2dNode = node.GetChildObject("gi2d", 0u);
+        AssertMsg(gi2dNode && gi2dNode.IsObject(), "OnUpdateObject: Expected object 'gi2d'.");
+
+        for (auto nodeIt = gi2dNode.begin(); nodeIt != gi2dNode.end(); ++nodeIt)
         {
             if (!ObjectExists(nodeIt.Name()))
             {
@@ -56,8 +62,11 @@ namespace Enso
     void UICommandManager::OnDeleteObject(const Json::Node& node)
     {
         AssertMsg(node.IsObject(), "OnUpdateObject: Expected an object.");
+        auto gi2dNode = node.GetChildObject("gi2d", 0u);
+        AssertMsg(gi2dNode && gi2dNode.IsObject(), "OnUpdateObject: Expected object 'gi2d'.");
+
         int numDeleted = 0;
-        for (auto nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        for (auto nodeIt = gi2dNode.begin(); nodeIt != gi2dNode.end(); ++nodeIt)
         {
             auto objectIt = m_objectContainer.find(nodeIt.Name());
             if(objectIt == m_objectContainer.end())

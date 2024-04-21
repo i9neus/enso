@@ -15,6 +15,13 @@ namespace Enso
 
     struct UIViewCtx;    
 
+    template<typename T> class AssetHandle;
+
+    namespace Json
+    {
+        class Node;
+    }
+
     namespace Generic
     {
         template<typename> class Vector;
@@ -34,6 +41,7 @@ namespace Enso
 
     namespace Host
     {
+        class Asset;
         class BIH2DAsset;
         class SceneObject;
         class Light;

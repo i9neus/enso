@@ -3,7 +3,7 @@
 #include "../DirtinessFlags.cuh"
 #include "core/Image.cuh"
 #include "../Ray2D.cuh"
-#include "../UICtx.cuh"
+#include "../Ctx.cuh"
 
 namespace Enso
 {

@@ -4,7 +4,7 @@
 
 #include "../bih/BIH2DAsset.cuh"
 //#include "../tracables/primitives/Primitive2D.cuh"
-#include "../tracables/LineStrip.cuh"
+#include "../SceneObject.cuh"
 
 namespace Enso
 {         

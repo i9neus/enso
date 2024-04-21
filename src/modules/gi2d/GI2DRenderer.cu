@@ -158,7 +158,7 @@ namespace Enso
 
         LoadScene();
 
-        //m_sceneBuilder->Rebuild(true);
+        m_sceneBuilder->Rebuild(true);
     }
 
     __host__ void Host::GI2DRenderer::LoadScene()
@@ -528,8 +528,8 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateSceneObjectOpen")
         {
-            // Try and instantiate the objerct
-            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneContainer, m_sceneContainer->GenericObjects());
+            // Try and instantiate the objerct         
+            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), m_sceneContainer->GenericObjects(), *this, m_sceneContainer);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
 
             // Emplace the new object with the scene builder ready for integration into the scene
@@ -592,19 +592,22 @@ namespace Enso
             
             //if (m_renderTimer.Get() > 0.1f)
             {
-                for (auto& camera : m_sceneContainer->Cameras())
+                /*for (auto& camera : m_sceneContainer->Cameras())
                 {
                     if (camera->Prepare())
                     {
                         camera->Integrate();
                     }
-                }
+                }*/
                 //m_renderTimer.Reset();
                 //Log::Write("-----");
             }
         }
 
-        m_overlayRenderer->Render();
+        if (m_overlayRenderer->Prepare(m_viewCtx, m_selectionCtx))
+        {
+            m_overlayRenderer->Render();
+        }
 
         // If a blit is in progress, skip the composite step entirely.
         // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
@@ -613,7 +616,7 @@ namespace Enso
         if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
 
         // Composite the render layers
-        //m_compositeImage->Clear(vec4(kZero, 1.0f));
+        m_compositeImage->Clear(vec4(kZero, 1.0f));
         m_overlayRenderer->Composite(m_compositeImage);
 
         m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);

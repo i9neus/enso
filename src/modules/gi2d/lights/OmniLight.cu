@@ -63,9 +63,9 @@ namespace Enso
         }
     }
 
-    __host__ AssetHandle<Host::GenericObject> Host::OmniLight::Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>&)
+    __host__ AssetHandle<Host::GenericObject> Host::OmniLight::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene)
     {
-        return AssetAllocator::CreateAsset<Host::OmniLight>(id);
+        return AssetAllocator::CreateChildAsset<Host::OmniLight>(parentAsset, id);
     }
 
     __host__ Host::OmniLight::OmniLight(const Asset::InitCtx& initCtx) :

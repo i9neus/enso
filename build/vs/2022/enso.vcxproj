@@ -138,7 +138,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\Ctx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleInterface.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />

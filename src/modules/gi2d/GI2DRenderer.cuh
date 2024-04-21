@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../ModuleInterface.cuh"
-#include "UICtx.cuh"
+#include "Ctx.cuh"
 #include "core/Vector.cuh"
 #include "FwdDecl.cuh"
 #include "core/GenericObjectFactory.cuh"
@@ -100,7 +100,7 @@ namespace Enso
             UIViewCtx                             m_viewCtx;
             UISelectionCtx                        m_selectionCtx;
 
-            Host::GenericObjectFactory<const std::string&, const Json::Node&, const AssetHandle<const Host::SceneContainer>&> m_sceneObjectFactory;
+            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::SceneContainer>&> m_sceneObjectFactory;
 
             struct
             {

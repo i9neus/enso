@@ -341,7 +341,7 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh">
+    <ClInclude Include="..\..\..\src\modules\gi2d\Ctx.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\DirtinessFlags.cuh">

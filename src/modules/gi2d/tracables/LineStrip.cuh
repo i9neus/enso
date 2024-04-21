@@ -68,7 +68,7 @@ namespace Enso
                 return cu_deviceInstance;
             }
 
-            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>&);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ static const std::string GetAssetClassStatic() { return "curve"; }
             __host__ virtual std::string GetAssetClass() const override final { return GetAssetClassStatic(); }
 

@@ -3,11 +3,11 @@
 #include "core/math/Sampler.cuh"
 #include "core/Hash.h"
 #include "Transform2D.cuh"
+#include "FwdDecl.cuh"
 
 namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
-
     
     struct UIGridCtx
     {

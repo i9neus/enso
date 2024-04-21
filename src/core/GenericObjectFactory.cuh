@@ -14,10 +14,10 @@ namespace Enso
 {
     namespace Host
     {
-        template<typename FirstType, typename... TypePack>
+        template<typename... TypePack>
         class GenericObjectFactory
         {
-            using InstantiatorSignature = AssetHandle<Host::GenericObject>(FirstType, TypePack...);
+            using InstantiatorSignature = AssetHandle<Host::GenericObject>(const std::string&, TypePack...);
             //using InstantiatorLambda = std::function < AssetHandle<Host::GenericObject>(const std::string&, const int&, const Json::Node&)>;
 
             struct ObjectGroup
@@ -36,11 +36,11 @@ namespace Enso
         public:
             __host__ GenericObjectFactory() : m_newInstanceCounter(0) {}
 
-            __host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
-            __host__ AssetHandle<Host::GenericObject>       Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
-            __host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            //__host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            __host__ AssetHandle<Host::GenericObject>         Instantiate(const uint hash, Host::GenericObjectContainer& renderObjects, TypePack... pack);
+            //__host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
 
-            template<typename HostClass> __host__ void RegisterInstantiator(const uint hash = 0u);
+            template<typename HostClass> __host__ void      RegisterInstantiator(const uint hash = 0u);
 
             __host__ void RegisterGroup(const std::string& groupName, const uint flags)
             {
@@ -48,7 +48,7 @@ namespace Enso
             }
 
         private:
-            __host__ AssetHandle<Host::GenericObject>       InstantiateImpl(std::shared_ptr<Instantiator>& ptr, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            __host__ AssetHandle<Host::GenericObject>       InstantiateImpl(std::shared_ptr<Instantiator>& ptr, Host::GenericObjectContainer& renderObjects, TypePack... pack);
 
             __host__ void InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects);
             __host__ void EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, Host::GenericObjectContainer& renderObjects);
@@ -60,9 +60,9 @@ namespace Enso
             int                                                     m_newInstanceCounter;
         };
 
-        template<typename FirstType, typename... TypePack>
+        template<typename... TypePack>
         template<typename HostClass>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::RegisterInstantiator(const uint hash)
+        __host__ void GenericObjectFactory<TypePack...>::RegisterInstantiator(const uint hash)
         {
             const auto id = HostClass::GetAssetClassStatic();
             auto it = m_instantiators.find(id);
@@ -84,8 +84,8 @@ namespace Enso
             }
         }
 
-        template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects)
+        template<typename... TypePack>
+        __host__ void GenericObjectFactory<TypePack...>::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects)
         {
             for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
             {
@@ -168,8 +168,8 @@ namespace Enso
             }
         }
 
-        template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, Host::GenericObjectContainer& renderObjects)
+        template<typename... TypePack>
+        __host__ void GenericObjectFactory<TypePack...>::EmplaceNewObject(AssetHandle<Host::GenericObject> newObject, Host::GenericObjectContainer& renderObjects)
         {
             renderObjects.Emplace(newObject);
 
@@ -190,8 +190,8 @@ namespace Enso
             }
         }
 
-        template<typename FirstType, typename... TypePack>
-        __host__ void GenericObjectFactory<FirstType, TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>& scene,
+        /*template<typename... TypePack>
+        __host__ void GenericObjectFactory<TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>& scene,
             Host::GenericObjectContainer& renderObjects)
         {
             for (const auto& group : m_groupList)
@@ -199,11 +199,10 @@ namespace Enso
                 const Json::Node childNode = rootNode.GetChildObject(group.name, group.flags);
                 InstantiateGroup(childNode, group.name, scene, renderObjects);
             }
-        }
+        }*/
 
-        template<typename FirstType, typename... TypePack>
-        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const uint hash, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene,
-            Host::GenericObjectContainer& renderObjects)
+        template<typename... TypePack>
+        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<TypePack...>::Instantiate(const uint hash, Host::GenericObjectContainer& renderObjects, TypePack... pack)
         {
             // Look for an instantiator that matches the hash
             auto it = m_hashMap.find(hash);
@@ -213,12 +212,11 @@ namespace Enso
                 return AssetHandle<Host::GenericObject>();
             }
 
-            return InstantiateImpl(it->second, json, scene, renderObjects);
+            return InstantiateImpl(it->second, renderObjects, pack...);
         }
 
-        template<typename FirstType, typename... TypePack>
-        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene,
-            Host::GenericObjectContainer& renderObjects)
+        /*template<typename... TypePack>
+        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<TypePack...>::Instantiate(const std::string& id, TypePack... pack)
         {
             // Look for an instantiator that matches the hash
             auto it = m_instantiators.find(id);
@@ -229,15 +227,15 @@ namespace Enso
             }
 
             return InstantiateImpl(it->second, json, scene, renderObjects);
-        }
+        }*/
 
-        template<typename FirstType, typename... TypePack>
-        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<FirstType, TypePack...>::InstantiateImpl(std::shared_ptr<Instantiator>& instantiator, const Json::Node& json,
-            const AssetHandle<const Host::SceneContainer>& scene,
-            Host::GenericObjectContainer& renderObjects)
+        template<typename... TypePack>
+        __host__ AssetHandle<Host::GenericObject> GenericObjectFactory<TypePack...>::InstantiateImpl(std::shared_ptr<Instantiator>& instantiator, Host::GenericObjectContainer& renderObjects, TypePack... pack)
         {
             // Instantiate the object
-            AssetHandle<Host::GenericObject> newObject = instantiator->instanceFunctor(tfm::format("object%i", ++m_newInstanceCounter), json, scene);
+            // FIXME: Create a better asset auto-naming system that this
+            const std::string newAssetId = tfm::format("object%i", ++m_newInstanceCounter);
+            AssetHandle<Host::GenericObject> newObject = instantiator->instanceFunctor(newAssetId, pack...);
             IsOk(cudaDeviceSynchronize());
 
             if (!newObject)
