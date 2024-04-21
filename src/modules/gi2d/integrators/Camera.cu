@@ -9,9 +9,9 @@ namespace Enso
 {
     __device__ Device::Camera::Camera() : m_frameIdx(1) {}
 
-    __device__ void Device::Camera::Prepare(const uint dirtyFlags)
+    __device__ void Device::Camera::Prepare(const bool resetIntegrator)
     {
-        m_frameIdx = (dirtyFlags & kDirtyIntegrators) ? 0 : (m_frameIdx + 1);
+        m_frameIdx = resetIntegrator ? 0 : (m_frameIdx + 1);
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);
 
@@ -49,11 +49,22 @@ namespace Enso
         m_scene(scene),
         m_dirtyFlags(0)
     {
+        Listen({ kDirtyIntegrators });
+    }
+
+    __host__ void Host::Camera::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
+    {
+        SceneObject::OnDirty(flag, caller);
+
+        if (flag == kDirtyIntegrators)
+        {
+            SetDirty(kDirtyIntegrators);
+        }
     }
 
     __host__ void Host::Camera::SetDeviceInstance(Device::Camera* deviceInstance)
     {
-        SceneObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::SceneObject>(deviceInstance));
+        SceneObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::SceneObject>(deviceInstance));
         cu_deviceInstance = deviceInstance;
     }
 
@@ -66,7 +77,7 @@ namespace Enso
     {
         Assert(cu_deviceInstance);        
 
-        m_accumBuffer = m_allocator.CreateChildAsset<Host::AccumulationBuffer>("accumBuffer", numProbes, numHarmonics, accumBufferSize);
+        m_accumBuffer = AssetAllocator::CreateChildAsset<Host::AccumulationBuffer>(*this, "accumBuffer", numProbes, numHarmonics, accumBufferSize);
         m_params.accum = m_accumBuffer->GetParams();
 
         m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
@@ -75,25 +86,28 @@ namespace Enso
         Synchronise(kSyncParams | kSyncObjects);
     }
 
-    __host__ bool Host::Camera::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::Camera::Prepare()
     {
-        m_dirtyFlags = dirtyFlags;        
-        return true;
+        // If we've already accumuated the specified number of samples, we're done
+        if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples)
+        {  
+            return false; 
+        }
+        else
+        {
+            KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+
+            if (IsDirty(kDirtyIntegrators))
+            {
+                m_accumBuffer->Clear();
+            }
+
+            return true;
+        }
     }
 
     __host__ void Host::Camera::Integrate()
     {
-        if (m_dirtyFlags & kDirtyIntegrators)
-        {
-            m_accumBuffer->Clear();
-        }
-        m_dirtyFlags = 0;
-
-        // If we've already accumuated the specified number of samples, we're done
-        if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples) { return; }
-
-        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
-
         ScopedDeviceStackResize(1024 * 10, [this]() -> void
             {
                 KernelIntegrate << <m_params.accum.kernel.grids.accumSize, m_params.accum.kernel.blockSize >> > (cu_deviceInstance);
@@ -117,18 +131,17 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::Camera::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::Camera::Deserialise(const Json::Node& node, const int flags)
     {
-        uint dirtyFlags = 0u;
-
+        bool isDirty = false;
         const Json::Node cameraNode = node.GetChildObject("camera", flags);
         if (cameraNode)
         {
-            if (cameraNode.GetValue("maxSamples", m_params.maxSamples, flags)) { dirtyFlags |= kDirtyIntegrators; }
+            isDirty |= cameraNode.GetValue("maxSamples", m_params.maxSamples, flags);
         }
 
         m_params.maxSamples = max(0, m_params.maxSamples);
 
-        return dirtyFlags;
+        return isDirty;
     }
 }

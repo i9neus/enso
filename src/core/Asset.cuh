@@ -27,11 +27,11 @@ namespace Enso
     { 
         class Asset {};
     }
+
+    class AssetAllocator;
     
     namespace Host
     {        
-        class AssetAllocator;
-
         class Asset
         {
             friend class AssetAllocator;
@@ -89,15 +89,15 @@ namespace Enso
     class AssetHandle
     {
         friend class Host::Asset;
-        friend class Host::AssetAllocator;
+        friend class AssetAllocator;
 
         template<typename T> friend class AssetHandle;
-        //template<typename AssetType, typename... Args> friend AssetHandle<AssetType> CreateAsset(const std::string&, Args...);
+        //template<typename AssetType, typename... Args> friend AssetHandle<AssetType> AssetAllocator::CreateAsset(const std::string&, Args...);
 
     private:
         std::shared_ptr<AssetType>          m_ptr;
 
-        explicit AssetHandle(std::shared_ptr<AssetType>& ptr) : m_ptr(ptr) {}
+        explicit AssetHandle(std::shared_ptr<AssetType>& ptr) : m_ptr(ptr) {}   // Used by casting functions
 
     public:
         __host__ AssetHandle() {}
@@ -113,9 +113,23 @@ namespace Enso
         template<typename OtherType>
         __host__ explicit AssetHandle(const WeakAssetHandle<OtherType>& weakHandle)
         {
+            static_assert(std::is_convertible<OtherType, AssetType>::value, "Cannot construct AssetHandle with WeakAssetHandle of incompatible type.");
+
             // FIXME: Const casting here to get around the fact that AssetHandle sheilds us from const traits whereas std::weak_ptr does not
             AssertMsg(!weakHandle.expired(), "Trying to a convert an expired weak asset handle to a strong one.");
             m_ptr = weakHandle.lock();
+        }
+
+        __host__ static AssetHandle<AssetType> MakeHandle(std::shared_ptr<AssetType>& ptr)
+        {
+            AssetHandle<AssetType> newHandle;
+            newHandle.m_ptr = ptr;
+            return newHandle;
+        }
+
+        __host__ operator std::shared_ptr<AssetType>()
+        {
+            return m_ptr;
         }
 
         template<typename CastType>
@@ -143,8 +157,8 @@ namespace Enso
         __host__ inline AssetType* operator->() { return &operator*(); }
         __host__ inline const AssetType* operator->() const { return &operator*(); }
 
-        __host__ inline AssetType* get() { return m_ptr.get(); }
-        __host__ inline const AssetType* get() const { return m_ptr; }
+        __host__ inline AssetType* GetRawPtr() { return m_ptr.get(); }
+        __host__ inline const AssetType* GetRawPtr() const { return m_ptr.get(); }
 
         __host__ WeakAssetHandle<AssetType> GetWeakHandle() const { return WeakAssetHandle<AssetType>(m_ptr); }
 
@@ -191,5 +205,7 @@ namespace Enso
             Log::Debug("Destroyed '%s'.\n", assetId);
             return true;
         }
+
+ 
     };
 }

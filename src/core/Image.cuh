@@ -127,8 +127,6 @@ namespace Enso
 			dim3			  m_block;
 			dim3		      m_grid;
 
-			AssetAllocator    m_allocator;
-
 		public:
 			using Pixel = T;
 

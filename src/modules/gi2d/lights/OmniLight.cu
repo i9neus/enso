@@ -70,16 +70,16 @@ namespace Enso
 
     __host__ Host::OmniLight::OmniLight(const Asset::InitCtx& initCtx) :
         Host::Light(initCtx, m_hostInstance),
-        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::OmniLight>())
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::OmniLight>(*this))
     {
-        Light::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Light>(cu_deviceInstance));
+        Light::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Light>(cu_deviceInstance));
 
         Synchronise(kSyncObjects);
     }
 
     __host__ Host::OmniLight::~OmniLight() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
     __host__ void Host::OmniLight::Synchronise(const uint syncFlags)
@@ -104,7 +104,7 @@ namespace Enso
         return m_dirtyFlags;
     }*/
 
-    __host__ uint Host::OmniLight::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::OmniLight::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         //AssertInThread("kMainThread");
 
@@ -144,27 +144,19 @@ namespace Enso
         }
         else
         {
-            return m_dirtyFlags;
+            return true;
         }
 
         // If the object is dirty, recompute the bounding box
-        SetDirtyFlags(kDirtyObjectBounds);
-        return m_dirtyFlags;
+        SignalDirty(kDirtyObjectBoundingBox);
+        return true;
     }
 
-    __host__ bool Host::OmniLight::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
-    {
-        //AssertInThread("kRenderThread");
-
-        if (!m_dirtyFlags) { return IsConstructed(); }
-        
-        if (m_dirtyFlags & kDirtyObjectBounds)
-        {
-            RecomputeBoundingBoxes();
-        }
-
+    __host__ bool Host::OmniLight::Rebuild()
+    {        
+        RecomputeBoundingBoxes();
         Synchronise(kSyncParams);
-        ClearDirtyFlags();
+
         return IsConstructed();
     }
 
@@ -178,15 +170,15 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::OmniLight::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::OmniLight::Deserialise(const Json::Node& node, const int flags)
     {
-        Tracable::Deserialise(node, flags);
+        bool isDirty = Tracable::Deserialise(node, flags);
 
-        if (node.GetValue("radius", m_hostInstance.m_params.lightRadius, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
-        if (node.GetVector("colour", m_hostInstance.m_params.lightColour, flags)) { SetDirtyFlags(kDirtyMaterials); }
-        if (node.GetValue("intensity", m_hostInstance.m_params.lightIntensity, flags)) { SetDirtyFlags(kDirtyMaterials); }
+        isDirty |= node.GetValue("radius", m_hostInstance.m_params.lightRadius, flags);
+        isDirty |= node.GetVector("colour", m_hostInstance.m_params.lightColour, flags);
+        isDirty |= node.GetValue("intensity", m_hostInstance.m_params.lightIntensity, flags);
 
-        return m_dirtyFlags;
+        return isDirty;
     }
 
     __host__ uint Host::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const

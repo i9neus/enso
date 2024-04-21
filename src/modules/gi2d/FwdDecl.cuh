@@ -47,7 +47,6 @@ namespace Enso
 
         class OverlayLayer;
         class PathTracerLayer;
-        class VoxelProxyGridLayer;
         template<typename> class Vector;
         template<typename, typename> class AssetVector;
     }

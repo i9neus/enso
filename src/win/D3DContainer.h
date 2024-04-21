@@ -2,7 +2,7 @@
 
 #include "D3DHeaders.h"
 
-#include "modules/ModuleManager.h"
+#include "modules/ModuleManager.cuh"
 #include "ui/UIModuleManager.h"
 
 #include <vector>

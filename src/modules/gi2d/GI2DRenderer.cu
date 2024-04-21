@@ -12,11 +12,10 @@
 #include "lights/OmniLight.cuh"
 
 #include "integrators/PerspectiveCamera.cuh"
+#include "integrators/VoxelProxyGrid.cuh"
 
 #include "scene/SceneBuilder.cuh"
-//#include "integrators/VoxelProxyGrid.cuh"
 #include "layers/OverlayLayer.cuh"
-#include "layers/VoxelProxyGridLayer.cuh"
 
 #include "io/SerialisableObjectSchema.h"
 
@@ -25,7 +24,8 @@
 namespace Enso
 {
 
-    __host__ GI2DRenderer::GI2DRenderer(std::shared_ptr<CommandQueue> outQueue) :
+    __host__ Host::GI2DRenderer::GI2DRenderer(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
+        Dirtyable(initCtx),
         ModuleInterface(outQueue),
         m_isRunning(true)
     {
@@ -38,25 +38,28 @@ namespace Enso
         m_outboundCmdQueue->RegisterCommand("OnDeleteObject");
 
         // Register the inbound command handlers
-        m_commandManager.RegisterEventHandler("OnUpdateObject", this, &GI2DRenderer::OnInboundUpdateObject);
+        m_commandManager.RegisterEventHandler("OnUpdateObject", this, &Host::GI2DRenderer::OnInboundUpdateObject);
 
         // Register the scene object instantiators
         RegisterInstantiators();
 
         // Declare the transition graph that will drive the UI
         DeclareStateTransitionGraph();   
+
+        // Declare any listeners that will respond to changes in the scene graph
+        DeclareListeners();
     }
 
-    __host__ GI2DRenderer::~GI2DRenderer() noexcept
+    __host__ Host::GI2DRenderer::~GI2DRenderer() noexcept
     {
         m_overlayRenderer.DestroyAsset();
-        m_voxelProxyGridLayer.DestroyAsset();
+        m_voxelProxyGrid.DestroyAsset();
         
         m_sceneBuilder.DestroyAsset();
         m_sceneContainer.DestroyAsset();
     }
 
-    __host__ void GI2DRenderer::RegisterInstantiators()
+    __host__ void Host::GI2DRenderer::RegisterInstantiators()
     {
         m_sceneObjectFactory.RegisterInstantiator<Host::LineStrip>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
@@ -64,12 +67,12 @@ namespace Enso
         m_sceneObjectFactory.RegisterInstantiator<Host::OmniLight>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
 
         //m_sceneObjectFactory.RegisterInstantiator<Host::OverlayLayer>();
-        //m_sceneObjectFactory.RegisterInstantiator<Host::VoxelProxyGridLayer>();
+        //m_sceneObjectFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
     }
 
-    __host__ void GI2DRenderer::DeclareStateTransitionGraph()
+    __host__ void Host::GI2DRenderer::DeclareStateTransitionGraph()
     {
-        m_uiGraph.DeclareState("kIdleState", this, &GI2DRenderer::OnIdleState);
+        m_uiGraph.DeclareState("kIdleState", this, &Host::GI2DRenderer::OnIdleState);
 
         // Create scene object
         m_uiGraph.DeclareState("kCreateSceneObjectOpen", this, &GI2DRenderer::OnCreateSceneObject);
@@ -130,12 +133,23 @@ namespace Enso
         m_uiGraph.Finalise();
     }
 
-    std::shared_ptr<ModuleInterface> GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
+    __host__ void Host::GI2DRenderer::DeclareListeners()
     {
-        return std::make_shared<GI2DRenderer>(outQueue);
+        Listen({ kDirtyObjectBoundingBox });
     }
 
-    __host__ void GI2DRenderer::OnInitialise()
+    __host__ void Host::GI2DRenderer::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
+    {
+
+    }
+
+    std::shared_ptr<ModuleInterface> Host::GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
+    {
+        AssetHandle<ModuleInterface> newAsset = AssetAllocator::CreateAsset<Host::GI2DRenderer>("gi2d", outQueue);
+        return std::shared_ptr<ModuleInterface>(newAsset);
+    }
+
+    __host__ void Host::GI2DRenderer::OnInitialise()
     {
         m_viewCtx.transform = ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);
         m_viewCtx.dPdXY = length(vec2(m_viewCtx.transform.matrix.i00, m_viewCtx.transform.matrix.i10));
@@ -144,55 +158,26 @@ namespace Enso
 
         LoadScene();
 
-        SetDirtyFlags(kDirtyAll);
-
-        Rebuild();        
+        //m_sceneBuilder->Rebuild(true);
     }
 
-    __host__ void GI2DRenderer::LoadScene()
+    __host__ void Host::GI2DRenderer::LoadScene()
     {
-        m_sceneContainer = Host::AssetAllocator::CreateAsset<Host::SceneContainer>(":gi2d/sceneContainer");
-        m_sceneBuilder = Host::AssetAllocator::CreateAsset<Host::SceneBuilder>(":gi2d/sceneBuilder", m_sceneContainer);
+        m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "sceneContainer");
+        m_sceneBuilder = AssetAllocator::CreateChildAsset<Host::SceneBuilder>(*this, "sceneBuilder", m_sceneContainer);
 
         // Create some default scene objects
         Json::Node emptyDocument;
-        m_overlayRenderer = Host::AssetAllocator::CreateAsset<Host::OverlayLayer>("overlayLayer", m_sceneContainer, m_clientWidth, m_clientHeight, m_renderStream);
-        m_voxelProxyGridLayer = Host::AssetAllocator::CreateAsset<Host::VoxelProxyGridLayer>("voxelProxyGridLayer", emptyDocument, m_sceneContainer);
+        m_overlayRenderer = AssetAllocator::CreateChildAsset<Host::OverlayLayer>(*this, "overlayLayer", m_sceneContainer, m_clientWidth, m_clientHeight, m_renderStream);
+        m_voxelProxyGrid = AssetAllocator::CreateChildAsset<Host::VoxelProxyGrid>(*this, "voxelProxyGridLayer", emptyDocument, m_sceneContainer);
 
         // Emplace them into the scene object list and enqueue them
         m_sceneContainer->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
-        m_sceneContainer->Emplace(m_voxelProxyGridLayer.StaticCast<Host::GenericObject>());
+        m_sceneContainer->Emplace(m_voxelProxyGrid.StaticCast<Host::GenericObject>());
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
     }
 
-    __host__ void GI2DRenderer::Bind()
-    {
-        m_sceneContainer->Bind();
-    }
-
-    __host__ void GI2DRenderer::Rebuild()
-    {
-        std::lock_guard<std::mutex> lock(m_resourceMutex);
-
-        if (!m_dirtyFlags) { return; }
-
-        // If the number of the objects in the scene has changed, do a full rebind
-        if (m_dirtyFlags & kDirtyRebind)
-        {
-            Bind();
-        }
-
-        // Rebuild the scene description structure
-        m_sceneBuilder->Rebuild(m_viewCtx, m_dirtyFlags);
-
-        // View has changed
-        m_overlayRenderer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-        m_voxelProxyGridLayer->Rebuild(m_dirtyFlags, m_viewCtx, m_selectionCtx);
-
-        SetDirtyFlags(kDirtyAll, false);
-    }
-
-    __host__ void GI2DRenderer::OnInboundUpdateObject(const Json::Node& node)
+    __host__ void Host::GI2DRenderer::OnInboundUpdateObject(const Json::Node& node)
     {
         for (Json::Node::ConstIterator nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
         {
@@ -205,12 +190,11 @@ namespace Enso
                 continue;
             }
 
-            const uint dirtyFlags = objectHandle->Deserialise(*nodeIt, Json::kRequiredWarn);
-            SetDirtyFlags(dirtyFlags);
+            objectHandle->Deserialise(*nodeIt, Json::kRequiredWarn);
         }
     }
 
-    __host__ void GI2DRenderer::EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
+    __host__ void Host::GI2DRenderer::EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
     {
         // TODO: This should be smarter and happen automatically whenever an object is dirtied. 
         
@@ -220,7 +204,7 @@ namespace Enso
         auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::GenericObject>& obj) -> void
         {           
             // Create a new child object and add its class ID for the schema
-            Json::Node childNode = node.AddChildObject(obj->GetAssetID());
+            Json::Node childNode = node.AddChildObject(obj->GetAssetID(), Json::kPathIsDAG);
             const std::string assetClass = obj->GetAssetClass();
             AssertMsgFmt(!assetClass.empty(), "Error: asset '%s' has no defined class", obj->GetAssetClass());
             childNode.AddValue("class", assetClass);
@@ -249,7 +233,7 @@ namespace Enso
         m_outboundCmdQueue->Enqueue();  // Enqueue the staged command
     }
 
-    __host__ uint GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         m_isRunning = !m_isRunning;
         Log::Warning(m_isRunning ? "Running" : "Paused");
@@ -258,27 +242,27 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         //Log::Success("Back home!");
         return kUIStateOkay;
     }
 
-    __host__ uint GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         if (m_selectionCtx.numSelected == 0) { return kUIStateOkay; }
 
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
-        auto& sceneObjects = m_sceneContainer->SceneObjects();
+        Host::SceneObjectContainer& sceneObjects = m_sceneContainer->SceneObjects();
         int emptyIdx = -1;
         int numDeleted = 0;
         for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
         {
             if (sceneObjects[primIdx]->IsSelected())
             {
-                // Erase the object from the container
-                m_sceneContainer->GenericObjects().Erase(sceneObjects[primIdx]->GetSceneObject().GetAssetID());
+                // Erase the object from the container. 
+                m_sceneBuilder->EnqueueDeleteObject(sceneObjects[primIdx]->GetAssetID());
 
                 ++numDeleted;
                 if (emptyIdx == -1) { emptyIdx = primIdx; }
@@ -299,12 +283,12 @@ namespace Enso
         m_selectedObjects.clear();
         m_selectionCtx.numSelected = 0;
 
-        SetDirtyFlags(kDirtyObjectBounds | kDirtyRebind);
+        SignalDirty(kDirtyObjectExistence);
 
         return kUIStateOkay;
     }
 
-    __host__ uint GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kMoveSceneObjectBegin")
@@ -316,7 +300,7 @@ namespace Enso
             // Update the selection overlay
             m_selectionCtx.selectedBBox += m_viewCtx.mousePos - m_onMove.dragAnchor;
             m_onMove.dragAnchor = m_viewCtx.mousePos;
-            SetDirtyFlags(kDirtyUI);
+            SignalDirty(kDirtyUIOverlay);
         }
 
         // Notify the scene objects of the move operation  
@@ -326,9 +310,8 @@ namespace Enso
         {
             Assert(obj->IsSelected());
 
-            // If the object has moved, trigger a rebuild of the BVH
-            const uint objDirty = obj->OnMove(stateID, m_viewCtx);
-            SetDirtyFlags(objDirty & (kDirtyObjectBounds | kDirtyObjectBVH));
+            // Moving objects 
+            obj->OnMove(stateID, m_viewCtx);
         }
 
         // Enqueue the list of selected scene objects
@@ -337,7 +320,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ void GI2DRenderer::DeselectAll()
+    __host__ void Host::GI2DRenderer::DeselectAll()
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
@@ -349,10 +332,10 @@ namespace Enso
         m_selectedObjects.clear();
         m_selectionCtx.numSelected = 0;
 
-        SetDirtyFlags(kDirtyUI);
+        SignalDirty(kDirtyUIOverlay);
     }
 
-    __host__ std::string GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
+    __host__ std::string Host::GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
         if (m_sceneContainer->SceneBIH().IsConstructed())
@@ -430,12 +413,12 @@ namespace Enso
         return "kSelectSceneObjectDragging";
     }
 
-    __host__ uint GI2DRenderer::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
 
         Assert(m_delegatedObject);
-        SetDirtyFlags(m_delegatedObject->OnDelegateAction(stateID, keyMap, m_viewCtx));
+        m_delegatedObject->OnDelegateAction(stateID, keyMap, m_viewCtx);
 
         if (stateID == "kDelegateSceneObjectEnd")
         {
@@ -445,7 +428,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
@@ -513,20 +496,20 @@ namespace Enso
                 }
             }
 
-            SetDirtyFlags(kDirtyUI);
+            SignalDirty(kDirtyUIOverlay);
             //Log::Success("Selecting!");
         }
         else if (stateID == "kSelectSceneObjectEnd")
         {
             m_selectionCtx.isLassoing = false;
-            SetDirtyFlags(kDirtyUI);
+            SignalDirty(kDirtyUIOverlay);
 
             //Log::Success("Finished!");
         }
         else if (stateID == "kDeselectSceneObject")
         {
             DeselectAll();
-            SetDirtyFlags(kDirtyUI);
+            SignalDirty(kDirtyUIOverlay);
 
             //Log::Success("Finished!");
         }
@@ -538,7 +521,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
+    __host__ uint Host::GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
     {
         std::lock_guard <std::mutex> lock(m_resourceMutex);
 
@@ -549,12 +532,13 @@ namespace Enso
             auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), Json::Document(), m_sceneContainer, m_sceneContainer->GenericObjects());
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
 
-            SetDirtyFlags(kDirtyRebind);
+            // Emplace the new object with the scene builder ready for integration into the scene
+            m_sceneBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
         Assert(m_onCreate.newObject);
-        SetDirtyFlags(m_onCreate.newObject->OnCreate(stateID, m_viewCtx));
+        m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
 
         // Some objects will automatically finalise themselves. If this happens, we're done.
         if (m_onCreate.newObject->IsFinalised())
@@ -572,17 +556,15 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ void GI2DRenderer::FinaliseNewSceneObject()
+    __host__ void Host::GI2DRenderer::FinaliseNewSceneObject()
     {
         Assert(m_onCreate.newObject);
 
-        // If the new object has closed but has not been finalised, delete it
+        // If the new object has closed but has not been finalised, delete i
         if (!m_onCreate.newObject->IsFinalised())
         {
-            m_sceneContainer->GenericObjects().Erase(m_onCreate.newObject->GetSceneObject().GetAssetID());
-            SetDirtyFlags(kDirtyObjectBounds);
-
-            Log::Success("Destroyed unfinalised scene object '%s'", m_onCreate.newObject->GetSceneObject().GetAssetID());
+            m_sceneBuilder->EnqueueDeleteObject(m_onCreate.newObject->GetAssetID());
+            Log::Success("Destroying unfinalised scene object '%s'", m_onCreate.newObject->GetAssetID());
         }
         else
         {
@@ -593,35 +575,35 @@ namespace Enso
         m_onCreate.newObject = nullptr;
     }
 
-    __host__ void GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
+    __host__ void Host::GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
     {
         m_commandManager.Flush(inbound, true);
     }
 
-    __host__ void GI2DRenderer::OnRender()
+    __host__ void Host::GI2DRenderer::OnRender()
     {
-        if (m_dirtyFlags)
-        {
-            Rebuild();
-        }
-
-        //m_sceneContainer->voxelProxy->Render();
+        //m_sceneBuilder->Rebuild(false);
 
         // Render the pass
-        //m_pathTracerLayer->Render();
         if (m_isRunning)
         {
+            // Prepare the scene 
+            m_sceneContainer->Prepare();
+            
             //if (m_renderTimer.Get() > 0.1f)
             {
                 for (auto& camera : m_sceneContainer->Cameras())
                 {
-                    camera->Integrate();
+                    if (camera->Prepare())
+                    {
+                        camera->Integrate();
+                    }
                 }
                 //m_renderTimer.Reset();
                 //Log::Write("-----");
             }
         }
-        //m_isosurfaceExplorer->Render();
+
         m_overlayRenderer->Render();
 
         // If a blit is in progress, skip the composite step entirely.
@@ -630,19 +612,22 @@ namespace Enso
         //m_renderSemaphore.Wait(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress);
         if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
 
+        // Composite the render layers
         //m_compositeImage->Clear(vec4(kZero, 1.0f));
-        m_voxelProxyGridLayer->Composite(m_compositeImage);
         m_overlayRenderer->Composite(m_compositeImage);
 
         m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
+
+        // Clean all the objects in the scene container ready for the next iteration
+        m_sceneContainer->Clean();
     }
 
-    __host__ void GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown)
+    __host__ void Host::GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown)
     {
 
     }
 
-    __host__ void GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
+    __host__ void Host::GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
         if (isDown && (code == VK_MBUTTON || code == VK_RBUTTON || IsKeyDown(VK_SHIFT)))
@@ -655,7 +640,7 @@ namespace Enso
         }
     }
 
-    __host__ void GI2DRenderer::OnMouseMove()
+    __host__ void Host::GI2DRenderer::OnMouseMove()
     {
         OnViewChange();
 
@@ -665,7 +650,7 @@ namespace Enso
         }
     }
 
-    __host__ void GI2DRenderer::OnViewChange()
+    __host__ void Host::GI2DRenderer::OnViewChange()
     {
         auto& transform = m_viewCtx.transform;
 
@@ -707,20 +692,20 @@ namespace Enso
             m_viewCtx.Prepare();
 
             // Mark the scene as dirty
-            SetDirtyFlags(kDirtyView);
+            //SignalDirty(kDirtyUIOverlay);
         }
     }
 
-    __host__ void GI2DRenderer::OnMouseWheel()
+    __host__ void Host::GI2DRenderer::OnMouseWheel()
     {
 
     }
 
-    __host__ void GI2DRenderer::OnResizeClient()
+    __host__ void Host::GI2DRenderer::OnResizeClient()
     {
     } 
 
-    __host__ void GI2DRenderer::OnFocusChange(const bool isSet)
+    __host__ void Host::GI2DRenderer::OnFocusChange(const bool isSet)
     {
         // Finalise any objects that are in the process of being created
         if (m_onCreate.newObject)
@@ -729,7 +714,7 @@ namespace Enso
         }
     }
 
-    __host__ bool GI2DRenderer::Serialise(Json::Document& json, const int flags)
+    __host__ bool Host::GI2DRenderer::Serialise(Json::Document& json, const int flags)
     {
         return true;
     }

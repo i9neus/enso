@@ -96,15 +96,15 @@ namespace Enso
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene) :
         Host::Camera(initCtx, m_hostInstance, scene)
     {
-        m_ui.hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("uiLineSegments", kVectorHostAlloc);
-        m_ui.hostUIHandles = m_allocator.CreateChildAsset<Host::Vector<UIHandle>>("uiHandles", kVectorHostAlloc);
+        m_ui.hostLineSegments = AssetAllocator::CreateChildAsset<Host::Vector<LineSegment>>(*this, "uiLineSegments", kVectorHostAlloc);
+        m_ui.hostUIHandles = AssetAllocator::CreateChildAsset<Host::Vector<UIHandle>>(*this, "uiHandles", kVectorHostAlloc);
 
         constexpr uint kGridWidth = 100;
         constexpr uint kGridHeight = 1;
         constexpr uint kNumHarmonics = 1;
         constexpr size_t kAccumBufferSize = 1000;
 
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::PerspectiveCamera>();
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PerspectiveCamera>(*this);
 
         // Construct the camera
         Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize);
@@ -123,7 +123,7 @@ namespace Enso
 
     __host__ Host::PerspectiveCamera::~PerspectiveCamera() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 
         m_ui.hostLineSegments.DestroyAsset();
         m_ui.hostUIHandles.DestroyAsset();
@@ -157,7 +157,7 @@ namespace Enso
         return m_dirtyFlags;
     }*/
 
-    __host__ uint Host::PerspectiveCamera::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::PerspectiveCamera::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         //AssertInThread("kMainThread");
 
@@ -181,7 +181,6 @@ namespace Enso
             {
                 GetTransform().trans = viewCtx.mousePos;
             }
-            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
@@ -194,56 +193,47 @@ namespace Enso
             {
                 m_isFinalised = true;
             }
-            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
         else
         {
-            return GenericObject::m_dirtyFlags;
+            return true;
         }
 
         // If the object is dirty, recompute the bounding box
-        SetDirtyFlags(kDirtyObjectBounds);
+        SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         UpdateUIHandles(m_hostInstance.m_params.cameraAxis);
         UpdateUIWireframes();
 
-        return GenericObject::m_dirtyFlags;
+        return true;
     }
 
-    __host__ uint Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
+    __host__ bool Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
     {
         const vec2 mouseLocal = viewCtx.mousePos - GetTransform().trans;
 
         // Render the control handles
-        GenericObject::m_dirtyFlags = GetAxisHandle().OnDelegateAction(stateID, keyMap, mouseLocal);
-        UpdateUIWireframes();
+        if (GetAxisHandle().OnDelegateAction(stateID, keyMap, mouseLocal))
+        {
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+        }
               
-        return GenericObject::m_dirtyFlags;
+        return true;
     }
 
-    __host__ bool Host::PerspectiveCamera::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::PerspectiveCamera::Rebuild()
     {
-        //AssertInThread("kRenderThread");
-
-        //if (!GenericObject::m_dirtyFlags) { return IsConstructed(); }
-
-        // Create an orthonomal basis from the 
+        // Create an orthonomal basis
         const vec2 dir = SafeNormalize(GetAxisHandle().GetCentroid());
         m_hostInstance.m_params.fwdBasis = mat2(dir, vec2(-dir.y, dir.x));
         m_hostInstance.m_params.invBasis = transpose(m_hostInstance.m_params.fwdBasis);
         m_hostInstance.m_params.cameraPos = GetTransform().trans;
 
-        if (GenericObject::m_dirtyFlags & kDirtyObjectBounds)
-        {
-            UpdateUIWireframes();
-            RecomputeBoundingBoxes();
-            Synchronise(kSyncObjects);
-        }
+        UpdateUIWireframes();
+        RecomputeBoundingBoxes();
 
-        Camera::Rebuild((parentFlags | GenericObject::m_dirtyFlags), viewCtx);
+        Synchronise(kSyncObjects | kSyncParams);
 
-        Synchronise(kSyncParams);
-        ClearDirtyFlags();
-        return IsConstructed();
+        return true;
     }
 
     __host__ bool Host::PerspectiveCamera::Serialise(Json::Node& node, const int flags) const
@@ -255,14 +245,13 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::PerspectiveCamera::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::PerspectiveCamera::Deserialise(const Json::Node& node, const int flags)
     {
-        SceneObject::m_dirtyFlags |= SceneObject::Deserialise(node, flags);
-        SceneObject::m_dirtyFlags |= Camera::Deserialise(node, flags);
+        bool isDirty = Camera::Deserialise(node, flags);
 
-        if (node.GetValue("fov", m_hostInstance.m_params.fov, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+        isDirty |= node.GetValue("fov", m_hostInstance.m_params.fov, flags);
 
-        return GenericObject::m_dirtyFlags;
+        return isDirty;
     }
 
     __host__ uint Host::PerspectiveCamera::OnMouseClick(const UIViewCtx& viewCtx) const

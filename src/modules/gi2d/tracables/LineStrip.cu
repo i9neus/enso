@@ -94,25 +94,25 @@ namespace Enso
 
     __host__ Host::LineStrip::LineStrip(const Asset::InitCtx& initCtx) :
         Tracable(initCtx, m_hostInstance, nullptr),
-        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::LineStrip>())
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::LineStrip>(*this))
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
-        Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
+        Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
 
         Log::Success("Host::LineStrip::LineStrip");
 
         constexpr uint kMinTreePrims = 3;
 
-        m_hostBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("bih", kMinTreePrims);
-        m_hostLineSegments = m_allocator.CreateChildAsset<Host::Vector<LineSegment>>("lineSegments", kVectorHostAlloc);
+        m_hostBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "bih", kMinTreePrims);
+        m_hostLineSegments = AssetAllocator::CreateChildAsset<Host::Vector<LineSegment>>(*this, "lineSegments", kVectorHostAlloc);
 
 
         m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
         m_deviceObjects.lineSegments = m_hostLineSegments->GetDeviceInstance();
 
         // Set the host parameters so we can query the primitive on the host
-        m_hostInstance.m_objects.bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.get());
-        m_hostInstance.m_objects.lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.get());
+        m_hostInstance.m_objects.bih = static_cast<BIH2D<BIH2DFullNode>*>(m_hostBIH.GetRawPtr());
+        m_hostInstance.m_objects.lineSegments = static_cast<Vector<LineSegment>*>(m_hostLineSegments.GetRawPtr());
 
         Synchronise(kSyncObjects);
     }
@@ -124,7 +124,7 @@ namespace Enso
 
     __host__ Host::LineStrip::~LineStrip() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 
         m_hostBIH.DestroyAsset();
         m_hostLineSegments.DestroyAsset();
@@ -137,27 +137,10 @@ namespace Enso
         if (syncType & kSyncObjects)
         {
             SynchroniseObjects<Device::LineStrip>(cu_deviceInstance, m_deviceObjects);
-
-            /*Device::LineStrip* cu_object = cu_deviceInstance;
-            const LineStripObjects& params = m_deviceObjects;
-
-            Assert(cu_object);
-
-            LineStripObjects* cu_params;
-            IsOk(cudaMalloc(&cu_params, sizeof(LineStripObjects)));
-            IsOk(cudaMemcpy(cu_params, &params, sizeof(LineStripObjects), cudaMemcpyHostToDevice));
-
-            IsOk(cudaDeviceSynchronize());
-            KernelSynchroniseObjects <Device::LineStrip> << <1, 1 >> > (cu_object, sizeof(LineStripObjects), cu_params);
-            IsOk(cudaDeviceSynchronize());
-
-            IsOk(cudaFree(cu_params));
-
-            Log::Error("Resync...");*/
         }
     }
 
-    __host__ uint Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen")
@@ -171,9 +154,8 @@ namespace Enso
             if (!m_hostLineSegments->IsEmpty())
             {
                 m_hostLineSegments->Back().Set(1, mousePosLocal);
-                SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
             }
-            SignalDirty(1u);
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
@@ -190,8 +172,7 @@ namespace Enso
                 m_hostLineSegments->PushBack(LineSegment(m_hostLineSegments->Back()[1], mousePosLocal));
             }
 
-            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
-            SignalDirty(1u);
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else if (stateID == "kCreateSceneObjectClose")
         {
@@ -203,15 +184,14 @@ namespace Enso
 
             Log::Warning("Closed path %s", GetAssetID());
             m_isFinalised = true;
-            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
-            SignalDirty(1u);
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else
         {
             AssertMsg(false, "Invalid state");
         }
 
-        return m_dirtyFlags;
+        return m_isFinalised;
     }
 
     __host__ uint Host::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const
@@ -224,53 +204,34 @@ namespace Enso
         return !m_hostLineSegments->IsEmpty() && m_hostBIH->IsConstructed();
     }
 
-    __host__ bool Host::LineStrip::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::LineStrip::Rebuild()
     {
-        if (!m_dirtyFlags) { return IsConstructed(); }
+        if (!IsDirty(kDirtyObjectRebuild)) { return false; }
+        
+        // Sync the line segments
+        auto& segments = *m_hostLineSegments;
+        segments.Synchronise(kVectorSyncUpload);
 
-        bool resyncParams = false;
+        // Create a segment list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
+        primIdxs.resize(segments.Size());
+        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
 
-        // If the geometry has changed, rebuild the BIH
-        if (m_dirtyFlags & kDirtyObjectBVH)
-        {            
-            // Sync the line segments
-            auto& segments = *m_hostLineSegments;
-            segments.Synchronise(kVectorSyncUpload);
-
-            // Create a segment list ready for building
-            // TODO: It's probably faster if we build on the already-sorted index list
-            auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
-            primIdxs.resize(segments.Size());
-            for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-            // Construct the BIH
-            std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
-            {
-                return Grow(segments[idx].GetBoundingBox(), 0.001f);
-            };
-            m_hostBIH->Build(getPrimitiveBBox);
-
-            //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
-
-            resyncParams = true;
-        }
-
-        if (m_dirtyFlags & kDirtyObjectBounds)
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
         {
-            resyncParams = true;
-        }
+            return Grow(segments[idx].GetBoundingBox(), 0.001f);
+        };
+        m_hostBIH->Build(getPrimitiveBBox);
 
-        if (resyncParams)
-        {
-            // Update the tracable bounding boxes
-            RecomputeBoundingBoxes();
+        //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
-            Synchronise(kSyncParams | kSyncObjects);
-        }
+        // Update the tracable bounding boxes
+        RecomputeBoundingBoxes();
+        Synchronise(kSyncObjects);
 
-        ClearDirtyFlags();
-
-        return IsConstructed();
+        return true;
     }
 
     __host__ BBox2f Host::LineStrip::RecomputeObjectSpaceBoundingBox()
@@ -299,15 +260,15 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::LineStrip::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::LineStrip::Deserialise(const Json::Node& node, const int flags)
     {
-        Tracable::Deserialise(node, flags);
+        bool isDirty = Tracable::Deserialise(node, flags);
 
         // Deserialise the entire curve including its vertices
         if (flags & kSerialiseAll)
         {
             std::vector<std::vector<float>> vertices; 
-            node.GetArray2DValues("v", vertices, flags);
+            isDirty |= node.GetArray2DValues("v", vertices, flags);
 
             auto& segments = *m_hostLineSegments;
             segments.Resize(vertices.size() - 1);
@@ -317,9 +278,10 @@ namespace Enso
                 segments[idx][1] = vec2(vertices[idx+1][0], vertices[idx+1][1]);
             }
 
-            SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
+            SignalDirty(kDirtyObjectBoundingBox);
+            //SetDirtyFlags(kDirtyObjectBounds | kDirtyObjectBVH);
         }
 
-        return m_dirtyFlags;
+        return isDirty;
     }
 }

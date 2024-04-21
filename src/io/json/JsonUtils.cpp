@@ -28,6 +28,19 @@ namespace Enso
             m_dagPath = std::move(other.m_dagPath);
             return *this;
         }*/
+
+        int Node::GetKeyFormat(const std::string& name) const
+        {
+            // JSON node names may only contain alphanumeric characters, underscores, dashes, and the DAG delimiter
+            if (name.empty()) { return false; }
+            int keyFormat = kKeyName;
+            for (auto& c : name)
+            {
+                if (!std::isalnum(c) && c != '_' && c != '-') { return kKeyInvalid; }
+                else if (c == kDAGDelimiter) { keyFormat = kKeyDAG; }
+            }
+            return keyFormat;
+        }
         
         bool Node::IsValidName(const std::string& name) const
         {
@@ -134,7 +147,11 @@ namespace Enso
             
             if (!(flags & kPathIsDAG))
             {
-                AssertMsgFmt(IsValidName(path), "'%s' is not a valid node name (must be alphanumeric, underscore or dash)", path.c_str());
+                // Verify that the key is correctly formatted
+                const int keyFormat = GetKeyFormat(path);
+                AssertMsgFmt(keyFormat != kKeyInvalid, "'%s' is not a valid node name (must be alphanumeric, underscore or dash)", path.c_str());
+                AssertMsgFmt(keyFormat != kKeyDAG, "'%s' is formatted like a DAG, however the kPathIsDAG flag was not specified.", path.c_str());
+                    
                 return functor(node, path, flags);
             }
             

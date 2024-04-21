@@ -206,10 +206,10 @@ namespace Enso
 
     __host__ Host::KIFS::KIFS(const Asset::InitCtx& initCtx) :
         Tracable(initCtx, m_hostInstance, nullptr),
-        cu_deviceInstance(m_allocator.InstantiateOnDevice<Device::KIFS>())
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::KIFS>(*this))
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
-        Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
+        Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
 
         Synchronise(kSyncObjects);
     }
@@ -221,7 +221,7 @@ namespace Enso
 
     __host__ Host::KIFS::~KIFS() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
     __host__ void Host::KIFS::Synchronise(const uint syncType)
@@ -235,45 +235,32 @@ namespace Enso
         }
     }
 
-    __host__ uint Host::KIFS::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::KIFS::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
         {
             GetTransform().trans = viewCtx.mousePos;
             m_isConstructed = true;
-            SetDirtyFlags(kDirtyObjectBounds);
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
 
             if (stateID == "kCreateSceneObjectOpen") { Log::Success("Opened KIFS %s", GetAssetID()); }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             m_isFinalised = true;
-            SetDirtyFlags(kDirtyObjectBounds);
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
 
-        return m_dirtyFlags;
+        return true;
     }
 
-    __host__ bool Host::KIFS::Rebuild(const uint parentFlags, const UIViewCtx& viewCtx)
+    __host__ bool Host::KIFS::Rebuild()
     {
-        if (!m_dirtyFlags) { return IsConstructed(); }
-
-        bool resyncParams = false;
-        if (m_dirtyFlags & kDirtyObjectBounds)
-        {
-            RecomputeBoundingBoxes();
-            resyncParams = true;
-        }
-        if (m_dirtyFlags & kDirtyMaterials)
-        {
-            resyncParams = true;
-        }
-
-        if (resyncParams) { Synchronise(kSyncParams); }
-
-        ClearDirtyFlags();
-        return IsConstructed();
+        RecomputeBoundingBoxes();        
+        Synchronise(kSyncParams); 
+        
+        return true;
     }
 
     __host__ uint Host::KIFS::OnMouseClick(const UIViewCtx& viewCtx) const
@@ -315,43 +302,46 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::KIFS::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::KIFS::Deserialise(const Json::Node& node, const int flags)
     {
-        Tracable::Deserialise(node, flags);
+        bool isDirty = Tracable::Deserialise(node, flags);
 
-        Json::Node kifsNode = node.GetChildObject("kifs", flags);
-        bool dirty = false;
+        Json::Node kifsNode = node.GetChildObject("kifs", flags);        
         if (kifsNode)
         {
             auto& kifs = m_hostInstance.m_params.kifs;
-            dirty |= kifsNode.GetValue("rotate", kifs.rotate, flags);
-            dirty |= kifsNode.GetVector("pivot", kifs.pivot, flags);
-            dirty |= kifsNode.GetValue("isosurface", kifs.isosurface, flags);
-            dirty |= kifsNode.GetValue("primSize", kifs.primSize, flags);
-            dirty |= kifsNode.GetValue("iterations", kifs.numIterations, flags);
-            dirty |= kifsNode.GetValue("scale", kifs.sdfScale, flags);
+            isDirty |= kifsNode.GetValue("rotate", kifs.rotate, flags);
+            isDirty |= kifsNode.GetVector("pivot", kifs.pivot, flags);
+            isDirty |= kifsNode.GetValue("isosurface", kifs.isosurface, flags);
+            isDirty |= kifsNode.GetValue("primSize", kifs.primSize, flags);
+            isDirty |= kifsNode.GetValue("iterations", kifs.numIterations, flags);
+            isDirty |= kifsNode.GetValue("scale", kifs.sdfScale, flags);
         }
 
         Json::Node isectNode = node.GetChildObject("isect", flags);
         if (isectNode)
         {
             auto& isect = m_hostInstance.m_params.intersector;
-            dirty |= isectNode.GetValue("cutoffThreshold", isect.cutoffThreshold, flags);
-            dirty |= isectNode.GetValue("escapeThreshold", isect.escapeThreshold, flags);
-            dirty |= isectNode.GetValue("failThreshold", isect.failThreshold, flags);
-            dirty |= isectNode.GetValue("rayIncrement", isect.rayIncrement, flags);
-            dirty |= isectNode.GetValue("rayKickoff", isect.rayKickoff, flags);
-            dirty |= isectNode.GetValue("maxIterations", isect.maxIterations, flags);
+            isDirty |= isectNode.GetValue("cutoffThreshold", isect.cutoffThreshold, flags);
+            isDirty |= isectNode.GetValue("escapeThreshold", isect.escapeThreshold, flags);
+            isDirty |= isectNode.GetValue("failThreshold", isect.failThreshold, flags);
+            isDirty |= isectNode.GetValue("rayIncrement", isect.rayIncrement, flags);
+            isDirty |= isectNode.GetValue("rayKickoff", isect.rayKickoff, flags);
+            isDirty |= isectNode.GetValue("maxIterations", isect.maxIterations, flags);
         }
 
         Json::Node lookNode = node.GetChildObject("look", flags);
         if (lookNode)
         {
-            dirty |= lookNode.GetValue("phase", m_hostInstance.m_params.look.phase, flags);
-            dirty |= lookNode.GetValue("range", m_hostInstance.m_params.look.range, flags);
+            isDirty |= lookNode.GetValue("phase", m_hostInstance.m_params.look.phase, flags);
+            isDirty |= lookNode.GetValue("range", m_hostInstance.m_params.look.range, flags);
         }
         
-        if (dirty) { SetDirtyFlags(kDirtyMaterials); }
-        return m_dirtyFlags;
+        if (isDirty) 
+        { 
+            SignalDirty({ kDirtyParams, kDirtyIntegrators }); 
+        }
+
+        return isDirty;
     }
 }

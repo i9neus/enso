@@ -42,7 +42,7 @@ namespace Enso
 
             __host__ void SetDeviceInstance(Device::Light* deviceInstance)
             {
-                Tracable::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::Tracable>(deviceInstance));
+                Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(deviceInstance));
                 cu_deviceInstance = deviceInstance;
             }
 

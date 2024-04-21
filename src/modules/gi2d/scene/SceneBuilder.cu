@@ -6,20 +6,30 @@
 #include "../integrators/Camera.cuh"
 
 namespace Enso
-{
-    __host__ void Host::SceneBuilder::OnDirty(const DirtinessKey& flag, Host::Dirtyable& caller)
+{    
+    __host__ void Host::SceneBuilder::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
-        if (flag == 1u)
+        switch (flag)
         {
-            Log::Error("Caught!");
-        }
+        case kDirtyObjectRebuild:
+            {                                 
+                // TODO: We're using the address of the object as the key. This probably isn't consistent with best practices. 
+                m_rebuildQueue[(void*)caller.lock().get()] = caller;
+                break;
+            }
+        default:
+            {
+                SetDirty(flag);
+                break;
+            }
+        };
     }
 
     __host__ Host::SceneBuilder::SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& container) :
         Dirtyable(initCtx),
-        m_allocator(*this),
         m_container(container)
     {
+        Listen({ kDirtyObjectBoundingBox, kDirtyObjectRebuild, kDirtyObjectExistence });
     }
 
     template<typename ContainerType>
@@ -40,80 +50,134 @@ namespace Enso
         bih.Build(getPrimitiveBBox);
     }
 
-    __host__ void Host::SceneBuilder::Rebuild(const UIViewCtx& viewCtx, const uint dirtyFlags)
+    __host__ void Host::SceneBuilder::EnqueueEmplaceObject(AssetHandle<Host::GenericObject> handle)
     {
-        // Only rebuilid if the object bounds have changed through insertion, deletion or movement
-        if (!(dirtyFlags & kDirtyIntegrators)) { return; }
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-        // Rebuild and synchronise any tracables that were dirtied since the last iteration
-        int lightIdx = 0;
+        m_emplaceQueue.emplace_back(handle);
+        SignalDirty(kDirtyObjectExistence);
+    }
 
-        auto& cameras = *m_container->m_hostCameras;
-        auto& lights = *m_container->m_hostLights;
-        auto& tracables = *m_container->m_hostTracables;
-        auto& sceneObjects = *m_container->m_hostSceneObjects;
-        auto& genericObjects = *m_container->m_hostGenericObjects;
+    __host__ void Host::SceneBuilder::EnqueueDeleteObject(const std::string& assetId)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-        m_container->Clear();
+        m_deleteQueue.emplace(assetId);
+        SignalDirty(kDirtyObjectExistence);
+    }
 
-        genericObjects.ForEach([&, this](AssetHandle<Host::GenericObject>& genericObject) -> bool
+    __host__ void Host::SceneBuilder::SortSceneObject(AssetHandle<Host::SceneObject>& sceneObject)
+    {
+        // If this is a camera object, add it to the list of cameras but not the list of scene objects
+        auto camera = sceneObject.DynamicCast<Host::Camera>();
+        if (camera)
+        {
+            m_container->m_hostCameras->EmplaceBack(camera);
+        }
+        else
+        {
+            // If the object can be transformed, add it to the list of scene objects
+            if (sceneObject->IsTransformable())
             {
-                // If this is a camera object, add it to the list of cameras
-                auto camera = genericObject.DynamicCast<Host::Camera>();
-                if (camera)
+                // Ordinary objects go into the universal BIH
+                m_container->m_hostSceneObjects->EmplaceBack(sceneObject);
+
+                // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
+                auto tracable = sceneObject.DynamicCast<Host::Tracable>();
+                if (tracable)
                 {
-                    if (camera->Rebuild(dirtyFlags, viewCtx))
+                    // Add the tracable to the list
+                    m_container->m_hostTracables->EmplaceBack(tracable);
+
+                    // Tracables that are also lights are separated out into their own container
+                    auto light = sceneObject.DynamicCast<Host::Light>();
+                    if (light)
                     {
-                        cameras.EmplaceBack(camera);
-                    }
-                    return true;
-                }
-
-                auto sceneObject = genericObject.DynamicCast<Host::SceneObject>();
-                // Rebuild the scene object (it will decide whether any action needs to be taken)
-                if (sceneObject && sceneObject->Rebuild(dirtyFlags, viewCtx))
-                {
-                    // If the object can be transformed, add it to the list of scene objects
-                    if (sceneObject->IsTransformable())
-                    {
-                        // Ordinary objects go into the universal BIH
-                        sceneObjects.EmplaceBack(sceneObject);
-
-                        // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
-                        auto tracable = genericObject.DynamicCast<Host::Tracable>();
-                        if (tracable)
-                        {
-                            // Add the tracable to the list
-                            tracables.EmplaceBack(tracable);
-
-                            // Tracables that are also lights are separated out into their own container
-                            auto light = genericObject.DynamicCast<Host::Light>();
-                            if (light)
-                            {
-                                tracable->SetLightIdx(lightIdx++);
-                                lights.EmplaceBack(light);
-                            }
-                        }
+                        tracable->SetLightIdx(m_lightIdx++);
+                        m_container->m_hostLights->EmplaceBack(light);
                     }
                 }
+            }
+        }
+    }
 
-                return true;
-            });
+    __host__ void Host::SceneBuilder::Rebuild(bool forceRebuild)
+    {        
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-        // Synch
+        m_lightIdx = 0;
+
+        // If there are objects waiting in the delete queue, remove them now
+        if (!m_deleteQueue.empty())
+        {
+            m_container->Clear();
+            for (const auto& id : m_deleteQueue)
+            {
+                m_container->m_hostGenericObjects->Erase(id);
+            }
+            m_deleteQueue.clear();
+        }
+
+        // If there are objects waiting in the emplace queue, add them to the full list
+        if (!m_emplaceQueue.empty())
+        {
+            for (auto& asset : m_emplaceQueue)
+            {
+                m_container->m_hostGenericObjects->Emplace(asset);
+            }
+            m_emplaceQueue.clear();
+        }
+
+        // If an object has been added or removed or a complete rebuild has been triggered, build the entire object container
+        if (IsDirty(kDirtyObjectExistence) || forceRebuild)
+        {
+            m_container->Clear();
+            for (auto& object : *m_container->m_hostGenericObjects)
+            {
+                auto sceneObject = object.DynamicCast<Host::SceneObject>();
+                if (sceneObject)
+                {
+                    sceneObject->Rebuild();
+                    SortSceneObject(sceneObject);
+                }
+            }
+        }
+        // Otherwise, only rebuild the scene objects listed in the rebuild queue
+        else
+        {
+            for (auto& it : m_rebuildQueue)
+            {
+                if (it.second.expired())
+                {
+                    Log::Error("Warning: an object expired from the rebuild queue before it could be rebuilt");
+                }
+                else
+                {
+                    auto sceneObject = AssetHandle<Host::Asset>(it.second).DynamicCast<Host::SceneObject>();  
+                    if (sceneObject)
+                    {
+                        sceneObject->Rebuild();
+                    }
+                }
+            }
+        }
+
+        // Synchronise the container lists
         m_container->Synchronise();
 
-        // Rebuild the BIHs
-        RebuildBIH(*m_container->m_hostTracableBIH, tracables);
-        RebuildBIH(*m_container->m_hostSceneBIH, sceneObjects);
+        // TODO: Make this process more intelligent by only doing a full rebuild if any object bounding boxes have explicitly changed
+        if (IsAnyDirty({ kDirtyObjectBoundingBox, kDirtyObjectExistence }))
+        {
+            // Rebuild the BIHs
+            RebuildBIH(*m_container->m_hostTracableBIH, *m_container->m_hostTracables);
+            RebuildBIH(*m_container->m_hostSceneBIH, *m_container->m_hostSceneObjects);
+        }
 
+        // Summarise the build process
         m_container->Summarise();
 
-        // Cache the object bounding boxes
-        /*m_tracableBBoxes.reserve(m_scene->m_hostTracables->Size());
-        for (auto& tracable : *m_scene->m_hostTracables)
-        {
-            m_tracableBBoxes.emplace_back(tracable->GetBoundingBox());
-        }*/
+        // Clean up
+        m_rebuildQueue.clear();
+        Clean();
     }
 }

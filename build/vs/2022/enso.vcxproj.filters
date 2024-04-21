@@ -159,15 +159,6 @@
     <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp">
       <Filter>io\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp">
-      <Filter>modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\modules\ModuleInterface.cpp">
-      <Filter>modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\modules\ModuleManager.cpp">
-      <Filter>modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ui\UIModuleManager.cpp">
       <Filter>ui</Filter>
     </ClCompile>
@@ -335,15 +326,6 @@
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
       <Filter>io\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h">
-      <Filter>modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\ModuleInterface.h">
-      <Filter>modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\ModuleManager.h">
-      <Filter>modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
@@ -390,9 +372,6 @@
       <Filter>modules\gi2d\lights</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh">
-      <Filter>modules\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cuh">
       <Filter>modules\gi2d\layers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh">
@@ -635,6 +614,18 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cuh">
       <Filter>modules\gi2d\scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh">
+      <Filter>modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\ModuleInterface.cuh">
+      <Filter>modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh">
+      <Filter>modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
+      <Filter>modules\gi2d\integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -657,9 +648,6 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu">
       <Filter>modules\gi2d\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu">
-      <Filter>modules\gi2d\layers</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu">
       <Filter>modules\gi2d\layers</Filter>
@@ -729,6 +717,18 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cu">
       <Filter>modules\gi2d\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu">
+      <Filter>modules</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\ModuleInterface.cu">
+      <Filter>modules</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu">
+      <Filter>modules</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
+      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

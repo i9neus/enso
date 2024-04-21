@@ -21,7 +21,7 @@ namespace Enso
     {
     public:
         __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const { return false; }
-        __host__ virtual uint Deserialise(const Json::Node& rootNode, const int flags) { return 0u; }
+        __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) { return false; }
 
     private:
     };

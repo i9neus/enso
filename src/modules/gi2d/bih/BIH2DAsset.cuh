@@ -44,7 +44,6 @@ namespace Enso
             std::vector<uint>                       m_primitiveIdxs;
             BIH2DParams<BIH2DFullNode>              m_params;
             const uint                              m_minBuildablePrims;
-            AssetAllocator                          m_allocator;
 
             Device::BIH2DAsset* cu_deviceInstance;
             BIH2D<BIH2DFullNode>* cu_deviceInterface;

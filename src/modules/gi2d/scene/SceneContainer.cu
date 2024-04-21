@@ -8,20 +8,19 @@
 namespace Enso
 {
     __host__ Host::SceneContainer::SceneContainer(const Asset::InitCtx& initCtx) :
-        Host::GenericObject(initCtx),
-        m_allocator(*this)
+        Host::GenericObject(initCtx)
     {
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::SceneContainer>();
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::SceneContainer>(*this);
         
-        m_hostGenericObjects = Host::AssetAllocator::CreateAsset<Host::GenericObjectContainer>(":gi2d/sceneObjects");
+        m_hostGenericObjects = AssetAllocator::CreateChildAsset<Host::GenericObjectContainer>(*this, ":gi2d/sceneObjects");
         
-        m_hostTracables = m_allocator.CreateChildAsset<Host::TracableContainer>("tracables", kVectorHostAlloc);
-        m_hostLights = m_allocator.CreateChildAsset<Host::LightContainer>("lights", kVectorHostAlloc);
-        m_hostCameras = m_allocator.CreateChildAsset<Host::CameraContainer>("cameras", kVectorHostAlloc);
-        m_hostSceneObjects = m_allocator.CreateChildAsset<Host::SceneObjectContainer>("widgets", kVectorHostAlloc);
+        m_hostTracables = AssetAllocator::CreateChildAsset<Host::TracableContainer>(*this, "tracables", kVectorHostAlloc);
+        m_hostLights = AssetAllocator::CreateChildAsset<Host::LightContainer>(*this, "lights", kVectorHostAlloc);
+        m_hostCameras = AssetAllocator::CreateChildAsset<Host::CameraContainer>(*this, "cameras", kVectorHostAlloc);
+        m_hostSceneObjects = AssetAllocator::CreateChildAsset<Host::SceneObjectContainer>(*this, "widgets", kVectorHostAlloc);
 
-        m_hostTracableBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("tracablebih", 1);
-        m_hostSceneBIH = m_allocator.CreateChildAsset<Host::BIH2DAsset>("widgetbih", 1);
+        m_hostTracableBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "tracablebih", 1);
+        m_hostSceneBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "widgetbih", 1);
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -34,7 +33,7 @@ namespace Enso
 
     __host__ Host::SceneContainer::~SceneContainer() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 
         m_hostTracables.DestroyAsset();
         m_hostLights.DestroyAsset();
@@ -53,6 +52,24 @@ namespace Enso
             {
                 object.DestroyAsset();
             }
+        }
+    }
+
+    __host__ void Host::SceneContainer::Prepare()
+    {
+        Assert(m_hostSceneObjects);        
+        for (auto& object : *m_hostSceneObjects)
+        {
+            object->Prepare();
+        }
+    }
+
+    __host__ void Host::SceneContainer::Clean()
+    {
+        Assert(m_hostGenericObjects);
+        for (auto& object : *m_hostGenericObjects)
+        {
+            object->Clean();
         }
     }
 

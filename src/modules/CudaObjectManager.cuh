@@ -10,7 +10,7 @@
 #include "core/Asset.cuh"
 
 namespace Enso
-{
+{	
 	class CudaObjectManager
 	{
 	public:

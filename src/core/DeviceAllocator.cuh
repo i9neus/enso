@@ -30,7 +30,7 @@ __global__ void KernelDeviceAllocDestroyDeviceInstance(ObjectType* cu_instance)
 }
 
 template<typename ObjectType, typename CastType>
-__global__ void KernelDeviceAllocStaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
+__global__ void KernelDeviceAllocAssetAllocator::StaticCastOnDevice(ObjectType** inputPtr, CastType** outputPtr)
 {
 	CudaAssert(inputPtr);
 	CudaAssert(outputPtr);
@@ -112,7 +112,7 @@ namespace Enso
 			IsOk(cudaMalloc((void***)&cu_outputPtr, sizeof(CastType*)));
 			IsOk(cudaMemset(cu_outputPtr, 0, sizeof(CastType*)));
 
-			KernelDeviceAllocStaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
+			KernelDeviceAllocAssetAllocator::StaticCastOnDevice << <1, 1 >> > (cu_inputPtr, cu_outputPtr);
 			IsOk(cudaDeviceSynchronize());
 
 			CastType* outputPtr = nullptr;

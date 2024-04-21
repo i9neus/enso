@@ -26,9 +26,6 @@
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp" />
     <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\Log.cpp" />
-    <ClCompile Include="..\..\..\src\modules\CudaObjectManager.cpp" />
-    <ClCompile Include="..\..\..\src\modules\ModuleInterface.cpp" />
-    <ClCompile Include="..\..\..\src\modules\ModuleManager.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui.cpp" />
@@ -110,7 +107,7 @@
     <ClInclude Include="..\..\..\src\io\Log.h" />
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h" />
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
-    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.h" />
+    <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cuh" />
@@ -122,9 +119,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Ellipse.cuh" />
@@ -143,8 +140,8 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\UICtx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh" />
-    <ClInclude Include="..\..\..\src\modules\ModuleInterface.h" />
-    <ClInclude Include="..\..\..\src\modules\ModuleManager.h" />
+    <ClInclude Include="..\..\..\src\modules\ModuleInterface.cuh" />
+    <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\imconfig.h" />
@@ -206,6 +203,7 @@
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
+    <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
@@ -213,8 +211,8 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\VoxelProxyGridLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cu" />
@@ -226,6 +224,8 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu" />
+    <CudaCompile Include="..\..\..\src\modules\ModuleInterface.cu" />
+    <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>

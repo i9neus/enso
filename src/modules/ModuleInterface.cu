@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ModuleInterface.h"
+#include "ModuleInterface.cuh"
 #include "io/CommandQueue.h"
 
 namespace Enso
@@ -10,7 +10,6 @@ namespace Enso
 		m_mouseWheelAngle(0.0f),
 		m_clientWidth(1.0f),
 		m_clientHeight(1.0f),
-		m_dirtyFlags(0),
 		m_uiGraph(m_keyCodes),
 		m_renderSemaphore(kRenderManagerD3DBlitFinished),
 		m_outboundCmdQueue(outQueue)

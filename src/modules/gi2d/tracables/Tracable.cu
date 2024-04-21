@@ -17,7 +17,7 @@ namespace Enso
 
     __host__ void Host::Tracable::SetDeviceInstance(Device::Tracable* deviceInstance)
     {
-        SceneObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::SceneObject>(deviceInstance));
+        SceneObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::SceneObject>(deviceInstance));
         cu_deviceInstance = deviceInstance;
     }
 
@@ -39,11 +39,12 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::Tracable::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::Tracable::Deserialise(const Json::Node& node, const int flags)
     {
+        bool isDirty = false;
         Json::Node tracableNode = node.GetChildObject("tracable", flags);
-        if (tracableNode) { SceneObject::Deserialise(tracableNode, flags); }
+        if (tracableNode) { isDirty |= SceneObject::Deserialise(tracableNode, flags); }
 
-        return m_dirtyFlags;
+        return isDirty;
     }
 }

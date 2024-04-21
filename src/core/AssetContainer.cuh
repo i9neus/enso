@@ -88,13 +88,13 @@ namespace Enso
 				m_allocator(*this), 
 				cu_deviceData(nullptr)
 			{
-				cu_deviceData = m_allocator.InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>();
+				cu_deviceData = AssetAllocator::InstantiateOnDevice<Device::AssetContainer<typename ElementType::DeviceVariant>>(*this);
 			}
 
 			__host__ ~AssetContainer()
 			{
-				m_allocator.DestroyOnDevice(cu_deviceData);
-				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
+				DestroyOnDevice(*this, cu_deviceData);
+				AssetAllocator::GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 			}
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
@@ -128,7 +128,7 @@ namespace Enso
 			__host__ void Synchronise()
 			{
 				// Clean up first
-				GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
+				AssetAllocator::GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 
 				if (!m_assetMap.empty())
 				{
@@ -163,7 +163,7 @@ namespace Enso
 					}
 
 					// Upload the array of device pointers
-					GuardedAllocAndCopyToDeviceArray(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
+					AssetAllocator::GuardedAllocAndCopyToDeviceArray(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
 					m_deviceObjects.numElements = m_assetMap.size();
 				}
 				else

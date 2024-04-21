@@ -1,4 +1,4 @@
-#include "CudaObjectManager.h"
+#include "CudaObjectManager.cuh"
 
 #include "win/SecurityAttributes.h"
 #include "win/D3DHeaders.h"

@@ -71,7 +71,7 @@ namespace Tests
 	
 	__host__ void BIH2DTestsImpl::BuildSimpleGeometry()
 	{
-		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		AssetHandle<Host::BIH2DAsset> bih = AssetAllocator::CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);		
 		
 		CreateCircleSegments(segments);
@@ -91,7 +91,7 @@ namespace Tests
 
 	__host__ void BIH2DTestsImpl::PointTestSimpleGeometry()
 	{
-		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		AssetHandle<Host::BIH2DAsset> bih = AssetAllocator::CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
 
 		CreateCircleSegments(segments);
@@ -130,7 +130,7 @@ namespace Tests
 
 	__host__ void BIH2DTestsImpl::RayTestSimpleGeometry() 
 	{
-		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		AssetHandle<Host::BIH2DAsset> bih = AssetAllocator::CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
 
 		CreateCircleSegments(segments);
@@ -162,7 +162,7 @@ namespace Tests
 		constexpr int kNumSegmentsLower = 10;
 		constexpr int kNumSegmentsUpper = 1000;
 
-		AssetHandle<Host::BIH2DAsset> bih = CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
+		AssetHandle<Host::BIH2DAsset> bih = AssetAllocator::CreateAsset<Host::BIH2DAsset>("id_gi2DBIH");
 		Host::Vector<LineSegment> segments("cudaVector", 0u, kVectorHostAlloc, nullptr);
 		
 		for (int iterIdx = 0; iterIdx < kNumIterations; ++iterIdx)
@@ -234,7 +234,7 @@ public:
 			primIdxs[idx] = idx;
 		}
 
-		AssetHandle<Host::BIH2D> bih = CreateAsset<Host::BIH2D>("bih");
+		AssetHandle<Host::BIH2D> bih = AssetAllocator::CreateAsset<Host::BIH2D>("bih");
 		Host::BIH2DBuilder builder(*bih);
 
 		builder.Build(primIdxs, [&primBBoxes](const uint idx) -> BBox2f& { Assert(idx < primBBoxes.size());  return primBBoxes[idx]; });

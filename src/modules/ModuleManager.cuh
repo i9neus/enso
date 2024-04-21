@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ModuleInterface.h"
+#include "ModuleInterface.cuh"
 
 namespace Enso
 {
@@ -46,8 +46,9 @@ namespace Enso
         }
 
     public:
-        std::shared_ptr<ModuleInterface>                                                      m_activeRenderer;
-        std::unordered_map<std::string, std::function<std::shared_ptr<ModuleInterface>(std::shared_ptr<CommandQueue>)>>    m_instantiators;
+        using Instantiator = std::function<std::shared_ptr<ModuleInterface>(std::shared_ptr<CommandQueue>)>;
+        std::shared_ptr<ModuleInterface>  m_activeRenderer;
+        std::unordered_map<std::string, Instantiator> m_instantiators;
 
     private:
         AssetHandle<Host::ImageRGBA>		m_compositeImage;

@@ -23,6 +23,13 @@ namespace Enso
             kPathIsDAG          = 16
         };
 
+        enum KeyFormat : int
+        {
+            kKeyInvalid = -1,
+            kKeyName = 0,
+            kKeyDAG = 1
+        };
+
         template<typename... Pack>
         inline void ReportError(const uint flags, const std::string message, Pack... pack)
         {
@@ -112,7 +119,8 @@ namespace Enso
 
         public:
             inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
-            bool IsValidName(const std::string& name) const;
+            bool IsValidName(const std::string& name) const; 
+            int GetKeyFormat(const std::string& path) const;
 
             const Document& GetRootDocument() const { Assert(m_rootDocument); return *m_rootDocument; }
             void DeepCopy(const Node& other);

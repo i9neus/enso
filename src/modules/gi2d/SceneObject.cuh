@@ -76,21 +76,22 @@ namespace Enso
         {
         public:
             //__host__ virtual bool       Finalise() = 0;
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx) = 0;
 
-            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
-            __host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
-            __host__ virtual uint       OnSelect(const bool isSelected);
+            __host__ virtual bool       Rebuild() = 0;
+            __host__ virtual bool       Prepare() { return true; }
+
+            __host__ virtual bool       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
+            __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
+            __host__ virtual bool       OnSelect(const bool isSelected) { return true; }
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
-            __host__ virtual uint       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return 0u; }
+            __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
             __host__ virtual bool       IsTransformable() const { return true; }
 
-            __host__ virtual uint       GetDirtyFlags() const { return m_dirtyFlags; }
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_hostInstance.m_params.attrFlags & kSceneObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual bool       HasOverlay() const { return false; }
-            __host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
+            //__host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
             __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
             
             __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_params.objectBBox; }
@@ -99,7 +100,7 @@ namespace Enso
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
-            __host__ virtual uint Deserialise(const Json::Node& rootNode, const int flags) override;
+            __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override;
 
             /*__host__ Device::SceneObject* GetDeviceInstance() const
             {

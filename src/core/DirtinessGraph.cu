@@ -16,14 +16,27 @@ namespace Enso
     __host__ void Host::Dirtyable::SignalDirty(const DirtinessKey& flag)
     {
         m_dirtyFlags.emplace(flag);
-
-        DirtinessGraph::Get().OnDirty(flag, *this);
+        DirtinessGraph::Get().OnDirty(flag, GetAssetHandle());
     }
 
-    __host__ void Host::Dirtyable::Listen(const DirtinessKey& flag)
-    {// Get the asset handle for this object and upcast it
-        WeakAssetHandle<Host::Dirtyable> weakHandle = std::dynamic_pointer_cast<Host::Dirtyable>(GetAssetHandle().lock());
-        DirtinessGraph::Get().AddListener(GetAssetID(), weakHandle, flag);
+    __host__ void Host::Dirtyable::SignalDirty(const std::vector<DirtinessKey>& flagList)
+    {
+        auto& graph = DirtinessGraph::Get();
+        for (const auto& flag : flagList)
+        {
+            m_dirtyFlags.emplace(flag);
+            graph.OnDirty(flag, GetAssetHandle());
+        }
+    }
+
+    __host__ void Host::Dirtyable::Listen(const std::vector<DirtinessKey>& flagList)
+    {
+        // Get the asset handle for this object and upcast it
+        auto& graph = DirtinessGraph::Get();
+        for (const auto& flag : flagList)
+        {
+            graph.AddListener(GetAssetID(), GetAssetHandle(), flag);
+        }
     }
 
     __host__ bool Host::Dirtyable::IsDirty(const DirtinessKey& id) const
@@ -31,37 +44,39 @@ namespace Enso
         return m_dirtyFlags.count(id);
     }
 
+    __host__ bool Host::Dirtyable::IsAnyDirty(const std::vector<DirtinessKey>& flagList) const
+    {
+        for (const auto& flag : flagList)
+        {
+            if (m_dirtyFlags.count(flag)) return true;
+        }
+        return false;
+    }
+
+    __host__ bool Host::Dirtyable::IsAllDirty(const std::vector<DirtinessKey>& flagList) const
+    {
+        for (const auto& flag : flagList)
+        {
+            if (!m_dirtyFlags.count(flag)) return false;
+        }
+        return true;
+    }
+
     __host__ void Host::Dirtyable::Clean()
     {
         // NOTE: Clearing flags does not trigger a signal to listeners
+        OnClean();
         m_dirtyFlags.clear();
     }
 
-    __host__ Host::DirtinessGraph::Listener::Listener(const DirtinessKey& _flag, WeakAssetHandle<Dirtyable>& _handle, EventDeligate& deligate) :
-        m_flag(_flag),
-        m_handle(_handle),
-        m_deligate(deligate)
+    __host__ Host::DirtinessGraph::Listener::Listener(const DirtinessKey& _flag, WeakAssetHandle<Host::Dirtyable>& _handle, EventDeligate& deligate) :
+        flag(_flag),
+        handle(_handle),
+        deligate(deligate)
     {
         // We cache the naked pointer for the hash function
-        Assert(!m_handle.expired());
-        m_hash = std::hash<void*>{}(m_handle.lock().get());
-        m_hash = HashCombine(m_hash, size_t(m_flag));
-    }
-
-    __host__ void Host::DirtinessGraph::Listener::OnDirty(Host::Dirtyable& caller)
-    {
-        Assert(!m_handle.expired());
-
-        if (m_deligate)
-        {
-            // If a custom deligate has been specified, call it here
-            m_deligate(m_flag, caller);
-        }
-        else
-        {
-            // Otherwise, just call the default method
-            m_handle.lock()->OnDirty(m_flag, caller);
-        }
+        hash = std::hash<void*>{}((void*)handle.lock().get());
+        hash = HashCombine(hash, size_t(flag));
     }
 
     Host::DirtinessGraph& Host::DirtinessGraph::Get()
@@ -71,24 +86,34 @@ namespace Enso
         return singleton;
     }
 
-    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessKey& flag, Host::Dirtyable& caller)
+    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
         //m_eventSet.emplace(flag);
         std::lock_guard<std::mutex> lock(m_mutex);
 
         int numExpired = 0;
-        for (auto listener = m_listenerFromFlag.find(flag); listener != m_listenerFromFlag.end() && listener->first == flag; ++listener)
+        for (auto it = m_listenerFromFlag.find(flag); it != m_listenerFromFlag.end() && it->first == flag; ++it)
         {
-            if (!listener->second)
+            auto& listener = it->second;
+            if (!listener)
             {
-                auto expiredIt = listener;
-                ++listener;
+                auto expiredIt = it;
+                ++it;
                 m_listenerFromFlag.erase(expiredIt);
                 ++numExpired;
             }
             else
-            {
-                listener->second.OnDirty(caller);
+            {                
+                if (listener.deligate)
+                {
+                    // If a custom deligate has been specified, call it here
+                    listener.deligate(flag, caller);
+                }
+                else
+                {
+                    // Otherwise, just call the default method
+                    listener.handle.lock()->OnDirty(flag, caller);
+                }
             }
         }
 
@@ -99,12 +124,10 @@ namespace Enso
         }
     }
 
-    __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Dirtyable>& handle, const DirtinessKey& flag, EventDeligate functor)
+    __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Asset>& assetHandle, const DirtinessKey& flag, EventDeligate functor)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-
-        AssertMsgFmt(!handle.expired(), "Handle for asset '%s' has expired.", assetId.c_str());
-
+        
         // Check to make sure this object isn't already listening for this event
         for (auto listener = m_flagFromAssetId.find(assetId); listener != m_flagFromAssetId.end() && listener->first == assetId; ++listener)
         {
@@ -115,7 +138,12 @@ namespace Enso
             }
         }
 
-        m_listenerFromFlag.emplace(flag, Listener(flag, handle, functor));
+        // Upcast the weak asset handle to a weak dirtyable handle
+        Assert(!assetHandle.expired());
+        auto dirtyableHandle = AssetHandle<Host::Asset>(assetHandle).DynamicCast<Host::Dirtyable>().GetWeakHandle();
+
+        // Emplace the new listener
+        m_listenerFromFlag.emplace(flag, Listener(flag, dirtyableHandle, functor));
         m_flagFromAssetId.emplace(assetId, flag);
 
         Log::Error("Object '%s' added as a listener to the dirtiness graph.", assetId);

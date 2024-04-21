@@ -1,4 +1,4 @@
-#include "ModuleManager.h"
+#include "ModuleManager.cuh"
 #include "core/HighResolutionTimer.h"
 #include "io/CommandQueue.h"
 
@@ -9,7 +9,7 @@ namespace Enso
     ModuleManager::ModuleManager() : 
         m_outboundCmdQueue(std::make_shared<CommandQueue>())
     {
-        AddInstantiator<GI2DRenderer>("2dgi");
+        AddInstantiator<Host::GI2DRenderer>("2dgi");
     }
 
     void ModuleManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
@@ -17,7 +17,7 @@ namespace Enso
         InitialiseCuda(dx12DeviceLUID, clientWidth, clientHeight);
 
         // Create some Cuda objects
-        m_compositeImage = Host::AssetAllocator::CreateAsset<Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
+        m_compositeImage = AssetAllocator::CreateAsset<Host::ImageRGBA>("id_compositeImage", clientWidth, clientHeight, m_renderStream);
     }
 
     void ModuleManager::Destroy()
@@ -92,6 +92,7 @@ namespace Enso
         m_activeRenderer->Stop();
 
         m_activeRenderer->Destroy();
+        
         m_activeRenderer.reset();
 
         Log::Success("Successfully unloaded renderer!");

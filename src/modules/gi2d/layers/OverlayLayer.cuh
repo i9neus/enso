@@ -67,7 +67,7 @@ namespace Enso
             __host__ virtual void Render() override final;
             __host__ virtual void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const override final; 
 
-            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
+            __host__ virtual bool Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
 
             __host__ static const std::string  GetAssetClassStatic() { return "overlaylayer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }

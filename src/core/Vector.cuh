@@ -103,7 +103,6 @@ namespace Enso
 		protected:
 			Device::Vector<DeviceType>*		cu_deviceInstance;
 			Vector<DeviceType>*				cu_deviceInterface;
-			AssetAllocator					m_allocator;
 			DeviceType*						cu_deviceData;
 			VectorParams					m_deviceParams;
 
@@ -144,7 +143,6 @@ namespace Enso
 		public:
 			__host__ VectorBase(const Asset::InitCtx& initCtx, const uint flags) :
 				Asset(initCtx),
-				m_allocator(*this),
 				cu_deviceInstance(nullptr),
 				cu_deviceInterface(nullptr),
 				cu_deviceData(nullptr)
@@ -164,7 +162,7 @@ namespace Enso
 				//	"kVectorUnifiedMemory can only be used when host and device types are the same.");
 
 				// Create a device instance
-				//cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::Vector<DeviceType>>(id);
+				//cu_deviceInstance = m_allocator.AssetAllocator::InstantiateOnDevice<Device::Vector<DeviceType>>(id);
 			}
 
 			__host__ VectorBase(const Asset::InitCtx& initCtx, const uint size, const uint flags) :
@@ -182,7 +180,7 @@ namespace Enso
 				Log::Error("Destroying %s", GetAssetID());
 
 				// Clean up device memory
-				m_allocator.GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
+				AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceParams.capacity, &cu_deviceData);
 				m_deviceParams.size = 0;
 				m_deviceParams.capacity = 0;
 
@@ -206,7 +204,7 @@ namespace Enso
 				}
 
 				// Destroy the device instance
-				m_allocator.DestroyOnDevice(cu_deviceInstance);
+				AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 			}
 
 			__host__ __inline__ VectorBase& operator=(const std::vector<HostType>& rhs)
@@ -354,7 +352,7 @@ namespace Enso
 				// Lazily initialise the device instance so we can use this class as an ordinary host vector without additional overhead
 				if (cu_deviceInstance == nullptr)
 				{
-					cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::Vector<DeviceType>>();
+					cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::Vector<DeviceType>>(*this);
 				}
 				return cu_deviceInstance;
 			}
@@ -406,7 +404,7 @@ namespace Enso
 
 					// Allocate a new block of memory
 					DeviceType* newDeviceData = nullptr;
-					m_allocator.GuardedAllocDeviceArray(newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
+					AssetAllocator::GuardedAllocDeviceArray(*this, newCapacity, &newDeviceData, (m_localParams.flags & kVectorUnifiedMemory) ? kCudaMemoryManaged : 0u);
 
 					// If we're syncing from host to device, don't copy the data from the old device buffer because it'll just get overwritten anyway
 					if (cu_deviceData)
@@ -417,7 +415,7 @@ namespace Enso
 						}
 
 						// Deallocate the old memory
-						m_allocator.GuardedFreeDeviceArray(m_deviceParams.capacity, &cu_deviceData);
+						AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceParams.capacity, &cu_deviceData);
 					}
 
 					m_deviceParams.capacity = newCapacity;
@@ -560,7 +558,7 @@ namespace Enso
 			}
 		};
 
-		// Requires that HostType inherit AssetTags
+		// Stores an array of asset handles of object HostType and corresponding device pointers to DeviceType
 		template<typename HostType, typename DeviceType>
 		class AssetVector : public VectorBase<AssetHandle<typename HostType>, DeviceType*>
 		{

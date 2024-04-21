@@ -3,6 +3,7 @@
 #include "math/Math.cuh"
 #include "io/Serialisable.cuh"
 #include "DirtinessGraph.cuh"
+#include "AssetAllocator.cuh"
 
 #include <map>
 #include <unordered_set>
@@ -85,47 +86,26 @@ namespace Enso
             __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
             __host__ bool                   HasDAGPath() const { return !m_dagPath.empty(); }
 
-            __host__ bool                   IsChildObject() const { return m_renderObjectFlags & kGenericObjectIsChild; }
+            __host__ bool                   IsChildObject() const { return m_genericObjectFlags & kGenericObjectIsChild; }
             __host__ static uint            GetInstanceFlags() { return 0; }
 
-            __host__ virtual void           OnPreRender() {}
-            __host__ virtual void           OnPostRender() {}
-            __host__ virtual void           OnPreRenderPass(const float wallTime) {}
-            __host__ virtual void           OnPostRenderPass() {}
-            __host__ virtual void           OnUpdateSceneGraph(GenericObjectContainer& sceneObjects, const uint dirtyFlags) {}
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
             __host__ virtual void           Synchronise(const uint flags) {}
 
             __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
             __host__ void SetGenericObjectFlags(const uint flags, const bool set = true)
             {
-                if (set) { m_renderObjectFlags |= flags; }
-                else { m_renderObjectFlags &= ~flags; }
+                if (set) { m_genericObjectFlags |= flags; }
+                else { m_genericObjectFlags &= ~flags; }
             }
 
             __host__ void SetUserFacingGenericObjectFlags(const uint flags)
             {
-                m_renderObjectFlags = (m_renderObjectFlags & ~kGenericObjectUserFacingParameterMask) | 
+                m_genericObjectFlags = (m_genericObjectFlags & ~kGenericObjectUserFacingParameterMask) | 
                                         (flags & kGenericObjectUserFacingParameterMask);
             }
 
-            template<typename Subclass, typename DeligateLambda>
-            __host__ void Listen(Subclass& owner, const std::string& eventID, DeligateLambda deligate)
-            {
-                for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
-                {
-                    if (&it->second.m_owner == static_cast<GenericObject*>(&owner))
-                    {
-                        Log::Error("Internal error: deligate '%s' ['%s' -> '%s'] is already registered", eventID, GetAssetID(), owner.GetAssetID());
-                        return;
-                    }
-                }
-
-                m_actionDeligates.emplace(eventID, EventDeligate(owner,
-                    std::function<void(const GenericObject&, const std::string&)>(std::bind(deligate, &owner, std::placeholders::_1, std::placeholders::_2))));
-            }
-
-            __host__ void  Unlisten(const GenericObject& owner, const std::string& eventID);
+          
 
         protected:
             __host__ GenericObject(const Asset::InitCtx& initCtx);
@@ -158,40 +138,17 @@ namespace Enso
             __host__ void                   OnEvent(const std::string& eventID);
             __host__ void                   RegisterEvent(const std::string& eventID);
 
-            __host__ uint                   SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); return m_dirtyFlags; }
-            __host__ void                   ClearDirtyFlags() { m_dirtyFlags = 0; }
+            //__host__ uint                   SetDirtyFlags(const uint flags, const bool isSet = true) { SetGenericFlags(m_dirtyFlags, flags, isSet); return m_dirtyFlags; }
+            //__host__ void                   ClearDirtyFlags() { m_dirtyFlags = 0; }
 
         protected:    
-            uint                m_dirtyFlags;
+            //uint                m_dirtyFlags;
             bool                m_isFinalised;
             bool                m_isConstructed;
 
-            const AssetAllocator m_allocator;
-
         private:
             std::string             m_dagPath;
-            uint                    m_renderObjectFlags;
-            Device::GenericObject*  cu_deviceInstance;
-
-            struct EventDeligate
-            {
-                EventDeligate(GenericObject& owner, std::function<void(const GenericObject&, const std::string&)>& functor) :
-                    m_owner(owner),
-                    m_functor(functor) {}
-
-                GenericObject&                                                   m_owner;
-                std::function<void(const GenericObject&, const std::string&)>    m_functor;
-
-                bool operator <(const EventDeligate& rhs)
-                {
-                    return std::hash<GenericObject*>{}(&m_owner) < std::hash<GenericObject*>{}(&rhs.m_owner);
-                }
-            };
-
-            using EventDeligateMap = std::multimap <std::string, EventDeligate>;
-            std::unordered_set<std::string>     m_eventRegistry;
-            EventDeligateMap                    m_actionDeligates;
-
+            uint                    m_genericObjectFlags;
         };     
     }      
 }

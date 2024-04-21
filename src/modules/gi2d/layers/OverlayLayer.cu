@@ -144,19 +144,19 @@ namespace Enso
         m_scene(scene)
     {                
         // Create some Cuda objects
-        m_hostAccumBuffer = m_allocator.CreateChildAsset<Host::ImageRGBW>("accumBuffer", width, height, renderStream);
+        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
 
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::OverlayLayer>();
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::OverlayLayer>(*this);
 
         Synchronise(kSyncObjects);
     }
 
     Host::OverlayLayer::~OverlayLayer() noexcept
     {
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();
     }
 
@@ -168,8 +168,6 @@ namespace Enso
 
     __host__ void Host::OverlayLayer::Render()
     {
-        if (!m_dirtyFlags) { return; }
-
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         dim3 blockSize, gridSize;
@@ -177,8 +175,6 @@ namespace Enso
 
         KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
         IsOk(cudaDeviceSynchronize());
-
-        m_dirtyFlags = 0;
     }
 
     __host__ void Host::OverlayLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
@@ -212,10 +208,8 @@ namespace Enso
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
     }*/
 
-    __host__ bool Host::OverlayLayer::Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::OverlayLayer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {        
-        if (SetDirtyFlags(dirtyFlags) == kClean) { return false; }
-
         m_params.viewCtx = viewCtx;
         m_params.selectionCtx = selectionCtx;
          

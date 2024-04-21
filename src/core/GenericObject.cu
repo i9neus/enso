@@ -23,17 +23,10 @@ namespace Enso
 
     __host__ Host::GenericObject::GenericObject(const Asset::InitCtx& initCtx) :
         Dirtyable(initCtx),
-        m_allocator(*this),
-        m_renderObjectFlags(0),
-        m_dirtyFlags(0),
+        m_genericObjectFlags(0),
         m_isFinalised(false),
         m_isConstructed(false)
     {
-    }
-
-    __host__ void Host::GenericObject::SetDeviceInstance(Device::GenericObject* deviceInstance)
-    {
-        cu_deviceInstance = deviceInstance;
     }
     
     __host__ void Host::GenericObject::UpdateDAGPath(const Json::Node& node)
@@ -45,35 +38,5 @@ namespace Enso
         }
 
         SetDAGPath(node.GetDAGPath());
-    }
-    
-    __host__ void Host::GenericObject::RegisterEvent(const std::string& eventID)
-    {
-        AssertMsgFmt(m_eventRegistry.find(eventID) == m_eventRegistry.end(), "Event '%s' already registered", eventID.c_str());
-
-        m_eventRegistry.emplace(eventID);
-    }
-
-    __host__ void Host::GenericObject::Unlisten(const GenericObject& owner, const std::string& eventID)
-    {
-        for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
-        {
-            if (&it->second.m_owner == &owner)
-            {
-                m_actionDeligates.erase(it);
-                return;
-            }
-            ++it;
-        }
-
-        Log::Error("Internal error: deligate '%s' ['%s' -> '%s'] can't be deregistered because it does not exist.", eventID, GetAssetID(), owner.GetAssetID());
-    }
-
-    __host__ void Host::GenericObject::OnEvent(const std::string& eventID)
-    {
-        for (auto it = m_actionDeligates.find(eventID); it != m_actionDeligates.end() && it->first == eventID; ++it)
-        {
-            it->second.m_functor(*this, eventID);
-        }
     }
 }

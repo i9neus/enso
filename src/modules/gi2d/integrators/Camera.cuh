@@ -43,7 +43,7 @@ namespace Enso
         class Camera : public Device::SceneObject
         {
         public:
-            __device__ virtual void Prepare(const uint dirtyFlags);
+            __device__ virtual void Prepare(const bool resetIntegrator);
             __device__ virtual void Integrate();
 
             __device__ virtual bool CreateRay(Ray2D& ray, HitCtx2D& hit, RenderCtx& renderCtx) const = 0;
@@ -68,10 +68,10 @@ namespace Enso
         class Camera : public Host::SceneObject
         {
         public:
-            __host__ virtual void Integrate();
+            __host__ void Integrate();
+            __host__ virtual bool Prepare() override;
             //__host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
             __host__ virtual Device::Camera* GetDeviceInstance() const override { return cu_deviceInstance; }
-            __host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx);
 
         protected:
             __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
@@ -80,13 +80,14 @@ namespace Enso
 
             __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize);
             __host__ void Synchronise(const int syncFlags);
+            __host__ virtual void       OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller) override final;
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
-            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override;
+            __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override;
 
         protected:            
             AssetHandle<Host::AccumulationBuffer>                   m_accumBuffer;
-            AssetHandle<const Host::SceneContainer>               m_scene;
+            AssetHandle<const Host::SceneContainer>                 m_scene;
             CameraParams                                            m_params;
 
             CameraObjects                                           m_deviceObjects;

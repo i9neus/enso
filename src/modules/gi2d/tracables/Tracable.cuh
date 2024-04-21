@@ -59,7 +59,7 @@ namespace Enso
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
-            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override;
+            __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override;
 
             __host__ virtual bool       HasOverlay() const override { return true; }
 

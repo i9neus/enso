@@ -14,21 +14,20 @@ namespace Enso
 
     __host__ Host::BIH2DAsset::BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims) :
         Asset(initCtx),
-        m_allocator(*this),
         cu_deviceInstance(nullptr),
         m_minBuildablePrims(minBuildablePrims)
     {
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::BIH2DAsset>();
-        cu_deviceInterface = m_allocator.StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::BIH2DAsset>(*this);
+        cu_deviceInterface = AssetAllocator::StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = m_allocator.CreateChildAsset<Host::Vector<NodeType>>(tfm::format("%s_nodes", initCtx.id), kVectorHostAlloc);
+        m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, tfm::format("%s_nodes", initCtx.id), kVectorHostAlloc);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset() noexcept
     {
         m_hostNodes.DestroyAsset();
 
-        m_allocator.DestroyOnDevice(cu_deviceInstance);
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
     __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)

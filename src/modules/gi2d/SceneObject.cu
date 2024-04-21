@@ -38,26 +38,17 @@ namespace Enso
 
     __host__ void Host::SceneObject::SetDeviceInstance(Device::SceneObject* deviceInstance)
     {
-        GenericObject::SetDeviceInstance(m_allocator.StaticCastOnDevice<Device::GenericObject>(deviceInstance));
         cu_deviceInstance = deviceInstance;
     }
-
-    __host__ uint Host::SceneObject::OnSelect(const bool isSelected)
-    {
-        if (SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kSceneObjectSelected), isSelected))
-        {
-            SetDirtyFlags(kDirtyUI, true);
-        }
-        return m_dirtyFlags;
-    }
-
-    __host__ uint Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
+    
+    __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         if (stateID == "kMoveSceneObjectBegin")
         {
             m_onMove.dragAnchor = viewCtx.mousePos;
             m_onMove.isDragging = true;
             Log::Error("kMoveSceneObjectBegin");
+            return false;
         }
         else if (stateID == "kMoveSceneObjectDragging")
         {
@@ -70,15 +61,16 @@ namespace Enso
 
             // The geometry internal to this object hasn't changed, but it will affect the 
             Log::Warning("kMoveSceneObjectDragging");
-            SetDirtyFlags(kDirtyObjectBounds);
+            
+            SignalDirty( kDirtyObjectBoundingBox );
+            return true;
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {
             m_onMove.isDragging = false;
             Log::Success("kMoveSceneObjectEnd");
+            return false;
         }
-
-        return m_dirtyFlags;
     }
 
     __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
@@ -100,15 +92,17 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
     {
         const Json::Node sceneNode = node.GetChildObject("sceneobject", flags);
 
+        bool isDirty = false;
         if (sceneNode)
         {
-            if (m_hostInstance.m_params.transform.Deserialise(sceneNode, flags)) { SetDirtyFlags(kDirtyObjectBounds); }
+            isDirty |= m_hostInstance.m_params.transform.Deserialise(sceneNode, flags);
         }
-        return m_dirtyFlags;
+
+        return isDirty;
     }
 
     __host__ void Host::SceneObject::RecomputeWorldSpaceBoundingBox() 

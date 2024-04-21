@@ -3,7 +3,7 @@
 #include "thirdparty/imgui/backends/imgui_impl_win32.h"
 
 #include "modules/gi2d/GI2DModule.h"
-#include "modules/ModuleManager.h"
+#include "modules/ModuleManager.cuh"
 
 namespace Enso
 {

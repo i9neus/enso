@@ -113,9 +113,9 @@ namespace Enso
         m_params.totalAccumUnits = m_params.totalSubprobes * m_params.numHarmonics;
 
         // Create some assets
-        m_hostAccumBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("accumBuffer", m_params.accumBufferSize, kVectorHostAlloc);
-        m_hostReduceBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("reduceBuffer", m_params.accumBufferSize, kVectorHostAlloc);
-        m_hostOutputBuffer = m_allocator.CreateChildAsset<Host::Vector<vec3>>("outputBuffer", m_params.totalGridUnits, kVectorHostAlloc);
+        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "accumBuffer", m_params.accumBufferSize, kVectorHostAlloc);
+        m_hostReduceBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "reduceBuffer", m_params.accumBufferSize, kVectorHostAlloc);
+        m_hostOutputBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "outputBuffer", m_params.totalGridUnits, kVectorHostAlloc);
 
         // Set the device objects
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -127,7 +127,7 @@ namespace Enso
         m_params.kernel.grids.accumSize = (m_params.totalSubprobes + m_params.kernel.blockSize - 1) / m_params.kernel.blockSize;
         m_params.kernel.grids.reduceSize = (m_params.totalAccumUnits + m_params.kernel.blockSize - 1) / m_params.kernel.blockSize;
 
-        cu_deviceInstance = m_allocator.InstantiateOnDevice<Device::AccumulationBuffer>();
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::AccumulationBuffer>(*this);
         Synchronise(kSyncParams | kSyncObjects);
     }
 

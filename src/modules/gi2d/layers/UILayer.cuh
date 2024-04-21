@@ -18,10 +18,9 @@ namespace Enso
         public:           
             virtual ~UILayer() = default;
 
-            __host__ virtual void   OnPreRender() {}
             __host__ virtual void   Render() = 0;
             __host__ virtual void   Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const = 0;
-            __host__ virtual bool   Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) = 0;
+            __host__ virtual bool   Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx) = 0;
 
         protected:
             UILayer() = default;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/Semaphore.h"
-#include "CudaObjectManager.h"
+#include "CudaObjectManager.cuh"
 #include "core/StateGraph.h"
 #include <mutex>
 #include <atomic>
@@ -95,11 +95,11 @@ namespace Enso
         }
 #undef IsDownImpl
 
-        inline void SetDirtyFlags(const uint code, bool isSet = true)
+        /*inline void SetDirtyFlags(const uint code, bool isSet = true)
         {
             if (isSet) { m_dirtyFlags |= code; }
             else { m_dirtyFlags &= ~code; }
-        }
+        }*/
 
     private:
         void RunThread();
@@ -137,7 +137,6 @@ namespace Enso
         std::mutex			                            m_jsonOutputMutex;
         std::mutex                                      m_resourceMutex;
 
-        std::atomic<uint>                               m_dirtyFlags;
         Semaphore                                       m_renderSemaphore;
 
         UIStateGraph                                    m_uiGraph;

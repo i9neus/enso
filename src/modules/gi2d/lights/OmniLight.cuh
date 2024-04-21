@@ -66,12 +66,12 @@ namespace Enso
             __host__ OmniLight(const Asset::InitCtx& initCtx);
             __host__ virtual ~OmniLight() noexcept;
 
-            __host__ virtual uint       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
+            __host__ virtual bool       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
             //__host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
-            __host__ virtual bool       Rebuild(const uint parentFlags, const UIViewCtx& viewCtx);
+            __host__ virtual bool       Rebuild() override final;
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>&);
             __host__ static const std::string  GetAssetClassStatic() { return "omnilight"; }
@@ -85,7 +85,7 @@ namespace Enso
             }
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
-            __host__ virtual uint       Deserialise(const Json::Node& rootNode, const int flags) override final;
+            __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
         protected:
             __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
