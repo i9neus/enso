@@ -55,7 +55,7 @@ namespace Enso
         class Tracable : public Host::SceneObject
         {
         public:
-            __host__ virtual void       SetLightIdx(const int idx) { m_hostInstance.m_params.lightIdx = idx; }
+            __host__ virtual void       SetLightIdx(const int idx) { m_hostInstance->m_params.lightIdx = idx; }
             __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
@@ -65,7 +65,7 @@ namespace Enso
 
 
         protected:
-            __host__ Tracable(const Asset::InitCtx& initCtx, Device::Tracable& hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
+            __host__ Tracable(const Asset::InitCtx& initCtx, Device::Tracable* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ void SetDeviceInstance(Device::Tracable* deviceInstance);
             
             __host__ virtual void Synchronise(const uint syncFlags) override;
@@ -78,7 +78,7 @@ namespace Enso
             }
             m_onMove;
 
-            Device::Tracable&               m_hostInstance;
+            Device::Tracable*               m_hostInstance = nullptr;
             Device::Tracable*               cu_deviceInstance;
         };
     }

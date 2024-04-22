@@ -69,9 +69,11 @@ namespace Enso
     }
 
     Host::VoxelProxyGrid::VoxelProxyGrid(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene) :
-        Camera(initCtx, m_hostInstance, scene),
+        Camera(initCtx, &m_hostInstance, scene),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::VoxelProxyGrid>(*this))
     {
+        m_hostInstance.SceneObject::m_params.worldBBox = m_hostInstance.SceneObject::m_params.objectBBox + m_hostInstance.SceneObject::m_params.transform.trans;
+
         Camera::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
 
         constexpr uint kGridWidth = 100;

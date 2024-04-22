@@ -64,8 +64,6 @@ namespace Enso
         public:
             __device__ GenericObject() {}
             __device__ virtual ~GenericObject() {}
-
-            __host__ __device__ virtual void    OnSynchronise(const int) {}
         };
     }
 

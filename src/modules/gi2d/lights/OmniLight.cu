@@ -55,12 +55,10 @@ namespace Enso
         return length(GetTransform().trans - hit.p) * powf(2.0f, m_params.lightIntensity);
     }
 
-    __device__ void Device::OmniLight::OnSynchronise(const int syncFlags)
+    __host__ __device__ void Device::OmniLight::Synchronise(const OmniLightParams& params)
     {
-        if (syncFlags == kSyncParams)
-        {
-            m_primitive = Ellipse(vec2(0.f), m_params.lightRadius);
-        }
+        m_params = params;
+        m_primitive = Ellipse(vec2(0.f), m_params.lightRadius);
     }
 
     __host__ AssetHandle<Host::GenericObject> Host::OmniLight::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene)
@@ -69,7 +67,7 @@ namespace Enso
     }
 
     __host__ Host::OmniLight::OmniLight(const Asset::InitCtx& initCtx) :
-        Host::Light(initCtx, m_hostInstance),
+        Host::Light(initCtx, &m_hostInstance),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::OmniLight>(*this))
     {
         Light::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Light>(cu_deviceInstance));
@@ -89,7 +87,7 @@ namespace Enso
         if (syncFlags & kSyncParams) 
         { 
             SynchroniseObjects<>(cu_deviceInstance, m_hostInstance.m_params); 
-            m_hostInstance.OnSynchronise(syncFlags);
+            m_hostInstance.Synchronise(m_hostInstance.m_params);
         }
     }
 
@@ -154,7 +152,8 @@ namespace Enso
 
     __host__ bool Host::OmniLight::Rebuild()
     {        
-        RecomputeBoundingBoxes();
+        Light::Rebuild();
+
         Synchronise(kSyncParams);
 
         return IsConstructed();
@@ -186,7 +185,7 @@ namespace Enso
         return m_hostInstance.OnMouseClick(viewCtx);
     }
 
-    __host__ BBox2f Host::OmniLight::RecomputeObjectSpaceBoundingBox()
+    __host__ BBox2f Host::OmniLight::GetObjectSpaceBoundingBox()
     {
         return BBox2f(-vec2(m_hostInstance.m_params.lightRadius), vec2(m_hostInstance.m_params.lightRadius));
     }

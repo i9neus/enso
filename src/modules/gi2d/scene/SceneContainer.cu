@@ -19,8 +19,8 @@ namespace Enso
         m_hostCameras = AssetAllocator::CreateChildAsset<Host::CameraContainer>(*this, "cameras", kVectorHostAlloc);
         m_hostSceneObjects = AssetAllocator::CreateChildAsset<Host::SceneObjectContainer>(*this, "widgets", kVectorHostAlloc);
 
-        m_hostTracableBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "tracablebih", 1);
-        m_hostSceneBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "widgetbih", 1);
+        m_hostTracableBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "tracablebih", 3);
+        m_hostSceneBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "widgetbih", 3);
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -87,8 +87,7 @@ namespace Enso
     }
 
     __host__ void Host::SceneContainer::Synchronise(const uint flags)
-    {
-        // Sync the scene objects with the device
+    {       
         m_hostTracables->Synchronise(kVectorSyncUpload);
         m_hostLights->Synchronise(kVectorSyncUpload);
         m_hostCameras->Synchronise(kVectorSyncUpload);
@@ -97,10 +96,11 @@ namespace Enso
 
     __host__ void Host::SceneContainer::Summarise() const
     {
-        Log::Write("%i scene objects", m_hostSceneObjects->Size());
-        Log::Write("%i cameras", m_hostCameras->Size());
-        Log::Write("Tracable BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
-        Log::Write("Scene BIH: %s", m_hostSceneBIH->GetBoundingBox().Format());
+        Log::Indent("Rebuilt scene:");
+        Log::Debug("%i scene objects", m_hostSceneObjects->Size());
+        Log::Debug("%i cameras", m_hostCameras->Size());
+        Log::Debug("Tracable BIH: %s", m_hostTracableBIH->GetBoundingBox().Format());
+        Log::Debug("Scene BIH: %s", m_hostSceneBIH->GetBoundingBox().Format());
     }
 
     __host__ bool Host::SceneContainer::Serialise(Json::Node& rootNode, const int flags) const

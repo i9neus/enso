@@ -55,15 +55,15 @@ namespace Enso
             
             __host__ __device__ const BidirectionalTransform2D& GetTransform() const { return m_params.transform; }
             __host__ __device__ const BBox2f&            GetWorldBBox() const { return m_params.worldBBox; }
-            __host__ __device__ const BBox2f&            GetObjectBBox() const { return m_params.objectBBox; }
+            __host__ __device__ const BBox2f&            GetObjectBBox() const { return m_params.objectBBox; }            SceneObjectParams m_params;
+
 
         protected:
-            __device__ SceneObject() {}
+            __host__ __device__  SceneObject() {}
 
             __device__ bool                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
             __host__ __device__ BidirectionalTransform2D& GetTransform() { return m_params.transform; }
 
-            SceneObjectParams m_params;
 
         private:
             BBox2f m_handleInnerBBox;
@@ -77,12 +77,12 @@ namespace Enso
         public:
             //__host__ virtual bool       Finalise() = 0;
 
-            __host__ virtual bool       Rebuild() = 0;
-            __host__ virtual bool       Prepare() { return true; }
+            __host__ virtual bool       Rebuild();
+            __host__ virtual bool       Prepare();
 
             __host__ virtual bool       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
-            __host__ virtual bool       OnSelect(const bool isSelected) { return true; }
+            __host__ virtual bool       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
             __host__ virtual bool       IsTransformable() const { return true; }
@@ -94,8 +94,8 @@ namespace Enso
             //__host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
             __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
             
-            __host__ virtual const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_params.objectBBox; }
-            __host__ virtual const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_params.worldBBox; }
+            __host__ virtual BBox2f GetObjectSpaceBoundingBox() = 0;
+            __host__ virtual BBox2f GetWorldSpaceBoundingBox();
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
@@ -120,13 +120,10 @@ namespace Enso
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
+            __host__ SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
             __host__ virtual void           Synchronise(const uint flags) override;
            
-            __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() = 0;
-            __host__ void RecomputeWorldSpaceBoundingBox();
-            __host__ void RecomputeBoundingBoxes();
             __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
             __host__ const BidirectionalTransform2D& GetTransform() const { return m_hostInstance.m_params.transform; }
 

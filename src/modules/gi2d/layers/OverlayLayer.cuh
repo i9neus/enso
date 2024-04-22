@@ -43,7 +43,6 @@ namespace Enso
             __device__ void Render();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
-            __host__ __device__ virtual void OnSynchronise(const int) override final;
             __device__ void Synchronise(const OverlayLayerParams& params) { m_params = params; }
             __device__ void Synchronise(const OverlayLayerObjects& objects) { objects.Validate(); m_objects = objects; }
 

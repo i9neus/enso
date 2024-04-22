@@ -19,11 +19,6 @@ namespace Enso
         gridCtx.majorLineSpacing = 1.0f;
     }
 
-    __host__ __device__ void Device::OverlayLayer::OnSynchronise(const int syncFlags)
-    {
-
-    }
-
     __device__ void Device::OverlayLayer::Composite(Device::ImageRGBA* deviceOutputImage)
     {
         CudaAssertDebug(deviceOutputImage);
@@ -60,7 +55,8 @@ namespace Enso
                     L = Blend(L, LPrim);
                 }
 
-                if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
+                if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY))
+                    L = vec4(kRed, 1.0f);
             }
             return false;
         };

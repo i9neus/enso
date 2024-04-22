@@ -94,8 +94,11 @@ namespace Enso
     }
 
     __host__ Host::PerspectiveCamera::PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene) :
-        Host::Camera(initCtx, m_hostInstance, scene)
+        Host::Camera(initCtx, &m_hostInstance, scene)
     {
+        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PerspectiveCamera>(*this);
+        Camera::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
+        
         m_ui.hostLineSegments = AssetAllocator::CreateChildAsset<Host::Vector<LineSegment>>(*this, "uiLineSegments", kVectorHostAlloc);
         m_ui.hostUIHandles = AssetAllocator::CreateChildAsset<Host::Vector<UIHandle>>(*this, "uiHandles", kVectorHostAlloc);
 
@@ -103,8 +106,6 @@ namespace Enso
         constexpr uint kGridHeight = 1;
         constexpr uint kNumHarmonics = 1;
         constexpr size_t kAccumBufferSize = 1000;
-
-        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PerspectiveCamera>(*this);
 
         // Construct the camera
         Camera::Initialise(kGridWidth * kGridHeight, kNumHarmonics, kAccumBufferSize);
@@ -118,7 +119,14 @@ namespace Enso
         m_hostInstance.m_objects.ui.lineSegments = &(*m_ui.hostLineSegments);
         m_hostInstance.m_objects.ui.handles = &(*m_ui.hostUIHandles);
 
-        Synchronise(kSyncObjects);
+        // Construct UI elements
+        m_ui.hostLineSegments->Resize(3);
+        m_ui.hostUIHandles->Resize(2);
+
+        ConstructUIHandlesFromAxis(vec2(0.f, 0.f));
+        ConstructUIWireframes();
+
+        Synchronise(kSyncObjects | kSyncParams);
     }
 
     __host__ Host::PerspectiveCamera::~PerspectiveCamera() noexcept
@@ -200,9 +208,11 @@ namespace Enso
         }
 
         // If the object is dirty, recompute the bounding box
-        SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
-        UpdateUIHandles(m_hostInstance.m_params.cameraAxis);
-        UpdateUIWireframes();
+        ConstructUIHandlesFromAxis(m_hostInstance.m_params.cameraAxis);
+        ConstructUIWireframes();
+        UpdateObjectSpaceBoundingBox();
+
+        SignalDirty(kDirtyObjectRebuild);
 
         return true;
     }
@@ -214,7 +224,7 @@ namespace Enso
         // Render the control handles
         if (GetAxisHandle().OnDelegateAction(stateID, keyMap, mouseLocal))
         {
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+            SignalDirty(kDirtyObjectRebuild);
         }
               
         return true;
@@ -222,15 +232,16 @@ namespace Enso
 
     __host__ bool Host::PerspectiveCamera::Rebuild()
     {
+        SceneObject::Rebuild();
+        
         // Create an orthonomal basis
         const vec2 dir = SafeNormalize(GetAxisHandle().GetCentroid());
         m_hostInstance.m_params.fwdBasis = mat2(dir, vec2(-dir.y, dir.x));
         m_hostInstance.m_params.invBasis = transpose(m_hostInstance.m_params.fwdBasis);
         m_hostInstance.m_params.cameraPos = GetTransform().trans;
 
-        UpdateUIWireframes();
-        RecomputeBoundingBoxes();
-
+        ConstructUIWireframes();
+        UpdateObjectSpaceBoundingBox();
         Synchronise(kSyncObjects | kSyncParams);
 
         return true;
@@ -271,17 +282,15 @@ namespace Enso
         return kSceneObjectInvalidSelect;
     }
 
-    __host__ BBox2f Host::PerspectiveCamera::RecomputeObjectSpaceBoundingBox()
+    __host__ void Host::PerspectiveCamera::UpdateObjectSpaceBoundingBox()
     {
-        // NOTE: UpdateUIElements() must be called before this method
-
-        BBox2f bBox;
-        for (const auto& segment : *m_ui.hostLineSegments) { bBox = Union(bBox, segment.GetBoundingBox()); }
-        for (const auto& control : *m_ui.hostUIHandles)    { bBox = Union(bBox, control.GetBoundingBox()); }
-        return bBox;
+        // Caches the object space bounding box
+        m_objectSpaceBBox.MakeInvalid();
+        for (const auto& segment : *m_ui.hostLineSegments) { m_objectSpaceBBox = Union(m_objectSpaceBBox, segment.GetBoundingBox()); }
+        for (const auto& control : *m_ui.hostUIHandles) { m_objectSpaceBBox = Union(m_objectSpaceBBox, control.GetBoundingBox()); }
     }
 
-    __host__ void Host::PerspectiveCamera::UpdateUIWireframes()
+    __host__ void Host::PerspectiveCamera::ConstructUIWireframes()
     {
         constexpr float kFrustumExtent = 0.5f;
         constexpr float kViewPlane = 0.1f;
@@ -290,7 +299,6 @@ namespace Enso
         const vec2 frustum = vec2(cos(theta), sin(theta)) * kFrustumExtent;
         const vec2 viewPlane = vec2(1.f, tan(theta)) * kViewPlane;
 
-        m_ui.hostLineSegments->Resize(3);
         (*m_ui.hostLineSegments)[0] = LineSegment(vec2(0.f), m_hostInstance.m_params.invBasis * frustum);
         (*m_ui.hostLineSegments)[1] = LineSegment(vec2(0.f), m_hostInstance.m_params.invBasis * vec2(frustum.x, -frustum.y));
         (*m_ui.hostLineSegments)[2] = LineSegment(m_hostInstance.m_params.invBasis * viewPlane, m_hostInstance.m_params.invBasis * vec2(viewPlane.x, -viewPlane.y));
@@ -298,17 +306,16 @@ namespace Enso
         // NOTE: Synchronise is called later when the scene is rebuilt
     }
 
-    __host__ void Host::PerspectiveCamera::UpdateUIHandles(const vec2& cameraAxis)
+    __host__ void Host::PerspectiveCamera::ConstructUIHandlesFromAxis(const vec2& cameraAxis)
     {
         constexpr float kHandleRadius = 0.005f;
         constexpr float kViewPlane = 0.1f;
 
-        m_ui.hostUIHandles->Resize(2);
         (*m_ui.hostUIHandles)[0] = UIHandle(vec2(0.f), kHandleRadius);
         (*m_ui.hostUIHandles)[1] = UIHandle(cameraAxis * kViewPlane, kHandleRadius);
     }
 
-    __host__ UIHandle& Host::PerspectiveCamera::GetOriginHandle() { return (*m_ui.hostUIHandles)[0]; }
-    __host__ UIHandle& Host::PerspectiveCamera::GetAxisHandle() { return (*m_ui.hostUIHandles)[1]; }
+    __host__ UIHandle& Host::PerspectiveCamera::GetOriginHandle() { Assert(m_ui.hostUIHandles->Size() == 3); return (*m_ui.hostUIHandles)[0]; }
+    __host__ UIHandle& Host::PerspectiveCamera::GetAxisHandle() { Assert(m_ui.hostUIHandles->Size() == 2); return (*m_ui.hostUIHandles)[1]; }
 
 }

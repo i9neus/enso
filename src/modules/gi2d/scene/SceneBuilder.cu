@@ -12,17 +12,15 @@ namespace Enso
         switch (flag)
         {
         case kDirtyObjectRebuild:
+        case kDirtyObjectBoundingBox:
             {                                 
                 // TODO: We're using the address of the object as the key. This probably isn't consistent with best practices. 
                 m_rebuildQueue[(void*)caller.lock().get()] = caller;
                 break;
             }
-        default:
-            {
-                SetDirty(flag);
-                break;
-            }
         };
+
+        SetDirty(flag);
     }
 
     __host__ Host::SceneBuilder::SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& container) :
@@ -103,8 +101,9 @@ namespace Enso
 
     __host__ void Host::SceneBuilder::Rebuild(bool forceRebuild)
     {        
+        if (!forceRebuild && IsClean()) { return; } // Nothing to do!
+        
         std::lock_guard<std::mutex> lock(m_mutex);
-
         m_lightIdx = 0;
 
         // If there are objects waiting in the delete queue, remove them now
@@ -119,14 +118,14 @@ namespace Enso
         }
 
         // If there are objects waiting in the emplace queue, add them to the full list
-        if (!m_emplaceQueue.empty())
+        /*if (!m_emplaceQueue.empty())
         {
             for (auto& asset : m_emplaceQueue)
             {
                 m_container->m_hostGenericObjects->Emplace(asset);
             }
             m_emplaceQueue.clear();
-        }
+        }*/
 
         // If an object has been added or removed or a complete rebuild has been triggered, build the entire object container
         if (IsDirty(kDirtyObjectExistence) || forceRebuild)

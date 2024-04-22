@@ -102,12 +102,14 @@ namespace Enso
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
             __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
+            __host__ virtual BBox2f     GetObjectSpaceBoundingBox() override final { return m_objectSpaceBBox; }
+
         protected:
-            __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
+            __host__ void               UpdateObjectSpaceBoundingBox();
 
         private:
-            __host__ void               UpdateUIWireframes();
-            __host__ void               UpdateUIHandles(const vec2& cameraAxis);
+            __host__ void               ConstructUIWireframes();
+            __host__ void               ConstructUIHandlesFromAxis(const vec2& cameraAxis);
 
             __host__ UIHandle&          GetOriginHandle();
             __host__ UIHandle&          GetAxisHandle();
@@ -115,6 +117,8 @@ namespace Enso
             Device::PerspectiveCamera*  cu_deviceInstance = nullptr;
             Device::PerspectiveCamera   m_hostInstance;
             PerspectiveCameraObjects    m_deviceObjects;
+
+            BBox2f                      m_objectSpaceBBox;
 
             struct
             {

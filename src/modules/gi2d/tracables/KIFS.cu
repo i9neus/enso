@@ -205,7 +205,7 @@ namespace Enso
     }
 
     __host__ Host::KIFS::KIFS(const Asset::InitCtx& initCtx) :
-        Tracable(initCtx, m_hostInstance, nullptr),
+        Tracable(initCtx, &m_hostInstance, nullptr),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::KIFS>(*this))
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
@@ -257,7 +257,8 @@ namespace Enso
 
     __host__ bool Host::KIFS::Rebuild()
     {
-        RecomputeBoundingBoxes();        
+        Tracable::Rebuild();
+
         Synchronise(kSyncParams); 
         
         return true;
@@ -268,7 +269,7 @@ namespace Enso
         return m_hostInstance.OnMouseClick(viewCtx);
     }
 
-    __host__ BBox2f Host::KIFS::RecomputeObjectSpaceBoundingBox()
+    __host__ BBox2f Host::KIFS::GetObjectSpaceBoundingBox()
     {
         return BBox2f(vec2(-m_hostInstance.m_params.kifs.objectBounds), vec2(m_hostInstance.m_params.kifs.objectBounds));
     }

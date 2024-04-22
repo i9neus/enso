@@ -74,7 +74,7 @@ namespace Enso
             __host__ virtual Device::Camera* GetDeviceInstance() const override { return cu_deviceInstance; }
 
         protected:
-            __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
+            __host__ Camera(const Asset::InitCtx& initCtx, Device::Camera* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ virtual ~Camera() noexcept;
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 

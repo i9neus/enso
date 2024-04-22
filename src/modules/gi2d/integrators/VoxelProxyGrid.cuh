@@ -35,7 +35,7 @@ namespace Enso
         class VoxelProxyGrid : public Device::Camera
         {
         public:
-            __device__ VoxelProxyGrid() {}
+            __host__ __device__ VoxelProxyGrid() {}
 
             __device__ __forceinline__ vec3     Evaluate(const vec2& posWorld) const;
 
@@ -61,7 +61,6 @@ namespace Enso
             VoxelProxyGrid(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene);
             virtual ~VoxelProxyGrid() noexcept;
             
-            __host__ virtual bool Rebuild() override final { return true; }
             __host__ virtual bool IsTransformable() const override final { return false; }
 
             //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>& scene);
@@ -73,9 +72,10 @@ namespace Enso
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
             __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override;
 
+            __host__ virtual BBox2f GetObjectSpaceBoundingBox() override final { return BBox2f::MakeInvalid(); }
+
         protected:
             __host__ void Synchronise(const int syncType);
-            __host__ virtual BBox2f RecomputeObjectSpaceBoundingBox() override final { return BBox2f::MakeInvalid(); }
 
         private:
             Device::VoxelProxyGrid*            cu_deviceInstance = nullptr;

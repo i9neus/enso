@@ -33,7 +33,7 @@ namespace Enso
             __host__ virtual Device::Light* GetDeviceInstance() const = 0;
 
         protected:
-            __host__ Light(const Asset::InitCtx& initCtx, Device::Light& hostInstance) :
+            __host__ Light(const Asset::InitCtx& initCtx, Device::Light* hostInstance) :
                 Tracable(initCtx, hostInstance, nullptr),
                 m_hostInstance(hostInstance)
             {}
@@ -47,7 +47,7 @@ namespace Enso
             }
 
         private:
-            Device::Light&      m_hostInstance;
+            Device::Light*      m_hostInstance = nullptr;
             Device::Light*      cu_deviceInstance = nullptr;
         };
     }

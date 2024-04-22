@@ -244,7 +244,7 @@ namespace Enso
 
     __host__ uint Host::GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
-        //Log::Success("Back home!");
+        Log::Success("Back home!");
         return kUIStateOkay;
     }
 
@@ -532,8 +532,10 @@ namespace Enso
             auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), m_sceneContainer->GenericObjects(), *this, m_sceneContainer);
             m_onCreate.newObject = newObject.DynamicCast<Host::SceneObject>();
 
+            SignalDirty(kDirtyObjectExistence);
+
             // Emplace the new object with the scene builder ready for integration into the scene
-            m_sceneBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
+            //m_sceneBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
@@ -582,7 +584,7 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::OnRender()
     {
-        //m_sceneBuilder->Rebuild(false);
+        m_sceneBuilder->Rebuild(false);
 
         // Render the pass
         if (m_isRunning)

@@ -44,11 +44,12 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Integrate);
 
-    __host__ Host::Camera::Camera(const Asset::InitCtx& initCtx, Device::Camera& hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
-        SceneObject(initCtx, m_hostInstance, scene),
+    __host__ Host::Camera::Camera(const Asset::InitCtx& initCtx, Device::Camera* hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
+        SceneObject(initCtx, hostInstance, scene),
         m_scene(scene),
         m_dirtyFlags(0)
     {
+        
         Listen({ kDirtyIntegrators });
     }
 
@@ -88,10 +89,12 @@ namespace Enso
 
     __host__ bool Host::Camera::Prepare()
     {
+        if (!SceneObject::Prepare()) { return false; }
+
         // If we've already accumuated the specified number of samples, we're done
         if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples)
-        {  
-            return false; 
+        {
+            return false;
         }
         else
         {
@@ -103,7 +106,7 @@ namespace Enso
             }
 
             return true;
-        }
+        }        
     }
 
     __host__ void Host::Camera::Integrate()

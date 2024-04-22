@@ -68,7 +68,6 @@ namespace Enso
 
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
             
-            __host__ __device__ virtual void    OnSynchronise(const int) override final {}
             __host__ __device__ void            Synchronise(const KIFSParams& params);
 
             __host__ __device__ __forceinline__ vec3 EvaluateSDF(vec2 z, const mat2& basis, uint& code) const;
@@ -114,9 +113,9 @@ namespace Enso
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
             __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
+            __host__ virtual BBox2f     GetObjectSpaceBoundingBox() override final;
+
         protected:
-            __host__ bool               Finalise();
-            __host__ virtual BBox2f     RecomputeObjectSpaceBoundingBox() override final;
 
         private:
             Device::KIFS*               cu_deviceInstance = nullptr;

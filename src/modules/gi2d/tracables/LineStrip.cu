@@ -93,7 +93,7 @@ namespace Enso
     }
 
     __host__ Host::LineStrip::LineStrip(const Asset::InitCtx& initCtx) :
-        Tracable(initCtx, m_hostInstance, nullptr),
+        Tracable(initCtx, &m_hostInstance, nullptr),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::LineStrip>(*this))
     {
         SetAttributeFlags(kSceneObjectInteractiveElement);
@@ -206,7 +206,7 @@ namespace Enso
 
     __host__ bool Host::LineStrip::Rebuild()
     {
-        if (!IsDirty(kDirtyObjectRebuild)) { return false; }
+        Tracable::Rebuild();
         
         // Sync the line segments
         auto& segments = *m_hostLineSegments;
@@ -225,16 +225,15 @@ namespace Enso
         };
         m_hostBIH->Build(getPrimitiveBBox);
 
-        //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
+        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
         // Update the tracable bounding boxes
-        RecomputeBoundingBoxes();
-        Synchronise(kSyncObjects);
+        Synchronise(kSyncObjects | kSyncParams);
 
         return true;
     }
 
-    __host__ BBox2f Host::LineStrip::RecomputeObjectSpaceBoundingBox()
+    __host__ BBox2f Host::LineStrip::GetObjectSpaceBoundingBox()
     {
         return m_hostBIH->GetBoundingBox();
     }

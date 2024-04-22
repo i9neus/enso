@@ -30,10 +30,12 @@ namespace Enso
         return false;
     }
 
-    __host__ Host::SceneObject::SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject& hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
+    // FIXME: hostInstance causes segfault when passed by reference. Find out why.
+    __host__ Host::SceneObject::SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
         GenericObject(initCtx),
-        m_hostInstance(hostInstance)
+        m_hostInstance(*hostInstance)
     {
+
     }
 
     __host__ void Host::SceneObject::SetDeviceInstance(Device::SceneObject* deviceInstance)
@@ -73,6 +75,11 @@ namespace Enso
         }
     }
 
+    __host__ bool Host::SceneObject::Rebuild()
+    {
+       return true;
+    }
+
     __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
     {
         GenericObject::Synchronise(syncFlags);
@@ -80,7 +87,6 @@ namespace Enso
         if (syncFlags & kSyncParams)
         {
             SynchroniseObjects<Device::SceneObject>(cu_deviceInstance, m_hostInstance.m_params);
-            m_hostInstance.OnSynchronise(syncFlags);
         }
     }
 
@@ -105,16 +111,26 @@ namespace Enso
         return isDirty;
     }
 
-    __host__ void Host::SceneObject::RecomputeWorldSpaceBoundingBox() 
+    __host__ BBox2f Host::SceneObject::GetWorldSpaceBoundingBox()
     {
-        m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
-        Log::Warning("Rebuilt world bbox: %s", m_hostInstance.m_params.worldBBox.Format());
+        return GetObjectSpaceBoundingBox() + m_hostInstance.m_params.transform.trans;
     }
 
-    __host__ void Host::SceneObject::RecomputeBoundingBoxes()
+    __host__ bool Host::SceneObject::OnSelect(const bool isSelected)
     {
-        m_hostInstance.m_params.objectBBox = RecomputeObjectSpaceBoundingBox();
-        RecomputeWorldSpaceBoundingBox();
+        SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kSceneObjectSelected), isSelected);
+        SignalDirty(kDirtyParams);
+        return true;
     }
 
+    __host__ bool Host::SceneObject::Prepare()
+    {
+        if (IsAnyDirty({ kDirtyParams, kDirtyObjectRebuild, kDirtyObjectBoundingBox }))
+        {
+            m_hostInstance.m_params.objectBBox = GetObjectSpaceBoundingBox();
+            m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
+
+            Synchronise(kSyncParams);
+        }
+    }
 }
