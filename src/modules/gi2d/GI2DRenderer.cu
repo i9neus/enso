@@ -447,7 +447,7 @@ namespace Enso
 
             m_selectionCtx.mouseBBox.upper = m_viewCtx.mousePos;
             m_selectionCtx.lassoBBox = Grow(Rectify(m_selectionCtx.mouseBBox), m_viewCtx.dPdXY * 2.);
-            m_selectionCtx.selectedBBox = BBox2f::MakeInvalid();
+            m_selectionCtx.selectedBBox = BBox2f::Invalid();
             m_selectedObjects.clear();
 
             std::lock_guard <std::mutex> lock(m_resourceMutex);
@@ -714,10 +714,10 @@ namespace Enso
     __host__ void Host::GI2DRenderer::OnFocusChange(const bool isSet)
     {
         // Finalise any objects that are in the process of being created
-        if (m_onCreate.newObject)
+        /*if (m_onCreate.newObject)
         {
             FinaliseNewSceneObject();
-        }
+        }*/
     }
 
     __host__ bool Host::GI2DRenderer::Serialise(Json::Document& json, const int flags)

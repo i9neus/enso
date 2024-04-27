@@ -54,11 +54,11 @@ namespace Enso
     }
 
     __host__ __device__ vec4 Device::PerspectiveCamera::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
-    {
+    {        
         CudaAssertDebug(m_objects.ui.lineSegments->Size() == 3);
         CudaAssertDebug(m_objects.ui.handles->Size() == 2);
 
-        const vec2 pObject = pWorld - GetTransform().trans;
+        const vec2 pObject = ToObjectSpace(pWorld);
         vec4 L(0.f);
 
         // Only render the accumulator when we're on the device
@@ -214,10 +214,8 @@ namespace Enso
 
     __host__ bool Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
     {
-        const vec2 mouseLocal = viewCtx.mousePos - GetTransform().trans;
-
         // Render the control handles
-        if (GetAxisHandle().OnDelegateAction(stateID, keyMap, mouseLocal))
+        if (GetAxisHandle().OnDelegateAction(stateID, keyMap, viewCtx.mousePos - GetTransform().trans))
         {
             SignalDirty(kDirtyObjectRebuild);
         }

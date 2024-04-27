@@ -22,8 +22,8 @@ namespace Enso
         AssertMsg(m_getPrimitiveBBox, "BIH builder does not have a valid bounding box functor.");
 
         // Find the global bounding box
-        BBox2f centroidBBox = BBox2f::MakeInvalid();
-        m_bih.m_treeBBox = BBox2f::MakeInvalid();
+        BBox2f centroidBBox = BBox2f::Invalid();
+        m_bih.m_treeBBox = BBox2f::Invalid();
 
         if (!m_primitiveIdxs.empty())
         {

@@ -27,9 +27,13 @@ namespace Enso
             lower(OtherType(other.lower.x), OtherType(other.lower.y)), 
             upper(OtherType(other.upper.x), OtherType(other.upper.y)) {}
 
-        __host__ __device__ __forceinline__ static BBox2 MakeInfinite() { return BBox2(-kFltMax, -kFltMax, kFltMax, kFltMax); }
-        __host__ __device__ __forceinline__ static BBox2 MakeInvalid() { return BBox2(kFltMax, kFltMax, -kFltMax, -kFltMax); }
-        __host__ __device__ __forceinline__ static BBox2 MakeZeroArea() { return BBox2(); }
+        __host__ __device__ __forceinline__ static BBox2 Infinite() { return BBox2(-kFltMax, -kFltMax, kFltMax, kFltMax); }
+        __host__ __device__ __forceinline__ static BBox2 Invalid() { return BBox2(kFltMax, kFltMax, -kFltMax, -kFltMax); }
+        __host__ __device__ __forceinline__ static BBox2 ZeroArea() { return BBox2(); }
+
+        __host__ __device__ __forceinline__ void MakeInfinite() {  *this = Infinite(); }
+        __host__ __device__ __forceinline__ void MakeInvalid() { *this = Invalid(); }
+        __host__ __device__ __forceinline__ void MakeZeroArea() { *this = ZeroArea(); }
 
         __host__ __device__ __forceinline__ bool HasZeroArea() const { return upper.x == lower.x || upper.y == lower.y; }
         __host__ __device__ __forceinline__ bool HasPositiveArea() const { return upper.x > lower.x && upper.y > lower.y; }

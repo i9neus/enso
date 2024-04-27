@@ -66,6 +66,9 @@ namespace Enso
 
     __host__ void Host::SceneBuilder::SortSceneObject(AssetHandle<Host::SceneObject>& sceneObject)
     {
+        // All objects go into the universal BIH
+        m_container->m_hostSceneObjects->EmplaceBack(sceneObject);
+        
         // If this is a camera object, add it to the list of cameras but not the list of scene objects
         auto camera = sceneObject.DynamicCast<Host::Camera>();
         if (camera)
@@ -77,9 +80,6 @@ namespace Enso
             // If the object can be transformed, add it to the list of scene objects
             if (sceneObject->IsTransformable())
             {
-                // Ordinary objects go into the universal BIH
-                m_container->m_hostSceneObjects->EmplaceBack(sceneObject);
-
                 // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
                 auto tracable = sceneObject.DynamicCast<Host::Tracable>();
                 if (tracable)
