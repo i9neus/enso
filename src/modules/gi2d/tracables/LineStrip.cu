@@ -74,16 +74,16 @@ namespace Enso
     {
         if (!m_objects.bih) { return vec4(0.0f); }
 
-        const vec2 pLocal = pWorld - GetTransform().trans;
+        const vec2 pObject = ToObjectSpace(pWorld);
         vec4 L(0.0f);
         const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
 
-        m_objects.bih->TestPoint(pLocal, [&, this](const uint* idxRange) -> bool
+        m_objects.bih->TestPoint(pObject, [&, this](const uint* idxRange) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
                     const auto& segment = (*m_objects.lineSegments)[idx];
-                    const vec4 line = segment.EvaluateOverlay(pLocal, overlayCtx);
+                    const vec4 line = segment.EvaluateOverlay(pObject, overlayCtx);
                     if (line.w > 0.f) { L = Blend(L, line); }
                 }
                 return false;
@@ -140,22 +140,18 @@ namespace Enso
         }
     }
 
-    __host__ bool Host::LineStrip::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::LineStrip::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen")
         {
-            GetTransform().trans = viewCtx.mousePos;
-
             Log::Success("Opened path %s", GetAssetID());
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (!m_hostLineSegments->IsEmpty())
             {
-                m_hostLineSegments->Back().Set(1, mousePosLocal);
+                m_hostLineSegments->Back().Set(1, mousePosObject);
             }
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
@@ -164,15 +160,13 @@ namespace Enso
             if (m_hostLineSegments->IsEmpty())
             {
                 // Create a zero-length segment that will be manipulated later
-                m_hostLineSegments->PushBack(LineSegment(mousePosLocal, mousePosLocal));
+                m_hostLineSegments->PushBack(LineSegment(mousePosObject, mousePosObject));
             }
             else
             {
                 // Any more and we simply reuse the last vertex on the path as the start of the next segment
-                m_hostLineSegments->PushBack(LineSegment(m_hostLineSegments->Back()[1], mousePosLocal));
+                m_hostLineSegments->PushBack(LineSegment(m_hostLineSegments->Back()[1], mousePosObject));
             }
-
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else if (stateID == "kCreateSceneObjectClose")
         {
@@ -184,14 +178,13 @@ namespace Enso
 
             Log::Warning("Closed path %s", GetAssetID());
             m_isFinalised = true;
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
         else
         {
             AssertMsg(false, "Invalid state");
         }
 
-        return m_isFinalised;
+        return true;
     }
 
     __host__ uint Host::LineStrip::OnMouseClick(const UIViewCtx& viewCtx) const

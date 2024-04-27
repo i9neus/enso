@@ -80,7 +80,6 @@ namespace Enso
             __host__ PerspectiveCamera(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ virtual ~PerspectiveCamera() noexcept;
 
-            __host__ virtual bool       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
             //__host__ virtual uint       OnMove(const std::string& stateID, const UIViewCtx& viewCtx) override final;
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) override final;
@@ -105,6 +104,8 @@ namespace Enso
             __host__ virtual BBox2f     GetObjectSpaceBoundingBox() override final { return m_objectSpaceBBox; }
 
         protected:
+            __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
+
             __host__ void               UpdateObjectSpaceBoundingBox();
 
         private:

@@ -165,36 +165,33 @@ namespace Enso
         return m_dirtyFlags;
     }*/
 
-    __host__ bool Host::PerspectiveCamera::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::PerspectiveCamera::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
         //AssertInThread("kMainThread");
-
-        Log::Warning(stateID);
 
         if (stateID == "kCreateSceneObjectOpen")
         {
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
-            GetTransform().trans = viewCtx.mousePos;
             m_hostInstance.m_params.cameraAxis = vec2(0.f, 0.f);
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
-                m_hostInstance.m_params.cameraAxis = SafeNormalize(viewCtx.mousePos - GetTransform().trans);
+                m_hostInstance.m_params.cameraAxis = SafeNormalize(mousePosObject);
             }
             else
             {
-                GetTransform().trans = viewCtx.mousePos;
+                SetTransform(viewCtx.mousePos);
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             if (!m_onCreate.isCentroidSet)
             {
-                GetTransform().trans = viewCtx.mousePos;
+                SetTransform(viewCtx.mousePos);
                 m_onCreate.isCentroidSet = true;
             }
             else
@@ -211,8 +208,6 @@ namespace Enso
         ConstructUIHandlesFromAxis(m_hostInstance.m_params.cameraAxis);
         ConstructUIWireframes();
         UpdateObjectSpaceBoundingBox();
-
-        SignalDirty(kDirtyObjectRebuild);
 
         return true;
     }

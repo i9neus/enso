@@ -10,7 +10,7 @@ namespace Enso
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.f); }
 
-        return m_primitive.EvaluateOverlay(pWorld - GetTransform().trans, OverlayCtx::MakeStroke(viewCtx, vec4(1.), 3.f));
+        return m_primitive.EvaluateOverlay(ToObjectSpace(pWorld), OverlayCtx::MakeStroke(viewCtx, vec4(1.), 3.f));
     }
 
     __host__ __device__ uint Device::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const
@@ -102,7 +102,7 @@ namespace Enso
         return m_dirtyFlags;
     }*/
 
-    __host__ bool Host::OmniLight::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::OmniLight::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
         //AssertInThread("kMainThread");
 
@@ -113,25 +113,24 @@ namespace Enso
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
-            m_hostInstance.GetTransform().trans = viewCtx.mousePos;
             m_hostInstance.m_params.lightRadius = viewCtx.dPdXY;
         }
         else if (stateID == "kCreateSceneObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
-                m_hostInstance.m_params.lightRadius = length(m_hostInstance.GetTransform().trans - viewCtx.mousePos);
+                m_hostInstance.m_params.lightRadius = length(mousePosObject);
             }
             else
             {
-                m_hostInstance.GetTransform().trans = viewCtx.mousePos;
+                SetTransform(viewCtx.mousePos);
             }
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             if (!m_onCreate.isCentroidSet)
             {
-                m_hostInstance.GetTransform().trans = viewCtx.mousePos;
+                SetTransform(viewCtx.mousePos);
                 m_hostInstance.m_params.lightRadius = viewCtx.dPdXY;
                 m_onCreate.isCentroidSet = true;
             }

@@ -196,7 +196,7 @@ namespace Enso
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
         
-        vec2 pObject = pWorld - GetTransform().trans;
+        const vec2 pObject = ToObjectSpace(pWorld);
         uint code;
         vec3 F = EvaluateSDF(pObject, mat2(1.0f, 0.0f, 0.0f, 1.0f), code);
 
@@ -235,24 +235,22 @@ namespace Enso
         }
     }
 
-    __host__ bool Host::KIFS::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::KIFS::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
-        const vec2 mousePosLocal = viewCtx.mousePos - GetTransform().trans;
         if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
         {
-            GetTransform().trans = viewCtx.mousePos;
-            m_isConstructed = true;
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
-
+            m_isConstructed = true;            
             if (stateID == "kCreateSceneObjectOpen") { Log::Success("Opened KIFS %s", GetAssetID()); }
+
+            return true;
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
             m_isFinalised = true;
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     __host__ bool Host::KIFS::Rebuild()

@@ -152,7 +152,7 @@ namespace Enso
                 }
                 else
                 {
-                    auto sceneObject = AssetHandle<Host::Asset>(it.second).DynamicCast<Host::SceneObject>();  
+                    AssetHandle<Host::SceneObject> sceneObject = AssetHandle<Host::Asset>(it.second).DynamicCast<Host::SceneObject>();
                     if (sceneObject)
                     {
                         sceneObject->Rebuild();

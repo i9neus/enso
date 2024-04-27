@@ -75,6 +75,7 @@ namespace Enso
             __host__ virtual BBox2f GetObjectSpaceBoundingBox() override final { return BBox2f::MakeInvalid(); }
 
         protected:
+            __host__ bool OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final { return false; }
             __host__ void Synchronise(const int syncType);
 
         private:

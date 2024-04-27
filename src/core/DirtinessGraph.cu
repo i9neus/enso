@@ -13,10 +13,27 @@ namespace Enso
         m_dirtyFlags.emplace(flag);
     }
 
+    __host__ void Host::Dirtyable::SetDirty(const std::vector<DirtinessKey>& flagList)
+    {
+        m_dirtyFlags.insert(flagList.begin(), flagList.end());
+    }
+
+    __host__ void Host::Dirtyable::SignalDirty()
+    {
+        auto& graph = DirtinessGraph::Get();
+        for (const auto& flag : m_dirtyFlags)
+        {            
+            graph.OnDirty(flag, GetAssetHandle());
+        }
+    }
+
     __host__ void Host::Dirtyable::SignalDirty(const DirtinessKey& flag)
     {
-        m_dirtyFlags.emplace(flag);
-        DirtinessGraph::Get().OnDirty(flag, GetAssetHandle());
+        if (m_dirtyFlags.find(flag) == m_dirtyFlags.end())
+        {
+            m_dirtyFlags.emplace(flag);
+            DirtinessGraph::Get().OnDirty(flag, GetAssetHandle());
+        }
     }
 
     __host__ void Host::Dirtyable::SignalDirty(const std::vector<DirtinessKey>& flagList)
@@ -24,8 +41,7 @@ namespace Enso
         auto& graph = DirtinessGraph::Get();
         for (const auto& flag : flagList)
         {
-            m_dirtyFlags.emplace(flag);
-            graph.OnDirty(flag, GetAssetHandle());
+            SignalDirty(flag);
         }
     }
 

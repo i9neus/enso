@@ -42,6 +42,27 @@ namespace Enso
     {
         cu_deviceInstance = deviceInstance;
     }
+
+    __host__ void Host::SceneObject::SetTransform(const vec2& trans)
+    {
+        m_hostInstance.m_params.transform.trans = trans;
+    }
+
+    __host__ bool Host::SceneObject::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    {
+        // Handle the open event by initialising the transform
+        if (stateID == "kCreateSceneObjectOpen")
+        {
+            m_hostInstance.m_params.transform.trans = viewCtx.mousePos;
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+        }
+
+        // Call the virtual method implemented by inheriting classes. If they return true, signal the scene graph as dirty.
+        if (OnCreateSceneObject(stateID, viewCtx, viewCtx.mousePos - m_hostInstance.m_params.transform.trans))
+        {
+            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+        }
+    }
     
     __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {

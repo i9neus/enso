@@ -12,7 +12,7 @@ namespace Enso
         Json::Document rootNode;
         if (!inCmd.Flush(rootNode)) { return; }
 
-        if (debug) { Log::Debug(rootNode.Stringify(true)); }
+        //if (debug) { Log::Debug(rootNode.Stringify(true)); }
 
         try
         {

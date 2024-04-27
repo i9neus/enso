@@ -46,7 +46,7 @@ namespace Enso
             friend Host::SceneObject;
 
         public:
-            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& p, const UIViewCtx& viewCtx, const bool isMouseTest) const { return vec4(0.0f); }
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const { return vec4(0.f); }
 
             __host__ __device__ const BBox2f&   GetObjectSpaceBoundingBox() const { return m_params.objectBBox; };
             __host__ __device__ const BBox2f&   GetWorldSpaceBoundingBox() const { return m_params.worldBBox; };
@@ -64,6 +64,10 @@ namespace Enso
             __device__ bool                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
             __host__ __device__ BidirectionalTransform2D& GetTransform() { return m_params.transform; }
 
+            __host__ __device__ __forceinline__ vec2 ToObjectSpace(const vec2& pWorld) const
+            {
+                return pWorld - m_params.transform.trans;
+            }
 
         private:
             BBox2f m_handleInnerBBox;
@@ -79,8 +83,8 @@ namespace Enso
 
             __host__ virtual bool       Rebuild();
             __host__ virtual bool       Prepare();
-
-            __host__ virtual bool       OnCreate(const std::string& stateID, const UIViewCtx& viewCtx) { return 0u; }
+            
+            __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual bool       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
@@ -122,7 +126,10 @@ namespace Enso
         protected:
             __host__ SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
-            __host__ virtual void           Synchronise(const uint flags) override;
+            __host__ virtual void       Synchronise(const uint flags) override;
+
+            __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) = 0;
+            __host__ void               SetTransform(const vec2& trans);
            
             __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
             __host__ const BidirectionalTransform2D& GetTransform() const { return m_hostInstance.m_params.transform; }

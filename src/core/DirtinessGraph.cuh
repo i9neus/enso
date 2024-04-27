@@ -75,6 +75,9 @@ namespace Enso
             __host__ virtual void       OnClean() {}
 
             __host__ void               SetDirty(const DirtinessKey& flag);
+            __host__ void               SetDirty(const std::vector<DirtinessKey>& flagList);
+
+            __host__ void               SignalDirty();
             __host__ void               SignalDirty(const DirtinessKey& flag);
             __host__ void               SignalDirty(const std::vector<DirtinessKey>& flagList);
 

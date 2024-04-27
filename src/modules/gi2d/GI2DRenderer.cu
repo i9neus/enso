@@ -625,6 +625,7 @@ namespace Enso
 
         // Clean all the objects in the scene container ready for the next iteration
         m_sceneContainer->Clean();
+        Clean();
     }
 
     __host__ void Host::GI2DRenderer::OnKey(const uint code, const bool isSysKey, const bool isDown)
