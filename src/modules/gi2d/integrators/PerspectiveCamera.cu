@@ -207,7 +207,6 @@ namespace Enso
         // If the object is dirty, recompute the bounding box
         ConstructUIHandlesFromAxis(m_hostInstance.m_params.cameraAxis);
         ConstructUIWireframes();
-        UpdateObjectSpaceBoundingBox();
 
         return true;
     }
@@ -234,7 +233,7 @@ namespace Enso
         m_hostInstance.m_params.cameraPos = GetTransform().trans;
 
         ConstructUIWireframes();
-        UpdateObjectSpaceBoundingBox();
+        RecomputeBoundingBoxes();
         Synchronise(kSyncObjects | kSyncParams);
 
         return true;
@@ -275,12 +274,13 @@ namespace Enso
         return kSceneObjectInvalidSelect;
     }
 
-    __host__ void Host::PerspectiveCamera::UpdateObjectSpaceBoundingBox()
+    __host__ BBox2f Host::PerspectiveCamera::ComputeObjectSpaceBoundingBox()
     {
         // Caches the object space bounding box
-        m_objectSpaceBBox.MakeInvalid();
-        for (const auto& segment : *m_ui.hostLineSegments) { m_objectSpaceBBox = Union(m_objectSpaceBBox, segment.GetBoundingBox()); }
-        for (const auto& control : *m_ui.hostUIHandles) { m_objectSpaceBBox = Union(m_objectSpaceBBox, control.GetBoundingBox()); }
+        BBox2f bBox = BBox2f::Invalid();
+        for (const auto& segment : *m_ui.hostLineSegments) { bBox = Union(bBox, segment.GetBoundingBox()); }
+        for (const auto& control : *m_ui.hostUIHandles) { bBox = Union(bBox, control.GetBoundingBox()); }
+        return bBox;
     }
 
     __host__ void Host::PerspectiveCamera::ConstructUIWireframes()

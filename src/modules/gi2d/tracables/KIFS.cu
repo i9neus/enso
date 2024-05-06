@@ -267,7 +267,7 @@ namespace Enso
         return m_hostInstance.OnMouseClick(viewCtx);
     }
 
-    __host__ BBox2f Host::KIFS::GetObjectSpaceBoundingBox()
+    __host__ BBox2f Host::KIFS::ComputeObjectSpaceBoundingBox()
     {
         return BBox2f(vec2(-m_hostInstance.m_params.kifs.objectBounds), vec2(m_hostInstance.m_params.kifs.objectBounds));
     }

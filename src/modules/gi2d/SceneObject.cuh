@@ -81,7 +81,7 @@ namespace Enso
         public:
             //__host__ virtual bool       Finalise() = 0;
 
-            __host__ virtual bool       Rebuild();
+            __host__ virtual bool       Rebuild() { return true; }
             __host__ virtual bool       Prepare();
             
             __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
@@ -98,8 +98,8 @@ namespace Enso
             //__host__ virtual const Host::SceneObject& GetSceneObject() const { return *this; }
             __host__ virtual Device::SceneObject* GetDeviceInstance() const = 0;
             
-            __host__ virtual BBox2f GetObjectSpaceBoundingBox() = 0;
-            __host__ virtual BBox2f GetWorldSpaceBoundingBox();
+            __host__ const BBox2f& GetObjectSpaceBoundingBox() { return m_hostInstance.m_params.objectBBox; }
+            __host__ const BBox2f& GetWorldSpaceBoundingBox() { return m_hostInstance.m_params.worldBBox; }
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
@@ -129,10 +129,14 @@ namespace Enso
             __host__ virtual void       Synchronise(const uint flags) override;
 
             __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) = 0;
+
             __host__ void               SetTransform(const vec2& trans);
            
             __host__ BidirectionalTransform2D& GetTransform() { return m_hostInstance.m_params.transform; }
             __host__ const BidirectionalTransform2D& GetTransform() const { return m_hostInstance.m_params.transform; }
+
+            __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() = 0;
+            __host__ void               RecomputeBoundingBoxes();
 
         protected:
             Device::SceneObject&                        m_hostInstance;

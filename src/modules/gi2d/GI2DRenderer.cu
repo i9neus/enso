@@ -140,7 +140,7 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
-
+        SetDirty(flag);
     }
 
     std::shared_ptr<ModuleBase> Host::GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
@@ -312,9 +312,7 @@ namespace Enso
 
         if (stateID == "kMoveSceneObjectDragging")
         {
-            // Update the selection overlay
-            UpdateSelectedBBox();
-            SignalDirty(kDirtyUIOverlay);
+
         }
 
         // Enqueue the list of selected scene objects
@@ -439,6 +437,7 @@ namespace Enso
         {
             m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, object->GetWorldSpaceBoundingBox());
         }
+        SignalDirty(kDirtyUIOverlay);
     }
 
     __host__ uint Host::GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
@@ -595,8 +594,16 @@ namespace Enso
         // Flush any keyboard and mouse inputs that have accumulated between now and the beginning of the last frame
         FlushUIEventQueue();
 
+        // Update the overlay if the scene is dirty
+        const bool updateSelection = !m_sceneBuilder->IsClean();
+
         // Rebuild the scene 
         m_sceneBuilder->Rebuild(true);
+
+        if (!updateSelection)
+        {
+            UpdateSelectedBBox();
+        }
 
         // Prepare the scene objects
         m_sceneContainer->Prepare();

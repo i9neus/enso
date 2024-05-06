@@ -101,7 +101,7 @@ namespace Enso
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
             __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
 
-            __host__ virtual BBox2f     GetObjectSpaceBoundingBox() override final { Log::Write(m_objectSpaceBBox.Format());  return m_objectSpaceBBox; }
+            __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() override final;
 
         protected:
             __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
@@ -118,8 +118,6 @@ namespace Enso
             Device::PerspectiveCamera*  cu_deviceInstance = nullptr;
             Device::PerspectiveCamera   m_hostInstance;
             PerspectiveCameraObjects    m_deviceObjects;
-
-            BBox2f                      m_objectSpaceBBox;
 
             struct
             {

@@ -72,7 +72,7 @@ namespace Enso
             __host__ virtual bool Serialise(Json::Node& rootNode, const int flags) const override;
             __host__ virtual bool Deserialise(const Json::Node& rootNode, const int flags) override;
 
-            __host__ virtual BBox2f GetObjectSpaceBoundingBox() override final { return BBox2f::Invalid(); }
+            __host__ virtual BBox2f ComputeObjectSpaceBoundingBox() override final { return BBox2f::Invalid(); }
 
         protected:
             __host__ bool OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final { return false; }

@@ -57,11 +57,21 @@ namespace Enso
             SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
         }
 
-        // Call the virtual method implemented by inheriting classes. If they return true, signal the scene graph as dirty.
+        // Call the virtual method implemented by inheriting classes. 
         if (OnCreateSceneObject(stateID, viewCtx, viewCtx.mousePos - m_hostInstance.m_params.transform.trans))
         {
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+            // Recompute the bounding boxes and signal the need to rebuild
+            RecomputeBoundingBoxes();            
+            SignalDirty(kDirtyObjectRebuild);
         }
+    }
+
+    __host__ void Host::SceneObject::RecomputeBoundingBoxes()
+    {
+        m_hostInstance.m_params.objectBBox = ComputeObjectSpaceBoundingBox();
+        m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
+        
+        SignalDirty(kDirtyObjectBoundingBox);
     }
     
     __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
@@ -74,23 +84,19 @@ namespace Enso
         else if (stateID == "kMoveSceneObjectDragging")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos + m_onMove.dragAnchorDelta;
-            m_hostInstance.m_params.worldBBox = GetWorldSpaceBoundingBox();
-
-            // The geometry internal to this object hasn't changed, but it will affect the 
             Log::Warning("kMoveSceneObjectDragging");            
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {
             Log::Success("kMoveSceneObjectEnd");
         }
+        else
+        {
+            return false;
+        }
 
-        SignalDirty(kDirtyObjectBoundingBox);
+        RecomputeBoundingBoxes(); 
         return true;
-    }
-
-    __host__ bool Host::SceneObject::Rebuild()
-    {
-       return true;
     }
 
     __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
@@ -122,11 +128,6 @@ namespace Enso
         }
 
         return isDirty;
-    }
-
-    __host__ BBox2f Host::SceneObject::GetWorldSpaceBoundingBox()
-    {
-        return GetObjectSpaceBoundingBox() + m_hostInstance.m_params.transform.trans;
     }
 
     __host__ bool Host::SceneObject::OnSelect(const bool isSelected)

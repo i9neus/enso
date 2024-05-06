@@ -177,7 +177,7 @@ namespace Enso
             }
 
             Log::Warning("Closed path %s", GetAssetID());
-            m_isFinalised = true;
+            m_isFinalised = !m_hostLineSegments->IsEmpty();
         }
         else
         {
@@ -226,7 +226,7 @@ namespace Enso
         return true;
     }
 
-    __host__ BBox2f Host::LineStrip::GetObjectSpaceBoundingBox()
+    __host__ BBox2f Host::LineStrip::ComputeObjectSpaceBoundingBox()
     {
         return m_hostBIH->GetBoundingBox();
     }

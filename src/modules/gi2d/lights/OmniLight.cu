@@ -144,8 +144,7 @@ namespace Enso
             return true;
         }
 
-        // If the object is dirty, recompute the bounding box
-        SignalDirty(kDirtyObjectBoundingBox);
+
         return true;
     }
 
@@ -184,7 +183,7 @@ namespace Enso
         return m_hostInstance.OnMouseClick(viewCtx);
     }
 
-    __host__ BBox2f Host::OmniLight::GetObjectSpaceBoundingBox()
+    __host__ BBox2f Host::OmniLight::ComputeObjectSpaceBoundingBox()
     {
         return BBox2f(-vec2(m_hostInstance.m_params.lightRadius), vec2(m_hostInstance.m_params.lightRadius));
     }
