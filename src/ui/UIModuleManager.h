@@ -11,7 +11,7 @@ namespace Enso
 {    
     class GI2DUI;
     class ModuleManager;
-    class ModuleInterface;
+    class ModuleBase;
     
     class UIModuleManager
     {
@@ -34,7 +34,7 @@ namespace Enso
         ComPtr<ID3D12DescriptorHeap>            m_srvHeap;
         HWND                                    m_hWnd;
         std::shared_ptr<ModuleManager>          m_moduleManager;
-        std::shared_ptr<ModuleInterface>        m_activeRenderer;
+        std::shared_ptr<ModuleBase>             m_activeRenderer;
         //MemoryMonitor                         m_memoryMonitor;
 
         bool                                    m_showConsole;

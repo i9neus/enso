@@ -617,9 +617,6 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh">
       <Filter>modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\ModuleInterface.cuh">
-      <Filter>modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh">
       <Filter>modules</Filter>
     </ClInclude>
@@ -628,6 +625,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\debug\Profiler.cuh">
       <Filter>core\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh">
+      <Filter>modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -724,9 +724,6 @@
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu">
       <Filter>modules</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\ModuleInterface.cu">
-      <Filter>modules</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu">
       <Filter>modules</Filter>
     </CudaCompile>
@@ -735,6 +732,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu">
       <Filter>core\debug</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu">
+      <Filter>modules</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

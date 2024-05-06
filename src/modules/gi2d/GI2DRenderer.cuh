@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ModuleInterface.cuh"
+#include "../ModuleBase.cuh"
 #include "Ctx.cuh"
 #include "core/Vector.cuh"
 #include "FwdDecl.cuh"
@@ -31,7 +31,7 @@ namespace Enso
         };
 
         class GI2DRenderer : public Host::Dirtyable,
-                             public ModuleInterface
+            public ModuleBase
         {
         public:
             enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };
@@ -50,7 +50,7 @@ namespace Enso
             //__host__ virtual void OnResizeClient() override final;
             __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
 
-            __host__ static std::shared_ptr<ModuleInterface> Instantiate(std::shared_ptr<CommandQueue> outQueue);
+            __host__ static std::shared_ptr<ModuleBase> Instantiate(std::shared_ptr<CommandQueue> outQueue);
 
             __host__ virtual bool Serialise(Json::Document& json, const int flags) override final;
 

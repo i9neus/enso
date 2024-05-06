@@ -26,7 +26,7 @@ namespace Enso
 
     __host__ Host::GI2DRenderer::GI2DRenderer(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
         Dirtyable(initCtx),
-        ModuleInterface(outQueue),
+        ModuleBase(outQueue),
         m_isRunning(true)
     {
         // Load the object schema
@@ -44,7 +44,7 @@ namespace Enso
         RegisterInstantiators();
 
         // Declare the transition graph that will drive the UI
-        DeclareStateTransitionGraph();   
+        DeclareStateTransitionGraph();
 
         // Declare any listeners that will respond to changes in the scene graph
         DeclareListeners();
@@ -54,7 +54,7 @@ namespace Enso
     {
         m_overlayRenderer.DestroyAsset();
         m_voxelProxyGrid.DestroyAsset();
-        
+
         m_sceneBuilder.DestroyAsset();
         m_sceneContainer.DestroyAsset();
     }
@@ -143,10 +143,10 @@ namespace Enso
 
     }
 
-    std::shared_ptr<ModuleInterface> Host::GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
+    std::shared_ptr<ModuleBase> Host::GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
     {
-        AssetHandle<ModuleInterface> newAsset = AssetAllocator::CreateAsset<Host::GI2DRenderer>("gi2d", outQueue);
-        return std::shared_ptr<ModuleInterface>(newAsset);
+        AssetHandle<ModuleBase> newAsset = AssetAllocator::CreateAsset<Host::GI2DRenderer>("gi2d", outQueue);
+        return std::shared_ptr<ModuleBase>(newAsset);
     }
 
     __host__ void Host::GI2DRenderer::OnInitialise()

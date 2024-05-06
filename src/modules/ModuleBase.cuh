@@ -32,7 +32,7 @@ namespace Enso
 
     class CommandQueue;
 
-    class ModuleInterface
+    class ModuleBase
     {
     public:
         friend class RendererManager;
@@ -57,13 +57,13 @@ namespace Enso
         Semaphore& GetRenderSemaphore() { return m_renderSemaphore; }
 
         void SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream);
-        
+
         virtual bool Serialise(Json::Document& json, const int flags) = 0;
         void SetInboundCommandQueue(std::shared_ptr<CommandQueue> inQueue) { m_inboundCmdQueue = inQueue; }
 
     protected:
-        ModuleInterface(std::shared_ptr<CommandQueue> outQueue);
-        virtual ~ModuleInterface();
+        ModuleBase(std::shared_ptr<CommandQueue> outQueue);
+        virtual ~ModuleBase();
 
         virtual void OnMouseMove() {}
         virtual void OnMouseButton(const uint code, const bool isDown) {}

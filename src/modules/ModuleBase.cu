@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ModuleInterface.cuh"
+#include "ModuleBase.cuh"
 #include "io/CommandQueue.h"
 
 namespace Enso
 {
-	ModuleInterface::ModuleInterface(std::shared_ptr<CommandQueue> outQueue) :
+	ModuleBase::ModuleBase(std::shared_ptr<CommandQueue> outQueue) :
 		m_frameTimes(20),
 		m_mouseWheelAngle(0.0f),
 		m_clientWidth(1.0f),
@@ -22,37 +22,37 @@ namespace Enso
 		m_uiEventQueue.autoFlushAfterEvents = -1;
 	}
 
-	ModuleInterface::~ModuleInterface()
+	ModuleBase::~ModuleBase()
 	{
 
 	}
 
-	void ModuleInterface::SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream)
+	void ModuleBase::SetCudaObjects(AssetHandle<Host::ImageRGBA>& compositeImage, cudaStream_t renderStream)
 	{
 		m_compositeImage = compositeImage;
 		m_renderStream = renderStream;
 	}
 
-	void ModuleInterface::Initialise(const UINT clientWidth, const UINT clientHeight)
+	void ModuleBase::Initialise(const UINT clientWidth, const UINT clientHeight)
 	{
 		SetClientSize(clientWidth, clientHeight);
 
 		OnInitialise();
 	}
 
-	void ModuleInterface::Destroy()
+	void ModuleBase::Destroy()
 	{
 		// Stop and clean up the renderer object
 		Stop();
 		OnDestroy();
 	}
 
-	void ModuleInterface::Start()
+	void ModuleBase::Start()
 	{
 		Log::Write("Starting %s...\b", GetRendererName());
 
 		m_threadSignal = kRenderManagerRun;
-		m_managerThread = std::thread(std::bind(&ModuleInterface::RunThread, this));
+		m_managerThread = std::thread(std::bind(&ModuleBase::RunThread, this));
 
 		m_renderStartTime = std::chrono::high_resolution_clock::now();
 
@@ -61,7 +61,7 @@ namespace Enso
 		Log::Success("Okay!");
 	}
 
-	void ModuleInterface::Stop()
+	void ModuleBase::Stop()
 	{
 		if (!m_managerThread.joinable() || m_threadSignal != kRenderManagerRun) { return; }
 
@@ -73,7 +73,7 @@ namespace Enso
 		Log::Success("Successfully halted '%s'!", GetRendererName());
 	}
 
-	void ModuleInterface::RunThread()
+	void ModuleBase::RunThread()
 	{
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 
@@ -140,7 +140,7 @@ namespace Enso
 		m_threadSignal.store(kRenderManagerIdle);
 	}
 
-	bool ModuleInterface::Poll(Json::Document& stateJson)
+	bool ModuleBase::Poll(Json::Document& stateJson)
 	{
 		stateJson.Clear();
 
@@ -158,7 +158,7 @@ namespace Enso
 	}
 
 	template<typename T>
-	T ModuleInterface::PopUIEventQueue(std::deque<T>& queue)
+	T ModuleBase::PopUIEventQueue(std::deque<T>& queue)
 	{
 		Assert(!queue.empty());
 		const T item = queue.front();
@@ -167,7 +167,7 @@ namespace Enso
 	}
 
 	template<typename T>
-	void ModuleInterface::PushUIEventQueue(const int event, std::deque<T>& queue, const T& newItem)
+	void ModuleBase::PushUIEventQueue(const int event, std::deque<T>& queue, const T& newItem)
 	{
 		m_controlQueueMutex.lock();
 
@@ -195,7 +195,7 @@ namespace Enso
 		}
 	}
 
-	void ModuleInterface::FlushUIEventQueue()
+	void ModuleBase::FlushUIEventQueue()
 	{
 		if (m_uiEventQueue.events.empty()) { return; }
 
@@ -288,27 +288,27 @@ namespace Enso
 		m_uiEventQueue.mouseWheel.clear();*/
 	}
 
-	void ModuleInterface::SetKey(const uint code, const bool isSysKey, const bool isDown)
+	void ModuleBase::SetKey(const uint code, const bool isSysKey, const bool isDown)
 	{
 		PushUIEventQueue(kControlEventKeyboard, m_uiEventQueue.keyButton, std::make_pair(code, isDown));
 	}
 
-	void ModuleInterface::SetMouseButton(const uint code, const bool isDown)
+	void ModuleBase::SetMouseButton(const uint code, const bool isDown)
 	{
 		PushUIEventQueue(kControlEventMouseButton, m_uiEventQueue.mouseButton, std::make_pair(code, isDown));
 	}
 
-	void ModuleInterface::SetMousePos(const int mouseX, const int mouseY, const WPARAM flags)
+	void ModuleBase::SetMousePos(const int mouseX, const int mouseY, const WPARAM flags)
 	{
 		PushUIEventQueue(kControlEventMouseMove, m_uiEventQueue.mouseMove, ivec2(mouseX, mouseY));
 	}
 
-	void ModuleInterface::SetMouseWheel(const float angle)
+	void ModuleBase::SetMouseWheel(const float angle)
 	{
 		PushUIEventQueue(kControlEventMouseWheel, m_uiEventQueue.mouseWheel, angle);
 	}
 
-	void ModuleInterface::SetClientSize(const int width, const int height)
+	void ModuleBase::SetClientSize(const int width, const int height)
 	{
 		m_clientWidth = width;
 		m_clientHeight = height;
@@ -322,7 +322,7 @@ namespace Enso
 		OnResizeClient();
 	}
 
-	void ModuleInterface::FocusChange(const bool isSet)
+	void ModuleBase::FocusChange(const bool isSet)
 	{	
 		// Notify the deriving class that the focus has changed so it can do clean-up
 		OnFocusChange(isSet);
@@ -333,7 +333,7 @@ namespace Enso
 		Log::Debug(isSet ? "Focus set" : "Focus lost");
 	}
 
-	void ModuleInterface::OnCommandsWaiting(CommandQueue& inbound) 
+	void ModuleBase::OnCommandsWaiting(CommandQueue& inbound) 
 	{ 
 		inbound.Clear(); 
 	}
