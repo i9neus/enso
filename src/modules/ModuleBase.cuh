@@ -141,8 +141,8 @@ namespace Enso
 
         std::mutex		                                m_jsonInputMutex;
         std::mutex			                            m_jsonOutputMutex;
-        std::mutex                                      m_resourceMutex;
-        std::mutex                                      m_controlQueueMutex;
+        std::mutex                                      m_commandMutex;
+        std::mutex                                      m_uiEventQueueMutex;
 
         Semaphore                                       m_renderSemaphore;
 

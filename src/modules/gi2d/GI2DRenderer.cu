@@ -250,9 +250,7 @@ namespace Enso
 
     __host__ uint Host::GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
-        if (m_selectionCtx.selectedObjects.empty()) { return kUIStateOkay; }
-
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
+        if (m_selectionCtx.selectedObjects.empty()) { return kUIStateOkay; }        
 
         Host::SceneObjectContainer& sceneObjects = m_sceneContainer->SceneObjects();
         int emptyIdx = -1;
@@ -289,8 +287,6 @@ namespace Enso
 
     __host__ uint Host::GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
-        
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kMoveSceneObjectBegin")
         {
@@ -329,8 +325,6 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::DeselectAll()
     {
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
-
         for (auto obj : m_sceneContainer->SceneObjects())
         {
             obj->OnSelect(false);
@@ -343,8 +337,6 @@ namespace Enso
 
     __host__ std::string Host::GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
     {
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
-
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
         if (m_sceneContainer->SceneBIH().IsConstructed())
         {
@@ -427,8 +419,6 @@ namespace Enso
 
     __host__ uint Host::GI2DRenderer::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
-        
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
 
         Assert(m_delegatedObject);
@@ -474,7 +464,6 @@ namespace Enso
             m_selectionCtx.selectedBBox = BBox2f::Invalid();
             m_selectionCtx.selectedObjects.clear();
 
-            //std::lock_guard <std::mutex> lock(m_resourceMutex);
             if (m_sceneContainer->SceneBIH().IsConstructed())
             {
                 int numSelected = 0;
@@ -544,8 +533,6 @@ namespace Enso
 
     __host__ uint Host::GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
     {
-        //std::lock_guard <std::mutex> lock(m_resourceMutex);
-
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateSceneObjectOpen")
         {
@@ -605,8 +592,6 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::OnRender()
     {        
-        //m_resourceMutex.lock();       
-
         // Flush any keyboard and mouse inputs that have accumulated between now and the beginning of the last frame
         FlushUIEventQueue();
 
@@ -666,10 +651,7 @@ namespace Enso
     {
         OnViewChange();
 
-        {
-            //std::lock_guard <std::mutex> lock(m_resourceMutex);
-            m_viewCtx.mousePos = m_viewCtx.transform.matrix * vec2(m_mouse.pos);
-        }
+        m_viewCtx.mousePos = m_viewCtx.transform.matrix * vec2(m_mouse.pos);
     }
 
     __host__ void Host::GI2DRenderer::OnViewChange()
@@ -709,7 +691,6 @@ namespace Enso
 
         // Update the parameters in the overlay renderer
         {
-            //std::lock_guard <std::mutex> lock(m_resourceMutex);
             transform.matrix = ConstructViewMatrix(transform.trans, transform.rotate, transform.scale) * m_clientToNormMatrix;
             m_viewCtx.Prepare();
 

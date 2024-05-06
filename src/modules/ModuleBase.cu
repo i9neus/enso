@@ -78,10 +78,7 @@ namespace Enso
 		checkCudaErrors(cudaStreamSynchronize(m_renderStream));
 
 		// Notify the inheriting class that the render is about to start
-		{
-			//std::lock_guard<std::mutex> lock(m_resourceMutex);
-			OnPreRender();
-		}
+		OnPreRender();
 
 		m_frameIdx = 0;
 		//#define DISABLE_EXCEPTION_HANDLING
@@ -99,10 +96,7 @@ namespace Enso
 				}
 
 				// Notify that a render "tick" has begun
-				{
-					//std::lock_guard<std::mutex> lock(m_resourceMutex);
-					OnRender();
-				}
+				OnRender();
 
 				// Compute some stats on the framerate
 				m_frameIdx++;
@@ -131,10 +125,7 @@ namespace Enso
 #endif
 
 		// Notify that the render has completed
-		{
-			//std::lock_guard<std::mutex> lock(m_resourceMutex);
-			OnPostRender();
-		}
+		OnPostRender();
 
 		// Signal that the renderer has finished
 		m_threadSignal.store(kRenderManagerIdle);
@@ -169,7 +160,7 @@ namespace Enso
 	template<typename T>
 	void ModuleBase::PushUIEventQueue(const int event, std::deque<T>& queue, const T& newItem)
 	{
-		m_controlQueueMutex.lock();
+		m_uiEventQueueMutex.lock();
 
 		// If the control queue hasn't been purged, just replace the most recent event
 		if (m_uiEventQueue.events.size() >= m_uiEventQueue.maxEvents)
@@ -186,7 +177,7 @@ namespace Enso
 			queue.push_back(newItem);
 		}
 
-		m_controlQueueMutex.unlock();
+		m_uiEventQueueMutex.unlock();
 
 		// If the queue is full and auto-flush is enabled, flush everything now. 
 		if (m_uiEventQueue.autoFlushAfterEvents >= 0 && m_uiEventQueue.events.size() >= m_uiEventQueue.autoFlushAfterEvents)
@@ -199,7 +190,7 @@ namespace Enso
 	{
 		if (m_uiEventQueue.events.empty()) { return; }
 
-		std::lock_guard<std::mutex> lock(m_controlQueueMutex);
+		std::lock_guard<std::mutex> lock(m_uiEventQueueMutex);
 
 		// Dispatch queued events in the order that they were posted
 		while (!m_uiEventQueue.events.empty())
