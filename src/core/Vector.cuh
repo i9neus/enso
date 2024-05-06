@@ -61,7 +61,16 @@ namespace Enso
 			__host__ __device__ Type* Data() { return m_localData; }
 			__host__ __device__ Type& operator[](const int idx)
 			{
-				CudaAssertDebug(idx < m_localParams.size);
+				/*CudaAssertDebug(idx < m_localParams.size);*/
+				if (!(idx < m_localParams.size)) 
+				{				
+#ifdef __CUDA_ARCH__
+					printf("Device assert: idx < m_localParams.size: %i < %i", idx, m_localParams.size);
+					asm("trap;"); 
+#else
+					AssertMsgFmt(idx < m_localParams.size, "Device assert: idx < m_localParams.size: %i < %i", idx, m_localParams.size);
+#endif
+				}
 				return m_localData[idx];
 			}
 			__host__ __device__ const Type& operator[](const int idx) const
@@ -262,7 +271,10 @@ namespace Enso
 			__host__ HostType& operator[](const uint idx)
 			{
 				AssertMsgFmt(m_localParams.flags & kVectorHostAlloc, "Vector '%s': trying to use [] on array that does not have host allocation.", GetAssetID().c_str());
-				Assert(idx < m_localParams.size);
+				if (idx >= m_localParams.size)
+				{
+					AssertMsgFmt(idx < m_localParams.size, "idx < m_localParams.size: %i < %i", idx, m_localParams.size);
+				}
 
 				return m_localData[idx];
 			}

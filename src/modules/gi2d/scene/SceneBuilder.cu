@@ -100,7 +100,7 @@ namespace Enso
     }
 
     __host__ void Host::SceneBuilder::Rebuild(bool forceRebuild)
-    {        
+    {                
         if (!forceRebuild && IsClean()) { return; } // Nothing to do!
         
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -173,7 +173,7 @@ namespace Enso
         }
 
         // Summarise the build process
-        m_container->Summarise();
+        //m_container->Summarise();
 
         // Clean up
         m_rebuildQueue.clear();

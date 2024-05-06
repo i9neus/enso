@@ -41,7 +41,7 @@ namespace Enso
 	template<typename ObjectType>
 	__host__ inline void AssertAllAreTrivialArguments(const ObjectType& t)
 	{
-		static_assert(std::is_trivial<ObjectType>::value, "Cannot sychronise because at least one parameter type is non-trivial.");
+		static_assert(std::is_trivial<ObjectType>::value, "Cannot use SynchroniseTrivialParams because at least one parameter type is non-trivial. Use SynchroniseObjects instead.");
 	}
 
 	template<typename ObjectType, typename... Pack>
@@ -64,9 +64,9 @@ namespace Enso
 
 	template<typename ObjectType, typename ParamsType, typename SuperType = ObjectType>
 	__host__ void SynchroniseObjects(ObjectType* cu_object, const ParamsType& params)
-	{
+	{		
 		AssertIsTransferrableType<ParamsType>();
-		Assert(cu_object);
+		Assert(cu_object); 
 
 		ParamsType* cu_params;
 		IsOk(cudaMalloc(&cu_params, sizeof(ParamsType)));

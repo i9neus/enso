@@ -64,36 +64,28 @@ namespace Enso
         }
     }
     
-    __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
         if (stateID == "kMoveSceneObjectBegin")
         {
-            m_onMove.dragAnchor = viewCtx.mousePos;
-            m_onMove.isDragging = true;
+            m_onMove.dragAnchorDelta = m_hostInstance.m_params.transform.trans - viewCtx.mousePos;
             Log::Error("kMoveSceneObjectBegin");
-            return false;
         }
         else if (stateID == "kMoveSceneObjectDragging")
         {
-            Assert(m_onMove.isDragging);
-
-            const vec2 delta = viewCtx.mousePos - m_onMove.dragAnchor;
-            m_onMove.dragAnchor = viewCtx.mousePos;
-            m_hostInstance.m_params.transform.trans += delta;
-            m_hostInstance.m_params.worldBBox += delta;
+            m_hostInstance.m_params.transform.trans = viewCtx.mousePos + m_onMove.dragAnchorDelta;
+            m_hostInstance.m_params.worldBBox = GetWorldSpaceBoundingBox();
 
             // The geometry internal to this object hasn't changed, but it will affect the 
-            Log::Warning("kMoveSceneObjectDragging");
-            
-            SignalDirty( kDirtyObjectBoundingBox );
-            return true;
+            Log::Warning("kMoveSceneObjectDragging");            
         }
         else if (stateID == "kMoveSceneObjectEnd")
         {
-            m_onMove.isDragging = false;
             Log::Success("kMoveSceneObjectEnd");
-            return false;
         }
+
+        SignalDirty(kDirtyObjectBoundingBox);
+        return true;
     }
 
     __host__ bool Host::SceneObject::Rebuild()

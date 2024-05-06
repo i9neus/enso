@@ -60,7 +60,7 @@ namespace Enso
         Assert(m_hostSceneObjects);        
         for (auto& object : *m_hostSceneObjects)
         {
-            object->Prepare();
+            //object->Prepare();
         }
     }
 

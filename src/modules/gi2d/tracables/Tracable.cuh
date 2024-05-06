@@ -71,13 +71,6 @@ namespace Enso
             __host__ virtual void Synchronise(const uint syncFlags) override;
 
         protected:
-            struct
-            {
-                vec2                        dragAnchor;
-                bool                        isDragging;
-            }
-            m_onMove;
-
             Device::Tracable*               m_hostInstance = nullptr;
             Device::Tracable*               cu_deviceInstance;
         };

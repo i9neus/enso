@@ -218,7 +218,7 @@ namespace Enso
         };
         m_hostBIH->Build(getPrimitiveBBox);
 
-        Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
+        //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
 
         // Update the tracable bounding boxes
         Synchronise(kSyncObjects | kSyncParams);

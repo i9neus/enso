@@ -85,7 +85,7 @@ namespace Enso
             __host__ virtual bool       Prepare();
             
             __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
-            __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx);
+            __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
             __host__ virtual bool       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
@@ -135,18 +135,17 @@ namespace Enso
             __host__ const BidirectionalTransform2D& GetTransform() const { return m_hostInstance.m_params.transform; }
 
         protected:
-            struct
-            {
-                vec2                                    dragAnchor;
-                bool                                    isDragging;
-            }
-            m_onMove;
-
             Device::SceneObject&                        m_hostInstance;
-            AssetHandle<const Host::SceneContainer>   m_scene;
+            AssetHandle<const Host::SceneContainer>     m_scene;
 
         private:
             Device::SceneObject*                        cu_deviceInstance = nullptr;
+
+            struct
+            {
+                vec2 dragAnchorDelta;
+            } 
+            m_onMove;
         };
     }
 }

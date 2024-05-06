@@ -17,7 +17,15 @@ namespace Enso
 
         UIGridCtx           gridCtx;
         UIViewCtx           viewCtx;
-        UISelectionCtx      selectionCtx;
+        
+        struct
+        {
+            BBox2f                  mouseBBox;
+            BBox2f                  lassoBBox;
+            BBox2f                  selectedBBox;
+            int                     numSelected;
+            bool                    isLassoing = false;
+        } selectionCtx;
     };
 
     struct OverlayLayerObjects

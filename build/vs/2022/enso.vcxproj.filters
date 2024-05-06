@@ -626,6 +626,9 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\Profiler.cuh">
+      <Filter>core\debug</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -729,6 +732,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
       <Filter>modules\gi2d\integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu">
+      <Filter>core\debug</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

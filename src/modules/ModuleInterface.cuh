@@ -82,6 +82,8 @@ namespace Enso
 
         inline bool IsKeyDown(const uint code) const { return m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed); }
 
+        void        FlushUIEventQueue();
+
 #define IsDownImpl (m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed))
         inline bool IsMouseButtonDown(const uint code) const { return IsDownImpl; }
         inline bool IsAnyMouseButtonDown(const uint code) const
@@ -103,6 +105,10 @@ namespace Enso
 
     private:
         void RunThread();
+
+        template<typename T> T PopUIEventQueue(std::deque<T>& queue);
+        template<typename T> void PushUIEventQueue(const int event, std::deque<T>& queue, const T& newItem);
+
 
     protected:
         AssetHandle<Host::ImageRGBA>                    m_compositeImage;
@@ -136,6 +142,7 @@ namespace Enso
         std::mutex		                                m_jsonInputMutex;
         std::mutex			                            m_jsonOutputMutex;
         std::mutex                                      m_resourceMutex;
+        std::mutex                                      m_controlQueueMutex;
 
         Semaphore                                       m_renderSemaphore;
 
@@ -144,5 +151,19 @@ namespace Enso
         std::shared_ptr<CommandQueue>                   m_outboundCmdQueue;
         std::shared_ptr<CommandQueue>                   m_inboundCmdQueue;
 
+    private:
+        enum UIControlEventType : int { kControlEventUndefined = -1, kControlEventKeyboard, kControlEventMouseMove, kControlEventMouseButton, kControlEventMouseWheel };
+
+        struct
+        {
+            int                                         maxEvents;
+            int                                         autoFlushAfterEvents;
+            std::deque<int>                             events;
+            std::deque<std::pair<uint, bool>>           keyButton;
+            std::deque<ivec2>                           mouseMove;
+            std::deque<std::pair<uint, bool>>           mouseButton;
+            std::deque<float>                           mouseWheel;
+        }
+        m_uiEventQueue;
     };
 }

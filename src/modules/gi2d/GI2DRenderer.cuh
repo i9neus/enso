@@ -42,8 +42,6 @@ namespace Enso
             __host__ virtual void OnInitialise() override final;
             __host__ virtual void OnMouseMove() override final;
             __host__ virtual void OnMouseButton(const uint code, const bool isDown) override final;
-            __host__ virtual void OnMouseWheel() override final;
-            __host__ virtual void OnKey(const uint code, const bool isSysKey, const bool isDown) override final;
             __host__ virtual void OnResizeClient() override final;
             __host__ virtual void OnFocusChange(const bool isSet) override final;
 
@@ -83,6 +81,7 @@ namespace Enso
 
             __host__ void                    EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
             __host__ void                    FinaliseNewSceneObject();
+            __host__ void                    UpdateSelectedBBox();
 
 
         private:
@@ -108,13 +107,6 @@ namespace Enso
             }
             m_onCreate;
 
-            struct
-            {
-                vec2                              dragAnchor;
-            }
-            m_onMove;
-
-            std::vector<AssetHandle<Host::SceneObject>> m_selectedObjects;
             AssetHandle<Host::SceneObject>              m_delegatedObject;
             CommandManager                              m_commandManager;
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include "io/Log.h"
 #include "CudaHeaders.cuh"
+#include "core/debug/Profiler.cuh"
 
 namespace Enso
 {

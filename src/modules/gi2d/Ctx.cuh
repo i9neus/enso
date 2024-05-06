@@ -11,6 +11,8 @@ namespace Enso
     
     struct UIGridCtx
     {
+        __host__ __device__ UIGridCtx() : show(false), majorLineSpacing(0.), minorLineSpacing(0.), lineAlpha(0.f) {}
+
         bool                    show;
         float                   majorLineSpacing;
         float                   minorLineSpacing;
@@ -19,17 +21,22 @@ namespace Enso
     
     struct UISelectionCtx
     {
+        __host__ UISelectionCtx() {}
+
         BBox2f                  mouseBBox;
         BBox2f                  lassoBBox;
         BBox2f                  selectedBBox;
         bool                    isLassoing = false;
-        uint                    numSelected = 0;
-        uint                    selectedIdx = 0xffffffff;
+        std::vector<AssetHandle<Host::SceneObject>> selectedObjects;
+        uint                    selectedIdx = 0xffffffff;        
+
+        bool                    isDragging = false;
+        vec2                    dragAnchor;
     };
 
     struct UIViewCtx
     {
-        __host__ __device__ UIViewCtx() {  }
+        __host__ __device__ UIViewCtx() : dPdXY(0.f), rotAnchor(0.f), scaleAnchor(0.f), zoomSpeed(1.f) {  }
 
         __host__ __device__ void Prepare()
         {

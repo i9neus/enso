@@ -206,8 +206,14 @@ namespace Enso
 
     __host__ bool Host::OverlayLayer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {        
+        // Copy the view context
         m_params.viewCtx = viewCtx;
-        m_params.selectionCtx = selectionCtx;
+        
+        // Copy some data to the device selection context
+        m_params.selectionCtx.isLassoing = selectionCtx.isLassoing;
+        m_params.selectionCtx.lassoBBox = selectionCtx.lassoBBox;
+        m_params.selectionCtx.numSelected = selectionCtx.selectedObjects.size();
+        m_params.selectionCtx.selectedBBox = selectionCtx.selectedBBox;
          
         // Calculate some values for the guide grid
         const float logScale = std::log10(m_params.viewCtx.transform.scale);
