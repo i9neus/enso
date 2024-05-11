@@ -140,7 +140,7 @@ namespace Tests
 		const vec2 d = normalize(vec2(1.0f));
 				
 		int hitSegment = -1;
-		auto onRayIntersectLeaf = [&](const uint& idx, float& tNear) -> void
+		auto onRayIntersectLeaf = [&](const uint* idx, const uint* primIdxs, float& tNear) -> void
 		{
 			float t = segments[idx].TestRay(o, d);
 			if (t < tNear)

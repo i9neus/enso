@@ -10,7 +10,7 @@ namespace Enso
     class BIH2DBuilder
     {
     public:
-        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
+        __host__ BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, Host::Vector<uint>& hostIndices,
             const uint minBuildablePrims, std::function<BBox2f(uint)>& getPrimitiveBBox) noexcept;
 
         __host__ void Build(const bool printStats = false);
@@ -24,7 +24,7 @@ namespace Enso
     private:
         BIH2D<NodeType>&                            m_bih;
         Host::Vector<NodeType>&                     m_hostNodes;
-        std::vector<uint>&                          m_primitiveIdxs;
+        Host::Vector<uint>&                         m_hostIndices;
         std::function<BBox2f(uint)>                 m_getPrimitiveBBox;
         BIH2DStats&                                 m_stats;
         const uint                                  m_minBuildablePrims;

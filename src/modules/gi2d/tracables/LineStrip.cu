@@ -17,11 +17,11 @@ namespace Enso
         RayBasic2D& rayObject = RayToObjectSpace(rayWorld);
         HitCtx2D hitObject;
 
-        auto onIntersect = [&](const uint* startEndIdx, RayRange2D& rangeTree)
+        auto onIntersect = [&](const uint* startEndIdx, const uint* primIdxs, RayRange2D& rangeTree)
         {
-            for (int primIdx = startEndIdx[0]; primIdx < startEndIdx[1]; ++primIdx)
+            for (int idx = startEndIdx[0]; idx < startEndIdx[1]; ++idx)
             {
-                if ((*m_objects.lineSegments)[primIdx].IntersectRay(rayObject, hitObject) && hitObject.tFar < rangeTree.tFar && hitObject.tFar < hitWorld.tFar)
+                if ((*m_objects.lineSegments)[primIdxs[idx]].IntersectRay(rayObject, hitObject) && hitObject.tFar < rangeTree.tFar && hitObject.tFar < hitWorld.tFar)
                 {
                     rangeTree.tFar = hitObject.tFar;
                 }
@@ -78,11 +78,11 @@ namespace Enso
         vec4 L(0.0f);
         const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
 
-        m_objects.bih->TestPoint(pObject, [&, this](const uint* idxRange) -> bool
+        m_objects.bih->TestPoint(pObject, [&, this](const uint* idxRange, const uint* primIdxs) -> bool
             {
                 for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
                 {
-                    const auto& segment = (*m_objects.lineSegments)[idx];
+                    const auto& segment = (*m_objects.lineSegments)[primIdxs[idx]];
                     const vec4 line = segment.EvaluateOverlay(pObject, overlayCtx);
                     if (line.w > 0.f) { L = Blend(L, line); }
                 }

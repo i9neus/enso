@@ -61,7 +61,7 @@ namespace Enso
             VoxelProxyGrid(const Asset::InitCtx& initCtx, const Json::Node& json, const AssetHandle<const Host::SceneContainer>& scene);
             virtual ~VoxelProxyGrid() noexcept;
             
-            __host__ virtual bool IsTransformable() const override final { return false; }
+            __host__ virtual bool HasBoundingBox() const override final { return false; }
 
             //__host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Json::Node&, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "voxelproxygrid"; }

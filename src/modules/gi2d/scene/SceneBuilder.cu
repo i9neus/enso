@@ -36,8 +36,17 @@ namespace Enso
         // Create a tracable list ready for building
         // TODO: It's probably faster if we build on the already-sorted index list
         auto& primIdxs = bih.GetPrimitiveIndices();
-        primIdxs.resize(primitives.Size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+        primIdxs.Clear();
+        primIdxs.Reserve(primitives.Size());
+        Log::Debug("Building...");
+        for (int idx = 0; idx < primitives.Size(); ++idx)
+        { 
+            // Ignore primitives that don't have bounding boxes
+            if (primitives[idx]->HasBoundingBox())
+            {
+                primIdxs.PushBack(idx);
+            }
+        }
 
         // Construct the BIH
         std::function<BBox2f(uint)> getPrimitiveBBox = [&](const uint& idx) -> BBox2f

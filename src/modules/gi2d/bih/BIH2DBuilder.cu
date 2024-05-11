@@ -4,11 +4,11 @@
 namespace Enso
 {
     template<typename NodeType>
-    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, std::vector<uint>& primitiveIdxs,
+    __host__ BIH2DBuilder<NodeType>::BIH2DBuilder(BIH2D<NodeType>& bih, Host::Vector<NodeType>& hostNodes, Host::Vector<uint>& hostIndices,
         const uint minBuildablePrims, std::function<BBox2f(uint)>& functor) noexcept :
         m_bih(bih),
         m_hostNodes(hostNodes),
-        m_primitiveIdxs(primitiveIdxs),
+        m_hostIndices(hostIndices),
         m_getPrimitiveBBox(functor),
         m_stats(bih.m_stats),
         m_minBuildablePrims(minBuildablePrims)
@@ -25,9 +25,9 @@ namespace Enso
         BBox2f centroidBBox = BBox2f::Invalid();
         m_bih.m_treeBBox = BBox2f::Invalid();
 
-        if (!m_primitiveIdxs.empty())
+        if (!m_hostIndices.IsEmpty())
         {
-            for (const auto idx : m_primitiveIdxs)
+            for (const auto idx : m_hostIndices)
             {
                 const BBox2f primBBox = m_getPrimitiveBBox(idx);
                 //AssertMsgFmt(primBBox.IsValid(),
@@ -44,27 +44,28 @@ namespace Enso
         }
 
         // If the list contains below the minimum ammount of primitives, don't build and flag the tree as a list traversal
-        if (m_primitiveIdxs.size() < m_minBuildablePrims)
+        if (m_hostIndices.Size() < m_minBuildablePrims)
         {
             m_bih.m_testAsList = true;
         }
         else
         {
             // Reserve space for the nodes
-            m_hostNodes.Reserve(m_primitiveIdxs.size());
+            m_hostNodes.Reserve(m_hostIndices.Size());
             m_hostNodes.Resize(1);
 
             // Construct the bounding interval hierarchy
             m_stats = BIH2DStats();
             m_stats.numInnerNodes = 0;
 
-            BuildPartition(0, m_primitiveIdxs.size(), 0, 0, m_bih.m_treeBBox, centroidBBox);
+            BuildPartition(0, m_hostIndices.Size(), 0, 0, m_bih.m_treeBBox, centroidBBox);
         }
 
         // Update the host data structures
         m_bih.m_nodes = m_hostNodes.GetHostData();
+        m_bih.m_indices = m_hostIndices.GetHostData();
         m_bih.m_numNodes = m_hostNodes.Size();
-        m_bih.m_numPrims = m_primitiveIdxs.size();
+        m_bih.m_numPrims = m_hostIndices.Size();
         m_bih.m_isConstructed = m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite();
 
         if (printStats)
@@ -86,19 +87,27 @@ namespace Enso
 
         m_stats.maxDepth = max(depth, m_stats.maxDepth);
 
+        // If the parent bounding box is invalid, warn and discard
+        if (!parentBBox.IsValid())
+        {
+            Log::Warning("Warning: BHV encountered bbox with zero or negative area.");
+            m_hostNodes[thisIdx].MakeInvalidLeaf();
+            return;
+        }
+
         // If this node only contains one primitive, it's a leaf
         if (i1 - i0 <= 1)
         {
             if (i0 == i1)
             {
                 m_stats.numLeafNodes++;
-                m_hostNodes[thisIdx].MakeLeaf(BIH2DFullNode::kInvalidLeaf, BIH2DFullNode::kInvalidLeaf);
+                m_hostNodes[thisIdx].MakeInvalidLeaf();
                 //return;
             }
             else if (i1 - i0 == 1)
             {
                 m_stats.numLeafNodes++;
-                m_hostNodes[thisIdx].MakeLeaf(m_primitiveIdxs[i0], m_primitiveIdxs[i1 - 1]);
+                m_hostNodes[thisIdx].MakeLeaf(m_hostIndices[i0], m_hostIndices[i1 - 1]);
                 //return;
             }
 
@@ -118,8 +127,6 @@ namespace Enso
             return;
         }
 
-        Assert(parentBBox.HasPositiveArea());
-
         const uint axis = centroidBBox.MaxAxis();
         const float split = centroidBBox.Centroid(axis);
         BBox2f leftBBox = parentBBox, rightBBox = parentBBox;
@@ -134,7 +141,7 @@ namespace Enso
         uint sw;
         for (int i = i0; i < i1; ++i)
         {
-            const BBox2f primBBox = m_getPrimitiveBBox(m_primitiveIdxs[i]);
+            const BBox2f primBBox = m_getPrimitiveBBox(m_hostIndices[i]);
             const vec2 centroid = primBBox.Centroid();
 
             if (centroid[axis] < split)
@@ -143,7 +150,7 @@ namespace Enso
                 leftBBox[1][axis] = fmaxf(leftBBox[1][axis], primBBox[1][axis]);
                 leftCentroidBBox[1][axis] = fmaxf(leftCentroidBBox[1][axis], centroid[axis]);
                 // Swap the element into the left-hand partition
-                sw = m_primitiveIdxs[j]; m_primitiveIdxs[j] = m_primitiveIdxs[i]; m_primitiveIdxs[i] = sw;
+                sw = m_hostIndices[j]; m_hostIndices[j] = m_hostIndices[i]; m_hostIndices[i] = sw;
                 // Increment the partition index
                 ++j;
             }
@@ -158,7 +165,7 @@ namespace Enso
         // If we've got a bunch of overlapping primitives that we can't effectively partition, just convert this node to a leaf
         if (j == i0 || j == i1)
         {
-            m_hostNodes[thisIdx].MakeLeaf(m_primitiveIdxs[i0], m_primitiveIdxs[i1 - 1]);
+            m_hostNodes[thisIdx].MakeLeaf(m_hostIndices[i0], m_hostIndices[i1 - 1]);
             return;
         }
 

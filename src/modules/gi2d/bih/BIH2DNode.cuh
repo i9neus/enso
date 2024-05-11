@@ -80,6 +80,13 @@ namespace Enso
             data.primIdxs[1] = idxEnd;
         }
 
+        __host__ __device__ __forceinline__ void MakeInvalidLeaf()
+        {
+            flags = kBIHLeaf;
+            data.primIdxs[0] = kInvalidLeaf;
+            data.primIdxs[1] = kInvalidLeaf;
+        }
+
     public:
         uint         flags;
         NodeDataType data;

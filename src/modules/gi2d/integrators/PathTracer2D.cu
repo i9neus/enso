@@ -16,16 +16,17 @@ namespace Enso
 
         const auto& bih = *m_scene.tracableBIH;
         const auto& tracables = *m_scene.tracables;
-        auto onIntersect = [&tracables, &ray, &hit](const uint* primRange, RayRange2D& range) -> float
+        auto onIntersect = [&tracables, &ray, &hit](const uint* primRange, const uint* primIdxs, RayRange2D& range) -> float
         {
             for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
             {
-                if (tracables[idx]->IntersectRay(ray, hit))
+                auto primIdx = primIdxs[idx];
+                if (tracables[primIdx]->IntersectRay(ray, hit))
                 {
                     if (hit.tFar < range.tFar)
                     {
                         range.tFar = hit.tFar;
-                        hit.tracableIdx = idx;
+                        hit.tracableIdx = primIdx;
                     }
                 }
             }

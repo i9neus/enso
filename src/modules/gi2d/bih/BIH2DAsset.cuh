@@ -11,7 +11,7 @@ namespace Enso
         public:
             __device__ BIH2DAsset() {}
 
-            __device__ void Synchronise(const BIH2DParams<BIH2DFullNode>& params);
+            __device__ void Synchronise(const BIH2DData<BIH2DFullNode>& params);
         };
     }
 
@@ -25,28 +25,26 @@ namespace Enso
             __host__ BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims);
             __host__ virtual ~BIH2DAsset() noexcept;
 
-            __host__ inline std::vector<uint>& GetPrimitiveIndices() { return m_primitiveIdxs; }
+            __host__ inline Host::Vector<uint>&     GetPrimitiveIndices() { Assert(m_hostIndices); return *m_hostIndices; }
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);
-            __host__ Device::BIH2DAsset* GetDeviceInstance() const { return cu_deviceInstance; }
-            __host__ BIH2D<BIH2DFullNode>* GetDeviceInterface() const { return cu_deviceInterface; }
+            __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ void                           Synchronise();
-            __host__ const BIH2DStats& GetTreeStats() const { return m_stats; }
+            __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
             __host__ const Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
 
-            std::function<void(const char*)> m_debugFunctor = nullptr;
+            std::function<void(const char*)>        m_debugFunctor = nullptr;
 
         private:
             __host__ void                           CheckTreeNodes() const;
 
         private:
             AssetHandle<Host::Vector<BIH2DFullNode>> m_hostNodes;
-            std::vector<uint>                       m_primitiveIdxs;
-            BIH2DParams<BIH2DFullNode>              m_params;
+            AssetHandle<Host::Vector<uint>>         m_hostIndices;
+            BIH2DData<BIH2DFullNode>                m_data;
             const uint                              m_minBuildablePrims;
 
-            Device::BIH2DAsset* cu_deviceInstance;
-            BIH2D<BIH2DFullNode>* cu_deviceInterface;
+            Device::BIH2DAsset*                     cu_deviceInstance;
         };
     }   
 }

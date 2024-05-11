@@ -2,14 +2,16 @@
 
 namespace Enso
 {
-    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DParams<BIH2DFullNode>& params)
+    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DData<BIH2DFullNode>& data)
     {
-        m_nodes = params.nodes->Data();
-        m_numNodes = params.nodes->Size();
-        m_numPrims = params.numPrims;
-        m_treeBBox = params.bBox;
-        m_isConstructed = params.isConstructed;
-        m_testAsList = params.testAsList;
+        m_nodes = data.nodes->Data();
+        m_indices = data.indices->Data();
+
+        m_numNodes = data.nodes->Size();
+        m_numPrims = data.numPrims;
+        m_treeBBox = data.bBox;
+        m_isConstructed = data.isConstructed;
+        m_testAsList = data.testAsList;
     }
 
     __host__ Host::BIH2DAsset::BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims) :
@@ -18,14 +20,15 @@ namespace Enso
         m_minBuildablePrims(minBuildablePrims)
     {
         cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::BIH2DAsset>(*this);
-        cu_deviceInterface = AssetAllocator::StaticCastOnDevice<BIH2D<BIH2DFullNode>>(cu_deviceInstance);
 
-        m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, tfm::format("%s_nodes", initCtx.id), kVectorHostAlloc);
+        m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, "nodes", kVectorHostAlloc);
+        m_hostIndices = AssetAllocator::CreateChildAsset<Host::Vector<uint>>(*this, "indices", kVectorHostAlloc);
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset() noexcept
     {
         m_hostNodes.DestroyAsset();
+        m_hostIndices.DestroyAsset();
 
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
@@ -36,7 +39,7 @@ namespace Enso
         //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
 
         // Resize and reset pointers
-        BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, m_primitiveIdxs, m_minBuildablePrims, functor);
+        BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, *m_hostIndices, m_minBuildablePrims, functor);
         builder.m_debugFunctor = m_debugFunctor;
         builder.Build();
 
@@ -44,13 +47,16 @@ namespace Enso
 
         // Synchronise the node data to the device
         m_hostNodes->Synchronise(kVectorSyncUpload);
-        m_params.isConstructed = m_isConstructed;
-        m_params.testAsList = m_testAsList;
-        m_params.bBox = m_treeBBox;
-        m_params.nodes = m_hostNodes->GetDeviceInstance();
-        m_params.numPrims = uint(m_primitiveIdxs.size());
+        m_hostIndices->Synchronise(kVectorSyncUpload);
 
-        SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_params);
+        m_data.isConstructed = m_isConstructed;
+        m_data.testAsList = m_testAsList;
+        m_data.bBox = m_treeBBox;
+        m_data.nodes = m_hostNodes->GetDeviceInstance();
+        m_data.indices = m_hostIndices->GetDeviceInstance();
+        m_data.numPrims = uint(m_hostIndices->Size());
+
+        SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_data);
     }
 
     __host__ void Host::BIH2DAsset::CheckTreeNodes() const

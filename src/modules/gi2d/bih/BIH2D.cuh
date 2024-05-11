@@ -11,17 +11,19 @@ namespace Enso
     template<typename NodeType> class BIH2DBuilder;
 
     template<typename NodeDataType>
-    struct BIH2DParams
+    struct BIH2DData
     {
         __device__ void Validate() const 
         {
             CudaAssert(nodes);
+            CudaAssert(indices);
         }
 
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
         Generic::Vector<NodeDataType>* nodes = nullptr;
+        Generic::Vector<uint>*      indices = nullptr;
         uint                        numPrims = 0;
     };
 
@@ -60,6 +62,7 @@ namespace Enso
         __host__ __device__ BIH2D() :
             m_treeBBox(vec2(0.f), vec2(0.f)),
             m_nodes(nullptr),
+            m_indices(nullptr),
             m_isConstructed(false),
             m_testAsList(false),
             m_numNodes(0),
@@ -97,7 +100,7 @@ namespace Enso
             if (m_testAsList)
             {
                 const uint idxRange[2] = { 0, m_numPrims };
-                return onIntersectLeaf(idxRange);
+                return onIntersectLeaf(idxRange, m_indices);
             }
 
             BIH2DPrimitiveStackElement stack[kBIH2DStackSize];
@@ -127,7 +130,7 @@ namespace Enso
                     OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        if (onIntersectLeaf(node->GetPrimIdxs())) { return true; }
+                        if (onIntersectLeaf(node->GetPrimIdxs(), m_indices)) { return true; }
                     }                    
                     node = nullptr;
                 }
@@ -184,7 +187,7 @@ namespace Enso
             if (m_testAsList)
             {
                 const uint idxRange[2] = { 0, m_numPrims };
-                onIntersectLeaf(idxRange, false);
+                onIntersectLeaf(idxRange, m_indices, false);
                 return;
             }
 
@@ -215,7 +218,7 @@ namespace Enso
                     OnPrimitiveIntersectInner(nodeBBox, depth, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimIdxs(), false);
+                        onIntersectLeaf(node->GetPrimIdxs(), m_indices, false);
                     }
                     node = nullptr;
                 }
@@ -227,7 +230,7 @@ namespace Enso
                     // If the entire node is contained within p, don't traverse the tree any further. Instead, just invoke the functor for all primitives contained by the node
                     if (p.Contains(nodeBBox))
                     {
-                        onIntersectLeaf(node->GetPrimIdxs(), true);
+                        onIntersectLeaf(node->GetPrimIdxs(), m_indices, true);
                         node = nullptr;
                     }
                     else
@@ -342,7 +345,7 @@ namespace Enso
             if (m_testAsList)
             {
                 const uint primsIdxs[2] = { 0, m_numPrims };
-                onIntersectLeaf(primsIdxs, range);
+                onIntersectLeaf(primsIdxs, m_indices, range);
                 return;
             }
 
@@ -377,7 +380,7 @@ namespace Enso
                     OnRayIntersectInner(bBox, range, true, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
-                        onIntersectLeaf(node->GetPrimIdxs(), range);
+                        onIntersectLeaf(node->GetPrimIdxs(), m_indices, range);
                     }
                     node = nullptr;
                 }
@@ -404,15 +407,17 @@ namespace Enso
         }
 
         __host__ __device__ __forceinline__ const BBox2f&       GetBoundingBox() const { return m_treeBBox; }
-        __host__ __device__ __forceinline__ const NodeType*     GetNodes() const { return m_nodes; }
+        __host__ __device__ __forceinline__ const NodeType*     GetNodes() const { return m_nodes; } 
+        __host__ __device__ __forceinline__ const uint*         GetIndices() const { return m_indices; }
         __host__ __device__ __forceinline__ uint                GetNumPrimitives() const { return m_numPrims; }
 
     protected:
         NodeType*                   m_nodes;
+        uint*                       m_indices;
+
         uint                        m_numNodes;
         uint                        m_numPrims;
         BBox2f                      m_treeBBox;
-
         bool                        m_isConstructed;
         bool                        m_testAsList;
 

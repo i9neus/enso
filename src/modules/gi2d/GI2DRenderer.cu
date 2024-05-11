@@ -339,17 +339,20 @@ namespace Enso
         if (m_sceneContainer->SceneBIH().IsConstructed())
         {
             auto& sceneObjects = m_sceneContainer->SceneObjects();
-            int hitIdx = -1;
+            constexpr int kInvalidHit = -1;
+            int hitIdx = kInvalidHit;
             uint hitResult = kSceneObjectInvalidSelect;
-            auto onContainsPrim = [&, this](const uint* primRange) -> bool
+            auto onContainsPrim = [&, this](const uint* primRange, const uint* primIdxs) -> bool
             {
-                for (int primIdx = primRange[0]; primIdx < primRange[1]; ++primIdx)
+                for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                 {
+                    const uint primIdx = primIdxs[idx];
                     if (primIdx >= m_sceneContainer->SceneObjects().Size())
                     {
                         int size = m_sceneContainer->SceneObjects().Size();
                         Log::Error("%i, %i", primIdx, size);
                     }
+
                     if (sceneObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
                     {
                         hitResult = sceneObjects[primIdx]->OnMouseClick(m_viewCtx);
@@ -365,7 +368,7 @@ namespace Enso
             m_sceneContainer->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
-            if (hitIdx != -1)
+            if (hitIdx != kInvalidHit)
             {
                 // Precision dragging instantaneously selects the object and goes into the object move state
                 if (hitResult == kSceneObjectPrecisionDrag)
@@ -466,29 +469,32 @@ namespace Enso
             if (m_sceneContainer->SceneBIH().IsConstructed())
             {
                 int numSelected = 0;
-                auto onIntersectPrim = [&sceneObjects, this](const uint* primRange, const bool isInnerNode)
+                auto onIntersectPrim = [&sceneObjects, this](const uint* primRange, const uint* primIdxs, const bool isInnerNode)
                 {
                     // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
                     if (isInnerNode)
                     {
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
-                            m_selectionCtx.selectedObjects.emplace_back(sceneObjects[idx]);
-                            sceneObjects[idx]->OnSelect(true);
+                            const uint primIdx = primIdxs[idx];
+                            m_selectionCtx.selectedObjects.emplace_back(sceneObjects[primIdx]);
+                            sceneObjects[primIdx]->OnSelect(true);
                         }
                     }
                     else
                     {
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
-                            const auto& bBoxWorld = sceneObjects[idx]->GetWorldSpaceBoundingBox();
+                            const uint primIdx = primIdxs[idx];
+                            const auto& bBoxWorld = sceneObjects[primIdx]->GetWorldSpaceBoundingBox();
                             const bool isCaptured = m_selectionCtx.lassoBBox.Contains(bBoxWorld);
                             if (isCaptured)
                             {
-                                m_selectionCtx.selectedObjects.emplace_back(sceneObjects[idx]);
+                                Log::Debug("Selected %i", primIdx);
+                                m_selectionCtx.selectedObjects.emplace_back(sceneObjects[primIdx]);
                                 m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, bBoxWorld);
                             }
-                            sceneObjects[idx]->OnSelect(isCaptured);
+                            sceneObjects[primIdx]->OnSelect(isCaptured);
                         }
                     }
                 };
