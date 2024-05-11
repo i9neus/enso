@@ -21,14 +21,14 @@ namespace Enso
         cu_deviceInstance = deviceInstance;
     }
 
-    __host__ void Host::Tracable::Synchronise(const uint syncFlags)
+    __host__ void Host::Tracable::OnSynchroniseSceneObject(const uint syncFlags)
     {
-        SceneObject::Synchronise(syncFlags);
-
         if (syncFlags & kSyncParams)
         {
             SynchroniseObjects<Device::Tracable>(cu_deviceInstance, m_hostInstance->m_params);
         }
+
+        OnSynchroniseTracable(syncFlags);
     }
 
     __host__ bool Host::Tracable::Serialise(Json::Node& node, const int flags) const

@@ -75,22 +75,18 @@ namespace Enso
                               public Serialisable
         {
         public:            
-            __host__ virtual void Bind() {}
+            __host__ void                   Bind() {}
+            __host__ virtual void           Synchronise(const uint syncFlags) { }
             
             __host__ virtual std::vector<AssetHandle<Host::GenericObject>>  GetChildObjectHandles() { return std::vector<AssetHandle<Host::GenericObject>>();  }
             __host__ virtual const GenericObjectParams*                     GetGenericObjectParams() const { return nullptr; }
             
-            __host__ void                   UpdateDAGPath(const Json::Node& node);
-            __host__ const std::string&     GetDAGPath() const { return m_dagPath; }
-            __host__ bool                   HasDAGPath() const { return !m_dagPath.empty(); }
-
             __host__ bool                   IsChildObject() const { return m_genericObjectFlags & kGenericObjectIsChild; }
             __host__ static uint            GetInstanceFlags() { return 0; }
 
             __host__ virtual bool           EmitStatistics(Json::Node& node) const { return false; }
-            __host__ virtual void           Synchronise(const uint flags) {}
+            //__host__ virtual void           Synchronise(const uint flags) {}
 
-            __host__ void SetDAGPath(const std::string& dagPath) { m_dagPath = dagPath; }
             __host__ void SetGenericObjectFlags(const uint flags, const bool set = true)
             {
                 if (set) { m_genericObjectFlags |= flags; }
@@ -101,14 +97,13 @@ namespace Enso
             {
                 m_genericObjectFlags = (m_genericObjectFlags & ~kGenericObjectUserFacingParameterMask) | 
                                         (flags & kGenericObjectUserFacingParameterMask);
-            }
-
-          
+            }          
 
         protected:
             __host__ GenericObject(const Asset::InitCtx& initCtx);
             __host__ virtual ~GenericObject() noexcept {}
-            __host__ void SetDeviceInstance(Device::GenericObject* deviceInstance);
+
+            __host__ void                   SetDeviceInstance(Device::GenericObject* deviceInstance);
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(GenericObjectContainer& objectContainer, const std::string& otherId)

@@ -81,15 +81,15 @@ namespace Enso
         public:
             //__host__ virtual bool       Finalise() = 0;
 
-            __host__ virtual bool       Rebuild() { return true; }
-            __host__ virtual bool       Prepare();
+            __host__ bool               Rebuild();
+            __host__ virtual void       Synchronise(const uint syncFlags) override final;
             
             __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
             __host__ virtual bool       OnSelect(const bool isSelected);
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kSceneObjectInvalidSelect; }
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
-            __host__ virtual bool       IsTransformable() const { return true; }
+            __host__ virtual bool       HasBoundingBox() const { return true; }
 
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }
             __host__ virtual bool       IsSelected() const { return m_hostInstance.m_params.attrFlags & kSceneObjectSelected; }
@@ -125,10 +125,12 @@ namespace Enso
 
         protected:
             __host__ SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
-            __host__ void SetDeviceInstance(Device::SceneObject* deviceInstance);
-            __host__ virtual void       Synchronise(const uint flags) override;
+            
+            __host__ void               SetDeviceInstance(Device::SceneObject* deviceInstance);
 
             __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) = 0;
+            __host__ virtual bool       OnRebuildSceneObject() = 0;
+            __host__ virtual void       OnSynchroniseSceneObject(const uint syncFlags) = 0;
 
             __host__ void               SetTransform(const vec2& trans);
            
@@ -139,10 +141,10 @@ namespace Enso
             __host__ void               RecomputeBoundingBoxes();
 
         protected:
-            Device::SceneObject&                        m_hostInstance;
             AssetHandle<const Host::SceneContainer>     m_scene;
 
         private:
+            Device::SceneObject&                        m_hostInstance;
             Device::SceneObject*                        cu_deviceInstance = nullptr;
 
             struct

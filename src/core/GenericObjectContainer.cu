@@ -26,22 +26,14 @@ namespace Enso
         ++m_uniqueIdx;
 
         // If the object has a DAG path, add it to the map alongside its weak reference
-        if (newObject->HasDAGPath())
+        const std::string dagPath = newObject->GetAssetDAGPath();
+        if (m_dagMap.find(dagPath) == m_dagMap.end())
         {
-            if (m_dagMap.find(newObject->GetDAGPath()) == m_dagMap.end())
-            {
-                m_dagMap[newObject->GetDAGPath()] = newObject.GetWeakHandle();
-            }
-            else
-            {
-                Log::Error("Internal error: object '%s' has the same DAG path (%s) as another object.\n", newObject->GetAssetID(), newObject->GetDAGPath());
-            }
+            m_dagMap[dagPath] = newObject.GetWeakHandle();
         }
-        // Child objects don't need to have DAG paths because they aren't user-referenceable
-        else if (requireDAGPath && !newObject->IsChildObject())
+        else
         {
-            Log::Warning("Warning: instantiated object '%s' does not have a valid DAG path. (Did you forget to call UpdateDAGPath() during FromJson()?)\n", newObject->GetAssetID());
-            return;
+            Log::Error("Internal error: object '%s' has the same DAG path (%s) as another object.\n", newObject->GetAssetID(), dagPath);
         }
     }
 
@@ -58,11 +50,7 @@ namespace Enso
         auto obj = it->second;
 
         // Erase the object from the DAG map
-        if (obj->HasDAGPath())
-        {
-            const auto& dag = obj->GetDAGPath();
-            m_objectMap.erase(dag);
-        }
+        m_dagMap.erase(obj->GetAssetDAGPath());
 
         // Erase the object from the main asset map
         AssertMsgFmt(m_objectMap.erase(id), "Internal error: object map and object list have gone out of sync with object '%s'", id.c_str());

@@ -29,6 +29,14 @@ namespace Enso
             return *this;
         }*/
 
+        Node Node::operator [](const size_t idx)
+        {
+            AssertMsgFmt(m_node->IsArray(), "Cannot use operator [] on node '%s' because it is not an array.", m_dagPath.c_str());
+            AssertMsgFmt(idx < m_node->Size(), "Index %i larger than array size %i.", idx, m_node->Size());
+
+            return Node(&(*m_node)[idx], *this);
+        }      
+
         int Node::GetKeyFormat(const std::string& name) const
         {
             // JSON node names may only contain alphanumeric characters, underscores, dashes, and the DAG delimiter
@@ -41,7 +49,7 @@ namespace Enso
             }
             return keyFormat;
         }
-        
+
         bool Node::IsValidName(const std::string& name) const
         {
             // JSON node names may only contain alphanumeric characters, underscores and dashes
@@ -52,7 +60,7 @@ namespace Enso
             }
             return true;
         }
-        
+
         rapidjson::Value* Node::GetChildImpl(const std::string& path, const uint flags) const
         {
             Assert(m_node);
@@ -117,7 +125,7 @@ namespace Enso
             auto functor = [this, &value](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
             {
                 node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(),
-                                  rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
+                    rapidjson::Value(value.c_str(), *m_allocator).Move(), *m_allocator);
 
                 return Node();
             };
@@ -144,17 +152,17 @@ namespace Enso
         Node Node::ResolveDAGRoute(const std::string& path, const uint flags, rapidjson::Value* node, std::function<Node(rapidjson::Value*, const std::string&, const uint)> functor)
         {
             CheckOk();
-            
+
             if (!(flags & kPathIsDAG))
             {
                 // Verify that the key is correctly formatted
                 const int keyFormat = GetKeyFormat(path);
                 AssertMsgFmt(keyFormat != kKeyInvalid, "'%s' is not a valid node name (must be alphanumeric, underscore or dash)", path.c_str());
                 AssertMsgFmt(keyFormat != kKeyDAG, "'%s' is formatted like a DAG, however the kPathIsDAG flag was not specified.", path.c_str());
-                    
+
                 return functor(node, path, flags);
             }
-            
+
             // Parse the DAG path into its constituent tokens
             Lexer lex(path);
             Assert(lex);
@@ -190,19 +198,53 @@ namespace Enso
             return functor(node, tokens.back(), flags);
         }
 
-        Node Node::AddChildObject(const std::string& path, const int flags)
+        Node Node::AddAbstractChildNode(const std::string& path, const int flags)
         {
             auto functor = [this](rapidjson::Value* node, const std::string& name, const uint flags) -> Node
             {
                 // Add the new child node
                 node->AddMember(rapidjson::Value(name.c_str(), *m_allocator).Move(), rapidjson::Value().Move(), *m_allocator);
                 rapidjson::Value& newNode = (*node)[name.c_str()];
-                newNode.SetObject();
-
                 return Node(&newNode, *this);
             };
 
             return ResolveDAGRoute(path, flags, m_node, functor);
+        }
+
+        Node Node::AddChildObject(const std::string& path, const int flags)
+        {
+            Node newNode = AddAbstractChildNode(path, flags);
+            newNode.m_node->SetObject();
+            return newNode;
+        }
+
+        Node Node::AddChildArray(const std::string& path, const int flags)
+        {
+            Node newNode = AddAbstractChildNode(path, flags);
+            newNode.m_node->SetArray();
+            return newNode;
+        }
+
+        Node& Node::MakeArray()
+        {
+            if (!m_node->IsArray()) { m_node->SetArray(); }
+            return *this;
+        }
+
+        Node& Node::MakeObject()
+        {
+            if (!m_node->IsObject()) { m_node->SetObject(); }
+            return *this;
+        }
+
+        // Creates a new node, sets it as an object, pushes it to the end of the array represented by this node, and returns it as Node object
+        Node Node::AppendArrayObject()
+        {
+            AssertMsg(IsArray(), "Cannot add an array object to a node that wasn't explicitly created as an array.")
+
+            m_node->PushBack(rapidjson::Value().SetObject().Move(), *m_allocator);
+            rapidjson::Value& newNode = (*m_node)[m_node->Size() - 1];
+            return Node(&newNode, *this);
         }
 
         bool Node::GetBool(const std::string& name, const bool defaultValue, const uint flags) const
@@ -368,14 +410,21 @@ namespace Enso
             WriteTextFile(filePath, Stringify(true));
         }
 
-        bool Node::IsObject() const { CheckOk(); return m_node->IsObject(); }
-
         int Node::Size() const
         {
             CheckOk();
-            if (!m_node->IsObject()) { return 0; }
-
-            return m_node->GetObject().MemberCount();
+            if (m_node->IsObject())
+            {
+                return m_node->GetObject().MemberCount();
+            }
+            else if (m_node->IsArray())
+            {
+                return m_node->GetArray().Size();
+            }
+            else
+            {
+                return 0;
+            }
         }
     }
 }

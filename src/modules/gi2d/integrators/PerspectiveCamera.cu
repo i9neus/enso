@@ -137,10 +137,8 @@ namespace Enso
         m_ui.hostUIHandles.DestroyAsset();
     }
 
-    __host__ void Host::PerspectiveCamera::Synchronise(const uint syncFlags)
+    __host__ void Host::PerspectiveCamera::OnSynchroniseCamera(const uint syncFlags)
     {
-        SceneObject::Synchronise(syncFlags);
-
         if (syncFlags & kSyncParams)
         {
             SynchroniseObjects<>(cu_deviceInstance, m_hostInstance.m_params);
@@ -214,7 +212,7 @@ namespace Enso
     __host__ bool Host::PerspectiveCamera::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
     {
         // Render the control handles
-        if (GetAxisHandle().OnDelegateAction(stateID, keyMap, viewCtx.mousePos - GetTransform().trans))
+        if (GetAxisHandle().OnDelegateAction(stateID, keyMap, viewCtx.mousePos - GetTransform().trans) != kClean)
         {
             SignalDirty(kDirtyObjectRebuild);
         }
@@ -222,10 +220,8 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::PerspectiveCamera::Rebuild()
-    {
-        SceneObject::Rebuild();
-        
+    __host__ bool Host::PerspectiveCamera::OnRebuildSceneObject()
+    {        
         // Create an orthonomal basis
         const vec2 dir = SafeNormalize(GetAxisHandle().GetCentroid());
         m_hostInstance.m_params.fwdBasis = mat2(dir, vec2(-dir.y, dir.x));
@@ -233,8 +229,6 @@ namespace Enso
         m_hostInstance.m_params.cameraPos = GetTransform().trans;
 
         ConstructUIWireframes();
-        RecomputeBoundingBoxes();
-        Synchronise(kSyncObjects | kSyncParams);
 
         return true;
     }

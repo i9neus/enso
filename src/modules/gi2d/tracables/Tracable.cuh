@@ -68,7 +68,10 @@ namespace Enso
             __host__ Tracable(const Asset::InitCtx& initCtx, Device::Tracable* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ void SetDeviceInstance(Device::Tracable* deviceInstance);
             
-            __host__ virtual void Synchronise(const uint syncFlags) override;
+            __host__ virtual void       OnSynchroniseSceneObject(const uint syncFlags) override final;
+
+            __host__ virtual void       OnSynchroniseTracable(const uint syncFlags) = 0;
+            //__host__ virtual void Synchronise(const uint syncFlags) override;
 
         protected:
             Device::Tracable*               m_hostInstance = nullptr;

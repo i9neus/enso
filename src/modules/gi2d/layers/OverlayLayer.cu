@@ -41,14 +41,14 @@ namespace Enso
         if (!bih || !elementListPtr) { return; }
 
         const ContainerType& elementList = *elementListPtr;
-        auto onPointIntersectLeaf = [&](const uint* idxRange) -> bool
+        auto onPointIntersectLeaf = [&](const uint* idxRange, const uint* primIdxs) -> bool
         {
             for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
             {
-                assert(idx < elementList.Size());
-                assert(elementList[idx]);
+                CudaAssertDebug(primIdxs[idx] < elementList.Size());
+                CudaAssertDebug(elementList[primIdxs[idx]]);
 
-                const auto& drawable = *elementList[idx];
+                const auto& drawable = *elementList[primIdxs[idx]];
                 vec4 LPrim = drawable.EvaluateOverlay(xyView, viewCtx, false);
                 if (LPrim.w > 0.0f)
                 {
@@ -156,10 +156,10 @@ namespace Enso
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::OverlayLayer::Synchronise(const int syncType)
+    __host__ void Host::OverlayLayer::Synchronise(const uint syncFlags)
     {
-        if (syncType & kSyncObjects) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_params); }
+        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_deviceObjects); }
+        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_params); }
     }
 
     __host__ void Host::OverlayLayer::Render()
@@ -188,11 +188,11 @@ namespace Enso
         Ray2D ray(vec2(0.0f), normalize(UILayer::m_params.viewCtx.mousePos));
         HitCtx2D hit;
         
-        auto onIntersect = [&](const uint* primRange, RayRange2D& range)
+        auto onIntersect = [&](const uint* primRange, const uint* primIdxs, RayRange2D& range)
         {
             for (uint idx = primRange[0]; idx < primRange[1]; ++idx)
             {
-                if (tracables[idx]->IntersectRay(ray, hit))
+                if (tracables[primIdxs[idx]]->IntersectRay(ray, hit))
                 {
                     if (hit.tFar < range.tFar)
                     {

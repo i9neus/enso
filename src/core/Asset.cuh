@@ -59,6 +59,7 @@ namespace Enso
             __host__ virtual std::string        GetAssetClass() const { return ""; }
             __host__ const inline std::string&  GetAssetID() const { return m_assetId; }
             __host__ std::string                GetParentAssetID() const;
+            __host__ std::string                GetAssetDAGPath() const;
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
 
             __host__ static std::string         MakeTemporaryID();

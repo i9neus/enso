@@ -24,6 +24,10 @@ namespace Enso
     {
         __device__ void Validate() const
         {
+            if (!accumBuffer)
+            {
+                printf("0x%x\n", accumBuffer);
+            }
             CudaAssert(accumBuffer);
         }
         
@@ -76,7 +80,8 @@ namespace Enso
 
         protected:
             __host__ bool OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final { return false; }
-            __host__ void Synchronise(const int syncType);
+            __host__ virtual void OnSynchroniseCamera(const uint syncFlags) override final;
+            __host__ virtual bool OnRebuildSceneObject() override final { return true; }
 
         private:
             Device::VoxelProxyGrid*            cu_deviceInstance = nullptr;

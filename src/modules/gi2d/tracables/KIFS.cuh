@@ -87,18 +87,15 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class KIFS : public Host::Tracable
+        class KIFS final : public Host::Tracable
         {
         public:
             __host__ KIFS(const Asset::InitCtx& initCtx);
             __host__ virtual ~KIFS() noexcept;
 
-            __host__ virtual void       Synchronise(const uint syncType) override final;
-
+            __host__ virtual void       OnSynchroniseTracable(const uint syncType) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
-
-            //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
-            __host__ virtual bool       Rebuild() override final;
+            __host__ virtual bool       OnRebuildSceneObject() override final { return true; }
 
             __host__ virtual Device::KIFS* GetDeviceInstance() const override final
             {

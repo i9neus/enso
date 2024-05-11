@@ -130,10 +130,8 @@ namespace Enso
         m_hostLineSegments.DestroyAsset();
     }
 
-    __host__ void Host::LineStrip::Synchronise(const uint syncType)
+    __host__ void Host::LineStrip::OnSynchroniseTracable(const uint syncType)
     {
-        Tracable::Synchronise(syncType);
-
         if (syncType & kSyncObjects)
         {
             SynchroniseObjects<Device::LineStrip>(cu_deviceInstance, m_deviceObjects);
@@ -197,10 +195,8 @@ namespace Enso
         return !m_hostLineSegments->IsEmpty() && m_hostBIH->IsConstructed();
     }
 
-    __host__ bool Host::LineStrip::Rebuild()
+    __host__ bool Host::LineStrip::OnRebuildSceneObject()
     {
-        Tracable::Rebuild();
-        
         // Sync the line segments
         auto& segments = *m_hostLineSegments;
         segments.Synchronise(kVectorSyncUpload);
@@ -208,8 +204,8 @@ namespace Enso
         // Create a segment list ready for building
         // TODO: It's probably faster if we build on the already-sorted index list
         auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
-        primIdxs.resize(segments.Size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+        primIdxs.Resize(segments.Size());
+        for (uint idx = 0; idx < primIdxs.Size(); ++idx) { primIdxs[idx] = idx; }
 
         // Construct the BIH
         std::function<BBox2f(uint)> getPrimitiveBBox = [&segments](const uint& idx) -> BBox2f
@@ -217,11 +213,6 @@ namespace Enso
             return Grow(segments[idx].GetBoundingBox(), 0.001f);
         };
         m_hostBIH->Build(getPrimitiveBBox);
-
-        //Log::Write("  - Rebuilt curve %s BIH: %s", GetAssetID(), GetObjectSpaceBoundingBox().Format()); 
-
-        // Update the tracable bounding boxes
-        Synchronise(kSyncObjects | kSyncParams);
 
         return true;
     }

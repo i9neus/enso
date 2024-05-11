@@ -55,12 +55,9 @@ namespace Enso
 
     __host__ void Host::Camera::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
-        SceneObject::OnDirty(flag, caller);
+        //SceneObject::OnDirty(flag, caller);
 
-        if (flag == kDirtyIntegrators)
-        {
-            SetDirty(kDirtyIntegrators);
-        }
+        SetDirty(kDirtyIntegrators);
     }
 
     __host__ void Host::Camera::SetDeviceInstance(Device::Camera* deviceInstance)
@@ -83,34 +80,23 @@ namespace Enso
 
         m_deviceObjects.accumBuffer = m_accumBuffer->GetDeviceInstance();
         m_deviceObjects.scene = m_scene->GetDeviceInstance();
-
-        Synchronise(kSyncParams | kSyncObjects);
-    }
-
-    __host__ bool Host::Camera::Prepare()
-    {
-        if (!SceneObject::Prepare()) { return false; }
-
-        // If we've already accumuated the specified number of samples, we're done
-        if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples)
-        {
-            return false;
-        }
-        else
-        {
-            KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
-
-            if (IsDirty(kDirtyIntegrators))
-            {
-                m_accumBuffer->Clear();
-            }
-
-            return true;
-        }        
     }
 
     __host__ void Host::Camera::Integrate()
     {
+        if (IsDirty(kDirtyIntegrators))
+        {
+            // Something has signaled to clear the integrators
+            m_accumBuffer->Clear();
+        }
+        else if (m_params.maxSamples > 0 && m_accumBuffer->GetTotalAccumulatedSamples() >= m_params.maxSamples)
+        {
+            // If we've already accumuated the specified number of samples, we're done
+            return;
+        }
+
+        KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+        
         ScopedDeviceStackResize(1024 * 10, [this]() -> void
             {
                 KernelIntegrate << <m_params.accum.kernel.grids.accumSize, m_params.accum.kernel.blockSize >> > (cu_deviceInstance);
@@ -121,10 +107,12 @@ namespace Enso
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::Camera::Synchronise(const int syncFlags)
+    __host__ void Host::Camera::OnSynchroniseSceneObject(const uint syncFlags)
     {
         if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_deviceObjects); }
         if (syncFlags & kSyncParams) { SynchroniseObjects<Device::Camera>(cu_deviceInstance, m_params); }
+
+        OnSynchroniseCamera(syncFlags);
     }
 
     __host__ bool Host::Camera::Serialise(Json::Node& node, const int flags) const

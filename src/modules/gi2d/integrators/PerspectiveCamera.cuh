@@ -73,7 +73,7 @@ namespace Enso
     {
         class BIH2DAsset;
 
-        class PerspectiveCamera : public Host::Camera
+        class PerspectiveCamera final : public Host::Camera
                                   
         {
         public:
@@ -85,13 +85,13 @@ namespace Enso
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
-            __host__ virtual bool       Rebuild() override final;
+            __host__ virtual bool       OnRebuildSceneObject() override final;
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "perspectivecamera"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
-            __host__ virtual void              Synchronise(const uint syncType) override final;
+            __host__ virtual void              OnSynchroniseCamera(const uint syncType) override final;
 
             __host__ virtual Device::PerspectiveCamera* GetDeviceInstance() const override final
             {
@@ -105,8 +105,6 @@ namespace Enso
 
         protected:
             __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
-
-            __host__ void               UpdateObjectSpaceBoundingBox();
 
         private:
             __host__ void               ConstructUIWireframes();

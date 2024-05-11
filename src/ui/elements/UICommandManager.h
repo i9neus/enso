@@ -20,6 +20,8 @@ namespace Enso
 
         bool ObjectExists(const std::string& objectId) const;        
 
+        template<typename Lambda> void IterateArrayObjects(const Json::Node& node, Lambda lambda);
+
     private:
         UIObjectContainer&                  m_objectContainer;
     };

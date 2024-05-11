@@ -124,11 +124,9 @@ namespace Enso
         return AssetAllocator::CreateAsset<Host::VoxelProxyGrid>(id, json, scene);
     }*/
 
-    __host__ void Host::VoxelProxyGrid::Synchronise(const int syncType)
-    {
-        Camera::Synchronise(syncType);
-        
-        if (syncType & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGrid>(cu_deviceInstance, m_deviceObjects); }
-        if (syncType & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGrid>(cu_deviceInstance, m_params); }
+    __host__ void Host::VoxelProxyGrid::OnSynchroniseCamera(const uint syncFlags)
+    {        
+        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::VoxelProxyGrid>(cu_deviceInstance, m_deviceObjects); }
+        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::VoxelProxyGrid>(cu_deviceInstance, m_params); }
     }
 }

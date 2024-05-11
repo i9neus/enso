@@ -54,7 +54,7 @@ namespace Enso
         if (stateID == "kCreateSceneObjectOpen")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos;
-            SignalDirty({ kDirtyObjectBoundingBox, kDirtyObjectRebuild });
+            SignalDirty({ kDirtyObjectRebuild });
         }
 
         // Call the virtual method implemented by inheriting classes. 
@@ -62,8 +62,10 @@ namespace Enso
         {
             // Recompute the bounding boxes and signal the need to rebuild
             RecomputeBoundingBoxes();            
-            SignalDirty(kDirtyObjectRebuild);
+            SignalDirty({ kDirtyObjectRebuild });
         }
+
+        return true;
     }
 
     __host__ void Host::SceneObject::RecomputeBoundingBoxes()
@@ -101,12 +103,12 @@ namespace Enso
 
     __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
     {
-        GenericObject::Synchronise(syncFlags);
-
         if (syncFlags & kSyncParams)
         {
             SynchroniseObjects<Device::SceneObject>(cu_deviceInstance, m_hostInstance.m_params);
         }
+
+        OnSynchroniseSceneObject(syncFlags);
     }
 
     __host__ bool Host::SceneObject::Serialise(Json::Node& node, const int flags) const
@@ -137,14 +139,18 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::SceneObject::Prepare()
+    __host__ bool Host::SceneObject::Rebuild()
     {
-        if (IsAnyDirty({ kDirtyParams, kDirtyObjectRebuild, kDirtyObjectBoundingBox }))
+        // If inheriting objects that we're doing a rebuild
+        if (OnRebuildSceneObject())
         {
-            m_hostInstance.m_params.objectBBox = GetObjectSpaceBoundingBox();
-            m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
+            // Update the transform and re-sync everything
+            RecomputeBoundingBoxes();
+            Synchronise(kSyncParams | kSyncObjects);
 
-            Synchronise(kSyncParams);
+            return true;
+        
         }
+        return false;
     }
 }

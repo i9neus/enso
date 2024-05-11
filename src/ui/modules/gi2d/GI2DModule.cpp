@@ -25,7 +25,7 @@ namespace Enso
         // Flush the command queue and update the object
         if (m_inboundCmdQueue)
         {
-            m_commandManger.Flush(*m_inboundCmdQueue, true);
+            m_commandManger.Flush(*m_inboundCmdQueue, false);
         }
         
         // Construct the objects
@@ -43,6 +43,7 @@ namespace Enso
         {
             m_outboundCmdQueue->Clear();
             Json::Node cmdNode = m_outboundCmdQueue->Create("OnUpdateObject");
+            cmdNode.MakeArray();
             for (auto& object : dirtyObjects)
             {
                 object->Serialise(cmdNode);

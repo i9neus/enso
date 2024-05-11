@@ -38,8 +38,6 @@ namespace Enso
                 m_hostInstance(hostInstance)
             {}
 
-            __host__ virtual void Synchronise(const uint syncType) override { Tracable::Synchronise(syncType); }
-
             __host__ void SetDeviceInstance(Device::Light* deviceInstance)
             {
                 Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(deviceInstance));

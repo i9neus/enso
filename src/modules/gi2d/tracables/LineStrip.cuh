@@ -54,13 +54,12 @@ namespace Enso
             __host__ LineStrip(const Asset::InitCtx& initCtx);
             __host__ virtual ~LineStrip() noexcept;
 
-            __host__ virtual void       Synchronise(const uint syncType) override final;
-
+            __host__ virtual bool       OnRebuildSceneObject() override final;
+            __host__ virtual void       OnSynchroniseTracable(const uint syncType) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
 
             //__host__ virtual uint       OnSelectElement(const std::string& stateID, const vec2& mousePos, const UIViewCtx& viewCtx, UISelectionCtx& selectCtx) override final;
             __host__ virtual bool       IsConstructed() const override final;
-            __host__ virtual bool       Rebuild() override final;
 
             __host__ virtual Device::LineStrip* GetDeviceInstance() const override final
             {

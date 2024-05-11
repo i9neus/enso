@@ -69,7 +69,7 @@ namespace Enso
 
     namespace Device
     {
-        class AccumulationBuffer : public Device::GenericObject
+        class AccumulationBuffer : public Device::Asset
         {
         public:
             __host__ __device__ AccumulationBuffer() {}
@@ -99,7 +99,7 @@ namespace Enso
 
     namespace Host
     {
-        class AccumulationBuffer : public Host::GenericObject
+        class AccumulationBuffer : public Host::Asset
         {
         public:
             AccumulationBuffer(const Asset::InitCtx& initCtx, const int numProbes, const int numHarmonics, const size_t accumBufferSize);
@@ -113,7 +113,7 @@ namespace Enso
             __host__ Device::AccumulationBuffer* GetDeviceInstance() const { return cu_deviceInstance; }
 
         private:
-            __host__ inline void Synchronise(const int syncFlags);
+            __host__ void Synchronise(const int syncFlags);
 
             AssetHandle<Host::Vector<vec3>>         m_hostAccumBuffer;
             AssetHandle<Host::Vector<vec3>>         m_hostReduceBuffer;

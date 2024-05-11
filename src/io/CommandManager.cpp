@@ -12,7 +12,7 @@ namespace Enso
         Json::Document rootNode;
         if (!inCmd.Flush(rootNode)) { return; }
 
-        //if (debug) { Log::Debug(rootNode.Stringify(true)); }
+        if (debug) { Log::Debug(rootNode.Stringify(true)); }
 
         try
         {
@@ -20,7 +20,7 @@ namespace Enso
             for (Json::Document::Iterator nodeIt = rootNode.begin(); nodeIt != rootNode.end(); ++nodeIt)
             {
                 Json::Node childNode = *nodeIt;
-                if (!childNode.IsObject()) { continue; }
+                if (!childNode.IsObject() && !childNode.IsArray()) { continue; }
 
                 const auto functorIt = m_eventMap.find(nodeIt.Name());
                 if (functorIt == m_eventMap.end())

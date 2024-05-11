@@ -64,7 +64,8 @@ namespace Enso
 
     void UIGenericObject::Serialise(Json::Node& node) const
     {
-        Json::Node childNode = node.AddChildObject(m_id);
+        Json::Node childNode = node.AppendArrayObject();
+        childNode.AddValue("id", m_id);
         for (const auto& attr : m_attributeList)
         {
             attr->Serialise(childNode);

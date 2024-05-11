@@ -75,7 +75,7 @@ namespace Enso
 
     __host__ void Host::SceneBuilder::SortSceneObject(AssetHandle<Host::SceneObject>& sceneObject)
     {
-        // All objects go into the universal BIH
+        // All scene objects go into the universal BIH
         m_container->m_hostSceneObjects->EmplaceBack(sceneObject);
         
         // If this is a camera object, add it to the list of cameras but not the list of scene objects
@@ -86,23 +86,19 @@ namespace Enso
         }
         else
         {
-            // If the object can be transformed, add it to the list of scene objects
-            if (sceneObject->IsTransformable())
+            // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
+            auto tracable = sceneObject.DynamicCast<Host::Tracable>();
+            if (tracable)
             {
-                // Tracables have their own BIH and build process required for ray tracing, so process them separaately here.
-                auto tracable = sceneObject.DynamicCast<Host::Tracable>();
-                if (tracable)
-                {
-                    // Add the tracable to the list
-                    m_container->m_hostTracables->EmplaceBack(tracable);
+                // Add the tracable to the list
+                m_container->m_hostTracables->EmplaceBack(tracable);
 
-                    // Tracables that are also lights are separated out into their own container
-                    auto light = sceneObject.DynamicCast<Host::Light>();
-                    if (light)
-                    {
-                        tracable->SetLightIdx(m_lightIdx++);
-                        m_container->m_hostLights->EmplaceBack(light);
-                    }
+                // Tracables that are also lights are separated out into their own container
+                auto light = sceneObject.DynamicCast<Host::Light>();
+                if (light)
+                {
+                    tracable->SetLightIdx(m_lightIdx++);
+                    m_container->m_hostLights->EmplaceBack(light);
                 }
             }
         }
@@ -180,6 +176,8 @@ namespace Enso
             RebuildBIH(*m_container->m_hostTracableBIH, *m_container->m_hostTracables);
             RebuildBIH(*m_container->m_hostSceneBIH, *m_container->m_hostSceneObjects);
         }
+
+        SignalDirty(kDirtyIntegrators);
 
         // Summarise the build process
         //m_container->Summarise();

@@ -10,7 +10,6 @@ namespace Enso
         struct SceneContainer : public Device::Asset
         {
             __device__ SceneContainer() {}
-            __device__ void OnSynchronise(const uint) {}
             __device__ void Synchronise(const SceneContainer& objects) { *this = objects; }
             
             __device__ void Validate() const

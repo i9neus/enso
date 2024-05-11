@@ -6,6 +6,8 @@ namespace Enso
 {
     enum GI2DDirtyFlags : unsigned int
     {
+        kClean = 0,
+
         // Scene object bounding box has changed
         kDirtyObjectBoundingBox,            
 

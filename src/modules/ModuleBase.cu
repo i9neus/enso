@@ -163,9 +163,9 @@ namespace Enso
 		m_uiEventQueueMutex.lock();
 
 		// If the control queue hasn't been purged, just replace the most recent event
-		if (m_uiEventQueue.events.size() >= m_uiEventQueue.maxEvents)
+		if (m_uiEventQueue.events.size() >= m_uiEventQueue.maxEvents && !queue.empty())
 		{
-			Log::Debug("Warning: UI control queue exceeded max size of %i events", m_uiEventQueue.maxEvents);
+			Log::DebugOnce("Warning: UI control queue exceeded max size of %i events", m_uiEventQueue.maxEvents);
 
 			m_uiEventQueue.events.back() = event;
 			queue.back() = newItem;
@@ -268,15 +268,15 @@ namespace Enso
 		}
 
 		// Sanity check
-		Assert(m_uiEventQueue.keyButton.empty());
+		/*Assert(m_uiEventQueue.keyButton.empty());
 		Assert(m_uiEventQueue.mouseButton.empty());
 		Assert(m_uiEventQueue.mouseMove.empty());
-		Assert(m_uiEventQueue.mouseWheel.empty());
+		Assert(m_uiEventQueue.mouseWheel.empty());*/
 
-		/*m_uiEventQueue.keyButton.clear();
+		m_uiEventQueue.keyButton.clear();
 		m_uiEventQueue.mouseButton.clear();
 		m_uiEventQueue.mouseMove.clear();
-		m_uiEventQueue.mouseWheel.clear();*/
+		m_uiEventQueue.mouseWheel.clear();
 	}
 
 	void ModuleBase::SetKey(const uint code, const bool isSysKey, const bool isDown)

@@ -69,7 +69,6 @@ namespace Enso
         {
         public:
             __host__ void Integrate();
-            __host__ virtual bool Prepare() override;
             //__host__ virtual bool Rebuild(const uint dirtyFlags, const UIViewCtx& viewCtx) = 0;
             __host__ virtual Device::Camera* GetDeviceInstance() const override { return cu_deviceInstance; }
 
@@ -79,7 +78,8 @@ namespace Enso
             __host__ void SetDeviceInstance(Device::Camera* deviceInstance);
 
             __host__ void Initialise(const int numProbes, const int numHarmonics, const size_t accumBufferSize);
-            __host__ void Synchronise(const int syncFlags);
+            __host__ virtual void       OnSynchroniseSceneObject(const uint syncFlags) override final;
+            __host__ virtual void       OnSynchroniseCamera(const uint syncFlags) = 0;
             __host__ virtual void       OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller) override final;
 
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;

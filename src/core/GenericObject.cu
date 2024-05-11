@@ -28,15 +28,4 @@ namespace Enso
         m_isConstructed(false)
     {
     }
-    
-    __host__ void Host::GenericObject::UpdateDAGPath(const Json::Node& node)
-    {
-        if (!node.HasDAGPath())
-        {
-            Log::Error("Internal error: JSON node for '%s' has no DAG path.\n", GetAssetID());
-            return;
-        }
-
-        SetDAGPath(node.GetDAGPath());
-    }
 }

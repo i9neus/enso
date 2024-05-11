@@ -117,6 +117,8 @@ namespace Enso
             // Ensures that the specified DAG path exists up until the last element (which will be decided by the calling function)
             Node ResolveDAGRoute(const std::string& path, const uint flags, rapidjson::Value* node, std::function<Node(rapidjson::Value*, const std::string&, const uint)> functor);
 
+            Node AddAbstractChildNode(const std::string& path, const int flags);
+
         public:
             inline void CheckOk() const { AssertMsg(m_node && m_allocator, "Invalid or unitialised JSON node."); }
             bool IsValidName(const std::string& name) const; 
@@ -135,7 +137,11 @@ namespace Enso
             ConstIterator begin() const { CheckOk(); return ConstIterator(m_node->MemberBegin(), *this); }
             ConstIterator end() const { CheckOk(); return ConstIterator(m_node->MemberEnd(), *this); }
 
-            bool IsObject() const;
+            Node& MakeArray();
+            Node& MakeObject();
+
+            bool IsObject() const { CheckOk(); return m_node->IsObject(); }
+            bool IsArray() const { CheckOk(); return m_node->IsArray(); }
             inline int NumMembers() const { return Size(); }
             int Size() const;
 
@@ -217,8 +223,9 @@ namespace Enso
                 ResolveDAGRoute(path, flags, m_node, functor);                
             }
 
-            Node AddChildObject(const std::string& name, const int flags = 0);
-
+            Node AddChildObject(const std::string& name, const int flags = 0);            
+            Node AddChildArray(const std::string& name, const int flags = 0);
+            Node AppendArrayObject();
             bool GetBool(const std::string& name, const bool defaultValue, const uint flags) const;
 
             template<typename T>
@@ -318,6 +325,8 @@ namespace Enso
 
             inline operator bool() const { return m_node; }
             inline bool operator!() const { return !m_node; }
+            Node operator [](const size_t idx);
+            inline const Node operator [](const size_t idx) const { return const_cast<Node*>(this)->operator[](idx); }
 
             inline rapidjson::Value* GetPtr() { return m_node; }
         };

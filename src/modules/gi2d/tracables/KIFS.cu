@@ -224,10 +224,8 @@ namespace Enso
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
-    __host__ void Host::KIFS::Synchronise(const uint syncType)
+    __host__ void Host::KIFS::OnSynchroniseTracable(const uint syncType)
     {
-        Tracable::Synchronise(syncType);
-
         if (syncType & kSyncParams)
         {
             SynchroniseObjects<Device::KIFS>(cu_deviceInstance, m_hostInstance.m_params);
@@ -251,15 +249,6 @@ namespace Enso
         }
 
         return false;
-    }
-
-    __host__ bool Host::KIFS::Rebuild()
-    {
-        Tracable::Rebuild();
-
-        Synchronise(kSyncParams); 
-        
-        return true;
     }
 
     __host__ uint Host::KIFS::OnMouseClick(const UIViewCtx& viewCtx) const

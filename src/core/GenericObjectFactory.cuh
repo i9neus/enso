@@ -87,6 +87,9 @@ namespace Enso
         template<typename... TypePack>
         __host__ void GenericObjectFactory<TypePack...>::InstantiateGroup(const Json::Node& node, const std::string& objectTypeStr, Host::GenericObjectContainer& renderObjects)
         {
+            // FIXME: The entire instancing system for Enso needs overhauling.
+            AssertMsg(false, "Instancing is broken.");
+            
             for (Json::Node::ConstIterator it = node.begin(); it != node.end(); ++it)
             {
                 AssetHandle<Host::GenericObject> newObject;
@@ -133,8 +136,8 @@ namespace Enso
                         }
                     }
 
+                    // FIXME: This is broken now that asset relations naturally contain their DAGs. 
                     Log::Debug("Instantiating %i new %s....\n", numInstances, objectTypeStr);
-
                     std::string instanceId;
                     for (int instanceIdx = 0; instanceIdx < numInstances; ++instanceIdx)
                     {
@@ -157,9 +160,8 @@ namespace Enso
                             continue;
                         }
 
-                        // Instanced objects have virtual DAG paths, so replace the trailing ID from the JSON file with the actual ID from the asset
                         const std::string instancedDAGPath = tfm::format("%s%c%i", childNode.GetDAGPath(), Json::Node::kDAGDelimiter, instanceIdx + 1);
-                        newObject->SetDAGPath(instancedDAGPath);
+                        //newObject->SetDAGPath(instancedDAGPath);
 
                         // Emplace the newly created object
                         EmplaceNewObject(newObject, renderObjects);

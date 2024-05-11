@@ -179,18 +179,23 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::OnInboundUpdateObject(const Json::Node& node)
     {
-        for (Json::Node::ConstIterator nodeIt = node.begin(); nodeIt != node.end(); ++nodeIt)
+        Assert(node.IsArray(), "Expected array");
+        for(int idx = 0; idx < node.Size(); ++idx)
         {
-            const std::string& objId = nodeIt.Name();
-            auto objectHandle = m_sceneContainer->GenericObjects().FindByID(objId);
+            Json::Node itemNode = node[idx];
+            Assert(itemNode.IsObject());
+
+            std::string id;
+            itemNode.GetValue("id", id, Json::kRequiredAssert | Json::kNotBlank);
+            auto objectHandle = m_sceneContainer->GenericObjects().FindByID(id);
 
             if (!objectHandle)
             {
-                Log::Warning("Error: '%s' is not a valid scene object.", objId);
+                Log::Warning("Error: '%s' is not a valid scene object.", id);
                 continue;
             }
 
-            objectHandle->Deserialise(*nodeIt, Json::kRequiredWarn);
+            objectHandle->Deserialise(itemNode, Json::kSilent);
         }
     }
 
@@ -204,31 +209,35 @@ namespace Enso
         auto SerialiseImpl = [&](Json::Node& node, const AssetHandle<Host::GenericObject>& obj) -> void
         {           
             // Create a new child object and add its class ID for the schema
-            Json::Node childNode = node.AddChildObject(obj->GetAssetID(), Json::kPathIsDAG);
             const std::string assetClass = obj->GetAssetClass();
             AssertMsgFmt(!assetClass.empty(), "Error: asset '%s' has no defined class", obj->GetAssetClass());
-            childNode.AddValue("class", assetClass);
+            node.AddValue("id", obj->GetAssetID());
+            //node.AddValue("dagPath", obj->GetAssetDAGPath());
+            node.AddValue("class", assetClass);
 
             // Deleted objects don't need their full attribute list serialised
             if (!(flags & kEnqueueIdOnly))
             {
-                obj->Serialise(childNode, kSerialiseExposedOnly);
+                obj->Serialise(node, kSerialiseExposedOnly);
             }
         };
 
-        Json::Node node = m_outboundCmdQueue->Create(eventId);
+        Json::Node nodeArray = m_outboundCmdQueue->Create(eventId).MakeArray();
+
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : m_sceneContainer->GenericObjects()) { SerialiseImpl(node, obj); }
+            for (auto& obj : m_sceneContainer->GenericObjects()) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
         }
         else if (flags & kEnqueueSelected)
         {
-            for (auto& obj : m_selectionCtx.selectedObjects) { SerialiseImpl(node, obj); }
+            for (auto& obj : m_selectionCtx.selectedObjects) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
         }
         else if (flags & kEnqueueOne)
         {
-            SerialiseImpl(node, asset);
+            SerialiseImpl(nodeArray.AppendArrayObject(), asset);
         }
+
+        Log::Warning(nodeArray.Stringify(true));
 
         m_outboundCmdQueue->Enqueue();  // Enqueue the staged command
     }
@@ -519,6 +528,12 @@ namespace Enso
             m_selectionCtx.isLassoing = false;
             SignalDirty(kDirtyUIOverlay);
 
+            Log::Debug("Selected:");
+            for (const auto& obj : m_selectionCtx.selectedObjects)
+            {
+                Log::Debug("  - %s", obj->GetAssetID());
+            }
+
             //Log::Success("Finished!");
         }
         else if (stateID == "kDeselectSceneObject")
@@ -575,7 +590,7 @@ namespace Enso
     {
         Assert(m_onCreate.newObject);
 
-        // If the new object has closed but has not been finalised, delete i
+        // If the new object has closed but has not been finalised, delete it
         if (!m_onCreate.newObject->IsFinalised())
         {
             m_sceneBuilder->EnqueueDeleteObject(m_onCreate.newObject->GetAssetID());
@@ -592,7 +607,7 @@ namespace Enso
 
     __host__ void Host::GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
     {
-        m_commandManager.Flush(inbound, true);
+        m_commandManager.Flush(inbound, false);
     }
 
     __host__ void Host::GI2DRenderer::OnRender()
@@ -604,7 +619,7 @@ namespace Enso
         const bool updateSelection = !m_sceneBuilder->IsClean();
 
         // Rebuild the scene 
-        m_sceneBuilder->Rebuild(true);
+        m_sceneBuilder->Rebuild(false);
 
         if (!updateSelection)
         {
@@ -612,21 +627,18 @@ namespace Enso
         }
 
         // Prepare the scene objects
-        m_sceneContainer->Prepare();
+        //m_sceneContainer->Prepare();
         m_overlayRenderer->Prepare(m_viewCtx, m_selectionCtx);
             
-        /*if (m_renderTimer.Get() > 0.1f)
-        {
+        //if (m_renderTimer.Get() > 0.1f)
+        //{
             for (auto& camera : m_sceneContainer->Cameras())
-            {
-                if (camera->Prepare())
-                {
-                    camera->Integrate();
-                }
+            {   
+                camera->Integrate();
             }
             //m_renderTimer.Reset();
             //Log::Write("-----");
-        }*/        
+        //}
   
         m_overlayRenderer->Render(); 
 

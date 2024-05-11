@@ -80,10 +80,8 @@ namespace Enso
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
-    __host__ void Host::OmniLight::Synchronise(const uint syncFlags)
+    __host__ void Host::OmniLight::OnSynchroniseTracable(const uint syncFlags)
     {
-        Light::Synchronise(syncFlags);
-
         if (syncFlags & kSyncParams) 
         { 
             SynchroniseObjects<>(cu_deviceInstance, m_hostInstance.m_params); 
@@ -148,15 +146,6 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::OmniLight::Rebuild()
-    {        
-        Light::Rebuild();
-
-        Synchronise(kSyncParams);
-
-        return IsConstructed();
-    }
-
     __host__ bool Host::OmniLight::Serialise(Json::Node& node, const int flags) const
     {
         Tracable::Serialise(node, flags);
@@ -164,6 +153,7 @@ namespace Enso
         node.AddValue("radius", m_hostInstance.m_params.lightRadius);
         node.AddVector("colour", m_hostInstance.m_params.lightColour);
         node.AddValue("intensity", m_hostInstance.m_params.lightIntensity);
+
         return true;
     }
 
@@ -175,6 +165,7 @@ namespace Enso
         isDirty |= node.GetVector("colour", m_hostInstance.m_params.lightColour, flags);
         isDirty |= node.GetValue("intensity", m_hostInstance.m_params.lightIntensity, flags);
 
+        SignalDirty(kDirtyObjectRebuild);
         return isDirty;
     }
 
