@@ -97,9 +97,6 @@
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\widgets">
-      <UniqueIdentifier>{170f97db-0c4d-4f49-8c0f-adc1e2ead725}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\gi2d\scene">
       <UniqueIdentifier>{eaf759a3-9559-46f2-a6ca-2b2908670e25}</UniqueIdentifier>
     </Filter>
@@ -111,6 +108,12 @@
     </Filter>
     <Filter Include="core\2d\primitives">
       <UniqueIdentifier>{0d03701e-a20e-43b4-8228-fbc43ed93172}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\2d\ui">
+      <UniqueIdentifier>{830f3194-10a5-4ae2-be95-9a982c18b37b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gi2d\widgets">
+      <UniqueIdentifier>{0e1aea48-f0d0-456c-842e-0506e5c219c5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -551,14 +554,8 @@
     <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
       <Filter>core\math\bbox</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\AssetSynchronise.cuh">
       <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh">
-      <Filter>modules\gi2d\widgets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h">
       <Filter>core</Filter>
@@ -629,6 +626,12 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\ui\UIHandle.cuh">
+      <Filter>core\2d\ui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -682,14 +685,8 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu">
       <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu">
       <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu">
-      <Filter>modules\gi2d\widgets</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu">
       <Filter>core</Filter>
@@ -735,6 +732,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu">
       <Filter>modules\gi2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu">
+      <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\ui\UIHandle.cu">
+      <Filter>core\2d\ui</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,6 @@
 #include "UIInspector.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "../bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 
 namespace Enso
 {

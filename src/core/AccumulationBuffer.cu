@@ -3,6 +3,7 @@
 #include "io/json/JsonUtils.h"
 #include "core/AssetAllocator.cuh"
 #include "core/Vector.cuh"
+#include "core/GenericObject.cuh"
 
 namespace Enso
 {     

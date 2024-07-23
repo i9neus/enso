@@ -1,11 +1,13 @@
 #pragma once
 
 #include "core/2d/primitives/Ellipse.cuh"
-#include "../FwdDecl.cuh"
 
 namespace Enso
 {
     namespace Host { template<typename T> class Vector; }
+
+    template<size_t> class UIButtonMap;
+    using VirtualKeyMap = UIButtonMap<256>;
 
     class UIHandle
     {

@@ -62,6 +62,8 @@
     <ClInclude Include="..\..\..\src\core\2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\Transform2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\ui\UIHandle.cuh" />
+    <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\core\Assert.h" />
     <ClInclude Include="..\..\..\src\core\Asset.cuh" />
     <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh" />
@@ -124,7 +126,6 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh" />
@@ -139,7 +140,6 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -200,6 +200,8 @@
     <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\ui\UIHandle.cu" />
+    <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu" />
     <CudaCompile Include="..\..\..\src\core\Asset.cu" />
     <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu" />
     <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu" />
@@ -212,7 +214,6 @@
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu" />
@@ -224,7 +225,6 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
