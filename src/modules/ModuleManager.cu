@@ -2,7 +2,7 @@
 #include "core/HighResolutionTimer.h"
 #include "io/CommandQueue.h"
 
-#include "gi2d/GI2DRenderer.cuh"
+#include "gi2d/GI2DModule.cuh"
 
 namespace Enso
 {
