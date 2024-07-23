@@ -1,8 +1,8 @@
 #include "LineStrip.cuh"
-#include "../primitives/LineSegment.cuh"
-#include "../primitives/GenericIntersector.cuh"
+#include "core/2d/primitives/LineSegment.cuh"
+#include "core/2d/primitives/GenericIntersector.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "../bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 #include "io/json/JsonUtils.h"
 
 namespace Enso

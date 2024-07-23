@@ -49,6 +49,19 @@
     <ClCompile Include="..\..\..\src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DAsset.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DNode.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\Ctx.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\Ellipse.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\GenericIntersector.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\LineSegment.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\Primitive2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\SDF.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\Ray2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\core\Assert.h" />
     <ClInclude Include="..\..\..\src\core\Asset.cuh" />
     <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh" />
@@ -109,11 +122,6 @@
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h" />
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DNode.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\DirtinessFlags.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh" />
@@ -125,21 +133,12 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Ellipse.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericIntersector.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\SDF.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Primitive2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\Ctx.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />
@@ -195,6 +194,12 @@
     <ClInclude Include="..\..\..\src\win\WindowsHeaders.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DAsset.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu" />
     <CudaCompile Include="..\..\..\src\core\Asset.cu" />
     <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu" />
     <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu" />
@@ -206,8 +211,6 @@
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
@@ -216,15 +219,11 @@
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\Ellpise.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\widgets\UIHandle.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />

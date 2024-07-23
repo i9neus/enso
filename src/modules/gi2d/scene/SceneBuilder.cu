@@ -1,5 +1,5 @@
 #include "SceneBuilder.cuh"
-#include "../bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
 #include "../lights/Light.cuh"
 #include "../tracables/Tracable.cuh"

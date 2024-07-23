@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BIH2DNode.cuh"
-#include "../primitives/GenericIntersector.cuh"
+#include "core/2d/primitives/GenericIntersector.cuh"
 
 namespace Enso
 {

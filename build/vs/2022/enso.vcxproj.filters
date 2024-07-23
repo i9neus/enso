@@ -43,9 +43,6 @@
     <Filter Include="modules\gi2d">
       <UniqueIdentifier>{eca99f3a-ef0b-4546-a38b-ce2424ef92ba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\bih">
-      <UniqueIdentifier>{0ff05bc4-b9f5-406e-a61e-f4281c613178}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\gi2d\integrators">
       <UniqueIdentifier>{9d71252e-a64f-4291-80a4-7374975f37e6}</UniqueIdentifier>
     </Filter>
@@ -100,14 +97,20 @@
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\primitives">
-      <UniqueIdentifier>{e624d2c9-3eed-4466-9a7b-fa7e47356b61}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\gi2d\widgets">
       <UniqueIdentifier>{170f97db-0c4d-4f49-8c0f-adc1e2ead725}</UniqueIdentifier>
     </Filter>
     <Filter Include="modules\gi2d\scene">
       <UniqueIdentifier>{eaf759a3-9559-46f2-a6ca-2b2908670e25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\2d">
+      <UniqueIdentifier>{8d4dc42a-2241-43ab-910e-932d1956f9d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\2d\bih">
+      <UniqueIdentifier>{cf971ca9-d866-4792-87a0-511686e158ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\2d\primitives">
+      <UniqueIdentifier>{0d03701e-a20e-43b4-8228-fbc43ed93172}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -329,38 +332,11 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Ray2D.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\SceneObject.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Transform2D.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\Ctx.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\DirtinessFlags.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh">
       <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cuh">
-      <Filter>modules\gi2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cuh">
-      <Filter>modules\gi2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2DNode.cuh">
-      <Filter>modules\gi2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\bih\BIH2D.cuh">
-      <Filter>modules\gi2d\bih</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh">
       <Filter>modules\gi2d\integrators</Filter>
@@ -575,21 +551,6 @@
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh">
       <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Ellipse.cuh">
-      <Filter>modules\gi2d\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cuh">
-      <Filter>modules\gi2d\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\Primitive2D.cuh">
-      <Filter>modules\gi2d\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\GenericIntersector.cuh">
-      <Filter>modules\gi2d\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\primitives\SDF.cuh">
-      <Filter>modules\gi2d\primitives</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
       <Filter>core\math\bbox</Filter>
     </ClInclude>
@@ -629,6 +590,45 @@
     <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh">
       <Filter>modules</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\GenericIntersector.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\LineSegment.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\Primitive2D.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\SDF.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\Ellipse.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DAsset.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DNode.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2D.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\Ctx.cuh">
+      <Filter>core\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\Ray2D.cuh">
+      <Filter>core\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\Transform2D.cuh">
+      <Filter>core\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh">
+      <Filter>core\2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -636,15 +636,6 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu">
       <Filter>modules\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\SceneObject.cu">
-      <Filter>modules\gi2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DAsset.cu">
-      <Filter>modules\gi2d\bih</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\bih\BIH2DBuilder.cu">
-      <Filter>modules\gi2d\bih</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu">
       <Filter>modules\gi2d\integrators</Filter>
@@ -688,20 +679,11 @@
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp">
       <Filter>io</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\Transform2D.cu">
-      <Filter>modules\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu">
       <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu">
       <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\Ellpise.cu">
-      <Filter>modules\gi2d\primitives</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\primitives\LineSegment.cu">
-      <Filter>modules\gi2d\primitives</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu">
       <Filter>modules\gi2d\integrators</Filter>
@@ -735,6 +717,24 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu">
       <Filter>modules</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu">
+      <Filter>core\2d\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu">
+      <Filter>core\2d\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cu">
+      <Filter>core\2d\bih</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DAsset.cu">
+      <Filter>core\2d\bih</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu">
+      <Filter>core\2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu">
+      <Filter>core\2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

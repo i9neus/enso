@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../primitives/Ellipse.cuh"
+#include "core/2d/primitives/Ellipse.cuh"
 #include "../FwdDecl.cuh"
 
 namespace Enso

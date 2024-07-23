@@ -2,9 +2,9 @@
 
 #include "UILayer.cuh"
 
-#include "../bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 //#include "../tracables/primitives/Primitive2D.cuh"
-#include "../SceneObject.cuh"
+#include "core/2d/SceneObject.cuh"
 
 namespace Enso
 {         

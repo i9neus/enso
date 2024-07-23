@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 #include "../scene/SceneContainer.cuh"
 #include "../RenderCtx.cuh"
 

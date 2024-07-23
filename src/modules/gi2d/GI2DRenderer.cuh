@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../ModuleBase.cuh"
-#include "Ctx.cuh"
+#include "core/2d/Ctx.cuh"
 #include "core/Vector.cuh"
 #include "FwdDecl.cuh"
 #include "core/GenericObjectFactory.cuh"

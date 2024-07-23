@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Camera.cuh"
-#include "../SceneObject.cuh"
+#include "core/2d/SceneObject.cuh"
 #include "../FwdDecl.cuh"
 
 namespace Enso

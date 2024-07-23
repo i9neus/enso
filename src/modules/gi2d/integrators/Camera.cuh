@@ -4,7 +4,7 @@
 #include "core/AssetAllocator.cuh"
 #include "PathTracer2D.cuh"
 #include "AccumulationBuffer.cuh"
-#include "../SceneObject.cuh"
+#include "core/2d/SceneObject.cuh"
 
 namespace Enso
 {

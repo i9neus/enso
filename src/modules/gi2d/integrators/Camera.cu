@@ -2,7 +2,7 @@
 #include "core/math/ColourUtils.cuh"
 #include "io/json/JsonUtils.h"
 #include "core/Vector.cuh"
-#include "../DirtinessFlags.cuh"
+#include "core/DirtinessFlags.cuh"
 #include "AccumulationBuffer.cuh"
 
 namespace Enso

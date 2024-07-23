@@ -2,7 +2,7 @@
 
 #include "Light.cuh"
 #include "../FwdDecl.cuh"
-#include "../primitives/Ellipse.cuh"
+#include "core/2d/primitives/Ellipse.cuh"
 
 namespace Enso
 {

@@ -1,4 +1,4 @@
-#include "SceneObject.cuh"
+#include "core/2d/SceneObject.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "io/json/JsonUtils.h"
 

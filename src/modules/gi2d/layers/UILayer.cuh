@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Ctx.cuh"
+#include "core/2d/Ctx.cuh"
 
-#include "../DirtinessFlags.cuh"
+#include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
 
 #include "../tracables/Tracable.cuh"

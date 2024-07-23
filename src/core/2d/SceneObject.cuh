@@ -1,13 +1,13 @@
 #pragma once
 
-#include "DirtinessFlags.cuh"
+#include "../DirtinessFlags.cuh"
 
 #include "Transform2D.cuh"
-#include "Ctx.cuh"
+#include "core/2d/Ctx.cuh"
 
 #include "core/GenericObject.cuh"
 #include "core/math/Math.cuh"
-#include "FwdDecl.cuh"
+#include "core/UIButtonMap.h"
 
 namespace Enso
 {   

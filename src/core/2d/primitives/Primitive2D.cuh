@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../DirtinessFlags.cuh"
+#include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
 #include "../Ray2D.cuh"
 #include "../Ctx.cuh"

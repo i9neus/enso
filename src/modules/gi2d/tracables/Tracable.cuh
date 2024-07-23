@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../SceneObject.cuh"
+#include "core/2d/SceneObject.cuh"
 
 namespace Enso
 {

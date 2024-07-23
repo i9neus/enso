@@ -5,7 +5,7 @@
 
 #include "../RenderCtx.cuh"
 #include "../scene/SceneContainer.cuh"
-#include "../primitives/SDF.cuh"
+#include "core/2d/primitives/SDF.cuh"
 #include "../tracables/Tracable.cuh"
 
 namespace Enso
