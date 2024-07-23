@@ -30,14 +30,14 @@ namespace Enso
             kGI2DAddPathFinished
         };
 
-        class GI2DRenderer : public Host::Dirtyable,
+        class GI2DModule : public Host::Dirtyable,
             public ModuleBase
         {
         public:
             enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };
 
-            __host__ GI2DRenderer(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue);
-            __host__ virtual ~GI2DRenderer() noexcept;
+            __host__ GI2DModule(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue);
+            __host__ virtual ~GI2DModule() noexcept;
 
             __host__ virtual void OnInitialise() override final;
             __host__ virtual void OnMouseMove() override final;

@@ -329,9 +329,6 @@
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
       <Filter>io\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
       <Filter>modules\gi2d</Filter>
     </ClInclude>
@@ -629,13 +626,13 @@
     <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh">
       <Filter>core\2d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh">
+      <Filter>modules\gi2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <Filter>utils</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu">
-      <Filter>modules\gi2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu">
       <Filter>modules\gi2d\integrators</Filter>
@@ -735,6 +732,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu">
       <Filter>core\2d</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu">
+      <Filter>modules\gi2d</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

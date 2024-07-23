@@ -9,7 +9,7 @@ namespace Enso
     ModuleManager::ModuleManager() : 
         m_outboundCmdQueue(std::make_shared<CommandQueue>())
     {
-        AddInstantiator<Host::GI2DRenderer>("2dgi");
+        AddInstantiator<Host::GI2DModule>("2dgi");
     }
 
     void ModuleManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)

@@ -1,4 +1,4 @@
-#include "GI2DRenderer.cuh"
+#include "GI2DModule.cuh"
 
 #include "core/math/Math.cuh"
 #include "core/math/ColourUtils.cuh"
@@ -24,7 +24,7 @@
 namespace Enso
 {
 
-    __host__ Host::GI2DRenderer::GI2DRenderer(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
+    __host__ Host::GI2DModule::GI2DModule(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
         Dirtyable(initCtx),
         ModuleBase(outQueue),
         m_isRunning(true)
@@ -38,7 +38,7 @@ namespace Enso
         m_outboundCmdQueue->RegisterCommand("OnDeleteObject");
 
         // Register the inbound command handlers
-        m_commandManager.RegisterEventHandler("OnUpdateObject", this, &Host::GI2DRenderer::OnInboundUpdateObject);
+        m_commandManager.RegisterEventHandler("OnUpdateObject", this, &Host::GI2DModule::OnInboundUpdateObject);
 
         // Register the scene object instantiators
         RegisterInstantiators();
@@ -50,7 +50,7 @@ namespace Enso
         DeclareListeners();
     }
 
-    __host__ Host::GI2DRenderer::~GI2DRenderer() noexcept
+    __host__ Host::GI2DModule::~GI2DModule() noexcept
     {
         m_overlayRenderer.DestroyAsset();
         m_voxelProxyGrid.DestroyAsset();
@@ -59,7 +59,7 @@ namespace Enso
         m_sceneContainer.DestroyAsset();
     }
 
-    __host__ void Host::GI2DRenderer::RegisterInstantiators()
+    __host__ void Host::GI2DModule::RegisterInstantiators()
     {
         m_sceneObjectFactory.RegisterInstantiator<Host::LineStrip>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_sceneObjectFactory.RegisterInstantiator<Host::KIFS>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
@@ -70,15 +70,15 @@ namespace Enso
         //m_sceneObjectFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
     }
 
-    __host__ void Host::GI2DRenderer::DeclareStateTransitionGraph()
+    __host__ void Host::GI2DModule::DeclareStateTransitionGraph()
     {
-        m_uiGraph.DeclareState("kIdleState", this, &Host::GI2DRenderer::OnIdleState);
+        m_uiGraph.DeclareState("kIdleState", this, &Host::GI2DModule::OnIdleState);
 
         // Create scene object
-        m_uiGraph.DeclareState("kCreateSceneObjectOpen", this, &GI2DRenderer::OnCreateSceneObject);
-        m_uiGraph.DeclareState("kCreateSceneObjectHover", this, &GI2DRenderer::OnCreateSceneObject);
-        m_uiGraph.DeclareState("kCreateSceneObjectAppend", this, &GI2DRenderer::OnCreateSceneObject);
-        m_uiGraph.DeclareState("kCreateSceneObjectClose", this, &GI2DRenderer::OnCreateSceneObject);
+        m_uiGraph.DeclareState("kCreateSceneObjectOpen", this, &GI2DModule::OnCreateSceneObject);
+        m_uiGraph.DeclareState("kCreateSceneObjectHover", this, &GI2DModule::OnCreateSceneObject);
+        m_uiGraph.DeclareState("kCreateSceneObjectAppend", this, &GI2DModule::OnCreateSceneObject);
+        m_uiGraph.DeclareState("kCreateSceneObjectClose", this, &GI2DModule::OnCreateSceneObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateSceneObjectOpen", VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
@@ -91,19 +91,19 @@ namespace Enso
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateSceneObjectClose", "kIdleState");
 
         // Delegate mouse actions to scene objects
-        m_uiGraph.DeclareState("kDelegateSceneObjectBegin", this, &GI2DRenderer::OnDelegateSceneObject);
-        m_uiGraph.DeclareState("kDelegateSceneObjectEnd", this, &GI2DRenderer::OnDelegateSceneObject);
-        m_uiGraph.DeclareState("kDelegateSceneObjectDragging", this, &GI2DRenderer::OnDelegateSceneObject);
+        m_uiGraph.DeclareState("kDelegateSceneObjectBegin", this, &GI2DModule::OnDelegateSceneObject);
+        m_uiGraph.DeclareState("kDelegateSceneObjectEnd", this, &GI2DModule::OnDelegateSceneObject);
+        m_uiGraph.DeclareState("kDelegateSceneObjectDragging", this, &GI2DModule::OnDelegateSceneObject);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateSceneObjectBegin", "kDelegateSceneObjectDragging");
         m_uiGraph.DeclareDeterministicTransition("kDelegateSceneObjectDragging", "kDelegateSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kDelegateSceneObjectDragging", "kDelegateSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateSceneObjectEnd", "kIdleState");
 
         // Select/deselect scene object
-        m_uiGraph.DeclareState("kSelectSceneObjectDragging", this, &GI2DRenderer::OnSelectSceneObjects);
-        m_uiGraph.DeclareState("kSelectSceneObjectEnd", this, &GI2DRenderer::OnSelectSceneObjects);
-        m_uiGraph.DeclareState("kDeselectSceneObject", this, &GI2DRenderer::OnSelectSceneObjects);
-        m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
+        m_uiGraph.DeclareState("kSelectSceneObjectDragging", this, &GI2DModule::OnSelectSceneObjects);
+        m_uiGraph.DeclareState("kSelectSceneObjectEnd", this, &GI2DModule::OnSelectSceneObjects);
+        m_uiGraph.DeclareState("kDeselectSceneObject", this, &GI2DModule::OnSelectSceneObjects);
+        m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DModule::DecideOnClickState);
         m_uiGraph.DeclareDeterministicTransition("kSelectSceneObjectDragging", "kSelectSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kSelectSceneObjectDragging", "kSelectSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kSelectSceneObjectEnd", "kIdleState");
@@ -111,45 +111,45 @@ namespace Enso
         m_uiGraph.DeclareDeterministicAutoTransition("kDeselectSceneObject", "kIdleState");
 
         // Move scene object
-        m_uiGraph.DeclareState("kMoveSceneObjectBegin", this, &GI2DRenderer::OnMoveSceneObject);
-        m_uiGraph.DeclareState("kMoveSceneObjectDragging", this, &GI2DRenderer::OnMoveSceneObject);
-        m_uiGraph.DeclareState("kMoveSceneObjectEnd", this, &GI2DRenderer::OnMoveSceneObject);
-        //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DRenderer::DecideOnClickState);
+        m_uiGraph.DeclareState("kMoveSceneObjectBegin", this, &GI2DModule::OnMoveSceneObject);
+        m_uiGraph.DeclareState("kMoveSceneObjectDragging", this, &GI2DModule::OnMoveSceneObject);
+        m_uiGraph.DeclareState("kMoveSceneObjectEnd", this, &GI2DModule::OnMoveSceneObject);
+        //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GI2DModule::DecideOnClickState);
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectBegin", "kMoveSceneObjectDragging");
         m_uiGraph.DeclareDeterministicTransition("kMoveSceneObjectDragging", "kMoveSceneObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kMoveSceneObjectDragging", "kMoveSceneObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveSceneObjectEnd", "kIdleState");
 
         // Delete scene object
-        m_uiGraph.DeclareState("kDeleteSceneObjects", this, &GI2DRenderer::OnDeleteSceneObject);
+        m_uiGraph.DeclareState("kDeleteSceneObjects", this, &GI2DModule::OnDeleteSceneObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteSceneObjects", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDeleteSceneObjects", "kIdleState");
 
         // Utils
-        m_uiGraph.DeclareState("kToggleRun", this, &GI2DRenderer::OnToggleRun);
+        m_uiGraph.DeclareState("kToggleRun", this, &GI2DModule::OnToggleRun);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kToggleRun", VirtualKeyMap({ {VK_SPACE, kOnButtonDepressed} }), 0);
 
         m_uiGraph.Finalise();
     }
 
-    __host__ void Host::GI2DRenderer::DeclareListeners()
+    __host__ void Host::GI2DModule::DeclareListeners()
     {
         Listen({ kDirtyObjectBoundingBox });
     }
 
-    __host__ void Host::GI2DRenderer::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
+    __host__ void Host::GI2DModule::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
         SetDirty(flag);
     }
 
-    std::shared_ptr<ModuleBase> Host::GI2DRenderer::Instantiate(std::shared_ptr<CommandQueue> outQueue)
+    std::shared_ptr<ModuleBase> Host::GI2DModule::Instantiate(std::shared_ptr<CommandQueue> outQueue)
     {
-        AssetHandle<ModuleBase> newAsset = AssetAllocator::CreateAsset<Host::GI2DRenderer>("gi2d", outQueue);
+        AssetHandle<ModuleBase> newAsset = AssetAllocator::CreateAsset<Host::GI2DModule>("gi2d", outQueue);
         return std::shared_ptr<ModuleBase>(newAsset);
     }
 
-    __host__ void Host::GI2DRenderer::OnInitialise()
+    __host__ void Host::GI2DModule::OnInitialise()
     {
         m_viewCtx.transform = ViewTransform2D(m_clientToNormMatrix, vec2(0.f), 0.f, 1.0f);
         m_viewCtx.dPdXY = length(vec2(m_viewCtx.transform.matrix.i00, m_viewCtx.transform.matrix.i10));
@@ -161,7 +161,7 @@ namespace Enso
         m_sceneBuilder->Rebuild(true);
     }
 
-    __host__ void Host::GI2DRenderer::LoadScene()
+    __host__ void Host::GI2DModule::LoadScene()
     {
         m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "sceneContainer");
         m_sceneBuilder = AssetAllocator::CreateChildAsset<Host::SceneBuilder>(*this, "sceneBuilder", m_sceneContainer);
@@ -177,7 +177,7 @@ namespace Enso
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
     }
 
-    __host__ void Host::GI2DRenderer::OnInboundUpdateObject(const Json::Node& node)
+    __host__ void Host::GI2DModule::OnInboundUpdateObject(const Json::Node& node)
     {
         Assert(node.IsArray(), "Expected array");
         for(int idx = 0; idx < node.Size(); ++idx)
@@ -199,7 +199,7 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GI2DRenderer::EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
+    __host__ void Host::GI2DModule::EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset)
     {
         // TODO: This should be smarter and happen automatically whenever an object is dirtied. 
         
@@ -242,7 +242,7 @@ namespace Enso
         m_outboundCmdQueue->Enqueue();  // Enqueue the staged command
     }
 
-    __host__ uint Host::GI2DRenderer::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         m_isRunning = !m_isRunning;
         Log::Warning(m_isRunning ? "Running" : "Paused");
@@ -251,13 +251,13 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GI2DRenderer::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         Log::Success("Back home!");
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GI2DRenderer::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         if (m_selectionCtx.selectedObjects.empty()) { return kUIStateOkay; }        
 
@@ -294,7 +294,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GI2DRenderer::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kMoveSceneObjectBegin")
@@ -330,7 +330,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ void Host::GI2DRenderer::DeselectAll()
+    __host__ void Host::GI2DModule::DeselectAll()
     {
         for (auto obj : m_sceneContainer->SceneObjects())
         {
@@ -342,7 +342,7 @@ namespace Enso
         SignalDirty(kDirtyUIOverlay);
     }
 
-    __host__ std::string Host::GI2DRenderer::DecideOnClickState(const uint& sourceStateIdx)
+    __host__ std::string Host::GI2DModule::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
         if (m_sceneContainer->SceneBIH().IsConstructed())
@@ -427,7 +427,7 @@ namespace Enso
         return "kSelectSceneObjectDragging";
     }
 
-    __host__ uint Host::GI2DRenderer::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
 
@@ -442,7 +442,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ void Host::GI2DRenderer::UpdateSelectedBBox()
+    __host__ void Host::GI2DModule::UpdateSelectedBBox()
     {
         m_selectionCtx.selectedBBox.MakeInvalid();
         for (auto& object : m_selectionCtx.selectedObjects)
@@ -452,7 +452,7 @@ namespace Enso
         SignalDirty(kDirtyUIOverlay);
     }
 
-    __host__ uint Host::GI2DRenderer::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GI2DModule::OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectSceneObjectDragging")
@@ -551,7 +551,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GI2DRenderer::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
+    __host__ uint Host::GI2DModule::OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateSceneObjectOpen")
@@ -586,7 +586,7 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ void Host::GI2DRenderer::FinaliseNewSceneObject()
+    __host__ void Host::GI2DModule::FinaliseNewSceneObject()
     {
         Assert(m_onCreate.newObject);
 
@@ -605,12 +605,12 @@ namespace Enso
         m_onCreate.newObject = nullptr;
     }
 
-    __host__ void Host::GI2DRenderer::OnCommandsWaiting(CommandQueue& inbound)
+    __host__ void Host::GI2DModule::OnCommandsWaiting(CommandQueue& inbound)
     {
         m_commandManager.Flush(inbound, false);
     }
 
-    __host__ void Host::GI2DRenderer::OnRender()
+    __host__ void Host::GI2DModule::OnRender()
     {        
         // Flush any keyboard and mouse inputs that have accumulated between now and the beginning of the last frame
         FlushUIEventQueue();
@@ -659,7 +659,7 @@ namespace Enso
         Clean();
     }
 
-    __host__ void Host::GI2DRenderer::OnMouseButton(const uint code, const bool isDown)
+    __host__ void Host::GI2DModule::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
         if (isDown && (code == VK_MBUTTON || code == VK_RBUTTON || IsKeyDown(VK_SHIFT)))
@@ -672,14 +672,14 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GI2DRenderer::OnMouseMove()
+    __host__ void Host::GI2DModule::OnMouseMove()
     {
         OnViewChange();
 
         m_viewCtx.mousePos = m_viewCtx.transform.matrix * vec2(m_mouse.pos);
     }
 
-    __host__ void Host::GI2DRenderer::OnViewChange()
+    __host__ void Host::GI2DModule::OnViewChange()
     {
         auto& transform = m_viewCtx.transform;
 
@@ -724,11 +724,11 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GI2DRenderer::OnResizeClient()
+    __host__ void Host::GI2DModule::OnResizeClient()
     {
     } 
 
-    __host__ void Host::GI2DRenderer::OnFocusChange(const bool isSet)
+    __host__ void Host::GI2DModule::OnFocusChange(const bool isSet)
     {
         // Finalise any objects that are in the process of being created
         /*if (m_onCreate.newObject)
@@ -737,7 +737,7 @@ namespace Enso
         }*/
     }
 
-    __host__ bool Host::GI2DRenderer::Serialise(Json::Document& json, const int flags)
+    __host__ bool Host::GI2DModule::Serialise(Json::Document& json, const int flags)
     {
         return true;
     }

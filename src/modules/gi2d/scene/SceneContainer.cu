@@ -105,7 +105,7 @@ namespace Enso
 
     __host__ bool Host::SceneContainer::Serialise(Json::Node& rootNode, const int flags) const
     {
-        // TODO: Move serialisation code out of GI2DRenderer to here
+        // TODO: Move serialisation code out of GI2DModule to here
         return true;
     }
 }

@@ -123,7 +123,7 @@
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DRenderer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
@@ -211,7 +211,7 @@
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DRenderer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\AccumulationBuffer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
