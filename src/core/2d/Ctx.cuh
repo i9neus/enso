@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/math/Sampler.cuh"
-#include "core/Hash.h"
+#include "core/math/samplers/PCG.cuh"
+#include "core/math/Hash.cuh"
 #include "Transform2D.cuh"
 
 namespace Enso

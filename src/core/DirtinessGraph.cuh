@@ -3,7 +3,7 @@
 #include "math/Math.cuh"
 #include "io/Serialisable.cuh"
 #include "AssetAllocator.cuh"
-#include "Hash.h"
+#include "math/Hash.cuh"
 
 #include <set>
 #include <map>

@@ -20,7 +20,7 @@ namespace Enso
     
     void GI2DUI::ConstructComponent()
     {
-        ImGui::Begin(m_componentId.c_str()); 
+        ImGui::Begin("Objects"); //m_componentId.c_str());
 
         // Flush the command queue and update the object
         if (m_inboundCmdQueue)

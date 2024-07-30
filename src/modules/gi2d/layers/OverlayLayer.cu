@@ -2,7 +2,7 @@
 
 #include "OverlayLayer.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "core/Hash.h"
+#include "core/math/Hash.cuh"
 #include "core/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
 #include "../scene/SceneContainer.cuh"

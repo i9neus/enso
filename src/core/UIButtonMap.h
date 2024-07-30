@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include "Hash.h"
+#include "math/Hash.cuh"
 
 #include <string>
 

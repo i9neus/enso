@@ -3,7 +3,7 @@
 #include "io/json/JsonUtils.h"
 #include "core/Vector.cuh"
 #include "core/DirtinessFlags.cuh"
-#include "AccumulationBuffer.cuh"
+#include "core/AccumulationBuffer.cuh"
 
 namespace Enso
 {

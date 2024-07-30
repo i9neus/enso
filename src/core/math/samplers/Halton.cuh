@@ -1,17 +1,16 @@
-﻿#pragma once
+#pragma once
 
-
-#include "Math.cuh"
-#include "../Hash.h"
+#include "../Math.cuh"
 
 namespace Enso
-{    
+{
+
     template<int Idx> __host__ __device__ __forceinline__ float GetHaltonCRPrime() { return 0.0f; }
     template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<0>() { return 1.0f; }
     template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<1>() { return 2.0f; }
     template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<2>() { return 3.0f; }
     template<> __host__ __device__ __forceinline__ float GetHaltonCRPrime<3>() { return 5.0f; }
-    
+
     template<int Base>
     __host__ __device__ __forceinline__ float HaltonBase(uint seed)
     {
@@ -179,7 +178,7 @@ namespace Enso
         T v;
         HaltonImpl<0, Pack...>(seed, v.data);
         return v;
-    } 
+    }
 
     template<int Base>
     __host__ __device__  __forceinline__ float Halton(const uint seed)
@@ -187,116 +186,4 @@ namespace Enso
         return fmodf(HaltonBase<Base>(seed) + GetHaltonCRPrime<Base>() * float(seed) / float(0xffffffffu), 1.0f);
     }
 
-    class PseudoRNG
-    {
-        #define kPCGRandBias 0.999999f
-
-    private:
-        uvec4   m_state;
-
-    public:
-        __host__ __device__ PseudoRNG() {}
-        __host__ __device__ PseudoRNG(const uint& seed) { Initialise(seed); }       
-
-        // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf
-        __host__ __device__  __forceinline__ void Advance()
-        {
-            m_state = m_state * 1664525u + 1013904223u;
-
-            m_state.x += m_state.y * m_state.w;
-            m_state.y += m_state.z * m_state.x;
-            m_state.z += m_state.x * m_state.y;
-            m_state.w += m_state.y * m_state.z;
-
-            m_state ^= m_state >> 16u;
-
-            m_state.x += m_state.y * m_state.w;
-            m_state.y += m_state.z * m_state.x;
-            m_state.z += m_state.x * m_state.y;
-            m_state.w += m_state.y * m_state.z;
-        }
-
-        // Seed the PCG hash function with the current frame multipled by a prime
-        __host__ __device__  __forceinline__ void Initialise(const uint& seed)
-        {
-            m_state = uvec4(seed * 20219, seed * 7243, seed * 12547, seed * 28573);
-        }
-
-        // Generates a 4-tuple of canonical random numbers in the range [0, 1]
-        __host__ __device__  __forceinline__ vec4 Rand4()
-        {
-            Advance();
-            return kPCGRandBias * vec4(m_state) / float(0xffffffffu);
-        }
-
-        template<int B0, int B1, int B2, int B3>
-        __host__ __device__ __forceinline__ vec4 Rand() { return Rand4(); }
-        template<int B0, int B1, int B2>
-        __host__ __device__ __forceinline__ vec3 Rand() { return Rand4().xyz; }
-        template<int B0, int B1>
-        __host__ __device__ __forceinline__ vec2 Rand() { return Rand4().xy; }
-        template<int B0>
-        __host__ __device__ __forceinline__ float Rand() { return Rand4().x; }
-    };    
-
-    // Quick and dirty method for sampling the unit disc from two canonical random variables. For a better algorithm, see
-    // A Low Distortion Map Between Disk and Square (Shirley and Chiu)
-    __host__ __device__ __forceinline__ vec2 SampleUnitDisc(const vec2& xi)
-    {
-        float phi = xi.y * kTwoPi;
-        return vec2(sin(phi), cos(phi)) * sqrt(xi.x);
-    }
-
-    __host__ __device__ __forceinline__ vec2 SampleUnitDiscLowDistortion(const vec2& xi)
-    {
-        float phi, r;
-        const float a = 2.0f * xi.x - 1.0f, b = 2.0f * xi.y - 1.0f;
-
-        // From A Low Distortion Map Between Disk and Square (Shirley and Chiu)
-        if (a > -b) // region 1 or 2
-        {
-            if (a > b) // region 1, also |a| > |b|
-            {
-                r = a;
-                phi = (kPi / 4) * (b / a);
-            }
-            else // region 2, also |b| > |a|
-            {
-                r = b;
-                phi = (kPi / 4) * (2 - (a / b));
-            }
-        }
-        else // region 3 or 4
-        {
-            if (a < b) // region 3, also |a| >= |b|, a != 0
-            {
-                r = -a;
-                phi = (kPi / 4) * (4 + (b / a));
-            }
-            else // region 4, |b| >= |a|, but a==0 and b==0 could occur.
-            {
-                r = -b;
-                phi = (b != 0) ? ((kPi / 4) * (6 - (a / b))) : 0;
-            }
-        }
-
-        return vec2(r * cosf(phi), r * sinf(phi));
-    }
-
-    __host__ __device__ __forceinline__ vec3 SampleUnitSphere(vec2 xi)
-    {
-        xi.x = xi.x * 2.0 - 1.0;
-        xi.y *= kTwoPi;
-
-        float sinTheta = sqrt(1.0 - xi.x * xi.x);
-        return vec3(cos(xi.y) * sinTheta, xi.x, sin(xi.y) * sinTheta);
-    }
-
-    __host__ __device__ __forceinline__ vec3 SampleUnitHemisphere(vec2 xi)
-    {
-        xi.y *= kTwoPi;
-
-        float sinTheta = sqrt(1.0 - xi.x * xi.x);
-        return vec3(cos(xi.y) * sinTheta, sin(xi.y) * sinTheta, xi.x);
-    }
 }

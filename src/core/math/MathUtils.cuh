@@ -40,6 +40,7 @@ namespace Enso
 	__host__ __device__ __forceinline__ float	saw01(float a) { return fabs(fract(a) * 2 - 1); }
 	__host__ __device__ __forceinline__ void	sort(float& a, float& b) { if (a > b) { float s = a; a = b; b = s; } }
 	__host__ __device__ __forceinline__ void	swap(float& a, float& b) { float s = a; a = b; b = s; }	
+	__host__ __device__ __forceinline__ float	step(const float& edge, const float& value) { return float(value >= edge); }
 	template<typename A, typename B, typename V> __host__ __device__ __forceinline__ A mix(const A& a, const B& b, const V& v) { return a * (V(1) - v) + b * v; }
 	template<typename T> __host__ __forceinline__ void echo(const T& t) { std::printf("%s\n", t.format().c_str()); }
 

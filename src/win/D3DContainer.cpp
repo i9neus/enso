@@ -36,7 +36,8 @@ namespace Enso
 
 		// Load the renderer
 		m_moduleManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
-		m_moduleManager->LoadRenderer("2dgi");
+		//m_moduleManager->LoadRenderer("2dgi");
+		m_moduleManager->LoadRenderer("gaussiansplatting");
 
 		// Create the GUI interface
 		m_ui = std::make_unique<UIModuleManager>(m_hWnd, m_moduleManager);

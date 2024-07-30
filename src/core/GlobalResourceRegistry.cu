@@ -1,5 +1,5 @@
 #include "GlobalResourceRegistry.cuh"
-#include "Hash.h"
+#include "math/Hash.cuh"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include <map>
 #include "io/Log.h"

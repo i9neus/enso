@@ -7,9 +7,9 @@
 #include "core/2d/primitives/SDF.cuh"
 #include "core/UIButtonMap.h"
 #include "core/Vector.cuh"
-#include "AccumulationBuffer.cuh"
+#include "core/AccumulationBuffer.cuh"
 #include "../tracables/Tracable.cuh"
-#include "../widgets/UIHandle.cuh"
+#include "core/2d/ui/UIHandle.cuh"
 
 namespace Enso
 {        
@@ -21,7 +21,7 @@ namespace Enso
         ray.o = m_params.cameraPos;
 
         // Construct the ray direction
-        const float aaJitter = renderCtx.rng.Rand<0>();
+        const float aaJitter = renderCtx.rng.Rand().x;
         const float alpha = (aaJitter + float(probeIdx)) / float(Camera::m_params.accum.numProbes);
         ray.d.x = 1.f;
         ray.d.y = tanf(toRad(m_params.fov * 0.5f)) * (2.f * alpha - 1.0f);

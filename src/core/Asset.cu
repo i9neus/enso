@@ -1,6 +1,6 @@
 #include "math/Math.cuh"
 #include "Asset.cuh"
-#include "Hash.h"
+#include "math/Hash.cuh"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include "io/json/JsonUtils.h"
 

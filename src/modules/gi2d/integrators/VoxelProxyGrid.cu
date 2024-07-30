@@ -1,6 +1,6 @@
 #include "VoxelProxyGrid.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "core/Hash.h"
+#include "core/math/Hash.cuh"
 #include "core/CudaHeaders.cuh"
 
 #include "../RenderCtx.cuh"
@@ -19,7 +19,7 @@ namespace Enso
         ray.o = m_params.cameraTransform.PointToWorldSpace(probePosNorm);
 
         // Randomly scatter the ray
-        const float theta = renderCtx.rng.Rand<0>() * kTwoPi;
+        const float theta = renderCtx.rng.Rand().x * kTwoPi;
         ray.d = vec2(cosf(theta), sinf(theta));
 
         /*if (renderCtx.IsDebug())

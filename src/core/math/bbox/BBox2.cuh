@@ -160,9 +160,9 @@ namespace Enso
             if (newLine) { printf("\n"); }
         }
 
-        __host__ __device__ __forceinline__ bool PointOnPerimiter(const vec2& p, float thickness) const
+        __host__ __device__ __forceinline__ bool PointOnPerimiter(const VecType& p, typename VecType::kType thickness) const
         {
-            thickness *= 0.5f;
+            thickness /= typename VecType::kType(2);
             return (p.x >= lower.x - thickness && p.y >= lower.y - thickness && p.x <= upper.x + thickness && p.y <= upper.y + thickness) &&
                    (p.x <= lower.x + thickness || p.y <= lower.y + thickness || p.x >= upper.x - thickness || p.y >= upper.y - thickness);
         }

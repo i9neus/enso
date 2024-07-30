@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include <stdio.h>
-#include "math/Constants.h"
+#include "Math.cuh"
 
 namespace Enso
 {
@@ -15,10 +14,9 @@ namespace Enso
     {
         static_assert(std::is_integral<T>::value, "HashCombine requires integral type.");
         
-        // Old hash function
-        constexpr uint mask = (1u << (sizeof(T) * 8u)) - 1u;
-        return (((a << (mask - (b & mask))) | (a >> (b & mask)))) ^
-            ((b << (a & mask)) | (b >> (mask - (a & mask))));
+        // Shadertoy function
+        return (((a << (31 - (b & 31))) | (a >> (b & 31)))) ^
+                ((b << (a & 31)) | (b >> (31 - (a & 31))));
 
         // Based on Boost's hash_combine()         
         //return b + 0x9e3779b9 + (a << 6) + (a >> 2);
@@ -68,6 +66,13 @@ namespace Enso
     __host__ __device__ __forceinline__ uint HashOf(const Type& v0, const Pack&... pack)
     {
         return HashCombine(HashOf(v0), HashOf(pack...));
+    }
+
+    template<typename... Pack>
+    __host__ __device__ __forceinline__ float HashOfAsFloat(const Pack&... pack)
+    {
+        auto h = HashOf(pack...);
+        return float(h) / float(0xffffffff);
     }
 
     size_t __forceinline__ _Hash_bytes(const void* ptr, size_t len, size_t seed)

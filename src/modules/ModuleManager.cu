@@ -3,6 +3,7 @@
 #include "io/CommandQueue.h"
 
 #include "gi2d/GI2DModule.cuh"
+#include "gaussiansplatting/GaussianSplattingModule.cuh"
 
 namespace Enso
 {
@@ -10,6 +11,7 @@ namespace Enso
         m_outboundCmdQueue(std::make_shared<CommandQueue>())
     {
         AddInstantiator<Host::GI2DModule>("2dgi");
+        AddInstantiator<Host::GaussianSplattingModule>("gaussiansplatting");
     }
 
     void ModuleManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)

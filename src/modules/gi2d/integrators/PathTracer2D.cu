@@ -1,6 +1,6 @@
 #include "PathTracer2D.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "core/Hash.h"
+#include "core/math/Hash.cuh"
 #include "Camera.cuh"
 
 #include "../lights/Light.cuh"
@@ -84,7 +84,7 @@ namespace Enso
 
     __device__ bool Device::PathTracer2D::Shade(Ray2D& ray, const HitCtx2D& hit, RenderCtx& renderCtx) const
     {
-        const vec4 xi = renderCtx.rng.Rand<0, 1, 2, 3>();
+        const vec4 xi = renderCtx.rng.Rand();
 
         // Evaluate albedo
         const vec3 albedo = (hit.hash != 0u) ? Hue(IntToUnitFloat(hit.hash)) : kOne;

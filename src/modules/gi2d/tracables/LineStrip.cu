@@ -153,7 +153,7 @@ namespace Enso
         }
         else if (stateID == "kCreateSceneObjectAppend")
         {
-            const vec3 colour = Hue(PseudoRNG(HashOf(m_hostLineSegments->Size())).Rand<0>());
+            const vec3 colour = Hue(PCG(HashOf(m_hostLineSegments->Size())).Rand().x);
 
             if (m_hostLineSegments->IsEmpty())
             {

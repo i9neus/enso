@@ -1,12 +1,12 @@
 #pragma once
 
 #include "FwdDecl.cuh"
-#include "core/math/Sampler.cuh"
-#include "core/Hash.h"
+#include "core/math/samplers/PCG.cuh"
+#include "core/math/Hash.cuh"
 
 namespace Enso
 {
-	using RNG = PseudoRNG;
+	using RNG = PCG;
 	struct RenderCtx;
 
 	enum RenderCtxFlags : uchar

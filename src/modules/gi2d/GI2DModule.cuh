@@ -30,8 +30,7 @@ namespace Enso
             kGI2DAddPathFinished
         };
 
-        class GI2DModule : public Host::Dirtyable,
-            public ModuleBase
+        class GI2DModule : public Host::Dirtyable, public ModuleBase
         {
         public:
             enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };

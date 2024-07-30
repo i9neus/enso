@@ -3,7 +3,7 @@
 #include "../FwdDecl.cuh"
 #include "core/AssetAllocator.cuh"
 #include "PathTracer2D.cuh"
-#include "AccumulationBuffer.cuh"
+#include "core/AccumulationBuffer.cuh"
 #include "core/2d/SceneObject.cuh"
 
 namespace Enso
