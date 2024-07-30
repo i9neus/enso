@@ -65,10 +65,10 @@ namespace Enso
 				if (!(idx < m_localParams.size)) 
 				{				
 #ifdef __CUDA_ARCH__
-					printf("Device assert: idx < m_localParams.size: %i < %i", idx, m_localParams.size);
+					printf("Device assert: vector index %i out of bounds [0, %i). (Did you forget to call Synchronise(kVectorSyncUpload)?)", idx, m_localParams.size);
 					asm("trap;"); 
 #else
-					AssertMsgFmt(idx < m_localParams.size, "Device assert: idx < m_localParams.size: %i < %i", idx, m_localParams.size);
+					AssertMsgFmt(idx < m_localParams.size, "Host assert: vector index %i out of bounds [0, %i)", idx, m_localParams.size);
 #endif
 				}
 				return m_localData[idx];

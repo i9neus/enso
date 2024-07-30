@@ -5,6 +5,11 @@
 #include "core/math/Hash.cuh"
 #include "core/3d/Ctx.cuh"
 #include "core/AssetContainer.cuh"
+#include "core/3d/Transform.cuh"
+#include "core/Vector.cuh"
+#include "Geometry.cuh"
+#include "core/3d/Cameras.cuh"
+#include "Scene.cuh"
 //#include "../scene/SceneContainer.cuh"
 
 #include "io/json/JsonUtils.h"
@@ -23,17 +28,58 @@ namespace Enso
         CudaAssert(viewport.dims.x != 0 && viewport.dims.y != 0);
     }
 
+    __host__ __device__ void PathTracerObjects::Validate() const
+    {
+        CudaAssert(transforms);
+        CudaAssert(accumBuffer);
+    }
+
     __device__ void Device::PathTracer::Render()
     {
         CudaAssertDebug(m_objects.accumBuffer);
+        CudaAssertDebug(m_objects.transforms->Size() == 9);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }        
 
+        const auto& transforms = *m_objects.transforms;
+
         RenderCtx renderCtx;
         renderCtx.rng.Initialise(HashOf(m_params.frameIdx, xyScreen.x, xyScreen.y));
 
-        m_objects.accumBuffer->At(xyScreen) = vec4(renderCtx.rng.Rand().xyz, 1.);
+        const vec2 uvView = ScreenToNormalisedScreen(vec2(xyScreen) + renderCtx.Rand().xy, vec2(m_params.viewport.dims));
+
+        float cameraPhi = -kPi;
+        //cameraPhi += kTwoPi * mix(-1., 1., iMouse.x / iResolution.x);
+        cameraPhi += kTwoPi * m_params.wallTime * 0.01f;
+        //float cameraTheta = kHalfPi * iMouse.y / iResolution.y;
+        vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;//mix(0.5, 3., iMouse.y / iResolution.y);
+        Ray ray = CreatePinholeCameraRay(uvView, cameraPos, vec3(0., -0., -0.), 50.f);
+        HitCtx hit;
+        vec3 L = kZero;
+        bool referenceMode = true;//(xyScreen.x < iResolution.x * 0.5);
+
+        #define kMaxPathDepth 4
+        for (int depth = 0; depth < kMaxPathDepth; ++depth)
+        {
+            if (Trace(ray, hit, transforms) == kMatInvalid && !ray.IsDirectSample())
+            {
+                //if (depth > 0)
+                //    L += kOne * luminance(texture(iChannel1, ray.od.d).xyz) * ray.weight * 0.5;
+                break;
+            }
+
+
+            L = hit.n *0.5f + 0.5f;
+            break;
+
+            /*if (!Shade(ray, hit, renderCtx, emitterTrans, depth, referenceMode, L))
+            {
+                break;
+            }*/
+        }
+
+        m_objects.accumBuffer->At(xyScreen) = vec4(L, 1.);
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -63,21 +109,48 @@ namespace Enso
     {                
         // Create some Cuda objects
         m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
+        m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
 
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.transforms = m_hostTransforms->GetDeviceInstance();
         //m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
         cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this);
         
         m_params.viewport.dims = ivec2(width, height);
         m_params.frameIdx = 0;
-        Synchronise(kSyncObjects | kSyncParams);
-    }
+        m_params.wallTime = 0.f;
+        m_wallTime.Reset();
+
+        CreateScene();
+    }    
 
     Host::PathTracer::~PathTracer() noexcept
     {
+        m_hostAccumBuffer.DestroyAsset();
+        m_hostTransforms.DestroyAsset();
+        
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();
+    }
+
+    __host__ void Host::PathTracer::CreateScene()
+    {
+        m_hostTransforms->Clear();
+
+        #define kNumSpheres 7        
+        for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
+        {
+            float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
+            m_hostTransforms->PushBack(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f));
+        }
+
+        m_hostTransforms->PushBack(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
+        m_hostTransforms->PushBack(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
+
+        m_hostTransforms->Synchronise(kVectorSyncUpload);
+
+        Synchronise(kSyncObjects | kSyncParams);
     }
 
     __host__ void Host::PathTracer::Synchronise(const uint syncFlags)
@@ -109,6 +182,7 @@ namespace Enso
     __host__ bool Host::PathTracer::Prepare()
     {  
         m_params.frameIdx++;
+        m_params.wallTime = m_wallTime.Get();
 
         // Upload to the device
         Synchronise(kSyncParams);

@@ -692,6 +692,18 @@
     <ClInclude Include="..\..\..\src\core\3d\Ctx.cuh">
       <Filter>core\3d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\3d\Transform.cuh">
+      <Filter>core\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh">
+      <Filter>modules\gaussiansplatting\pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh">
+      <Filter>modules\gaussiansplatting\pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh">
+      <Filter>modules\gaussiansplatting\pathtracer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

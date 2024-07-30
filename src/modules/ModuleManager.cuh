@@ -21,11 +21,11 @@ namespace Enso
     public:
         ModuleManager();
 
-        void                                    Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight);
+        void                                    Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight, HWND hWnd);
         void                                    Destroy();
         std::vector<RendererComponentInfo>      GetRendererList() const;
-        ModuleBase& GetRenderer() { Assert(m_activeRenderer); return *m_activeRenderer; }
-        std::shared_ptr<ModuleBase>        GetRendererPtr() { return m_activeRenderer; }
+        ModuleBase& GetRenderer()               { Assert(m_activeRenderer); return *m_activeRenderer; }
+        std::shared_ptr<ModuleBase>             GetRendererPtr() { return m_activeRenderer; }
         void                                    LoadRenderer(const std::string& id);
         void                                    UnloadRenderer();
         void						            UpdateD3DOutputTexture(UINT64& currentFenceValue);
@@ -55,5 +55,7 @@ namespace Enso
 
         std::shared_ptr<CommandQueue>       m_inboundCmdQueue;
         std::shared_ptr<CommandQueue>       m_outboundCmdQueue;
+
+        HWND                                m_parentWnd;
     };
 }

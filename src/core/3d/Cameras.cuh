@@ -6,14 +6,14 @@
 
 namespace Enso
 {
-    __host__ __device__ Ray CreatePinholeCameraRay(const vec2& uvView, const vec3& cameraPos, const vec3& cameraLookAt, const float& fov)
+    __host__ __device__ Ray CreatePinholeCameraRay(const vec2& uvScreen, const vec3& cameraPos, const vec3& cameraLookAt, const float& fov)
     {
         Ray ray;
         ray.od.o = cameraPos;
-        ray.od.d = CreateBasis(normalize(cameraPos - cameraLookAt), vec3(0., 1., 0.)) * normalize(vec3(uvView, -tan(toRad(fov))));
+        ray.od.d = CreateBasis(normalize(cameraPos - cameraLookAt), vec3(0., 1., 0.)) * normalize(vec3(uvScreen, -tan(toRad(fov))));
         ray.tNear = kFltMax;
-        ray.weight = kOne;
-        ray.pdf = kFltMax;
+        ray.weight = vec3(1.0, 1.0, 1.0);
+        ray.flags = kRayCausticPath;
 
         return ray;
     }

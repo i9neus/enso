@@ -9,6 +9,7 @@ namespace Enso
     struct BIH2DNodeDataFull;
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
+    class BidirectionalTransform;
     
     template<size_t> class UIButtonMap;
     using VirtualKeyMap = UIButtonMap<256>;
@@ -52,7 +53,7 @@ namespace Enso
         class SceneBuilder;
         class AccumulationBuffer;
         class GenericObjectContainer;
-        class PathTracer;
+        class PathTracer;            
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

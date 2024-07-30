@@ -37,7 +37,7 @@ namespace Enso
     public:
         friend class RendererManager;
 
-        void Initialise(const UINT clientWidth, const UINT clientHeight);
+        void Initialise(const UINT clientWidth, const UINT clientHeight, HWND hWnd);
         void Start();
         void Stop();
         void Destroy();
@@ -113,6 +113,7 @@ namespace Enso
     protected:
         AssetHandle<Host::ImageRGBA>                    m_compositeImage;
         cudaStream_t                                    m_renderStream;
+        HWND                                            m_parentWnd;
 
         std::atomic<int>	                            m_threadSignal;
         std::thread			                            m_managerThread;

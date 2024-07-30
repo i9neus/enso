@@ -39,6 +39,10 @@ namespace Enso
 
         // Declare any listeners that will respond to changes in the scene graph
         DeclareListeners();
+
+        // Zero the ring buffer
+        m_timeRingIdx = 0;
+        for (auto& t : m_timeRingBuffer) { t = 0.f; }
     }
 
     __host__ Host::GaussianSplattingModule::~GaussianSplattingModule() noexcept
@@ -180,9 +184,26 @@ namespace Enso
         // Flush any keyboard and mouse inputs that have accumulated between now and the beginning of the last frame
         FlushUIEventQueue();
 
-        m_pathTracer->Prepare();
+        m_renderTimer.Reset();
 
+        m_pathTracer->Prepare();
         m_pathTracer->Render();
+
+        // Compute the exponential moving average of the frame time
+        m_timeRingBuffer[m_timeRingIdx] = m_renderTimer.Get();
+        m_timeRingIdx = (m_timeRingIdx + 1) % m_timeRingBuffer.size();
+        float meanTime = 0., sumWeights = 0.;
+        constexpr float kEMASigma = 1.5f;
+        for (int i = 0, j = m_timeRingIdx - 1; i < m_timeRingBuffer.size(); ++i, --j)
+        {
+            const float weight = std::exp(-sqr(kEMASigma * float(i) / float(m_timeRingBuffer.size())));
+            meanTime += weight * m_timeRingBuffer[(j >= 0) ? j : (m_timeRingBuffer.size() + j)];
+            sumWeights += weight;
+        }
+        meanTime /= sumWeights;
+        
+        std::string windowTitle = tfm::format("%i fps (%.2 ms/frame)", int(1. / meanTime), meanTime * 1e-3f);
+        SetWindowTextA(m_parentWnd, windowTitle.c_str());
 
         // If a blit is in progress, skip the composite step entirely.
        // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than

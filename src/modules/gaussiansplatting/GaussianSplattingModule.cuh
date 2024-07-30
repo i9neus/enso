@@ -58,6 +58,8 @@ namespace Enso
 
             bool                                        m_isRunning;
             HighResolutionTimer                         m_renderTimer;
+            std::array<float, 60>                       m_timeRingBuffer;
+            int                                         m_timeRingIdx;
         };
     }
 }

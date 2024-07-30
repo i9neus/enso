@@ -8,14 +8,16 @@
 namespace Enso
 {
     ModuleManager::ModuleManager() : 
-        m_outboundCmdQueue(std::make_shared<CommandQueue>())
+        m_outboundCmdQueue(std::make_shared<CommandQueue>()),
+        m_parentWnd(0)
     {
         AddInstantiator<Host::GI2DModule>("2dgi");
         AddInstantiator<Host::GaussianSplattingModule>("gaussiansplatting");
     }
 
-    void ModuleManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
+    void ModuleManager::Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight, HWND hWnd)
     {
+        m_parentWnd = hWnd;
         InitialiseCuda(dx12DeviceLUID, clientWidth, clientHeight);
 
         // Create some Cuda objects
@@ -78,7 +80,7 @@ namespace Enso
         // Instantiate and set up the renderer
         m_activeRenderer = (it->second)(m_outboundCmdQueue);
         m_activeRenderer->SetCudaObjects(m_compositeImage, m_renderStream);
-        m_activeRenderer->Initialise(m_clientWidth, m_clientHeight);
+        m_activeRenderer->Initialise(m_clientWidth, m_clientHeight, m_parentWnd);
 
         Log::Success("Successfully loaded '%s'!", id);
     }

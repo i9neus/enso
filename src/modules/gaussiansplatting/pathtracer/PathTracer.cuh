@@ -5,6 +5,10 @@
 #include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
 #include "core/GenericObject.cuh"
+#include "core/HighResolutionTimer.h"
+
+#include "../FwdDecl.cuh"
+//#include "core/3d/BidirectionalTransform.cuh"
 
 namespace Enso
 {         
@@ -22,18 +26,16 @@ namespace Enso
         viewport;
 
         int frameIdx;
+        float wallTime;
     };
 
     struct PathTracerObjects
     {
-        __device__ void Validate() const
-        {
-            //CudaAssert(scene);
-            CudaAssert(accumBuffer);
-        }
+        __device__ void Validate() const;
         
         //const Device::SceneContainer*     scene = nullptr;
         Device::ImageRGBW*                  accumBuffer = nullptr;
+        Device::Vector<BidirectionalTransform>* transforms = nullptr;
     };
 
     namespace Device
@@ -43,7 +45,7 @@ namespace Enso
         public:
             __host__ __device__ PathTracer() {}
             
-            __device__ void Prepare(const uint dirtyFlags);
+            //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
@@ -79,6 +81,8 @@ namespace Enso
             __host__ virtual void Synchronise(const uint syncFlags) override final;
 
         private:
+            __host__ void CreateScene();
+
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
             {
@@ -93,8 +97,10 @@ namespace Enso
             Device::PathTracer                m_hostInstance;
             PathTracerObjects                 m_deviceObjects;
             PathTracerParams                  m_params;
+            HighResolutionTimer               m_wallTime;
 
             AssetHandle<Host::ImageRGBW>        m_hostAccumBuffer;
+            AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };
     }
 }

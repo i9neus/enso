@@ -71,6 +71,7 @@
     <ClInclude Include="..\..\..\src\core\3d\Ctx.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\primitives\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\Ray.cuh" />
+    <ClInclude Include="..\..\..\src\core\3d\Transform.cuh" />
     <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\core\Assert.h" />
     <ClInclude Include="..\..\..\src\core\Asset.cuh" />
@@ -136,8 +137,11 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Geometry.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh" />

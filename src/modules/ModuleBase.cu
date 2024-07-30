@@ -12,7 +12,8 @@ namespace Enso
 		m_clientHeight(1.0f),
 		m_uiGraph(m_keyCodes),
 		m_renderSemaphore(kRenderManagerD3DBlitFinished),
-		m_outboundCmdQueue(outQueue)
+		m_outboundCmdQueue(outQueue),
+		m_parentWnd(0)
 	{
 		m_mouse.pos = std::numeric_limits<int>::min();
 		m_mouse.prevPos = std::numeric_limits<int>::min();
@@ -33,8 +34,9 @@ namespace Enso
 		m_renderStream = renderStream;
 	}
 
-	void ModuleBase::Initialise(const UINT clientWidth, const UINT clientHeight)
+	void ModuleBase::Initialise(const UINT clientWidth, const UINT clientHeight, HWND hWnd)
 	{
+		m_parentWnd = hWnd;
 		SetClientSize(clientWidth, clientHeight);
 
 		OnInitialise();

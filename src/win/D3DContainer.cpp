@@ -35,7 +35,7 @@ namespace Enso
 		CreatePipeline();
 
 		// Load the renderer
-		m_moduleManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight());
+		m_moduleManager->Initialise(m_dx12deviceluid, GetClientWidth(), GetClientHeight(), m_hWnd);
 		//m_moduleManager->LoadRenderer("2dgi");
 		m_moduleManager->LoadRenderer("gaussiansplatting");
 
