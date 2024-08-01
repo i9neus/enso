@@ -133,6 +133,9 @@
     <Filter Include="modules\gaussiansplatting\pathtracer">
       <UniqueIdentifier>{a9024a80-dc6a-445f-b733-5547af7209c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gaussiansplatting\denoiser">
+      <UniqueIdentifier>{ac6930e7-1342-4826-b2b3-54a9db0d5fb6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -704,6 +707,18 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh">
+      <Filter>modules\gaussiansplatting\pathtracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh">
+      <Filter>core\math\samplers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\3d\bxdfs\Specular.cuh">
+      <Filter>core\3d\bxdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM.cuh">
+      <Filter>modules\gaussiansplatting\denoiser</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -816,6 +831,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM .cu">
+      <Filter>modules\gaussiansplatting\denoiser</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

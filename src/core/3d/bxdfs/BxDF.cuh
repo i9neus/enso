@@ -8,11 +8,15 @@ namespace Enso
     {
         __host__ __device__ __forceinline__ vec3 Reflect(const vec3& i, const vec3 & n) 
         {
-            return (n * (dot(n, i) * 2.0f)) - i;
+            // As defined in the GLSL spec: https://registry.khronos.org/OpenGL-Refpages/gl4/html/reflect.xhtml
+            // Assumes the incident ray to be in the opposite hemisphere to the normal
+            return i - 2 * dot(n, i) * n; 
         }
 
         __host__ __device__ __forceinline__ vec3 Refract(const vec3& i, const vec3& n, const float& eta)
         {
+            // Equal to refract() as defined in the GLSL spec: https://registry.khronos.org/OpenGL-Refpages/gl4/html/refract.xhtml
+            // Assumes the incident ray to be in the opposite hemisphere to the normal
             const float nDoti = dot(n, i);            
             const float k = 1.f - eta * eta * (1.0f - nDoti*nDoti);
             return (k < 0.0f) ? kZero : (eta * i - (eta * nDoti + sqrt(k)) * n);

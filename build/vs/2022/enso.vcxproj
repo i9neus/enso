@@ -67,6 +67,7 @@
     <ClInclude Include="..\..\..\src\core\3d\bxdfs\BxDF.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\bxdfs\Lambert.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\bxdfs\GGX.cuh" />
+    <ClInclude Include="..\..\..\src\core\3d\bxdfs\Specular.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\Cameras.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\Ctx.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\primitives\GenericIntersector.cuh" />
@@ -105,6 +106,7 @@
     <ClInclude Include="..\..\..\src\core\math\mat\Mat3.cuh" />
     <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Mappings.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Halton.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\PCG.cuh" />
     <ClInclude Include="..\..\..\src\core\math\SphericalHarmonics.cuh" />
@@ -135,11 +137,13 @@
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h" />
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Geometry.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />
     <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
@@ -231,6 +235,7 @@
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM .cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu" />

@@ -81,6 +81,7 @@ namespace Enso
             {
                 if (RaySphere(ray, hit, transforms[sphereIdx]))
                 {
+                    //hit.matID = kMatLambertian;                    
                     switch (sphereIdx)
                     {
                     case 0:
@@ -103,23 +104,26 @@ namespace Enso
                     }
                 }
             }
-
-            if (RayPlane(ray, hit, transforms[kNumSpheres], true))
-            {
-                hit.matID = kMatRoughSpecular;
-
-                float fbm = FBM2D(hit.uv, 20.f, 5);
-                fbm = 1.f / (1. + expf(mix(-1.f, 1.f, fbm) * 3.f));
-                hit.alpha = mix(0.01, 0.5, sqr(fbm));
-                ray.weight *= 0.7;
-            }
+           
             if (RayPlane(ray, hit, transforms[kNumSpheres+1], true))
             {
                 hit.matID = kMatEmitter;
             }
 
+            if (RayPlane(ray, hit, transforms[kNumSpheres], false))
+            {
+                hit.matID = kMatRoughSpecular;
+                //hit.matID = kMatLambertian;
+
+                //float tex = Texture::EvaluateFBM2D(hit.uv, 20.f, 1);
+                //tex = 1.f / (1. + expf(mix(-1.f, 1.f, fbm) * 3.f));
+                float tex = Texture::EvaluateGrid2D(hit.uv * 10., 0.1);
+                hit.alpha = mix(0.01, 0.5, sqr(tex));
+                ray.weight *= 0.7;
+            }
+
             // Make all materials diffuse Lambert
-            //if(hit.matID != kInvalidMaterial && hit.matID != kMatEmitter)  hit.matID = kMatLambertian;
+            //if (hit.matID != kMatInvalid && hit.matID != kMatEmitter) { hit.matID = kMatLambertian; }
 
             return hit.matID;
         }

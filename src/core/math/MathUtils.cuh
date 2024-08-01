@@ -26,13 +26,15 @@ namespace Enso
 
 	__host__ __device__ __forceinline__ float	clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
 	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return fmaxf(a, fminf(v, b)); }
-	__host__ __device__ __forceinline__ float	fract(const float& v) noexcept { return fmodf(v, 1.0f); }
+	__host__ __device__ __forceinline__ float	fract(const float& v) noexcept { return v - floorf(v); }
 	__host__ __device__ __forceinline__ float	sign(const float& v) noexcept { return copysign(1.0f, v); }
 	__host__ __device__ __forceinline__ float	cubrt(float a) { return copysignf(1.0f, a) * powf(fabs(a), 1.0f / 3.0f); }
 	template<typename T> __host__ __device__ __forceinline__ T toRad(const T& deg) { return kTwoPi * deg / 360.0f; }
 	template<typename T> __host__ __device__ __forceinline__ T toDeg(const T& rad) { return 360.0f * rad / kTwoPi; }
 	template<typename T> __host__ __device__ __forceinline__ T sqr(const T& a) { return a * a; }
 	template<typename T> __host__ __device__ __forceinline__ T cub(const T& a) { return a * a * a; }
+	template<typename T> __host__ __device__ __forceinline__ T pow3(const T& a) { return a * a * a; }
+	template<typename T> __host__ __device__ __forceinline__ T pow4(T a) { a *= a;  return a * a; }
 	__host__ __device__ __forceinline__ int		mod2(int a, int b) { return ((a % b) + b) % b; }
 	__host__ __device__ __forceinline__ float	mod2(float a, float b) { return fmodf(fmodf(a, b) + b, b); }
 	__host__ __device__ __forceinline__ float	sin01(float a) { return 0.5f * sin(a) + 0.5f; }
@@ -70,8 +72,9 @@ namespace Enso
 		return float(integer) / float(0x7fffffff);
 	}
 
-	__host__ __device__ __forceinline__ float smoothstep(const float a, const float b, const float t)
+	__host__ __device__ __forceinline__ float smoothstep(const float a, const float b, float t)
 	{
+		t = saturatef(t);
 		return t * t * (3.f - 2.f * t);
 	}
 }

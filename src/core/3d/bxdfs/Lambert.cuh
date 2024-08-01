@@ -8,7 +8,7 @@ namespace Enso
 {
     namespace BxDF
     {
-        __host__ __device__ float SampleLambert(const vec2& xi, const vec3& n, vec3& o, float& pdf)
+        __host__ __device__ float SampleLambertian(const vec2& xi, const vec3& n, vec3& o)
         {
             // Sample the Lambertian direction
             vec3 r = vec3(SampleUnitDisc(xi), 0.0f);
@@ -19,9 +19,9 @@ namespace Enso
             return r.z / kPi;
         }
 
-        __host__ __device__ __forceinline__ float EvalauateLambert(const vec3& d, const vec3 &n)
+        __host__ __device__ __forceinline__ float EvaluateLambertian()
         {
-            return dot(d, n) / kPi;
+            return 1.f / kPi;
         }
     }
 }

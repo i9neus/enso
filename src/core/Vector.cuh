@@ -58,10 +58,14 @@ namespace Enso
 			__host__ __device__ __forceinline__ bool				IsEmpty() const { return m_localParams.size == 0; }
 			__host__ __device__ __forceinline__ unsigned int		MemorySize() const { return m_localParams.size * sizeof(T); }
 
+			__host__ __device__ __forceinline__ Type&				Back() { CudaAssertDebug(m_localParams.size != 0); return m_localData[m_localParams.size - 1]; }
+			__host__ __device__ __forceinline__ const Type&			Back() const { CudaAssertDebug(m_localParams.size != 0); return m_localData[m_localParams.size - 1]; }
+
 			__host__ __device__ Type* Data() { return m_localData; }
 			__host__ __device__ Type& operator[](const int idx)
 			{
 				/*CudaAssertDebug(idx < m_localParams.size);*/
+#ifdef CUDA_DEVICE_DEBUG_ASSERTS
 				if (!(idx < m_localParams.size)) 
 				{				
 #ifdef __CUDA_ARCH__
@@ -71,6 +75,7 @@ namespace Enso
 					AssertMsgFmt(idx < m_localParams.size, "Host assert: vector index %i out of bounds [0, %i)", idx, m_localParams.size);
 #endif
 				}
+#endif
 				return m_localData[idx];
 			}
 			__host__ __device__ const Type& operator[](const int idx) const

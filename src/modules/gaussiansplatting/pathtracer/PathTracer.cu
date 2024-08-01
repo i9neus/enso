@@ -10,6 +10,7 @@
 #include "Geometry.cuh"
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
+#include "Integrator.cuh"
 //#include "../scene/SceneContainer.cuh"
 
 #include "io/json/JsonUtils.h"
@@ -31,55 +32,91 @@ namespace Enso
     __host__ __device__ void PathTracerObjects::Validate() const
     {
         CudaAssert(transforms);
-        CudaAssert(accumBuffer);
+        CudaAssert(meanAccumBuffer);
+        CudaAssert(varAccumBuffer);
     }
 
     __device__ void Device::PathTracer::Render()
     {
-        CudaAssertDebug(m_objects.accumBuffer);
+        CudaAssertDebug(m_objects.meanAccumBuffer);
         CudaAssertDebug(m_objects.transforms->Size() == 9);
 
         const ivec2 xyScreen = kKernelPos<ivec2>();
-        if (xyScreen.x < 0 || xyScreen.x >= m_objects.accumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.accumBuffer->Height()) { return; }        
+        if (xyScreen.x < 0 || xyScreen.x >= m_objects.meanAccumBuffer->Width() || xyScreen.y < 0 || xyScreen.y >= m_objects.meanAccumBuffer->Height()) { return; }        
 
+        // Get pointers to the object transforms
         const auto& transforms = *m_objects.transforms;
+        const auto& emitterTrans = transforms.Back();
 
+        // Create a render context
         RenderCtx renderCtx;
         renderCtx.rng.Initialise(HashOf(m_params.frameIdx, xyScreen.x, xyScreen.y));
+        renderCtx.xyScreen = xyScreen;
+        renderCtx.frameIdx = m_params.frameIdx;
 
+        // Transform into normalised sceen space
         const vec2 uvView = ScreenToNormalisedScreen(vec2(xyScreen) + renderCtx.Rand().xy, vec2(m_params.viewport.dims));
+        Ray directRay, indirectRay;
 
+        // Create the camera ray
         float cameraPhi = -kPi;
-        //cameraPhi += kTwoPi * mix(-1., 1., iMouse.x / iResolution.x);
-        cameraPhi += kTwoPi * m_params.wallTime * 0.01f;
-        //float cameraTheta = kHalfPi * iMouse.y / iResolution.y;
-        vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;//mix(0.5, 3., iMouse.y / iResolution.y);
-        Ray ray = CreatePinholeCameraRay(uvView, cameraPos, vec3(0., -0., -0.), 50.f);
+        //cameraPhi += kTwoPi * m_params.wallTime * 0.01f;
+        vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;
+        indirectRay = Cameras::CreatePinholeRay(uvView, cameraPos, vec3(0., -0., -0.), 50.);
+
+        int genFlags = kGeneratedIndirect;
         HitCtx hit;
         vec3 L = kZero;
-        bool referenceMode = true;//(xyScreen.x < iResolution.x * 0.5);
+        //int renderMode = (xyScreen.x < m_objects.meanAccumBuffer->Width() * 0.5f) ? kModePathTraced : kModeNEE;
+        const int renderMode = kModeNEE;
 
-        #define kMaxPathDepth 4
-        for (int depth = 0; depth < kMaxPathDepth; ++depth)
+        constexpr int kMaxPathDepth = 5;
+        constexpr int kMaxIterations = 10;
+        for (int rayIdx = 0; rayIdx < kMaxIterations && genFlags != kGenerateNothing; ++rayIdx)
         {
+            Ray ray;
+            if ((genFlags & kGeneratedDirect) != 0) ray = directRay; else ray = indirectRay;
+
+            if (ray.depth >= kMaxPathDepth) { continue; }
+
             if (Trace(ray, hit, transforms) == kMatInvalid && !ray.IsDirectSample())
             {
-                //if (depth > 0)
-                //    L += kOne * luminance(texture(iChannel1, ray.od.d).xyz) * ray.weight * 0.5;
+                //if(depth > 0)
+                {
+                    L += kOne * ray.weight * 0.2;
+                    //L += kOne * 0.5 * luminance(texture(iChannel1, ray.od.d).xyz);
+                }
                 break;
             }
 
+            //EvaluateMaterial(ray, hit);
 
-            L = hit.n *0.5f + 0.5f;
-            break;
+            //L = hit.n * 0.5 + 0.5;
+            //break;
 
-            /*if (!Shade(ray, hit, renderCtx, emitterTrans, depth, referenceMode, L))
+            if ((genFlags & kGeneratedDirect) != 0)
             {
-                break;
-            }*/
+                ShadeDirectSample(ray, hit, L);
+                genFlags &= ~kGeneratedDirect;
+            }
+            else if ((genFlags & kGeneratedIndirect) != 0)
+            {
+                genFlags = Shade(ray, indirectRay, directRay, hit, renderCtx, emitterTrans, renderMode, L);
+            }
         }
 
-        m_objects.accumBuffer->At(xyScreen) = vec4(L, 1.);
+        auto& meanL = m_objects.meanAccumBuffer->At(xyScreen);
+        auto& varL = m_objects.varAccumBuffer->At(xyScreen);
+
+        // Unstable running variance
+        //varL += vec4(sqr(L), 1.);
+        
+        // Welford's online algorithm
+        varL += vec4((L - meanL.xyz / fmaxf(1.f, meanL.w)) * 
+                     (L - (L + meanL.xyz) / (1.f + meanL.w)), 1.0f);
+
+        meanL += vec4(L, 1.);
+
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
@@ -89,16 +126,18 @@ namespace Enso
 
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyAccum = kKernelPos<ivec2>();
-        const ivec2 xyScreen = xyAccum + deviceOutputImage->Dimensions() / 2 - m_objects.accumBuffer->Dimensions() / 2;
+        const ivec2 xyScreen = xyAccum + deviceOutputImage->Dimensions() / 2 - m_objects.meanAccumBuffer->Dimensions() / 2;
         BBox2i border(0, 0, m_params.viewport.dims.x, m_params.viewport.dims.y);
-        if(border.PointOnPerimiter(xyAccum, 2))
+        /*if(border.PointOnPerimiter(xyAccum, 2))
         {
             deviceOutputImage->At(xyScreen) = vec4(1.0f);
-        }
-        else if (xyAccum.x < m_objects.accumBuffer->Width() && xyAccum.y < m_objects.accumBuffer->Height())
+        }*/
+        if (xyAccum.x < m_objects.meanAccumBuffer->Width() && xyAccum.y < m_objects.meanAccumBuffer->Height())
         {
-            const vec4& L = m_objects.accumBuffer->At(xyAccum);
-            deviceOutputImage->At(xyScreen) = vec4(L.xyz / fmaxf(1.f, L.w), 1.f);
+            const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
+            const vec4& meanL = m_objects.meanAccumBuffer->At(xyAccum);
+            //deviceOutputImage->At(xyScreen) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
+            deviceOutputImage->At(xyScreen) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
@@ -108,44 +147,46 @@ namespace Enso
         //m_scene(scene)
     {                
         // Create some Cuda objects
-        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
+        m_hostMeanAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", width, height, renderStream);
+        m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", width, height, renderStream);
         m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
 
-        m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.meanAccumBuffer = m_hostMeanAccumBuffer->GetDeviceInstance();
+        m_deviceObjects.varAccumBuffer = m_hostVarAccumBuffer->GetDeviceInstance();
         m_deviceObjects.transforms = m_hostTransforms->GetDeviceInstance();
         //m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
         cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this);
-        
+
         m_params.viewport.dims = ivec2(width, height);
         m_params.frameIdx = 0;
         m_params.wallTime = 0.f;
         m_wallTime.Reset();
 
         CreateScene();
-    }    
+    }
 
     Host::PathTracer::~PathTracer() noexcept
     {
-        m_hostAccumBuffer.DestroyAsset();
+        m_hostMeanAccumBuffer.DestroyAsset();
+        m_hostVarAccumBuffer.DestroyAsset();
         m_hostTransforms.DestroyAsset();
-        
+
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
-        m_hostAccumBuffer.DestroyAsset();
     }
 
     __host__ void Host::PathTracer::CreateScene()
     {
         m_hostTransforms->Clear();
 
-        #define kNumSpheres 7        
+#define kNumSpheres 7        
         for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
         {
             float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
             m_hostTransforms->PushBack(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f));
         }
 
-        m_hostTransforms->PushBack(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
+        m_hostTransforms->PushBack(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
         m_hostTransforms->PushBack(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
 
         m_hostTransforms->Synchronise(kVectorSyncUpload);
@@ -164,7 +205,7 @@ namespace Enso
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
+        KernelParamsFromImage(m_hostMeanAccumBuffer, blockSize, gridSize);
 
         KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
         IsOk(cudaDeviceSynchronize());
@@ -173,14 +214,14 @@ namespace Enso
     __host__ void Host::PathTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
         dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
+        KernelParamsFromImage(m_hostMeanAccumBuffer, blockSize, gridSize);
 
         KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
         IsOk(cudaDeviceSynchronize());
     }
 
     __host__ bool Host::PathTracer::Prepare()
-    {  
+    {
         m_params.frameIdx++;
         m_params.wallTime = m_wallTime.Get();
 
@@ -191,7 +232,7 @@ namespace Enso
 
     __host__ void Host::PathTracer::Clear()
     {
-        m_hostAccumBuffer->Clear(vec4(0.f));
+        m_hostMeanAccumBuffer->Clear(vec4(0.f));
 
         m_params.frameIdx = 0;  
         Synchronise(kSyncParams);

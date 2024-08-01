@@ -8,54 +8,50 @@
 #include "core/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
-//#include "core/3d/BidirectionalTransform.cuh"
 
 namespace Enso
-{         
-    namespace Device { class Tracable; }
-    
-    struct PathTracerParams
+{
+    struct NLMDenoiserParams
     {
-        __host__ __device__ PathTracerParams();
+        __host__ __device__ NLMDenoiserParams();
         __device__ void Validate() const;
 
         struct
         {
             ivec2 dims;
-        } 
+        }
         viewport;
 
         int frameIdx;
         float wallTime;
     };
 
-    struct PathTracerObjects
+    struct NLMDenoiserObjects
     {
         __device__ void Validate() const;
-        
+
         //const Device::SceneContainer*     scene = nullptr;
-        Device::ImageRGBW*                  meanAccumBuffer = nullptr;
-        Device::ImageRGBW*                  varAccumBuffer = nullptr;
+        Device::ImageRGBW* accumBuffer = nullptr;
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
     };
-
+    
     namespace Device
     {
-        class PathTracer : public Device::GenericObject
+        class NLMDenoiser : public Device::GenericObject
         {
         public:
-            __host__ __device__ PathTracer() {}
-            
+            __host__ __device__ NLMDenoiser() {}
+
             //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
-            __device__ void Synchronise(const PathTracerParams& params) { m_params = params; }
-            __device__ void Synchronise(const PathTracerObjects& objects) { objects.Validate(); m_objects = objects; }
+            __device__ void Synchronise(const NLMDenoiserParams& params) { m_params = params; }
+            __device__ void Synchronise(const NLMDenoiserObjects& objects) { objects.Validate(); m_objects = objects; }
 
         private:
-            PathTracerParams              m_params;
-            PathTracerObjects             m_objects;
+            NLMDenoiserParams              m_params;
+            NLMDenoiserObjects             m_objects;
 
             //Device::SceneContainer        m_scene;
         };
@@ -63,14 +59,14 @@ namespace Enso
 
     namespace Host
     {
-        class PathTracer : public Host::GenericObject
+        class NLMDenoiser : public Host::GenericObject
         {
         public:
-            PathTracer(const Asset::InitCtx& initCtx, /*const AssetHandle<const Host::SceneContainer>& scene, */const uint width, const uint height, cudaStream_t renderStream);
-            virtual ~PathTracer() noexcept;
+            NLMDenoiser(const Asset::InitCtx& initCtx, /*const AssetHandle<const Host::SceneContainer>& scene, */const uint width, const uint height, cudaStream_t renderStream);
+            virtual ~NLMDenoiser() noexcept;
 
             __host__ void Render();
-            __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const; 
+            __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
 
             __host__ bool Prepare();
             __host__ void Clear();
@@ -94,15 +90,13 @@ namespace Enso
 
             //const AssetHandle<const Host::SceneContainer>& m_scene;
 
-            Device::PathTracer*               cu_deviceInstance = nullptr;
-            Device::PathTracer                m_hostInstance;
-            PathTracerObjects                 m_deviceObjects;
-            PathTracerParams                  m_params;
+            Device::NLMDenoiser* cu_deviceInstance = nullptr;
+            Device::NLMDenoiser                m_hostInstance;
+            NLMDenoiserObjects                 m_deviceObjects;
+            NLMDenoiserParams                  m_params;
             HighResolutionTimer               m_wallTime;
 
-            AssetHandle<Host::ImageRGBW>        m_hostMeanAccumBuffer;
-            AssetHandle<Host::ImageRGBW>        m_hostVarAccumBuffer;
-
+            AssetHandle<Host::ImageRGBW>        m_hostAccumBuffer;
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };
     }
