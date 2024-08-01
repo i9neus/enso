@@ -27,13 +27,28 @@ namespace Enso
 
 		__host__ __device__ __forceinline__ __mat3() {}
 		//__host__ __device__ __forceinline__ __mat3(const __mat3&) = default; // NOTE: Commented out to suppress nvcc compiler warnings
-		__host__ __device__ __forceinline__ __mat3(const VecType& x_, const VecType& y_, const VecType& z_) : x(x_), y(y_), z(z_) {}
+		
+		// Column-major order used by GLSL and Shadertoy
+		__host__ __device__ __forceinline__ __mat3(const VecType& v0, const VecType& v1, const VecType& v2) : 
+			x(v0[0], v1[0], v2[0]),
+			y(v0[1], v1[1], v2[1]),
+			z(v0[2], v1[2], v2[2]) {}
+		__host__ __device__ __forceinline__ __mat3(const float& i00_, const float& i01_, const float& i02_,
+			const float& i10_, const float& i11_, const float& i12_,
+			const float& i20_, const float& i21_, const float& i22_) :
+			i00(i00_), i01(i10_), i02(i20_),
+			i10(i01_), i11(i11_), i12(i21_),
+			i20(i02_), i21(i12_), i22(i22_) {}
+		
+		// Row-major order
+		/*__host__ __device__ __forceinline__ __mat3(const VecType& a, const VecType& b, const VecType& c) : x(a), y(b), z(c) {}
 		__host__ __device__ __forceinline__ __mat3(const float& i00_, const float& i01_, const float& i02_, 
 											       const float& i10_, const float& i11_, const float& i12_, 
 												   const float& i20_, const float& i21_, const float& i22_) : 
 			i00(i00_), i01(i01_), i02(i02_), 
 			i10(i10_), i11(i11_), i12(i12_),
 			i20(i20_), i21(i21_), i22(i22_) {}
+		*/
 
 		__host__ __device__ __forceinline__ static __mat3 Identity()
 		{

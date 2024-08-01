@@ -23,10 +23,20 @@ namespace Enso
 
 		__host__ __device__ __forceinline__ __mat2() {}
 		//__host__ __device__ __forceinline__ __mat2(const __mat2&) = default; // NOTE: Commented out to suppress nvcc compiler warnings
-		__host__ __device__ __forceinline__ __mat2(const VecType& x_, const VecType& y_) : x(x_), y(y_) {}
+		
+		// Column-major order used by GLSL and Shadertoy
+		__host__ __device__ __forceinline__ __mat2(const VecType& v0, const VecType& v1) : 
+			x(v0[0], v1[0]), 
+			y(v0[1], v1[1]) {}
+		__host__ __device__ __forceinline__ __mat2(const float& i00_, const float& i01_, const float& i10_, const float& i11_) :
+			i00(i00_), i01(i10_),
+			i10(i01_), i11(i11_) {}
+
+		// Row-major order
+		/*__host__ __device__ __forceinline__ __mat2(const VecType& x_, const VecType& y_) : x(x_), y(y_) {}
 		__host__ __device__ __forceinline__ __mat2(const float& i00_, const float& i01_, const float& i10_, const float& i11_) :
 			i00(i00_), i01(i01_),
-			i10(i10_), i11(i11_) {}
+			i10(i10_), i11(i11_) {}*/
 
 		__host__ __device__ __forceinline__ static __mat2 Identity()
 		{

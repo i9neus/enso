@@ -35,7 +35,24 @@ namespace Enso
 
 		__host__ __device__ __forceinline__ mat4() {}
 		//__host__ __device__ __forceinline__ mat4(const mat4&) = default; // NOTE: Commented out to suppress nvcc compiler warnings
-		__host__ __device__ __forceinline__ mat4(const vec4& x_, const vec4& y_, const vec4& z_, const vec4& w_) : x(x_), y(y_), z(z_), w(w_) {}
+
+		// Column-major order used by GLSL and Shadertoy
+		__host__ __device__ __forceinline__ mat4(const vec4& v0, const vec4& v1, const vec4& v2, const vec4& v3) : 
+			x(v0[0], v1[0], v2[0], v3[0]), 
+			y(v0[1], v1[1], v2[1], v3[1]),
+			z(v0[2], v1[2], v2[2], v3[2]),
+			w(v0[3], v1[3], v2[3], v3[3]) {}
+		__host__ __device__ __forceinline__ mat4(const float& i00_, const float& i01_, const float& i02_, const float& i03_,
+											 	 const float& i10_, const float& i11_, const float& i12_, const float& i13_,
+											 	 const float& i20_, const float& i21_, const float& i22_, const float& i23_,
+												 const float& i30_, const float& i31_, const float& i32_, const float& i33_) :
+			i00(i00_), i01(i10_), i02(i20_), i03(i30_),
+			i10(i01_), i11(i11_), i12(i21_), i13(i31_),
+			i20(i02_), i21(i12_), i22(i22_), i23(i32_),
+			i30(i03_), i31(i13_), i32(i23_), i33(i33_) {}
+
+		// Row-major order
+		/*__host__ __device__ __forceinline__ mat4(const vec4& x_, const vec4& y_, const vec4& z_, const vec4& w_) : x(x_), y(y_), z(z_), w(w_) {}
 		__host__ __device__ __forceinline__ mat4(const float& i00_, const float& i01_, const float& i02_, const float& i03_,
 												 const float& i10_, const float& i11_, const float& i12_, const float& i13_,
 											     const float& i20_, const float& i21_, const float& i22_, const float& i23_,
@@ -43,7 +60,7 @@ namespace Enso
 			i00(i00_), i01(i01_), i02(i02_), i03(i03_),
 			i10(i10_), i11(i11_), i12(i12_), i13(i13_),
 			i20(i20_), i21(i21_), i22(i22_), i23(i23_),
-			i30(i30_), i31(i31_), i32(i32_), i33(i33_) {}
+			i30(i30_), i31(i31_), i32(i32_), i33(i33_) {}*/
 
 		__host__ __device__ __forceinline__ const vec4& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ __forceinline__ vec4& operator[](const unsigned int idx) { return data[idx]; }
