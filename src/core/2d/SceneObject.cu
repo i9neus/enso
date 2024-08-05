@@ -48,6 +48,12 @@ namespace Enso
         m_hostInstance.m_params.transform.trans = trans;
     }
 
+    __host__ void Host::SceneObject::Verify() const
+    {
+        // This method should be called after construction to verify that all derived classes have initialised the appropriate objects
+        AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call SceneObject::SetDeviceInstance() in from the derived class constructor?");
+    }
+
     __host__ bool Host::SceneObject::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         // Handle the open event by initialising the transform
@@ -105,6 +111,7 @@ namespace Enso
     {
         if (syncFlags & kSyncParams)
         {
+            AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call SceneObject::SetDeviceInstance() in from the derived class constructor?");
             SynchroniseObjects<Device::SceneObject>(cu_deviceInstance, m_hostInstance.m_params);
         }
 

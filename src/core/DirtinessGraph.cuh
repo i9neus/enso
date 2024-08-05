@@ -4,6 +4,7 @@
 #include "io/Serialisable.cuh"
 #include "AssetAllocator.cuh"
 #include "math/Hash.cuh"
+#include "DirtinessFlags.cuh"
 
 #include <set>
 #include <map>

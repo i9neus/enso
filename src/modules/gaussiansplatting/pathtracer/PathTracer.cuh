@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/2d/Ctx.cuh"
+#include "core/2d/SceneObject.cuh"
 
 #include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
@@ -23,6 +24,7 @@ namespace Enso
         struct
         {
             ivec2 dims;
+            BBox2f objectBounds;
         } 
         viewport;
 
@@ -41,10 +43,14 @@ namespace Enso
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
     };
 
+    namespace Host { class PathTracer; }
+
     namespace Device
     {
-        class PathTracer : public Device::GenericObject
+        class PathTracer : public Device::SceneObject
         {
+            friend Host::PathTracer;
+
         public:
             __host__ __device__ PathTracer() {}
             
@@ -55,6 +61,9 @@ namespace Enso
 
             __device__ void Synchronise(const PathTracerParams& params);
             __device__ void Synchronise(const PathTracerObjects& objects);
+
+            __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
+            __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
         private:
             PathTracerParams            m_params;
@@ -68,23 +77,36 @@ namespace Enso
 
     namespace Host
     {
-        class PathTracer : public Host::GenericObject
+        class PathTracer : public Host::SceneObject
         {
         public:
-            PathTracer(const Asset::InitCtx& initCtx, /*const AssetHandle<const Host::SceneContainer>& scene, */const uint width, const uint height, cudaStream_t renderStream);
+            PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene);
             virtual ~PathTracer() noexcept;
 
             __host__ void Render();
             __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
-
             __host__ bool Prepare();
             __host__ void Clear();
 
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "pathtracer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
+            __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
+            __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
+            __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
+            __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() override final;
+            __host__ virtual bool       HasOverlay() const override { return true; }
+
+            __host__ virtual Device::PathTracer* GetDeviceInstance() const override final
+            {
+                return cu_deviceInstance;
+            }
+
         protected:
-            __host__ virtual void Synchronise(const uint syncFlags) override final;
+            __host__ virtual void       OnSynchroniseSceneObject(const uint syncFlags) override final;
+            __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
+            __host__ virtual bool       OnRebuildSceneObject() override final;
 
         private:
             __host__ void CreateScene();
@@ -97,12 +119,11 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            //const AssetHandle<const Host::SceneContainer>& m_scene;
+            const AssetHandle<const Host::SceneContainer>& m_scene;
 
-            Device::PathTracer* cu_deviceInstance = nullptr;
+            Device::PathTracer*               cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;
             PathTracerObjects                 m_deviceObjects;
-            PathTracerParams                  m_params;
             HighResolutionTimer               m_wallTime;
             HighResolutionTimer               m_renderTimer;
 

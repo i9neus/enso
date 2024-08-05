@@ -1,14 +1,22 @@
 #pragma once
 
 #include "../ModuleBase.cuh"
-#include "io/CommandManager.h"
-#include "core/GenericObjectFactory.cuh"
+#include "core/2d/Ctx.cuh"
+#include "core/Vector.cuh"
 #include "FwdDecl.cuh"
+#include "core/GenericObjectFactory.cuh"
+#include "io/CommandManager.h"
 
 namespace Enso
 {
+    class Asset;
     namespace Host
     {
+        class RenderObject;
+        //template<typename T> class Vector;
+
+        struct CudaObjects;        
+
         class GaussianSplattingModule : public Host::Dirtyable, public ModuleBase
         {
         public:
@@ -42,26 +50,50 @@ namespace Enso
             __host__ void                    RegisterInstantiators();
             __host__ void                    DeclareStateTransitionGraph();
             __host__ void                    DeclareListeners();
-            __host__ void                    UpdatePerfStats();
 
             __host__ void                    LoadScene();
-        
+
+            __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
+            __host__ std::string             DecideOnClickState(const uint& sourceStateIdx);
+            __host__ void                    DeselectAll();
+
             __host__ void                    EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
+            __host__ void                    FinaliseNewSceneObject();
+            __host__ void                    UpdateSelectedBBox();
+
 
         private:
+            enum JobIDs : uint { kJobDraw };
+
+            AssetHandle<Host::SceneContainer>     m_sceneContainer;
+            AssetHandle<Host::SceneBuilder>       m_sceneBuilder;
+            AssetHandle<Host::OverlayLayer>       m_overlayRenderer;
+
+            UIGridCtx                             m_gridCtx;
+            UIViewCtx                             m_viewCtx;
+            UISelectionCtx                        m_selectionCtx;
+
+            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::SceneContainer>&> m_sceneObjectFactory;
+
+            struct
+            {
+                AssetHandle<Host::SceneObject>   newObject;
+            }
+            m_onCreate;
+
+            AssetHandle<Host::SceneObject>              m_delegatedObject;
             CommandManager                              m_commandManager;
 
-            AssetHandle<Host::PathTracer>               m_pathTracer;
-
             bool                                        m_isRunning;
-            HighResolutionTimer                         m_renderTimer;
             HighResolutionTimer                         m_blitTimer;
-            std::array<float, 60>                       m_timeRingBuffer;
-            int                                         m_timeRingIdx;
         };
     }
 }

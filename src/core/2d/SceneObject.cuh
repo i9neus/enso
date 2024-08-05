@@ -83,6 +83,7 @@ namespace Enso
 
             __host__ bool               Rebuild();
             __host__ virtual void       Synchronise(const uint syncFlags) override final;
+            __host__ void               Verify() const;
             
             __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);

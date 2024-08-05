@@ -30,7 +30,7 @@ namespace Enso
         m_isRunning(true)
     {
         // Load the object schema
-        SerialisableObjectSchemaContainer::Load("schema.json");
+        SerialisableObjectSchemaContainer::Load("GI2DSchema.json");
 
         // Register the outbound commands
         m_outboundCmdQueue->RegisterCommand("OnCreateObject");

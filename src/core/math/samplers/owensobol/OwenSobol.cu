@@ -106,7 +106,7 @@ namespace Enso
     __device__ void OwenSobol::Initialise(const uint sampleIdx, const uint& seed)
     {
         m_sampleIdx = sampleIdx;
-        m_seed = seed;
+        m_seed = seed; 
     }
 
     __device__ vec4 OwenSobol::Rand(uint dim)

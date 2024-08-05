@@ -13,7 +13,6 @@
   <ItemGroup>
     <Text Include="..\..\..\BUILD_NOTES.txt" />
     <Text Include="..\..\..\docs\BugChecklist.md" />
-    <Text Include="..\..\..\src\thirdparty\sobol\licence.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp" />
@@ -44,12 +43,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\sobol.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp" />
@@ -103,6 +96,7 @@
     <ClInclude Include="..\..\..\src\core\debug\GlobalThreadMap.h" />
     <ClInclude Include="..\..\..\src\core\debug\ProcessMemoryMonitor.h" />
     <ClInclude Include="..\..\..\src\core\debug\Profiler.cuh" />
+    <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh" />
     <ClInclude Include="..\..\..\src\core\DirtinessGraph.cuh" />
     <ClInclude Include="..\..\..\src\core\GenericObject.cuh" />
     <ClInclude Include="..\..\..\src\core\GenericObjectContainer.cuh" />
@@ -129,12 +123,6 @@
     <ClInclude Include="..\..\..\src\core\math\samplers\Halton.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\PCG.cuh" />
-    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolData.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\SphericalHarmonics.cuh" />
     <ClInclude Include="..\..\..\src\core\math\VecUtils.cuh" />
     <ClInclude Include="..\..\..\src\core\math\vec\IVec2.cuh" />
@@ -163,9 +151,9 @@
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h" />
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
@@ -173,22 +161,9 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\UILayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.h" />
@@ -240,12 +215,6 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stream.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
-    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol.hpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol_test.hpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h" />
     <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h" />
@@ -285,30 +254,14 @@
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu" />
-    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolData.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM .cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -318,12 +271,12 @@
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\bin\win64\Release\schema.json" />
+    <None Include="..\..\..\bin\win64\Release\GaussianSplattingSchema.json" />
+    <None Include="..\..\..\bin\win64\Release\GI2DSchema.json" />
     <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\docs\FixMe.md" />
     <None Include="..\..\..\docs\protocols\Messages.json" />
     <None Include="..\..\..\src\core\math\samplers\Resources.md" />
-    <None Include="..\..\..\src\modules\gi2d\ControlFlow.md" />
     <None Include="..\..\..\src\thirdparty\owenscrambling\Makefile">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>

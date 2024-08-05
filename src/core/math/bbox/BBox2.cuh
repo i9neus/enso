@@ -18,9 +18,9 @@ namespace Enso
         //__host__ __device__ BBox2& operator=(const BBox2&) = default;  
         //__host__ __device__ ~BBox2() {};
 
-        __host__ __device__ __inline__ BBox2(const VecType& v) noexcept : lower(v), upper(v) {}
-        __host__ __device__ __inline__ BBox2(const VecType& l, const VecType& u) noexcept : lower(l), upper(u) {}
-        __host__ __device__ __inline__ BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
+        __host__ __device__ __inline__ explicit BBox2(const VecType& v) noexcept : lower(v), upper(v) {}
+        __host__ __device__ __inline__ explicit BBox2(const VecType& l, const VecType& u) noexcept : lower(l), upper(u) {}
+        __host__ __device__ __inline__ explicit BBox2(const ScalarType & lx, const ScalarType & ly, const ScalarType & ux, const ScalarType & uy) noexcept : lower(lx, ly), upper(ux, uy) {}
 
         template<typename OtherType>  
         __host__ __device__ __forceinline__  BBox2(const BBox2<OtherType>& other) :

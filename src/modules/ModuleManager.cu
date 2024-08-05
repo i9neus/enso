@@ -2,7 +2,7 @@
 #include "core/HighResolutionTimer.h"
 #include "io/CommandQueue.h"
 
-#include "gi2d/GI2DModule.cuh"
+//#include "gi2d/GI2DModule.cuh"
 #include "gaussiansplatting/GaussianSplattingModule.cuh"
 
 namespace Enso
@@ -11,7 +11,7 @@ namespace Enso
         m_outboundCmdQueue(std::make_shared<CommandQueue>()),
         m_parentWnd(0)
     {
-        AddInstantiator<Host::GI2DModule>("2dgi");
+        //AddInstantiator<Host::GI2DModule>("2dgi");
         AddInstantiator<Host::GaussianSplattingModule>("gaussiansplatting");
     }
 

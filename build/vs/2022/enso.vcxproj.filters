@@ -40,21 +40,6 @@
     <Filter Include="modules">
       <UniqueIdentifier>{5f593df5-52db-4ccb-ad29-274603da2314}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d">
-      <UniqueIdentifier>{eca99f3a-ef0b-4546-a38b-ce2424ef92ba}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\gi2d\integrators">
-      <UniqueIdentifier>{9d71252e-a64f-4291-80a4-7374975f37e6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\gi2d\lights">
-      <UniqueIdentifier>{75490de9-0708-4770-a984-7d70c6201f30}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\gi2d\layers">
-      <UniqueIdentifier>{36e7c326-8448-4af6-9469-21c545f02069}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\gi2d\tracables">
-      <UniqueIdentifier>{2d2a21fe-5b63-4ba1-af2e-81fffbfefafe}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ui">
       <UniqueIdentifier>{2b5a2888-41ef-40c2-ac23-2b4dc7b3e523}</UniqueIdentifier>
     </Filter>
@@ -97,9 +82,6 @@
     <Filter Include="ui\elements\types">
       <UniqueIdentifier>{079dc70e-b8b5-45f4-ab0f-2560eadff5e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gi2d\scene">
-      <UniqueIdentifier>{eaf759a3-9559-46f2-a6ca-2b2908670e25}</UniqueIdentifier>
-    </Filter>
     <Filter Include="core\2d">
       <UniqueIdentifier>{8d4dc42a-2241-43ab-910e-932d1956f9d4}</UniqueIdentifier>
     </Filter>
@@ -111,9 +93,6 @@
     </Filter>
     <Filter Include="core\2d\ui">
       <UniqueIdentifier>{830f3194-10a5-4ae2-be95-9a982c18b37b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\gi2d\widgets">
-      <UniqueIdentifier>{0e1aea48-f0d0-456c-842e-0506e5c219c5}</UniqueIdentifier>
     </Filter>
     <Filter Include="modules\gaussiansplatting">
       <UniqueIdentifier>{e37cdba9-5430-454c-bc0f-d062bf7ae76c}</UniqueIdentifier>
@@ -133,20 +112,14 @@
     <Filter Include="modules\gaussiansplatting\pathtracer">
       <UniqueIdentifier>{a9024a80-dc6a-445f-b733-5547af7209c9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gaussiansplatting\denoiser">
-      <UniqueIdentifier>{ac6930e7-1342-4826-b2b3-54a9db0d5fb6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="thirdparty\sobol">
-      <UniqueIdentifier>{477e0e42-4650-4c57-93c7-fb694f889f8a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="core\math\samplers\sobol">
-      <UniqueIdentifier>{2fbc86db-0956-4df4-9afc-a1426ad2f170}</UniqueIdentifier>
-    </Filter>
     <Filter Include="thirdparty\owenscrambling">
       <UniqueIdentifier>{c9a5d209-14f8-4d59-8c3a-b4b695f276e7}</UniqueIdentifier>
     </Filter>
     <Filter Include="core\math\samplers\owensobol">
       <UniqueIdentifier>{0e96254e-e6cf-4972-ae4f-0c055dd1ae3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\scene">
+      <UniqueIdentifier>{94747bcb-5225-43df-bacb-49f00744a39c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -154,9 +127,6 @@
       <Filter>docs</Filter>
     </Text>
     <Text Include="..\..\..\BUILD_NOTES.txt" />
-    <Text Include="..\..\..\src\thirdparty\sobol\licence.txt">
-      <Filter>thirdparty\sobol</Filter>
-    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\io\ImageIO.cpp">
@@ -245,12 +215,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp">
       <Filter>ui\elements\types</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol.cpp">
-      <Filter>thirdparty\sobol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol_test.cpp">
-      <Filter>thirdparty\sobol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\genpoints.cpp">
       <Filter>thirdparty\owenscrambling</Filter>
@@ -385,33 +349,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h">
       <Filter>io\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\RenderCtx.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\FwdDecl.cuh">
-      <Filter>modules\gi2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\Camera.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\lights\OmniLight.cuh">
-      <Filter>modules\gi2d\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\UILayer.cuh">
-      <Filter>modules\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cuh">
-      <Filter>modules\gi2d\layers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cuh">
-      <Filter>modules\gi2d\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\Tracable.cuh">
-      <Filter>modules\gi2d\tracables</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\utils\CudaTests.cuh">
       <Filter>utils</Filter>
@@ -575,9 +512,6 @@
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh">
       <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\lights\Light.cuh">
-      <Filter>modules\gi2d\lights</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\io\CommandQueue.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -596,12 +530,6 @@
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h">
       <Filter>ui\elements\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\tracables\KIFS.cuh">
-      <Filter>modules\gi2d\tracables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
       <Filter>core\math\bbox</Filter>
     </ClInclude>
@@ -614,20 +542,11 @@
     <ClInclude Include="..\..\..\src\core\DirtinessGraph.cuh">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cuh">
-      <Filter>modules\gi2d\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cuh">
-      <Filter>modules\gi2d\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh">
       <Filter>modules</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh">
       <Filter>modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cuh">
-      <Filter>modules\gi2d\integrators</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\debug\Profiler.cuh">
       <Filter>core\debug</Filter>
@@ -673,9 +592,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh">
       <Filter>core\2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gi2d\GI2DModule.cuh">
-      <Filter>modules\gi2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh">
       <Filter>core</Filter>
@@ -749,23 +665,8 @@
     <ClInclude Include="..\..\..\src\core\3d\bxdfs\Specular.cuh">
       <Filter>core\3d\bxdfs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM.cuh">
-      <Filter>modules\gaussiansplatting\denoiser</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol.hpp">
-      <Filter>thirdparty\sobol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol_test.hpp">
-      <Filter>thirdparty\sobol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolData.cuh">
-      <Filter>core\math\samplers\sobol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cuh">
-      <Filter>core\math\samplers\sobol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\genpoints.h">
       <Filter>thirdparty\owenscrambling</Filter>
@@ -788,25 +689,25 @@
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh">
       <Filter>core\math\samplers\owensobol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cuh">
+      <Filter>modules\gaussiansplatting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\UILayer.cuh">
+      <Filter>modules\gaussiansplatting</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <Filter>utils</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PathTracer2D.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\lights\OmniLight.cu">
-      <Filter>modules\gi2d\lights</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\layers\OverlayLayer.cu">
-      <Filter>modules\gi2d\layers</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\Tracable.cu">
-      <Filter>modules\gi2d\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\LineStrip.cu">
-      <Filter>modules\gi2d\tracables</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu">
       <Filter>utils</Filter>
@@ -835,32 +736,14 @@
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp">
       <Filter>io</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\tracables\KIFS.cu">
-      <Filter>modules\gi2d\tracables</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\PerspectiveCamera.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu">
-      <Filter>modules\gi2d\integrators</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu">
       <Filter>core</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneContainer.cu">
-      <Filter>modules\gi2d\scene</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\scene\SceneBuilder.cu">
-      <Filter>modules\gi2d\scene</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu">
       <Filter>modules</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu">
       <Filter>modules</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\VoxelProxyGrid.cu">
-      <Filter>modules\gi2d\integrators</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu">
       <Filter>core\debug</Filter>
@@ -886,9 +769,6 @@
     <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu">
       <Filter>core\2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu">
-      <Filter>modules\gi2d</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu">
       <Filter>core</Filter>
     </CudaCompile>
@@ -901,20 +781,20 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM .cu">
-      <Filter>modules\gaussiansplatting\denoiser</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cu">
-      <Filter>core\math\samplers\sobol</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolData.cu">
-      <Filter>core\math\samplers\sobol</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu">
       <Filter>core\math\samplers\owensobol</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cu">
+      <Filter>modules\gaussiansplatting</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
@@ -924,14 +804,8 @@
     <None Include="..\..\..\docs\FixMe.md">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\..\..\bin\win64\Release\schema.json">
-      <Filter>config</Filter>
-    </None>
     <None Include="..\..\..\docs\protocols\Messages.json">
       <Filter>docs\protocols</Filter>
-    </None>
-    <None Include="..\..\..\src\modules\gi2d\ControlFlow.md">
-      <Filter>modules\gi2d</Filter>
     </None>
     <None Include="..\..\..\src\core\math\samplers\Resources.md">
       <Filter>core\math\samplers</Filter>
@@ -944,6 +818,12 @@
     </None>
     <None Include="..\..\..\src\thirdparty\owenscrambling\viewpoints.py">
       <Filter>thirdparty\owenscrambling</Filter>
+    </None>
+    <None Include="..\..\..\bin\win64\Release\GaussianSplattingSchema.json">
+      <Filter>config</Filter>
+    </None>
+    <None Include="..\..\..\bin\win64\Release\GI2DSchema.json">
+      <Filter>config</Filter>
     </None>
   </ItemGroup>
 </Project>

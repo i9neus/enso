@@ -53,7 +53,8 @@ namespace Enso
         class SceneBuilder;
         class AccumulationBuffer;
         class GenericObjectContainer;
-        class PathTracer;            
+        class PathTracer;    
+        class OverlayLayer;
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

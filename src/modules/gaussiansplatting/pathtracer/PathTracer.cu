@@ -11,7 +11,7 @@
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
 #include "Integrator.cuh"
-//#include "../scene/SceneContainer.cuh"
+#include "../scene/SceneContainer.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -145,7 +145,6 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Denoise);
 
-
     __device__ void Device::PathTracer::Composite(Device::ImageRGBA* deviceOutputImage)
     {
         CudaAssertDebug(deviceOutputImage);
@@ -178,14 +177,63 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, /*const AssetHandle<const Host::SceneContainer>& scene, */const uint width, const uint height, cudaStream_t renderStream):
-        GenericObject(initCtx)
-        //m_scene(scene)
+    __host__ __device__ uint Device::PathTracer::OnMouseClick(const UIViewCtx& viewCtx) const
+    {
+        return GetWorldBBox().Contains(viewCtx.mousePos) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;       
+    }
+
+    __host__ __device__ vec4 Device::PathTracer::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
+    {
+        if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
+
+#ifdef __CUDA_ARCH__
+        const vec2 pObject = ToObjectSpace(pWorld);
+
+        const ivec2 pPixel = ivec2(vec2(m_params.viewport.dims) * (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions());
+
+        if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
+        {
+            if (pPixel.x < m_params.viewport.dims.x / 2)
+            {
+                //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
+                const vec4& meanL = m_objects.meanAccumBuffer->At(pPixel);
+                return vec4(meanL.xyz / fmaxf(1.f, meanL.w), 1.0f);
+
+                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
+                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
+            }
+            else
+            {
+                const vec3& denoisedL = m_objects.denoisedBuffer->At(pPixel);
+                return vec4(denoisedL, 1.f);
+            }
+        }      
+#else
+        return vec4(1.);
+#endif
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    __host__ AssetHandle<Host::GenericObject> Host::PathTracer::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene)
+    {
+        return AssetAllocator::CreateChildAsset<Host::PathTracer>(parentAsset, id, scene);
+    }
+
+    Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene):
+        SceneObject(initCtx, &m_hostInstance, scene),
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this)),
+        m_scene(scene)
     {                
+        SceneObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::SceneObject>(cu_deviceInstance));
+        
+        constexpr int kViewportWidth = 1200;
+        constexpr int kViewportHeight = 675;
+        
         // Create some Cuda objects
-        m_hostMeanAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", width, height, renderStream);
-        m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", width, height, renderStream);
-        m_hostDenoisedBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGB>(*this, "denoisedBuffer", width, height, renderStream);
+        m_hostMeanAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", kViewportWidth, kViewportHeight, nullptr);
+        m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", kViewportWidth, kViewportHeight, nullptr);
+        m_hostDenoisedBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGB>(*this, "denoisedBuffer", kViewportWidth, kViewportHeight, nullptr);
         m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
 
         m_deviceObjects.meanAccumBuffer = m_hostMeanAccumBuffer->GetDeviceInstance();
@@ -194,9 +242,12 @@ namespace Enso
         m_deviceObjects.transforms = m_hostTransforms->GetDeviceInstance();
         //m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
-        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this);
+        const vec2 boundHalf = 0.25 * ((kViewportHeight > kViewportWidth) ?
+                                      vec2(1.f, float(kViewportHeight) / float(kViewportWidth)) :
+                                      vec2(float(kViewportWidth) / float(kViewportHeight), 1.f));
 
-        m_params.viewport.dims = ivec2(width, height);
+        m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
+        m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
         m_params.frameIdx = 0;
         m_params.wallTime = 0.f;
         m_wallTime.Reset();
@@ -233,7 +284,7 @@ namespace Enso
         Synchronise(kSyncObjects | kSyncParams);
     }
 
-    __host__ void Host::PathTracer::Synchronise(const uint syncFlags)
+    __host__ void Host::PathTracer::OnSynchroniseSceneObject(const uint syncFlags)
     {
         if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects); }
         if (syncFlags & kSyncParams) { SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params); }
@@ -292,4 +343,68 @@ namespace Enso
         m_params.frameIdx = 0;  
         Synchronise(kSyncParams);
     }
+
+    __host__ bool Host::PathTracer::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
+    {
+        if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
+        {
+            m_isConstructed = true;
+            m_isFinalised = true;
+            if (stateID == "kCreateSceneObjectOpen") { Log::Success("Opened path tracer %s", GetAssetID()); }
+
+            return true;
+        }
+        else if (stateID == "kCreateSceneObjectAppend")
+        {
+            m_isFinalised = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    __host__ bool Host::PathTracer::OnRebuildSceneObject()
+    {
+        return true;
+    }
+
+    __host__ uint Host::PathTracer::OnMouseClick(const UIViewCtx& viewCtx) const
+    {
+        return m_hostInstance.OnMouseClick(viewCtx);
+    }
+
+    __host__ BBox2f Host::PathTracer::ComputeObjectSpaceBoundingBox()
+    {
+        Log::Debug("%s", m_params.viewport.objectBounds.Format());
+        return m_params.viewport.objectBounds;
+    }
+
+    __host__ bool Host::PathTracer::Serialise(Json::Node& node, const int flags) const
+    {
+        SceneObject::Serialise(node, flags);
+
+        Json::Node lookNode = node.AddChildObject("viewport");
+        lookNode.AddVector("dims", m_hostInstance.m_params.viewport.dims);
+
+        return true;
+    }
+
+    __host__ bool Host::PathTracer::Deserialise(const Json::Node& node, const int flags)
+    {
+        bool isDirty = SceneObject::Deserialise(node, flags);
+        
+        Json::Node lookNode = node.GetChildObject("look", flags);
+        if (lookNode)
+        {
+            isDirty |= lookNode.GetVector("dims", m_hostInstance.m_params.viewport.dims, flags);
+        }
+
+        if (isDirty)
+        {
+            SignalDirty({ kDirtyParams, kDirtyIntegrators });
+        }
+
+        return isDirty;
+    }
+
 }
