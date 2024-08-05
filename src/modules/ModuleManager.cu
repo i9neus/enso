@@ -49,7 +49,7 @@ namespace Enso
     {
         if (m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
         {
-            HighResolutionTimer timer;
+            //HighResolutionTimer timer;
             CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, true);
             m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished, true);
             //Log::System("Blitted");       

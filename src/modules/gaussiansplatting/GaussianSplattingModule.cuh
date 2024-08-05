@@ -42,6 +42,7 @@ namespace Enso
             __host__ void                    RegisterInstantiators();
             __host__ void                    DeclareStateTransitionGraph();
             __host__ void                    DeclareListeners();
+            __host__ void                    UpdatePerfStats();
 
             __host__ void                    LoadScene();
         
@@ -58,6 +59,7 @@ namespace Enso
 
             bool                                        m_isRunning;
             HighResolutionTimer                         m_renderTimer;
+            HighResolutionTimer                         m_blitTimer;
             std::array<float, 60>                       m_timeRingBuffer;
             int                                         m_timeRingIdx;
         };

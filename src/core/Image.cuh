@@ -49,14 +49,18 @@ namespace Enso
 				return cu_data[xy.y * m_width + xy.x];
 			}
 
-			__device__ __forceinline__ typename std::enable_if<std::is_same<T, vec4>::value>::type BlendPixel(const ivec2& xy, const vec4& rgba)
+			__device__ void BlendPixel(const ivec2& xy, const T& rgba);
+
+			// FIXME: We ought to use SFINAE to limit use of this function to vec4 types, however MSVC throws an error
+			//typename std::enable_if<std::is_same<T, vec4>::value>::type
+			/*__device__ void BlendPixel(const ivec2& xy, const T& rgba)
 			{
 #ifdef CudaImageBoundCheck
 				if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
 #endif
 				auto& pixel = cu_data[xy.y * m_width + xy.x];
 				pixel = Blend(pixel, rgba);
-			}
+			}*/
 
 			__device__ __inline__ T Lerp(const vec2& xy)
 			{
@@ -109,9 +113,15 @@ namespace Enso
 			unsigned int    m_accessSignal;
 		};
 
+		template<typename T> __device__ void Image<T>::BlendPixel(const ivec2& xy, const T& rgba);
+		template<> __device__ void Image<vec4>::BlendPixel(const ivec2& xy, const vec4& rgba);
+
 		template class Image<vec4>;
+		template class Image<vec3>;
+
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
+		using ImageRGB = Image<vec3>;
 	}
 
 	namespace Host
@@ -156,8 +166,14 @@ namespace Enso
 			__host__ void CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream);
 		};
 
+		template<typename T> __host__ void Image<T>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream);
+		template<> __host__ void Image<vec4>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream);
+
 		template class Image<vec4>;
+		template class Image<vec3>;
+
 		using ImageRGBW = Image<vec4>;
 		using ImageRGBA = Image<vec4>;
+		using ImageRGB = Image<vec3>;
 	}
 }

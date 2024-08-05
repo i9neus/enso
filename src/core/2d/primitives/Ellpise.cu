@@ -3,6 +3,7 @@
 #include "core/math/Math.cuh"
 #include "GenericIntersector.cuh"
 #include "SDF.cuh"
+#include "core/math/ColourUtils.cuh"
 
 #include <random>
 

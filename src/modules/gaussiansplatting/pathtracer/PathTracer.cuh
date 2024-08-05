@@ -8,6 +8,7 @@
 #include "core/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
+#include "NLM.cuh"
 //#include "core/3d/BidirectionalTransform.cuh"
 
 namespace Enso
@@ -36,6 +37,7 @@ namespace Enso
         //const Device::SceneContainer*     scene = nullptr;
         Device::ImageRGBW*                  meanAccumBuffer = nullptr;
         Device::ImageRGBW*                  varAccumBuffer = nullptr;
+        Device::ImageRGB*                   denoisedBuffer = nullptr;
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
     };
 
@@ -48,14 +50,17 @@ namespace Enso
             
             //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
+            __device__ void Denoise();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
-            __device__ void Synchronise(const PathTracerParams& params) { m_params = params; }
-            __device__ void Synchronise(const PathTracerObjects& objects) { objects.Validate(); m_objects = objects; }
+            __device__ void Synchronise(const PathTracerParams& params);
+            __device__ void Synchronise(const PathTracerObjects& objects);
 
         private:
-            PathTracerParams              m_params;
-            PathTracerObjects             m_objects;
+            PathTracerParams            m_params;
+            PathTracerObjects           m_objects;
+
+            NLMDenoiser                 m_nlm;
 
             //Device::SceneContainer        m_scene;
         };
@@ -70,7 +75,7 @@ namespace Enso
             virtual ~PathTracer() noexcept;
 
             __host__ void Render();
-            __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const; 
+            __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
 
             __host__ bool Prepare();
             __host__ void Clear();
@@ -94,14 +99,16 @@ namespace Enso
 
             //const AssetHandle<const Host::SceneContainer>& m_scene;
 
-            Device::PathTracer*               cu_deviceInstance = nullptr;
+            Device::PathTracer* cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;
             PathTracerObjects                 m_deviceObjects;
             PathTracerParams                  m_params;
             HighResolutionTimer               m_wallTime;
+            HighResolutionTimer               m_renderTimer;
 
-            AssetHandle<Host::ImageRGBW>        m_hostMeanAccumBuffer;
-            AssetHandle<Host::ImageRGBW>        m_hostVarAccumBuffer;
+            AssetHandle<Host::ImageRGBW>      m_hostMeanAccumBuffer;
+            AssetHandle<Host::ImageRGBW>      m_hostVarAccumBuffer;
+            AssetHandle<Host::ImageRGB>       m_hostDenoisedBuffer;
 
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };

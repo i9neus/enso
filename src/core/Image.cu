@@ -28,9 +28,24 @@ namespace Enso
 			At(xy) = value;
 		}
 	}
-
+	
 	template<typename T>
-	__global__ void KernelCopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, Device::Image<T>* image, cudaSurfaceObject_t cuSurface)
+	__device__ void Device::Image<T>::BlendPixel(const ivec2& xy, const T& rgba)
+	{
+		CudaAssertMsg(false, "Image must have an alpha channel in order to blend.");
+	}
+
+	template<>
+	__device__ void Device::Image<vec4>::BlendPixel(const ivec2& xy, const vec4& rgba)
+	{
+		#ifdef CudaImageBoundCheck
+			if (xy.x < 0 || xy.x >= m_width || xy.y < 0 || xy.y >= m_height) { return nullptr; }
+		#endif		
+		auto& pixel = cu_data[xy.y * m_width + xy.x];
+		pixel = Blend(pixel, rgba);
+	}
+
+	__global__ void KernelCopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, Device::Image<vec4>* image, cudaSurfaceObject_t cuSurface)
 	{
 		//if (*(image->AccessSignal()) != kImageReadLocked) { return; }
 
@@ -87,9 +102,15 @@ namespace Enso
 	template<typename T>
 	__host__ void Host::Image<T>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream)
 	{		
+		AssertMsg(false, "Unable to copy non-RGBA image to D3D texture");
+	}
+
+	template<>
+	__host__ void Host::Image<vec4>::CopyImageToD3DTexture(unsigned int clientWidth, unsigned int clientHeight, cudaSurfaceObject_t cuSurface, cudaStream_t hostStream)
+	{
 		dim3 block(16, 16, 1);
 		dim3 grid((clientWidth + 15) / 16, (clientHeight + 15) / 16, 1);
-		
+
 		SignalSetRead(hostStream);
 		KernelCopyImageToD3DTexture << < grid, block, 0, hostStream >> > (clientWidth, clientHeight, cu_deviceData, cuSurface);
 		SignalUnsetRead(hostStream);

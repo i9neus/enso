@@ -82,6 +82,8 @@ namespace Enso
     {
         LoadScene();
 
+        m_blitTimer.Reset();
+        m_renderTimer.Reset();
     }
 
     __host__ void Host::GaussianSplattingModule::LoadScene()
@@ -170,9 +172,7 @@ namespace Enso
     {
         Log::Success("Back home!");
         return kUIStateOkay;
-    }
-
-    
+    }   
 
     __host__ void Host::GaussianSplattingModule::OnCommandsWaiting(CommandQueue& inbound)
     {
@@ -189,6 +189,32 @@ namespace Enso
         m_pathTracer->Prepare();
         m_pathTracer->Render();
 
+        //UpdatePerfStats();
+
+        Clean();
+
+        // Lock the framerate to 60fps
+        if (m_blitTimer.Get() >= 1.f / 60.f)
+        {
+            m_blitTimer.Reset();
+
+            // If a blit is in progress, skip the composite step entirely.
+            // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
+            // than skipping frames like this.
+            m_renderSemaphore.Wait(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress);
+            //if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
+
+            // Composite the render layers
+            m_compositeImage->Clear(vec4(kZero, 1.0f));
+            m_pathTracer->Composite(m_compositeImage);
+
+            m_renderSemaphore.Wait(kRenderManagerCompInProgress, kRenderManagerCompFinished);
+            //m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
+        }
+    }
+
+    __host__ void Host::GaussianSplattingModule::UpdatePerfStats()
+    {
         // Compute the exponential moving average of the frame time
         m_timeRingBuffer[m_timeRingIdx] = m_renderTimer.Get();
         m_timeRingIdx = (m_timeRingIdx + 1) % m_timeRingBuffer.size();
@@ -201,23 +227,9 @@ namespace Enso
             sumWeights += weight;
         }
         meanTime /= sumWeights;
-        
-        std::string windowTitle = tfm::format("%i fps (%.2 ms/frame)", int(1. / meanTime), meanTime * 1e-3f);
+
+        std::string windowTitle = tfm::format("%i fps (%.2 ms/frame)", int(1. / meanTime), meanTime * 1e3f);
         SetWindowTextA(m_parentWnd, windowTitle.c_str());
-
-        // If a blit is in progress, skip the composite step entirely.
-       // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
-       // than skipping frames like this.
-       //m_renderSemaphore.Wait(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress);
-        if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
-
-        // Composite the render layers
-        m_compositeImage->Clear(vec4(kZero, 1.0f));
-        m_pathTracer->Composite(m_compositeImage);
-
-        m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
-
-        Clean();
     }
 
     __host__ void Host::GaussianSplattingModule::OnMouseButton(const uint code, const bool isDown)

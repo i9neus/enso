@@ -103,22 +103,9 @@ namespace Enso
 
     __host__ __device__ vec3 xyYToXYZ(const vec3& xyy)
     {
-        return vec3(xyy.x * xyy.z / xyy.y, 
-                    xyy.z, 
-                    (1.0f - xyy.x - xyy.y) * xyy.z / xyy.y);
+        return vec3(xyy.x * xyy.z / xyy.y,
+            xyy.z,
+            (1.0f - xyy.x - xyy.y) * xyy.z / xyy.y);
     }
 
-    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec3& rgb2, const float& w2)
-    {
-        // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
-        return vec4(mix(rgba1.xyz * rgba1.w, rgb2, w2) / fmaxf(1e-15f, rgba1.w + (1 - rgba1.w) * w2),
-                    rgba1.w + (1 - rgba1.w) * w2);
-    }
-
-    __host__ __device__ vec4 Blend(const vec4& rgba1, const vec4& rgba2)
-    {               
-        // Assume that RGB values are premultiplied so that when alpha-composited, they don't need to be renormalised
-        return vec4(mix(rgba1.xyz * rgba1.w, rgba2.xyz, rgba2.w) / fmaxf(1e-15f, rgba1.w + (1 - rgba1.w) * rgba2.w),
-                    rgba1.w + (1 - rgba1.w) * rgba2.w);
-    }
 }

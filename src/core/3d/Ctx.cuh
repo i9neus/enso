@@ -2,16 +2,28 @@
 
 #include "core/math/Math.cuh"
 #include "core/math/samplers/PCG.cuh"
+#include "core/math/samplers/owensobol/OwenSobol.cuh"
 
 namespace Enso
 {
     struct RenderCtx
     {
         PCG             rng;
-        ivec2           xyScreen;
-        int             frameIdx;
+        OwenSobol       qrng;
 
-        __host__ __device__ __forceinline__ vec4 Rand() { return rng.Rand(); }
+        int             frameIdx;
+        struct
+        {
+            ivec2 xy;
+            ivec2 dims;
+        } 
+        viewport;
+
+        __device__ __forceinline__ vec4 Rand(const uint dim) 
+        { 
+            //return (viewport.xy.x < viewport.dims.x / 2) ? rng.Rand() : qrng.Rand(dim);
+            return qrng.Rand(dim);
+        }
     };
     
     struct HitCtx

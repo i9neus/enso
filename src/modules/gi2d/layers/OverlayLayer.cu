@@ -6,6 +6,7 @@
 #include "core/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
 #include "../scene/SceneContainer.cuh"
+#include "core/math/ColourUtils.cuh"
 
 #include "io/json/JsonUtils.h"
 
@@ -27,7 +28,8 @@ namespace Enso
         const ivec2 xyScreen = kKernelPos<ivec2>();
         if (xyScreen.x >= 0 && xyScreen.x < m_objects.accumBuffer->Width() && xyScreen.y >= 0 && xyScreen.y < m_objects.accumBuffer->Height())
         {            
-            deviceOutputImage->BlendPixel(xyScreen, m_objects.accumBuffer->At(xyScreen));
+            CompositeBlend(deviceOutputImage->At(xyScreen), m_objects.accumBuffer->At(xyScreen));
+            
             //vec4& target = deviceOutputImage->At(xyScreen);
             //target = Blend(target, m_objects.accumBuffer->At(xyScreen));
             //target.xyz += m_objects.accumBuffer->At(xyScreen).xyz;

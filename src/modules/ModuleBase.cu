@@ -83,6 +83,11 @@ namespace Enso
 		OnPreRender();
 
 		m_frameIdx = 0;
+		HighResolutionTimer renderTimer, fpsTimer;
+		std::array<float, 60> timeRingBuffer;
+		int timeRingIdx = 0;
+		constexpr float kFPSTimerUpdateInterval = 0.5f;
+
 		//#define DISABLE_EXCEPTION_HANDLING
 #ifndef DISABLE_EXCEPTION_HANDLING
 		try
@@ -90,8 +95,7 @@ namespace Enso
 #endif
 			while (m_threadSignal.load() == kRenderManagerRun)
 			{
-				HighResolutionTimer timer;
-
+				renderTimer.Reset();
 				if (m_inboundCmdQueue && !m_inboundCmdQueue->IsEmpty())
 				{
 					OnCommandsWaiting(*m_inboundCmdQueue);
@@ -102,14 +106,28 @@ namespace Enso
 
 				// Compute some stats on the framerate
 				m_frameIdx++;
-				m_lastFrameTime = timer.Get();
-				m_frameTimes[m_frameIdx % m_frameTimes.size()] = m_lastFrameTime;
-				m_meanFrameTime = 0.0f;
-				for (const auto& ft : m_frameTimes)
+				timeRingBuffer[timeRingIdx] = renderTimer.Get();
+				timeRingIdx = (timeRingIdx + 1) % timeRingBuffer.size();
+
+				if (fpsTimer.Get() > kFPSTimerUpdateInterval)
 				{
-					m_meanFrameTime += ft;
+					float meanTime = 0., sumWeights = 0.;
+					constexpr float kEMASigma = 1.5f;
+
+					// Compute the exponential moving average of the framerate
+					for (int i = 0, j = timeRingIdx - 1; i < timeRingBuffer.size(); ++i, --j)
+					{
+						const float weight = std::exp(-sqr(kEMASigma * float(i) / float(timeRingBuffer.size())));
+						meanTime += weight * timeRingBuffer[(j >= 0) ? j : (timeRingBuffer.size() + j)];
+						sumWeights += weight;
+					}
+					meanTime /= sumWeights;
+
+					std::string windowTitle = tfm::format("%i fps (%.2 ms/frame)", int(1. / meanTime), meanTime / 1e3f);
+					SetWindowTextA(m_parentWnd, windowTitle.c_str());
+
+					fpsTimer.Reset();
 				}
-				m_meanFrameTime /= min(m_frameIdx, int(m_frameTimes.size()));
 			}
 
 #ifndef DISABLE_EXCEPTION_HANDLING

@@ -13,6 +13,7 @@
   <ItemGroup>
     <Text Include="..\..\..\BUILD_NOTES.txt" />
     <Text Include="..\..\..\docs\BugChecklist.md" />
+    <Text Include="..\..\..\src\thirdparty\sobol\licence.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp" />
@@ -33,6 +34,24 @@
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
+    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\faure05.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\genpoints.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\sobol.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\sobol\sobol_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UIGenericObject.cpp" />
@@ -108,7 +127,14 @@
     <ClInclude Include="..\..\..\src\core\math\Mappings.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Halton.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\PCG.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolData.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\SphericalHarmonics.cuh" />
     <ClInclude Include="..\..\..\src\core\math\VecUtils.cuh" />
     <ClInclude Include="..\..\..\src\core\math\vec\IVec2.cuh" />
@@ -141,6 +167,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Geometry.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh" />
@@ -175,6 +202,24 @@
     <ClInclude Include="..\..\..\src\thirdparty\lodepng\lodepng.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_string.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\faure05.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\genpoints.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\owenhash.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\pcg.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\radicalinverse.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\sobol.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\allocators.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\cursorstreamwrapper.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\document.h" />
@@ -195,6 +240,12 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stream.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol.hpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\sobol\sobol_test.hpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h" />
     <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h" />
@@ -233,10 +284,18 @@
     <CudaCompile Include="..\..\..\src\core\Image.cu" />
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolData.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\math\samplers\sobol\SobolGenerator.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\denoiser\NLM .cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\GI2DModule.cu" />
     <CudaCompile Include="..\..\..\src\modules\gi2d\integrators\Camera.cu" />
@@ -263,7 +322,17 @@
     <None Include="..\..\..\docs\CodeStructure.md" />
     <None Include="..\..\..\docs\FixMe.md" />
     <None Include="..\..\..\docs\protocols\Messages.json" />
+    <None Include="..\..\..\src\core\math\samplers\Resources.md" />
     <None Include="..\..\..\src\modules\gi2d\ControlFlow.md" />
+    <None Include="..\..\..\src\thirdparty\owenscrambling\Makefile">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="..\..\..\src\thirdparty\owenscrambling\README">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="..\..\..\src\thirdparty\owenscrambling\viewpoints.py">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>
