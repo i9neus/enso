@@ -189,7 +189,7 @@ namespace Enso
     {
         if (!GetWorldBBox().Contains(viewCtx.mousePos)) { return false; }
         uint code;
-        return (EvaluateSDF(viewCtx.mousePos - GetTransform().trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+        return (EvaluateSDF(viewCtx.mousePos - GetTransform().trans, mat2(1.0f, 0.0f, 0.0f, 1.0f), code).x < 0.0f) ? kDrawableObjectPrecisionDrag : kDrawableObjectInvalidSelect;
     }
 
     __host__ __device__ vec4 Device::KIFS::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
@@ -208,7 +208,7 @@ namespace Enso
         Tracable(initCtx, &m_hostInstance, nullptr),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::KIFS>(*this))
     {
-        SetAttributeFlags(kSceneObjectInteractiveElement);
+        SetAttributeFlags(kDrawableObjectInteractiveElement);
         Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
 
         Synchronise(kSyncObjects);
@@ -233,16 +233,16 @@ namespace Enso
         }
     }
 
-    __host__ bool Host::KIFS::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
+    __host__ bool Host::KIFS::OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
-        if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
+        if (stateID == "kCreateDrawableObjectOpen" || stateID == "kCreateDrawableObjectHover")
         {
             m_isConstructed = true;            
-            if (stateID == "kCreateSceneObjectOpen") { Log::Success("Opened KIFS %s", GetAssetID()); }
+            if (stateID == "kCreateDrawableObjectOpen") { Log::Success("Opened KIFS %s", GetAssetID()); }
 
             return true;
         }
-        else if (stateID == "kCreateSceneObjectAppend")
+        else if (stateID == "kCreateDrawableObjectAppend")
         {
             m_isFinalised = true;
             return true;

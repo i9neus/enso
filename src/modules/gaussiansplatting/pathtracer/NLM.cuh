@@ -9,7 +9,7 @@ namespace Enso
     public:
         __device__ NLMDenoiser();
 
-        __device__ void Initialise(const int N, const int M, const float alpha, const float K);
+        __host__ __device__ void Initialise(const int N, const int M, const float alpha, const float K);
         __device__ void Initialise(Device::ImageRGBW* meanAccumBuffer, Device::ImageRGBW* varAccumBuffer);
 
         __device__ __forceinline__ bool IsValidTexel(const ivec2& p);

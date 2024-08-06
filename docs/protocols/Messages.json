@@ -1,5 +1,5 @@
 {
-    "OnCreateSceneObject": {
+    "OnCreateDrawableObject": {
         "light1": {
             "tracable": {
                 "sceneobject": {
@@ -13,13 +13,13 @@
             "pos": [ 0.0, 0.0 ]
         }
     },
-    "OnUpdateSceneObject": {
+    "OnUpdateDrawableObject": {
         "light1": {
             "class": "omnilight",
             "pos": [ 0.0, 0.0 ]
         }
     },
-    "OnDeleteSceneObject": {
+    "OnDeleteDrawableObject": {
 
     }
 }

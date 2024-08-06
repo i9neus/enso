@@ -22,7 +22,7 @@ namespace Enso
             __host__ virtual void   OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller) override;
 
         private:
-            __host__ void           SortSceneObject(AssetHandle<Host::SceneObject>& genericObject);
+            __host__ void           SortDrawableObject(AssetHandle<Host::DrawableObject>& genericObject);
 
         private:
             AssetHandle<Host::SceneContainer>                               m_container;

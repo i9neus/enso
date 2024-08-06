@@ -121,6 +121,18 @@
     <Filter Include="modules\gaussiansplatting\scene">
       <UniqueIdentifier>{94747bcb-5225-43df-bacb-49f00744a39c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\textures">
+      <UniqueIdentifier>{c5c64315-fc1e-442c-9fa0-85e936312fcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\tracables">
+      <UniqueIdentifier>{caeee873-86c9-4390-987c-0c46abf44792}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\materials">
+      <UniqueIdentifier>{9056473e-dace-4159-a9af-3fb1314f16eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\lights">
+      <UniqueIdentifier>{dc015995-52d4-45f7-9eed-7b3aac6c1b22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -590,7 +602,7 @@
     <ClInclude Include="..\..\..\src\core\2d\Transform2D.cuh">
       <Filter>core\2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\SceneObject.cuh">
+    <ClInclude Include="..\..\..\src\core\2d\DrawableObject.cuh">
       <Filter>core\2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh">
@@ -766,7 +778,7 @@
     <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu">
       <Filter>core\2d</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\2d\SceneObject.cu">
+    <CudaCompile Include="..\..\..\src\core\2d\DrawableObject.cu">
       <Filter>core\2d</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu">

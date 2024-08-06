@@ -33,7 +33,7 @@ namespace Enso
         class BIH2DAsset;
         class Tracable;
         class Light;
-        class SceneObject;
+        class DrawableObject;
         class Camera;
         class VoxelProxyGrid;
         class AccumulationBuffer;
@@ -44,7 +44,7 @@ namespace Enso
     {
         class Asset;
         class BIH2DAsset;
-        class SceneObject;
+        class DrawableObject;
         class Light;
         class Tracable;
         class Camera;

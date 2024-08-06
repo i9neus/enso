@@ -15,7 +15,7 @@ namespace Enso
 
     __host__ __device__ uint Device::OmniLight::OnMouseClick(const UIViewCtx& viewCtx) const
     {       
-        return (m_primitive.Contains(viewCtx.mousePos - GetTransform().trans, viewCtx.dPdXY) > 0.0f) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;
+        return (m_primitive.Contains(viewCtx.mousePos - GetTransform().trans, viewCtx.dPdXY) > 0.0f) ? kDrawableObjectPrecisionDrag : kDrawableObjectInvalidSelect;
     }
 
     __host__ __device__ bool Device::OmniLight::IntersectRay(const Ray2D& rayWorld, HitCtx2D& hitWorld) const
@@ -91,29 +91,29 @@ namespace Enso
 
     /*__host__ uint Host::OmniLight::OnMove(const std::string& stateID, const UIViewCtx& viewCtx)
     {
-        if (stateID != "kMoveSceneObjectDragging") { return 0; }
+        if (stateID != "kMoveDrawableObjectDragging") { return 0; }
 
         GetTransform().trans = viewCtx.mousePos;
-        SceneObject::m_params.worldBBox = BBox2f(GetTransform().trans - vec2(m_params.lightRadius), GetTransform().trans + vec2(m_params.lightRadius));
+        DrawableObject::m_params.worldBBox = BBox2f(GetTransform().trans - vec2(m_params.lightRadius), GetTransform().trans + vec2(m_params.lightRadius));
 
         SetDirtyFlags(kDirtyObjectBounds);
         return m_dirtyFlags;
     }*/
 
-    __host__ bool Host::OmniLight::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
+    __host__ bool Host::OmniLight::OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
         //AssertInThread("kMainThread");
 
         Log::Warning(stateID);
 
-        if (stateID == "kCreateSceneObjectOpen")
+        if (stateID == "kCreateDrawableObjectOpen")
         {
             // Set the origin of the 
             m_onCreate.isCentroidSet = false;
             m_isConstructed = true;
             m_hostInstance.m_params.lightRadius = viewCtx.dPdXY;
         }
-        else if (stateID == "kCreateSceneObjectHover")
+        else if (stateID == "kCreateDrawableObjectHover")
         {
             if (m_onCreate.isCentroidSet)
             {
@@ -124,7 +124,7 @@ namespace Enso
                 SetTransform(viewCtx.mousePos);
             }
         }
-        else if (stateID == "kCreateSceneObjectAppend")
+        else if (stateID == "kCreateDrawableObjectAppend")
         {
             if (!m_onCreate.isCentroidSet)
             {

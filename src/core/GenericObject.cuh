@@ -103,7 +103,7 @@ namespace Enso
             __host__ GenericObject(const Asset::InitCtx& initCtx);
             __host__ virtual ~GenericObject() noexcept {}
 
-            __host__ void                   SetDeviceInstance(Device::GenericObject* deviceInstance);
+            //__host__ void                   SetDeviceInstance(Device::GenericObject* deviceInstance);
 
             template<typename ThisType, typename BindType>
             __host__ AssetHandle<BindType> GetAssetHandleForBinding(GenericObjectContainer& objectContainer, const std::string& otherId)

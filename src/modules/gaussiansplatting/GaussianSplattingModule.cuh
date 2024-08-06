@@ -53,12 +53,12 @@ namespace Enso
 
             __host__ void                    LoadScene();
 
-            __host__ uint                    OnMoveSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnCreateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnSelectSceneObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnDelegateSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnMoveDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnCreateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnSelectDrawableObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDelegateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnDeleteSceneObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDeleteDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
@@ -66,7 +66,7 @@ namespace Enso
             __host__ void                    DeselectAll();
 
             __host__ void                    EnqueueOutboundSerialisation(const std::string& eventId, const int flags, const AssetHandle<Host::GenericObject> asset = nullptr);
-            __host__ void                    FinaliseNewSceneObject();
+            __host__ void                    FinaliseNewDrawableObject();
             __host__ void                    UpdateSelectedBBox();
 
 
@@ -85,11 +85,11 @@ namespace Enso
 
             struct
             {
-                AssetHandle<Host::SceneObject>   newObject;
+                AssetHandle<Host::DrawableObject>   newObject;
             }
             m_onCreate;
 
-            AssetHandle<Host::SceneObject>              m_delegatedObject;
+            AssetHandle<Host::DrawableObject>              m_delegatedObject;
             CommandManager                              m_commandManager;
 
             bool                                        m_isRunning;

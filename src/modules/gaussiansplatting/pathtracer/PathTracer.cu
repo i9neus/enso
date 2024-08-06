@@ -37,7 +37,7 @@ namespace Enso
         CudaAssert(denoisedBuffer);
     }
 
-    __device__ void Device::PathTracer::Synchronise(const PathTracerParams& params) 
+    __host__ __device__ void Device::PathTracer::Synchronise(const PathTracerParams& params) 
     {
         m_params = params;   
         m_nlm.Initialise(10, 2, 2.f, 2.f);
@@ -179,7 +179,7 @@ namespace Enso
 
     __host__ __device__ uint Device::PathTracer::OnMouseClick(const UIViewCtx& viewCtx) const
     {
-        return GetWorldBBox().Contains(viewCtx.mousePos) ? kSceneObjectPrecisionDrag : kSceneObjectInvalidSelect;       
+        return GetWorldBBox().Contains(viewCtx.mousePos) ? kDrawableObjectPrecisionDrag : kDrawableObjectInvalidSelect;       
     }
 
     __host__ __device__ vec4 Device::PathTracer::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
@@ -221,11 +221,11 @@ namespace Enso
     }
 
     Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene):
-        SceneObject(initCtx, &m_hostInstance, scene),
+        DrawableObject(initCtx, &m_hostInstance, scene),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this)),
         m_scene(scene)
     {                
-        SceneObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::SceneObject>(cu_deviceInstance));
+        DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         
         constexpr int kViewportWidth = 1200;
         constexpr int kViewportHeight = 675;
@@ -284,10 +284,14 @@ namespace Enso
         Synchronise(kSyncObjects | kSyncParams);
     }
 
-    __host__ void Host::PathTracer::OnSynchroniseSceneObject(const uint syncFlags)
+    __host__ void Host::PathTracer::OnSynchroniseDrawableObject(const uint syncFlags)
     {
         if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects); }
-        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params); }
+        if (syncFlags & kSyncParams) 
+        { 
+            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params); 
+            m_hostInstance.Synchronise(m_params);
+        }
     }
 
     __host__ void Host::PathTracer::Render()
@@ -344,17 +348,17 @@ namespace Enso
         Synchronise(kSyncParams);
     }
 
-    __host__ bool Host::PathTracer::OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
+    __host__ bool Host::PathTracer::OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject)
     {
-        if (stateID == "kCreateSceneObjectOpen" || stateID == "kCreateSceneObjectHover")
+        if (stateID == "kCreateDrawableObjectOpen" || stateID == "kCreateDrawableObjectHover")
         {
             m_isConstructed = true;
             m_isFinalised = true;
-            if (stateID == "kCreateSceneObjectOpen") { Log::Success("Opened path tracer %s", GetAssetID()); }
+            if (stateID == "kCreateDrawableObjectOpen") { Log::Success("Opened path tracer %s", GetAssetID()); }
 
             return true;
         }
-        else if (stateID == "kCreateSceneObjectAppend")
+        else if (stateID == "kCreateDrawableObjectAppend")
         {
             m_isFinalised = true;
             return true;
@@ -363,7 +367,7 @@ namespace Enso
         return false;
     }
 
-    __host__ bool Host::PathTracer::OnRebuildSceneObject()
+    __host__ bool Host::PathTracer::OnRebuildDrawableObject()
     {
         return true;
     }
@@ -381,22 +385,22 @@ namespace Enso
 
     __host__ bool Host::PathTracer::Serialise(Json::Node& node, const int flags) const
     {
-        SceneObject::Serialise(node, flags);
+        DrawableObject::Serialise(node, flags);
 
         Json::Node lookNode = node.AddChildObject("viewport");
-        lookNode.AddVector("dims", m_hostInstance.m_params.viewport.dims);
+        lookNode.AddVector("dims", m_params.viewport.dims);
 
         return true;
     }
 
     __host__ bool Host::PathTracer::Deserialise(const Json::Node& node, const int flags)
     {
-        bool isDirty = SceneObject::Deserialise(node, flags);
+        bool isDirty = DrawableObject::Deserialise(node, flags);
         
-        Json::Node lookNode = node.GetChildObject("look", flags);
-        if (lookNode)
+        Json::Node viewportNode = node.GetChildObject("viewport", flags);
+        if (viewportNode)
         {
-            isDirty |= lookNode.GetVector("dims", m_hostInstance.m_params.viewport.dims, flags);
+            isDirty |= viewportNode.GetVector("dims", m_params.viewport.dims, flags);
         }
 
         if (isDirty)

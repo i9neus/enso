@@ -9,7 +9,7 @@ namespace Enso
     namespace Host 
     { 
         template<typename T> class Vector; 
-        class SceneObject;
+        class DrawableObject;
     }
     template<typename T> class AssetHandle;
     
@@ -31,7 +31,7 @@ namespace Enso
         BBox2f                  lassoBBox;
         BBox2f                  selectedBBox;
         bool                    isLassoing = false;
-        std::vector<AssetHandle<Host::SceneObject>> selectedObjects;
+        std::vector<AssetHandle<Host::DrawableObject>> selectedObjects;
         uint                    selectedIdx = 0xffffffff;        
 
         bool                    isDragging = false;

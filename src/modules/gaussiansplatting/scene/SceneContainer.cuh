@@ -18,7 +18,7 @@ namespace Enso
                 CudaAssert(sceneBIH);
             }
 
-            const Vector<Device::SceneObject*>* sceneObjects = nullptr;
+            const Vector<Device::DrawableObject*>* sceneObjects = nullptr;
             const BIH2D<BIH2DFullNode>* sceneBIH = nullptr;
         };
     }
@@ -27,7 +27,7 @@ namespace Enso
     {
         class SceneBuilder;        
     
-        using SceneObjectContainer = Host::AssetVector<Host::SceneObject, Device::SceneObject>;
+        using DrawableObjectContainer = Host::AssetVector<Host::DrawableObject, Device::DrawableObject>;
 
         class SceneContainer : public Host::GenericObject
         {
@@ -45,7 +45,7 @@ namespace Enso
 
             __host__ Host::BIH2DAsset& SceneBIH() { DAssert(m_hostSceneBIH);  return *m_hostSceneBIH; }
 
-            __host__ SceneObjectContainer& SceneObjects() { return *m_hostSceneObjects; }
+            __host__ DrawableObjectContainer& DrawableObjects() { return *m_hostDrawableObjects; }
             __host__ Host::GenericObjectContainer& GenericObjects() { return *m_hostGenericObjects; }
 
             __host__ virtual void Synchronise(const uint flags = 0u) override final;
@@ -62,7 +62,7 @@ namespace Enso
             // Geometry
             AssetHandle<Host::BIH2DAsset>           m_hostSceneBIH;
 
-            AssetHandle<SceneObjectContainer>       m_hostSceneObjects;
+            AssetHandle<DrawableObjectContainer>       m_hostDrawableObjects;
 
             AssetHandle<Host::GenericObjectContainer> m_hostGenericObjects;
 

@@ -15,7 +15,7 @@ namespace Enso
     {
     }
 
-    __device__ void NLMDenoiser::Initialise(const int N, const int M, const float alpha, const float K)
+    __host__ __device__ void NLMDenoiser::Initialise(const int N, const int M, const float alpha, const float K)
     {
         m_kN = N;
         m_kM = M;

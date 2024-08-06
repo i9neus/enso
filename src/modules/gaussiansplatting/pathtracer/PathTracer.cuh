@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/2d/Ctx.cuh"
-#include "core/2d/SceneObject.cuh"
+#include "core/2d/DrawableObject.cuh"
 
 #include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
@@ -47,7 +47,7 @@ namespace Enso
 
     namespace Device
     {
-        class PathTracer : public Device::SceneObject
+        class PathTracer : public Device::DrawableObject
         {
             friend Host::PathTracer;
 
@@ -59,7 +59,7 @@ namespace Enso
             __device__ void Denoise();
             __device__ void Composite(Device::ImageRGBA* outputImage);
 
-            __device__ void Synchronise(const PathTracerParams& params);
+            __host__ __device__ void Synchronise(const PathTracerParams& params);
             __device__ void Synchronise(const PathTracerObjects& objects);
 
             __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
@@ -77,7 +77,7 @@ namespace Enso
 
     namespace Host
     {
-        class PathTracer : public Host::SceneObject
+        class PathTracer : public Host::DrawableObject
         {
         public:
             PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene);
@@ -104,9 +104,9 @@ namespace Enso
             }
 
         protected:
-            __host__ virtual void       OnSynchroniseSceneObject(const uint syncFlags) override final;
-            __host__ virtual bool       OnCreateSceneObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
-            __host__ virtual bool       OnRebuildSceneObject() override final;
+            __host__ virtual void       OnSynchroniseDrawableObject(const uint syncFlags) override final;
+            __host__ virtual bool       OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
+            __host__ virtual bool       OnRebuildDrawableObject() override final;
 
         private:
             __host__ void CreateScene();
@@ -124,6 +124,7 @@ namespace Enso
             Device::PathTracer*               cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;
             PathTracerObjects                 m_deviceObjects;
+            PathTracerParams                  m_params;
             HighResolutionTimer               m_wallTime;
             HighResolutionTimer               m_renderTimer;
 

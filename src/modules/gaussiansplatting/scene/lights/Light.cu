@@ -1,7 +1,7 @@
 #include "SceneBuilder.cuh"
 #include "core/2d/bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
-#include "core/2d/DrawableObject.cuh"
+#include "core/2d/SceneObject.cuh"
 
 namespace Enso
 {    
@@ -71,10 +71,10 @@ namespace Enso
         SignalDirty(kDirtyObjectExistence);
     }
 
-    __host__ void Host::SceneBuilder::SortDrawableObject(AssetHandle<Host::DrawableObject>& sceneObject)
+    __host__ void Host::SceneBuilder::SortSceneObject(AssetHandle<Host::SceneObject>& sceneObject)
     {
         // All scene objects go into the universal BIH
-        m_container->m_hostDrawableObjects->EmplaceBack(sceneObject);
+        m_container->m_hostSceneObjects->EmplaceBack(sceneObject);
         
         // If this is a camera object, add it to the list of cameras but not the list of scene objects
         /*auto camera = sceneObject.DynamicCast<Host::Camera>();
@@ -136,11 +136,11 @@ namespace Enso
             m_container->Clear();
             for (auto& object : *m_container->m_hostGenericObjects)
             {
-                auto sceneObject = object.DynamicCast<Host::DrawableObject>();
+                auto sceneObject = object.DynamicCast<Host::SceneObject>();
                 if (sceneObject)
                 {
                     sceneObject->Rebuild();
-                    SortDrawableObject(sceneObject);
+                    SortSceneObject(sceneObject);
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace Enso
                 }
                 else
                 {
-                    AssetHandle<Host::DrawableObject> sceneObject = AssetHandle<Host::Asset>(it.second).DynamicCast<Host::DrawableObject>();
+                    AssetHandle<Host::SceneObject> sceneObject = AssetHandle<Host::Asset>(it.second).DynamicCast<Host::SceneObject>();
                     if (sceneObject)
                     {
                         sceneObject->Rebuild();
@@ -172,7 +172,7 @@ namespace Enso
         {
             // Rebuild the BIHs
             //RebuildBIH(*m_container->m_hostTracableBIH, *m_container->m_hostTracables);
-            RebuildBIH(*m_container->m_hostSceneBIH, *m_container->m_hostDrawableObjects);
+            RebuildBIH(*m_container->m_hostSceneBIH, *m_container->m_hostSceneObjects);
         }
 
         SignalDirty(kDirtyIntegrators);

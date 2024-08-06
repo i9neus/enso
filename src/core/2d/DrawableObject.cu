@@ -1,10 +1,10 @@
-#include "core/2d/SceneObject.cuh"
+#include "core/2d/DrawableObject.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "io/json/JsonUtils.h"
 
 namespace Enso
 {
-    __device__ bool Device::SceneObject::EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
+    __device__ bool Device::DrawableObject::EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const
     {
         // Draw the bounding box
         /*if (m_params.objectBBox.PointOnPerimiter(p, m_params.viewCtx.dPdXY * 2.f))
@@ -31,40 +31,40 @@ namespace Enso
     }
 
     // FIXME: hostInstance causes segfault when passed by reference. Find out why.
-    __host__ Host::SceneObject::SceneObject(const Asset::InitCtx& initCtx, Device::SceneObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
+    __host__ Host::DrawableObject::DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
         GenericObject(initCtx),
         m_hostInstance(*hostInstance)
     {
 
     }
 
-    __host__ void Host::SceneObject::SetDeviceInstance(Device::SceneObject* deviceInstance)
+    __host__ void Host::DrawableObject::SetDeviceInstance(Device::DrawableObject* deviceInstance)
     {
         cu_deviceInstance = deviceInstance;
     }
 
-    __host__ void Host::SceneObject::SetTransform(const vec2& trans)
+    __host__ void Host::DrawableObject::SetTransform(const vec2& trans)
     {
         m_hostInstance.m_params.transform.trans = trans;
     }
 
-    __host__ void Host::SceneObject::Verify() const
+    __host__ void Host::DrawableObject::Verify() const
     {
         // This method should be called after construction to verify that all derived classes have initialised the appropriate objects
-        AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call SceneObject::SetDeviceInstance() in from the derived class constructor?");
+        AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call DrawableObject::SetDeviceInstance() in from the derived class constructor?");
     }
 
-    __host__ bool Host::SceneObject::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
+    __host__ bool Host::DrawableObject::OnCreate(const std::string& stateID, const UIViewCtx& viewCtx)
     {
         // Handle the open event by initialising the transform
-        if (stateID == "kCreateSceneObjectOpen")
+        if (stateID == "kCreateDrawableObjectOpen")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos;
             SignalDirty({ kDirtyObjectRebuild });
         }
 
         // Call the virtual method implemented by inheriting classes. 
-        if (OnCreateSceneObject(stateID, viewCtx, viewCtx.mousePos - m_hostInstance.m_params.transform.trans))
+        if (OnCreateDrawableObject(stateID, viewCtx, viewCtx.mousePos - m_hostInstance.m_params.transform.trans))
         {
             // Recompute the bounding boxes and signal the need to rebuild
             RecomputeBoundingBoxes();            
@@ -74,7 +74,7 @@ namespace Enso
         return true;
     }
 
-    __host__ void Host::SceneObject::RecomputeBoundingBoxes()
+    __host__ void Host::DrawableObject::RecomputeBoundingBoxes()
     {
         m_hostInstance.m_params.objectBBox = ComputeObjectSpaceBoundingBox();
         m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
@@ -82,21 +82,21 @@ namespace Enso
         SignalDirty(kDirtyObjectBoundingBox);
     }
     
-    __host__ bool Host::SceneObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::DrawableObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {
-        if (stateID == "kMoveSceneObjectBegin")
+        if (stateID == "kMoveDrawableObjectBegin")
         {
             m_onMove.dragAnchorDelta = m_hostInstance.m_params.transform.trans - viewCtx.mousePos;
-            Log::Error("kMoveSceneObjectBegin");
+            Log::Error("kMoveDrawableObjectBegin");
         }
-        else if (stateID == "kMoveSceneObjectDragging")
+        else if (stateID == "kMoveDrawableObjectDragging")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos + m_onMove.dragAnchorDelta;
-            Log::Warning("kMoveSceneObjectDragging");            
+            Log::Warning("kMoveDrawableObjectDragging");            
         }
-        else if (stateID == "kMoveSceneObjectEnd")
+        else if (stateID == "kMoveDrawableObjectEnd")
         {
-            Log::Success("kMoveSceneObjectEnd");
+            Log::Success("kMoveDrawableObjectEnd");
         }
         else
         {
@@ -107,18 +107,18 @@ namespace Enso
         return true;
     }
 
-    __host__ void Host::SceneObject::Synchronise(const uint syncFlags)
+    __host__ void Host::DrawableObject::Synchronise(const uint syncFlags)
     {
         if (syncFlags & kSyncParams)
         {
-            AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call SceneObject::SetDeviceInstance() in from the derived class constructor?");
-            SynchroniseObjects<Device::SceneObject>(cu_deviceInstance, m_hostInstance.m_params);
+            AssertMsg(cu_deviceInstance, "cu_deviceInstance is nullptr. Did you forget to call DrawableObject::SetDeviceInstance() in from the derived class constructor?");
+            SynchroniseObjects<Device::DrawableObject>(cu_deviceInstance, m_hostInstance.m_params);
         }
 
-        OnSynchroniseSceneObject(syncFlags);
+        OnSynchroniseDrawableObject(syncFlags);
     }
 
-    __host__ bool Host::SceneObject::Serialise(Json::Node& node, const int flags) const
+    __host__ bool Host::DrawableObject::Serialise(Json::Node& node, const int flags) const
     {
         Json::Node sceneNode = node.AddChildObject("sceneobject");
 
@@ -126,7 +126,7 @@ namespace Enso
         return true;
     }
 
-    __host__ bool Host::SceneObject::Deserialise(const Json::Node& node, const int flags)
+    __host__ bool Host::DrawableObject::Deserialise(const Json::Node& node, const int flags)
     {
         const Json::Node sceneNode = node.GetChildObject("sceneobject", flags);
 
@@ -139,17 +139,17 @@ namespace Enso
         return isDirty;
     }
 
-    __host__ bool Host::SceneObject::OnSelect(const bool isSelected)
+    __host__ bool Host::DrawableObject::OnSelect(const bool isSelected)
     {
-        SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kSceneObjectSelected), isSelected);
+        SetGenericFlags(m_hostInstance.m_params.attrFlags, uint(kDrawableObjectSelected), isSelected);
         SignalDirty(kDirtyParams);
         return true;
     }
 
-    __host__ bool Host::SceneObject::Rebuild()
+    __host__ bool Host::DrawableObject::Rebuild()
     {
         // If inheriting objects that we're doing a rebuild
-        if (OnRebuildSceneObject())
+        if (OnRebuildDrawableObject())
         {
             // Update the transform and re-sync everything
             RecomputeBoundingBoxes();

@@ -1,5 +1,5 @@
 #include "SceneContainer.cuh"
-#include "core/2d/SceneObject.cuh"
+#include "core/2d/DrawableObject.cuh"
 #include "core/2d/bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
 
@@ -10,10 +10,10 @@ namespace Enso
     {
         cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::SceneContainer>(*this);        
         m_hostGenericObjects = AssetAllocator::CreateChildAsset<Host::GenericObjectContainer>(*this, ":gaussiansplatting/genericObjects"); 
-        m_hostSceneObjects = AssetAllocator::CreateChildAsset<Host::SceneObjectContainer>(*this, "widgets", kVectorHostAlloc);
+        m_hostDrawableObjects = AssetAllocator::CreateChildAsset<Host::DrawableObjectContainer>(*this, "widgets", kVectorHostAlloc);
         m_hostSceneBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "widgetbih", 3);
 
-        m_deviceObjects.sceneObjects = m_hostSceneObjects->GetDeviceInstance();
+        m_deviceObjects.sceneObjects = m_hostDrawableObjects->GetDeviceInstance();
         m_deviceObjects.sceneBIH = m_hostSceneBIH->GetDeviceInstance();
 
         SynchroniseObjects<Device::SceneContainer>(cu_deviceInstance, m_deviceObjects);
@@ -24,7 +24,7 @@ namespace Enso
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 
         m_hostSceneBIH.DestroyAsset();
-        m_hostSceneObjects.DestroyAsset();
+        m_hostDrawableObjects.DestroyAsset();
         m_hostGenericObjects.DestroyAsset();        
     }   
 
@@ -41,8 +41,8 @@ namespace Enso
 
     __host__ void Host::SceneContainer::Prepare()
     {
-        Assert(m_hostSceneObjects);        
-        for (auto& object : *m_hostSceneObjects)
+        Assert(m_hostDrawableObjects);        
+        for (auto& object : *m_hostDrawableObjects)
         {
             //object->Prepare();
         }
@@ -64,18 +64,18 @@ namespace Enso
 
     __host__ void Host::SceneContainer::Clear()
     {
-        m_hostSceneObjects->Clear();
+        m_hostDrawableObjects->Clear();
     }
 
     __host__ void Host::SceneContainer::Synchronise(const uint flags)
     {       
-        m_hostSceneObjects->Synchronise(kVectorSyncUpload);
+        m_hostDrawableObjects->Synchronise(kVectorSyncUpload);
     }
 
     __host__ void Host::SceneContainer::Summarise() const
     {
         Log::Indent("Rebuilt scene:");
-        Log::Debug("%i scene objects", m_hostSceneObjects->Size());
+        Log::Debug("%i scene objects", m_hostDrawableObjects->Size());
         Log::Debug("Scene BIH: %s", m_hostSceneBIH->GetBoundingBox().Format());
     }
 
