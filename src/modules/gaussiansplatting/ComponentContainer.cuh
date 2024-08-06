@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../FwdDecl.cuh"
+#include "FwdDecl.cuh"
 #include "core/GenericObject.cuh"
 
 namespace Enso
 {
     namespace Device
     {
-        struct SceneContainer : public Device::Asset
+        struct ComponentContainer : public Device::Asset
         {
-            __device__ SceneContainer() {}
-            __device__ void Synchronise(const SceneContainer& objects) { *this = objects; }
+            __device__ ComponentContainer() {}
+            __device__ void Synchronise(const ComponentContainer& objects) { *this = objects; }
             
             __device__ void Validate() const
             {
@@ -25,25 +25,25 @@ namespace Enso
 
     namespace Host
     {
-        class SceneBuilder;        
+        class ComponentBuilder;        
     
         using DrawableObjectContainer = Host::AssetVector<Host::DrawableObject, Device::DrawableObject>;
 
-        class SceneContainer : public Host::GenericObject
+        class ComponentContainer : public Host::GenericObject
         {
-            friend class SceneBuilder;
+            friend class ComponentBuilder;
 
         public:
-            __host__                SceneContainer(const Asset::InitCtx& initCtx);
-            __host__ virtual        ~SceneContainer() noexcept;
+            __host__                ComponentContainer(const Asset::InitCtx& initCtx);
+            __host__ virtual        ~ComponentContainer() noexcept;
 
             __host__ void           Prepare();
             __host__ void           Clean();
 
             __host__ void           Destroy();
-            __host__ const Device::SceneContainer* GetDeviceInstance() const { return cu_deviceInstance; }
+            __host__ const Device::ComponentContainer* GetDeviceInstance() const { return cu_deviceInstance; }
 
-            __host__ Host::BIH2DAsset& SceneBIH() { DAssert(m_hostSceneBIH);  return *m_hostSceneBIH; }
+            __host__ Host::BIH2DAsset& DrawableBIH() { DAssert(m_hostDrawableBIH);  return *m_hostDrawableBIH; }
 
             __host__ DrawableObjectContainer& DrawableObjects() { return *m_hostDrawableObjects; }
             __host__ Host::GenericObjectContainer& GenericObjects() { return *m_hostGenericObjects; }
@@ -60,14 +60,13 @@ namespace Enso
 
         private:    
             // Geometry
-            AssetHandle<Host::BIH2DAsset>           m_hostSceneBIH;
+            AssetHandle<Host::BIH2DAsset>               m_hostDrawableBIH;
 
-            AssetHandle<DrawableObjectContainer>       m_hostDrawableObjects;
+            AssetHandle<DrawableObjectContainer>        m_hostDrawableObjects;
+            AssetHandle<Host::GenericObjectContainer>   m_hostGenericObjects;
 
-            AssetHandle<Host::GenericObjectContainer> m_hostGenericObjects;
-
-            Device::SceneContainer*                 cu_deviceInstance = nullptr;
-            Device::SceneContainer                  m_deviceObjects;
+            Device::ComponentContainer*                 cu_deviceInstance = nullptr;
+            Device::ComponentContainer                  m_deviceObjects;
         };
     }
 }

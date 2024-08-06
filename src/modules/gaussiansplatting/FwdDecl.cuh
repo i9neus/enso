@@ -49,8 +49,8 @@ namespace Enso
         class Tracable;
         class Camera;
         class VoxelProxyGrid;
-        class SceneContainer;
-        class SceneBuilder;
+        class ComponentContainer;
+        class ComponentBuilder;
         class AccumulationBuffer;
         class GenericObjectContainer;
         class PathTracer;    

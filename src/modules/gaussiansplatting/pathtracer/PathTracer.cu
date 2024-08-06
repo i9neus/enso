@@ -11,7 +11,7 @@
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
 #include "Integrator.cuh"
-#include "../scene/SceneContainer.cuh"
+#include "../ComponentContainer.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -215,12 +215,12 @@ namespace Enso
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    __host__ AssetHandle<Host::GenericObject> Host::PathTracer::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene)
+    __host__ AssetHandle<Host::GenericObject> Host::PathTracer::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::ComponentContainer>& scene)
     {
         return AssetAllocator::CreateChildAsset<Host::PathTracer>(parentAsset, id, scene);
     }
 
-    Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene):
+    Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene):
         DrawableObject(initCtx, &m_hostInstance, scene),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this)),
         m_scene(scene)

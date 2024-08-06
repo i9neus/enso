@@ -1,11 +1,11 @@
-#include "SceneBuilder.cuh"
+#include "ComponentBuilder.cuh"
 #include "core/2d/bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
 #include "core/2d/DrawableObject.cuh"
 
 namespace Enso
 {    
-    __host__ void Host::SceneBuilder::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
+    __host__ void Host::ComponentBuilder::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
     {
         switch (flag)
         {
@@ -21,7 +21,7 @@ namespace Enso
         SetDirty(flag);
     }
 
-    __host__ Host::SceneBuilder::SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& container) :
+    __host__ Host::ComponentBuilder::ComponentBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::ComponentContainer>& container) :
         Dirtyable(initCtx),
         m_container(container)
     {
@@ -55,7 +55,7 @@ namespace Enso
         bih.Build(getPrimitiveBBox);
     }
 
-    __host__ void Host::SceneBuilder::EnqueueEmplaceObject(AssetHandle<Host::GenericObject> handle)
+    __host__ void Host::ComponentBuilder::EnqueueEmplaceObject(AssetHandle<Host::GenericObject> handle)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -63,7 +63,7 @@ namespace Enso
         SignalDirty(kDirtyObjectExistence);
     }
 
-    __host__ void Host::SceneBuilder::EnqueueDeleteObject(const std::string& assetId)
+    __host__ void Host::ComponentBuilder::EnqueueDeleteObject(const std::string& assetId)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -71,7 +71,7 @@ namespace Enso
         SignalDirty(kDirtyObjectExistence);
     }
 
-    __host__ void Host::SceneBuilder::SortDrawableObject(AssetHandle<Host::DrawableObject>& sceneObject)
+    __host__ void Host::ComponentBuilder::SortDrawableObject(AssetHandle<Host::DrawableObject>& sceneObject)
     {
         // All scene objects go into the universal BIH
         m_container->m_hostDrawableObjects->EmplaceBack(sceneObject);
@@ -102,7 +102,7 @@ namespace Enso
         }*/
     }
 
-    __host__ void Host::SceneBuilder::Rebuild(bool forceRebuild)
+    __host__ void Host::ComponentBuilder::Rebuild(bool forceRebuild)
     {                
         if (!forceRebuild && IsClean()) { return; } // Nothing to do!
         
@@ -172,7 +172,7 @@ namespace Enso
         {
             // Rebuild the BIHs
             //RebuildBIH(*m_container->m_hostTracableBIH, *m_container->m_hostTracables);
-            RebuildBIH(*m_container->m_hostSceneBIH, *m_container->m_hostDrawableObjects);
+            RebuildBIH(*m_container->m_hostDrawableBIH, *m_container->m_hostDrawableObjects);
         }
 
         SignalDirty(kDirtyIntegrators);

@@ -151,6 +151,8 @@
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h" />
     <ClInclude Include="..\..\..\src\io\Serialisable.cuh" />
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cuh" />
@@ -161,8 +163,6 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\UILayer.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleBase.cuh" />
     <ClInclude Include="..\..\..\src\modules\ModuleManager.cuh" />
@@ -256,12 +256,12 @@
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

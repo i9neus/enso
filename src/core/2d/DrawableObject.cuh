@@ -125,7 +125,7 @@ namespace Enso
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene);
+            __host__ DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::ComponentContainer>& scene);
             
             __host__ void               SetDeviceInstance(Device::DrawableObject* deviceInstance);
 
@@ -142,7 +142,7 @@ namespace Enso
             __host__ void               RecomputeBoundingBoxes();
 
         protected:
-            AssetHandle<const Host::SceneContainer>     m_scene;
+            AssetHandle<const Host::ComponentContainer>     m_scene;
 
         private:
             Device::DrawableObject&                        m_hostInstance;

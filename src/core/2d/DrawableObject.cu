@@ -31,7 +31,7 @@ namespace Enso
     }
 
     // FIXME: hostInstance causes segfault when passed by reference. Find out why.
-    __host__ Host::DrawableObject::DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::SceneContainer>& scene) :
+    __host__ Host::DrawableObject::DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::ComponentContainer>& scene) :
         GenericObject(initCtx),
         m_hostInstance(*hostInstance)
     {

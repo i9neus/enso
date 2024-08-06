@@ -69,7 +69,7 @@ namespace Enso
 
     namespace Host
     {        
-        class SceneContainer;
+        class ComponentContainer;
         
         class GenericObject : public Host::Dirtyable,
                               public Serialisable

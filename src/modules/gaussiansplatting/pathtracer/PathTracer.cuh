@@ -36,7 +36,7 @@ namespace Enso
     {
         __device__ void Validate() const;
         
-        //const Device::SceneContainer*     scene = nullptr;
+        //const Device::ComponentContainer*     scene = nullptr;
         Device::ImageRGBW*                  meanAccumBuffer = nullptr;
         Device::ImageRGBW*                  varAccumBuffer = nullptr;
         Device::ImageRGB*                   denoisedBuffer = nullptr;
@@ -71,7 +71,7 @@ namespace Enso
 
             NLMDenoiser                 m_nlm;
 
-            //Device::SceneContainer        m_scene;
+            //Device::ComponentContainer        m_scene;
         };
     }
 
@@ -80,7 +80,7 @@ namespace Enso
         class PathTracer : public Host::DrawableObject
         {
         public:
-            PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene);
+            PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene);
             virtual ~PathTracer() noexcept;
 
             __host__ void Render();
@@ -88,7 +88,7 @@ namespace Enso
             __host__ bool Prepare();
             __host__ void Clear();
 
-            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::SceneContainer>& scene);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::ComponentContainer>& scene);
             __host__ static const std::string  GetAssetClassStatic() { return "pathtracer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
@@ -119,7 +119,7 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            const AssetHandle<const Host::SceneContainer>& m_scene;
+            const AssetHandle<const Host::ComponentContainer>& m_scene;
 
             Device::PathTracer*               cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;

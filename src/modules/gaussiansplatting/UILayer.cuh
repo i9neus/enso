@@ -6,7 +6,7 @@
 #include "core/Image.cuh"
 
 #include "FwdDecl.cuh"
-#include "scene/SceneContainer.cuh"
+#include "ComponentContainer.cuh"
 
 namespace Enso
 {

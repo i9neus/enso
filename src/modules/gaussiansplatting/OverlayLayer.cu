@@ -5,7 +5,7 @@
 #include "core/math/Hash.cuh"
 #include "core/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
-#include "scene/SceneContainer.cuh"
+#include "ComponentContainer.cuh"
 #include "core/math/ColourUtils.cuh"
 
 #include "io/json/JsonUtils.h"
@@ -137,7 +137,7 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);*/
 
-    Host::OverlayLayer::OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene, const uint width, const uint height, cudaStream_t renderStream):
+    Host::OverlayLayer::OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene, const uint width, const uint height, cudaStream_t renderStream):
         GenericObject(initCtx),
         m_scene(scene)
     {                

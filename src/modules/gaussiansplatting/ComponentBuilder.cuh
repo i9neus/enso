@@ -1,17 +1,17 @@
 #pragma once
 
-#include "SceneContainer.cuh"
+#include "ComponentContainer.cuh"
 #include "core/DirtinessGraph.cuh"
 
 namespace Enso
 {
     namespace Host
     {
-        class SceneBuilder : public Host::Dirtyable
+        class ComponentBuilder : public Host::Dirtyable
         {
         public:
-            __host__                SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& container);
-            __host__ virtual        ~SceneBuilder() noexcept {}
+            __host__                ComponentBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::ComponentContainer>& container);
+            __host__ virtual        ~ComponentBuilder() noexcept {}
 
             __host__ void           Rebuild(bool forceRebuild);
 
@@ -25,7 +25,7 @@ namespace Enso
             __host__ void           SortDrawableObject(AssetHandle<Host::DrawableObject>& genericObject);
 
         private:
-            AssetHandle<Host::SceneContainer>                               m_container;
+            AssetHandle<Host::ComponentContainer>                           m_container;
             
             std::unordered_map<void*, WeakAssetHandle<Host::Asset>>         m_rebuildQueue;
             std::unordered_set<std::string>                                 m_deleteQueue;

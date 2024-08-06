@@ -8,7 +8,7 @@
 #include "OverlayLayer.cuh"
 
 #include "core/2d/bih/BIH2DAsset.cuh"
-#include "scene/SceneBuilder.cuh"
+#include "ComponentBuilder.cuh"
 
 #include "pathtracer/PathTracer.cuh"
 
@@ -49,8 +49,8 @@ namespace Enso
     {
         m_overlayRenderer.DestroyAsset();
 
-        m_sceneBuilder.DestroyAsset();
-        m_sceneContainer.DestroyAsset();
+        m_componentBuilder.DestroyAsset();
+        m_componentContainer.DestroyAsset();
     }
 
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
@@ -150,22 +150,22 @@ namespace Enso
 
         LoadScene();
 
-        m_sceneBuilder->Rebuild(true);
+        m_componentBuilder->Rebuild(true);
     }
 
     __host__ void Host::GaussianSplattingModule::LoadScene()
     {
-        m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "sceneContainer");
-        m_sceneBuilder = AssetAllocator::CreateChildAsset<Host::SceneBuilder>(*this, "sceneBuilder", m_sceneContainer);
+        m_componentContainer = AssetAllocator::CreateChildAsset<Host::ComponentContainer>(*this, "sceneContainer");
+        m_componentBuilder = AssetAllocator::CreateChildAsset<Host::ComponentBuilder>(*this, "sceneBuilder", m_componentContainer);
 
         // Create some default scene objects
         Json::Node emptyDocument;
-        m_overlayRenderer = AssetAllocator::CreateChildAsset<Host::OverlayLayer>(*this, "overlayLayer", m_sceneContainer, m_clientWidth, m_clientHeight, m_renderStream);
-        //m_voxelProxyGrid = AssetAllocator::CreateChildAsset<Host::VoxelProxyGrid>(*this, "voxelProxyGridLayer", emptyDocument, m_sceneContainer);
+        m_overlayRenderer = AssetAllocator::CreateChildAsset<Host::OverlayLayer>(*this, "overlayLayer", m_componentContainer, m_clientWidth, m_clientHeight, m_renderStream);
+        //m_voxelProxyGrid = AssetAllocator::CreateChildAsset<Host::VoxelProxyGrid>(*this, "voxelProxyGridLayer", emptyDocument, m_componentContainer);
 
         // Emplace them into the scene object list and enqueue them
-        m_sceneContainer->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
-        //m_sceneContainer->Emplace(m_voxelProxyGrid.StaticCast<Host::GenericObject>());
+        m_componentContainer->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
+        //m_componentContainer->Emplace(m_voxelProxyGrid.StaticCast<Host::GenericObject>());
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
     }
 
@@ -179,7 +179,7 @@ namespace Enso
 
             std::string id;
             itemNode.GetValue("id", id, Json::kRequiredAssert | Json::kNotBlank);
-            auto objectHandle = m_sceneContainer->GenericObjects().FindByID(id);
+            auto objectHandle = m_componentContainer->GenericObjects().FindByID(id);
 
             if (!objectHandle)
             {
@@ -218,7 +218,7 @@ namespace Enso
 
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : m_sceneContainer->GenericObjects()) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
+            for (auto& obj : m_componentContainer->GenericObjects()) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
         }
         else if (flags & kEnqueueSelected)
         {
@@ -253,7 +253,7 @@ namespace Enso
     {
         if (m_selectionCtx.selectedObjects.empty()) { return kUIStateOkay; }
 
-        Host::DrawableObjectContainer& sceneObjects = m_sceneContainer->DrawableObjects();
+        Host::DrawableObjectContainer& sceneObjects = m_componentContainer->DrawableObjects();
         int emptyIdx = -1;
         int numDeleted = 0;
         for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
@@ -261,7 +261,7 @@ namespace Enso
             if (sceneObjects[primIdx]->IsSelected())
             {
                 // Erase the object from the container. 
-                m_sceneBuilder->EnqueueDeleteObject(sceneObjects[primIdx]->GetAssetID());
+                m_componentBuilder->EnqueueDeleteObject(sceneObjects[primIdx]->GetAssetID());
 
                 ++numDeleted;
                 if (emptyIdx == -1) { emptyIdx = primIdx; }
@@ -324,7 +324,7 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::DeselectAll()
     {
-        for (auto obj : m_sceneContainer->DrawableObjects())
+        for (auto obj : m_componentContainer->DrawableObjects())
         {
             obj->OnSelect(false);
         }
@@ -337,9 +337,9 @@ namespace Enso
     __host__ std::string Host::GaussianSplattingModule::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
-        if (m_sceneContainer->SceneBIH().IsConstructed())
+        if (m_componentContainer->DrawableBIH().IsConstructed())
         {
-            auto& sceneObjects = m_sceneContainer->DrawableObjects();
+            auto& sceneObjects = m_componentContainer->DrawableObjects();
             constexpr int kInvalidHit = -1;
             int hitIdx = kInvalidHit;
             uint hitResult = kDrawableObjectInvalidSelect;
@@ -348,9 +348,9 @@ namespace Enso
                 for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                 {
                     const uint primIdx = primIdxs[idx];
-                    if (primIdx >= m_sceneContainer->DrawableObjects().Size())
+                    if (primIdx >= m_componentContainer->DrawableObjects().Size())
                     {
-                        int size = m_sceneContainer->DrawableObjects().Size();
+                        int size = m_componentContainer->DrawableObjects().Size();
                         Log::Error("%i, %i", primIdx, size);
                     }
 
@@ -366,7 +366,7 @@ namespace Enso
                 }
                 return false;
             };
-            m_sceneContainer->SceneBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            m_componentContainer->DrawableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
             if (hitIdx != kInvalidHit)
@@ -449,7 +449,7 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectDrawableObjectDragging")
         {
-            auto& sceneObjects = m_sceneContainer->DrawableObjects();
+            auto& sceneObjects = m_componentContainer->DrawableObjects();
             const bool wasLassoing = m_selectionCtx.isLassoing;
             const int lastNumSelected = m_selectionCtx.selectedObjects.size();
 
@@ -467,7 +467,7 @@ namespace Enso
             m_selectionCtx.selectedBBox = BBox2f::Invalid();
             m_selectionCtx.selectedObjects.clear();
 
-            if (m_sceneContainer->SceneBIH().IsConstructed())
+            if (m_componentContainer->DrawableBIH().IsConstructed())
             {
                 int numSelected = 0;
                 auto onIntersectPrim = [&sceneObjects, this](const uint* primRange, const uint* primIdxs, const bool isInnerNode)
@@ -499,7 +499,7 @@ namespace Enso
                         }
                     }
                 };
-                m_sceneContainer->SceneBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                m_componentContainer->DrawableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.selectedObjects.size())
@@ -549,14 +549,14 @@ namespace Enso
         if (stateID == "kCreateDrawableObjectOpen")
         {
             // Try and instantiate the objerct         
-            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), m_sceneContainer->GenericObjects(), *this, m_sceneContainer);
+            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), m_componentContainer->GenericObjects(), *this, m_componentContainer);
             m_onCreate.newObject = newObject.DynamicCast<Host::DrawableObject>();
             m_onCreate.newObject->Verify();
 
             SignalDirty(kDirtyObjectExistence);
 
             // Emplace the new object with the scene builder ready for integration into the scene
-            //m_sceneBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
+            //m_componentBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
@@ -586,7 +586,7 @@ namespace Enso
         // If the new object has closed but has not been finalised, delete it
         if (!m_onCreate.newObject->IsFinalised())
         {
-            m_sceneBuilder->EnqueueDeleteObject(m_onCreate.newObject->GetAssetID());
+            m_componentBuilder->EnqueueDeleteObject(m_onCreate.newObject->GetAssetID());
             Log::Success("Destroying unfinalised scene object '%s'", m_onCreate.newObject->GetAssetID());
         }
         else
@@ -609,10 +609,10 @@ namespace Enso
         FlushUIEventQueue();
 
         // Update the overlay if the scene is dirty
-        const bool updateSelection = !m_sceneBuilder->IsClean();
+        const bool updateSelection = !m_componentBuilder->IsClean();
 
         // Rebuild the scene 
-        m_sceneBuilder->Rebuild(false);
+        m_componentBuilder->Rebuild(false);
 
         if (!updateSelection)
         {
@@ -620,10 +620,10 @@ namespace Enso
         }
 
         // Prepare the scene objects
-        m_sceneContainer->Prepare();
+        m_componentContainer->Prepare();
         m_overlayRenderer->Prepare(m_viewCtx, m_selectionCtx);
 
-        for (auto& object : m_sceneContainer->DrawableObjects())
+        for (auto& object : m_componentContainer->DrawableObjects())
         {
             AssetHandle<Host::PathTracer> pt = object.DynamicCast<Host::PathTracer>();
             if (pt)
@@ -655,7 +655,7 @@ namespace Enso
         }
 
         // Clean all the objects in the scene container ready for the next iteration
-        m_sceneContainer->Clean();
+        m_componentContainer->Clean();
         Clean();
     }
 

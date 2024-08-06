@@ -701,12 +701,6 @@
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh">
       <Filter>core\math\samplers\owensobol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh">
-      <Filter>modules\gaussiansplatting\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh">
-      <Filter>modules\gaussiansplatting\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
       <Filter>core</Filter>
     </ClInclude>
@@ -714,6 +708,12 @@
       <Filter>modules\gaussiansplatting</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\UILayer.cuh">
+      <Filter>modules\gaussiansplatting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cuh">
+      <Filter>modules\gaussiansplatting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cuh">
       <Filter>modules\gaussiansplatting</Filter>
     </ClInclude>
   </ItemGroup>
@@ -799,13 +799,13 @@
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu">
       <Filter>core\math\samplers\owensobol</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu">
-      <Filter>modules\gaussiansplatting\scene</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu">
-      <Filter>modules\gaussiansplatting\scene</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cu">
+      <Filter>modules\gaussiansplatting</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cu">
+      <Filter>modules\gaussiansplatting</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cu">
       <Filter>modules\gaussiansplatting</Filter>
     </CudaCompile>
   </ItemGroup>

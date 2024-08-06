@@ -73,15 +73,15 @@ namespace Enso
         private:
             enum JobIDs : uint { kJobDraw };
 
-            AssetHandle<Host::SceneContainer>     m_sceneContainer;
-            AssetHandle<Host::SceneBuilder>       m_sceneBuilder;
+            AssetHandle<Host::ComponentContainer> m_componentContainer;
+            AssetHandle<Host::ComponentBuilder>   m_componentBuilder;
             AssetHandle<Host::OverlayLayer>       m_overlayRenderer;
 
             UIGridCtx                             m_gridCtx;
             UIViewCtx                             m_viewCtx;
             UISelectionCtx                        m_selectionCtx;
 
-            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::SceneContainer>&> m_sceneObjectFactory;
+            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::ComponentContainer>&> m_sceneObjectFactory;
 
             struct
             {

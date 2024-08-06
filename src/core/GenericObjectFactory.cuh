@@ -36,9 +36,9 @@ namespace Enso
         public:
             __host__ GenericObjectFactory() : m_newInstanceCounter(0) {}
 
-            //__host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            //__host__ void                                   Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::ComponentContainer>&, Host::GenericObjectContainer& renderObjects);
             __host__ AssetHandle<Host::GenericObject>         Instantiate(const uint hash, Host::GenericObjectContainer& renderObjects, TypePack... pack);
-            //__host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::SceneContainer>&, Host::GenericObjectContainer& renderObjects);
+            //__host__ AssetHandle<Host::GenericObject>       Instantiate(const std::string& id, const Json::Node& json, const AssetHandle<const Host::ComponentContainer>&, Host::GenericObjectContainer& renderObjects);
 
             template<typename HostClass> __host__ void      RegisterInstantiator(const uint hash = 0u);
 
@@ -193,7 +193,7 @@ namespace Enso
         }
 
         /*template<typename... TypePack>
-        __host__ void GenericObjectFactory<TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::SceneContainer>& scene,
+        __host__ void GenericObjectFactory<TypePack...>::Instantiate(const Json::Node& rootNode, const AssetHandle<const Host::ComponentContainer>& scene,
             Host::GenericObjectContainer& renderObjects)
         {
             for (const auto& group : m_groupList)

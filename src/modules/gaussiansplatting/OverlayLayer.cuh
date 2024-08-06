@@ -36,7 +36,7 @@ namespace Enso
             CudaAssert(accumBuffer);
         }
         
-        const Device::SceneContainer*     scene = nullptr;
+        const Device::ComponentContainer*     scene = nullptr;
         Device::ImageRGBW*                  accumBuffer = nullptr;
     };
 
@@ -58,7 +58,7 @@ namespace Enso
             OverlayLayerParams              m_params;
             OverlayLayerObjects             m_objects;
 
-            Device::SceneContainer        m_scene;
+            Device::ComponentContainer        m_scene;
         };
     }
 
@@ -68,7 +68,7 @@ namespace Enso
                              public Host::GenericObject
         {
         public:
-            OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::SceneContainer>& scene, const uint width, const uint height, cudaStream_t renderStream);
+            OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene, const uint width, const uint height, cudaStream_t renderStream);
             virtual ~OverlayLayer() noexcept;
 
             __host__ virtual void Render() override final;
@@ -83,7 +83,7 @@ namespace Enso
             __host__ virtual void Synchronise(const uint syncFlags) override final;
 
         private:
-            const AssetHandle<const Host::SceneContainer>& m_scene;
+            const AssetHandle<const Host::ComponentContainer>& m_scene;
 
             Device::OverlayLayer*               cu_deviceInstance = nullptr;
             Device::OverlayLayer                m_hostInstance;
