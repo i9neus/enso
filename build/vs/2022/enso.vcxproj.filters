@@ -133,6 +133,9 @@
     <Filter Include="modules\gaussiansplatting\scene\lights">
       <UniqueIdentifier>{dc015995-52d4-45f7-9eed-7b3aac6c1b22}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\cameras">
+      <UniqueIdentifier>{0cfa971b-5697-4081-a7d0-05c0a0f2c74f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -716,6 +719,36 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cuh">
       <Filter>modules\gaussiansplatting</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Tracable.cuh">
+      <Filter>modules\gaussiansplatting\scene\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\Light.cuh">
+      <Filter>modules\gaussiansplatting\scene\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cuh">
+      <Filter>modules\gaussiansplatting\scene\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cuh">
+      <Filter>modules\gaussiansplatting\scene\tracables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cuh">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\Texture2D.cuh">
+      <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\Camera.cuh">
+      <Filter>modules\gaussiansplatting\scene\cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh">
+      <Filter>modules\gaussiansplatting\scene\cameras</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -807,6 +840,18 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cu">
       <Filter>modules\gaussiansplatting</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cu">
+      <Filter>modules\gaussiansplatting\scene\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cu">
+      <Filter>modules\gaussiansplatting\scene\tracables</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

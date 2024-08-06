@@ -13,7 +13,7 @@ namespace Enso
         }
 
         // Ray-sphere intersection test
-        __host__ __device__ bool RayUnitSphere(const RayBasic& ray, vec2& t)
+        __host__ __device__ __forceinline__ bool RayUnitSphere(const RayBasic& ray, vec2& t)
         {
             const float a = dot(ray.d, ray.d);
             const float b = 2.0f * dot(ray.d, ray.o);

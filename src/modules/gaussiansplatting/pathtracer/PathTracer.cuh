@@ -34,13 +34,20 @@ namespace Enso
 
     struct PathTracerObjects
     {
-        __device__ void Validate() const;
+        __host__ __device__ void Validate() const
+        {
+            CudaAssert(transforms);
+            CudaAssert(meanAccumBuffer);
+            CudaAssert(varAccumBuffer);
+            CudaAssert(denoisedBuffer);
+            //CudaAssert(scene);
+        }
         
-        //const Device::ComponentContainer*     scene = nullptr;
         Device::ImageRGBW*                  meanAccumBuffer = nullptr;
         Device::ImageRGBW*                  varAccumBuffer = nullptr;
         Device::ImageRGB*                   denoisedBuffer = nullptr;
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
+        Device::SceneContainer*             scene = nullptr;
     };
 
     namespace Host { class PathTracer; }
@@ -131,6 +138,9 @@ namespace Enso
             AssetHandle<Host::ImageRGBW>      m_hostMeanAccumBuffer;
             AssetHandle<Host::ImageRGBW>      m_hostVarAccumBuffer;
             AssetHandle<Host::ImageRGB>       m_hostDenoisedBuffer;
+
+            AssetHandle<Host::SceneContainer> m_hostSceneContainer;
+
 
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };

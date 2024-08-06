@@ -33,10 +33,14 @@ namespace Enso
         class BIH2DAsset;
         class Tracable;
         class Light;
+        class Material;
+        class Texture2D;
         class DrawableObject;
         class Camera;
         class VoxelProxyGrid;
         class AccumulationBuffer;
+        class SceneContainer;
+
         template<typename> class Vector;
     }
 
@@ -46,7 +50,9 @@ namespace Enso
         class BIH2DAsset;
         class DrawableObject;
         class Light;
+        class Material;
         class Tracable;
+        class Texture2D;
         class Camera;
         class VoxelProxyGrid;
         class ComponentContainer;
@@ -55,6 +61,7 @@ namespace Enso
         class GenericObjectContainer;
         class PathTracer;    
         class OverlayLayer;
+        class SceneContainer;
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

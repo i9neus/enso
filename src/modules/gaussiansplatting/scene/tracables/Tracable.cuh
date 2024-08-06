@@ -23,12 +23,16 @@ namespace Enso
 
     struct TracableParams
     {
-        __host__ __device__ TracableParams() {}
+        __host__ __device__ TracableParams() :
+            lightIdx(kTracableNotALight),
+            materialIdx(-1)
+        {}
+
         __device__ void Validate() const {}
 
-        BidirectionalTransform transform;
-
-        int lightIdx = kTracableNotALight;
+        BidirectionalTransform      transform;
+        int                         materialIdx;
+        int                         lightIdx;
     };
      
     namespace Host { class Tracable; }
@@ -40,21 +44,21 @@ namespace Enso
         {
             friend class Host::Tracable;
         public:
-            __host__ __device__ virtual bool        IntersectRay(const Ray& ray, HitCtx& hit) const { return false; }
+            __device__ virtual bool                 IntersectRay(Ray& ray, HitCtx& hit) const = 0;
             //__host__ __device__ virtual bool      InteresectPoint(const vec2& p, const float& thickness) const { return false; }
             //__host__ __device__ virtual bool        IntersectBBox(const BBox2f& bBox) const;
 
             //__host__ __device__ virtual vec2      PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
          
-            __host__ __device__ virtual vec3        GetColour() const { return kOne; }
-            __host__ __device__ virtual int         GetLightIdx() const { return m_params.lightIdx; }
+            __device__ virtual vec3                 GetColour() const { return kOne; }
+            __device__ virtual int                  GetLightIdx() const { return m_params.lightIdx; }
             __device__ void                         Synchronise(const TracableParams& params) { m_params = params; }
 
         protected:
-            __host__ __device__ Tracable() {}
+            __device__ Tracable() {}
 
-            __host__ __device__ __forceinline__ RayBasic RayToObjectSpace(const Ray& world) const { return m_params.transform.RayToObjectSpace(world.od); }
-            __host__ __device__ __forceinline__ vec3 NormalToWorldSpace(const vec3& object) const { return m_params.transform.NormalToWorldSpace(object); }
+            __device__ __forceinline__ RayBasic     RayToObjectSpace(const Ray& world) const { return m_params.transform.RayToObjectSpace(world.od); }
+            __device__ __forceinline__ vec3         NormalToWorldSpace(const vec3& object) const { return m_params.transform.NormalToWorldSpace(object); }
             //__host__ __device__ __forceinline__ vec3 PointToWorldSpace(const vec3& world) const { return m_params.transform.PointToWorldSpace(world); }
 
             TracableParams m_params;
@@ -69,16 +73,22 @@ namespace Enso
         class Tracable : public Host::GenericObject
         {
         public:
-            __host__ virtual void       SetLightIdx(const int idx) { m_params.lightIdx = idx; }
-            __host__ virtual Device::Tracable* GetDeviceInstance() const = 0;
+            __host__ void       SetLightIdx(const int idx) { m_params.lightIdx = idx; }
+            __host__ void       SetMaterialIdx(const int idx) { m_params.materialIdx = idx; }
 
-            __host__ virtual void       Synchronise(const uint syncFlags) override final;
+            __host__ Device::Tracable* GetDeviceInstance() { return cu_deviceInstance; }
 
-            __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override;
-            __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override;
+            __host__ virtual void Synchronise(const uint syncFlags) override final
+            {
+                if (syncFlags & kSyncParams)
+                {
+                    SynchroniseObjects<Device::Tracable>(cu_deviceInstance, m_params);
+                }
+                OnSynchroniseTracable(syncFlags);
+            }
 
         protected:
-            __host__ Tracable(const Asset::InitCtx& initCtx);
+            __host__ Tracable(const Asset::InitCtx& initCtx) : GenericObject(initCtx) {}
 
             __host__ void               SetDeviceInstance(Device::Tracable* deviceInstance) { cu_deviceInstance = deviceInstance; }
             

@@ -12,8 +12,9 @@ namespace Enso
             __device__      QuadLight() {}
             __device__      ~QuadLight() noexcept {}
 
-            __device__ virtual float Sample(const Ray& incident, Ray& extant, const HitCtx& hit, const vec2& xi) override final;
-            __device__ virtual float Evaluate(Ray& extant, const HitCtx& hit) override final;
+            __device__ virtual float        Sample(const Ray& incident, Ray& extant, const HitCtx& hit, const vec2& xi) override final;
+            __device__ virtual float        Evaluate(Ray& extant, const HitCtx& hit) override final;
+            __device__ virtual bool         IntersectRay(Ray& ray, HitCtx& hit) const override final;
         };
     }
 
@@ -23,7 +24,10 @@ namespace Enso
         {
         public:
             __host__ QuadLight(const Asset::InitCtx& initCtx);
-            __host__ virtual ~QuadLight() noexcept {}
+            __host__ virtual ~QuadLight() noexcept;
+
+        protected:
+            __host__ virtual void OnSynchroniseLight(const uint syncFlags) override final {}
 
         private:
             Device::QuadLight* cu_deviceInstance = nullptr;

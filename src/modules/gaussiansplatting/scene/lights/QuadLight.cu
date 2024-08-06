@@ -1,4 +1,5 @@
 #include "QuadLight.cuh"
+#include "core/3d/primitives/GenericIntersector.cuh"
 
 namespace Enso
 {    
@@ -45,13 +46,12 @@ namespace Enso
 
     __device__  float Device::QuadLight::Evaluate(Ray& extant, const HitCtx& hit)
     {
-        RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(extant.od);
-        if (fabsf(localRay.d.z) < 1e-10f) { return 0.0f; }
-
-        float t = localRay.o.z / -localRay.d.z;
+        RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(extant.od);        
+        const float t = Intersector::RayPlane(localRay);
+        if (t <= 0.0) { return 0.0f; }
 
         const vec2 uv = (localRay.o.xy + localRay.d.xy * t) + 0.5f;
-        if (cwiseMin(uv) < 0.0 || cwiseMax(uv) > 1.0) { return 0.0f; }
+        if (cwiseMin(uv) < 0.0f || cwiseMax(uv) > 1.0f) { return 0.0f; }
 
         const vec3 lightNormal = normalize(Tracable::m_params.transform.inv * vec3(0.0f, 0.0f, 1.0f));
         const vec3 lightPos = extant.PointAt(t);
@@ -74,13 +74,34 @@ namespace Enso
         extant.weight *= Light::m_params.radiance;
         return 1.0f / fmaxf(1e-10f, solidAngle);
     }
+
+    __device__ bool Device::QuadLight::IntersectRay(Ray& ray, HitCtx& hit) const
+    {
+        const RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(ray.od);
+        const float t = Intersector::RayPlane(localRay);
+        if (t <= 0.0 || t >= ray.tNear) { return false; }
+
+        const vec2 uv = (localRay.o.xy + localRay.d.xy * t) + 0.5f;
+        if (cwiseMin(uv) < 0.0f || cwiseMax(uv) > 1.0f) { return false; }
+
+        ray.tNear = t;
+        ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
+        hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
+        hit.uv = uv;
+
+        return true;       
+    }
     
     __host__ Host::QuadLight::QuadLight(const Asset::InitCtx& initCtx) :
         Host::Light(initCtx),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::QuadLight>(*this))
     {
         Light::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Light>(cu_deviceInstance));
+        Synchronise(kSyncParams);
+    }
 
-        Synchronise(kSyncObjects);
+    __host__ Host::QuadLight::~QuadLight() noexcept
+    {
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 }

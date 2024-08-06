@@ -1,22 +1,13 @@
 #pragma once
 
-#include "core/2d/Ctx.cuh"
-#include "core/2d/DrawableObject.cuh"
-#include "core/3d/Transform.cuh"
-
-#include "core/DirtinessFlags.cuh"
-#include "core/Image.cuh"
-#include "core/GenericObject.cuh"
-#include "core/HighResolutionTimer.h"
-
-#include "../../FwdDecl.cuh"
-
 #include "../tracables/Tracable.cuh"
 
 namespace Enso
 {
     struct LightParams
     {
+        __device__ void Validate() const {}
+
         float radiance;
     };
     
@@ -44,7 +35,8 @@ namespace Enso
         class Light : public Host::Tracable
         {
         public:
-            __host__ virtual ~Light() noexcept {}
+            __host__ virtual            ~Light() noexcept {}
+            __host__ Device::Light*     GetDeviceInstance() { return cu_deviceInstance; }
 
         protected:
             __host__ Light(const Asset::InitCtx& initCtx) :
@@ -57,8 +49,21 @@ namespace Enso
                 cu_deviceInstance = deviceInstance;
             }
 
+            __host__ virtual void OnSynchroniseTracable(const uint syncFlags) override final
+            {
+                if (syncFlags == kSyncParams)
+                {
+                    SynchroniseObjects<Device::Light>(cu_deviceInstance, m_params);
+                }
+                OnSynchroniseLight(syncFlags);
+            }
+
+            __host__ virtual void OnSynchroniseLight(const uint syncFlags) = 0;
+
+
         private:
-            Device::Light* cu_deviceInstance = nullptr;
+            Device::Light*              cu_deviceInstance = nullptr;
+            LightParams                 m_params;
         };
     }
 }

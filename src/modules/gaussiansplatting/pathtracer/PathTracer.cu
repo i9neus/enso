@@ -12,6 +12,7 @@
 #include "Scene.cuh"
 #include "Integrator.cuh"
 #include "../ComponentContainer.cuh"
+#include "../scene/SceneContainer.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -27,15 +28,7 @@ namespace Enso
     __host__ __device__ void PathTracerParams::Validate() const
     {
         CudaAssert(viewport.dims.x != 0 && viewport.dims.y != 0);
-    }
-
-    __host__ __device__ void PathTracerObjects::Validate() const
-    {
-        CudaAssert(transforms);
-        CudaAssert(meanAccumBuffer);
-        CudaAssert(varAccumBuffer); 
-        CudaAssert(denoisedBuffer);
-    }
+    }   
 
     __host__ __device__ void Device::PathTracer::Synchronise(const PathTracerParams& params) 
     {
@@ -235,6 +228,7 @@ namespace Enso
         m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", kViewportWidth, kViewportHeight, nullptr);
         m_hostDenoisedBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGB>(*this, "denoisedBuffer", kViewportWidth, kViewportHeight, nullptr);
         m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
+        m_hostSceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scene");
 
         m_deviceObjects.meanAccumBuffer = m_hostMeanAccumBuffer->GetDeviceInstance();
         m_deviceObjects.varAccumBuffer = m_hostVarAccumBuffer->GetDeviceInstance();
@@ -261,6 +255,9 @@ namespace Enso
         m_hostVarAccumBuffer.DestroyAsset();
         m_hostDenoisedBuffer.DestroyAsset();
         m_hostTransforms.DestroyAsset();
+
+        m_hostSceneContainer->DestroyManagedObjects();
+        m_hostSceneContainer.DestroyAsset();
 
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
