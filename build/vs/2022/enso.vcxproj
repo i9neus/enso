@@ -70,10 +70,11 @@
     <ClInclude Include="..\..\..\src\core\2d\primitives\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\LineSegment.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\Primitive2D.cuh" />
-    <ClInclude Include="..\..\..\src\core\2d\primitives\SDF.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\DrawableObject.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\RenderableObject.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\Transform2D.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\ui\UIHandle.cuh" />
     <ClInclude Include="..\..\..\src\core\3d\Basis.cuh" />
@@ -168,7 +169,6 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\Texture2D.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Tracable.cuh" />
@@ -250,6 +250,7 @@
     <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\DrawableObject.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\ui\UIHandle.cu" />
     <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu" />

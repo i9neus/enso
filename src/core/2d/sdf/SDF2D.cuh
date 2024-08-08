@@ -6,7 +6,7 @@ namespace Enso
 {
     #define kInvalidSDF vec3(kFltMax)
 
-    namespace SDF
+    namespace SDF2D
     {
         /*
         * SDF functions should return vec3 triples:
@@ -48,33 +48,6 @@ namespace Enso
         {
             const float dist = length(p - v0);
             return vec3(dist, (p - v0) / dist);
-        }
-
-        namespace Renderer
-        {
-            // Render a line
-            __host__ __device__ __forceinline__ float Line(const vec2& p, const vec2& v, const vec2& dv, const float& thickness, const float& dPdXY)
-            {
-                return saturatef(1.0f - (length(p - PerpLine(p, v, dv)) - dPdXY * thickness * 0.5f) / dPdXY);
-            }
-
-            // Render a hashed line
-            __host__ __device__ __forceinline__ float HashedLine(const vec2& p, const vec2& v, const vec2& dv, const float& thickness, const float& hashFreq, const float& dPdXY)
-            {
-                return saturatef(1.0f - (length(p - PerpLineHashed(p, v, dv, hashFreq)) - dPdXY * thickness * 0.5f) / dPdXY);
-            }
-
-            // Render an ellipse
-            __host__ __device__ __forceinline__ float Ellipse(const vec2& p, const vec2& origin, const float& radius, const float& dPdXY)
-            {
-                return saturatef(((radius + dPdXY) - length(p - origin)) / dPdXY);
-            }
-
-            // Render a torus
-            __host__ __device__ __forceinline__ float Torus(const vec2& p, const vec2& origin, const float& radius, const float& thickness, const float& dPdXY)
-            {
-                return saturatef(((dPdXY * thickness * 0.5f) - fabsf(fabs(length(p - origin)) - radius)) / dPdXY);
-            }
-        }
-    }    
+        }            
+    }  
 }

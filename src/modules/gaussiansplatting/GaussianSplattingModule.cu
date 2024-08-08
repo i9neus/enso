@@ -670,7 +670,7 @@ namespace Enso
         Rebuild(false);
 
         // Prepare the scene objects
-        m_viewportRenderer->Prepare(m_viewCtx, m_selectionCtx);
+        m_viewportRenderer->Prepare(m_viewCtx, m_selectionCtx, m_frameIdx);
 
         for (auto& object : *m_objectContainer)
         {

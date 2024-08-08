@@ -5,10 +5,12 @@
 #include "core/math/Hash.cuh"
 #include "core/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
+#include "core/2d/sdf/SDF2DRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/bih/BIH2DAsset.cuh"
 #include "core/GenericObjectContainer.cuh"
+#include "core/math/ColourUtils.cuh"
 
 #include "io/json/JsonUtils.h"
 
@@ -127,6 +129,11 @@ namespace Enso
         // Draw the selected object's bounding box
         if (m_params.selectionCtx.numSelected > 0 && m_params.selectionCtx.selectedBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kGreen, 1.0f); }
 
+        // Draw the update indicator        
+        //float alpha = SDF2DRenderer::Ellipse(vec2(xyScreen), vec2(10.f), 4.f, 1.f);
+        float alpha = SDF2DRenderer::ActivityIndicator(vec2(xyScreen), vec2(30.f), 25.f, float(m_params.frameIdx.viewport) / 60.f, 1.0f);
+        L = Blend(L, Hue(HashOfAsFloat(m_params.frameIdx.viewport)), alpha);
+
         m_objects.accumBuffer->At(xyScreen) = L;
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
@@ -142,7 +149,8 @@ namespace Enso
     __host__ Host::ViewportRenderer::ViewportRenderer(const Asset::InitCtx& initCtx, AssetHandle<Host::GenericObjectContainer>& objectContainer, const uint width, const uint height, cudaStream_t renderStream):
         GenericObject(initCtx),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::ViewportRenderer>(*this)),
-        m_objectContainer(objectContainer)
+        m_objectContainer(objectContainer),
+        m_viewportFrameIdx(0)
     {
         // Create some Cuda objects
         m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
@@ -243,6 +251,8 @@ namespace Enso
 
         KernelRender << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance);
         IsOk(cudaDeviceSynchronize());
+
+        m_viewportFrameIdx++;
     }
 
     __host__ void Host::ViewportRenderer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
@@ -273,7 +283,7 @@ namespace Enso
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
     }*/
 
-    __host__ bool Host::ViewportRenderer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::ViewportRenderer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx, const int globalFrameIdx)
     {        
         // Copy the view context
         m_params.viewCtx = viewCtx;
@@ -293,6 +303,9 @@ namespace Enso
         m_params.gridCtx.show = true;
         m_params.selectionCtx.lassoBBox.Rectify();
         m_params.selectionCtx.selectedBBox.Rectify();
+
+        m_params.frameIdx.global = globalFrameIdx;
+        m_params.frameIdx.viewport = m_viewportFrameIdx;
 
         // Upload to the device
         Synchronise(kSyncParams);

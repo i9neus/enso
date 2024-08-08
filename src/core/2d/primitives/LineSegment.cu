@@ -1,6 +1,6 @@
 #include "LineSegment.cuh"
 #include "core/Vector.cuh"
-#include "SDF.cuh"
+#include "core/2d/sdf/SDF2DRenderer.cuh"
 
 #include <random>
 
@@ -8,21 +8,21 @@ namespace Enso
 {    
     __host__ __device__ vec2 LineSegment::PerpendicularPoint(const vec2& p) const
     {
-        return SDF::PerpLine(p, m_v[0], m_dv);
+        return SDF2D::PerpLine(p, m_v[0], m_dv);
     }
     
     __host__ __device__ vec4 LineSegment::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const
     {
         const float stroke = (ctx.flags & OverlayCtx::kStrokeHashed) ? 
-                SDF::Renderer::HashedLine(p, m_v[0], m_dv, ctx.strokeThickness, 0.3f * length(m_dv) / ctx.dPdXY, ctx.dPdXY) :
-                SDF::Renderer::Line(p, m_v[0], m_dv, ctx.strokeThickness, ctx.dPdXY);
+                SDF2DRenderer::HashedLine(p, m_v[0], m_dv, ctx.strokeThickness, 0.3f * length(m_dv) / ctx.dPdXY, ctx.dPdXY) :
+                SDF2DRenderer::Line(p, m_v[0], m_dv, ctx.strokeThickness, ctx.dPdXY);
 
         return vec4(ctx.strokeColour.xyz, ctx.strokeColour.w * stroke);
     }
 
     __host__ __device__ bool LineSegment::TestPoint(const vec2& p, const float& thickness) const
     {
-        return length2(p - SDF::PerpLine(p, m_v[0], m_dv)) < sqr(thickness);
+        return length2(p - SDF2D::PerpLine(p, m_v[0], m_dv)) < sqr(thickness);
     }
 
     __host__ __device__ bool LineSegment::IntersectRay(const RayBasic2D& ray, HitCtx2D& hit) const

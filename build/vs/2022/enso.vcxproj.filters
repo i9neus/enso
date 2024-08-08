@@ -139,6 +139,9 @@
     <Filter Include="modules\gaussiansplatting\viewport">
       <UniqueIdentifier>{65e0eb32-0659-4dd7-96ba-c04e066ab9c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core\2d\sdf">
+      <UniqueIdentifier>{705a5556-8432-4caa-952b-433bbaffc052}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -581,9 +584,6 @@
     <ClInclude Include="..\..\..\src\core\2d\primitives\Primitive2D.cuh">
       <Filter>core\2d\primitives</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\primitives\SDF.cuh">
-      <Filter>core\2d\primitives</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\primitives\Ellipse.cuh">
       <Filter>core\2d\primitives</Filter>
     </ClInclude>
@@ -737,9 +737,6 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh">
       <Filter>modules\gaussiansplatting\scene\cameras</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneObject.cuh">
-      <Filter>modules\gaussiansplatting\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
       <Filter>core</Filter>
     </ClInclude>
@@ -748,6 +745,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\RenderableObject.cuh">
       <Filter>core\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2D.cuh">
+      <Filter>core\2d\sdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cuh">
+      <Filter>core\2d\sdf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -846,6 +849,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\viewport\ViewportRenderer.cu">
       <Filter>modules\gaussiansplatting\viewport</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cu">
+      <Filter>core\2d\sdf</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

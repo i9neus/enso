@@ -2,7 +2,7 @@
 #include "core/Vector.cuh"
 #include "core/math/Math.cuh"
 #include "GenericIntersector.cuh"
-#include "SDF.cuh"
+#include "core/2d/sdf/SDF2DRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 
 #include <random>
@@ -14,11 +14,11 @@ namespace Enso
         vec4 L(0.f);
         if (ctx.HasFill())
         {
-            L = Blend(L, ctx.fillColour * SDF::Renderer::Ellipse(p, m_origin, m_radius, ctx.dPdXY));
+            L = Blend(L, ctx.fillColour * SDF2DRenderer::Ellipse(p, m_origin, m_radius, ctx.dPdXY));
         }
         if (ctx.HasStroke())
         {
-            L = Blend(L, ctx.strokeColour * SDF::Renderer::Torus(p, m_origin, m_radius, ctx.strokeThickness, ctx.dPdXY));
+            L = Blend(L, ctx.strokeColour * SDF2DRenderer::Torus(p, m_origin, m_radius, ctx.strokeThickness, ctx.dPdXY));
         }
         return L;
     }    

@@ -26,6 +26,13 @@ namespace Enso
             bool                    isLassoing = false;
         } 
         selectionCtx;
+
+        struct
+        {
+            int                     viewport;
+            int                     global;
+        }
+        frameIdx;
     };
 
     struct ViewportObjects
@@ -80,7 +87,7 @@ namespace Enso
             __host__ void                       Render();
             __host__ void                       Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
 
-            __host__ virtual bool               Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
+            __host__ virtual bool               Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx, const int frameIdx);
 
             __host__ static const std::string   GetAssetClassStatic() { return "overlaylayer"; }
             __host__ virtual std::string        GetAssetClass() const override final { return GetAssetClassStatic(); }
@@ -104,7 +111,9 @@ namespace Enso
             dim3                            m_blockSize, m_gridSize;
 
             AssetHandle<Host::BIH2DAsset>               m_hostDrawableBIH;
-            AssetHandle<DrawableObjectContainer>        m_hostDrawableObjects;
+            AssetHandle<DrawableObjectContainer>        m_hostDrawableObjects; 
+
+            int                             m_viewportFrameIdx;
         };
     }
 }
