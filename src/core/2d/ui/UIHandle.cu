@@ -18,19 +18,19 @@ namespace Enso
         if (m_state == kDeselected && keyMap.IsSet(VK_LBUTTON) && m_ellipse.Contains(mousePosObject, 0.f))
         {
             m_state = kDragging;
-            return kDirtyObjectBoundingBox;
+            return kDirtyViewportObjectBBox;
         }
         else if (m_state == kDragging)
         {
             if (!keyMap.IsSet(VK_LBUTTON))
             {
                 m_state = kDeselected;
-                return kDirtyObjectBoundingBox;
+                return kDirtyViewportObjectBBox;
             }
             else
             {
                 m_ellipse.SetOrigin(mousePosObject);                
-                return kDirtyObjectBoundingBox;
+                return kDirtyViewportObjectBBox;
             }
         }
 

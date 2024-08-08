@@ -2,7 +2,6 @@
 
 #include "core/2d/Ctx.cuh"
 #include "core/3d/Ctx.cuh"
-#include "core/GenericObject.cuh"
 #include "core/3d/Transform.cuh"
 
 #include "core/DirtinessFlags.cuh"
@@ -12,6 +11,7 @@
 
 #include "io/Serialisable.cuh"
 
+#include "../SceneObject.cuh"
 #include "../../FwdDecl.cuh"
 
 namespace Enso
@@ -40,7 +40,7 @@ namespace Enso
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
-        class Tracable : public Device::GenericObject
+        class Tracable : public Device::SceneObject
         {
             friend class Host::Tracable;
         public:
@@ -70,7 +70,7 @@ namespace Enso
 
     namespace Host
     {        
-        class Tracable : public Host::GenericObject
+        class Tracable : public Host::SceneObject
         {
         public:
             __host__ void       SetLightIdx(const int idx) { m_params.lightIdx = idx; }
@@ -88,7 +88,7 @@ namespace Enso
             }
 
         protected:
-            __host__ Tracable(const Asset::InitCtx& initCtx) : GenericObject(initCtx) {}
+            __host__ Tracable(const Asset::InitCtx& initCtx) : SceneObject(initCtx) {}
 
             __host__ void               SetDeviceInstance(Device::Tracable* deviceInstance) { cu_deviceInstance = deviceInstance; }
             

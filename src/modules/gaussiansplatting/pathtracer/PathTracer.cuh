@@ -2,6 +2,7 @@
 
 #include "core/2d/Ctx.cuh"
 #include "core/2d/DrawableObject.cuh"
+#include "core/2d/RenderableObject.cuh"
 
 #include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
@@ -40,7 +41,6 @@ namespace Enso
             CudaAssert(meanAccumBuffer);
             CudaAssert(varAccumBuffer);
             CudaAssert(denoisedBuffer);
-            //CudaAssert(scene);
         }
         
         Device::ImageRGBW*                  meanAccumBuffer = nullptr;
@@ -84,18 +84,18 @@ namespace Enso
 
     namespace Host
     {
-        class PathTracer : public Host::DrawableObject
+        class PathTracer : public Host::DrawableObject, Host::RenderableObject
         {
         public:
-            PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene);
-            virtual ~PathTracer() noexcept;
+            __host__                    PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
+            __host__ virtual            ~PathTracer() noexcept;
 
-            __host__ void Render();
-            __host__ void Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
-            __host__ bool Prepare();
-            __host__ void Clear();
+            __host__ virtual void       Render() override final;
+            __host__ void               Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
+            __host__ bool               Prepare();
+            __host__ void               Clear();
 
-            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::ComponentContainer>& scene);
+            __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
             __host__ static const std::string  GetAssetClassStatic() { return "pathtracer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
@@ -116,7 +116,7 @@ namespace Enso
             __host__ virtual bool       OnRebuildDrawableObject() override final;
 
         private:
-            __host__ void CreateScene();
+            __host__ void               CreateScene();
 
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
@@ -126,7 +126,7 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            const AssetHandle<const Host::ComponentContainer>& m_scene;
+            const AssetHandle<const Host::GenericObjectContainer> m_genericObjects;
 
             Device::PathTracer*               cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;
@@ -140,7 +140,6 @@ namespace Enso
             AssetHandle<Host::ImageRGB>       m_hostDenoisedBuffer;
 
             AssetHandle<Host::SceneContainer> m_hostSceneContainer;
-
 
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };

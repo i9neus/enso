@@ -115,17 +115,19 @@ namespace Enso
                 return handles.empty() ? nullptr : handles.front();
             }
 
-            __host__ void Bind();
-            __host__ void Finalise() const;
-            __host__ void Synchronise(const uint flags);
+
+            //__host__ void Finalise() const;
+            __host__ void CleanAll();
+            __host__ bool RebuildAll();
+            __host__ void SynchroniseAll(const uint flags);
             __host__ uint GetUniqueIndex() { return m_uniqueIdx; }
 
             __host__ size_t Size() const { return m_objectMap.size(); }
 
             __host__ void Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath = true);
 
-            __host__ void Erase(const Host::GenericObject& obj);
-            __host__ void Erase(const std::string& id);
+            __host__ bool Erase(const Host::GenericObject& obj, const bool mustExist);
+            __host__ bool Erase(const std::string& id, const bool mustExist);
             __host__ void Clear();
 
             template<typename DowncastType, typename DeleteFunctor>

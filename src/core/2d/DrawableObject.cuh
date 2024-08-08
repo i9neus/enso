@@ -81,7 +81,7 @@ namespace Enso
         public:
             //__host__ virtual bool       Finalise() = 0;
 
-            __host__ bool               Rebuild();
+            __host__ virtual bool       Rebuild() override final;
             __host__ virtual void       Synchronise(const uint syncFlags) override final;
             __host__ void               Verify() const;
             
@@ -99,8 +99,8 @@ namespace Enso
             //__host__ virtual const Host::DrawableObject& GetDrawableObject() const { return *this; }
             __host__ virtual Device::DrawableObject* GetDeviceInstance() const = 0;
             
-            __host__ const BBox2f& GetObjectSpaceBoundingBox() { return m_hostInstance.m_params.objectBBox; }
-            __host__ const BBox2f& GetWorldSpaceBoundingBox() { return m_hostInstance.m_params.worldBBox; }
+            __host__ const BBox2f& GetObjectSpaceBoundingBox() const { return m_hostInstance.m_params.objectBBox; }
+            __host__ const BBox2f& GetWorldSpaceBoundingBox() const { return m_hostInstance.m_params.worldBBox; }
 
             __host__ static uint        GetInstanceFlags() { return 0u; }
 
@@ -125,7 +125,7 @@ namespace Enso
             //__host__ virtual uint GetStaticAttributes() const { return StaticAttributes; }
 
         protected:
-            __host__ DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::ComponentContainer>& scene);
+            __host__ DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance);
             
             __host__ void               SetDeviceInstance(Device::DrawableObject* deviceInstance);
 
@@ -142,11 +142,11 @@ namespace Enso
             __host__ void               RecomputeBoundingBoxes();
 
         protected:
-            AssetHandle<const Host::ComponentContainer>     m_scene;
+
 
         private:
-            Device::DrawableObject&                        m_hostInstance;
-            Device::DrawableObject*                        cu_deviceInstance = nullptr;
+            Device::DrawableObject&                         m_hostInstance;
+            Device::DrawableObject*                         cu_deviceInstance = nullptr;
 
             struct
             {

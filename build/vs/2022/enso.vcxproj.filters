@@ -136,6 +136,9 @@
     <Filter Include="modules\gaussiansplatting\scene\cameras">
       <UniqueIdentifier>{0cfa971b-5697-4081-a7d0-05c0a0f2c74f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gaussiansplatting\viewport">
+      <UniqueIdentifier>{65e0eb32-0659-4dd7-96ba-c04e066ab9c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -704,21 +707,6 @@
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh">
       <Filter>core\math\samplers\owensobol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cuh">
-      <Filter>modules\gaussiansplatting</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\UILayer.cuh">
-      <Filter>modules\gaussiansplatting</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cuh">
-      <Filter>modules\gaussiansplatting</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cuh">
-      <Filter>modules\gaussiansplatting</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh">
       <Filter>modules\gaussiansplatting\scene</Filter>
     </ClInclude>
@@ -748,6 +736,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh">
       <Filter>modules\gaussiansplatting\scene\cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneObject.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\viewport\ViewportRenderer.cuh">
+      <Filter>modules\gaussiansplatting\viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\RenderableObject.cuh">
+      <Filter>core\2d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -832,15 +832,6 @@
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu">
       <Filter>core\math\samplers\owensobol</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\OverlayLayer.cu">
-      <Filter>modules\gaussiansplatting</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentContainer.cu">
-      <Filter>modules\gaussiansplatting</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\ComponentBuilder.cu">
-      <Filter>modules\gaussiansplatting</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu">
       <Filter>modules\gaussiansplatting\scene</Filter>
     </CudaCompile>
@@ -852,6 +843,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cu">
       <Filter>modules\gaussiansplatting\scene\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\viewport\ViewportRenderer.cu">
+      <Filter>modules\gaussiansplatting\viewport</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

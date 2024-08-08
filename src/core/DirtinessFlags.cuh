@@ -1,29 +1,28 @@
 #pragma once
 
-//#include <stdio.h>
+#include "core/DirtinessGraph.cuh"
 
 namespace Enso
 {
-    enum GI2DDirtyFlags : unsigned int
+    enum DirtinessFlags : unsigned int
     {
         kClean = 0,
 
-        // Scene object bounding box has changed
-        kDirtyObjectBoundingBox,            
+        // Viewport object bounding box has changed
+        kDirtyViewportObjectBBox,            
+
+        // Viewport needs redrawing
+        kDirtyViewportRedraw,
 
         // Scene object requires a rebuild
         kDirtyObjectRebuild,
         
         // Scene object is created or destroyed
-        kDirtyObjectExistence,              
-        
-        // Contents of integrators is invalid,
-        kDirtyIntegrators,
-
-        // Overlay elements are invalid and need redrawing
-        kDirtyUIOverlay,
+        kDirtyObjectExistence, 
 
         // Parameters changed (e.g. through deserialisation) and to be re-synced
-        kDirtyParams
+        kDirtyParams,
+
+        kNumDirtinessFlags
     };
 }

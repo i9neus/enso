@@ -7,7 +7,7 @@ namespace Enso
 {
     namespace Device
     { 
-        struct SceneContainer : public Device::Asset
+        struct SceneContainer
         {
             __device__ SceneContainer() {}
             __device__ void Synchronise(const SceneContainer& objects) { *this = objects; }
@@ -45,7 +45,7 @@ namespace Enso
 
         public:
             __host__                SceneContainer(const Asset::InitCtx& initCtx);
-            __host__ virtual        ~SceneContainer() noexcept;
+            __host__ virtual        ~SceneContainer() noexcept;     
 
             __host__ void           Prepare();
             __host__ void           Clean();
@@ -56,7 +56,8 @@ namespace Enso
             __host__ virtual void   Synchronise(const uint flags) override final;
 
             __host__ void           Summarise() const;
-
+            __host__ static const std::string  GetAssetClassStatic() { return "scenecontainer"; }
+            __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
         private:    
             AssetHandle<Host::TracableContainer>    m_hostTracables;

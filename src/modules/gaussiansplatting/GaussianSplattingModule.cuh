@@ -31,7 +31,7 @@ namespace Enso
             __host__ virtual void OnResizeClient() override final;
             __host__ virtual void OnFocusChange(const bool isSet) override final;
 
-            __host__ virtual void OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller) override final;
+            __host__ virtual void OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller) override final;
 
             //__host__ virtual void OnResizeClient() override final;
             __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
@@ -51,14 +51,16 @@ namespace Enso
             __host__ void                    DeclareStateTransitionGraph();
             __host__ void                    DeclareListeners();
 
+            __host__ void                    Rebuild(const bool forceRebuild);
             __host__ void                    LoadScene();
+            __host__ void                    UnloadScene();
 
-            __host__ uint                    OnMoveDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnCreateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnSelectDrawableObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnDelegateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnMoveViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnCreateViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnSelectViewportObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDelegateViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnIdleState(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
-            __host__ uint                    OnDeleteDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
+            __host__ uint                    OnDeleteViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ uint                    OnToggleRun(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap);
             __host__ void                    OnInboundUpdateObject(const Json::Node& node);
 
@@ -72,16 +74,24 @@ namespace Enso
 
         private:
             enum JobIDs : uint { kJobDraw };
+            
+            // Primary repository for all objects created by the module 
+            AssetHandle<Host::GenericObjectContainer>           m_objectContainer;
 
-            AssetHandle<Host::ComponentContainer> m_componentContainer;
-            AssetHandle<Host::ComponentBuilder>   m_componentBuilder;
-            AssetHandle<Host::OverlayLayer>       m_overlayRenderer;
+            // Renderable objects designed to be cycled rapidly by the inner loop
+            std::vector<AssetHandle<Host::RenderableObject>>    m_renderableObjects;
 
-            UIGridCtx                             m_gridCtx;
-            UIViewCtx                             m_viewCtx;
-            UISelectionCtx                        m_selectionCtx;
+            // Viewport renderer
+            AssetHandle<Host::ViewportRenderer>     m_viewportRenderer;
 
-            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::ComponentContainer>&> m_sceneObjectFactory;
+            AssetHandle<Host::SceneContainer>       m_sceneContainer;
+            AssetHandle<Host::SceneBuilder>         m_sceneBuilder;
+
+            UIGridCtx                               m_gridCtx;
+            UIViewCtx                               m_viewCtx;
+            UISelectionCtx                          m_selectionCtx;
+
+            Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::GenericObjectContainer>&> m_componentFactory;
 
             struct
             {
@@ -89,11 +99,17 @@ namespace Enso
             }
             m_onCreate;
 
-            AssetHandle<Host::DrawableObject>              m_delegatedObject;
+            std::mutex                                  m_threadMutex;
+            std::unordered_set<std::string>             m_deleteObjectQueue;
+            std::unordered_set<std::string>             m_rebuildObjectQueue;
+            std::unordered_set<std::string>             m_newObjectQueue;
+
+            AssetHandle<Host::DrawableObject>           m_delegatedObject;
             CommandManager                              m_commandManager;
 
             bool                                        m_isRunning;
             HighResolutionTimer                         m_blitTimer;
+            
         };
     }
 }

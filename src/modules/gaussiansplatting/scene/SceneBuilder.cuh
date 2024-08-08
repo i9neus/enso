@@ -12,10 +12,10 @@ namespace Enso
             friend class SceneBuilder;
 
         public:
-            __host__                SceneBuilder(const Asset::InitCtx& initCtx);
+            __host__                SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene);
             __host__ virtual        ~SceneBuilder() noexcept;
 
-            __host__ AssetHandle<Host::SceneContainer> Rebuild();
+            __host__ virtual bool   Rebuild() override final;
 
         private:    
             AssetHandle<Host::SceneContainer>    m_scene;        

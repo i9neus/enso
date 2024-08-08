@@ -5,12 +5,14 @@
 #include "core/GenericObjectContainer.cuh"
 #include "core/Vector.cuh"
 #include "core/Tuple.cuh"
-#include "OverlayLayer.cuh"
+#include "viewport/ViewportRenderer.cuh"
 
 #include "core/2d/bih/BIH2DAsset.cuh"
-#include "ComponentBuilder.cuh"
 
 #include "pathtracer/PathTracer.cuh"
+
+#include "scene/SceneBuilder.cuh"
+#include "scene/SceneContainer.cuh"
 
 #include "io/SerialisableObjectSchema.h"
 
@@ -47,19 +49,16 @@ namespace Enso
 
     __host__ Host::GaussianSplattingModule::~GaussianSplattingModule() noexcept
     {
-        m_overlayRenderer.DestroyAsset();
-
-        m_componentBuilder.DestroyAsset();
-        m_componentContainer.DestroyAsset();
+        UnloadScene();
     }
 
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
     {
         Log::Error("%i", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_sceneObjectFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
 
-        //m_sceneObjectFactory.RegisterInstantiator<Host::OverlayLayer>();
-        //m_sceneObjectFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
+        //m_componentFactory.RegisterInstantiator<Host::ViewportRenderer>();
+        //m_componentFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
     }
 
     __host__ void Host::GaussianSplattingModule::DeclareStateTransitionGraph()
@@ -67,10 +66,10 @@ namespace Enso
         m_uiGraph.DeclareState("kIdleState", this, &Host::GaussianSplattingModule::OnIdleState);
 
         // Create scene object
-        m_uiGraph.DeclareState("kCreateDrawableObjectOpen", this, &GaussianSplattingModule::OnCreateDrawableObject);
-        m_uiGraph.DeclareState("kCreateDrawableObjectHover", this, &GaussianSplattingModule::OnCreateDrawableObject);
-        m_uiGraph.DeclareState("kCreateDrawableObjectAppend", this, &GaussianSplattingModule::OnCreateDrawableObject);
-        m_uiGraph.DeclareState("kCreateDrawableObjectClose", this, &GaussianSplattingModule::OnCreateDrawableObject);
+        m_uiGraph.DeclareState("kCreateDrawableObjectOpen", this, &GaussianSplattingModule::OnCreateViewportObject);
+        m_uiGraph.DeclareState("kCreateDrawableObjectHover", this, &GaussianSplattingModule::OnCreateViewportObject);
+        m_uiGraph.DeclareState("kCreateDrawableObjectAppend", this, &GaussianSplattingModule::OnCreateViewportObject);
+        m_uiGraph.DeclareState("kCreateDrawableObjectClose", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
@@ -83,18 +82,18 @@ namespace Enso
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectClose", "kIdleState");
 
         // Delegate mouse actions to scene objects
-        m_uiGraph.DeclareState("kDelegateDrawableObjectBegin", this, &GaussianSplattingModule::OnDelegateDrawableObject);
-        m_uiGraph.DeclareState("kDelegateDrawableObjectEnd", this, &GaussianSplattingModule::OnDelegateDrawableObject);
-        m_uiGraph.DeclareState("kDelegateDrawableObjectDragging", this, &GaussianSplattingModule::OnDelegateDrawableObject);
+        m_uiGraph.DeclareState("kDelegateDrawableObjectBegin", this, &GaussianSplattingModule::OnDelegateViewportObject);
+        m_uiGraph.DeclareState("kDelegateDrawableObjectEnd", this, &GaussianSplattingModule::OnDelegateViewportObject);
+        m_uiGraph.DeclareState("kDelegateDrawableObjectDragging", this, &GaussianSplattingModule::OnDelegateViewportObject);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateDrawableObjectBegin", "kDelegateDrawableObjectDragging");
         m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateDrawableObjectEnd", "kIdleState");
 
         // Select/deselect scene object
-        m_uiGraph.DeclareState("kSelectDrawableObjectDragging", this, &GaussianSplattingModule::OnSelectDrawableObjects);
-        m_uiGraph.DeclareState("kSelectDrawableObjectEnd", this, &GaussianSplattingModule::OnSelectDrawableObjects);
-        m_uiGraph.DeclareState("kDeselectDrawableObject", this, &GaussianSplattingModule::OnSelectDrawableObjects);
+        m_uiGraph.DeclareState("kSelectDrawableObjectDragging", this, &GaussianSplattingModule::OnSelectViewportObjects);
+        m_uiGraph.DeclareState("kSelectDrawableObjectEnd", this, &GaussianSplattingModule::OnSelectViewportObjects);
+        m_uiGraph.DeclareState("kDeselectDrawableObject", this, &GaussianSplattingModule::OnSelectViewportObjects);
         m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
         m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
@@ -103,9 +102,9 @@ namespace Enso
         m_uiGraph.DeclareDeterministicAutoTransition("kDeselectDrawableObject", "kIdleState");
 
         // Move scene object
-        m_uiGraph.DeclareState("kMoveDrawableObjectBegin", this, &GaussianSplattingModule::OnMoveDrawableObject);
-        m_uiGraph.DeclareState("kMoveDrawableObjectDragging", this, &GaussianSplattingModule::OnMoveDrawableObject);
-        m_uiGraph.DeclareState("kMoveDrawableObjectEnd", this, &GaussianSplattingModule::OnMoveDrawableObject);
+        m_uiGraph.DeclareState("kMoveDrawableObjectBegin", this, &GaussianSplattingModule::OnMoveViewportObject);
+        m_uiGraph.DeclareState("kMoveDrawableObjectDragging", this, &GaussianSplattingModule::OnMoveViewportObject);
+        m_uiGraph.DeclareState("kMoveDrawableObjectEnd", this, &GaussianSplattingModule::OnMoveViewportObject);
         //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveDrawableObjectBegin", "kMoveDrawableObjectDragging");
         m_uiGraph.DeclareDeterministicTransition("kMoveDrawableObjectDragging", "kMoveDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
@@ -113,7 +112,7 @@ namespace Enso
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveDrawableObjectEnd", "kIdleState");
 
         // Delete scene object
-        m_uiGraph.DeclareState("kDeleteDrawableObjects", this, &GaussianSplattingModule::OnDeleteDrawableObject);
+        m_uiGraph.DeclareState("kDeleteDrawableObjects", this, &GaussianSplattingModule::OnDeleteViewportObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDeleteDrawableObjects", "kIdleState");
@@ -127,11 +126,13 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::DeclareListeners()
     {
-        Listen({ kDirtyObjectBoundingBox });
+        Listen({ kDirtyViewportObjectBBox });
     }
 
-    __host__ void Host::GaussianSplattingModule::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)
+    __host__ void Host::GaussianSplattingModule::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
     {
+        
+        
         SetDirty(flag);
     }
 
@@ -149,24 +150,41 @@ namespace Enso
         m_viewCtx.sceneBounds = BBox2f(vec2(-0.5f), vec2(0.5f));
 
         LoadScene();
-
-        m_componentBuilder->Rebuild(true);
     }
 
     __host__ void Host::GaussianSplattingModule::LoadScene()
     {
-        m_componentContainer = AssetAllocator::CreateChildAsset<Host::ComponentContainer>(*this, "sceneContainer");
-        m_componentBuilder = AssetAllocator::CreateChildAsset<Host::ComponentBuilder>(*this, "sceneBuilder", m_componentContainer);
+        UnloadScene();
+        
+        // Component objects are interactive elements that can intercommunicate
+        m_objectContainer = AssetAllocator::CreateChildAsset<Host::GenericObjectContainer>(*this, "objectcontainer");
+
+        // The scene description contains objects used by the physically based renderer
+        m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scenecontainer");
+        m_sceneBuilder = AssetAllocator::CreateChildAsset<Host::SceneBuilder>(*this, "scenebuilder", m_sceneContainer);
+        m_objectContainer->Emplace(m_sceneContainer.StaticCast<Host::GenericObject>());
 
         // Create some default scene objects
         Json::Node emptyDocument;
-        m_overlayRenderer = AssetAllocator::CreateChildAsset<Host::OverlayLayer>(*this, "overlayLayer", m_componentContainer, m_clientWidth, m_clientHeight, m_renderStream);
-        //m_voxelProxyGrid = AssetAllocator::CreateChildAsset<Host::VoxelProxyGrid>(*this, "voxelProxyGridLayer", emptyDocument, m_componentContainer);
+        m_viewportRenderer = AssetAllocator::CreateChildAsset<Host::ViewportRenderer>(*this, "viewportrenderer", m_objectContainer, m_clientWidth, m_clientHeight, m_renderStream);
 
-        // Emplace them into the scene object list and enqueue them
-        m_componentContainer->Emplace(m_overlayRenderer.StaticCast<Host::GenericObject>());
-        //m_componentContainer->Emplace(m_voxelProxyGrid.StaticCast<Host::GenericObject>());
+        // Notify the UI that a bunch of objects has been created, then rebuild the component container
+        m_sceneBuilder->Rebuild();
+
+        // Force a rebuild
+        Rebuild(true);
+
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
+    }
+
+    __host__ void Host::GaussianSplattingModule::UnloadScene()
+    {
+        m_viewportRenderer.DestroyAsset();
+
+        m_sceneBuilder.DestroyAsset();
+        m_sceneContainer.DestroyAsset();
+
+        m_objectContainer.DestroyAsset();
     }
 
     __host__ void Host::GaussianSplattingModule::OnInboundUpdateObject(const Json::Node& node)
@@ -179,7 +197,7 @@ namespace Enso
 
             std::string id;
             itemNode.GetValue("id", id, Json::kRequiredAssert | Json::kNotBlank);
-            auto objectHandle = m_componentContainer->GenericObjects().FindByID(id);
+            auto objectHandle = m_objectContainer->FindByID(id);
 
             if (!objectHandle)
             {
@@ -218,7 +236,7 @@ namespace Enso
 
         if (flags & kEnqueueAll)
         {
-            for (auto& obj : m_componentContainer->GenericObjects()) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
+            for (auto& obj : *m_objectContainer) { SerialiseImpl(nodeArray.AppendArrayObject(), obj); }
         }
         else if (flags & kEnqueueSelected)
         {
@@ -249,44 +267,29 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GaussianSplattingModule::OnDeleteDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GaussianSplattingModule::OnDeleteViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
-        if (m_selectionCtx.selectedObjects.empty()) { return kUIStateOkay; }
-
-        Host::DrawableObjectContainer& sceneObjects = m_componentContainer->DrawableObjects();
-        int emptyIdx = -1;
-        int numDeleted = 0;
-        for (int primIdx = 0; primIdx < sceneObjects.Size(); ++primIdx)
+        if (!m_selectionCtx.selectedObjects.empty())
         {
-            if (sceneObjects[primIdx]->IsSelected())
+            Host::DrawableObjectContainer& drawableObjects = m_viewportRenderer->DrawableObjects();
+            for (int primIdx = 0; primIdx < drawableObjects.Size(); ++primIdx)
             {
-                // Erase the object from the container. 
-                m_componentBuilder->EnqueueDeleteObject(sceneObjects[primIdx]->GetAssetID());
+                if (drawableObjects[primIdx]->IsSelected())
+                {
+                    // Erase the object from the container. 
+                    std::lock_guard<std::mutex> lock(m_threadMutex);
+                    m_deleteObjectQueue.emplace(drawableObjects[primIdx]->GetAssetID());
+                }
+            }
 
-                ++numDeleted;
-                if (emptyIdx == -1) { emptyIdx = primIdx; }
-            }
-            else if (emptyIdx >= 0)
-            {
-                sceneObjects[emptyIdx++] = sceneObjects[primIdx];
-            }
+            // Clear the selected object list
+            m_selectionCtx.selectedObjects.clear();
         }
-
-        Assert(numDeleted <= sceneObjects.Size());
-        sceneObjects.Resize(sceneObjects.Size() - numDeleted);
-        Log::Error("Delete!");
-
-        EnqueueOutboundSerialisation("OnDeleteObject", kEnqueueSelected | kEnqueueIdOnly);
-
-        // Clear the selected object list
-        m_selectionCtx.selectedObjects.clear();
-
-        SignalDirty(kDirtyObjectExistence);
 
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GaussianSplattingModule::OnMoveDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GaussianSplattingModule::OnMoveViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kMoveDrawableObjectBegin")
@@ -318,28 +321,27 @@ namespace Enso
 
         // Enqueue the list of selected scene objects
         EnqueueOutboundSerialisation("OnUpdateObject", kEnqueueSelected);
-
         return kUIStateOkay;
     }
 
     __host__ void Host::GaussianSplattingModule::DeselectAll()
     {
-        for (auto obj : m_componentContainer->DrawableObjects())
+        for (auto obj : m_viewportRenderer->DrawableObjects())
         {
             obj->OnSelect(false);
         }
 
         m_selectionCtx.selectedObjects.clear();
 
-        SignalDirty(kDirtyUIOverlay);
+        SignalDirty(kDirtyViewportRedraw);
     }
 
     __host__ std::string Host::GaussianSplattingModule::DecideOnClickState(const uint& sourceStateIdx)
     {
         // Before deciding whether to lasso or move, test if the mouse has precision-clicked an object. If it has, select it.
-        if (m_componentContainer->DrawableBIH().IsConstructed())
+        if (m_viewportRenderer->DrawableBIH().IsConstructed())
         {
-            auto& sceneObjects = m_componentContainer->DrawableObjects();
+            auto& drawableObjects = m_viewportRenderer->DrawableObjects();
             constexpr int kInvalidHit = -1;
             int hitIdx = kInvalidHit;
             uint hitResult = kDrawableObjectInvalidSelect;
@@ -348,15 +350,15 @@ namespace Enso
                 for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                 {
                     const uint primIdx = primIdxs[idx];
-                    if (primIdx >= m_componentContainer->DrawableObjects().Size())
+                    if (primIdx >= drawableObjects.Size())
                     {
-                        int size = m_componentContainer->DrawableObjects().Size();
+                        int size = drawableObjects.Size();
                         Log::Error("%i, %i", primIdx, size);
                     }
 
-                    if (sceneObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
+                    if (drawableObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
                     {
-                        hitResult = sceneObjects[primIdx]->OnMouseClick(m_viewCtx);
+                        hitResult = drawableObjects[primIdx]->OnMouseClick(m_viewCtx);
                         if (hitResult != kDrawableObjectInvalidSelect)
                         {
                             hitIdx = primIdx;
@@ -366,7 +368,7 @@ namespace Enso
                 }
                 return false;
             };
-            m_componentContainer->DrawableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            m_viewportRenderer->DrawableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
             if (hitIdx != kInvalidHit)
@@ -376,18 +378,18 @@ namespace Enso
                 {
                     DeselectAll();
 
-                    m_selectionCtx.selectedObjects.push_back(sceneObjects[hitIdx]);
+                    m_selectionCtx.selectedObjects.push_back(drawableObjects[hitIdx]);
                     m_selectionCtx.selectedObjects.back()->OnSelect(true);
 
                     m_selectionCtx.isLassoing = false;
-                    m_selectionCtx.selectedBBox = sceneObjects[hitIdx]->GetWorldSpaceBoundingBox();
+                    m_selectionCtx.selectedBBox = drawableObjects[hitIdx]->GetWorldSpaceBoundingBox();
 
                     return "kMoveDrawableObjectBegin";
                 }
                 // Otherwise, start delegating mouse movements directly to the scene object until the button is lifted
                 else if (hitResult == kDrawableObjectDelegatedAction)
                 {
-                    m_delegatedObject = sceneObjects[hitIdx];
+                    m_delegatedObject = drawableObjects[hitIdx];
                     return "kDelegateDrawableObjectBegin";
                 }
                 else
@@ -419,7 +421,7 @@ namespace Enso
         return "kSelectDrawableObjectDragging";
     }
 
-    __host__ uint Host::GaussianSplattingModule::OnDelegateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GaussianSplattingModule::OnDelegateViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
 
@@ -441,15 +443,15 @@ namespace Enso
         {
             m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, object->GetWorldSpaceBoundingBox());
         }
-        SignalDirty(kDirtyUIOverlay);
+        SignalDirty(kDirtyViewportRedraw);
     }
 
-    __host__ uint Host::GaussianSplattingModule::OnSelectDrawableObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
+    __host__ uint Host::GaussianSplattingModule::OnSelectViewportObjects(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& keyMap)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kSelectDrawableObjectDragging")
         {
-            auto& sceneObjects = m_componentContainer->DrawableObjects();
+            auto& drawableObjects = m_viewportRenderer->DrawableObjects();
             const bool wasLassoing = m_selectionCtx.isLassoing;
             const int lastNumSelected = m_selectionCtx.selectedObjects.size();
 
@@ -467,10 +469,10 @@ namespace Enso
             m_selectionCtx.selectedBBox = BBox2f::Invalid();
             m_selectionCtx.selectedObjects.clear();
 
-            if (m_componentContainer->DrawableBIH().IsConstructed())
+            if (m_viewportRenderer->DrawableBIH().IsConstructed())
             {
                 int numSelected = 0;
-                auto onIntersectPrim = [&sceneObjects, this](const uint* primRange, const uint* primIdxs, const bool isInnerNode)
+                auto onIntersectPrim = [&drawableObjects, this](const uint* primRange, const uint* primIdxs, const bool isInnerNode)
                 {
                     // Inner nodes are tested when the bounding box envelops them completely. Hence, there's no need to do a bbox checks.
                     if (isInnerNode)
@@ -478,8 +480,8 @@ namespace Enso
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
                             const uint primIdx = primIdxs[idx];
-                            m_selectionCtx.selectedObjects.emplace_back(sceneObjects[primIdx]);
-                            sceneObjects[primIdx]->OnSelect(true);
+                            m_selectionCtx.selectedObjects.emplace_back(drawableObjects[primIdx]);
+                            drawableObjects[primIdx]->OnSelect(true);
                         }
                     }
                     else
@@ -487,19 +489,19 @@ namespace Enso
                         for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                         {
                             const uint primIdx = primIdxs[idx];
-                            const auto& bBoxWorld = sceneObjects[primIdx]->GetWorldSpaceBoundingBox();
+                            const auto& bBoxWorld = drawableObjects[primIdx]->GetWorldSpaceBoundingBox();
                             const bool isCaptured = m_selectionCtx.lassoBBox.Contains(bBoxWorld);
                             if (isCaptured)
                             {
                                 Log::Debug("Selected %i", primIdx);
-                                m_selectionCtx.selectedObjects.emplace_back(sceneObjects[primIdx]);
+                                m_selectionCtx.selectedObjects.emplace_back(drawableObjects[primIdx]);
                                 m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, bBoxWorld);
                             }
-                            sceneObjects[primIdx]->OnSelect(isCaptured);
+                            drawableObjects[primIdx]->OnSelect(isCaptured);
                         }
                     }
                 };
-                m_componentContainer->DrawableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                m_viewportRenderer->DrawableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.selectedObjects.size())
@@ -512,13 +514,13 @@ namespace Enso
                 }
             }
 
-            SignalDirty(kDirtyUIOverlay);
+            SignalDirty(kDirtyViewportRedraw);
             //Log::Success("Selecting!");
         }
         else if (stateID == "kSelectDrawableObjectEnd")
         {
             m_selectionCtx.isLassoing = false;
-            SignalDirty(kDirtyUIOverlay);
+            SignalDirty(kDirtyViewportRedraw);
 
             Log::Debug("Selected:");
             for (const auto& obj : m_selectionCtx.selectedObjects)
@@ -531,7 +533,7 @@ namespace Enso
         else if (stateID == "kDeselectDrawableObject")
         {
             DeselectAll();
-            SignalDirty(kDirtyUIOverlay);
+            SignalDirty(kDirtyViewportRedraw);
 
             //Log::Success("Finished!");
         }
@@ -543,20 +545,21 @@ namespace Enso
         return kUIStateOkay;
     }
 
-    __host__ uint Host::GaussianSplattingModule::OnCreateDrawableObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
+    __host__ uint Host::GaussianSplattingModule::OnCreateViewportObject(const uint& sourceStateIdx, const uint& targetStateIdx, const VirtualKeyMap& trigger)
     {
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateDrawableObjectOpen")
         {
             // Try and instantiate the objerct         
-            auto newObject = m_sceneObjectFactory.Instantiate(trigger.HashOf(), m_componentContainer->GenericObjects(), *this, m_componentContainer);
+            auto newObject = m_componentFactory.Instantiate(trigger.HashOf(), *m_objectContainer, *this, m_objectContainer);
             m_onCreate.newObject = newObject.DynamicCast<Host::DrawableObject>();
             m_onCreate.newObject->Verify();
+            m_newObjectQueue.emplace(m_onCreate.newObject->GetAssetID());
 
-            SignalDirty(kDirtyObjectExistence);
+            SetDirty(kDirtyObjectExistence);
 
             // Emplace the new object with the scene builder ready for integration into the scene
-            //m_componentBuilder->EnqueueEmplaceObject(m_onCreate.newObject);
+            //m_componentManager->EnqueueEmplaceObject(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
@@ -586,7 +589,8 @@ namespace Enso
         // If the new object has closed but has not been finalised, delete it
         if (!m_onCreate.newObject->IsFinalised())
         {
-            m_componentBuilder->EnqueueDeleteObject(m_onCreate.newObject->GetAssetID());
+            std::lock_guard<std::mutex> lock(m_threadMutex);
+            m_deleteObjectQueue.emplace(m_onCreate.newObject->GetAssetID());
             Log::Success("Destroying unfinalised scene object '%s'", m_onCreate.newObject->GetAssetID());
         }
         else
@@ -603,27 +607,72 @@ namespace Enso
         m_commandManager.Flush(inbound, false);
     }
 
+    __host__ void Host::GaussianSplattingModule::Rebuild(const bool forceRebuild)
+    {
+        // Lock the mutex so other threads can't interfere until we're done
+        std::lock_guard<std::mutex> lock(m_threadMutex);
+
+        bool rebuildViewport = Dirtyable::IsAnyDirty({ kDirtyObjectExistence, kDirtyViewportObjectBBox });
+        bool objectsChanged = false;
+
+        // If objects are waiting to be deleted, do so now
+        if (!m_deleteObjectQueue.empty())
+        {
+            // Release any handles that might prevent objects being successfully erased from the container
+            m_viewportRenderer->ReleaseObjects();
+            m_renderableObjects.clear();
+
+            // Iterate through the delete queue and erase the objects from the object container
+            for (auto& id : m_deleteObjectQueue)
+            {
+                m_objectContainer->Erase(id, true);
+            }
+            m_deleteObjectQueue.clear();
+            rebuildViewport = true;
+            objectsChanged = true;
+
+            // Signal to the UI that objects have been deleted
+            EnqueueOutboundSerialisation("OnDeleteObject", kEnqueueAll);
+        }
+
+        // If new objects have been created, signal that the viewport should be rebuilt
+        if (!m_newObjectQueue.empty())
+        {
+            rebuildViewport = true;
+            objectsChanged = true;
+            m_newObjectQueue.clear();
+        }
+
+        // If objects have been added or removed, rebuild any data structures that depend on them
+        if (objectsChanged || forceRebuild)
+        {
+            m_renderableObjects.clear();
+            m_objectContainer->ForEachOfType<Host::RenderableObject>([&](AssetHandle<Host::RenderableObject>& object) -> bool
+                {
+                    m_renderableObjects.push_back(object);
+                    return true;
+                });
+        }
+
+        // Rebuild the viewport if required
+        if (rebuildViewport || forceRebuild)
+        {
+            m_viewportRenderer->Rebuild();
+        }
+    }
+
     __host__ void Host::GaussianSplattingModule::OnRender()
     {
         // Flush any keyboard and mouse inputs that have accumulated between now and the beginning of the last frame
         FlushUIEventQueue();
 
-        // Update the overlay if the scene is dirty
-        const bool updateSelection = !m_componentBuilder->IsClean();
-
-        // Rebuild the scene 
-        m_componentBuilder->Rebuild(false);
-
-        if (!updateSelection)
-        {
-            UpdateSelectedBBox();
-        }
+        // Rebuild any objects that require it
+        Rebuild(false);
 
         // Prepare the scene objects
-        m_componentContainer->Prepare();
-        m_overlayRenderer->Prepare(m_viewCtx, m_selectionCtx);
+        m_viewportRenderer->Prepare(m_viewCtx, m_selectionCtx);
 
-        for (auto& object : m_componentContainer->DrawableObjects())
+        for (auto& object : *m_objectContainer)
         {
             AssetHandle<Host::PathTracer> pt = object.DynamicCast<Host::PathTracer>();
             if (pt)
@@ -638,7 +687,7 @@ namespace Enso
         {
             m_blitTimer.Reset();
 
-            m_overlayRenderer->Render();
+            m_viewportRenderer->Render();
 
             // If a blit is in progress, skip the composite step entirely.
            // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
@@ -648,15 +697,15 @@ namespace Enso
 
             // Composite the render layers
             m_compositeImage->Clear(vec4(kZero, 1.0f));
-            m_overlayRenderer->Composite(m_compositeImage);
+            m_viewportRenderer->Composite(m_compositeImage);
 
             m_renderSemaphore.Wait(kRenderManagerCompInProgress, kRenderManagerCompFinished);
             //m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
         }
 
         // Clean all the objects in the scene container ready for the next iteration
-        m_componentContainer->Clean();
-        Clean();
+        m_objectContainer->CleanAll();
+        Dirtyable::Clean();
     }
 
     __host__ void Host::GaussianSplattingModule::OnMouseButton(const uint code, const bool isDown)

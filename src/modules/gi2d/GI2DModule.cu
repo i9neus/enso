@@ -135,7 +135,7 @@ namespace Enso
 
     __host__ void Host::GI2DModule::DeclareListeners()
     {
-        Listen({ kDirtyObjectBoundingBox });
+        Listen({ kDirtyViewportObjectBBox });
     }
 
     __host__ void Host::GI2DModule::OnDirty(const DirtinessKey& flag, WeakAssetHandle<Host::Asset>& caller)

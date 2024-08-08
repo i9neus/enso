@@ -31,11 +31,11 @@ namespace Enso
     }
 
     // FIXME: hostInstance causes segfault when passed by reference. Find out why.
-    __host__ Host::DrawableObject::DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance, const AssetHandle<const Host::ComponentContainer>& scene) :
+    __host__ Host::DrawableObject::DrawableObject(const Asset::InitCtx& initCtx, Device::DrawableObject* hostInstance) :
         GenericObject(initCtx),
         m_hostInstance(*hostInstance)
     {
-
+        
     }
 
     __host__ void Host::DrawableObject::SetDeviceInstance(Device::DrawableObject* deviceInstance)
@@ -60,7 +60,7 @@ namespace Enso
         if (stateID == "kCreateDrawableObjectOpen")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos;
-            SignalDirty({ kDirtyObjectRebuild });
+            SignalDirty( kDirtyObjectRebuild );
         }
 
         // Call the virtual method implemented by inheriting classes. 
@@ -68,7 +68,7 @@ namespace Enso
         {
             // Recompute the bounding boxes and signal the need to rebuild
             RecomputeBoundingBoxes();            
-            SignalDirty({ kDirtyObjectRebuild });
+            SignalDirty( kDirtyObjectRebuild );
         }
 
         return true;
@@ -79,7 +79,7 @@ namespace Enso
         m_hostInstance.m_params.objectBBox = ComputeObjectSpaceBoundingBox();
         m_hostInstance.m_params.worldBBox = m_hostInstance.m_params.objectBBox + m_hostInstance.m_params.transform.trans;
         
-        SignalDirty(kDirtyObjectBoundingBox);
+        SignalDirty(kDirtyViewportObjectBBox);
     }
     
     __host__ bool Host::DrawableObject::OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
@@ -149,15 +149,12 @@ namespace Enso
     __host__ bool Host::DrawableObject::Rebuild()
     {
         // If inheriting objects that we're doing a rebuild
-        if (OnRebuildDrawableObject())
-        {
-            // Update the transform and re-sync everything
-            RecomputeBoundingBoxes();
-            Synchronise(kSyncParams | kSyncObjects);
+        if (!OnRebuildDrawableObject()) { return false; }      
 
-            return true;
-        
-        }
-        return false;
+        // Update the transform and re-sync everything
+        RecomputeBoundingBoxes();
+        Synchronise(kSyncParams | kSyncObjects);
+
+        return true;
     }
 }

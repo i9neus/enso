@@ -1,18 +1,20 @@
 #define CUDA_DEVICE_GLOBAL_ASSERTS
 
-#include "OverlayLayer.cuh"
+#include "ViewportRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
 #include "core/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
-#include "ComponentContainer.cuh"
 #include "core/math/ColourUtils.cuh"
+#include "core/2d/DrawableObject.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
+#include "core/GenericObjectContainer.cuh"
 
 #include "io/json/JsonUtils.h"
 
 namespace Enso
 {    
-    __host__ __device__ OverlayLayerParams::OverlayLayerParams()
+    __host__ __device__ ViewportRendererParams::ViewportRendererParams()
     {
         gridCtx.show = true;
         gridCtx.lineAlpha = 0.0;
@@ -20,7 +22,7 @@ namespace Enso
         gridCtx.majorLineSpacing = 1.0f;
     }
 
-    __device__ void Device::OverlayLayer::Composite(Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::ViewportRenderer::Composite(Device::ImageRGBA* deviceOutputImage)
     {
         CudaAssertDebug(deviceOutputImage);
         
@@ -82,7 +84,7 @@ namespace Enso
         }
     }
 
-    __device__ void Device::OverlayLayer::Render()
+    __device__ void Device::ViewportRenderer::Render()
     {
         CudaAssertDebug(m_objects.accumBuffer);
 
@@ -117,7 +119,7 @@ namespace Enso
         }  
 
         // Draw the tracables and widgets    
-        DrawOverlayElements(xyView, m_params.viewCtx, m_objects.scene->sceneBIH, m_objects.scene->sceneObjects, L);
+        DrawOverlayElements(xyView, m_params.viewCtx, m_objects.viewportBIH, m_objects.viewportObjects, L);
 
         // Draw the lasso 
         if (m_params.selectionCtx.isLassoing && m_params.selectionCtx.lassoBBox.PointOnPerimiter(xyView, m_params.viewCtx.dPdXY * 2.f)) { L = vec4(kRed, 1.0f); }
@@ -129,7 +131,7 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    /*__device__ void Device::OverlayLayer::Prepare(const uint dirtyFlags)
+    /*__device__ void Device::ViewportRenderer::Prepare(const uint dirtyFlags)
     {
         // Save ourselves a deference here by caching the scene pointers
         assert(m_objects.scenePtr);
@@ -137,54 +139,119 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Prepare);*/
 
-    Host::OverlayLayer::OverlayLayer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene, const uint width, const uint height, cudaStream_t renderStream):
+    __host__ Host::ViewportRenderer::ViewportRenderer(const Asset::InitCtx& initCtx, AssetHandle<Host::GenericObjectContainer>& objectContainer, const uint width, const uint height, cudaStream_t renderStream):
         GenericObject(initCtx),
-        m_scene(scene)
-    {                
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::ViewportRenderer>(*this)),
+        m_objectContainer(objectContainer)
+    {
         // Create some Cuda objects
         m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
+        m_hostDrawableObjects = AssetAllocator::CreateChildAsset<Host::DrawableObjectContainer>(*this, "drawables", kVectorHostAlloc);
+        m_hostDrawableBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "drawablebih", 3);       
 
-        m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
-        m_deviceObjects.scene = m_scene->GetDeviceInstance();
+        m_hostInstance.m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
+        m_hostInstance.m_objects.viewportObjects = m_hostDrawableObjects->GetDeviceInstance();
+        m_hostInstance.m_objects.viewportBIH = m_hostDrawableBIH->GetDeviceInstance();
 
-        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::OverlayLayer>(*this);
+        const auto& meta = m_hostAccumBuffer->GetMetadata();
+        m_blockSize = dim3(16, 16, 1);
+        m_gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
+        
+        Synchronise(kSyncObjects | kSyncParams);
 
-        Synchronise(kSyncObjects);
+        Dirtyable::Listen({ kDirtyViewportRedraw, kDirtyObjectRebuild, kDirtyParams, kDirtyObjectExistence });
     }
 
-    Host::OverlayLayer::~OverlayLayer() noexcept
+    Host::ViewportRenderer::~ViewportRenderer() noexcept
     {
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
         m_hostAccumBuffer.DestroyAsset();
     }
 
-    __host__ void Host::OverlayLayer::Synchronise(const uint syncFlags)
+    __host__ void Host::ViewportRenderer::ReleaseObjects()
     {
-        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_deviceObjects); }
-        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::OverlayLayer>(cu_deviceInstance, m_params); }
+        m_hostDrawableObjects->Clear();
     }
 
-    __host__ void Host::OverlayLayer::Render()
+    __host__ void Host::ViewportRenderer::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
     {
+        SetDirty(flag);
+    }
+
+    template<typename ContainerType>
+    __host__ void RebuildBIH(Host::BIH2DAsset& bih, ContainerType& primitives)
+    {
+        // Create a tracable list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = bih.GetPrimitiveIndices();
+        primIdxs.Clear();
+        primIdxs.Reserve(primitives.Size());
+        Log::Debug("Building...");
+        for (int idx = 0; idx < primitives.Size(); ++idx)
+        {
+            // Ignore primitives that don't have bounding boxes
+            if (primitives[idx]->HasBoundingBox())
+            {
+                primIdxs.PushBack(idx);
+            }
+        }
+
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [&](const uint& idx) -> BBox2f
+        {
+            // Expand the world space bbox slightly
+            return Grow(primitives[idx]->GetWorldSpaceBoundingBox(), 0.001f);
+        };
+        bih.Build(getPrimitiveBBox);
+    }
+
+    __host__ bool Host::ViewportRenderer::Rebuild()
+    {
+        // Release any object handles
+        ReleaseObjects();
+
+        // Rebuild the list of drawable objects
+        m_objectContainer->ForEachOfType<Host::DrawableObject>([&](const AssetHandle<Host::DrawableObject>& object) -> bool
+            {
+                m_hostDrawableObjects->EmplaceBack(object);
+                return true;
+            });
+
+        // Rebuild the bounding interval hierarchy
+        RebuildBIH(*m_hostDrawableBIH, *m_hostDrawableObjects);
+
+        m_hostDrawableObjects->Synchronise(kVectorSyncUpload);
+        Summarise();
+    }
+
+    __host__ void Host::ViewportRenderer::Summarise() const
+    {
+        Log::Indent("Rebuilt viewport:");
+        Log::Debug("%i drawable objects", m_hostDrawableObjects->Size());
+        Log::Debug("Drawable BIH: %s", m_hostDrawableBIH->GetBoundingBox().Format());
+    }
+   
+    __host__ void Host::ViewportRenderer::Synchronise(const uint syncFlags)
+    {
+        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::ViewportRenderer>(cu_deviceInstance, m_hostInstance.m_objects); }
+        if (syncFlags & kSyncParams) { SynchroniseObjects<Device::ViewportRenderer>(cu_deviceInstance, m_params); }
+    }
+
+    __host__ void Host::ViewportRenderer::Render()
+    {    
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
-        dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
-
-        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
+        KernelRender << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance);
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ void Host::OverlayLayer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
+    __host__ void Host::ViewportRenderer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
-        dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
-
-        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
+        KernelComposite << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
         IsOk(cudaDeviceSynchronize());
     }
 
-    /*__host__ void Host::OverlayLayer::TraceRay()
+    /*__host__ void Host::ViewportRenderer::TraceRay()
     {
         const auto& tracables = *m_hostTracables;
         Ray2D ray(vec2(0.0f), normalize(UILayer::m_params.viewCtx.mousePos));
@@ -206,7 +273,7 @@ namespace Enso
         m_hostBIH->TestRay(ray, kFltMax, onIntersect);        
     }*/
 
-    __host__ bool Host::OverlayLayer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
+    __host__ bool Host::ViewportRenderer::Prepare(const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx)
     {        
         // Copy the view context
         m_params.viewCtx = viewCtx;

@@ -40,6 +40,8 @@ namespace Enso
         class VoxelProxyGrid;
         class AccumulationBuffer;
         class SceneContainer;
+        class SceneBuilder;
+        class GenericObject;
 
         template<typename> class Vector;
     }
@@ -55,13 +57,14 @@ namespace Enso
         class Texture2D;
         class Camera;
         class VoxelProxyGrid;
-        class ComponentContainer;
-        class ComponentBuilder;
         class AccumulationBuffer;
         class GenericObjectContainer;
         class PathTracer;    
-        class OverlayLayer;
+        class ViewportRenderer;
         class SceneContainer;
+        class SceneBuilder;
+        class GenericObject;
+        class RenderableObject;
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

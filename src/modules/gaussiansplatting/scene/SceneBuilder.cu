@@ -3,10 +3,10 @@
 
 namespace Enso
 {
-    __host__ Host::SceneBuilder::SceneBuilder(const Asset::InitCtx& initCtx) :
-        Host::GenericObject(initCtx)
+    __host__ Host::SceneBuilder::SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene) :
+        Host::GenericObject(initCtx),
+        m_scene(scene)
     {
-        m_scene = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scenecontainer");
     }
 
     __host__ Host::SceneBuilder::~SceneBuilder() noexcept
@@ -14,12 +14,8 @@ namespace Enso
         m_scene.DestroyAsset();
     }   
 
-    __host__ AssetHandle<Host::SceneContainer> Host::SceneBuilder::Rebuild()
+    __host__ bool Host::SceneBuilder::Rebuild()
     {
-        m_scene->DestroyManagedObjects();
-
-
-        
-        return m_scene;
+        return true;
     }    
 }

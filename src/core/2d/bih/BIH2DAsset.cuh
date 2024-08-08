@@ -29,7 +29,6 @@ namespace Enso
             __host__ void                           Build(std::function<BBox2f(uint)>& functor);
             __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
 
-            __host__ void                           Synchronise();
             __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }
             __host__ const Host::Vector<BIH2DFullNode>& GetHostNodes() const { return *m_hostNodes; }
 

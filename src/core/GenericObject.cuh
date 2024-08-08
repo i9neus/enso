@@ -68,15 +68,14 @@ namespace Enso
     }
 
     namespace Host
-    {        
-        class ComponentContainer;
-        
+    {               
         class GenericObject : public Host::Dirtyable,
                               public Serialisable
         {
         public:            
-            __host__ void                   Bind() {}
-            __host__ virtual void           Synchronise(const uint syncFlags) { }
+            //__host__ void                   Bind() { AssertMsgFmt(false, "Object '%s' does not override Bind()", GetAssetID()); }
+            __host__ virtual bool           Rebuild() { AssertMsgFmt(false, "Object '%s' does not override Rebuild()", GetAssetID()); return false; }
+            __host__ virtual void           Synchronise(const uint syncFlags) { AssertMsgFmt(false, "Object '%s' does not override Synchronise()", GetAssetID()); }
             
             __host__ virtual std::vector<AssetHandle<Host::GenericObject>>  GetChildObjectHandles() { return std::vector<AssetHandle<Host::GenericObject>>();  }
             __host__ virtual const GenericObjectParams*                     GetGenericObjectParams() const { return nullptr; }

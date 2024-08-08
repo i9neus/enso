@@ -11,8 +11,8 @@
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
 #include "Integrator.cuh"
-#include "../ComponentContainer.cuh"
 #include "../scene/SceneContainer.cuh"
+#include "core/GenericObjectContainer.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -208,15 +208,15 @@ namespace Enso
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    __host__ AssetHandle<Host::GenericObject> Host::PathTracer::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::ComponentContainer>& scene)
+    __host__ AssetHandle<Host::GenericObject> Host::PathTracer::Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::GenericObjectContainer>& genericObjects)
     {
-        return AssetAllocator::CreateChildAsset<Host::PathTracer>(parentAsset, id, scene);
+        return AssetAllocator::CreateChildAsset<Host::PathTracer>(parentAsset, id, genericObjects);
     }
 
-    Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::ComponentContainer>& scene):
-        DrawableObject(initCtx, &m_hostInstance, scene),
+    __host__ Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects) :
+        DrawableObject(initCtx, &m_hostInstance),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this)),
-        m_scene(scene)
+        m_genericObjects(genericObjects)
     {                
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         
@@ -228,13 +228,11 @@ namespace Enso
         m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", kViewportWidth, kViewportHeight, nullptr);
         m_hostDenoisedBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGB>(*this, "denoisedBuffer", kViewportWidth, kViewportHeight, nullptr);
         m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
-        m_hostSceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scene");
 
         m_deviceObjects.meanAccumBuffer = m_hostMeanAccumBuffer->GetDeviceInstance();
         m_deviceObjects.varAccumBuffer = m_hostVarAccumBuffer->GetDeviceInstance();
         m_deviceObjects.denoisedBuffer = m_hostDenoisedBuffer->GetDeviceInstance();
         m_deviceObjects.transforms = m_hostTransforms->GetDeviceInstance();
-        //m_deviceObjects.scene = m_scene->GetDeviceInstance();
 
         const vec2 boundHalf = 0.25 * ((kViewportHeight > kViewportWidth) ?
                                       vec2(1.f, float(kViewportHeight) / float(kViewportWidth)) :
@@ -249,7 +247,7 @@ namespace Enso
         CreateScene();
     }
 
-    Host::PathTracer::~PathTracer() noexcept
+    __host__ Host::PathTracer::~PathTracer() noexcept
     {
         m_hostMeanAccumBuffer.DestroyAsset();
         m_hostVarAccumBuffer.DestroyAsset();
@@ -366,6 +364,12 @@ namespace Enso
 
     __host__ bool Host::PathTracer::OnRebuildDrawableObject()
     {
+        /*m_scene = m_componentContainer->GenericObjects().FindFirstOfType<Host::SceneContainer>();
+        if (!m_scene)
+        {
+            Log::Warning("Warning: path tracer '%s' expected an initialised scene container but none was found.");
+        }*/
+        
         return true;
     }
 
@@ -402,7 +406,7 @@ namespace Enso
 
         if (isDirty)
         {
-            SignalDirty({ kDirtyParams, kDirtyIntegrators });
+            SignalDirty({ kDirtyParams });
         }
 
         return isDirty;

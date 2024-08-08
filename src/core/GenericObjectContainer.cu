@@ -2,7 +2,7 @@
 
 namespace Enso
 {
-    __host__ void Host::GenericObjectContainer::Finalise() const
+    /*__host__ void Host::GenericObjectContainer::Finalise() const
     {
         Log::Debug("Finalising...\n");
         Log::Indent indent;
@@ -15,6 +15,21 @@ namespace Enso
                 Log::Debug("%s\n", object.first);
             }
         }
+    }*/
+
+    __host__ void Host::GenericObjectContainer::CleanAll()
+    {
+        for (auto& object : m_objectMap) { object.second->Clean(); }        
+    }
+
+    __host__ bool Host::GenericObjectContainer::RebuildAll()
+    {
+        bool success = true;
+        for (auto& object : m_objectMap) 
+        { 
+            success &= object.second->Rebuild(); 
+        }
+        return success;
     }
 
     __host__ void Host::GenericObjectContainer::Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath)
@@ -37,16 +52,20 @@ namespace Enso
         }
     }
 
-    __host__ void Host::GenericObjectContainer::Erase(const Host::GenericObject& obj)
+    __host__ bool Host::GenericObjectContainer::Erase(const Host::GenericObject& obj, const bool mustExist)
     {
-        Erase(obj.GetAssetID());
+        return Erase(obj.GetAssetID(), mustExist);
     }   
 
-    __host__ void Host::GenericObjectContainer::Erase(const std::string& id)
+    __host__ bool Host::GenericObjectContainer::Erase(const std::string& id, const bool mustExist)
     {
         // Get the handle to the object
         auto it = m_objectMap.find(id);
-        AssertMsgFmt(it != m_objectMap.end(), "Render object '%s' is not in the container.", id.c_str());
+        if (it == m_objectMap.end())
+        {
+            AssertMsgFmt(!mustExist || it != m_objectMap.end(), "Render object '%s' is not in the container.", id.c_str());
+            return false;
+        }
         auto obj = it->second;
 
         // Erase the object from the DAG map
@@ -57,6 +76,7 @@ namespace Enso
 
         // Destroy the asset
         obj.DestroyAsset();
+        return true;
     } 
 
     __host__ void Host::GenericObjectContainer::Clear()
@@ -64,20 +84,9 @@ namespace Enso
         m_objectMap.clear();
     }
 
-    __host__ void Host::GenericObjectContainer::Bind()
+    __host__ void Host::GenericObjectContainer::SynchroniseAll(const uint flags)
     {
-        for (auto& object : m_objectMap)
-        {
-            object.second->Bind();
-        }
-    }
-
-    __host__ void Host::GenericObjectContainer::Synchronise(const uint flags)
-    {
-        for (auto& object : m_objectMap)
-        {
-            object.second->Synchronise(flags);
-        }
+        for (auto& object : m_objectMap) { object.second->Synchronise(flags); }
     }
 
     __host__ Host::GenericObjectContainer::~GenericObjectContainer() noexcept
