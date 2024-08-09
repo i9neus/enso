@@ -7,12 +7,18 @@
 #include "core/AssetContainer.cuh"
 #include "core/3d/Transform.cuh"
 #include "core/Vector.cuh"
-#include "Geometry.cuh"
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
 #include "Integrator.cuh"
-#include "../scene/SceneContainer.cuh"
 #include "core/GenericObjectContainer.cuh"
+#include "Geometry.cuh"
+
+#include "../scene/SceneContainer.cuh"
+#include "../scene/cameras/Camera.cuh"
+#include "../scene/materials/Material.cuh"
+#include "../scene/lights/Light.cuh"
+#include "../scene/textures/Texture2D.cuh"
+#include "../scene/tracables/Tracable.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -23,6 +29,7 @@ namespace Enso
     {
         viewport.dims = ivec2(0);  
         frameIdx = 0;
+        hasValidScene = false;
     }
 
     __host__ __device__ void PathTracerParams::Validate() const
@@ -63,8 +70,11 @@ namespace Enso
         renderCtx.frameIdx = m_params.frameIdx;
 
         // Transform into normalised sceen space
-        const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + renderCtx.Rand(0).xy, vec2(m_params.viewport.dims));
+        const vec4 xi = renderCtx.Rand(0);
+        const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
         Ray directRay, indirectRay;
+
+        //m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
 
         // Create the camera ray
         float cameraPhi = -kPi;
@@ -138,21 +148,22 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Denoise);
 
-    __device__ void Device::PathTracer::Composite(Device::ImageRGBA* deviceOutputImage)
+    __device__ void Device::PathTracer::Composite(Device::ImageRGBA* deviceOutputImage, const bool isValidScene)
     {
         CudaAssertDebug(deviceOutputImage);
 
         // TODO: Make alpha compositing a generic operation inside the Image class.
         const ivec2 xyAccum = kKernelPos<ivec2>();
         const ivec2 xyViewport = xyAccum + deviceOutputImage->Dimensions() / 2 - m_objects.meanAccumBuffer->Dimensions() / 2;
-        BBox2i border(0, 0, m_params.viewport.dims.x, m_params.viewport.dims.y);
-        /*if(border.PointOnPerimiter(xyAccum, 2))
+        
+        /*BBox2i border(0, 0, m_params.viewport.dims.x, m_params.viewport.dims.y);
+        if(border.PointOnPerimiter(xyAccum, 2))
         {
             deviceOutputImage->At(xyViewport) = vec4(1.0f);
         }*/
         if (xyAccum.x < m_params.viewport.dims.x && xyAccum.y < m_params.viewport.dims.y)
         {
-            if (xyAccum.x < m_params.viewport.dims.x / 2)
+            //if (xyAccum.x < m_params.viewport.dims.x / 2)
             {
                 //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
                 const vec4& meanL = m_objects.meanAccumBuffer->At(xyAccum);
@@ -161,11 +172,11 @@ namespace Enso
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
             }
-            else
+            /*else
             {
                 const vec3& denoisedL = m_objects.denoisedBuffer->At(xyAccum);
                 deviceOutputImage->At(xyViewport) = vec4(denoisedL, 1.f);
-            }
+            }*/
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
@@ -181,12 +192,16 @@ namespace Enso
 
 #ifdef __CUDA_ARCH__
         const vec2 pObject = ToObjectSpace(pWorld);
-
         const ivec2 pPixel = ivec2(vec2(m_params.viewport.dims) * (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions());
 
-        if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
+        if (!m_params.hasValidScene)
         {
-            if (pPixel.x < m_params.viewport.dims.x / 2)
+            const float hatch = step(0.8f, fract(0.05f * dot(pWorld / viewCtx.dPdXY, vec2(1.f))));
+            return vec4(kOne * hatch * 0.5f, 1.f);
+        }
+        else if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
+        {
+            //if (pPixel.x < m_params.viewport.dims.x / 2)
             {
                 //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
                 const vec4& meanL = m_objects.meanAccumBuffer->At(pPixel);
@@ -195,11 +210,11 @@ namespace Enso
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
             }
-            else
+            /*else
             {
                 const vec3& denoisedL = m_objects.denoisedBuffer->At(pPixel);
                 return vec4(denoisedL, 1.f);
-            }
+            }*/
         }      
 #else
         return vec4(1.);
@@ -283,7 +298,11 @@ namespace Enso
 
     __host__ void Host::PathTracer::OnSynchroniseDrawableObject(const uint syncFlags)
     {
-        if (syncFlags & kSyncObjects) { SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects); }
+        // Only sync the objects if a SceneContainer has been bound
+        if (syncFlags & kSyncObjects)
+        { 
+            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects); 
+        }
         if (syncFlags & kSyncParams) 
         { 
             SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params); 
@@ -291,9 +310,41 @@ namespace Enso
         }
     }
 
+    __host__ void Host::PathTracer::Bind(GenericObjectContainer& objects)
+    {
+        m_hostSceneContainer = objects.FindFirstOfType<Host::SceneContainer>();
+        if (!m_hostSceneContainer)
+        {
+            Log::Warning("Warning! Path tracer '%s' could not bind to a valid SceneContainer object.", GetAssetID());
+            m_params.hasValidScene = false;
+        }
+        else
+        {
+            m_deviceObjects.tracables = m_hostSceneContainer->Tracables().GetDeviceInstance();
+            m_deviceObjects.lights = m_hostSceneContainer->Lights().GetDeviceInstance();
+            m_deviceObjects.textures = m_hostSceneContainer->Textures().GetDeviceInstance();
+            m_deviceObjects.materials = m_hostSceneContainer->Materials().GetDeviceInstance();
+            
+            if (m_hostSceneContainer->Cameras().IsEmpty())
+            {
+                Log::Warning("Warning! Path tracer '%s' found no cameras in the scene.");
+                m_hostActiveCamera = nullptr;
+            }
+            else
+            {
+                m_hostActiveCamera = m_hostSceneContainer->Cameras().Back();
+                m_deviceObjects.activeCamera = m_hostActiveCamera->GetDeviceInstance();
+            }       
+
+            m_params.hasValidScene = true;
+        }
+
+        Synchronise(kSyncParams | kSyncObjects);
+    }
+
     __host__ void Host::PathTracer::Render()
     {        
-        return;
+        if (!m_hostSceneContainer || !m_hostActiveCamera) { return; }
         
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
@@ -306,10 +357,10 @@ namespace Enso
         KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
 
         // Denoise if necessary
-        if (m_params.frameIdx % 500 == 0)
+        /*if (m_params.frameIdx % 500 == 0)
         {
             KernelDenoise << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
-        }
+        }*/
 
         IsOk(cudaDeviceSynchronize());
 
@@ -330,12 +381,10 @@ namespace Enso
 
     __host__ void Host::PathTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
-        return;
-        
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostMeanAccumBuffer, blockSize, gridSize);
 
-        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
+        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance(), m_hostSceneContainer != nullptr);
         IsOk(cudaDeviceSynchronize());
     }
 
@@ -394,7 +443,6 @@ namespace Enso
 
     __host__ BBox2f Host::PathTracer::ComputeObjectSpaceBoundingBox()
     {
-        Log::Debug("%s", m_params.viewport.objectBounds.Format());
         return m_params.viewport.objectBounds;
     }
 

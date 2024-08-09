@@ -6,6 +6,7 @@
 #include "FwdDecl.cuh"
 #include "core/GenericObjectFactory.cuh"
 #include "io/CommandManager.h"
+#include "scene/SceneBuilder.cuh"
 
 namespace Enso
 {
@@ -85,7 +86,7 @@ namespace Enso
             AssetHandle<Host::ViewportRenderer>     m_viewportRenderer;
 
             AssetHandle<Host::SceneContainer>       m_sceneContainer;
-            AssetHandle<Host::SceneBuilder>         m_sceneBuilder;
+            Host::SceneBuilder                      m_sceneBuilder;
 
             UIGridCtx                               m_gridCtx;
             UIViewCtx                               m_viewCtx;

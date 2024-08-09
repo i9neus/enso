@@ -4,20 +4,19 @@
 #include "core/3d/Ctx.cuh"
 #include "core/GenericObject.cuh"
 #include "core/3d/Transform.cuh"
+#include "core/3d/Basis.cuh"
 
 namespace Enso
 {
     struct CameraParams
     {
-        __host__ __device__ CameraParams() : 
-            viewportDims(0) {}
+        __host__ __device__ CameraParams() {}
 
         __device__ void Validate() const
         {
-            CudaAssert(viewportDims.x > 0 && viewportDims.y > 0);
+            CudaAssert(fabsf(trace(cameraBasis)) > 1e-10f);
         }
 
-        vec2 viewportDims;
         vec3 cameraPos;
         vec3 cameraLookAt;
         mat3 cameraBasis;        
@@ -31,7 +30,7 @@ namespace Enso
         class Camera : public Device::GenericObject
         {
         public:
-            __device__ virtual bool                 CreateRay(const ivec2& xyViewport, Ray& ray) const = 0;
+            __device__ virtual bool                 CreateRay(const vec2& uvView, const vec2& xi, Ray& ray) const = 0;
             __device__ void                         Synchronise(const CameraParams& params) { m_params = params; }
 
         protected:
@@ -55,7 +54,14 @@ namespace Enso
                 OnSynchroniseCamera(syncFlags);
             }
 
-            __host__ Device::Camera* GetDeviceInstance() { return cu_deviceInstance; }
+            __host__ void Prepare(const vec3& cameraPos, const vec3& lookAt)
+            {
+                m_params.cameraPos = cameraPos;
+                m_params.cameraLookAt = lookAt;
+                m_params.cameraBasis = CreateBasisTranspose(normalize(m_params.cameraPos - m_params.cameraLookAt), vec3(0.f, 1.f, 0.f));
+            }
+
+            __host__ Device::Camera*    GetDeviceInstance() { return cu_deviceInstance; }
 
         protected:
             __host__                    Camera(const Asset::InitCtx& initCtx) : GenericObject(initCtx) {}

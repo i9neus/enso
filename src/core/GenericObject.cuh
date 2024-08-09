@@ -21,8 +21,6 @@ namespace Enso
         return prevData != data;
     }
     
-    class GenericObjectContainer;
-
     enum AssetSyncType : int { kSyncObjects = 1, kSyncParams = 2 };
 
     enum GenericObjectFlags : uint
@@ -69,11 +67,13 @@ namespace Enso
 
     namespace Host
     {               
+        class GenericObjectContainer;
+        
         class GenericObject : public Host::Dirtyable,
                               public Serialisable
         {
         public:            
-            //__host__ void                   Bind() { AssertMsgFmt(false, "Object '%s' does not override Bind()", GetAssetID()); }
+            __host__ virtual void           Bind(Host::GenericObjectContainer& objects) { }
             __host__ virtual bool           Rebuild() { AssertMsgFmt(false, "Object '%s' does not override Rebuild()", GetAssetID()); return false; }
             __host__ virtual void           Synchronise(const uint syncFlags) { AssertMsgFmt(false, "Object '%s' does not override Synchronise()", GetAssetID()); }
             

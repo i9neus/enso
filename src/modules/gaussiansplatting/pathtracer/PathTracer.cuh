@@ -31,6 +31,7 @@ namespace Enso
 
         int frameIdx;
         float wallTime;
+        bool hasValidScene;
     };
 
     struct PathTracerObjects
@@ -40,14 +41,19 @@ namespace Enso
             CudaAssert(transforms);
             CudaAssert(meanAccumBuffer);
             CudaAssert(varAccumBuffer);
-            CudaAssert(denoisedBuffer);
+            CudaAssert(denoisedBuffer);           
         }
         
         Device::ImageRGBW*                  meanAccumBuffer = nullptr;
         Device::ImageRGBW*                  varAccumBuffer = nullptr;
         Device::ImageRGB*                   denoisedBuffer = nullptr;
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
-        Device::SceneContainer*             scene = nullptr;
+
+        Device::Camera*                     activeCamera = nullptr;
+        Device::Vector<Device::Tracable*>*  tracables = nullptr;
+        Device::Vector<Device::Light*>*     lights = nullptr;
+        Device::Vector<Device::Texture2D*>* textures = nullptr;
+        Device::Vector<Device::Material*>*  materials = nullptr;
     };
 
     namespace Host { class PathTracer; }
@@ -64,7 +70,7 @@ namespace Enso
             //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
             __device__ void Denoise();
-            __device__ void Composite(Device::ImageRGBA* outputImage);
+            __device__ void Composite(Device::ImageRGBA* outputImage, const bool isValidScene);
 
             __host__ __device__ void Synchronise(const PathTracerParams& params);
             __device__ void Synchronise(const PathTracerObjects& objects);
@@ -99,6 +105,7 @@ namespace Enso
             __host__ static const std::string  GetAssetClassStatic() { return "pathtracer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
+            __host__ virtual void       Bind(GenericObjectContainer& objects) override final;
             __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
             __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
@@ -139,6 +146,7 @@ namespace Enso
             AssetHandle<Host::ImageRGB>       m_hostDenoisedBuffer;
 
             AssetHandle<Host::SceneContainer> m_hostSceneContainer;
+            AssetHandle<Host::Camera>         m_hostActiveCamera;
 
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };

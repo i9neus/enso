@@ -7,18 +7,12 @@ namespace Enso
 {
     namespace Host
     {      
-        class SceneBuilder : public Host::GenericObject
+        class SceneBuilder
         {
-            friend class SceneBuilder;
-
         public:
-            __host__                SceneBuilder(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene);
-            __host__ virtual        ~SceneBuilder() noexcept;
+            __host__                SceneBuilder() = default;
 
-            __host__ virtual bool   Rebuild() override final;
-
-        private:    
-            AssetHandle<Host::SceneContainer>    m_scene;        
+            __host__  bool          Rebuild(AssetHandle<Host::SceneContainer>& scene);
         };
     }
 }

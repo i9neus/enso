@@ -6,7 +6,8 @@
 
 namespace Enso
 {
-    __device__ bool Device::PlanePrimitive::IntersectRay(Ray& ray, HitCtx& hit) const
+    template<>
+    __device__ bool Device::Primitive<PlaneParams>::IntersectRay(Ray& ray, HitCtx& hit) const
     {
         const RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(ray.od);
         const float t = Intersector::RayPlane(localRay);
@@ -17,30 +18,23 @@ namespace Enso
         else
         {
             const vec2 uv = (localRay.o.xy + localRay.d.xy * t) + 0.5f;
-            if (cwiseMin(uv) < 0.0 || cwiseMax(uv) > 1.0) { return 0.0f; }
-
-            ray.tNear = t;
-            ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
-            hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
-            hit.uv = uv;
-
-            return true;
+            if (m_params.isBounded && (cwiseMin(uv) < 0.0 || cwiseMax(uv) > 1.0)) 
+            { 
+                return false; 
+            }
+            else
+            {
+                ray.tNear = t;
+                ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
+                hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
+                hit.uv = uv;
+                return true;
+            }
         }
     }
 
-    __host__ Host::PlanePrimitive::PlanePrimitive(const InitCtx& initCtx) :
-        Tracable(initCtx),
-        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PlanePrimitive>(*this))
-    {
-        Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
-    }
-
-    __host__ Host::PlanePrimitive::~PlanePrimitive()
-    {
-        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
-    }
-
-    __device__ bool Device::SpherePrimitive::IntersectRay(Ray& ray, HitCtx& hit) const
+    template<>
+    __device__ bool Device::Primitive<UnitSphereParams>::IntersectRay(Ray& ray, HitCtx& hit) const
     {
         const RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(ray.od);
 
@@ -75,14 +69,25 @@ namespace Enso
         }
     }
 
-    __host__ Host::SpherePrimitive::SpherePrimitive(const InitCtx& initCtx) :
+    template<typename ParamsType>
+    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx) :
         Tracable(initCtx),
-        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::SpherePrimitive>(*this))
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<DeviceType>(*this))
     {
         Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
     }
 
-    __host__ Host::SpherePrimitive::~SpherePrimitive()
+    template<typename ParamsType>
+    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const ParamsType& params) :
+        Primitive(initCtx)
+    {
+        m_params = params;
+        Tracable::m_params.transform = transform;
+        Synchronise(kSyncParams);
+    }
+    
+    template<typename ParamsType>
+    __host__ Host::Primitive<ParamsType>::~Primitive()
     {
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }

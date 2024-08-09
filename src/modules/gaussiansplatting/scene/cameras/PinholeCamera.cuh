@@ -9,6 +9,8 @@ namespace Enso
         __host__ __device__ PinholeCameraParams() :
             fov(45.) {}
 
+        __device__ void Validate() const {}
+
         float fov;
     };
      
@@ -17,13 +19,13 @@ namespace Enso
         // This class provides an interface for querying the tracable via geometric operations
         class PinholeCamera : public Device::Camera
         {
-            friend Host::PinholeCamera;
-
         public:
-            __device__ virtual bool CreateRay(const ivec2& xyViewport, const vec4& xi, Ray& ray)
+            __device__ PinholeCamera() {}
+
+            __device__ virtual bool CreateRay(const vec2& uvView, const vec2& xi, Ray& ray) const override final
             {
-                const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + xi.xy, Camera::m_params.viewportDims);
-                
+                // uvView should be in the range [-0.5, 0.5]
+
                 ray.od.o = Camera::m_params.cameraPos;
                 ray.od.d = Camera::m_params.cameraBasis * normalize(vec3(uvView, -tanf(toRad(PinholeCamera::m_params.fov))));
                 ray.tNear = kFltMax;
@@ -37,8 +39,6 @@ namespace Enso
             __device__ void  Synchronise(const PinholeCameraParams& params) { m_params = params; }
 
         protected:
-            __device__ PinholeCamera() {}
-
             PinholeCameraParams m_params;
         };
     }
@@ -54,6 +54,16 @@ namespace Enso
             {
                 Camera::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Camera>(cu_deviceInstance));
             }
+
+            __host__ PinholeCamera(const Asset::InitCtx& initCtx, const vec3& cameraPos, const vec3& cameraBasis, const float fov) :
+                PinholeCamera(initCtx)
+            {
+                Camera::Prepare(cameraPos, cameraBasis);
+                m_params.fov = fov;                                
+                
+                Synchronise(kSyncParams);
+            }
+
 
             __host__ virtual ~PinholeCamera() noexcept
             {
@@ -72,7 +82,7 @@ namespace Enso
         protected:
             Device::PinholeCamera*             cu_deviceInstance;
 
-            CameraParams                m_params;
+            PinholeCameraParams                m_params;
         };
     }
 }

@@ -4,7 +4,7 @@
 
 namespace Enso
 {
-    __host__ __device__  mat3 CreateBasis(const vec3& n)
+    __host__ __device__  __forceinline__ mat3 CreateBasis(const vec3& n)
     {
         const float s = sign(n.z);
         const float a = -1.0f / (s + n.z);
@@ -17,7 +17,7 @@ namespace Enso
 
     __host__ __device__ __forceinline__ mat3 CreateBasisTranspose(const vec3& n) { return transpose(CreateBasis(n)); }
 
-    __host__ __device__  mat3 CreateBasis(const vec3& n, const vec3& up)
+    __host__ __device__  __forceinline__ mat3 CreateBasis(const vec3& n, const vec3& up)
     {
         const vec3 tangent = normalize(cross(n, up));  
         return transpose(mat3(tangent, 

@@ -16,6 +16,9 @@ namespace Enso
 
         // Scene object requires a rebuild
         kDirtyObjectRebuild,
+
+        // Scene object requesting objects rebind their assets
+        kDirtyObjectRebind,
         
         // Scene object is created or destroyed
         kDirtyObjectExistence, 

@@ -159,7 +159,6 @@ namespace Enso
 
         // The scene description contains objects used by the physically based renderer
         m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scenecontainer");
-        m_sceneBuilder = AssetAllocator::CreateChildAsset<Host::SceneBuilder>(*this, "scenebuilder", m_sceneContainer);
         m_objectContainer->Emplace(m_sceneContainer.StaticCast<Host::GenericObject>());
 
         // Create some default scene objects
@@ -167,7 +166,7 @@ namespace Enso
         m_viewportRenderer = AssetAllocator::CreateChildAsset<Host::ViewportRenderer>(*this, "viewportrenderer", m_objectContainer, m_clientWidth, m_clientHeight, m_renderStream);
 
         // Notify the UI that a bunch of objects has been created, then rebuild the component container
-        m_sceneBuilder->Rebuild();
+        m_sceneBuilder.Rebuild(m_sceneContainer);
 
         // Force a rebuild
         Rebuild(true);
@@ -182,7 +181,6 @@ namespace Enso
 
         //GlobalResourceRegistry::Get().Report();
 
-        m_sceneBuilder.DestroyAsset();
         m_sceneContainer.DestroyAsset();
 
         m_renderableObjects.clear();
@@ -655,17 +653,19 @@ namespace Enso
             EnqueueOutboundSerialisation("OnDeleteObject", kEnqueueAll);
         }
 
-        // If new objects have been created, signal that the viewport should be rebuilt
+        // If new objects have been created, signal that the viewport should be rebuilt and 
         if (!m_newObjectQueue.empty())
-        {
+        {            
             rebuildViewport = true;
             objectsChanged = true;
             m_newObjectQueue.clear();
         }
 
-        // If objects have been added or removed, rebuild any data structures that depend on them
+        // If objects have been added or removed, do a re-bind and rebuild any data structures that depend on them
         if (objectsChanged || forceRebuild)
         {
+            m_objectContainer->BindAll();
+            
             m_renderableObjects.clear();
             m_objectContainer->ForEachOfType<Host::RenderableObject>([&](AssetHandle<Host::RenderableObject>& object) -> bool
                 {
@@ -678,11 +678,6 @@ namespace Enso
         if (rebuildViewport || forceRebuild)
         {
             m_viewportRenderer->Rebuild();
-
-            auto ind = m_viewportRenderer->DrawableBIH().GetIndices();
-            auto numPrims = m_viewportRenderer->DrawableBIH().GetNumPrimitives();
-            for (int i = 0; i < numPrims; ++i)
-                Log::Error("  - %i: %i", i, ind[i]);
         }
     }
 

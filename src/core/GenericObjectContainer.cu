@@ -84,6 +84,11 @@ namespace Enso
         m_objectMap.clear();
     }
 
+    __host__ void Host::GenericObjectContainer::BindAll()
+    {
+        for (auto& object : m_objectMap) { object.second->Bind(*this); }
+    }
+
     __host__ void Host::GenericObjectContainer::SynchroniseAll(const uint flags)
     {
         for (auto& object : m_objectMap) { object.second->Synchronise(flags); }

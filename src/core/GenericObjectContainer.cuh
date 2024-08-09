@@ -117,6 +117,7 @@ namespace Enso
 
 
             //__host__ void Finalise() const;
+            __host__ void BindAll();
             __host__ void CleanAll();
             __host__ bool RebuildAll();
             __host__ void SynchroniseAll(const uint flags);

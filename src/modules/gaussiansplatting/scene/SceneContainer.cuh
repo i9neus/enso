@@ -41,8 +41,6 @@ namespace Enso
 
         class SceneContainer : public Host::GenericObject
         {
-            friend class SceneBuilder;
-
         public:
             __host__                SceneContainer(const Asset::InitCtx& initCtx);
             __host__ virtual        ~SceneContainer() noexcept;     
@@ -51,13 +49,19 @@ namespace Enso
             __host__ void           Clean();
 
             __host__ void           DestroyManagedObjects();
-            __host__ const Device::SceneContainer* GetDeviceInstance() const { return cu_deviceInstance; }
+            __host__ Device::SceneContainer* GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ virtual void   Synchronise(const uint flags) override final;
 
             __host__ void           Summarise() const;
             __host__ static const std::string  GetAssetClassStatic() { return "scenecontainer"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
+
+            Host::TracableContainer&    Tracables() { Assert(m_hostTracables); return *m_hostTracables; }
+            Host::LightContainer&       Lights() { Assert(m_hostLights); return *m_hostLights; }
+            Host::MaterialContainer&    Materials() { Assert(m_hostMaterials); return *m_hostMaterials; }
+            Host::Texture2DContainer&   Textures() { Assert(m_hostTextures); return *m_hostTextures; }
+            Host::CameraContainer&      Cameras() { Assert(m_hostCameras); return *m_hostCameras; }
 
         private:    
             AssetHandle<Host::TracableContainer>    m_hostTracables;
