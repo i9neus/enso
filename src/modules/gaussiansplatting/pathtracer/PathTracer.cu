@@ -215,8 +215,7 @@ namespace Enso
 
     __host__ Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects) :
         DrawableObject(initCtx, &m_hostInstance),
-        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this)),
-        m_genericObjects(genericObjects)
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this))
     {                
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         
@@ -254,8 +253,11 @@ namespace Enso
         m_hostDenoisedBuffer.DestroyAsset();
         m_hostTransforms.DestroyAsset();
 
-        m_hostSceneContainer->DestroyManagedObjects();
-        m_hostSceneContainer.DestroyAsset();
+        if (m_hostSceneContainer)
+        {
+            m_hostSceneContainer->DestroyManagedObjects();
+            m_hostSceneContainer.DestroyAsset();
+        }
 
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
@@ -290,7 +292,9 @@ namespace Enso
     }
 
     __host__ void Host::PathTracer::Render()
-    {
+    {        
+        return;
+        
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         //if (m_params.frameIdx > 10) return;
@@ -309,15 +313,25 @@ namespace Enso
 
         IsOk(cudaDeviceSynchronize());
 
+        // If there's no user interaction, signal the viewport to update intermittently to save compute
+        constexpr float kViewportUpdateInterval = 1. / 2.f;
+        if (m_redrawTimer.Get() > kViewportUpdateInterval)
+        {
+            SignalDirty(kDirtyViewportRedraw);
+            m_redrawTimer.Reset();
+        }
+
         if (m_renderTimer.Get() > 1.)
         {
-            m_renderTimer.Reset();
             Log::Debug("Frame: %i", m_params.frameIdx);
+            m_renderTimer.Reset();
         }
     }
 
     __host__ void Host::PathTracer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
     {
+        return;
+        
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostMeanAccumBuffer, blockSize, gridSize);
 

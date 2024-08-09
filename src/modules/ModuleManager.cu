@@ -89,15 +89,13 @@ namespace Enso
     {
         if (!m_activeRenderer) { return; }
 
-        AssertMsgFmt(m_activeRenderer.use_count() == 1, "Renderer object has %i active references.", m_activeRenderer.use_count());
+        AssertMsgFmt(m_activeRenderer.GetReferenceCount() == 1, "Renderer object has %i active references.", m_activeRenderer.GetReferenceCount());
 
         Log::Indent indent("Unloading renderer...");
 
         m_activeRenderer->Stop();
-
-        m_activeRenderer->Destroy();
-        
-        m_activeRenderer.reset();
+        m_activeRenderer->Destroy();        
+        m_activeRenderer.DestroyAsset();
 
         Log::Success("Successfully unloaded renderer!");
     }

@@ -17,7 +17,7 @@ namespace Enso
 
         struct CudaObjects;        
 
-        class GaussianSplattingModule : public Host::Dirtyable, public ModuleBase
+        class GaussianSplattingModule : public ModuleBase
         {
         public:
             enum EnqueueFlags : int { kEnqueueOne = 1, kEnqueueSelected = 2, kEnqueueAll = 4, kEnqueueIdOnly = 8 };
@@ -34,9 +34,9 @@ namespace Enso
             __host__ virtual void OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller) override final;
 
             //__host__ virtual void OnResizeClient() override final;
-            __host__ virtual std::string GetRendererName() const { return "2D GI Sandbox"; };
+            __host__ virtual std::string GetRendererName() const { return "Gaussian Splatting Sandbox"; };
 
-            __host__ static std::shared_ptr<ModuleBase> Instantiate(std::shared_ptr<CommandQueue> outQueue);
+            __host__ static AssetHandle<ModuleBase> Instantiate(std::shared_ptr<CommandQueue> outQueue);
 
             __host__ virtual bool Serialise(Json::Document& json, const int flags) override final;
 
@@ -93,11 +93,7 @@ namespace Enso
 
             Host::GenericObjectFactory<const Host::Asset&, const AssetHandle<const Host::GenericObjectContainer>&> m_componentFactory;
 
-            struct
-            {
-                AssetHandle<Host::DrawableObject>   newObject;
-            }
-            m_onCreate;
+            AssetHandle<Host::DrawableObject>           m_newObject;
 
             std::mutex                                  m_threadMutex;
             std::unordered_set<std::string>             m_deleteObjectQueue;

@@ -5,7 +5,8 @@
 
 namespace Enso
 {
-	ModuleBase::ModuleBase(std::shared_ptr<CommandQueue> outQueue) :
+	ModuleBase::ModuleBase(const Host::Asset::InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
+		Dirtyable(initCtx),
 		m_frameTimes(20),
 		m_mouseWheelAngle(0.0f),
 		m_clientWidth(1.0f),

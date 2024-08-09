@@ -290,7 +290,7 @@ namespace Enso
         {
             uint hash = MakeHash(m_currentState, m_keyCodes, triggerFlags);
 
-            //Log::Write(m_uiStateList[m_currentState].id);
+            //Log::Debug(m_uiStateList[m_currentState].id);
 
             // Search for states that match the current set of triggers
             auto range = m_uiStateTriggeredTransitionMap.equal_range(hash);

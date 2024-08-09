@@ -10,6 +10,7 @@
 #include "win/D3DHeaders.h"
 #include "io/json/JsonUtils.h"
 #include "core/Assert.h"
+#include "core/DirtinessGraph.cuh"
 
 namespace Enso
 {
@@ -32,7 +33,7 @@ namespace Enso
 
     class CommandQueue;
 
-    class ModuleBase
+    class ModuleBase : public Host::Dirtyable
     {
     public:
         friend class RendererManager;
@@ -62,7 +63,7 @@ namespace Enso
         void SetInboundCommandQueue(std::shared_ptr<CommandQueue> inQueue) { m_inboundCmdQueue = inQueue; }
 
     protected:
-        ModuleBase(std::shared_ptr<CommandQueue> outQueue);
+        ModuleBase(const Host::Asset::InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue);
         virtual ~ModuleBase();
 
         virtual void OnMouseMove() {}

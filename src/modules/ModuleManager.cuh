@@ -24,7 +24,7 @@ namespace Enso
         void                                    Initialise(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight, HWND hWnd);
         void                                    Destroy();
         std::vector<RendererComponentInfo>      GetRendererList() const;
-        ModuleBase& GetRenderer()               { Assert(m_activeRenderer); return *m_activeRenderer; }
+        ModuleBase&                             GetRenderer() { Assert(m_activeRenderer); return *m_activeRenderer; }
         std::shared_ptr<ModuleBase>             GetRendererPtr() { return m_activeRenderer; }
         void                                    LoadRenderer(const std::string& id);
         void                                    UnloadRenderer();
@@ -46,8 +46,8 @@ namespace Enso
         }
 
     public:
-        using Instantiator = std::function<std::shared_ptr<ModuleBase>(std::shared_ptr<CommandQueue>)>;
-        std::shared_ptr<ModuleBase>  m_activeRenderer;
+        using Instantiator = std::function<AssetHandle<ModuleBase>(std::shared_ptr<CommandQueue>)>;
+        AssetHandle<ModuleBase>     m_activeRenderer;
         std::unordered_map<std::string, Instantiator> m_instantiators;
 
     private:

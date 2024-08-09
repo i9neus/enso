@@ -101,7 +101,7 @@ namespace Enso
             __host__ void                       Summarise() const;
 
         private:
-            AssetHandle<Host::GenericObjectContainer>& m_objectContainer;
+            AssetHandle<Host::GenericObjectContainer> m_objectContainer;
 
             Device::ViewportRenderer*       cu_deviceInstance = nullptr;
             Device::ViewportRenderer        m_hostInstance;

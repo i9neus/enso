@@ -22,8 +22,7 @@ namespace Enso
 {
 
     __host__ Host::GaussianSplattingModule::GaussianSplattingModule(const InitCtx& initCtx, std::shared_ptr<CommandQueue> outQueue) :
-        Dirtyable(initCtx),
-        ModuleBase(outQueue),
+        ModuleBase(initCtx, outQueue),
         m_isRunning(true)
     {
         // Load the object schema
@@ -136,10 +135,9 @@ namespace Enso
         SetDirty(flag);
     }
 
-    std::shared_ptr<ModuleBase> Host::GaussianSplattingModule::Instantiate(std::shared_ptr<CommandQueue> outQueue)
+    AssetHandle<ModuleBase> Host::GaussianSplattingModule::Instantiate(std::shared_ptr<CommandQueue> outQueue)
     {
-        AssetHandle<ModuleBase> newAsset = AssetAllocator::CreateAsset<Host::GaussianSplattingModule>("gaussiansplatting", outQueue);
-        return std::shared_ptr<ModuleBase>(newAsset);
+        return AssetAllocator::CreateAsset<Host::GaussianSplattingModule>("gaussiansplatting", outQueue);
     }
 
     __host__ void Host::GaussianSplattingModule::OnInitialise()
@@ -154,7 +152,7 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::LoadScene()
     {
-        UnloadScene();
+        //UnloadScene();
         
         // Component objects are interactive elements that can intercommunicate
         m_objectContainer = AssetAllocator::CreateChildAsset<Host::GenericObjectContainer>(*this, "objectcontainer");
@@ -175,14 +173,21 @@ namespace Enso
         Rebuild(true);
 
         EnqueueOutboundSerialisation("OnCreateObject", kEnqueueAll);
+        SignalDirty(kDirtyViewportRedraw);
     }
 
     __host__ void Host::GaussianSplattingModule::UnloadScene()
-    {
+    {       
         m_viewportRenderer.DestroyAsset();
+
+        //GlobalResourceRegistry::Get().Report();
 
         m_sceneBuilder.DestroyAsset();
         m_sceneContainer.DestroyAsset();
+
+        m_renderableObjects.clear();
+        m_newObject = nullptr;
+        m_delegatedObject = nullptr;
 
         m_objectContainer.DestroyAsset();
     }
@@ -247,7 +252,7 @@ namespace Enso
             SerialiseImpl(nodeArray.AppendArrayObject(), asset);
         }
 
-        Log::Warning(nodeArray.Stringify(true));
+        //Log::Warning(nodeArray.Stringify(true));
 
         m_outboundCmdQueue->Enqueue();  // Enqueue the staged command
     }
@@ -283,7 +288,7 @@ namespace Enso
             }
 
             // Clear the selected object list
-            m_selectionCtx.selectedObjects.clear();
+            DeselectAll();
         }
 
         return kUIStateOkay;
@@ -306,13 +311,18 @@ namespace Enso
 
         // Notify the scene objects of the move operation  
         uint objectDirtyFlags = 0u;
+        m_selectionCtx.selectedBBox.MakeInvalid();
         for (auto& obj : m_selectionCtx.selectedObjects)
         {
             Assert(obj->IsSelected());
 
             // Moving objects 
             obj->OnMove(stateID, m_viewCtx, m_selectionCtx);
+
+            m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, obj->GetWorldSpaceBoundingBox());
         }
+
+        SignalDirty(kDirtyViewportRedraw);
 
         if (stateID == "kMoveDrawableObjectDragging")
         {
@@ -332,6 +342,7 @@ namespace Enso
         }
 
         m_selectionCtx.selectedObjects.clear();
+        m_selectionCtx.selectedBBox.MakeInvalid();
 
         SignalDirty(kDirtyViewportRedraw);
     }
@@ -352,8 +363,11 @@ namespace Enso
                     const uint primIdx = primIdxs[idx];
                     if (primIdx >= drawableObjects.Size())
                     {
-                        int size = drawableObjects.Size();
-                        Log::Error("%i, %i", primIdx, size);
+                        //int size = ;
+                        Log::Error("%i -> %i", primRange[0], primRange[1]);
+                        for (int i = primRange[0]; i < primRange[1]; ++i)
+                            Log::Error("  - %i: %i", i, primIdxs[i]);
+                        Assert(false);
                     }
 
                     if (drawableObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
@@ -367,7 +381,7 @@ namespace Enso
                     }
                 }
                 return false;
-            };
+            };          
             m_viewportRenderer->DrawableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
@@ -550,26 +564,31 @@ namespace Enso
         const std::string stateID = m_uiGraph.GetStateID(targetStateIdx);
         if (stateID == "kCreateDrawableObjectOpen")
         {
+            Assert(!m_newObject); // Should be reset after object finalisation
+
+            for (auto& obj : *m_objectContainer)
+            {
+                Log::Debug("%s: %i", obj->GetAssetID(), obj.GetReferenceCount());
+            }
+
             // Try and instantiate the objerct         
-            auto newObject = m_componentFactory.Instantiate(trigger.HashOf(), *m_objectContainer, *this, m_objectContainer);
-            m_onCreate.newObject = newObject.DynamicCast<Host::DrawableObject>();
-            m_onCreate.newObject->Verify();
-            m_newObjectQueue.emplace(m_onCreate.newObject->GetAssetID());
+            auto newGeneric = m_componentFactory.Instantiate(trigger.HashOf(), *m_objectContainer, *this, m_objectContainer);
+            m_newObject = newGeneric.DynamicCast<Host::DrawableObject>();
+            m_newObject->Verify();
+            m_newObjectQueue.emplace(m_newObject->GetAssetID());
 
             SetDirty(kDirtyObjectExistence);
-
-            // Emplace the new object with the scene builder ready for integration into the scene
-            //m_componentManager->EnqueueEmplaceObject(m_onCreate.newObject);
         }
 
         // Invoke the event handler of the new object
-        Assert(m_onCreate.newObject);
-        m_onCreate.newObject->OnCreate(stateID, m_viewCtx);
+        Assert(m_newObject);
+        m_newObject->OnCreate(stateID, m_viewCtx);
 
         // Some objects will automatically finalise themselves. If this happens, we're done.
-        if (m_onCreate.newObject->IsFinalised())
+        if (m_newObject->IsFinalised())
         {
-            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_newObject);
+            m_newObject = nullptr;
             m_uiGraph.SetState("kIdleState");
             return kUIStateOkay;
         }
@@ -584,22 +603,22 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::FinaliseNewDrawableObject()
     {
-        Assert(m_onCreate.newObject);
+        Assert(m_newObject);
 
         // If the new object has closed but has not been finalised, delete it
-        if (!m_onCreate.newObject->IsFinalised())
+        if (!m_newObject->IsFinalised())
         {
             std::lock_guard<std::mutex> lock(m_threadMutex);
-            m_deleteObjectQueue.emplace(m_onCreate.newObject->GetAssetID());
-            Log::Success("Destroying unfinalised scene object '%s'", m_onCreate.newObject->GetAssetID());
+            m_deleteObjectQueue.emplace(m_newObject->GetAssetID());
+            Log::Success("Destroying unfinalised scene object '%s'", m_newObject->GetAssetID());
         }
         else
         {
             // Serialise the new object to the outbound queue
-            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_onCreate.newObject);
+            EnqueueOutboundSerialisation("OnCreateObject", kEnqueueOne, m_newObject);
         }
 
-        m_onCreate.newObject = nullptr;
+        m_newObject = nullptr;
     }
 
     __host__ void Host::GaussianSplattingModule::OnCommandsWaiting(CommandQueue& inbound)
@@ -617,10 +636,11 @@ namespace Enso
 
         // If objects are waiting to be deleted, do so now
         if (!m_deleteObjectQueue.empty())
-        {
+        { 
             // Release any handles that might prevent objects being successfully erased from the container
             m_viewportRenderer->ReleaseObjects();
-            m_renderableObjects.clear();
+            m_renderableObjects.clear();  
+            m_selectionCtx.selectedObjects.clear();
 
             // Iterate through the delete queue and erase the objects from the object container
             for (auto& id : m_deleteObjectQueue)
@@ -658,6 +678,11 @@ namespace Enso
         if (rebuildViewport || forceRebuild)
         {
             m_viewportRenderer->Rebuild();
+
+            auto ind = m_viewportRenderer->DrawableBIH().GetIndices();
+            auto numPrims = m_viewportRenderer->DrawableBIH().GetNumPrimitives();
+            for (int i = 0; i < numPrims; ++i)
+                Log::Error("  - %i: %i", i, ind[i]);
         }
     }
 
@@ -731,6 +756,7 @@ namespace Enso
     __host__ void Host::GaussianSplattingModule::OnViewChange()
     {
         auto& transform = m_viewCtx.transform;
+        bool isUpdated = true;
 
         // Zooming?
         if (IsMouseButtonDown(VK_RBUTTON))
@@ -762,14 +788,19 @@ namespace Enso
 
             //Log::Write("Trans: %s", m_viewCtx.trans.format());
         }
+        else
+        {
+            isUpdated = false;
+        }
 
         // Update the parameters in the overlay renderer
+        if (isUpdated)
         {
             transform.matrix = ConstructViewMatrix(transform.trans, transform.rotate, transform.scale) * m_clientToNormMatrix;
             m_viewCtx.Prepare();
 
             // Mark the scene as dirty
-            //SignalDirty(kDirtyUIOverlay);
+            SignalDirty(kDirtyViewportRedraw);
         }
     }
 
@@ -780,7 +811,7 @@ namespace Enso
     __host__ void Host::GaussianSplattingModule::OnFocusChange(const bool isSet)
     {
         // Finalise any objects that are in the process of being created
-        /*if (m_onCreate.newObject)
+        /*if (m_newObject)
         {
             FinaliseNewDrawableObject();
         }*/

@@ -112,7 +112,7 @@ namespace Enso
                 }
 
                 // Try to delete the asset
-                if (!it->second.DestroyAsset(flags))
+                if (!it->second.DestroyAsset())
                 {
                     ++it;
                 }

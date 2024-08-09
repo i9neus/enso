@@ -126,14 +126,13 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            const AssetHandle<const Host::GenericObjectContainer> m_genericObjects;
-
             Device::PathTracer*               cu_deviceInstance = nullptr;
             Device::PathTracer                m_hostInstance;
             PathTracerObjects                 m_deviceObjects;
             PathTracerParams                  m_params;
             HighResolutionTimer               m_wallTime;
             HighResolutionTimer               m_renderTimer;
+            HighResolutionTimer               m_redrawTimer;
 
             AssetHandle<Host::ImageRGBW>      m_hostMeanAccumBuffer;
             AssetHandle<Host::ImageRGBW>      m_hostVarAccumBuffer;

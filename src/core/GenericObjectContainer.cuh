@@ -48,7 +48,7 @@ namespace Enso
             __host__ GenericObjectContainer(const Asset::InitCtx& initCtx) : Asset(initCtx), m_uniqueIdx(0) {}
             __host__ GenericObjectContainer(const GenericObjectContainer&) = delete;
             __host__ GenericObjectContainer(const GenericObjectContainer&&) = delete;
-            __host__ ~GenericObjectContainer() noexcept;
+            __host__ virtual ~GenericObjectContainer() noexcept;
 
             __host__ Iterator begin() noexcept { return Iterator(m_objectMap.begin()); }
             __host__ Iterator end() noexcept { return Iterator(m_objectMap.end()); }

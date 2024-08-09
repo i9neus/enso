@@ -68,7 +68,7 @@ namespace Enso
         };
         bih->TestPoint(xyView, onPointIntersectLeaf);
         
-        for (int idx = 0; idx < elementList.Size(); ++idx)
+        /*for (int idx = 0; idx < elementList.Size(); ++idx)
         {
             CudaAssertDebug(elementList[idx]);
 
@@ -83,7 +83,7 @@ namespace Enso
             }
 
             if (drawable.GetWorldSpaceBoundingBox().PointOnPerimiter(xyView, viewCtx.dPdXY)) L = vec4(kRed, 1.0f);
-        }
+        }*/
     }
 
     __device__ void Device::ViewportRenderer::Render()
@@ -173,6 +173,9 @@ namespace Enso
     Host::ViewportRenderer::~ViewportRenderer() noexcept
     {
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
+        
+        m_hostDrawableObjects.DestroyAsset();
+        m_hostDrawableBIH.DestroyAsset();
         m_hostAccumBuffer.DestroyAsset();
     }
 
@@ -183,7 +186,7 @@ namespace Enso
 
     __host__ void Host::ViewportRenderer::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
     {
-        SetDirty(flag);
+        SetDirty(kDirtyViewportRedraw);
     }
 
     template<typename ContainerType>
@@ -215,6 +218,8 @@ namespace Enso
 
     __host__ bool Host::ViewportRenderer::Rebuild()
     {
+        Assert(m_objectContainer);
+        
         // Release any object handles
         ReleaseObjects();
 
@@ -226,7 +231,7 @@ namespace Enso
             });
 
         // Rebuild the bounding interval hierarchy
-        RebuildBIH(*m_hostDrawableBIH, *m_hostDrawableObjects);
+        RebuildBIH(*m_hostDrawableBIH, *m_hostDrawableObjects);     
 
         m_hostDrawableObjects->Synchronise(kVectorSyncUpload);
         Summarise();
@@ -248,11 +253,15 @@ namespace Enso
     __host__ void Host::ViewportRenderer::Render()
     {    
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
+        if (IsDirty(kDirtyViewportRedraw))
+        {
+            KernelRender << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance);
+            IsOk(cudaDeviceSynchronize());
 
-        KernelRender << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance);
-        IsOk(cudaDeviceSynchronize());
+            m_viewportFrameIdx++;
 
-        m_viewportFrameIdx++;
+            Clean();
+        }
     }
 
     __host__ void Host::ViewportRenderer::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const

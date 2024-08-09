@@ -36,6 +36,7 @@ namespace Enso
         class Asset
         {
             friend class AssetAllocator;
+            template<typename T> friend class AssetHandle;
 
         public:
             struct InitCtx
@@ -47,13 +48,16 @@ namespace Enso
 
         private:
             const std::string       m_assetId;
+            bool                    m_isPendingDestruction;
 
             // Weak references to the shared handles that own this instance
             WeakAssetHandle<Asset>  m_thisAssetHandle;
             WeakAssetHandle<Asset>  m_parentAssetHandle;
 
         public:
-            __host__ virtual ~Asset() {}
+            __host__ virtual ~Asset() noexcept 
+            {
+            }
 
             __host__ virtual uint               FromJson(const Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual std::string        GetAssetClass() const { return ""; }
@@ -61,6 +65,7 @@ namespace Enso
             __host__ std::string                GetParentAssetID() const;
             __host__ std::string                GetAssetDAGPath() const;
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
+            __host__ bool                       IsPendingDestuction() const { return m_isPendingDestruction; }
 
             __host__ static std::string         MakeTemporaryID();
 
@@ -72,7 +77,8 @@ namespace Enso
                 m_assetId(initCtx.id), 
                 m_thisAssetHandle(initCtx.thisAssetHandle), 
                 m_parentAssetHandle(initCtx.parentAssetHandle),
-                m_hostStream(0) {  }
+                m_hostStream(0),
+                m_isPendingDestruction(false) {  }
 
             __host__ WeakAssetHandle<Asset>& GetAssetHandle() { return m_thisAssetHandle; }
             __host__ WeakAssetHandle<Asset>& GetParentAssetHandle() { return m_parentAssetHandle; }
@@ -102,9 +108,9 @@ namespace Enso
         explicit AssetHandle(std::shared_ptr<AssetType>& ptr) : m_ptr(ptr) {}   // Used by casting functions
 
     public:
-        __host__ AssetHandle() {}
-        __host__ AssetHandle(const std::nullptr_t&) {}
-        __host__ ~AssetHandle() {}
+        __host__ AssetHandle() = default;
+        __host__ AssetHandle(const std::nullptr_t&) { m_ptr.reset(); }
+        __host__ ~AssetHandle() = default;
 
         template<typename OtherType>
         __host__ AssetHandle(AssetHandle<OtherType>& other)
@@ -181,33 +187,27 @@ namespace Enso
             return *m_ptr;
         }
 
-        __host__ bool DestroyAsset(const uint flags = 0)
+        // This function may fail silently if other objects retain references to the object being destroyed. We tolerate this behaviour to allow dependancies to wind up 
+        // gracefully without causing undefined behaviour. If an object isn't explicitly destroyed, an exception will be thrown on program termination. 
+        __host__ bool DestroyAsset()
         {
-            if (!m_ptr) { return true; }
-
-            // If the refcount is greater than 1, the object is still in use elsewhere
-            if (m_ptr.use_count() > 1 && !(flags & kAssetForceDestroy))
+            if (m_ptr)
             {
-                if (flags & kAssetExpectNoRefs)
+                if (m_ptr.use_count() > 1)
                 {
-                    Log::Error("Asset '%s' is still being referenced by %i other objects. Remove all other references before destroying this object.",
-                        m_ptr->GetAssetID().c_str(), m_ptr.use_count() - 1);
-                    Assert(!(flags & kAssetAssertOnError));
+                    m_ptr->m_isPendingDestruction = true;
+                    m_ptr.reset();
+                    return false;
                 }
-
-                return false;
+                else
+                {
+                    const std::string assetId = m_ptr->GetAssetID();
+                    m_ptr.reset();
+                    GlobalResourceRegistry::Get().DeregisterAsset(assetId);
+                }
             }
-
-            const std::string assetId = m_ptr->GetAssetID();
-
-            // Delete then deregister the host object.
-            m_ptr.reset();
-            GlobalResourceRegistry::Get().DeregisterAsset(assetId);
-
-            Log::Debug("Destroyed '%s'.\n", assetId);
+            
             return true;
         }
-
- 
     };
 }
