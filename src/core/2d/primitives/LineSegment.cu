@@ -85,7 +85,7 @@ namespace Enso
         std::uniform_int_distribution<> intRng;
 
         const int numSegments = numSegmentsRange[0] + intRng(mt) % max(1, numSegmentsRange[1] - numSegmentsRange[0]);
-        segments.Resize(numSegments);
+        segments.resize(numSegments);
         for (int segIdx = 0; segIdx < numSegments; ++segIdx)
         {
             const vec2 p(mix(bounds.lower.x, bounds.upper.x, realRng(mt)), mix(bounds.lower.y, bounds.upper.y, realRng(mt)));

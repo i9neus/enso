@@ -16,6 +16,8 @@
 namespace Enso
 {         
     namespace Device { class Tracable; }
+    struct Ray;
+    struct HitCtx;
     
     struct PathTracerParams
     {
@@ -79,6 +81,8 @@ namespace Enso
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
         private:
+            __device__ int Trace(Ray& ray, HitCtx& hit) const;
+
             PathTracerParams            m_params;
             PathTracerObjects           m_objects;
 

@@ -51,7 +51,7 @@ namespace Enso
         {
             for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
             {
-                CudaAssertDebug(primIdxs[idx] < elementList.Size());
+                CudaAssertDebug(primIdxs[idx] < elementList.size());
                 CudaAssertDebug(elementList[primIdxs[idx]]);
 
                 const auto& drawable = *elementList[primIdxs[idx]];
@@ -154,7 +154,7 @@ namespace Enso
     {
         // Create some Cuda objects
         m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "accumBuffer", width, height, renderStream);
-        m_hostDrawableObjects = AssetAllocator::CreateChildAsset<Host::DrawableObjectContainer>(*this, "drawables", kVectorHostAlloc);
+        m_hostDrawableObjects = AssetAllocator::CreateChildAsset<Host::DrawableObjectContainer>(*this, "drawables");
         m_hostDrawableBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "drawablebih", 3);       
 
         m_hostInstance.m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
@@ -181,7 +181,7 @@ namespace Enso
 
     __host__ void Host::ViewportRenderer::ReleaseObjects()
     {
-        m_hostDrawableObjects->Clear();
+        m_hostDrawableObjects->clear();
     }
 
     __host__ void Host::ViewportRenderer::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
@@ -195,15 +195,15 @@ namespace Enso
         // Create a tracable list ready for building
         // TODO: It's probably faster if we build on the already-sorted index list
         auto& primIdxs = bih.GetPrimitiveIndices();
-        primIdxs.Clear();
-        primIdxs.Reserve(primitives.Size());
+        primIdxs.clear();
+        primIdxs.reserve(primitives.size());
         Log::Debug("Building...");
-        for (int idx = 0; idx < primitives.Size(); ++idx)
+        for (int idx = 0; idx < primitives.size(); ++idx)
         {
             // Ignore primitives that don't have bounding boxes
             if (primitives[idx]->HasBoundingBox())
             {
-                primIdxs.PushBack(idx);
+                primIdxs.push_back(idx);
             }
         }
 
@@ -226,7 +226,7 @@ namespace Enso
         // Rebuild the list of drawable objects
         m_objectContainer->ForEachOfType<Host::DrawableObject>([&](const AssetHandle<Host::DrawableObject>& object) -> bool
             {
-                m_hostDrawableObjects->EmplaceBack(object);
+                m_hostDrawableObjects->push_back(object);
                 return true;
             });
 
@@ -240,7 +240,7 @@ namespace Enso
     __host__ void Host::ViewportRenderer::Summarise() const
     {
         Log::Indent("Rebuilt viewport:");
-        Log::Debug("%i drawable objects", m_hostDrawableObjects->Size());
+        Log::Debug("%i drawable objects", m_hostDrawableObjects->size());
         Log::Debug("Drawable BIH: %s", m_hostDrawableBIH->GetBoundingBox().Format());
     }
    

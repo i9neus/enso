@@ -114,9 +114,9 @@ namespace Enso
         m_params.totalAccumUnits = m_params.totalSubprobes * m_params.numHarmonics;
 
         // Create some assets
-        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "accumBuffer", m_params.accumBufferSize, kVectorHostAlloc);
-        m_hostReduceBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "reduceBuffer", m_params.accumBufferSize, kVectorHostAlloc);
-        m_hostOutputBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "outputBuffer", m_params.totalGridUnits, kVectorHostAlloc);
+        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "accumBuffer", m_params.accumBufferSize);
+        m_hostReduceBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "reduceBuffer", m_params.accumBufferSize);
+        m_hostOutputBuffer = AssetAllocator::CreateChildAsset<Host::Vector<vec3>>(*this, "outputBuffer", m_params.totalGridUnits);
 
         // Set the device objects
         m_deviceObjects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();

@@ -46,12 +46,12 @@ namespace Enso
         public:
             __device__ virtual bool                 IntersectRay(Ray& ray, HitCtx& hit) const = 0;
             //__host__ __device__ virtual bool      InteresectPoint(const vec2& p, const float& thickness) const { return false; }
-            //__host__ __device__ virtual bool        IntersectBBox(const BBox2f& bBox) const;
+            //__host__ __device__ virtual bool      IntersectBBox(const BBox2f& bBox) const;
 
             //__host__ __device__ virtual vec2      PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
          
-            __device__ virtual vec3                 GetColour() const { return kOne; }
-            __device__ virtual int                  GetLightIdx() const { return m_params.lightIdx; }
+            __device__ int                          GetLightIdx() const { return m_params.lightIdx; }
+            __device__ int                          GetMaterialIdx() const { return m_params.materialIdx; }
             __device__ void                         Synchronise(const TracableParams& params) { m_params = params; }
 
         protected:

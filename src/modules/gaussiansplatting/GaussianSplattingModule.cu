@@ -275,7 +275,7 @@ namespace Enso
         if (!m_selectionCtx.selectedObjects.empty())
         {
             Host::DrawableObjectContainer& drawableObjects = m_viewportRenderer->DrawableObjects();
-            for (int primIdx = 0; primIdx < drawableObjects.Size(); ++primIdx)
+            for (int primIdx = 0; primIdx < drawableObjects.size(); ++primIdx)
             {
                 if (drawableObjects[primIdx]->IsSelected())
                 {
@@ -359,7 +359,7 @@ namespace Enso
                 for (int idx = primRange[0]; idx < primRange[1]; ++idx)
                 {
                     const uint primIdx = primIdxs[idx];
-                    if (primIdx >= drawableObjects.Size())
+                    if (primIdx >= drawableObjects.size())
                     {
                         //int size = ;
                         Log::Error("%i -> %i", primRange[0], primRange[1]);

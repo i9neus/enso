@@ -431,9 +431,6 @@
     <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Vector.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\Tuple.cuh">
       <Filter>core</Filter>
     </ClInclude>
@@ -752,6 +749,12 @@
     <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cuh">
       <Filter>core\2d\sdf</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Lambertian.cuh">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\Vector.cuh">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -852,6 +855,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cu">
       <Filter>core\2d\sdf</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\Vector.cu">
+      <Filter>core</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

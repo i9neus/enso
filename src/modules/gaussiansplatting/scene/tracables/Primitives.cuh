@@ -41,7 +41,7 @@ namespace Enso
             using DeviceType = Device::Primitive<ParamsType>;
         public:
             __host__                Primitive(const InitCtx& initCtx);
-            __host__                Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const ParamsType& params);
+            __host__                Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params);
             __host__ virtual        ~Primitive();
 
             __host__ virtual void   OnSynchroniseTracable(const uint syncFlags) override final

@@ -22,8 +22,8 @@ namespace Enso
         bool                        isConstructed = false;
         bool                        testAsList = false;
         BBox2f                      bBox;
-        Generic::Vector<NodeDataType>* nodes = nullptr;
-        Generic::Vector<uint>*      indices = nullptr;
+        Device::Vector<NodeDataType>* nodes = nullptr;
+        Device::Vector<uint>*       indices = nullptr;
         uint                        numPrims = 0;
     };
 

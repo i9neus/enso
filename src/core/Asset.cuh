@@ -101,10 +101,11 @@ namespace Enso
 
         template<typename T> friend class AssetHandle;
         //template<typename AssetType, typename... Args> friend AssetHandle<AssetType> AssetAllocator::CreateAsset(const std::string&, Args...);
-
+    
     private:
         std::shared_ptr<AssetType>          m_ptr;
-
+    
+    private:
         explicit AssetHandle(std::shared_ptr<AssetType>& ptr) : m_ptr(ptr) {}   // Used by casting functions
 
     public:
@@ -112,11 +113,11 @@ namespace Enso
         __host__ AssetHandle(const std::nullptr_t&) { m_ptr.reset(); }
         __host__ ~AssetHandle() = default;
 
-        template<typename OtherType>
+        /*template<typename OtherType>
         __host__ AssetHandle(AssetHandle<OtherType>& other)
         {
             m_ptr = other.m_ptr;
-        }
+        }*/
 
         template<typename OtherType>
         __host__ explicit AssetHandle(const WeakAssetHandle<OtherType>& weakHandle)
@@ -126,7 +127,27 @@ namespace Enso
             // FIXME: Const casting here to get around the fact that AssetHandle sheilds us from const traits whereas std::weak_ptr does not
             AssertMsg(!weakHandle.expired(), "Trying to a convert an expired weak asset handle to a strong one.");
             m_ptr = weakHandle.lock();
+        }        
+
+        // Implicit downcasting from superclass to base class handle
+        template <typename OtherType, typename = typename std::enable_if_t<std::is_base_of<AssetType, OtherType>::value>>
+        __host__  AssetHandle(const AssetHandle<OtherType>& handle)
+        {
+            m_ptr = std::static_pointer_cast<AssetType>(handle.m_ptr);
+        }    
+
+        ////////////////////////////////
+
+        __host__  AssetHandle<AssetType>& operator=(const AssetHandle<AssetType>& other) = default;
+
+        template <typename OtherType, typename = typename std::enable_if_t<std::is_base_of<AssetType, OtherType>::value>>
+        __host__  AssetHandle<AssetType> operator=(const AssetHandle<OtherType>& handle)
+        {
+            m_ptr = std::static_pointer_cast<AssetType>(handle.m_ptr);
+            return *this;
         }
+
+        ////////////////////////////////
 
         __host__ static AssetHandle<AssetType> MakeHandle(std::shared_ptr<AssetType>& ptr)
         {

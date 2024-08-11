@@ -50,16 +50,27 @@ namespace Enso
         m_nlm.Initialise(m_objects.meanAccumBuffer, m_objects.varAccumBuffer);
     }
 
+    __device__ int Device::PathTracer::Trace(Ray& ray, HitCtx& hit) const
+    {
+        hit.matID = kMatInvalid;
+        for (int idx = 0; idx < m_objects.tracables->size(); ++idx)
+        {
+            if ((*m_objects.tracables)[idx]->IntersectRay(ray, hit)) hit.matID = 5;
+        }
+
+        return hit.matID;
+    }
+
     __device__ void Device::PathTracer::Render()
     {
-        CudaAssertDebug(m_objects.transforms->Size() == 9);
+        CudaAssertDebug(m_objects.transforms->size() == 9);
 
         const ivec2 xyViewport = kKernelPos<ivec2>();
         if (xyViewport.x < 0 || xyViewport.x >= m_params.viewport.dims.x || xyViewport.y < 0 || xyViewport.y >= m_params.viewport.dims.y) { return; }        
 
         // Get pointers to the object transforms
         const auto& transforms = *m_objects.transforms;
-        const auto& emitterTrans = transforms.Back();
+        const auto& emitterTrans = transforms.back();
 
         // Create a render context
         RenderCtx renderCtx;
@@ -74,13 +85,7 @@ namespace Enso
         const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
         Ray directRay, indirectRay;
 
-        //m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
-
-        // Create the camera ray
-        float cameraPhi = -kPi;
-        //cameraPhi += kTwoPi * m_params.wallTime * 0.01f;
-        vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;
-        indirectRay = Cameras::CreatePinholeRay(uvView, cameraPos, vec3(0., -0., -0.), 50.);
+        m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
 
         int genFlags = kGeneratedIndirect;
         HitCtx hit;
@@ -97,7 +102,8 @@ namespace Enso
 
             if (ray.depth >= kMaxPathDepth) { continue; }
 
-            if (Trace(ray, hit, transforms) == kMatInvalid && !ray.IsDirectSample())
+            if (TraceGeo(ray, hit, transforms) == kMatInvalid && !ray.IsDirectSample())
+            //if (Trace(ray, hit) == kMatInvalid && !ray.IsDirectSample())
             {
                 //if(depth > 0)
                 {
@@ -241,7 +247,7 @@ namespace Enso
         m_hostMeanAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", kViewportWidth, kViewportHeight, nullptr);
         m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", kViewportWidth, kViewportHeight, nullptr);
         m_hostDenoisedBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGB>(*this, "denoisedBuffer", kViewportWidth, kViewportHeight, nullptr);
-        m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms", kVectorHostAlloc);
+        m_hostTransforms = AssetAllocator::CreateChildAsset<Host::Vector<BidirectionalTransform>>(*this, "transforms");
 
         m_deviceObjects.meanAccumBuffer = m_hostMeanAccumBuffer->GetDeviceInstance();
         m_deviceObjects.varAccumBuffer = m_hostVarAccumBuffer->GetDeviceInstance();
@@ -268,28 +274,22 @@ namespace Enso
         m_hostDenoisedBuffer.DestroyAsset();
         m_hostTransforms.DestroyAsset();
 
-        if (m_hostSceneContainer)
-        {
-            m_hostSceneContainer->DestroyManagedObjects();
-            m_hostSceneContainer.DestroyAsset();
-        }
-
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
     __host__ void Host::PathTracer::CreateScene()
     {
-        m_hostTransforms->Clear();
+        m_hostTransforms->clear();
 
 #define kNumSpheres 7        
         for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
         {
             float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
-            m_hostTransforms->PushBack(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f));
+            m_hostTransforms->push_back(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f));
         }
 
-        m_hostTransforms->PushBack(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
-        m_hostTransforms->PushBack(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
+        m_hostTransforms->push_back(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
+        m_hostTransforms->push_back(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
 
         m_hostTransforms->Synchronise(kVectorSyncUpload);
 
@@ -325,14 +325,14 @@ namespace Enso
             m_deviceObjects.textures = m_hostSceneContainer->Textures().GetDeviceInstance();
             m_deviceObjects.materials = m_hostSceneContainer->Materials().GetDeviceInstance();
             
-            if (m_hostSceneContainer->Cameras().IsEmpty())
+            if (m_hostSceneContainer->Cameras().empty())
             {
                 Log::Warning("Warning! Path tracer '%s' found no cameras in the scene.");
                 m_hostActiveCamera = nullptr;
             }
             else
             {
-                m_hostActiveCamera = m_hostSceneContainer->Cameras().Back();
+                m_hostActiveCamera = m_hostSceneContainer->Cameras().back();
                 m_deviceObjects.activeCamera = m_hostActiveCamera->GetDeviceInstance();
             }       
 

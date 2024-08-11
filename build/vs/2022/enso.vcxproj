@@ -166,6 +166,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\Light.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Lambertian.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
@@ -264,6 +265,7 @@
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu" />
+    <CudaCompile Include="..\..\..\src\core\Vector.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />

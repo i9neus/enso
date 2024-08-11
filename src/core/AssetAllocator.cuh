@@ -136,7 +136,7 @@ namespace Enso
 		}*/
 
 		template<typename ObjectType>
-		void static GuardedAllocDeviceArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceObject, const uint flags) noexcept
+		__host__ static void GuardedAllocDeviceArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceObject, const uint flags) noexcept
 		{
 			Assert(deviceObject);
 			AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");

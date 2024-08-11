@@ -72,11 +72,11 @@ namespace Enso
             }
         }
 
-        __device__ int Trace(Ray& ray, HitCtx& hit, const Device::Vector<BidirectionalTransform>& transforms)
+        __device__ int TraceGeo(Ray& ray, HitCtx& hit, const Device::Vector<BidirectionalTransform>& transforms)
         {
             hit.matID = kMatInvalid;
 
-            const int kNumSpheres = transforms.Size() - 2;
+            const int kNumSpheres = transforms.size() - 2;
             for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
             {
                 if (RaySphere(ray, hit, transforms[sphereIdx]))
@@ -123,7 +123,7 @@ namespace Enso
             }
 
             // Make all materials diffuse Lambert
-            //if (hit.matID != kMatInvalid && hit.matID != kMatEmitter) { hit.matID = kMatLambertian; }
+            if (hit.matID != kMatInvalid && hit.matID != kMatEmitter) { hit.matID = kMatLambertian; }
 
             return hit.matID;
         }

@@ -25,7 +25,7 @@ namespace Enso
         BBox2f centroidBBox = BBox2f::Invalid();
         m_bih.m_treeBBox = BBox2f::Invalid();
 
-        if (!m_hostIndices.IsEmpty())
+        if (!m_hostIndices.empty())
         {
             for (const auto idx : m_hostIndices)
             {
@@ -44,28 +44,28 @@ namespace Enso
         }
 
         // If the list contains below the minimum ammount of primitives, don't build and flag the tree as a list traversal
-        if (m_hostIndices.Size() < m_minBuildablePrims)
+        if (m_hostIndices.size() < m_minBuildablePrims)
         {
             m_bih.m_testAsList = true;
         }
         else
         {
             // Reserve space for the nodes
-            m_hostNodes.Reserve(m_hostIndices.Size());
-            m_hostNodes.Resize(1);
+            m_hostNodes.reserve(m_hostIndices.size());
+            m_hostNodes.resize(1);
 
             // Construct the bounding interval hierarchy
             m_stats = BIH2DStats();
             m_stats.numInnerNodes = 0;
 
-            BuildPartition(0, m_hostIndices.Size(), 0, 0, m_bih.m_treeBBox, centroidBBox);
+            BuildPartition(0, m_hostIndices.size(), 0, 0, m_bih.m_treeBBox, centroidBBox);
         }
 
         // Update the host data structures
-        m_bih.m_nodes = m_hostNodes.GetHostData();
-        m_bih.m_indices = m_hostIndices.GetHostData();
-        m_bih.m_numNodes = m_hostNodes.Size();
-        m_bih.m_numPrims = m_hostIndices.Size();
+        m_bih.m_nodes = m_hostNodes.data();
+        m_bih.m_indices = m_hostIndices.data();
+        m_bih.m_numNodes = m_hostNodes.size();
+        m_bih.m_numPrims = m_hostIndices.size();
         m_bih.m_isConstructed = m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite();
 
         if (printStats)
@@ -170,9 +170,9 @@ namespace Enso
         }
 
         // Grow the node vector by two
-        const int leftIdx = m_hostNodes.Size();
+        const int leftIdx = m_hostNodes.size();
         const int rightIdx = leftIdx + 1;
-        m_hostNodes.Grow(2);
+        m_hostNodes.grow(2);
 
         // Refresh the reference and build the inner node          
         m_hostNodes[thisIdx].MakeInner(leftIdx, axis, leftBBox[1][axis], rightBBox[0][axis], i0, i1);

@@ -4,10 +4,10 @@ namespace Enso
 {
     __device__ void Device::BIH2DAsset::Synchronise(const BIH2DData<BIH2DFullNode>& data)
     {
-        m_nodes = data.nodes->Data();
-        m_indices = data.indices->Data();
+        m_nodes = data.nodes->data();
+        m_indices = data.indices->data();
 
-        m_numNodes = data.nodes->Size();
+        m_numNodes = data.nodes->size();
         m_numPrims = data.numPrims;
         m_treeBBox = data.bBox;
         m_isConstructed = data.isConstructed;
@@ -21,8 +21,8 @@ namespace Enso
     {
         cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::BIH2DAsset>(*this);
 
-        m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, "nodes", kVectorHostAlloc);
-        m_hostIndices = AssetAllocator::CreateChildAsset<Host::Vector<uint>>(*this, "indices", kVectorHostAlloc);
+        m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, "nodes");
+        m_hostIndices = AssetAllocator::CreateChildAsset<Host::Vector<uint>>(*this, "indices");
     }
 
     __host__ Host::BIH2DAsset::~BIH2DAsset() noexcept
@@ -54,14 +54,14 @@ namespace Enso
         m_data.bBox = m_treeBBox;
         m_data.nodes = m_hostNodes->GetDeviceInstance();
         m_data.indices = m_hostIndices->GetDeviceInstance();
-        m_data.numPrims = uint(m_hostIndices->Size());
+        m_data.numPrims = uint(m_hostIndices->size());
 
         SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_data);
     }
 
     __host__ void Host::BIH2DAsset::CheckTreeNodes() const
     {
-        for (int nodeIdx = 0; nodeIdx < m_hostNodes->Size(); ++nodeIdx)
+        for (int nodeIdx = 0; nodeIdx < m_hostNodes->size(); ++nodeIdx)
         {
             const BIH2DFullNode& node = (*m_hostNodes)[nodeIdx];
             if (node.IsLeaf())

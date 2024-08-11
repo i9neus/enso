@@ -26,6 +26,7 @@ namespace Enso
             {
                 ray.tNear = t;
                 ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
+                hit.matID = Tracable::m_params.materialIdx;
                 hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
                 hit.uv = uv;
                 return true;
@@ -62,8 +63,9 @@ namespace Enso
             else { return false; }
 
             ray.tNear = tNear;
-            hit.n = Tracable::m_params.transform.NormalToWorldSpace(n);
             ray.SetFlag(kRayBackfacing, dot(localRay.o, localRay.o) < 1.0);
+            hit.n = Tracable::m_params.transform.NormalToWorldSpace(n);
+            hit.matID = Tracable::m_params.materialIdx;
 
             return true;
         }
@@ -78,11 +80,12 @@ namespace Enso
     }
 
     template<typename ParamsType>
-    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const ParamsType& params) :
+    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params) :
         Primitive(initCtx)
     {
         m_params = params;
         Tracable::m_params.transform = transform;
+        Tracable::m_params.materialIdx = materialIdx;
         Synchronise(kSyncParams);
     }
     

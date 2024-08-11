@@ -13,11 +13,11 @@ namespace Enso
         Host::GenericObject(initCtx),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::SceneContainer>(*this))
     {
-        m_hostTracables = AssetAllocator::CreateChildAsset<Host::TracableContainer>(*this, "tracablescontainer", kVectorHostAlloc);
-        m_hostLights = AssetAllocator::CreateChildAsset<Host::LightContainer>(*this, "lightscontainer", kVectorHostAlloc);
-        m_hostMaterials = AssetAllocator::CreateChildAsset<Host::MaterialContainer>(*this, "materialscontainer", kVectorHostAlloc);
-        m_hostTextures = AssetAllocator::CreateChildAsset<Host::Texture2DContainer>(*this, "texturescontainer", kVectorHostAlloc);
-        m_hostCameras = AssetAllocator::CreateChildAsset<Host::CameraContainer>(*this, "camerascontainer", kVectorHostAlloc);
+        m_hostTracables = AssetAllocator::CreateChildAsset<Host::TracableContainer>(*this, "tracablescontainer");
+        m_hostLights = AssetAllocator::CreateChildAsset<Host::LightContainer>(*this, "lightscontainer");
+        m_hostMaterials = AssetAllocator::CreateChildAsset<Host::MaterialContainer>(*this, "materialscontainer");
+        m_hostTextures = AssetAllocator::CreateChildAsset<Host::Texture2DContainer>(*this, "texturescontainer");
+        m_hostCameras = AssetAllocator::CreateChildAsset<Host::CameraContainer>(*this, "camerascontainer");
 
         m_deviceObjects.tracables = m_hostTracables->GetDeviceInstance();
         m_deviceObjects.lights = m_hostLights->GetDeviceInstance();
@@ -76,11 +76,11 @@ namespace Enso
     __host__ void Host::SceneContainer::Summarise() const
     {
         Log::Indent("Rebuilt scene:");
-        Log::Debug("  - %i tracables", m_hostTracables->Size());
-        Log::Debug("  - %i lights", m_hostLights->Size());
-        Log::Debug("  - %i cameras", m_hostCameras->Size());
-        Log::Debug("  - %i materials", m_hostMaterials->Size());
-        Log::Debug("  - %i textures", m_hostTextures->Size());
+        Log::Debug("  - %i tracables", m_hostTracables->size());
+        Log::Debug("  - %i lights", m_hostLights->size());
+        Log::Debug("  - %i cameras", m_hostCameras->size());
+        Log::Debug("  - %i materials", m_hostMaterials->size());
+        Log::Debug("  - %i textures", m_hostTextures->size());
     }
 
 }
