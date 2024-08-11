@@ -8,7 +8,7 @@ namespace Enso
 {
     namespace Cameras
     {
-        __host__ __device__ Ray CreatePinholeRay(const vec2& uvScreen, const vec3& cameraPos, const vec3& cameraLookAt, const float& fov)
+        __host__ __device__ __forceinline__ Ray CreatePinholeRay(const vec2& uvScreen, const vec3& cameraPos, const vec3& cameraLookAt, const float& fov)
         {
             Ray ray;
             ray.od.o = cameraPos;

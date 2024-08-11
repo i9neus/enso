@@ -7,9 +7,9 @@
 #include "core/DirtinessFlags.cuh"
 #include "core/Image.cuh"
 #include "core/GenericObject.cuh"
+#include "core/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
-#include "NLM.cuh"
 //#include "core/3d/BidirectionalTransform.cuh"
 
 namespace Enso
@@ -18,61 +18,51 @@ namespace Enso
     struct Ray;
     struct HitCtx;
     
-    struct PathTracerParams
+    struct RasteriserParams
     {
-        __host__ __device__ PathTracerParams();
+        __host__ __device__ RasteriserParams();
         __device__ void Validate() const;
 
         struct
         {
             ivec2 dims;
             BBox2f objectBounds;
-        } 
+        }
         viewport;
-        
+
+        int frameIdx;
+        float wallTime;
         bool hasValidScene;
     };
 
-    struct PathTracerObjects
+    struct RasteriserObjects
     {
         __host__ __device__ void Validate() const
         {
-            CudaAssert(transforms);
-            CudaAssert(meanAccumBuffer);
-            CudaAssert(varAccumBuffer);
-            CudaAssert(denoisedBuffer);           
+            CudaAssert(frameBuffer);      
         }
         
-        Device::ImageRGBW*                  meanAccumBuffer = nullptr;
-        Device::ImageRGBW*                  varAccumBuffer = nullptr;
-        Device::ImageRGB*                   denoisedBuffer = nullptr;
-        Device::Vector<BidirectionalTransform>* transforms = nullptr;
-
+        Device::ImageRGBW*                  frameBuffer = nullptr;
         Device::Camera*                     activeCamera = nullptr;
         Device::Vector<Device::Tracable*>*  tracables = nullptr;
-        Device::Vector<Device::Light*>*     lights = nullptr;
-        Device::Vector<Device::Texture2D*>* textures = nullptr;
-        Device::Vector<Device::Material*>*  materials = nullptr;
     };
 
-    namespace Host { class PathTracer; }
+    namespace Host { class Rasteriser; }
 
     namespace Device
     {
-        class PathTracer : public Device::DrawableObject, public Device::RenderableObject
+        class Rasteriser : public Device::DrawableObject
         {
-            friend Host::PathTracer;
+            friend Host::Rasteriser;
 
         public:
-            __host__ __device__ PathTracer() {}
+            __host__ __device__ Rasteriser() {}
             
             //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
-            __device__ void Denoise();
-            __device__ void Composite(Device::ImageRGBA* outputImage, const bool isValidScene);
 
-            __host__ __device__ void Synchronise(const PathTracerParams& params);
-            __device__ void Synchronise(const PathTracerObjects& objects);
+            __host__ __device__ void Synchronise(const RasteriserParams& params);
+            __device__ void Synchronise(const RasteriserObjects& objects);
 
             __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
@@ -80,10 +70,8 @@ namespace Enso
         private:
             __device__ int Trace(Ray& ray, HitCtx& hit) const;
 
-            PathTracerParams            m_params;
-            PathTracerObjects           m_objects;
-
-            NLMDenoiser                 m_nlm;
+            RasteriserParams            m_params;
+            RasteriserObjects           m_objects;
 
             //Device::ComponentContainer        m_scene;
         };
@@ -91,18 +79,17 @@ namespace Enso
 
     namespace Host
     {
-        class PathTracer : public Host::DrawableObject, public Host::RenderableObject
+        class Rasteriser : public Host::DrawableObject, Host::RenderableObject
         {
         public:
-            __host__                    PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
-            __host__ virtual            ~PathTracer() noexcept;
+            __host__                    Rasteriser(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
+            __host__ virtual            ~Rasteriser() noexcept;
 
             __host__ virtual void       Render() override final;
-            __host__ void               Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
             __host__ void               Clear();
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
-            __host__ static const std::string  GetAssetClassStatic() { return "pathtracer"; }
+            __host__ static const std::string  GetAssetClassStatic() { return "rasteriser"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
             __host__ virtual void       Bind(GenericObjectContainer& objects) override final;
@@ -112,7 +99,7 @@ namespace Enso
             __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() override final;
             __host__ virtual bool       HasOverlay() const override { return true; }
 
-            __host__ virtual Device::PathTracer* GetDeviceInstance() const override final
+            __host__ virtual Device::Rasteriser* GetDeviceInstance() const override final
             {
                 return cu_deviceInstance;
             }
@@ -123,8 +110,6 @@ namespace Enso
             __host__ virtual bool       OnRebuildDrawableObject() override final;
 
         private:
-            __host__ void               CreateScene();
-
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
             {
@@ -133,16 +118,15 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            Device::PathTracer*               cu_deviceInstance = nullptr;
-            Device::PathTracer                m_hostInstance;
-            PathTracerObjects                 m_deviceObjects;
-            PathTracerParams                  m_params;
+            Device::Rasteriser*               cu_deviceInstance = nullptr;
+            Device::Rasteriser                m_hostInstance;
+            RasteriserObjects                 m_deviceObjects;
+            RasteriserParams                  m_params;
+            HighResolutionTimer               m_wallTime;
             HighResolutionTimer               m_renderTimer;
             HighResolutionTimer               m_redrawTimer;
 
-            AssetHandle<Host::ImageRGBW>      m_hostMeanAccumBuffer;
-            AssetHandle<Host::ImageRGBW>      m_hostVarAccumBuffer;
-            AssetHandle<Host::ImageRGB>       m_hostDenoisedBuffer;
+            AssetHandle<Host::ImageRGBW>      m_hostFrameBuffer;
 
             AssetHandle<Host::SceneContainer> m_hostSceneContainer;
             AssetHandle<Host::Camera>         m_hostActiveCamera;

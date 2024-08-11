@@ -10,6 +10,7 @@
 #include "core/2d/bih/BIH2DAsset.cuh"
 
 #include "pathtracer/PathTracer.cuh"
+#include "rasteriser/Rasteriser.cuh"
 
 #include "scene/SceneBuilder.cuh"
 #include "scene/SceneContainer.cuh"
@@ -53,8 +54,9 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
     {
-        Log::Error("%i", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
         m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_componentFactory.RegisterInstantiator<Host::Rasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+
 
         //m_componentFactory.RegisterInstantiator<Host::ViewportRenderer>();
         //m_componentFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
@@ -70,8 +72,6 @@ namespace Enso
         m_uiGraph.DeclareState("kCreateDrawableObjectAppend", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareState("kCreateDrawableObjectClose", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'E', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectOpen", "kCreateDrawableObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectHover", VirtualKeyMap::Nothing(), kUITriggerOnMouseMove);
@@ -694,11 +694,16 @@ namespace Enso
 
         for (auto& object : *m_objectContainer)
         {
-            AssetHandle<Host::PathTracer> pt = object.DynamicCast<Host::PathTracer>();
-            if (pt)
+            AssetHandle<Host::RenderableObject> renderable = object.DynamicCast<Host::RenderableObject>();
+            if (renderable)
             {
-                pt->Prepare();
-                pt->Render();
+                renderable->Prepare();
+                renderable->Render();
+            }
+
+            if (!object->IsClean()) 
+            {
+                object->Synchronise(kSyncParams);
             }
         }
 

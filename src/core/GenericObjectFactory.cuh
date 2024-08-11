@@ -64,6 +64,8 @@ namespace Enso
         template<typename HostClass>
         __host__ void GenericObjectFactory<TypePack...>::RegisterInstantiator(const uint hash)
         {
+            Log::Debug("Instantiator hash: %i", hash);
+            
             const auto id = HostClass::GetAssetClassStatic();
             auto it = m_instantiators.find(id);
             AssertMsgFmt(it == m_instantiators.end(),

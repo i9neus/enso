@@ -26,7 +26,9 @@ namespace Enso
 
     struct DrawableObjectParams
     {
-        __host__ __device__ DrawableObjectParams() {}
+        __host__ __device__ DrawableObjectParams() :
+            attrFlags(0)
+        {}
         __device__ void Validate() const {}
 
         BBox2f                      objectBBox;
@@ -55,11 +57,11 @@ namespace Enso
             
             __host__ __device__ const BidirectionalTransform2D& GetTransform() const { return m_params.transform; }
             __host__ __device__ const BBox2f&            GetWorldBBox() const { return m_params.worldBBox; }
-            __host__ __device__ const BBox2f&            GetObjectBBox() const { return m_params.objectBBox; }            DrawableObjectParams m_params;
+            __host__ __device__ const BBox2f&            GetObjectBBox() const { return m_params.objectBBox; }            
 
 
         protected:
-            __host__ __device__  DrawableObject() {}
+            __host__ __device__                 DrawableObject() {}
 
             __device__ bool                     EvaluateControlHandles(const vec2& pWorld, const UIViewCtx& viewCtx, vec4& L) const;
             __host__ __device__ BidirectionalTransform2D& GetTransform() { return m_params.transform; }
@@ -69,8 +71,11 @@ namespace Enso
                 return pWorld - m_params.transform.trans;
             }
 
+        protected:
+            DrawableObjectParams    m_params;
+
         private:
-            BBox2f m_handleInnerBBox;
+            BBox2f                  m_handleInnerBBox;
         };
     }
 
@@ -147,7 +152,7 @@ namespace Enso
         private:
             Device::DrawableObject&                         m_hostInstance;
             Device::DrawableObject*                         cu_deviceInstance = nullptr;
-
+             
             struct
             {
                 vec2 dragAnchorDelta;

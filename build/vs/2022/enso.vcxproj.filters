@@ -142,6 +142,9 @@
     <Filter Include="core\2d\sdf">
       <UniqueIdentifier>{705a5556-8432-4caa-952b-433bbaffc052}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\gaussiansplatting\rasteriser">
+      <UniqueIdentifier>{50263c2f-ca18-41cf-8802-b668b3c54e7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -755,6 +758,9 @@
     <ClInclude Include="..\..\..\src\core\Vector.cuh">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\rasteriser\Rasteriser.cuh">
+      <Filter>modules\gaussiansplatting\rasteriser</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -858,6 +864,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\Vector.cu">
       <Filter>core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\rasteriser\Rasteriser.cu">
+      <Filter>modules\gaussiansplatting\rasteriser</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

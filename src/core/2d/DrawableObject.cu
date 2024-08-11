@@ -35,7 +35,7 @@ namespace Enso
         GenericObject(initCtx),
         m_hostInstance(*hostInstance)
     {
-        
+
     }
 
     __host__ void Host::DrawableObject::SetDeviceInstance(Device::DrawableObject* deviceInstance)

@@ -28,7 +28,6 @@ namespace Enso
     __host__ __device__ PathTracerParams::PathTracerParams()
     {
         viewport.dims = ivec2(0);  
-        frameIdx = 0;
         hasValidScene = false;
     }
 
@@ -62,7 +61,7 @@ namespace Enso
     }
 
     __device__ void Device::PathTracer::Render()
-    {
+    {        
         CudaAssertDebug(m_objects.transforms->size() == 9);
 
         const ivec2 xyViewport = kKernelPos<ivec2>();
@@ -74,11 +73,11 @@ namespace Enso
 
         // Create a render context
         RenderCtx renderCtx;
-        renderCtx.rng.Initialise(HashOf(m_params.frameIdx, xyViewport.x, xyViewport.y));
-        renderCtx.qrng.Initialise(0x7a67bbfc, HashOf(xyViewport.x, xyViewport.y) + m_params.frameIdx);
+        renderCtx.rng.Initialise(HashOf(RenderableObject::m_params.frameIdx, xyViewport.x, xyViewport.y));
+        renderCtx.qrng.Initialise(0x7a67bbfc, HashOf(xyViewport.x, xyViewport.y) + RenderableObject::m_params.frameIdx);
         renderCtx.viewport.dims = m_params.viewport.dims;
         renderCtx.viewport.xy = xyViewport;
-        renderCtx.frameIdx = m_params.frameIdx;
+        renderCtx.frameIdx = RenderableObject::m_params.frameIdx;
 
         // Transform into normalised sceen space
         const vec4 xi = renderCtx.Rand(0);
@@ -203,7 +202,7 @@ namespace Enso
         if (!m_params.hasValidScene)
         {
             const float hatch = step(0.8f, fract(0.05f * dot(pWorld / viewCtx.dPdXY, vec2(1.f))));
-            return vec4(kOne * hatch * 0.5f, 1.f);
+            return vec4(kOne * hatch * 0.1f, 1.f);
         }
         else if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
         {
@@ -239,6 +238,7 @@ namespace Enso
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this))
     {                
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
+        RenderableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::RenderableObject>(cu_deviceInstance));
         
         constexpr int kViewportWidth = 1200;
         constexpr int kViewportHeight = 675;
@@ -260,9 +260,6 @@ namespace Enso
 
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
-        m_params.frameIdx = 0;
-        m_params.wallTime = 0.f;
-        m_wallTime.Reset();
 
         CreateScene();
     }
@@ -345,6 +342,8 @@ namespace Enso
     __host__ void Host::PathTracer::Render()
     {        
         if (!m_hostSceneContainer || !m_hostActiveCamera) { return; }
+
+        if (!IsClean()) { Synchronise(kSyncParams); }
         
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
@@ -374,7 +373,7 @@ namespace Enso
 
         if (m_renderTimer.Get() > 1.)
         {
-            Log::Debug("Frame: %i", m_params.frameIdx);
+            Log::Debug("Frame: %i", RenderableObject::m_params.frameIdx);
             m_renderTimer.Reset();
         }
     }
@@ -388,21 +387,10 @@ namespace Enso
         IsOk(cudaDeviceSynchronize());
     }
 
-    __host__ bool Host::PathTracer::Prepare()
-    {
-        m_params.frameIdx++;
-        m_params.wallTime = m_wallTime.Get();
-
-        // Upload to the device
-        Synchronise(kSyncParams);
-        return true;
-    }
-
     __host__ void Host::PathTracer::Clear()
     {
         m_hostMeanAccumBuffer->Clear(vec4(0.f));
 
-        m_params.frameIdx = 0;  
         Synchronise(kSyncParams);
     }
 

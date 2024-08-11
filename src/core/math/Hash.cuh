@@ -14,12 +14,13 @@ namespace Enso
     {
         static_assert(std::is_integral<T>::value, "HashCombine requires integral type.");
         
-        // Shadertoy function
-        /*return (((a << (31 - (b & 31))) | (a >> (b & 31)))) ^
-                ((b << (a & 31)) | (b >> (31 - (a & 31))));*/
+        // My Shadertoy function
+        return (((a << (31 - (b & 31))) | (a >> (b & 31)))) ^
+                ((b << (a & 31)) | (b >> (31 - (a & 31))));
 
-        // Based on Boost's hash_combine()         
-        return b + 0x9e3779b9 + (a << 6) + (a >> 2);
+        // Based on Boost's hash_combine().
+        // NOTE: Collides badly when hashing a string with only one letter difference
+        //return b + 0x9e3779b9 + (a << 6) + (a >> 2);
     }
 
     // Mix and combine hashes
