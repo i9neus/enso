@@ -103,7 +103,7 @@ namespace Enso
         m_seed(0) 
     {}
 
-    __device__ void OwenSobol::Initialise(const uint sampleIdx, const uint& seed)
+    __device__ void OwenSobol::Initialise(const uint seed, const uint sampleIdx)
     {
         m_sampleIdx = sampleIdx;
         m_seed = seed; 
@@ -111,12 +111,13 @@ namespace Enso
 
     __device__ vec4 OwenSobol::Rand(uint dim)
     {
+        const uint seed = hash_combine(m_seed, dim);
+        const uint index = nested_uniform_scramble_base2(m_sampleIdx, seed);
         vec4 xi;
-        for (uint d = 0; d < 4; ++d, ++dim) 
+        for (uint d = 0u; d < 5u; ++d)
         {
-            const uint index = nested_uniform_scramble_base2(m_sampleIdx, m_seed);
-            xi[d] = nested_uniform_scramble_base2(sobol(index, d), hash_combine(m_seed, dim)) * (1.0f / 0xffffffff);
-        }
+            xi[d] = float(nested_uniform_scramble_base2(sobol(index, d), hash_combine(seed, d))) / float(0xffffffffu);
+        }       
 
         return xi;
     }
