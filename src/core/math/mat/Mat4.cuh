@@ -70,6 +70,24 @@ namespace Enso
 			const char nl = pretty ? '\n' : ' ';
 			return tfm::format("{%s,%c%s,%c%s,%c%}", x.format(), nl, y.format(), nl, z.format(), nl, w.format());
 		}
+
+		__host__ __device__ __forceinline__ mat4 operator*=(const float v)
+		{
+			i00 *= v; i01 *= v; i02 *= v; i03 *= v;
+			i10 *= v; i11 *= v; i12 *= v; i13 *= v;
+			i20 *= v; i21 *= v; i22 *= v; i23 *= v;
+			i30 *= v; i31 *= v; i32 *= v; i33 *= v;
+			return *this;
+		}
+
+		__host__ __device__ __forceinline__ mat4 operator/=(const float v)
+		{
+			i00 /= v; i01 /= v; i02 /= v; i03 /= v;
+			i10 /= v; i11 /= v; i12 /= v; i13 /= v;
+			i20 /= v; i21 /= v; i22 /= v; i23 /= v;
+			i30 /= v; i31 /= v; i32 /= v; i33 /= v;
+			return *this;
+		}
 	};
 
 	//template<typename T>
@@ -95,12 +113,6 @@ namespace Enso
 		r.i23 = a.i20 * b.i03 + a.i21 * b.i13 + a.i22 * b.i23 + a.i23 * b.i33;
 		r.i33 = a.i30 * b.i03 + a.i31 * b.i13 + a.i32 * b.i23 + a.i33 * b.i33;
 		return r;
-	}
-
-	__host__ __device__ __forceinline__ mat4& operator *=(mat4& a, const mat4& b)
-	{
-		const mat4 r = a * b;
-		return a = r;
 	}
 
 	__host__ __device__ __forceinline__ vec4 operator *(const mat4& a, const vec4& b)

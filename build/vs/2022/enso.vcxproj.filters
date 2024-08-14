@@ -760,6 +760,8 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\rasteriser\Rasteriser.cuh">
       <Filter>modules\gaussiansplatting\rasteriser</Filter>
+    <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh">
+      <Filter>core\math\mat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

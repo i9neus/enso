@@ -56,6 +56,20 @@ namespace Enso
 		__host__ __device__ __forceinline__ const VecType& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ __forceinline__ VecType& operator[](const unsigned int idx) { return data[idx]; }
 
+		__host__ __device__ __forceinline__ __mat2 operator*=(const Type v)
+		{
+			i00 *= v; i01 *= v; 
+			i10 *= v; i11 *= v; 
+			return *this;
+		}
+
+		__host__ __device__ __forceinline__ __mat2 operator/=(const Type v)
+		{
+			i00 /= v; i01 /= v;
+			i10 /= v; i11 /= v;
+			return *this;
+		}
+
 		__host__ inline std::string format(const bool pretty = false) const
 		{
 			const char nl = pretty ? '\n' : ' ';

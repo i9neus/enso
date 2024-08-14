@@ -121,6 +121,7 @@
     <ClInclude Include="..\..\..\src\core\math\mat\Mat3.cuh" />
     <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Mappings.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Halton.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh" />

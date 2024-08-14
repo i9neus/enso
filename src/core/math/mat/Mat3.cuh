@@ -12,6 +12,7 @@ namespace Enso
 	{
 		enum _attrs : size_t { kDims = 3 };
 		using VecType = __vec_swizzle<Type, 3, 3, 0, 1, 2>;
+		using ScaType = Type;
 
 		union
 		{
@@ -26,6 +27,7 @@ namespace Enso
 		};
 
 		__host__ __device__ __forceinline__ __mat3() {}
+		__host__ __device__ __forceinline__ explicit __mat3(const float v) : x(v), y(v), z(v) {}
 		//__host__ __device__ __forceinline__ __mat3(const __mat3&) = default; // NOTE: Commented out to suppress nvcc compiler warnings
 		
 		// Column-major order used by GLSL and Shadertoy
@@ -50,12 +52,28 @@ namespace Enso
 			i20(i20_), i21(i21_), i22(i22_) {}
 		*/
 
+		__host__ __device__ __forceinline__ __mat3& MakeIdentity()
+		{
+			x = VecType(1.0f, 0.0f, 0.0f); 
+			y = VecType(0.0f, 1.0f, 0.0f);
+			z = VecType(0.0f, 0.0f, 1.0f);
+			return *this;
+		}
+
+		__host__ __device__ __forceinline__  __mat3& MakeZeros()
+		{
+			x = VecType(0.0f, 0.0f, 0.0f);
+			y = VecType(0.0f, 1.0f, 0.0f);
+			z = VecType(0.0f, 0.0f, 0.0f);
+			return *this;
+		}
+
 		__host__ __device__ __forceinline__ static __mat3 Identity()
 		{
 			return __mat3(VecType(1.0f, 0.0f, 0.0f), VecType(0.0f, 1.0f, 0.0f), VecType(0.0f, 0.0f, 1.0f));
 		}
 
-		__host__ __device__ __forceinline__  static __mat3 Null()
+		__host__ __device__ __forceinline__  static __mat3 Zeros()
 		{
 			return __mat3(VecType(0.0f, 0.0f, 0.0f), VecType(0.0f, 0.0f, 0.0f), VecType(0.0f, 0.0f, 0.0f));
 		}
@@ -67,6 +85,28 @@ namespace Enso
 
 		__host__ __device__ __forceinline__ const VecType& operator[](const unsigned int idx) const { return data[idx]; }
 		__host__ __device__ __forceinline__ VecType& operator[](const unsigned int idx) { return data[idx]; }
+
+		__host__ __device__ __forceinline__ __mat3& operator*=(const Type v)
+		{
+			i00 *= v; i01 *= v; i02 *= v;
+			i10 *= v; i11 *= v; i12 *= v;
+			i20 *= v; i21 *= v; i22 *= v;
+			return *this;
+		}
+
+		__host__ __device__ __forceinline__ __mat3& operator/=(const Type v)
+		{
+			i00 /= v; i01 /= v; i02 /= v;
+			i10 /= v; i11 /= v; i12 /= v;
+			i20 /= v; i21 /= v; i22 /= v;
+			return *this;
+		}
+
+		__host__ __device__ __forceinline__ __mat3& operator*=(const __mat3& v)
+		{
+			*this = *this * v;
+			return  *this;
+		}
 
 		__host__ inline std::string format(const bool pretty = false) const
 		{
@@ -96,13 +136,6 @@ namespace Enso
 	}
 
 	template<typename Type>
-	__host__ __device__ __forceinline__ __mat3<Type>& operator *=(__mat3<Type>& a, const __mat3<Type>& b)
-	{
-		const __mat3<Type> r = a * b;
-		return a = r;
-	}
-
-	template<typename Type>
 	__host__ __device__ __forceinline__ typename __mat3<Type>::VecType operator *(const __mat3<Type>& a, const typename __mat3<Type>::VecType& b)
 	{
 		typename __mat3<Type>::VecType r;
@@ -123,6 +156,12 @@ namespace Enso
 
 	template<typename Type>
 	__host__ __device__ __forceinline__ __mat3<Type> operator *(const __mat3<Type>& a, const Type& b)
+	{
+		return __mat3<Type>(a[0] * b, a[1] * b, a[2] * b);
+	}
+
+	template<typename Type>
+	__host__ __device__ __forceinline__ __mat3<Type> operator *(const Type& b, const __mat3<Type>& a)
 	{
 		return __mat3<Type>(a[0] * b, a[1] * b, a[2] * b);
 	}
