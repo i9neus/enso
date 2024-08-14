@@ -150,7 +150,7 @@ namespace Enso
 
         // Generate some random numbers
         //vec4 xi = Rand(renderCtx.rng);
-        vec4 xi = renderCtx.Rand((1 + incidentRay.depth) * 4);
+        vec4 xi = renderCtx.Rand(1 + incidentRay.depth);
         float xiSplit = fract(OrderedDither(renderCtx.viewport.xy) + float(renderCtx.frameIdx) / 16.);
 
         // Compound BxDFs need to be stochastically sampled

@@ -13,6 +13,7 @@
 
 #include "../SceneObject.cuh"
 #include "../../FwdDecl.cuh"
+#include "../pointclouds/GaussianPointCloud.cuh"
 
 namespace Enso
 {
@@ -86,6 +87,9 @@ namespace Enso
                 }
                 OnSynchroniseTracable(syncFlags);
             }
+
+            __host__ virtual std::vector<GaussianPoint> GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng) = 0;
+            __host__ virtual float CalculateSurfaceArea() const  = 0;
 
         protected:
             __host__ Tracable(const Asset::InitCtx& initCtx) : SceneObject(initCtx) {}

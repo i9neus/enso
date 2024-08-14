@@ -18,10 +18,9 @@ namespace Enso
     struct Ray;
     struct HitCtx;
     
-    struct RasteriserParams
+    struct SplatRasteriserParams
     {
-        __host__ __device__ RasteriserParams();
-        __device__ void Validate() const;
+        __device__ void Validate() const {}
 
         struct
         {
@@ -30,12 +29,10 @@ namespace Enso
         }
         viewport;
 
-        int frameIdx;
-        float wallTime;
-        bool hasValidScene;
+        bool hasValidSplatCloud = false;
     };
 
-    struct RasteriserObjects
+    struct SplatRasteriserObjects
     {
         __host__ __device__ void Validate() const
         {
@@ -43,26 +40,26 @@ namespace Enso
         }
         
         Device::ImageRGBW*                  frameBuffer = nullptr;
+        Device::Vector<GaussianPoint>*      pointCloud = nullptr;
         Device::Camera*                     activeCamera = nullptr;
-        Device::Vector<Device::Tracable*>*  tracables = nullptr;
     };
 
-    namespace Host { class Rasteriser; }
+    namespace Host { class SplatRasteriser; }
 
     namespace Device
     {
-        class Rasteriser : public Device::DrawableObject
+        class SplatRasteriser : public Device::DrawableObject, public Device::RenderableObject
         {
-            friend Host::Rasteriser;
+            friend Host::SplatRasteriser;
 
         public:
-            __host__ __device__ Rasteriser() {}
+            __host__ __device__ SplatRasteriser() {}
             
             //__device__ void Prepare(const uint dirtyFlags);
             __device__ void Render();
 
-            __host__ __device__ void Synchronise(const RasteriserParams& params);
-            __device__ void Synchronise(const RasteriserObjects& objects);
+            __host__ __device__ void Synchronise(const SplatRasteriserParams& params);
+            __device__ void Synchronise(const SplatRasteriserObjects& objects);
 
             __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
@@ -70,8 +67,8 @@ namespace Enso
         private:
             __device__ int Trace(Ray& ray, HitCtx& hit) const;
 
-            RasteriserParams            m_params;
-            RasteriserObjects           m_objects;
+            SplatRasteriserParams            m_params;
+            SplatRasteriserObjects           m_objects;
 
             //Device::ComponentContainer        m_scene;
         };
@@ -79,17 +76,17 @@ namespace Enso
 
     namespace Host
     {
-        class Rasteriser : public Host::DrawableObject, Host::RenderableObject
+        class SplatRasteriser : public Host::DrawableObject, public Host::RenderableObject
         {
         public:
-            __host__                    Rasteriser(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
-            __host__ virtual            ~Rasteriser() noexcept;
+            __host__                    SplatRasteriser(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
+            __host__ virtual            ~SplatRasteriser() noexcept;
 
             __host__ virtual void       Render() override final;
             __host__ void               Clear();
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
-            __host__ static const std::string  GetAssetClassStatic() { return "rasteriser"; }
+            __host__ static const std::string  GetAssetClassStatic() { return "splatrasteriser"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
             __host__ virtual void       Bind(GenericObjectContainer& objects) override final;
@@ -99,7 +96,7 @@ namespace Enso
             __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() override final;
             __host__ virtual bool       HasOverlay() const override { return true; }
 
-            __host__ virtual Device::Rasteriser* GetDeviceInstance() const override final
+            __host__ virtual Device::SplatRasteriser* GetDeviceInstance() const override final
             {
                 return cu_deviceInstance;
             }
@@ -110,6 +107,8 @@ namespace Enso
             __host__ virtual bool       OnRebuildDrawableObject() override final;
 
         private:
+            __host__ void               RebuildSplatCloud();
+
             template<typename T>
             __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
             {
@@ -118,10 +117,10 @@ namespace Enso
                 gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
             }
 
-            Device::Rasteriser*               cu_deviceInstance = nullptr;
-            Device::Rasteriser                m_hostInstance;
-            RasteriserObjects                 m_deviceObjects;
-            RasteriserParams                  m_params;
+            Device::SplatRasteriser*          cu_deviceInstance = nullptr;
+            Device::SplatRasteriser           m_hostInstance;
+            SplatRasteriserObjects            m_objects;
+            SplatRasteriserParams             m_params;
             HighResolutionTimer               m_wallTime;
             HighResolutionTimer               m_renderTimer;
             HighResolutionTimer               m_redrawTimer;
@@ -130,6 +129,7 @@ namespace Enso
 
             AssetHandle<Host::SceneContainer> m_hostSceneContainer;
             AssetHandle<Host::Camera>         m_hostActiveCamera;
+            AssetHandle<Host::GaussianPointCloud> m_gaussianPointCloud;
 
             AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
         };

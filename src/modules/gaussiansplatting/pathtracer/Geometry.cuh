@@ -123,7 +123,7 @@ namespace Enso
             }
 
             // Make all materials diffuse Lambert
-            if (hit.matID != kMatInvalid && hit.matID != kMatEmitter) { hit.matID = kMatLambertian; }
+            //if (hit.matID != kMatInvalid && hit.matID != kMatEmitter) { hit.matID = kMatLambertian; }
 
             return hit.matID;
         }

@@ -12,8 +12,8 @@
 #define kKernelX				(blockIdx.x * blockDim.x + threadIdx.x)	
 #define kKernelY				(blockIdx.y * blockDim.y + threadIdx.y)	
 #define kKernelIdx				kKernelX
-#define kThreadIdx				threadIdx.x
-#define kBlockIdx				blockIdx.x
+#define kThreadIdx				(threadIdx.x * blockDim.x + threadIdx.y)
+#define kBlockIdx				(blockIdx.y * gridDim.x + blockIdx.x)
 #define kWarpLane				(threadIdx.x & 31)
 #define kKernelWidth			(gridDim.x * blockDim.x)
 #define kKernelHeight			(gridDim.y * blockDim.y)

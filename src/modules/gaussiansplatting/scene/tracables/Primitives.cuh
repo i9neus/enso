@@ -44,10 +44,16 @@ namespace Enso
             __host__                Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params);
             __host__ virtual        ~Primitive();
 
+            __host__ virtual std::vector<GaussianPoint> GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng) override final;
+            __host__ virtual float  CalculateSurfaceArea() const override final;
+
             __host__ virtual void   OnSynchroniseTracable(const uint syncFlags) override final
             {
                 SynchroniseObjects<DeviceType>(cu_deviceInstance, m_params);
             }
+
+        private:
+            __host__ GaussianPoint GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const;
 
         private:
             DeviceType*           cu_deviceInstance;

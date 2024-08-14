@@ -125,7 +125,26 @@ namespace Enso
 
             __host__ size_t Size() const { return m_objectMap.size(); }
 
-            __host__ void Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath = true);
+            template <typename ObjectType, typename = typename std::enable_if_t<std::is_base_of<Host::GenericObject, ObjectType>::value>>
+            __host__ void Emplace(AssetHandle<ObjectType>& newObject, const bool requireDAGPath = true) 
+            {
+                AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
+
+                // Store a strong reference to the object in the object map
+                m_objectMap[newObject->GetAssetID()] = newObject;
+                ++m_uniqueIdx;
+
+                // If the object has a DAG path, add it to the map alongside its weak reference
+                const std::string dagPath = newObject->GetAssetDAGPath();
+                if (m_dagMap.find(dagPath) == m_dagMap.end())
+                {
+                    m_dagMap[dagPath] = newObject.GetWeakHandle();
+                }
+                else
+                {
+                    Log::Error("Internal error: object '%s' has the same DAG path (%s) as another object.\n", newObject->GetAssetID(), dagPath);
+                }
+            }
 
             __host__ bool Erase(const Host::GenericObject& obj, const bool mustExist);
             __host__ bool Erase(const std::string& id, const bool mustExist);

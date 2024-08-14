@@ -176,6 +176,11 @@ namespace Enso
 			}
 			//template<typename... Pack> __host__ __forceinline__ void emplace_back(Pack... pack) { m_hostData.emplace_back(pack...); }
 			__host__ __forceinline__ void push_back(const HostType& newElement) { m_hostData.push_back(newElement); }
+			__host__ __forceinline__ void insert(const std::vector<HostType>& container) 
+			{ 
+				m_hostData.reserve(m_hostData.size() + container.size());
+				m_hostData.insert(m_hostData.end(), container.begin(), container.end());
+			}
 
 			__host__ __forceinline__ HostType pop_back()
 			{

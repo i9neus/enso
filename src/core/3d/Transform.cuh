@@ -95,6 +95,11 @@ namespace Enso
 		{
 			return inv * n;
 		}
+
+		__host__ __device__ __forceinline__ vec3 PointToWorldSpace(const vec3& p) const
+		{
+			return (inv * p) * sca + trans;
+		}
 	};	
 
 	__host__ __device__ __forceinline__ vec2 ScreenToNormalisedScreen(const vec2& p, const vec2& viewportRes)

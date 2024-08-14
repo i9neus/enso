@@ -14,12 +14,14 @@ namespace Enso
 
         __device__ void Validate() const
         {
-            CudaAssert(fabsf(trace(cameraBasis)) > 1e-10f);
+            CudaAssert(fabsf(trace(fwd)) > 1e-10f);
         }
 
         vec3 cameraPos;
         vec3 cameraLookAt;
-        mat3 cameraBasis;        
+        float cameraFov;
+        mat3 fwd;     
+        mat3 inv;
     };
      
     namespace Host { class Tracable; }
@@ -31,6 +33,10 @@ namespace Enso
         {
         public:
             __device__ virtual bool                 CreateRay(const vec2& uvView, const vec2& xi, Ray& ray) const = 0;
+            __device__ virtual vec2                 ProjectPoint(vec3 p) const = 0;
+
+            __device__ __forceinline__ const CameraParams& GetCameraParams() const { return m_params; }
+
             __device__ void                         Synchronise(const CameraParams& params) { m_params = params; }
 
         protected:
@@ -54,11 +60,13 @@ namespace Enso
                 OnSynchroniseCamera(syncFlags);
             }
 
-            __host__ void Prepare(const vec3& cameraPos, const vec3& lookAt)
+            __host__ void Prepare(const vec3& cameraPos, const vec3& lookAt, const float fov)
             {
                 m_params.cameraPos = cameraPos;
                 m_params.cameraLookAt = lookAt;
-                m_params.cameraBasis = CreateBasisTranspose(normalize(m_params.cameraPos - m_params.cameraLookAt), vec3(0.f, 1.f, 0.f));
+                m_params.cameraFov = fov;
+                m_params.inv = CreateBasis(normalize(m_params.cameraPos - m_params.cameraLookAt), vec3(0.f, 1.f, 0.f));
+                m_params.fwd = transpose(m_params.inv);
             }
 
             __host__ Device::Camera*    GetDeviceInstance() { return cu_deviceInstance; }

@@ -10,6 +10,8 @@ namespace Enso
     using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
     using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
     class BidirectionalTransform;
+    class MersenneTwister; 
+    class GaussianPoint;
     
     template<size_t> class UIButtonMap;
     using VirtualKeyMap = UIButtonMap<256>;
@@ -42,6 +44,7 @@ namespace Enso
         class SceneContainer;
         class SceneBuilder;
         class GenericObject;
+        class GaussianPointCloud;
 
         template<typename> class Vector;
     }
@@ -65,6 +68,7 @@ namespace Enso
         class SceneBuilder;
         class GenericObject;
         class RenderableObject;
+        class GaussianPointCloud;
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

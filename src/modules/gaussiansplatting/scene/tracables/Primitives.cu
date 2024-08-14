@@ -3,6 +3,10 @@
 #include "core/3d/primitives/GenericIntersector.cuh"
 #include "core/3d/Ctx.cuh"
 #include "core/3d/Transform.cuh"
+#include "core/math/Mappings.cuh"
+
+#include "../pointclouds/GaussianPointCloud.cuh"
+#include "core/math/samplers/MersenneTwister.cuh"
 
 namespace Enso
 {
@@ -87,6 +91,69 @@ namespace Enso
         Tracable::m_params.transform = transform;
         Tracable::m_params.materialIdx = materialIdx;
         Synchronise(kSyncParams);
+    }
+
+    template<typename ParamsType>
+    __host__ GaussianPoint Host::Primitive<ParamsType>::GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const
+    {
+        GaussianPoint pt;
+        pt.p = p;
+        pt.rot = normalize(mix(vec4(-1.f), vec4(1.f), rng.Rand4()));
+        pt.sca = gaussSigma * mix(vec3(0.1f), vec3(1.0f), rng.Rand3());
+        pt.rgba.xyz = rng.Rand3();
+        pt.rgba.w = 1.f;
+        return pt;
+    }
+
+    template<>
+    __host__ std::vector<GaussianPoint> Host::Primitive<PlaneParams>::GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng)
+    {
+        if (!m_params.isBounded)
+        {
+            Log::Error("Warning: cannot create points on an unbounded plane!");
+            return std::vector<GaussianPoint>();
+        }
+
+        const float gaussSigma = 0.5f * std::sqrt(CalculateSurfaceArea() / numPoints);
+
+        std::vector<GaussianPoint> points(numPoints);
+        const vec3 n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f));
+
+        for (auto& pt : points)
+        {
+            const vec3 p = vec3(mix(vec2(-.5f, -.5f), vec2(.5f, .5f), rng.Rand2()), 0.f);
+            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);           
+        }
+
+        return points;
+    }
+
+    template<>
+    __host__ std::vector<GaussianPoint> Host::Primitive<UnitSphereParams>::GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng)
+    {
+        const float gaussSigma = 0.5f * std::sqrt(CalculateSurfaceArea() / numPoints);
+
+        std::vector<GaussianPoint> points(numPoints);
+        for (auto& pt : points)
+        {
+            const vec3 p = SampleUnitSphere(rng.Rand2());
+            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);
+        }
+
+        return points;
+    }
+
+    template<>
+    __host__ float Host::Primitive<PlaneParams>::CalculateSurfaceArea() const
+    {
+        // NOTE: Unbounded planes have infinite surface area
+        return m_params.isBounded ? sqr(Tracable::m_params.transform.sca) : std::numeric_limits<float>::infinity();
+    }
+
+    template<>
+    __host__ float Host::Primitive<UnitSphereParams>::CalculateSurfaceArea() const
+    {
+        return 4. * kPi * sqr(Tracable::m_params.transform.sca);
     }
     
     template<typename ParamsType>

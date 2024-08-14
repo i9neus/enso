@@ -74,7 +74,7 @@ namespace Enso
         // Create a render context
         RenderCtx renderCtx;
         renderCtx.rng.Initialise(HashOf(RenderableObject::m_params.frameIdx, xyViewport.x, xyViewport.y));
-        renderCtx.qrng.Initialise(0x7a67bbfc, HashOf(xyViewport.x, xyViewport.y) + RenderableObject::m_params.frameIdx);
+        renderCtx.qrng.Initialise(0, HashOf(xyViewport.x, xyViewport.y) + RenderableObject::m_params.frameIdx);
         renderCtx.viewport.dims = m_params.viewport.dims;
         renderCtx.viewport.xy = xyViewport;
         renderCtx.frameIdx = RenderableObject::m_params.frameIdx;
@@ -82,15 +82,15 @@ namespace Enso
         // Transform into normalised sceen space
         const vec4 xi = renderCtx.Rand(0);
         const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
+        
         Ray directRay, indirectRay;
-
         m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
 
         int genFlags = kGeneratedIndirect;
         HitCtx hit;
         vec3 L = kZero;
         //int renderMode = (xyViewport.x < m_params.viewport.dims.x * 0.5f) ? kModePathTraced : kModeNEE;
-        const int renderMode = kModeNEE;
+        const int renderMode = kModePathTraced;
 
         constexpr int kMaxPathDepth = 5;
         constexpr int kMaxIterations = 10;
@@ -347,7 +347,7 @@ namespace Enso
         
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
-        //if (m_params.frameIdx > 10) return;
+        //if (RenderableObject::m_params.frameIdx > 10) return;
 
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostMeanAccumBuffer, blockSize, gridSize);

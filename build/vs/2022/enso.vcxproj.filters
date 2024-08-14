@@ -142,8 +142,11 @@
     <Filter Include="core\2d\sdf">
       <UniqueIdentifier>{705a5556-8432-4caa-952b-433bbaffc052}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\gaussiansplatting\rasteriser">
+    <Filter Include="modules\gaussiansplatting\splatcloud">
       <UniqueIdentifier>{50263c2f-ca18-41cf-8802-b668b3c54e7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\scene\pointclouds">
+      <UniqueIdentifier>{e7a5044d-dbb1-46d2-bde2-a415968fc050}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -758,8 +761,21 @@
     <ClInclude Include="..\..\..\src\core\Vector.cuh">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\rasteriser\Rasteriser.cuh">
-      <Filter>modules\gaussiansplatting\rasteriser</Filter>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cuh">
+      <Filter>modules\gaussiansplatting\splatcloud</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatOptimiser.cuh">
+      <Filter>modules\gaussiansplatting\splatcloud</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\samplers\MersenneTwister.cuh">
+      <Filter>core\math\samplers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cuh">
+      <Filter>modules\gaussiansplatting\scene\pointclouds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Quarternion.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh">
       <Filter>core\math\mat</Filter>
     </ClInclude>
@@ -867,8 +883,14 @@
     <CudaCompile Include="..\..\..\src\core\Vector.cu">
       <Filter>core</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\rasteriser\Rasteriser.cu">
-      <Filter>modules\gaussiansplatting\rasteriser</Filter>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cu">
+      <Filter>modules\gaussiansplatting\splatcloud</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatOptimiser.cu">
+      <Filter>modules\gaussiansplatting\splatcloud</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cu">
+      <Filter>modules\gaussiansplatting\scene\pointclouds</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

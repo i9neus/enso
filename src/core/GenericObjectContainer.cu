@@ -32,7 +32,8 @@ namespace Enso
         return success;
     }
 
-    __host__ void Host::GenericObjectContainer::Emplace(AssetHandle<Host::GenericObject>& newObject, const bool requireDAGPath)
+     /*template <typename ObjectType, typename>
+     __host__ void Host::GenericObjectContainer::Emplace(AssetHandle<ObjectType>& newObject, const bool requireDAGPath)
     {
         AssertMsgFmt(!Exists(newObject->GetAssetID()), "A render object with ID '%s' already exists in the object container.\n", newObject->GetAssetID().c_str());
 
@@ -50,7 +51,7 @@ namespace Enso
         {
             Log::Error("Internal error: object '%s' has the same DAG path (%s) as another object.\n", newObject->GetAssetID(), dagPath);
         }
-    }
+    }*/
 
     __host__ bool Host::GenericObjectContainer::Erase(const Host::GenericObject& obj, const bool mustExist)
     {

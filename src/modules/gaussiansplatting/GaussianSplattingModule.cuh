@@ -87,6 +87,7 @@ namespace Enso
 
             AssetHandle<Host::SceneContainer>       m_sceneContainer;
             Host::SceneBuilder                      m_sceneBuilder;
+            AssetHandle<Host::GaussianPointCloud>   m_gaussianPointCloud;
 
             UIGridCtx                               m_gridCtx;
             UIViewCtx                               m_viewCtx;

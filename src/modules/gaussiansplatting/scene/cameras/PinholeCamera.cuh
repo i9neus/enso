@@ -6,12 +6,9 @@ namespace Enso
 {
     struct PinholeCameraParams
     {
-        __host__ __device__ PinholeCameraParams() :
-            fov(45.) {}
+        __host__ __device__ PinholeCameraParams() {}
 
         __device__ void Validate() const {}
-
-        float fov;
     };
      
     namespace Device
@@ -27,13 +24,21 @@ namespace Enso
                 // uvView should be in the range [-0.5, 0.5]
 
                 ray.od.o = Camera::m_params.cameraPos;
-                ray.od.d = Camera::m_params.cameraBasis * normalize(vec3(uvView, -tanf(toRad(PinholeCamera::m_params.fov))));
+                ray.od.d = Camera::m_params.fwd * normalize(vec3(uvView, -1.0f / tanf(toRad(Camera::m_params.cameraFov))));
                 ray.tNear = kFltMax;
                 ray.weight = vec3(1.0, 1.0, 1.0);
                 ray.flags = kRayCausticPath;
                 ray.depth = 0;
 
                 return true;
+            }
+
+            __device__ virtual vec2 ProjectPoint(vec3 p) const override final
+            {
+                // Transform the point into the basis of the camera sensor
+                p = Camera::m_params.inv * (p - Camera::m_params.cameraPos);
+                
+                return p.xy / (p.z / -tanf(toRad(Camera::m_params.cameraFov)));
             }
 
             __device__ void  Synchronise(const PinholeCameraParams& params) { m_params = params; }
@@ -58,8 +63,7 @@ namespace Enso
             __host__ PinholeCamera(const Asset::InitCtx& initCtx, const vec3& cameraPos, const vec3& cameraBasis, const float fov) :
                 PinholeCamera(initCtx)
             {
-                Camera::Prepare(cameraPos, cameraBasis);
-                m_params.fov = fov;                                
+                Camera::Prepare(cameraPos, cameraBasis, fov);
                 
                 Synchronise(kSyncParams);
             }

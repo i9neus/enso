@@ -30,7 +30,7 @@ namespace Enso
         const float cameraPhi = -kPi;
         const vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;
         const vec3 cameraLookAt = vec3(0., -0., -0.);
-        cameras.push_back(AssetAllocator::CreateChildAsset<Host::PinholeCamera>(*scene, "pinholecamera", cameraPos, cameraLookAt, 50.));
+        cameras.push_back(AssetAllocator::CreateChildAsset<Host::PinholeCamera>(*scene, "pinholecamera", cameraPos, cameraLookAt, 40.));
 
         // Create some materials
 
@@ -48,7 +48,7 @@ namespace Enso
 
         // Ground plane        
         transform = BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f);
-        tracables.push_back(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "groundplane", transform, 5, PlaneParams{ false }));
+        tracables.push_back(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "groundplane", transform, 5, PlaneParams{ true }));
        
         // Emitter plane
         transform = BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca);

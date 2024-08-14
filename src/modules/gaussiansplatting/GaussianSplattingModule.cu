@@ -10,8 +10,10 @@
 #include "core/2d/bih/BIH2DAsset.cuh"
 
 #include "pathtracer/PathTracer.cuh"
-#include "rasteriser/Rasteriser.cuh"
+#include "splatcloud/SplatRasteriser.cuh"
+#include "splatcloud/SplatOptimiser.cuh"
 
+#include "scene/pointclouds/GaussianPointCloud.cuh"
 #include "scene/SceneBuilder.cuh"
 #include "scene/SceneContainer.cuh"
 
@@ -55,7 +57,7 @@ namespace Enso
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
     {
         m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_componentFactory.RegisterInstantiator<Host::Rasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_componentFactory.RegisterInstantiator<Host::SplatRasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
 
 
         //m_componentFactory.RegisterInstantiator<Host::ViewportRenderer>();
@@ -159,11 +161,13 @@ namespace Enso
 
         // The scene description contains objects used by the physically based renderer
         m_sceneContainer = AssetAllocator::CreateChildAsset<Host::SceneContainer>(*this, "scenecontainer");
-        m_objectContainer->Emplace(m_sceneContainer.StaticCast<Host::GenericObject>());
+        m_objectContainer->Emplace(m_sceneContainer);
 
         // Create some default scene objects
         Json::Node emptyDocument;
         m_viewportRenderer = AssetAllocator::CreateChildAsset<Host::ViewportRenderer>(*this, "viewportrenderer", m_objectContainer, m_clientWidth, m_clientHeight, m_renderStream);
+        m_gaussianPointCloud = AssetAllocator::CreateChildAsset<Host::GaussianPointCloud>(*this, "gaussianpointcloud");
+        m_objectContainer->Emplace(m_gaussianPointCloud);
 
         // Notify the UI that a bunch of objects has been created, then rebuild the component container
         m_sceneBuilder.Rebuild(m_sceneContainer);
@@ -181,6 +185,7 @@ namespace Enso
 
         //GlobalResourceRegistry::Get().Report();
 
+        m_gaussianPointCloud.DestroyAsset();
         m_sceneContainer.DestroyAsset();
 
         m_renderableObjects.clear();
@@ -563,11 +568,6 @@ namespace Enso
         if (stateID == "kCreateDrawableObjectOpen")
         {
             Assert(!m_newObject); // Should be reset after object finalisation
-
-            for (auto& obj : *m_objectContainer)
-            {
-                Log::Debug("%s: %i", obj->GetAssetID(), obj.GetReferenceCount());
-            }
 
             // Try and instantiate the objerct         
             auto newGeneric = m_componentFactory.Instantiate(trigger.HashOf(), *m_objectContainer, *this, m_objectContainer);
