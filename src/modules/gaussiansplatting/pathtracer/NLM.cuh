@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/Image.cuh"
+#include "core/containers/Image.cuh"
 
 namespace Enso
 {

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <map>
-#include "math/Hash.cuh"
+#include "core/math/Hash.cuh"
 #include "UIButtonMap.h"
 
 #include <functional>
 #include <string>
-#include "core/StdUtils.h"
+#include "core/utils/StdUtils.h"
 
 namespace Enso
 {

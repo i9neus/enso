@@ -1,9 +1,9 @@
 #include "AccumulationBuffer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "io/json/JsonUtils.h"
-#include "core/AssetAllocator.cuh"
-#include "core/Vector.cuh"
-#include "core/GenericObject.cuh"
+#include "core/assets/AssetAllocator.cuh"
+#include "Vector.cuh"
+#include "core/assets/GenericObject.cuh"
 
 namespace Enso
 {     

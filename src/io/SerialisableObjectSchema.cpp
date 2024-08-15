@@ -2,7 +2,7 @@
 
 #include "json/JsonUtils.h"
 #include "FileSystemUtils.h"
-#include "core/StdUtils.h"
+#include "core/utils/StdUtils.h"
 
 namespace Enso
 {

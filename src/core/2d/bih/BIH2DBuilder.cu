@@ -1,5 +1,5 @@
 #include "BIH2DBuilder.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/utils/HighResolutionTimer.h"
 
 namespace Enso
 {

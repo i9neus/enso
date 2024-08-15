@@ -1,5 +1,5 @@
 #include "Ellipse.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/math/Math.cuh"
 #include "GenericIntersector.cuh"
 #include "core/2d/sdf/SDF2DRenderer.cuh"

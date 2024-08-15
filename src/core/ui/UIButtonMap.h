@@ -1,7 +1,8 @@
 #pragma once
 
 #include <map>
-#include "math/Hash.cuh"
+#include "core/math/Hash.cuh"
+#include "VirtualKeyStates.h"
 
 #include <string>
 
@@ -140,6 +141,7 @@ namespace Enso
             //Echo();
         }
 
+        // Returns the state of the specified code as a value in UIButtonStates
         uint GetState(const uint code) const
         {
             Assert(code < NumButtons);
@@ -156,7 +158,7 @@ namespace Enso
         void SetState(const uint code, const uint state)
         {
             // FIXME: Alt-tabbing out of the app breaks things. 
-            if (code == VK_MENU) { return; }
+            if (code == KEY_MENU) { return; }
 
             Assert(code < NumButtons);
             uint bitIdx = code * 2, blockIdx = bitIdx >> 5;

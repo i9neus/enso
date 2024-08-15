@@ -4,10 +4,10 @@
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/RenderableObject.cuh"
 
-#include "core/DirtinessFlags.cuh"
-#include "core/Image.cuh"
-#include "core/GenericObject.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/assets/DirtinessFlags.cuh"
+#include "core/containers/Image.cuh"
+#include "core/assets/GenericObject.cuh"
+#include "core/utils/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
 //#include "core/3d/BidirectionalTransform.cuh"
@@ -61,7 +61,6 @@ namespace Enso
             __host__ __device__ void Synchronise(const SplatRasteriserParams& params);
             __device__ void Synchronise(const SplatRasteriserObjects& objects);
 
-            __host__ __device__ uint            OnMouseClick(const UIViewCtx& viewCtx) const;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
         private:
@@ -90,11 +89,12 @@ namespace Enso
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
 
             __host__ virtual void       Bind(GenericObjectContainer& objects) override final;
-            __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const override final;
             __host__ virtual bool       Serialise(Json::Node& rootNode, const int flags) const override final;
             __host__ virtual bool       Deserialise(const Json::Node& rootNode, const int flags) override final;
             __host__ virtual BBox2f     ComputeObjectSpaceBoundingBox() override final;
             __host__ virtual bool       HasOverlay() const override { return true; }
+            __host__ virtual bool       IsClickablePoint(const UIViewCtx& viewCtx) const override final;
+            __host__ virtual bool       IsDelegatable() const override final { return true; }
 
             __host__ virtual Device::SplatRasteriser* GetDeviceInstance() const override final
             {

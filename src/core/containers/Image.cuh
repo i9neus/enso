@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "math/Math.cuh"
-#include "math/ColourUtils.cuh"
-#include "AssetAllocator.cuh"
+#include "core/math/Math.cuh"
+#include "core/math/ColourUtils.cuh"
+#include "core/assets/AssetAllocator.cuh"
 
 //#define CudaImageBoundCheck
 

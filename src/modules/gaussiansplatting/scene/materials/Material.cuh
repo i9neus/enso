@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/GenericObject.cuh"
+#include "core/assets/GenericObject.cuh"
 #include "core/3d/Ctx.cuh"
 
 namespace Enso

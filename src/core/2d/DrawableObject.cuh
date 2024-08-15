@@ -1,13 +1,14 @@
 #pragma once
 
-#include "../DirtinessFlags.cuh"
+#include "core/assets/DirtinessFlags.cuh"
 
 #include "Transform2D.cuh"
 #include "core/2d/Ctx.cuh"
 
-#include "core/GenericObject.cuh"
+#include "core/assets/GenericObject.cuh"
 #include "core/math/Math.cuh"
-#include "core/UIButtonMap.h"
+#include "core/ui/UIButtonMap.h"
+#include "core/ui/VirtualKeyStates.h"
 
 namespace Enso
 {   
@@ -93,7 +94,6 @@ namespace Enso
             __host__ bool               OnCreate(const std::string& stateID, const UIViewCtx& viewCtx);
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
             __host__ virtual bool       OnSelect(const bool isSelected);
-            __host__ virtual uint       OnMouseClick(const UIViewCtx& viewCtx) const { return kDrawableObjectInvalidSelect; }
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
             __host__ virtual bool       HasBoundingBox() const { return true; }
 
@@ -101,6 +101,10 @@ namespace Enso
             __host__ virtual bool       IsSelected() const { return m_hostInstance.m_params.attrFlags & kDrawableObjectSelected; }
             __host__ virtual bool       IsConstructed() const { return m_isConstructed; }
             __host__ virtual bool       HasOverlay() const { return false; }
+            __host__ virtual bool       IsClickablePoint(const UIViewCtx& viewCtx) const = 0;
+            __host__ virtual bool       IsDelegatable() const = 0;
+            __host__ uint               OnMouseClick(const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) const;
+
             //__host__ virtual const Host::DrawableObject& GetDrawableObject() const { return *this; }
             __host__ virtual Device::DrawableObject* GetDeviceInstance() const = 0;
             

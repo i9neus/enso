@@ -1,8 +1,8 @@
 #pragma once
 
 #include "core/CudaHeaders.cuh"
-#include "core/AssetSynchronise.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/assets/AssetSynchronise.cuh"
+#include "core/utils/HighResolutionTimer.h"
 
 namespace Enso
 {   

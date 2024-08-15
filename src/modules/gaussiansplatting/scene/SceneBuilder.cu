@@ -7,7 +7,7 @@
 #include "textures/Texture2D.cuh"
 #include "tracables/Primitives.cuh"
 
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 
 #define kEmitterPos vec3(0., 0.5, 0.5)
 #define kEmitterRot vec3(kHalfPi * 1.5, 0., 0.)
@@ -17,6 +17,10 @@
 
 namespace Enso
 {
+    __host__ Host::SceneBuilder::SceneBuilder()
+    {
+    }
+
     __host__ bool Host::SceneBuilder::Rebuild(AssetHandle<Host::SceneContainer>& scene)
     {
         Log::Write("Rebuilding scene '%s'...", scene->GetAssetID());

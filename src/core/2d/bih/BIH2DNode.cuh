@@ -3,9 +3,9 @@
 #include "core/math/bbox/BBox2.cuh"
 #include <map>
 
-#include "core/Asset.cuh"
-#include "core/Image.cuh"
-#include "core/Vector.cuh"
+#include "core/assets/Asset.cuh"
+#include "core/containers/Image.cuh"
+#include "core/containers/Vector.cuh"
 
 namespace Enso
 {

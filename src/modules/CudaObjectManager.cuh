@@ -1,13 +1,13 @@
 #pragma once
 
 #include "win/D3DHeaders.h"
-#include "core/HighResolutionTimer.h"
+#include "core/utils/HighResolutionTimer.h"
 #include <cuda_runtime.h>
 #include "io/json/JsonUtils.h"
 #include <deque>
 
-#include "core/Image.cuh"
-#include "core/Asset.cuh"
+#include "core/containers/Image.cuh"
+#include "core/assets/Asset.cuh"
 
 namespace Enso
 {	

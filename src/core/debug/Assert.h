@@ -1,8 +1,8 @@
 #pragma once
 
-#include "debug/Backtrace.h"
+#include "Backtrace.h"
 #include "thirdparty/tinyformat/tinyformat.h"
-#include "Types.h"
+#include "core/Types.h"
 
 namespace Enso
 {

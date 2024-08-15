@@ -230,7 +230,7 @@ namespace Enso
 				// Notify the superclass that a key state has changed
 				OnKey(keyButton.first, false, keyButton.second);
 
-				if (keyButton.first == VK_ESCAPE)
+				if (keyButton.first == KEY_ESCAPE)
 				{
 					m_uiGraph.Reset();
 				}

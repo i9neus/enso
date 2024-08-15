@@ -14,9 +14,9 @@
 #include "D3DContainer.h"
 #include "Win32Application.h"
 
-#include "core/StringUtils.h"
+#include "core/utils/StringUtils.h"
 #include "io/json/JsonUtils.h"
-#include "core/GlobalStateAuthority.h"
+#include "core/singletons/GlobalStateAuthority.h"
 #include "core/debug/ProcessMemoryMonitor.h"
 
 #include <d3d12.h>

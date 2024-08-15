@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/AssetAllocator.cuh"
-#include "core/Vector.cuh"
+#include "core/assets/AssetAllocator.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/math/Math.cuh"
 
 namespace Enso

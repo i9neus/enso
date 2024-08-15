@@ -1,7 +1,9 @@
 #include "StringUtils.h"
+
 #include <cstdlib>
 #include <clocale>
 #include <math.h>
+#include "thirdparty/tinyformat/tinyformat.h"
 
 namespace Enso
 {

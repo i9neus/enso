@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <string>
-#include "Assert.h"
+#include "core/debug/Assert.h"
 
 namespace Enso
 {

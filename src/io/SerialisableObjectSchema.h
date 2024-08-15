@@ -2,7 +2,7 @@
 
 #include "core/math/Math.cuh"
 #include "core/CudaHeaders.cuh"
-#include "core/Assert.h"
+#include "core/debug/Assert.h"
 
 #include <unordered_map>
 #include <set>

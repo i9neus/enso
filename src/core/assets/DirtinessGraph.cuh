@@ -1,9 +1,11 @@
 #pragma once
 
-#include "math/Math.cuh"
+#include "core/math/Math.cuh"
 #include "io/Serialisable.cuh"
-#include "AssetAllocator.cuh"
-#include "math/Hash.cuh"
+#include "core/assets/AssetAllocator.cuh"
+#include "core/math/Hash.cuh"
+#include "DirtinessFlags.cuh"
+#include "core/utils/Semaphore.h"
 
 #include <set>
 #include <map>
@@ -34,10 +36,17 @@ namespace Enso
 
         using DirtinessEvent = size_t;
 
+        enum ListenerCallbackType : int
+        {
+            kListenerCascade,   // Cascading means that the listening object simply inherits the dirtiness flag and not directly notified about it
+            kListenerNotify,    // Notification calls the default OnDirty() method of the Dirtyable object
+            kListenerDelegate   // Delegation means that the listening object specifies a customer functor that's called 
+        };
+
         class DirtinessGraph
         {
         public:
-            using EventDeligate = std::function<void(const DirtinessEvent& id, WeakAssetHandle<Host::Asset>& caller)>;
+            using EventDeligate = std::function<void(const DirtinessEvent& id, AssetHandle<Host::Asset>& caller)>;
 
         private:
             class Listener
@@ -46,33 +55,38 @@ namespace Enso
                 size_t hash;
 
             public:
-                WeakAssetHandle<Host::Dirtyable>  handle;
-                EventDeligate               deligate;
-                const DirtinessEvent          event;
+                WeakAssetHandle<Host::Dirtyable>    handle;
+                EventDeligate                       deligate;
+                const DirtinessEvent                event;
+                const int                           callbackType;
 
             public:
-                __host__ Listener(const DirtinessEvent& _event, WeakAssetHandle<Host::Dirtyable>& _handle, EventDeligate& _functor);
+                __host__ Listener(const DirtinessEvent& _event, WeakAssetHandle<Host::Dirtyable>& _handle, const int _callbackType, EventDeligate& _functor);
 
                 __host__ operator bool() const { return !handle.expired(); }
                 __host__ bool operator <(const Listener& rhs) const { return hash < rhs.hash; }
             };
 
-            std::mutex                                                  m_mutex;
+            std::atomic<int>                                            m_re;
             std::multimap<DirtinessEvent, Listener>                     m_listenerFromEvent;
             std::multimap<std::string, DirtinessEvent>                  m_eventFromAssetId;
             std::map<std::string, DirtinessEvent>                       m_eventHashFromId;
+            
+            enum GraphStates : uint      { kGraphUnlocked = 0, kGraphLocked };
+            Semaphore                     m_semaphore;
 
         public:
 
             __host__ static DirtinessGraph& Get();
 
-            __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Asset>& handle, const DirtinessEvent& event, EventDeligate functor = nullptr);
-            __host__ void OnDirty(const DirtinessEvent& event, WeakAssetHandle<Host::Asset>& caller);
+            __host__ bool AddListener(const std::string& id, WeakAssetHandle<Host::Asset>& handle, const DirtinessEvent& event, const int callbackType, EventDeligate functor = nullptr);
+            __host__ void RemoveAllListeners(const std::string& assetId);
+            __host__ void OnDirty(const DirtinessEvent& event, AssetHandle<Host::Asset>& caller);
 
             __host__ static DirtinessEvent RegisterEvent(const std::string& id, const bool mustExist);
 
         private:
-            __host__ DirtinessGraph() = default;
+            __host__ DirtinessGraph() : m_semaphore(kGraphUnlocked) {}                
         };
 
         class Dirtyable : public Host::Asset
@@ -80,6 +94,7 @@ namespace Enso
             friend DirtinessGraph;
         public:
             __host__ Dirtyable(const Asset::InitCtx& initCtx);
+            __host__ virtual ~Dirtyable();
 
             __host__ bool               IsClean() const { return m_dirtyEvents.empty(); }
             __host__ bool               IsDirty(const DirtinessEvent& event) const;
@@ -88,24 +103,24 @@ namespace Enso
             __host__ void               Clean();
 
         protected:
-            __host__ virtual void       OnDirty(const DirtinessEvent& event, WeakAssetHandle<Host::Asset>& caller) {}
+            __host__ virtual void       OnDirty(const DirtinessEvent& event, AssetHandle<Host::Asset>& caller) {}
             __host__ virtual void       OnClean() {}
 
             __host__ void               SetDirty(const DirtinessEvent& event);
             __host__ void               SetDirty(const std::vector<DirtinessEvent>& eventList);
 
-            __host__ void               SignalDirty();
+            //__host__ void               SignalDirty();
             __host__ void               SignalDirty(const DirtinessEvent& event);
             __host__ void               SignalDirty(const std::vector<DirtinessEvent>& eventList);
 
-            //__host__ void               Listen(const DirtinessEvent& event) { Listen({ event }); }
             __host__ void               Listen(const std::vector<DirtinessEvent>& eventList);
+            __host__ void               Cascade(const std::vector<DirtinessEvent>& eventList);
 
             template<typename SuperClass, typename Deligate>
             __host__ __forceinline__ void Listen(const DirtinessEvent& event, SuperClass& super, Deligate deligate)
             {
                 DirtinessGraph::EventDeligate functor(std::bind(deligate, &super, std::placeholders::_1, std::placeholders::_2));
-                DirtinessGraph::Get().AddListener(GetAssetID(), GetAssetHandle(), event, functor);
+                DirtinessGraph::Get().AddListener(GetAssetID(), GetAssetHandle(), event, kListenerDelegate, functor);
             }
 
         private:

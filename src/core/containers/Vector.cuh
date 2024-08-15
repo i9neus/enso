@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "math/Math.cuh"
-#include "AssetAllocator.cuh"
-#include "Tuple.cuh"
+#include "core/math/Math.cuh"
+#include "core/assets/AssetAllocator.cuh"
+#include "core/utils/Tuple.cuh"
 #include <vector>
 
 namespace Enso

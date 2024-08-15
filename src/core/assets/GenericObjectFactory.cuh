@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 #include "AssetAllocator.cuh"
-#include "math/Math.cuh"
+#include "core/math/Math.cuh"
 #include <map>
 #include <string>
 #include <functional>
 
 #include "io/json/JsonUtils.h"
-#include "GenericObjectContainer.cuh"
+#include "core/assets/GenericObjectContainer.cuh"
 #include "GenericObject.cuh"
 
 namespace Enso

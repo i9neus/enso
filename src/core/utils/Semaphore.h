@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include "Assert.h"
+#include "core/debug/Assert.h"
 #include <thread>
 
 namespace Enso
@@ -11,7 +11,8 @@ namespace Enso
     public:
         Semaphore(const unsigned int& initialState) : m_state(initialState) {}
 
-        bool Try(const unsigned int& expectedState, const unsigned int& newState, bool assertOnFail)
+        // Tries to update the semaphore to the new state. Returns whether successful or unsuccessful.
+        bool TryOnce(const unsigned int& expectedState, const unsigned int& newState, bool assertOnFail)
         {
             unsigned int actualState = expectedState;
             bool success = m_state.compare_exchange_strong(actualState, newState, std::memory_order_release, std::memory_order_relaxed);
@@ -23,7 +24,8 @@ namespace Enso
             return success;
         }
 
-        void Wait(const unsigned int& expectedState, const unsigned int& newState)
+        // Repeatedly tries to update the semaphore to the new state until the operation succeeds
+        void TryUntil(const unsigned int& expectedState, const unsigned int& newState)
         {
             unsigned int actualState = expectedState;
             while (!m_state.compare_exchange_strong(actualState, newState, std::memory_order_release, std::memory_order_relaxed))
@@ -33,7 +35,8 @@ namespace Enso
             }
         }
 
-        bool WaitFor(const unsigned int& expectedState, const unsigned int& newState, const std::chrono::duration<double>& duration)
+        // Repeatedly tries to update the semaphore to the new state until the operation succeeds or the function times out
+        /*bool TryUntil(const unsigned int& expectedState, const unsigned int& newState, const std::chrono::duration<double>& duration)
         {
             unsigned int actualState = expectedState;
             const auto spinStart = std::chrono::high_resolution_clock::now();
@@ -45,6 +48,15 @@ namespace Enso
             }
 
             return true;
+        }*/
+
+        // Waits until the semaphore is in the expected state
+        void Wait(const unsigned int& expectedState) 
+        {
+            while (m_state.load() != expectedState)
+            {
+                std::this_thread::yield();
+            }
         }
 
         explicit operator unsigned int() const

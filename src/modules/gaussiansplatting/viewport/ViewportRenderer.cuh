@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/GenericObject.cuh"
+#include "core/assets/GenericObject.cuh"
 #include "core/2d/Ctx.cuh"
 #include "../FwdDecl.cuh"
-#include "core/Image.cuh"
+#include "core/containers/Image.cuh"
 
 namespace Enso
 {         
@@ -97,7 +97,7 @@ namespace Enso
 
         protected:
             __host__ virtual void               Synchronise(const uint syncFlags) override final;
-            __host__ virtual void               OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller) override final;
+            __host__ virtual void               OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller) override final;
             __host__ void                       Summarise() const;
 
         private:

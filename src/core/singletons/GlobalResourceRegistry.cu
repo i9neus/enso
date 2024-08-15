@@ -1,9 +1,9 @@
 #include "GlobalResourceRegistry.cuh"
-#include "math/Hash.cuh"
+#include "core/math/Hash.cuh"
 #include "thirdparty/tinyformat/tinyformat.h"
 #include <map>
 #include "io/Log.h"
-#include "Assert.h"
+#include "core/debug/Assert.h"
 
 namespace Enso
 {

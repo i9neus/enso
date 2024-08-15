@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "math/Math.cuh"
+#include "core/math/Math.cuh"
 #include "AssetAllocator.cuh"
 #include <unordered_map>
 #include "GenericObject.cuh"
@@ -56,6 +56,12 @@ namespace Enso
             __host__ ConstIterator end() const noexcept { return ConstIterator(m_objectMap.cend()); }
 
             __host__ bool Exists(const std::string& id) const { return m_objectMap.find(id) != m_objectMap.end(); }
+
+            __host__ AssetHandle<Host::GenericObject> operator[](const std::string& id) const
+            {
+                auto it = m_objectMap.find(id);
+                return (it == m_objectMap.end()) ? AssetHandle<GenericObject>(nullptr) : it->second.DynamicCast<GenericObject>();
+            }
 
             template<typename ObjectType = Host::GenericObject>
             __host__ AssetHandle<ObjectType> FindByID(const std::string& id) const

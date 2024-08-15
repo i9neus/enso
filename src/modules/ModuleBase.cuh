@@ -1,16 +1,16 @@
 #pragma once
 
-#include "core/Semaphore.h"
+#include "core/utils/Semaphore.h"
 #include "CudaObjectManager.cuh"
-#include "core/StateGraph.h"
+#include "core/ui/StateGraph.h"
 #include <mutex>
 #include <atomic>
 #include <thread>
 
 #include "win/D3DHeaders.h"
 #include "io/json/JsonUtils.h"
-#include "core/Assert.h"
-#include "core/DirtinessGraph.cuh"
+#include "core/assets/DirtinessGraph.cuh"
+#include "core/ui/VirtualKeyStates.h"
 
 namespace Enso
 {
@@ -85,31 +85,27 @@ namespace Enso
 
         void        FlushUIEventQueue();
 
-#define IsDownImpl (m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed))
-        inline bool IsMouseButtonDown(const uint code) const { return IsDownImpl; }
-        inline bool IsAnyMouseButtonDown(const uint code) const
+        // Returns the down status of the three mouse buttons as a bitmask
+        inline uint GetMouseButtonDown() const
         {
-            return IsDownImpl;
+            return (uint(IsDownImpl(KEY_LBUTTON)) * KEY_LBUTTON) |
+                   (uint(IsDownImpl(KEY_MBUTTON)) * KEY_MBUTTON) |
+                   (uint(IsDownImpl(KEY_RBUTTON)) * KEY_RBUTTON);
         }
-        template<typename... Pack>
-        inline bool IsAnyMouseButtonDown(const uint code, Pack... pack) const
-        {
-            return IsAnyMouseButtonDown(pack...) | IsDownImpl;
-        }
-#undef IsDownImpl
 
-        /*inline void SetDirtyFlags(const uint code, bool isSet = true)
+        inline bool IsMouseButtonDown(const uint code) const { return IsDownImpl(code); }
+        inline bool IsAnyMouseButtonDown() const
         {
-            if (isSet) { m_dirtyFlags |= code; }
-            else { m_dirtyFlags &= ~code; }
-        }*/
+            return GetMouseButtonDown() != 0u;
+        }       
 
     private:
         void RunThread();
 
         template<typename T> T PopUIEventQueue(std::deque<T>& queue);
         template<typename T> void PushUIEventQueue(const int event, std::deque<T>& queue, const T& newItem);
-
+        
+        inline bool IsDownImpl(const uint code) const { return m_keyCodes.GetState(code) & (kButtonDown | kOnButtonDepressed); }
 
     protected:
         AssetHandle<Host::ImageRGBA>                    m_compositeImage;

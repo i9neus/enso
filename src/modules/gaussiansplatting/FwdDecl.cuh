@@ -69,6 +69,7 @@ namespace Enso
         class GenericObject;
         class RenderableObject;
         class GaussianPointCloud;
+        class SceneObject;
 
         template<typename> class Vector;
         template<typename, typename> class AssetVector;

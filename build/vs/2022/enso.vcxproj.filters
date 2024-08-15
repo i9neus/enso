@@ -52,9 +52,6 @@
     <Filter Include="ui\tools">
       <UniqueIdentifier>{e164cc36-c20f-4e1c-9303-a47a925c5e71}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ui\modules\gi2d">
-      <UniqueIdentifier>{82c0e93b-2a11-40f0-b589-436e7f0d1f63}</UniqueIdentifier>
-    </Filter>
     <Filter Include="core">
       <UniqueIdentifier>{523857cc-de4b-4297-b715-1c6a47c4054a}</UniqueIdentifier>
     </Filter>
@@ -148,6 +145,24 @@
     <Filter Include="modules\gaussiansplatting\scene\pointclouds">
       <UniqueIdentifier>{e7a5044d-dbb1-46d2-bde2-a415968fc050}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ui\modules\gi2d">
+      <UniqueIdentifier>{78286daa-f819-416c-a276-f24c3e50c2d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\utils">
+      <UniqueIdentifier>{c847fa26-4940-4334-97db-6698e09bf219}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\containers">
+      <UniqueIdentifier>{b69752f7-9a53-4aff-b1c7-f4858bd2cdad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\ui">
+      <UniqueIdentifier>{6d192e49-3a3f-4fb6-bf43-52232fb0aa60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\singletons">
+      <UniqueIdentifier>{2c4cb347-ca83-4e14-9e53-8f005b87784d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\assets">
+      <UniqueIdentifier>{2705964b-1623-40ff-9d2d-41a5feb25bdd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -204,12 +219,6 @@
     <ClCompile Include="..\..\..\src\ui\tools\MemoryMonitor.cpp">
       <Filter>ui\tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\core\GlobalStateAuthority.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\core\StringUtils.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\core\debug\GlobalThreadMap.cpp">
       <Filter>core\debug</Filter>
     </ClCompile>
@@ -218,9 +227,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\core\debug\Backtrace.cpp">
       <Filter>core\debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp">
-      <Filter>ui\modules\gi2d</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\modules\UIModuleInterface.cpp">
       <Filter>ui\modules</Filter>
@@ -254,6 +260,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\faure05.cpp">
       <Filter>thirdparty\owenscrambling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp">
+      <Filter>ui\modules\gi2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\core\utils\StringUtils.cpp">
+      <Filter>core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\core\singletons\GlobalStateAuthority.cpp">
+      <Filter>core\singletons</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -392,54 +407,6 @@
     <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\GenericObject.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\GenericObjectContainer.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\GenericObjectFactory.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\GlobalStateAuthority.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\HighResolutionTimer.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Image.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Semaphore.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\StdUtils.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\StringUtils.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\UIButtonMap.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\StateGraph.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Assert.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\AssetContainer.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Asset.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\AssetAllocator.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Tuple.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\ColourUtils.cuh">
       <Filter>core\math</Filter>
     </ClInclude>
@@ -509,14 +476,8 @@
     <ClInclude Include="..\..\..\src\core\Types.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ui\modules\gi2d\GI2DModule.h">
-      <Filter>ui\modules\gi2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\MathUtils.cuh">
       <Filter>core\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\GlobalResourceRegistry.cuh">
-      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\VecUtils.cuh">
       <Filter>core\math</Filter>
@@ -545,9 +506,6 @@
     <ClInclude Include="..\..\..\src\io\SerialisableObjectSchema.h">
       <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Lexer.h">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\io\CommandManager.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -556,15 +514,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\bbox\BBoxUtils.cuh">
       <Filter>core\math\bbox</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\AssetSynchronise.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\VirtualKeyStates.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\DirtinessGraph.cuh">
-      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh">
       <Filter>modules</Filter>
@@ -613,9 +562,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\DrawableObject.cuh">
       <Filter>core\2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\AccumulationBuffer.cuh">
-      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\ui\UIHandle.cuh">
       <Filter>core\2d\ui</Filter>
@@ -740,9 +686,6 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh">
       <Filter>modules\gaussiansplatting\scene\cameras</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\core\DirtinessFlags.cuh">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\viewport\ViewportRenderer.cuh">
       <Filter>modules\gaussiansplatting\viewport</Filter>
     </ClInclude>
@@ -757,9 +700,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Lambertian.cuh">
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\Vector.cuh">
-      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cuh">
       <Filter>modules\gaussiansplatting\splatcloud</Filter>
@@ -779,6 +719,87 @@
     <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh">
       <Filter>core\math\mat</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\ui\modules\gi2d\GI2DModule.h">
+      <Filter>ui\modules\gi2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneObject.cuh">
+      <Filter>modules\gaussiansplatting\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\StringUtils.h">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\Tuple.cuh">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\Semaphore.h">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\StdUtils.h">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\HighResolutionTimer.h">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\utils\Lexer.h">
+      <Filter>core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\Vector.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\debug\Assert.h">
+      <Filter>core\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\AccumulationBuffer.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\Image.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\ui\StateGraph.h">
+      <Filter>core\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\ui\UIButtonMap.h">
+      <Filter>core\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\ui\VirtualKeyStates.h">
+      <Filter>core\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\singletons\GlobalResourceRegistry.cuh">
+      <Filter>core\singletons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\singletons\GlobalStateAuthority.h">
+      <Filter>core\singletons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\Asset.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\AssetAllocator.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\AssetContainer.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\AssetSynchronise.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\DeviceAllocator.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\DirtinessFlags.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\DirtinessGraph.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\GenericObject.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\GenericObjectFactory.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\assets\GenericObjectContainer.cuh">
+      <Filter>core\assets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -787,32 +808,14 @@
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu">
       <Filter>utils</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\GenericObject.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\GenericObjectContainer.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\Image.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\Asset.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu">
       <Filter>core\math</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu">
       <Filter>core\math</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\GlobalResourceRegistry.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp">
       <Filter>io</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\DirtinessGraph.cu">
-      <Filter>core</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu">
       <Filter>modules</Filter>
@@ -843,9 +846,6 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\DrawableObject.cu">
       <Filter>core\2d</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\AccumulationBuffer.cu">
-      <Filter>core</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\ui\UIHandle.cu">
       <Filter>core\2d\ui</Filter>
@@ -880,9 +880,6 @@
     <CudaCompile Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cu">
       <Filter>core\2d\sdf</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\Vector.cu">
-      <Filter>core</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cu">
       <Filter>modules\gaussiansplatting\splatcloud</Filter>
     </CudaCompile>
@@ -891,6 +888,33 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cu">
       <Filter>modules\gaussiansplatting\scene\pointclouds</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\containers\Vector.cu">
+      <Filter>core\containers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\containers\AccumulationBuffer.cu">
+      <Filter>core\containers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\containers\Image.cu">
+      <Filter>core\containers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\singletons\GlobalResourceRegistry.cu">
+      <Filter>core\singletons</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\assets\DirtinessGraph.cu">
+      <Filter>core\assets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\assets\GenericObject.cu">
+      <Filter>core\assets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\assets\Asset.cu">
+      <Filter>core\assets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\assets\GenericObjectContainer.cu">
+      <Filter>core\assets</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\Camera.cu">
+      <Filter>modules\gaussiansplatting\scene\cameras</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

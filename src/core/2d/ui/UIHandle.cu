@@ -1,8 +1,8 @@
 #include "UIHandle.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/math/Math.cuh"
-#include "core/VirtualKeyStates.h"
-#include "core/UIButtonMap.h"
+#include "core/ui/VirtualKeyStates.h"
+#include "core/ui/UIButtonMap.h"
 
 #include <random>
 
@@ -15,14 +15,14 @@ namespace Enso
     
     __host__ uint UIHandle::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const vec2& mousePosObject)
     {
-        if (m_state == kDeselected && keyMap.IsSet(VK_LBUTTON) && m_ellipse.Contains(mousePosObject, 0.f))
+        if (m_state == kDeselected && keyMap.IsSet(KEY_LBUTTON) && m_ellipse.Contains(mousePosObject, 0.f))
         {
             m_state = kDragging;
             return kDirtyViewportObjectBBox;
         }
         else if (m_state == kDragging)
         {
-            if (!keyMap.IsSet(VK_LBUTTON))
+            if (!keyMap.IsSet(KEY_LBUTTON))
             {
                 m_state = kDeselected;
                 return kDirtyViewportObjectBBox;

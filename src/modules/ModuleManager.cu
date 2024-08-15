@@ -1,5 +1,5 @@
 #include "ModuleManager.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/utils/HighResolutionTimer.h"
 #include "io/CommandQueue.h"
 
 //#include "gi2d/GI2DModule.cuh"
@@ -47,11 +47,12 @@ namespace Enso
 
     void ModuleManager::UpdateD3DOutputTexture(UINT64& currentFenceValue)
     {
-        if (m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
+        // If the semaphore
+        if (m_activeRenderer->GetRenderSemaphore().TryOnce(kRenderManagerCompFinished, kRenderManagerD3DBlitInProgress, false))
         {
             //HighResolutionTimer timer;
             CudaObjectManager::UpdateD3DOutputTexture(currentFenceValue, m_compositeImage, true);
-            m_activeRenderer->GetRenderSemaphore().Try(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished, true);
+            m_activeRenderer->GetRenderSemaphore().TryUntil(kRenderManagerD3DBlitInProgress, kRenderManagerD3DBlitFinished);
             //Log::System("Blitted");       
         }
         else

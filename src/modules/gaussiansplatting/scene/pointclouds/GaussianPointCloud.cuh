@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/GenericObject.cuh"
-#include "core/Vector.cuh"
+#include "core/assets/GenericObject.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/math/Quarternion.cuh"
 
 namespace Enso

@@ -1,6 +1,7 @@
 #include "win/WindowsHeaders.h"
 #include "io/FilesystemUtils.h"
-#include "core/StringUtils.h"
+#include "core/utils/StringUtils.h"
+#include "core/debug/Assert.h"
 #include "Assert.h"
 
 #include <filesystem>

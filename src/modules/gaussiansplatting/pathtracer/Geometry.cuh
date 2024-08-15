@@ -4,7 +4,7 @@
 #include "core/3d/Ctx.cuh"
 #include "core/3d/Transform.cuh"
 #include "Integrator.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "TextureShader.cuh"
 
 namespace Enso

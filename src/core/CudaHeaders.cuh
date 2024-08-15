@@ -5,7 +5,7 @@
 #include "thirdparty/nvidia/helper_cuda.h"
 
 #include "math/Constants.h"
-#include "Assert.h"
+#include "debug/Assert.h"
 #include <type_traits>
 #include <math.h>
 

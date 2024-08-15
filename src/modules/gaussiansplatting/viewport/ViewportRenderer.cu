@@ -3,13 +3,13 @@
 #include "ViewportRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
-#include "core/AssetContainer.cuh"
+#include "core/assets/AssetContainer.cuh"
 #include "core/2d/primitives/LineSegment.cuh"
 #include "core/2d/sdf/SDF2DRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/bih/BIH2DAsset.cuh"
-#include "core/GenericObjectContainer.cuh"
+#include "core/assets/GenericObjectContainer.cuh"
 #include "core/math/ColourUtils.cuh"
 
 #include "io/json/JsonUtils.h"
@@ -167,7 +167,7 @@ namespace Enso
         
         Synchronise(kSyncObjects | kSyncParams);
 
-        Dirtyable::Listen({ kDirtyViewportRedraw, kDirtyObjectRebuild, kDirtyParams, kDirtyObjectExistence });
+        Dirtyable::Listen({ kDirtyViewportRedraw, kDirtyParams, kDirtyObjectExistence });
     }
 
     Host::ViewportRenderer::~ViewportRenderer() noexcept
@@ -184,7 +184,7 @@ namespace Enso
         m_hostDrawableObjects->clear();
     }
 
-    __host__ void Host::ViewportRenderer::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
+    __host__ void Host::ViewportRenderer::OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller)
     {
         SetDirty(kDirtyViewportRedraw);
     }

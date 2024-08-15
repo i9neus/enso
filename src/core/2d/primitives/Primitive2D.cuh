@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/DirtinessFlags.cuh"
-#include "core/Image.cuh"
+#include "core/assets/DirtinessFlags.cuh"
+#include "core/containers/Image.cuh"
 #include "../Ray2D.cuh"
 #include "../Ctx.cuh"
 

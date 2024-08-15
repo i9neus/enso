@@ -3,9 +3,9 @@
 #include "thirdparty/rapidjson/document.h"
 #include "thirdparty/rapidjson/allocators.h"
 #include "thirdparty/rapidjson/error/en.h"
-#include "core/StringUtils.h"
+#include "core/utils/StringUtils.h"
 #include "io/Log.h"
-#include "core/Assert.h"
+#include "core/debug/Assert.h"
 #include "core/Types.h"
 #include <map>
 #include <functional>

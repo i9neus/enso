@@ -2,9 +2,9 @@
 
 #include "../ModuleBase.cuh"
 #include "core/2d/Ctx.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "FwdDecl.cuh"
-#include "core/GenericObjectFactory.cuh"
+#include "core/assets/GenericObjectFactory.cuh"
 #include "io/CommandManager.h"
 #include "scene/SceneBuilder.cuh"
 
@@ -32,7 +32,7 @@ namespace Enso
             __host__ virtual void OnResizeClient() override final;
             __host__ virtual void OnFocusChange(const bool isSet) override final;
 
-            __host__ virtual void OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller) override final;
+            __host__ virtual void OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller) override final;
 
             //__host__ virtual void OnResizeClient() override final;
             __host__ virtual std::string GetRendererName() const { return "Gaussian Splatting Sandbox"; };
@@ -98,9 +98,9 @@ namespace Enso
             AssetHandle<Host::DrawableObject>           m_newObject;
 
             std::mutex                                  m_threadMutex;
-            std::unordered_set<std::string>             m_deleteObjectQueue;
-            std::unordered_set<std::string>             m_rebuildObjectQueue;
-            std::unordered_set<std::string>             m_newObjectQueue;
+            std::unordered_set<std::string>             m_deleteObjectSet;
+            std::unordered_set<std::string>             m_syncObjectParamsSet;
+            std::unordered_set<std::string>             m_newObjectSet;
 
             AssetHandle<Host::DrawableObject>           m_delegatedObject;
             CommandManager                              m_commandManager;

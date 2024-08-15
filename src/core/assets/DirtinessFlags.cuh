@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/DirtinessGraph.cuh"
-
 namespace Enso
 {
     enum DirtinessFlags : unsigned int
@@ -15,7 +13,7 @@ namespace Enso
         kDirtyViewportRedraw,
 
         // Scene object requires a rebuild
-        kDirtyObjectRebuild,
+        kDirtyObjectRequestRebuild,
 
         // Scene object requesting objects rebind their assets
         kDirtyObjectRebind,
@@ -25,6 +23,9 @@ namespace Enso
 
         // Parameters changed (e.g. through deserialisation) and to be re-synced
         kDirtyParams,
+
+        // A render object has changed. This should clear accumulators, resync device parameters, etc.
+        kDirtySceneObjectChanged,
 
         kNumDirtinessFlags
     };

@@ -1,5 +1,5 @@
 #include "LineSegment.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/2d/sdf/SDF2DRenderer.cuh"
 
 #include <random>

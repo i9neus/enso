@@ -6,7 +6,7 @@
 
 #include "core/CudaHeaders.cuh"
 
-#include "core/GlobalStateAuthority.h"
+#include "core/singletons/GlobalStateAuthority.h"
 #include "core/debug/ProcessMemoryMonitor.h"
 
 #include "utils/CudaTests.cuh"

@@ -4,10 +4,10 @@
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/RenderableObject.cuh"
 
-#include "core/DirtinessFlags.cuh"
-#include "core/Image.cuh"
-#include "core/GenericObject.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/assets/DirtinessFlags.cuh"
+#include "core/containers/Image.cuh"
+#include "core/assets/GenericObject.cuh"
+#include "core/utils/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
 #include "../scene/pointclouds/GaussianPointCloud.cuh"

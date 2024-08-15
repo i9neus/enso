@@ -4,13 +4,13 @@
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
 #include "core/3d/Ctx.cuh"
-#include "core/AssetContainer.cuh"
+#include "core/assets/AssetContainer.cuh"
 #include "core/3d/Transform.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/3d/Cameras.cuh"
 #include "Scene.cuh"
 #include "Integrator.cuh"
-#include "core/GenericObjectContainer.cuh"
+#include "core/assets/GenericObjectContainer.cuh"
 #include "Geometry.cuh"
 
 #include "../scene/SceneContainer.cuh"
@@ -186,9 +186,9 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
-    __host__ __device__ uint Device::PathTracer::OnMouseClick(const UIViewCtx& viewCtx) const
+    __host__ __device__ bool Device::PathTracer::IsClickablePoint(const UIViewCtx& viewCtx) const
     {
-        return GetWorldBBox().Contains(viewCtx.mousePos) ? kDrawableObjectPrecisionDrag : kDrawableObjectInvalidSelect;       
+        return GetWorldBBox().Contains(viewCtx.mousePos);
     }
 
     __host__ __device__ vec4 Device::PathTracer::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
@@ -220,7 +220,7 @@ namespace Enso
                 const vec3& denoisedL = m_objects.denoisedBuffer->At(pPixel);
                 return vec4(denoisedL, 1.f);
             }*/
-        }      
+        }
 #else
         return vec4(1.);
 #endif
@@ -236,13 +236,13 @@ namespace Enso
     __host__ Host::PathTracer::PathTracer(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects) :
         DrawableObject(initCtx, &m_hostInstance),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::PathTracer>(*this))
-    {                
+    {        
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         RenderableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::RenderableObject>(cu_deviceInstance));
-        
+
         constexpr int kViewportWidth = 1200;
         constexpr int kViewportHeight = 675;
-        
+
         // Create some Cuda objects
         m_hostMeanAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", kViewportWidth, kViewportHeight, nullptr);
         m_hostVarAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferVar", kViewportWidth, kViewportHeight, nullptr);
@@ -255,11 +255,13 @@ namespace Enso
         m_deviceObjects.transforms = m_hostTransforms->GetDeviceInstance();
 
         const vec2 boundHalf = 0.25 * ((kViewportHeight > kViewportWidth) ?
-                                      vec2(1.f, float(kViewportHeight) / float(kViewportWidth)) :
-                                      vec2(float(kViewportWidth) / float(kViewportHeight), 1.f));
+            vec2(1.f, float(kViewportHeight) / float(kViewportWidth)) :
+            vec2(float(kViewportWidth) / float(kViewportHeight), 1.f));
 
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
+
+        Cascade({ kDirtySceneObjectChanged });        
 
         CreateScene();
     }
@@ -297,12 +299,12 @@ namespace Enso
     {
         // Only sync the objects if a SceneContainer has been bound
         if (syncFlags & kSyncObjects)
-        { 
-            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects); 
+        {
+            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_deviceObjects);
         }
-        if (syncFlags & kSyncParams) 
-        { 
-            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params); 
+        if (syncFlags & kSyncParams)
+        {
+            SynchroniseObjects<Device::PathTracer>(cu_deviceInstance, m_params);
             m_hostInstance.Synchronise(m_params);
         }
     }
@@ -321,7 +323,7 @@ namespace Enso
             m_deviceObjects.lights = m_hostSceneContainer->Lights().GetDeviceInstance();
             m_deviceObjects.textures = m_hostSceneContainer->Textures().GetDeviceInstance();
             m_deviceObjects.materials = m_hostSceneContainer->Materials().GetDeviceInstance();
-            
+
             if (m_hostSceneContainer->Cameras().empty())
             {
                 Log::Warning("Warning! Path tracer '%s' found no cameras in the scene.");
@@ -331,7 +333,7 @@ namespace Enso
             {
                 m_hostActiveCamera = m_hostSceneContainer->Cameras().back();
                 m_deviceObjects.activeCamera = m_hostActiveCamera->GetDeviceInstance();
-            }       
+            }
 
             m_params.hasValidScene = true;
         }
@@ -340,11 +342,17 @@ namespace Enso
     }
 
     __host__ void Host::PathTracer::Render()
-    {        
+    {
         if (!m_hostSceneContainer || !m_hostActiveCamera) { return; }
 
-        if (!IsClean()) { Synchronise(kSyncParams); }
-        
+        //if (!IsClean()) { Synchronise(kSyncParams); }
+
+        if (IsDirty(kDirtySceneObjectChanged))
+        {
+            m_hostMeanAccumBuffer->Clear(vec4(0.f));
+            SignalDirty(kDirtyViewportRedraw);
+        }
+
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         //if (RenderableObject::m_params.frameIdx > 10) return;
@@ -420,13 +428,13 @@ namespace Enso
         {
             Log::Warning("Warning: path tracer '%s' expected an initialised scene container but none was found.");
         }*/
-        
+
         return true;
     }
 
-    __host__ uint Host::PathTracer::OnMouseClick(const UIViewCtx& viewCtx) const
+    __host__ bool Host::PathTracer::IsClickablePoint(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.OnMouseClick(viewCtx);
+        return GetWorldSpaceBoundingBox().Contains(viewCtx.mousePos);
     }
 
     __host__ BBox2f Host::PathTracer::ComputeObjectSpaceBoundingBox()
@@ -462,4 +470,19 @@ namespace Enso
         return isDirty;
     }
 
+    __host__ bool Host::PathTracer::OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx)
+    {        
+        const auto& bBox = GetWorldSpaceBoundingBox();
+        const vec2 mouseNorm = (viewCtx.mousePos - bBox.Centroid()) / bBox.Dimensions();
+
+        const float cameraPhi = kTwoPi * mix(-1., 1., mouseNorm.x);
+        const float cameraDist = mix(0.5, 3., mouseNorm.y);
+        const vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * cameraDist;
+
+        Log::Debug("%s", cameraPos.format());
+        
+        m_hostActiveCamera->SetPosition(cameraPos);
+        
+        return true;
+    }
 }

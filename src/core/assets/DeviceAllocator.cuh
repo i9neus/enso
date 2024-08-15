@@ -6,7 +6,7 @@
 #pragma once
 
 #include "core/CudaHeaders.cuh"
-#include "core/Asset.cuh"
+#include "core/assets/Asset.cuh"
 #include "io/Log.h"
 #include <typeinfo>
 #include <unordered_map>

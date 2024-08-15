@@ -1,6 +1,6 @@
 #include "SecurityAttributes.h"
 #include <aclapi.h>
-#include "core/Assert.h"
+#include "core/debug/Assert.h"
 
 namespace Enso
 {

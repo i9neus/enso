@@ -1,11 +1,16 @@
 #include "DirtinessGraph.cuh"
-#include "Asset.cuh"
 
 namespace Enso
 {           
     __host__ Host::Dirtyable::Dirtyable(const Asset::InitCtx& initCtx) :
         Asset(initCtx)
     {
+    }
+
+    __host__ Host::Dirtyable::~Dirtyable()
+    {
+        // Clean up by removing any listeners
+        DirtinessGraph::Get().RemoveAllListeners(GetAssetID());
     }
 
     __host__ void Host::Dirtyable::SetDirty(const DirtinessEvent& event)
@@ -18,21 +23,24 @@ namespace Enso
         m_dirtyEvents.insert(eventList.begin(), eventList.end());
     }
 
-    __host__ void Host::Dirtyable::SignalDirty()
+    /*__host__ void Host::Dirtyable::SignalDirty()
     {
         auto& graph = DirtinessGraph::Get();
         for (const auto& event : m_dirtyEvents)
         {
             graph.OnDirty(event, GetAssetHandle());
         }
-    }
+    }*/
 
     __host__ void Host::Dirtyable::SignalDirty(const DirtinessEvent& event)
     {
+        AssetHandle<Host::Asset> handle(GetAssetHandle());
+        AssertMsgFmt(handle, "GetAssetHandle() returned expired pointer for asset '%s'", GetAssetID());
+
         if (m_dirtyEvents.find(event) == m_dirtyEvents.end())
         {
             m_dirtyEvents.emplace(event);
-            DirtinessGraph::Get().OnDirty(event, GetAssetHandle());
+            DirtinessGraph::Get().OnDirty(event, handle);
         }
     }
 
@@ -51,7 +59,17 @@ namespace Enso
         auto& graph = DirtinessGraph::Get();
         for (const auto& event : eventList)
         {
-            graph.AddListener(GetAssetID(), GetAssetHandle(), event);
+            graph.AddListener(GetAssetID(), GetAssetHandle(), event, kListenerNotify);
+        }
+    }
+
+    __host__ void Host::Dirtyable::Cascade(const std::vector<DirtinessEvent>& eventList)
+    {
+        // Get the asset handle for this object and upcast it
+        auto& graph = DirtinessGraph::Get();
+        for (const auto& event : eventList)
+        {
+            graph.AddListener(GetAssetID(), GetAssetHandle(), event, kListenerCascade);
         }
     }
 
@@ -85,10 +103,11 @@ namespace Enso
         m_dirtyEvents.clear();
     }
 
-    __host__ Host::DirtinessGraph::Listener::Listener(const DirtinessEvent& _event, WeakAssetHandle<Host::Dirtyable>& _handle, EventDeligate& deligate) :
+    __host__ Host::DirtinessGraph::Listener::Listener(const DirtinessEvent& _event, WeakAssetHandle<Host::Dirtyable>& _handle, const int _callbackType, EventDeligate& deligate) :
         event(_event),
         handle(_handle),
-        deligate(deligate)
+        deligate(deligate),
+        callbackType(_callbackType)
     {
         // We cache the naked pointer for the hash function
         hash = std::hash<void*>{}((void*)handle.lock().get());
@@ -119,16 +138,17 @@ namespace Enso
         return eventHash;
     }
 
-    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessEvent& event, WeakAssetHandle<Host::Asset>& caller)
+    __host__ void Host::DirtinessGraph::OnDirty(const DirtinessEvent& event, AssetHandle<Host::Asset>& caller)
     {
         //m_eventSet.emplace(event);
-        std::lock_guard<std::mutex> lock(m_mutex);
 
         int numExpired = 0;
         for (auto it = m_listenerFromEvent.find(event); it != m_listenerFromEvent.end() && it->first == event; ++it)
         {
             auto& listener = it->second;
-            if (!listener)
+            AssetHandle<Host::Dirtyable> handle(listener.handle);
+
+            if (!handle)
             {
                 auto expiredIt = it;
                 ++it;
@@ -137,15 +157,23 @@ namespace Enso
             }
             else
             {
-                if (listener.deligate)
+                switch (listener.callbackType)
                 {
-                    // If a custom deligate has been specified, call it here
+                case kListenerCascade:
+                    handle->SetDirty(event); 
+                    break;
+
+                case kListenerNotify:
+                    handle->OnDirty(event, caller); 
+                    break;
+
+                case kListenerDelegate:
+                    Assert(listener.deligate);
                     listener.deligate(event, caller);
-                }
-                else
-                {
-                    // Otherwise, just call the default method
-                    listener.handle.lock()->OnDirty(event, caller);
+                    break;
+
+                default:
+                    Assert(false);
                 }
             }
         }
@@ -153,14 +181,20 @@ namespace Enso
         // If any of the handles expired, do some garbage collection
         if (numExpired > 0)
         {
-            Log::Warning("Garbage collection removed %i listeners from dirtiness graph.", numExpired);
+            Log::Error("Warning: Garbage collection removed %i listeners from dirtiness graph. This shouldn't happen!", numExpired);
         }
     }
 
-    __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Asset>& assetHandle, const DirtinessEvent& event, EventDeligate functor)
+    __host__ void Host::DirtinessGraph::RemoveAllListeners(const std::string& assetId)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        
+        if (m_eventFromAssetId.erase(assetId) > 0)
+        {
+            Log::Debug("Removed %i listeners for expired asset %s", assetId);
+        }
+    }
+
+    __host__ bool Host::DirtinessGraph::AddListener(const std::string& assetId, WeakAssetHandle<Host::Asset>& assetHandle, const DirtinessEvent& event, const int callbackType, EventDeligate functor)
+    {                
         // Check to make sure this object isn't already listening for this event
         for (auto listener = m_eventFromAssetId.find(assetId); listener != m_eventFromAssetId.end() && listener->first == assetId; ++listener)
         {
@@ -175,9 +209,14 @@ namespace Enso
         Assert(!assetHandle.expired());
         auto dirtyableHandle = AssetHandle<Host::Asset>(assetHandle).DynamicCast<Host::Dirtyable>().GetWeakHandle();
 
+        Assert(uint(m_semaphore) == kGraphUnlocked);
+        m_semaphore.TryUntil(kGraphUnlocked, kGraphLocked);
+        
         // Emplace the new listener
-        m_listenerFromEvent.emplace(event, Listener(event, dirtyableHandle, functor));
+        m_listenerFromEvent.emplace(event, Listener(event, dirtyableHandle, callbackType, functor));
         m_eventFromAssetId.emplace(assetId, event);
+
+        m_semaphore.TryUntil(kGraphLocked, kGraphUnlocked);
 
         Log::Error("Object '%s' added as a listener to the dirtiness graph.", assetId);
         return true;

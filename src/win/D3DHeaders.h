@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "core/Assert.h"
+#include "core/debug/Assert.h"
 
 namespace Enso
 {

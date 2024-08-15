@@ -5,7 +5,7 @@
 #include "materials/Material.cuh"
 #include "textures/Texture2D.cuh"
 #include "cameras/Camera.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 
 namespace Enso
 {
@@ -13,6 +13,8 @@ namespace Enso
         Host::GenericObject(initCtx),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::SceneContainer>(*this))
     {
+        Listen({ kDirtySceneObjectChanged });
+        
         m_hostTracables = AssetAllocator::CreateChildAsset<Host::TracableContainer>(*this, "tracablescontainer");
         m_hostLights = AssetAllocator::CreateChildAsset<Host::LightContainer>(*this, "lightscontainer");
         m_hostMaterials = AssetAllocator::CreateChildAsset<Host::MaterialContainer>(*this, "materialscontainer");
@@ -39,7 +41,20 @@ namespace Enso
         m_hostCameras.DestroyAsset();
         
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
-    }   
+    }
+
+    __host__ void Host::SceneContainer::OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller)
+    {
+        if (flag == kDirtySceneObjectChanged)
+        {
+            auto sceneObj = caller.DynamicCast<Host::SceneObject>();
+            if (sceneObj)
+            {
+                m_syncObjectSet[caller->GetAssetID()] = sceneObj.GetWeakHandle();
+                SignalDirty(kDirtyParams);
+            }
+        }
+    }
 
     template<typename ContainerType> 
     __host__ void DestroyObjects(ContainerType& container)
@@ -62,15 +77,52 @@ namespace Enso
     __host__ void Host::SceneContainer::Prepare()
     {
        
-    }    
+    }   
+
+    template<typename ContainerType>
+    __host__ void CleanContainerItems(AssetHandle<ContainerType>& container)
+    {
+        Assert(container);
+        for (auto& item : *container)
+        {
+            item->Clean();
+        }
+    }
+
+    __host__ void Host::SceneContainer::OnClean()
+    {
+        CleanContainerItems(m_hostTracables);
+        CleanContainerItems(m_hostLights);
+        CleanContainerItems(m_hostMaterials);
+        CleanContainerItems(m_hostTextures);
+        CleanContainerItems(m_hostCameras);
+    }
 
     __host__ void Host::SceneContainer::Synchronise(const uint flags)
     {
-        m_hostTracables->Synchronise(kVectorSyncUpload);
-        m_hostLights->Synchronise(kVectorSyncUpload);
-        m_hostCameras->Synchronise(kVectorSyncUpload);
-        m_hostMaterials->Synchronise(kVectorSyncUpload);
-        m_hostTextures->Synchronise(kVectorSyncUpload);
+        // Synchronise the parameters of any objects that signalled they were dirty
+        if (flags & kSyncParams)
+        {
+            for (auto& it : m_syncObjectSet)
+            {
+                AssetHandle<Host::SceneObject> object(it.second);
+                if (object)
+                {
+                    object->Synchronise(kSyncParams);
+                }
+            }
+            m_syncObjectSet.clear();
+        }
+
+        // Synchronise the scene objects arrays themselves
+        if (flags & kSyncObjects)
+        {
+            m_hostTracables->Synchronise(kVectorSyncUpload);
+            m_hostLights->Synchronise(kVectorSyncUpload);
+            m_hostCameras->Synchronise(kVectorSyncUpload);
+            m_hostMaterials->Synchronise(kVectorSyncUpload);
+            m_hostTextures->Synchronise(kVectorSyncUpload);
+        }
     }
 
     __host__ void Host::SceneContainer::Summarise() const

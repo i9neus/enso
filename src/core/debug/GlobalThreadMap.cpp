@@ -1,5 +1,5 @@
 #include "GlobalThreadMap.h"
-#include "../Assert.h"
+#include "Assert.h"
 
 #include <thread>
 #include <unordered_map>

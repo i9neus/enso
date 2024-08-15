@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/GenericObject.cuh"
+#include "core/assets/GenericObject.cuh"
 #include "../FwdDecl.cuh"
 
 namespace Enso

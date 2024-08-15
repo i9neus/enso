@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CudaHeaders.cuh"
+#include "core/CudaHeaders.cuh"
 
 namespace Enso
 {

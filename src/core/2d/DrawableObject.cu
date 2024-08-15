@@ -60,15 +60,13 @@ namespace Enso
         if (stateID == "kCreateDrawableObjectOpen")
         {
             m_hostInstance.m_params.transform.trans = viewCtx.mousePos;
-            SignalDirty( kDirtyObjectRebuild );
         }
 
         // Call the virtual method implemented by inheriting classes. 
         if (OnCreateDrawableObject(stateID, viewCtx, viewCtx.mousePos - m_hostInstance.m_params.transform.trans))
         {
             // Recompute the bounding boxes and signal the need to rebuild
-            RecomputeBoundingBoxes();            
-            SignalDirty( kDirtyObjectRebuild );
+            RecomputeBoundingBoxes();  
         }
 
         return true;
@@ -156,5 +154,22 @@ namespace Enso
         Synchronise(kSyncParams | kSyncObjects);
 
         return true;
+    }
+
+    __host__ uint Host::DrawableObject::OnMouseClick(const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) const 
+    { 
+        if (IsClickablePoint(viewCtx))
+        {
+            // If the object is already selected and the drawable supports delegation, signal a shift into delegation mode
+            // Otherwise, insta-select it and shift into dragging mode
+            if (IsSelected() && IsDelegatable()) { return kDrawableObjectDelegatedAction; }
+            else { return kDrawableObjectPrecisionDrag; }
+        }
+        else
+        {
+            return kDrawableObjectInvalidSelect;
+        }
+        
+        return kDrawableObjectInvalidSelect; 
     }
 }

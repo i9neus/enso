@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../FwdDecl.cuh"
-#include "core/GenericObject.cuh"
+#include "core/assets/GenericObject.cuh"
 
 namespace Enso
 {
@@ -63,6 +63,10 @@ namespace Enso
             Host::Texture2DContainer&   Textures() { Assert(m_hostTextures); return *m_hostTextures; }
             Host::CameraContainer&      Cameras() { Assert(m_hostCameras); return *m_hostCameras; }
 
+        private:
+            __host__ virtual void       OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller) override final;
+            __host__ virtual void       OnClean() override final;
+
         private:    
             AssetHandle<Host::TracableContainer>    m_hostTracables;
             AssetHandle<Host::LightContainer>       m_hostLights;
@@ -72,6 +76,9 @@ namespace Enso
 
             Device::SceneContainer*                 cu_deviceInstance = nullptr;
             Device::SceneContainer                  m_deviceObjects;
+
+            std::unordered_map<std::string, WeakAssetHandle<Host::SceneObject>> m_syncObjectSet;
+
         };
     }
 }

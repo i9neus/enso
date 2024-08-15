@@ -2,9 +2,9 @@
 
 #include "core/math/Math.cuh"
 #include "core/math/ColourUtils.cuh"
-#include "core/GenericObjectContainer.cuh"
-#include "core/Vector.cuh"
-#include "core/Tuple.cuh"
+#include "core/assets/GenericObjectContainer.cuh"
+#include "core/containers/Vector.cuh"
+#include "core/utils/Tuple.cuh"
 #include "viewport/ViewportRenderer.cuh"
 
 #include "core/2d/bih/BIH2DAsset.cuh"
@@ -56,8 +56,8 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
     {
-        m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
-        m_componentFactory.RegisterInstantiator<Host::SplatRasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }).HashOf());
+        m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }).HashOf());
+        m_componentFactory.RegisterInstantiator<Host::SplatRasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }).HashOf());
 
 
         //m_componentFactory.RegisterInstantiator<Host::ViewportRenderer>();
@@ -73,13 +73,13 @@ namespace Enso
         m_uiGraph.DeclareState("kCreateDrawableObjectHover", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareState("kCreateDrawableObjectAppend", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareState("kCreateDrawableObjectClose", this, &GaussianSplattingModule::OnCreateViewportObject);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {VK_CONTROL, kButtonDown} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectOpen", "kCreateDrawableObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectHover", VirtualKeyMap::Nothing(), kUITriggerOnMouseMove);
-        m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectAppend", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0);
+        m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectAppend", VirtualKeyMap(KEY_LBUTTON, kOnButtonDepressed), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectAppend", "kCreateDrawableObjectHover");
-        m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectClose", VirtualKeyMap(VK_RBUTTON, kOnButtonDepressed), 0);
+        m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectClose", VirtualKeyMap(KEY_RBUTTON, kOnButtonDepressed), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectClose", "kIdleState");
 
         // Delegate mouse actions to scene objects
@@ -87,54 +87,52 @@ namespace Enso
         m_uiGraph.DeclareState("kDelegateDrawableObjectEnd", this, &GaussianSplattingModule::OnDelegateViewportObject);
         m_uiGraph.DeclareState("kDelegateDrawableObjectDragging", this, &GaussianSplattingModule::OnDelegateViewportObject);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateDrawableObjectBegin", "kDelegateDrawableObjectDragging");
-        m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
-        m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+        m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectDragging", VirtualKeyMap(KEY_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+        m_uiGraph.DeclareDeterministicTransition("kDelegateDrawableObjectDragging", "kDelegateDrawableObjectEnd", VirtualKeyMap(KEY_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDelegateDrawableObjectEnd", "kIdleState");
 
         // Select/deselect scene object
         m_uiGraph.DeclareState("kSelectDrawableObjectDragging", this, &GaussianSplattingModule::OnSelectViewportObjects);
         m_uiGraph.DeclareState("kSelectDrawableObjectEnd", this, &GaussianSplattingModule::OnSelectViewportObjects);
         m_uiGraph.DeclareState("kDeselectDrawableObject", this, &GaussianSplattingModule::OnSelectViewportObjects);
-        m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
-        m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
-        m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+        m_uiGraph.DeclareNonDeterministicTransition("kIdleState", VirtualKeyMap(KEY_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
+        m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectDragging", VirtualKeyMap(KEY_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+        m_uiGraph.DeclareDeterministicTransition("kSelectDrawableObjectDragging", "kSelectDrawableObjectEnd", VirtualKeyMap(KEY_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kSelectDrawableObjectEnd", "kIdleState");
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeselectDrawableObject", VirtualKeyMap(VK_RBUTTON, kOnButtonDepressed), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeselectDrawableObject", VirtualKeyMap(KEY_RBUTTON, kOnButtonDepressed), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDeselectDrawableObject", "kIdleState");
 
         // Move scene object
         m_uiGraph.DeclareState("kMoveDrawableObjectBegin", this, &GaussianSplattingModule::OnMoveViewportObject);
         m_uiGraph.DeclareState("kMoveDrawableObjectDragging", this, &GaussianSplattingModule::OnMoveViewportObject);
         m_uiGraph.DeclareState("kMoveDrawableObjectEnd", this, &GaussianSplattingModule::OnMoveViewportObject);
-        //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(VK_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
+        //m_uiGraph.DeclareNonDeterministicTransition("kIdleState", nullptr, MouseButtonMap(KEY_LBUTTON, kOnButtonDepressed), 0, this, &GaussianSplattingModule::DecideOnClickState);
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveDrawableObjectBegin", "kMoveDrawableObjectDragging");
-        m_uiGraph.DeclareDeterministicTransition("kMoveDrawableObjectDragging", "kMoveDrawableObjectDragging", VirtualKeyMap(VK_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
-        m_uiGraph.DeclareDeterministicTransition("kMoveDrawableObjectDragging", "kMoveDrawableObjectEnd", VirtualKeyMap(VK_LBUTTON, kOnButtonReleased), 0);
+        m_uiGraph.DeclareDeterministicTransition("kMoveDrawableObjectDragging", "kMoveDrawableObjectDragging", VirtualKeyMap(KEY_LBUTTON, kButtonDown), kUITriggerOnMouseMove);
+        m_uiGraph.DeclareDeterministicTransition("kMoveDrawableObjectDragging", "kMoveDrawableObjectEnd", VirtualKeyMap(KEY_LBUTTON, kOnButtonReleased), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kMoveDrawableObjectEnd", "kIdleState");
 
         // Delete scene object
         m_uiGraph.DeclareState("kDeleteDrawableObjects", this, &GaussianSplattingModule::OnDeleteViewportObject);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {VK_DELETE, kOnButtonDepressed} }), 0);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {VK_BACK, kOnButtonDepressed} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {KEY_DELETE, kOnButtonDepressed} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kDeleteDrawableObjects", VirtualKeyMap({ {KEY_BACK, kOnButtonDepressed} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kDeleteDrawableObjects", "kIdleState");
 
         // Utils
         m_uiGraph.DeclareState("kToggleRun", this, &GaussianSplattingModule::OnToggleRun);
-        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kToggleRun", VirtualKeyMap({ {VK_SPACE, kOnButtonDepressed} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kToggleRun", VirtualKeyMap({ {KEY_SPACE, kOnButtonDepressed} }), 0);
 
-        m_uiGraph.Finalise();
+        m_uiGraph.Finalise(); 
     }
 
     __host__ void Host::GaussianSplattingModule::DeclareListeners()
     {
-        Listen({ kDirtyViewportObjectBBox });
+        Listen({ kDirtyParams });
     }
 
-    __host__ void Host::GaussianSplattingModule::OnDirty(const DirtinessEvent& flag, WeakAssetHandle<Host::Asset>& caller)
-    {
-        
-        
-        SetDirty(flag);
+    __host__ void Host::GaussianSplattingModule::OnDirty(const DirtinessEvent& flag, AssetHandle<Host::Asset>& caller)
+    {                
+        m_syncObjectParamsSet.emplace(caller->GetAssetID());
     }
 
     AssetHandle<ModuleBase> Host::GaussianSplattingModule::Instantiate(std::shared_ptr<CommandQueue> outQueue)
@@ -286,7 +284,7 @@ namespace Enso
                 {
                     // Erase the object from the container. 
                     std::lock_guard<std::mutex> lock(m_threadMutex);
-                    m_deleteObjectQueue.emplace(drawableObjects[primIdx]->GetAssetID());
+                    m_deleteObjectSet.emplace(drawableObjects[primIdx]->GetAssetID());
                 }
             }
 
@@ -320,7 +318,11 @@ namespace Enso
             Assert(obj->IsSelected());
 
             // Moving objects 
-            obj->OnMove(stateID, m_viewCtx, m_selectionCtx);
+            if (obj->OnMove(stateID, m_viewCtx, m_selectionCtx))
+            {
+                m_syncObjectParamsSet.emplace(obj->GetAssetID());
+                SetDirty(kDirtyViewportObjectBBox);
+            }
 
             m_selectionCtx.selectedBBox = Union(m_selectionCtx.selectedBBox, obj->GetWorldSpaceBoundingBox());
         }
@@ -375,7 +377,7 @@ namespace Enso
 
                     if (drawableObjects[primIdx]->GetWorldSpaceBoundingBox().Contains(m_viewCtx.mousePos))
                     {
-                        hitResult = drawableObjects[primIdx]->OnMouseClick(m_viewCtx);
+                        hitResult = drawableObjects[primIdx]->OnMouseClick(m_keyCodes, m_viewCtx);
                         if (hitResult != kDrawableObjectInvalidSelect)
                         {
                             hitIdx = primIdx;
@@ -573,14 +575,18 @@ namespace Enso
             auto newGeneric = m_componentFactory.Instantiate(trigger.HashOf(), *m_objectContainer, *this, m_objectContainer);
             m_newObject = newGeneric.DynamicCast<Host::DrawableObject>();
             m_newObject->Verify();
-            m_newObjectQueue.emplace(m_newObject->GetAssetID());
+            m_newObjectSet.emplace(m_newObject->GetAssetID());
 
             SetDirty(kDirtyObjectExistence);
         }
 
         // Invoke the event handler of the new object
         Assert(m_newObject);
-        m_newObject->OnCreate(stateID, m_viewCtx);
+        if (m_newObject->OnCreate(stateID, m_viewCtx))
+        {
+            m_syncObjectParamsSet.emplace(m_newObject->GetAssetID());
+            SetDirty(kDirtyViewportObjectBBox);
+        }
 
         // Some objects will automatically finalise themselves. If this happens, we're done.
         if (m_newObject->IsFinalised())
@@ -607,7 +613,7 @@ namespace Enso
         if (!m_newObject->IsFinalised())
         {
             std::lock_guard<std::mutex> lock(m_threadMutex);
-            m_deleteObjectQueue.emplace(m_newObject->GetAssetID());
+            m_deleteObjectSet.emplace(m_newObject->GetAssetID());
             Log::Success("Destroying unfinalised scene object '%s'", m_newObject->GetAssetID());
         }
         else
@@ -633,19 +639,19 @@ namespace Enso
         bool objectsChanged = false;
 
         // If objects are waiting to be deleted, do so now
-        if (!m_deleteObjectQueue.empty())
-        { 
+        if (!m_deleteObjectSet.empty())
+        {
             // Release any handles that might prevent objects being successfully erased from the container
             m_viewportRenderer->ReleaseObjects();
-            m_renderableObjects.clear();  
+            m_renderableObjects.clear();
             m_selectionCtx.selectedObjects.clear();
 
             // Iterate through the delete queue and erase the objects from the object container
-            for (auto& id : m_deleteObjectQueue)
+            for (auto& id : m_deleteObjectSet)
             {
                 m_objectContainer->Erase(id, true);
             }
-            m_deleteObjectQueue.clear();
+            m_deleteObjectSet.clear();
             rebuildViewport = true;
             objectsChanged = true;
 
@@ -653,12 +659,12 @@ namespace Enso
             EnqueueOutboundSerialisation("OnDeleteObject", kEnqueueAll);
         }
 
-        // If new objects have been created, signal that the viewport should be rebuilt and 
-        if (!m_newObjectQueue.empty())
-        {            
+        // If new objects have been created, signal that the viewport should be rebuilt
+        if (!m_newObjectSet.empty())
+        {
             rebuildViewport = true;
             objectsChanged = true;
-            m_newObjectQueue.clear();
+            m_newObjectSet.clear();
         }
 
         // If objects have been added or removed, do a re-bind and rebuild any data structures that depend on them
@@ -672,6 +678,20 @@ namespace Enso
                     m_renderableObjects.push_back(object);
                     return true;
                 });
+        }
+
+        // Some objects will signal that their parameters need to be resynced. 
+        if (!m_syncObjectParamsSet.empty())
+        {
+            for (auto id : m_syncObjectParamsSet)
+            {
+                auto obj = m_objectContainer->FindByID(id);
+                if (obj)
+                {
+                    obj->Synchronise(kSyncParams);
+                }
+            }
+            m_syncObjectParamsSet.clear();
         }
 
         // Rebuild the viewport if required
@@ -718,14 +738,13 @@ namespace Enso
            // TODO: Make this respond intelligently to frame rate. If the CUDA renderer is running at a lower FPS than the D3D renderer then it should wait rather than
            // than skipping frames like this.
             //m_renderSemaphore.Wait(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress);
-            if (!m_renderSemaphore.Try(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
+            if (!m_renderSemaphore.TryOnce(kRenderManagerD3DBlitFinished, kRenderManagerCompInProgress, false)) { return; }
 
             // Composite the render layers
             m_compositeImage->Clear(vec4(kZero, 1.0f));
             m_viewportRenderer->Composite(m_compositeImage);
 
-            m_renderSemaphore.Wait(kRenderManagerCompInProgress, kRenderManagerCompFinished);
-            //m_renderSemaphore.Try(kRenderManagerCompInProgress, kRenderManagerCompFinished, true);
+            m_renderSemaphore.TryUntil(kRenderManagerCompInProgress, kRenderManagerCompFinished);
         }
 
         // Clean all the objects in the scene container ready for the next iteration
@@ -736,7 +755,7 @@ namespace Enso
     __host__ void Host::GaussianSplattingModule::OnMouseButton(const uint code, const bool isDown)
     {
         // Is the view being changed? 
-        if (isDown && (code == VK_MBUTTON || code == VK_RBUTTON || IsKeyDown(VK_SHIFT)))
+        if (isDown && (code == KEY_MBUTTON || code == KEY_RBUTTON || IsKeyDown(KEY_SHIFT)))
         {
             m_viewCtx.dragAnchor = vec2(m_mouse.pos);
             m_viewCtx.rotAxis = normalize(m_viewCtx.dragAnchor - vec2(m_clientWidth, m_clientHeight) * 0.5f);
@@ -759,7 +778,7 @@ namespace Enso
         bool isUpdated = true;
 
         // Zooming?
-        if (IsMouseButtonDown(VK_RBUTTON))
+        if (IsMouseButtonDown(KEY_RBUTTON))
         {
             float logScaleAnchor = std::log2(std::max(1e-10f, m_viewCtx.scaleAnchor));
             logScaleAnchor += m_viewCtx.zoomSpeed * float(m_mouse.pos.y - m_viewCtx.dragAnchor.y) / m_clientHeight;
@@ -768,7 +787,7 @@ namespace Enso
             //Log::Write("Scale: %f", transform.scale);
         }
         // Rotating?
-        else if (IsKeyDown(VK_SHIFT) && IsMouseButtonDown(VK_LBUTTON))
+        else if (IsKeyDown(KEY_SHIFT) && IsMouseButtonDown(KEY_LBUTTON))
         {
             const vec2 delta = normalize(vec2(m_mouse.pos) - vec2(m_clientWidth, m_clientHeight) * 0.5f);
             const float theta = std::acos(dot(delta, m_viewCtx.rotAxis)) * (float(dot(delta, vec2(m_viewCtx.rotAxis.y, -m_viewCtx.rotAxis.x)) < 0.0f) * 2.0 - 1.0f);
@@ -779,7 +798,7 @@ namespace Enso
             //Log::Write("Theta: %f", transform.rotate);
         }
         // Translating
-        else if (IsMouseButtonDown(VK_MBUTTON))
+        else if (IsMouseButtonDown(KEY_MBUTTON))
         {
             // Update the transformation
             const mat3 newMat = ConstructViewMatrix(m_viewCtx.transAnchor, transform.rotate, transform.scale) * m_clientToNormMatrix;

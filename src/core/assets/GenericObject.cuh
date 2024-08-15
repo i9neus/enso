@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "math/Math.cuh"
+#include "core/math/Math.cuh"
 #include "io/Serialisable.cuh"
 #include "DirtinessGraph.cuh"
 #include "AssetAllocator.cuh"

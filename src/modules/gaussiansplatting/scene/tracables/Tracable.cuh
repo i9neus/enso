@@ -4,10 +4,10 @@
 #include "core/3d/Ctx.cuh"
 #include "core/3d/Transform.cuh"
 
-#include "core/DirtinessFlags.cuh"
-#include "core/Image.cuh"
-#include "core/GenericObject.cuh"
-#include "core/HighResolutionTimer.h"
+#include "core/assets/DirtinessFlags.cuh"
+#include "core/containers/Image.cuh"
+#include "core/assets/GenericObject.cuh"
+#include "core/utils/HighResolutionTimer.h"
 
 #include "io/Serialisable.cuh"
 

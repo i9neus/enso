@@ -2,11 +2,11 @@
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
 #include "core/3d/Ctx.cuh"
-#include "core/AssetContainer.cuh"
+#include "core/assets/AssetContainer.cuh"
 #include "core/3d/Transform.cuh"
-#include "core/Vector.cuh"
+#include "core/containers/Vector.cuh"
 #include "core/3d/Cameras.cuh"
-#include "core/GenericObjectContainer.cuh"
+#include "core/assets/GenericObjectContainer.cuh"
 #include "core/math/samplers/MersenneTwister.cuh"
 #include "core/math/mat/MatMul.cuh"
 
@@ -93,11 +93,6 @@ namespace Enso
     }
     DEFINE_KERNEL_PASSTHROUGH(Render);
 
-    __host__ __device__ uint Device::SplatRasteriser::OnMouseClick(const UIViewCtx& viewCtx) const
-    {
-        return GetWorldBBox().Contains(viewCtx.mousePos) ? kDrawableObjectPrecisionDrag : kDrawableObjectInvalidSelect;       
-    }
-
     __host__ __device__ vec4 Device::SplatRasteriser::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
         if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
@@ -130,7 +125,7 @@ namespace Enso
     __host__ Host::SplatRasteriser::SplatRasteriser(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects) :
         DrawableObject(initCtx, &m_hostInstance),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::SplatRasteriser>(*this))
-    {                
+    {                        
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         RenderableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::RenderableObject>(cu_deviceInstance));
         
@@ -149,6 +144,8 @@ namespace Enso
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
         m_wallTime.Reset();
+
+        Cascade({ kDirtySceneObjectChanged });
     }
 
     __host__ Host::SplatRasteriser::~SplatRasteriser() noexcept
@@ -254,8 +251,7 @@ namespace Enso
     {        
         if (!m_hostSceneContainer || !m_hostActiveCamera) { return; }
 
-        if (!IsClean()) { Synchronise(kSyncParams); }
-        
+                
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
         //if (m_params.frameIdx > 10) return;
@@ -263,7 +259,7 @@ namespace Enso
         dim3 blockSize, gridSize;
         KernelParamsFromImage(m_hostFrameBuffer, blockSize, gridSize);
 
-        if(RenderableObject::m_params.frameIdx <= 1)
+        if(RenderableObject::m_params.frameIdx <= 1 || IsDirty(kDirtySceneObjectChanged))
         // Accumulate the frame
             KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
 
@@ -328,10 +324,10 @@ namespace Enso
         return true;
     }
 
-    __host__ uint Host::SplatRasteriser::OnMouseClick(const UIViewCtx& viewCtx) const
+    __host__ bool Host::SplatRasteriser::IsClickablePoint(const UIViewCtx& viewCtx) const
     {
-        return m_hostInstance.OnMouseClick(viewCtx);
-    }
+        return GetWorldSpaceBoundingBox().Contains(viewCtx.mousePos);
+    }   
 
     __host__ BBox2f Host::SplatRasteriser::ComputeObjectSpaceBoundingBox()
     {

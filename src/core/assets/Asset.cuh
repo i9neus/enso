@@ -1,9 +1,9 @@
 #pragma once
 
-#include "GlobalResourceRegistry.cuh"
+#include "core/singletons/GlobalResourceRegistry.cuh"
 #include <memory>
 #include "io/Log.h"
-#include "CudaHeaders.cuh"
+#include "core/CudaHeaders.cuh"
 #include "core/debug/Profiler.cuh"
 
 namespace Enso
@@ -122,7 +122,7 @@ namespace Enso
         template<typename OtherType>
         __host__ explicit AssetHandle(const WeakAssetHandle<OtherType>& weakHandle)
         {
-            static_assert(std::is_convertible<OtherType, AssetType>::value, "Cannot construct AssetHandle with WeakAssetHandle of incompatible type.");
+            static_assert(std::is_convertible<OtherType*, AssetType*>::value, "Cannot construct AssetHandle with WeakAssetHandle of incompatible type.");
 
             // FIXME: Const casting here to get around the fact that AssetHandle sheilds us from const traits whereas std::weak_ptr does not
             AssertMsg(!weakHandle.expired(), "Trying to a convert an expired weak asset handle to a strong one.");
