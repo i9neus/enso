@@ -10,44 +10,72 @@
 #include "core/utils/HighResolutionTimer.h"
 
 #include "../FwdDecl.cuh"
+
+#include <cuda/std/tuple>
 //#include "core/3d/BidirectionalTransform.cuh"
 
 namespace Enso
 {         
-    namespace Device { class Tracable; }
-    struct Ray;
-    struct HitCtx;
-    
+    namespace Host { class SplatRasteriser; }
+    namespace Device { struct GaussianPoint; }
+
+    enum SplatRasteriserAttrs : int { kSplatRasteriserTileSize = 16 };
+
+    struct ProjectedGaussianPoint
+    {
+        vec3        p;
+        mat2        sigma;
+        vec4        rgba;
+    };
+
+    struct RadixSortKey
+    {
+        uint64_t                    key = 0ull;
+
+        __device__ RadixSortKey() {}
+        __device__ RadixSortKey(const uint64_t k) : key(k) {}
+
+        __device__ __forceinline__ RadixSortKey& operator=(const uint64_t v) { key = v; return *this;  }
+    };
+
     struct SplatRasteriserParams
     {
         __device__ void Validate() const {}
 
         struct
         {
-            ivec2 dims;
-            BBox2f objectBounds;
+            uvec2 dims;
+            BBox2f objectBounds; 
         }
         viewport;
+
+        struct
+        {
+            uvec2 dims;
+            uint32_t numTiles;
+        }
+        tileGrid;
 
         bool hasValidSplatCloud = false;
     };
 
     struct SplatRasteriserObjects
     {
-        __host__ __device__ void Validate() const
-        {
-            CudaAssert(frameBuffer);      
-        }
+        __device__ void Validate() const;
         
         Device::ImageRGBW*                  frameBuffer = nullptr;
-        Device::Vector<GaussianPoint>*      pointCloud = nullptr;
+        Device::Vector<GaussianPoint>*      splatList = nullptr;
+        Device::Vector<ProjectedGaussianPoint>* projectedSplatList = nullptr;
         Device::Camera*                     activeCamera = nullptr;
+        Device::Vector<RadixSortKey>*       unsortedKeys = nullptr;
+        Device::Vector<RadixSortKey>*       sortedKeys = nullptr;
+        Device::Vector<uint32_t>*           unsortedRefs = nullptr;
+        Device::Vector<uint32_t>*           sortedRefs = nullptr;
+        Device::Vector<uvec2>*              tileRanges = nullptr;
     };
 
-    namespace Host { class SplatRasteriser; }
-
     namespace Device
-    {
+    {          
         class SplatRasteriser : public Device::DrawableObject, public Device::RenderableObject
         {
             friend Host::SplatRasteriser;
@@ -56,16 +84,20 @@ namespace Enso
             __host__ __device__ SplatRasteriser() {}
             
             //__device__ void Prepare(const uint dirtyFlags);
-            __device__ void Render();
+            __device__ void                     RenderUnsortedSplats();
+            __device__ void                     RenderSortedSplats();
+            __device__ void                     ProjectSplats();
+            __device__ void                     ClearTileRanges();
+            __device__ void                     DetermineTileRanges();
+            __device__ void                     RenderSplatTiles();
+            __device__ void                     Verify();
 
-            __host__ __device__ void Synchronise(const SplatRasteriserParams& params);
-            __device__ void Synchronise(const SplatRasteriserObjects& objects);
+            __host__ __device__ void            Synchronise(const SplatRasteriserParams& params);
+            __device__ void                     Synchronise(const SplatRasteriserObjects& objects);
 
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
         private:
-            __device__ int Trace(Ray& ray, HitCtx& hit) const;
-
             SplatRasteriserParams            m_params;
             SplatRasteriserObjects           m_objects;
 
@@ -102,6 +134,7 @@ namespace Enso
             }
 
         protected:
+            __host__ void               SortSplats(const bool allocTempStorage);
             __host__ virtual void       OnSynchroniseDrawableObject(const uint syncFlags) override final;
             __host__ virtual bool       OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
             __host__ virtual bool       OnRebuildDrawableObject() override final;
@@ -127,11 +160,17 @@ namespace Enso
 
             AssetHandle<Host::ImageRGBW>      m_hostFrameBuffer;
 
-            AssetHandle<Host::SceneContainer> m_hostSceneContainer;
-            AssetHandle<Host::Camera>         m_hostActiveCamera;
-            AssetHandle<Host::GaussianPointCloud> m_gaussianPointCloud;
+            AssetHandle<Host::SceneContainer>                   m_hostSceneContainer;
+            AssetHandle<Host::Camera>                           m_hostActiveCamera;
+            AssetHandle<Host::GaussianPointCloud>               m_gaussianPointCloud;
 
-            AssetHandle<Host::Vector<BidirectionalTransform>> m_hostTransforms;
+            AssetHandle<Host::Vector<ProjectedGaussianPoint>>   m_hostProjectedSplatList;
+            AssetHandle<Host::Vector<RadixSortKey>>             m_hostUnsortedKeys;
+            AssetHandle<Host::Vector<RadixSortKey>>             m_hostSortedKeys;
+            AssetHandle<Host::Vector<uint32_t>>                 m_hostUnsortedRefs;
+            AssetHandle<Host::Vector<uint32_t>>                 m_hostSortedRefs;
+            AssetHandle<Host::Vector<uint8_t>>                  m_radixSortTempStorage;
+            AssetHandle<Host::Vector<uvec2>>                    m_hostTileRanges;
         };
     }
 }

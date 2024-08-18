@@ -34,7 +34,7 @@ namespace Enso
         const float cameraPhi = -kPi;
         const vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;
         const vec3 cameraLookAt = vec3(0., -0., -0.);
-        cameras.push_back(AssetAllocator::CreateChildAsset<Host::PinholeCamera>(*scene, "pinholecamera", cameraPos, cameraLookAt, 40.));
+        cameras.push_back(AssetAllocator::CreateChildAsset<Host::PinholeCamera>(*scene, "pinholecamera", cameraPos, cameraLookAt, 35.f));
 
         // Create some materials
 

@@ -100,8 +100,7 @@ namespace Enso
         pt.p = p;
         pt.rot = normalize(mix(vec4(-1.f), vec4(1.f), rng.Rand4()));
         pt.sca = gaussSigma * mix(vec3(0.1f), vec3(1.0f), rng.Rand3());
-        pt.rgba.xyz = rng.Rand3();
-        pt.rgba.w = 1.f;
+        pt.rgba = vec4(rng.Rand3(), 1.0f);
         return pt;
     }
 

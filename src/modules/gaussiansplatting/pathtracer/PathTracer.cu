@@ -81,7 +81,7 @@ namespace Enso
 
         // Transform into normalised sceen space
         const vec4 xi = renderCtx.Rand(0);
-        const vec2 uvView = ScreenToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
+        const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
         
         Ray directRay, indirectRay;
         m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);

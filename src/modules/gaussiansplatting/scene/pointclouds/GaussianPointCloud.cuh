@@ -49,7 +49,7 @@ namespace Enso
             __host__ virtual void Synchronise(const uint syncFlags) override final;
             __host__ void AppendSplats(const std::vector<GaussianPoint>& points);
             __host__ void Finalise(); 
-            __host__ Host::Vector<GaussianPoint> GetSplatList() { return *m_hostSplatList; }
+            __host__ Host::Vector<GaussianPoint>& GetSplatList() { return *m_hostSplatList; }
 
             __host__ static const std::string  GetAssetClassStatic() { return "gaussianpointcloud"; }
             __host__ virtual std::string       GetAssetClass() const override final { return GetAssetClassStatic(); }
