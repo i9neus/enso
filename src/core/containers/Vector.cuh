@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/*
+
+	NOTES:
+	 - Vector<> type has two modes: host+device and device only.
+	   Host+device mode allocates memory on the host and allows it be accessed like a regular vector. To mirror it on the device, Synchronise must be called.
+	   Device only mode only allocates memory on the device. This is done immediately whenever resize(), grow() or clear() are called.
+* */
+
+#pragma once
 
 #include "core/math/Math.cuh"
 #include "core/assets/AssetAllocator.cuh"
@@ -10,7 +18,9 @@ namespace Enso
 	enum CudaVectorFlags : uint
 	{
 		kVectorSyncUpload = 1,
-		kVectorSyncDownload = 2
+		kVectorSyncDownload = 2,
+
+		kVectorDeviceOnly = 4
 	};
 
 	namespace Host
@@ -64,10 +74,12 @@ namespace Enso
 			__device__ Vector() {}
 			__device__ void Synchronise(const VectorData<Type>& data) { m_data = data; }
 
+#define GuardSize CudaAssertDebugFmt(idx < m_data.size, "Device::Vector: index %u out of bounds [0, %i).", idx, m_data.size)
+#define GuardNotEmpty CudaAssertDebugMsg(m_data.size != 0, "Device::Vector: can't access empty array.")
 
 			__device__ __forceinline__ size_t size() const { return m_data.size; }
-			__device__ __forceinline__ Type& operator[](const int idx) { CudaAssertDebug(idx < m_data.size); return m_data.mem[idx]; }
-			__device__ __forceinline__ const Type& operator[](const int idx) const { CudaAssertDebug(idx < m_data.size); return m_data.mem[idx]; }
+			__device__ __forceinline__ Type& operator[](const size_t idx) { GuardSize; return m_data.mem[idx]; }
+			__device__ __forceinline__ const Type& operator[](const size_t idx) const { GuardSize; return m_data.mem[idx]; }
 
 			__device__ __forceinline__ Iterator<Type> begin() { return Iterator<Type>(m_data.mem, 0); }
 			__device__ __forceinline__ Iterator<Type> begin() const { return Iterator<const Type>(m_data.mem, 0, m_data.size); }
@@ -76,10 +88,13 @@ namespace Enso
 
 			__device__ __forceinline__ Type* data() { return m_data.mem; }
 			__device__ __forceinline__ const Type* data() const { return m_data.mem; }
-			__device__ __forceinline__ Type& back() { CudaAssertDebug(m_data.size != 0); return m_data.mem[m_data.size - 1]; }
-			__device__ __forceinline__ const Type& back() const { CudaAssertDebug(m_data.size != 0); return m_data.mem[m_data.size - 1]; }
-			__device__ __forceinline__ Type& front() { CudaAssertDebug(m_data.size != 0); return m_data.mem[0]; }
-			__device__ __forceinline__ const Type& front() const { CudaAssertDebug(m_data.size != 0); return m_data.mem[0]; }
+			__device__ __forceinline__ Type& back() { GuardNotEmpty; return m_data.mem[m_data.size - 1]; }
+			__device__ __forceinline__ const Type& back() const { GuardNotEmpty; return m_data.mem[m_data.size - 1]; }
+			__device__ __forceinline__ Type& front() { GuardNotEmpty; return m_data.mem[0]; }
+			__device__ __forceinline__ const Type& front() const { GuardNotEmpty; return m_data.mem[0]; }
+
+#undef GuardNotEmpty
+#undef GuardSize
 		};
 	}
 
@@ -107,130 +122,177 @@ namespace Enso
 			};
 
 		protected:
-			std::vector<HostType>			m_hostData;
-			//Device::Vector<DeviceType>*	m_hostInstance;
+			std::vector<HostType>			m_hostVector;
 			Device::Vector<DeviceType>*		cu_deviceInstance;
 			VectorData<DeviceType>	     	m_deviceData;
+			uint							m_flags;
 
 		protected:
-			__host__ VectorBase(const Asset::InitCtx& initCtx, const size_t size) :
+			__host__ VectorBase(const Asset::InitCtx& initCtx, const size_t initSize, const uint flags) :
 				Host::Asset(initCtx),
+				m_flags(flags),
 				cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::Vector<DeviceType>>(*this))
-			{
-				if (size > 0)
-				{
-					DestructiveResizeImpl(size);
+			{			
+				static_assert(std::is_standard_layout<DeviceType>::value, "Vector device type is non-trivial.");
+				
+				// Pre-allocate memory if required
+				if (initSize > 0)
+				{ 
+					ResizeImpl(initSize);
 				}
 			}
 
 			__host__ virtual ~VectorBase()
 			{
-				DestructiveResizeImpl(0);
+				DeviceResizeImpl(0, 0);
 				AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
 			}
 
-			__host__ VectorBase(const size_t size) : m_hostData(size) {}
-
-			__host__ void DestructiveResizeImpl(const size_t newSize)
+			__host__ void DeviceResizeImpl(const size_t newSize, const size_t newCapacity)
 			{
-				// Deallocate the old device memory
-				AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceData.capacity, &m_deviceData.mem);
+				Assert(newSize <= newCapacity);
 
-				if (newSize == 0)
+				// No change? 
+				if (newSize == m_deviceData.size && newCapacity == m_deviceData.capacity) { return; }
+
+				if (newCapacity != m_deviceData.capacity)
 				{
-					m_deviceData.mem = nullptr;
-					m_deviceData.capacity = 0;
-					m_deviceData.size = 0;
+					// Deallocate the old device memory
+					AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceData.capacity, &m_deviceData.mem);
+					if (newCapacity != 0)
+					{
+						AssetAllocator::GuardedAllocDeviceArray(*this, newCapacity, &m_deviceData.mem, 0u);
+					}
+				}
+
+				m_deviceData.capacity = newCapacity;
+				m_deviceData.size = newSize;
+				SynchroniseObjects<Device::Vector<DeviceType>>(cu_deviceInstance, m_deviceData);
+				//LegacySynchroniseObjects(cu_deviceInstance, m_deviceData);
+			}
+
+			__host__ void ResizeImpl(const size_t newSize)
+			{
+				if (m_flags & kVectorDeviceOnly)
+				{
+					// If memory has only been allocated on the device, immediately allocate and sync it here.
+					DeviceResizeImpl(newSize, newSize);
 				}
 				else
 				{
-					AssetAllocator::GuardedAllocDeviceArray(*this, newSize, &m_deviceData.mem, 0u);
-					m_deviceData.capacity = newSize;
-					m_deviceData.size = newSize;
+					// If this is a host+device vector, resize the host and defer synchronisation until later.
+					m_hostVector.resize(newSize);
 				}
 			}
 
 		public:
 			// Capacity
-			__host__ __forceinline__ size_t size() const { return m_hostData.size(); }
-			__host__ __forceinline__ size_t capacity() const { return m_hostData.capacity(); }
-			__host__ __forceinline__ void reserve(const int capacity) { return m_hostData.reserve(capacity); }
-			__host__ __forceinline__ bool empty() const { return m_hostData.empty(); }
+			__host__ __forceinline__ size_t size() const { return (m_flags & kVectorDeviceOnly) ? m_deviceData.size : m_hostVector.size(); }
+			__host__ __forceinline__ size_t capacity() const { return (m_flags & kVectorDeviceOnly) ? m_deviceData.capacity : m_hostVector.capacity(); }
+			__host__ __forceinline__ bool empty() const { return size() == 0; }
 
 			// Element access
-			__host__ __forceinline__ HostType& operator[](const int idx) { return m_hostData[idx]; }
-			__host__ __forceinline__ const HostType& operator[](const int idx) const { return m_hostData[idx]; }
-			__host__ __forceinline__ HostType& back() { Assert(!m_hostData.empty()); return m_hostData.back(); }
-			__host__ __forceinline__ const HostType& back() const { Assert(!m_hostData.empty()); return m_hostData.back(); }
-			__host__ __forceinline__ HostType& front() { Assert(!m_hostData.empty()); return m_hostData.front(); }
-			__host__ __forceinline__ const HostType& front() const { Assert(!m_hostData.empty()); return m_hostData.front(); }
+			__host__ __forceinline__ HostType& operator[](const size_t idx) { Assert(!(m_flags & kVectorDeviceOnly)); return m_hostVector[idx]; }
+			__host__ __forceinline__ const HostType& operator[](const size_t idx) const { Assert(!(m_flags & kVectorDeviceOnly)); return m_hostVector[idx]; }
+			__host__ __forceinline__ HostType& back() { Assert(!(m_flags & kVectorDeviceOnly)); Assert(!m_hostVector.empty()); return m_hostVector.back(); }
+			__host__ __forceinline__ const HostType& back() const { Assert(!(m_flags & kVectorDeviceOnly)); Assert(!m_hostVector.empty()); return m_hostVector.back(); }
+			__host__ __forceinline__ HostType& front() { Assert(!(m_flags & kVectorDeviceOnly)); Assert(!m_hostVector.empty()); return m_hostVector.front(); }
+			__host__ __forceinline__ const HostType& front() const { Assert(!(m_flags & kVectorDeviceOnly)); Assert(!m_hostVector.empty()); return m_hostVector.front(); }
 
 			// Modifiers
-			__host__ __forceinline__ void clear() { m_hostData.clear(); }
-			__host__ __forceinline__ void resize(const size_t newSize) { m_hostData.resize(newSize); }
-			__host__ __forceinline__ void grow(const int deltaSize)
+			__host__ __forceinline__ void clear() { ResizeImpl(0u); }
+			__host__ void resize(const size_t newSize) { ResizeImpl(newSize); }
+
+			__host__ void grow(const int deltaSize)
 			{
-				const int newSize = int(m_hostData.size()) + deltaSize;
+				const int newSize = int(size()) + deltaSize;
 				AssertMsgFmt(newSize >= 0, "Growing vector '%s' by %i elements results in negative size.", GetAssetID(), deltaSize);
-				m_hostData.resize(newSize);
+				ResizeImpl(newSize);				
 			}
-			//template<typename... Pack> __host__ __forceinline__ void emplace_back(Pack... pack) { m_hostData.emplace_back(pack...); }
-			__host__ __forceinline__ void push_back(const HostType& newElement) { m_hostData.push_back(newElement); }
+
+			__host__  void reserve(const size_t capacity)
+			{
+				AssertMsgFmt(!(m_flags & kVectorDeviceOnly), "Can't reserve host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+				
+				return m_hostVector.reserve(capacity);
+			}
+
+			//template<typename... Pack> __host__ __forceinline__ void emplace_back(Pack... pack) { m_hostVector.emplace_back(pack...); }
+			__host__ __forceinline__ void push_back(const HostType& newElement) 
+			{ 
+				AssertMsgFmt(!(m_flags & kVectorDeviceOnly), "Can't push_back() to host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+				
+				m_hostVector.push_back(newElement); 
+			}
 			__host__ __forceinline__ void insert(const std::vector<HostType>& container) 
 			{ 
-				m_hostData.reserve(m_hostData.size() + container.size());
-				m_hostData.insert(m_hostData.end(), container.begin(), container.end());
+				AssertMsgFmt(!(m_flags & kVectorDeviceOnly), "Can't insert() to host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+				
+				m_hostVector.reserve(m_hostVector.size() + container.size());
+				m_hostVector.insert(m_hostVector.end(), container.begin(), container.end());
 			}
 
 			__host__ __forceinline__ HostType pop_back()
 			{
-				Assert(!m_hostData.empty());
-				HostType back = m_hostData.back();
-				m_hostData.pop_back();
+				AssertMsgFmt(!(m_flags & kVectorDeviceOnly), "Can't pop_back() from host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+				Assert(!m_hostVector.empty());
+				HostType back = m_hostVector.back();
+				m_hostVector.pop_back();
+
 				return back;
 			}
 
 			// Iterators
-			__host__ __forceinline__ Iterator<HostType> begin() { return Iterator<HostType>(m_hostData.begin()); }
-			__host__ __forceinline__ Iterator<const HostType> begin() const { return Iterator<const HostType>(m_hostData.begin()); }
-			__host__ __forceinline__ Iterator<HostType> end() { return Iterator<HostType>(m_hostData.end()); }
-			__host__ __forceinline__ Iterator<const HostType> end() const { return Iterator<const HostType>(m_hostData.end()); }
+			__host__ __forceinline__ Iterator<HostType> begin() { Assert(!(m_flags & kVectorDeviceOnly)); return Iterator<HostType>(m_hostVector.begin()); }
+			__host__ __forceinline__ Iterator<const HostType> begin() const { Assert(!(m_flags & kVectorDeviceOnly)); return Iterator<const HostType>(m_hostVector.begin()); }
+			__host__ __forceinline__ Iterator<HostType> end() { Assert(!(m_flags & kVectorDeviceOnly)); return Iterator<HostType>(m_hostVector.end()); }
+			__host__ __forceinline__ Iterator<const HostType> end() const { Assert(!(m_flags & kVectorDeviceOnly)); return Iterator<const HostType>(m_hostVector.end()); }
 
 			// Accessors
-			__host__ __forceinline__ HostType* data() { return m_hostData.data(); }
-			__host__ __forceinline__ const HostType* data() const { return m_hostData.data(); }
+			__host__ __forceinline__ HostType* data() { return m_hostVector.data(); }
+			__host__ __forceinline__ const HostType* data() const { return m_hostVector.data(); }
 
 			__host__ void Wipe()
 			{
 				IsOk(cudaMemset(m_deviceData.mem, 0, sizeof(DeviceType) * m_deviceData.size));
-				std::memset(m_hostData.data(), 0, sizeof(HostType) * m_hostData.size());
+				std::memset(m_hostVector.data(), 0, sizeof(HostType) * m_hostVector.size());
 			}
 
 			__host__ __forceinline__ Device::Vector<DeviceType>* GetDeviceInstance() { return cu_deviceInstance; }
+			__host__ __forceinline__ DeviceType* GetDeviceData() { return m_deviceData.mem; }
+			__host__ __forceinline__ const DeviceType* GetDeviceData() const { return m_deviceData.mem; }
 		};
 
 		template<typename CommonType>
 		class Vector : public VectorBase<CommonType, CommonType>
 		{
 		public:
-			__host__ Vector(const Asset::InitCtx& initCtx, const size_t size = 0) : VectorBase<CommonType, CommonType>(initCtx, size) {}
+			__host__ Vector(const Asset::InitCtx& initCtx, const size_t size = 0, const uint flags = 0) : 
+				VectorBase<CommonType, CommonType>(initCtx, size, flags)
+			{
+			}
+
+			__host__ Vector(const Vector&) = delete;
+			__host__ Vector(Vector&&) = delete;
 			__host__ virtual ~Vector() = default;
 
 			__host__ void Synchronise(const uint syncFlags)
 			{
+				if (m_flags & kVectorDeviceOnly)
+				{
+					//Log::DebugOnce("Warning: Can't synchronise host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+					return;
+				}
+				
 				if (syncFlags == kVectorSyncUpload)
 				{
 					// Make sure the device data matches the host size
-					if (m_hostData.size() != m_deviceData.size)
-					{
-						DestructiveResizeImpl(m_hostData.size());
-					}
+					DeviceResizeImpl(m_hostVector.size(), m_hostVector.size());
 
-					if (!m_hostData.empty())
+					if (!m_hostVector.empty())
 					{
 						// Upload the data and synchronise with the device object
-						IsOk(cudaMemcpy(m_deviceData.mem, m_hostData.data(), sizeof(CommonType) * m_hostData.size(), cudaMemcpyHostToDevice));
-						SynchroniseObjects<Device::Vector<CommonType>>(cu_deviceInstance, m_deviceData);
+						IsOk(cudaMemcpy(m_deviceData.mem, m_hostVector.data(), sizeof(CommonType) * m_hostVector.size(), cudaMemcpyHostToDevice));
 					}
 				}
 				else
@@ -239,8 +301,8 @@ namespace Enso
 					{
 						// We're assuming that the host content is already initialised
 						Assert(m_deviceData.mem);
-						Assert(m_hostData.size() == m_deviceData.size);
-						IsOk(cudaMemcpy(m_hostData.data(), m_deviceData.mem, sizeof(CommonType) * m_deviceData.size, cudaMemcpyDeviceToHost));
+						Assert(m_hostVector.size() == m_deviceData.size);
+						IsOk(cudaMemcpy(m_hostVector.data(), m_deviceData.mem, sizeof(CommonType) * m_deviceData.size, cudaMemcpyDeviceToHost));
 					}
 				}
 			}
@@ -251,35 +313,44 @@ namespace Enso
 		class AssetVector : public VectorBase<AssetHandle<typename HostType>, DeviceType*>
 		{
 		public:
-			__host__ AssetVector(const Asset::InitCtx& initCtx, const size_t size = 0) : VectorBase<AssetHandle<typename HostType>, DeviceType*>(initCtx, size) {}
+			__host__ AssetVector(const Asset::InitCtx& initCtx, const size_t size = 0, const uint flags = 0) : 
+				VectorBase<AssetHandle<typename HostType>, DeviceType*>(initCtx, size, flags) 
+			{
+			}
 			__host__ virtual ~AssetVector() = default;
 
 			__host__ void Synchronise(const uint syncFlags)
 			{
-				AssertMsg(syncFlags == kVectorSyncUpload, "Using kVectorSyncDownload on AssetVector type is meaningless.");				
-
-				// Make sure the device data matches the host size
-				if (m_hostData.size() != m_deviceData.size)
+				if (m_flags & kVectorDeviceOnly)
 				{
-					DestructiveResizeImpl(m_hostData.size());
+					//Log::DebugOnce("Warning: Can't synchronise host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
+					return;
 				}
 
-				if (!m_hostData.empty())
+				if (syncFlags != kVectorSyncUpload)
 				{
-					std::vector<DeviceType*> devicePtrs(m_hostData.size());
-					for (int idx = 0; idx < m_hostData.size(); ++idx)
+					Log::DebugOnce("Using kVectorSyncDownload on AssetVector '%s' is meaningless.", GetAssetID());
+					return;
+				}
+
+				// Make sure the device data matches the host size
+				DeviceResizeImpl(m_hostVector.size(), m_hostVector.size());
+
+				if (!m_hostVector.empty())
+				{
+					std::vector<DeviceType*> devicePtrs(m_hostVector.size());
+					for (uint idx = 0; idx < m_hostVector.size(); ++idx)
 					{
-						devicePtrs[idx] = m_hostData[idx]->GetDeviceInstance();
+						devicePtrs[idx] = m_hostVector[idx]->GetDeviceInstance();
 					}
 
 					IsOk(cudaMemcpy(m_deviceData.mem, devicePtrs.data(), sizeof(DeviceType*) * devicePtrs.size(), cudaMemcpyHostToDevice));
-					LegacySynchroniseObjects(cu_deviceInstance, m_deviceData);
 				}
 			}
 
 			// Helper function to downcast compatible handles to their base class pointers
 			template <typename OtherType, typename = typename std::enable_if_t<std::is_base_of<HostType, OtherType>::value>>
-			__host__ __forceinline__ void push_back(const AssetHandle<OtherType>& newElement) { m_hostData.push_back(AssetHandle<HostType>(newElement)); }
+			__host__ __forceinline__ void push_back(const AssetHandle<OtherType>& newElement) { m_hostVector.push_back(AssetHandle<HostType>(newElement)); }
 		};
 	}
 
