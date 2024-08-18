@@ -37,24 +37,24 @@ namespace Enso
         __host__ __device__ __forceinline__ __vec_swizzle(const __ivec2<Type>& v, const Type& z_) : x(v.x), y(v.y), z(z_) {}
 
         // Cast from other vec3 types
-        template<typename OtherType, int OtherSize, int I0, int I1, int I2>
-        __host__ __device__ explicit __vec_swizzle(const __vec_swizzle<OtherType, OtherSize, 3, I0, I1, I2>& v) :
+        template<typename OtherType, int OtherSize, int I0, int I1, int I2, int... In>
+        __host__ __device__ __vec_swizzle(const __vec_swizzle<OtherType, OtherSize, 3, I0, I1, I2, In...>& v) :
             x(Type(v.data[I0])), y(Type(v.data[I1])), z(Type(v.data[I2])) {}
 
         template<int L0, int L1, int L2, int R0, int R1, int R2>
         __host__ __device__ __forceinline__ void UnpackTo(Type* otherData) const
         {
-            otherData[L0] = data[0];
-            otherData[L1] = data[1];
-            otherData[L2] = data[2];
+            otherData[L0] = data[R0];
+            otherData[L1] = data[R1];
+            otherData[L2] = data[R2];
         }
 
         // Cast from swizzled types
-        template<int ActualSize, int... In>
+        /*template<int ActualSize, int... In>
         __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle<Type, ActualSize, 3, In...>& swizzled)
         {
             swizzled.UnpackTo<0, 1, 2, In...>(data);
-        }
+        }*/
 
         // Assign from swizzled types
         template<int RS, int R0, int R1, int R2>

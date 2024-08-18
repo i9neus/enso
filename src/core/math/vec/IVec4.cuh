@@ -115,24 +115,24 @@ namespace Enso
 
         // Cast from other vec4 types
         template<typename OtherType, int I0, int I1, int I2, int I3>
-        __host__ __device__ __forceinline__ explicit __vec_swizzle(const __vec_swizzle<OtherType, 4, 4, I0, I1, I2, I3>& v) :
+        __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle<OtherType, 4, 4, I0, I1, I2, I3>& v) :
             x(Type(v.data[I0])), y(Type(v.data[I1])), z(Type(v.data[I2])), w(Type(v.data[I3])) {}
 
         template<typename Type, int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
         __host__ __device__ __forceinline__ void UnpackTo(Type* otherData) const
         {
-            otherData[L0] = data[0];
-            otherData[L1] = data[1];
-            otherData[L2] = data[2];
-            otherData[L3] = data[3];
+            otherData[L0] = data[R0];
+            otherData[L1] = data[R1];
+            otherData[L2] = data[R2];
+            otherData[L3] = data[R3];
         }
 
         // Cast from swizzled types
-        template<typename Type, int... In>
+        /*template<typename Type, int... In>
         __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle<Type, 4, 4, In...>& swizzled)
         {
             swizzled.UnpackTo<0, 1, 2, 3, In...>(data);
-        }
+        }*/
 
         __host__ __device__ __forceinline__ __vec_swizzle& operator+=(const __vec_swizzle& rhs) { x += rhs.x; y += rhs.y; z += rhs.z; w += rhs.w; return *this; }
         __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const __vec_swizzle& rhs) { x -= rhs.x; y -= rhs.y; z -= rhs.z; w -= rhs.w; return *this; }

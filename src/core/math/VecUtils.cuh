@@ -28,8 +28,7 @@ namespace Enso
 	__host__ __device__ __forceinline__ int		Area(const ivec2& v) { return v.x * v.y; }
 	__host__ __device__ __forceinline__ uint	Area(const uvec2& v) { return v.x * v.y; }
 
-	__host__ __device__ __forceinline__
-		__host__ __device__ __forceinline__ vec2	MinMax(const vec2& v, const float& f) { return vec2(fminf(v.x, f), fmaxf(v.y, f)); }
+	__host__ __device__ __forceinline__ vec2	MinMax(const vec2& v, const float& f) { return vec2(fminf(v.x, f), fmaxf(v.y, f)); }
 
 	__host__ __device__ __forceinline__ bool	IsPointInUnitBox(const vec3& v)
 	{

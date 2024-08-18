@@ -45,18 +45,17 @@ template<typename T> __device__ __forceinline__ T kKernelDims() { return T(typen
             asm("trap;"); \
         }
 
-    #define CudaAssertFmt(condition, message, ...) \
+    #define CudaAssertFmtImpl(condition, message, ...) \
         if(!(condition)) {  \
-            char buffer[1024]; \
-            snprintf(buffer, 1024, message, __VA_ARGS__); \
-            printf("Device assert: %s in %s (%d)\n", buffer, __FILE__, __LINE__); \
+            printf(message, __VA_ARGS__); \
             asm("trap;"); \
         }
+    #define CudaAssertFmt(condition, message, ...) CudaAssertFmtImpl(condition, message"\n", __VA_ARGS__)
 
     #ifdef CUDA_DEVICE_DEBUG_ASSERTS
         #define CudaAssertDebug(condition) CudaAssert(condition)
-        #define CudaAssertDebugMsg(condition, message) CudaAssertMsg(condition)
-        #define CudaAssertDebugFmt(condition, message, ...) CudaAssertFmt(condition)
+        #define CudaAssertDebugMsg(condition, message) CudaAssertMsg(condition, message)
+        #define CudaAssertDebugFmt(condition, message, ...) CudaAssertFmt(condition, message, __VA_ARGS__)
     #else
         #define CudaAssertDebug(condition)
         #define CudaAssertDebugMsg(condition, message)
@@ -65,12 +64,12 @@ template<typename T> __device__ __forceinline__ T kKernelDims() { return T(typen
 #else
     #define CudaAssert(condition) Assert(condition)
     #define CudaAssertMsg(condition, message) AssertMsg(condition, message)
-    #define CudaAssertFmt(condition, message, ...)  AssertMsgFmt(condition, message, ...)
+    #define CudaAssertFmt(condition, message, ...)  AssertMsgFmt(condition, message, __VA_ARGS__)
 
     #ifdef CUDA_DEVICE_DEBUG_ASSERTS
-        #define CudaAssertDebug(condition) CudaAssert(condition)
-        #define CudaAssertDebugMsg(condition, message) CudaAssertMsg(condition)
-        #define CudaAssertDebugFmt(condition, message, ...) CudaAssertFmt(condition)
+        #define CudaAssertDebug(condition) Assert(condition)
+        #define CudaAssertDebugMsg(condition, message) AssertMsg(condition, message)
+        #define CudaAssertDebugFmt(condition, message, ...) AssertMsgFmt(condition, message, __VA_ARGS__)
     #else
         #define CudaAssertDebug(condition)
         #define CudaAssertDebugMsg(condition, message)
