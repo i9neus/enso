@@ -117,7 +117,7 @@ namespace Enso
 		}
 
 		template<typename ObjectType>
-		__host__ static void GuardedFreeDeviceArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceData) noexcept
+		__host__ static void GuardedFreeDevice1DArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceData) noexcept
 		{
 			Assert(deviceData);
 			if (*deviceData != nullptr)
@@ -129,48 +129,72 @@ namespace Enso
 			}
 		}
 
-		/*template<typename ObjectType>
-		__host__ static void GuardedFreeDeviceObject(const Host::Asset& parentAsset, ObjectType** deviceData) noexcept
-		{
-			AssetAllocator::GuardedFreeDeviceArray(1, deviceData, parentAsset);
-		}*/
-
 		template<typename ObjectType>
-		__host__ static void GuardedAllocDeviceArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceObject, const uint flags) noexcept
+		__host__ static void GuardedAllocDevice1DArray(const Host::Asset& parentAsset, const size_t numElements, ObjectType** deviceObject, const uint flags) noexcept
 		{
 			Assert(deviceObject);
 			AssertMsg(*deviceObject == nullptr, "Memory is already allocated.");
 
-			if (numElements == 0) { return; }
-
-			const size_t arraySize = sizeof(ObjectType) * numElements;
-
-			if (flags & kCudaMemoryManaged)
+			if (numElements > 0)
 			{
-				IsOk(cudaMalloc((void**)deviceObject, arraySize));
-			}
-			else
-			{
-				IsOk(cudaMalloc((void**)deviceObject, arraySize));
-			}
+				const size_t arraySize = sizeof(ObjectType) * numElements;
+				if (flags & kCudaMemoryManaged)
+				{
+					IsOk(cudaMallocManaged((void**)deviceObject, arraySize));
+				}
+				else
+				{
+					IsOk(cudaMalloc((void**)deviceObject, arraySize));
+				}
 
-			GlobalResourceRegistry::Get().RegisterDeviceMemory(parentAsset.GetAssetID(), arraySize);
+				GlobalResourceRegistry::Get().RegisterDeviceMemory(parentAsset.GetAssetID(), arraySize);
+			}
 		}
 
-		/*template<typename ObjectType>
-		__host__ static void GuardedAllocDeviceObject(const Host::Asset& parentAsset, ObjectType** deviceObject, const uint flags)
-		{
-			AssetAllocator::GuardedAllocDeviceArray(parentAsset, 1, deviceObject, flags);
-		}*/
-
 		template<typename ObjectType>
-		__host__ static void GuardedAllocAndCopyToDeviceArray(const Host::Asset& parentAsset, ObjectType** deviceObject, size_t numElements, ObjectType* hostData, const uint flags)
+		__host__ static void GuardedAllocAndCopyToDevice1DArray(const Host::Asset& parentAsset, ObjectType** deviceObject, size_t numElements, ObjectType* hostData, const uint flags)
 		{
 			Assert(hostData);
 
-			GuardedAllocDeviceArray(parentAsset, numElements, deviceObject, flags);
+			GuardedAllocDevice1DArray(parentAsset, numElements, deviceObject, flags);
 
 			IsOk(cudaMemcpy(*deviceObject, hostData, sizeof(ObjectType) * numElements, cudaMemcpyHostToDevice));
+		}
+
+		template<typename Type>
+		__host__ static void GuardedAllocDevice2DArray(const Host::Asset& parentAsset, const size_t width, const size_t height, cudaArray_t& deviceData)
+		{			
+			AssertMsgFmt(width > 0 && height > 0, "Invalid dimensions %i x %i", width, height);
+			AssertMsg(deviceData == nullptr, "Memory is already allocated.");
+			
+			const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<Type>();
+			IsOk(cudaMallocArray(&deviceData, &channelDesc, width, height));
+
+			GlobalResourceRegistry::Get().RegisterDeviceMemory(parentAsset.GetAssetID(), width * height * sizeof(Type));
+		}
+
+		template<typename Type>
+		__host__ static void GuardedFreeDevice2DArray(const Host::Asset& parentAsset, const size_t width, const size_t height, cudaArray_t& deviceData) noexcept
+		{
+			if (deviceData != nullptr)
+			{
+				AssertMsgFmt(width > 0 && height > 0, "Invalid dimensions %i x %i", width, height);
+
+				IsOk(cudaFreeArray(deviceData));
+				deviceData = nullptr;
+
+				GlobalResourceRegistry::Get().DeregisterDeviceMemory(parentAsset.GetAssetID(), width * height * sizeof(Type));
+			}
+		}
+
+		// Frees a texture object of type cudaTextureObject_t
+		__host__ static void GuardedFreeDeviceTextureObject(cudaTextureObject_t& obj) noexcept
+		{
+			if (obj)
+			{
+				IsOk(cudaDestroyTextureObject(obj));
+				obj = 0;
+			}
 		}
 
 		template<typename ObjectType, typename UpcastType = ObjectType, typename... Pack>

@@ -33,6 +33,6 @@ namespace Enso
 
     __host__ void Host::GaussianPointCloud::Finalise()
     {
-        m_hostSplatList->Synchronise(kVectorSyncUpload);
+        m_hostSplatList->Upload();
     }
 }

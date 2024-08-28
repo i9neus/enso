@@ -117,11 +117,11 @@ namespace Enso
         // Synchronise the scene objects arrays themselves
         if (flags & kSyncObjects)
         {
-            m_hostTracables->Synchronise(kVectorSyncUpload);
-            m_hostLights->Synchronise(kVectorSyncUpload);
-            m_hostCameras->Synchronise(kVectorSyncUpload);
-            m_hostMaterials->Synchronise(kVectorSyncUpload);
-            m_hostTextures->Synchronise(kVectorSyncUpload);
+            m_hostTracables->Upload();
+            m_hostLights->Upload();
+            m_hostCameras->Upload();
+            m_hostMaterials->Upload();
+            m_hostTextures->Upload();
         }
     }
 

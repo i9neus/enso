@@ -17,7 +17,7 @@ namespace Enso
 	__host__ Host::Image<T>::~Image() noexcept
 	{
 		AssetAllocator::DestroyOnDevice(*this, cu_deviceData);
-		AssetAllocator::GuardedFreeDeviceArray(*this, m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
+		AssetAllocator::GuardedFreeDevice1DArray(*this, m_hostData.m_width * m_hostData.m_height, &m_hostData.cu_data);
 	}
 	
 	template<typename T>
@@ -77,7 +77,7 @@ namespace Enso
 		m_hostData.m_height = height;
 		m_hostData.m_accessSignal = kImageUnlocked;
 
-		AssetAllocator::GuardedAllocDeviceArray(*this, width * height, &m_hostData.cu_data, 0);
+		AssetAllocator::GuardedAllocDevice1DArray(*this, width * height, &m_hostData.cu_data, 0);
 
 		cu_deviceData = AssetAllocator::InstantiateOnDevice<Device::Image<T>>(*this, width, height, m_hostData.cu_data);
 

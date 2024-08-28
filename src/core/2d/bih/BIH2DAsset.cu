@@ -46,8 +46,8 @@ namespace Enso
         //CheckTreeNodes();
 
         // Synchronise the node data to the device
-        m_hostNodes->Synchronise(kVectorSyncUpload);
-        m_hostIndices->Synchronise(kVectorSyncUpload);
+        m_hostNodes->Upload();
+        m_hostIndices->Upload();
 
         m_data.isConstructed = m_isConstructed;
         m_data.testAsList = m_testAsList;

@@ -23,7 +23,8 @@
     <ClCompile Include="..\..\..\src\io\CommandManager.cpp" />
     <ClCompile Include="..\..\..\src\io\CommandQueue.cpp" />
     <ClCompile Include="..\..\..\src\io\FilesystemUtils.cpp" />
-    <ClCompile Include="..\..\..\src\io\ImageIO.cpp" />
+    <ClCompile Include="..\..\..\src\io\images\Exr.cpp" />
+    <ClCompile Include="..\..\..\src\io\images\Png.cpp" />
     <ClCompile Include="..\..\..\src\io\json\JsonUtils.cpp" />
     <ClCompile Include="..\..\..\src\io\Log.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\backends\imgui_impl_dx12.cpp" />
@@ -45,6 +46,8 @@
     <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\sobol.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\tinyexr\miniz.c" />
+    <ClCompile Include="..\..\..\src\thirdparty\tinyexr\tinyexr.cc" />
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UIAttribute.cpp" />
     <ClCompile Include="..\..\..\src\ui\elements\UIGenericObject.cpp" />
@@ -99,6 +102,7 @@
     <ClInclude Include="..\..\..\src\core\assets\GenericObjectFactory.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Image.cuh" />
+    <ClInclude Include="..\..\..\src\core\containers\Unified.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Vector.cuh" />
     <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh" />
     <ClInclude Include="..\..\..\src\core\debug\Assert.h" />
@@ -150,7 +154,8 @@
     <ClInclude Include="..\..\..\src\io\CommandManager.h" />
     <ClInclude Include="..\..\..\src\io\CommandQueue.h" />
     <ClInclude Include="..\..\..\src\io\FilesystemUtils.h" />
-    <ClInclude Include="..\..\..\src\io\ImageIO.h" />
+    <ClInclude Include="..\..\..\src\io\images\Exr.h" />
+    <ClInclude Include="..\..\..\src\io\images\Png.h" />
     <ClInclude Include="..\..\..\src\io\json\JsonSerialiser.h" />
     <ClInclude Include="..\..\..\src\io\json\JsonUtils.h" />
     <ClInclude Include="..\..\..\src\io\Log.h" />
@@ -177,6 +182,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneObject.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\Texture2D.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\TextureMap.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Tracable.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatOptimiser.cuh" />
@@ -233,6 +239,8 @@
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stream.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\writer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\tinyexr\miniz.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\tinyexr\tinyexr.h" />
     <ClInclude Include="..\..\..\src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.h" />
     <ClInclude Include="..\..\..\src\ui\elements\UIAttribute.h" />
@@ -284,6 +292,7 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\textures\TextureMap.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Primitives.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatOptimiser.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cu" />

@@ -94,7 +94,7 @@ namespace Enso
 			__host__ ~AssetContainer()
 			{
 				DestroyOnDevice(*this, cu_deviceData);
-				AssetAllocator::GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
+				AssetAllocator::GuardedFreeDevice1DArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 			}
 
 			__host__ void SetSortFunctor(SortFunctor functor) { m_sortFunctor = functor; }
@@ -128,7 +128,7 @@ namespace Enso
 			__host__ void Synchronise()
 			{
 				// Clean up first
-				AssetAllocator::GuardedFreeDeviceArray(m_assetMap.size(), &m_deviceObjects.cu_data);
+				AssetAllocator::GuardedFreeDevice1DArray(m_assetMap.size(), &m_deviceObjects.cu_data);
 
 				if (!m_assetMap.empty())
 				{
@@ -163,7 +163,7 @@ namespace Enso
 					}
 
 					// Upload the array of device pointers
-					AssetAllocator::GuardedAllocAndCopyToDeviceArray(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
+					AssetAllocator::GuardedAllocAndCopyToDevice1DArray(&m_deviceObjects.cu_data, m_assetMap.size(), deviceInstArray.data());
 					m_deviceObjects.numElements = m_assetMap.size();
 				}
 				else

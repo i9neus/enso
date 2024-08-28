@@ -6,6 +6,7 @@
 
 #include "core/assets/DirtinessFlags.cuh"
 #include "core/containers/Image.cuh"
+#include "core/containers/Unified.cuh"
 #include "core/assets/GenericObject.cuh"
 #include "core/utils/HighResolutionTimer.h"
 
@@ -26,6 +27,8 @@ namespace Enso
         vec3        p;
         mat2        sigma;
         vec4        rgba;
+        uint32_t    bounds;
+        uint64_t    key;
     };
 
     struct RadixSortKey
@@ -44,14 +47,14 @@ namespace Enso
 
         struct
         {
-            uvec2 dims;
+            ivec2 dims;
             BBox2f objectBounds; 
         }
         viewport;
 
         struct
         {
-            uvec2 dims;
+            ivec2 dims;
             uint32_t numTiles;
         }
         tileGrid;
@@ -65,13 +68,17 @@ namespace Enso
         
         Device::ImageRGBW*                  frameBuffer = nullptr;
         Device::Vector<GaussianPoint>*      splatList = nullptr;
-        Device::Vector<ProjectedGaussianPoint>* projectedSplatList = nullptr;
+        Device::Vector<ProjectedGaussianPoint>* projectedSplats = nullptr;
         Device::Camera*                     activeCamera = nullptr;
         Device::Vector<RadixSortKey>*       unsortedKeys = nullptr;
         Device::Vector<RadixSortKey>*       sortedKeys = nullptr;
         Device::Vector<uint32_t>*           unsortedRefs = nullptr;
         Device::Vector<uint32_t>*           sortedRefs = nullptr;
         Device::Vector<uvec2>*              tileRanges = nullptr;
+        Device::Vector<uint32_t>*           splatPMF = nullptr;
+        Device::Vector<uint32_t>*           splatCMF = nullptr;
+        
+        uint32_t*                           numSplatRefs = nullptr;
     };
 
     namespace Device
@@ -91,6 +98,10 @@ namespace Enso
             __device__ void                     DetermineTileRanges();
             __device__ void                     RenderSplatTiles();
             __device__ void                     Verify();
+            __device__ void                     MapCMF(uint32_t level);
+            __device__ void                     ReduceCMF();
+            __device__ void                     Debug(const uint32_t op);
+            __device__ void                     PopulateKeyRefPairs();
 
             __host__ __device__ void            Synchronise(const SplatRasteriserParams& params);
             __device__ void                     Synchronise(const SplatRasteriserObjects& objects);
@@ -135,6 +146,7 @@ namespace Enso
 
         protected:
             __host__ void               SortSplats(const bool allocTempStorage);
+            __host__ void               ComputeTileOverlaps();
             __host__ virtual void       OnSynchroniseDrawableObject(const uint syncFlags) override final;
             __host__ virtual bool       OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
             __host__ virtual bool       OnRebuildDrawableObject() override final;
@@ -164,13 +176,18 @@ namespace Enso
             AssetHandle<Host::Camera>                           m_hostActiveCamera;
             AssetHandle<Host::GaussianPointCloud>               m_gaussianPointCloud;
 
-            AssetHandle<Host::Vector<ProjectedGaussianPoint>>   m_hostProjectedSplatList;
+            AssetHandle<Host::Vector<ProjectedGaussianPoint>>   m_hostProjectedSplats;
+            AssetHandle<Host::Vector<RadixSortKey>>             m_hostUnexpandedKeys;
             AssetHandle<Host::Vector<RadixSortKey>>             m_hostUnsortedKeys;
             AssetHandle<Host::Vector<RadixSortKey>>             m_hostSortedKeys;
             AssetHandle<Host::Vector<uint32_t>>                 m_hostUnsortedRefs;
             AssetHandle<Host::Vector<uint32_t>>                 m_hostSortedRefs;
             AssetHandle<Host::Vector<uint8_t>>                  m_radixSortTempStorage;
             AssetHandle<Host::Vector<uvec2>>                    m_hostTileRanges;
+            AssetHandle<Host::Vector<uint32_t>>                 m_hostSplatPMF;
+            AssetHandle<Host::Vector<uint32_t>>                 m_hostSplatCMF;
+
+            Unified<uint32_t>                                   m_numSplatRefs;
         };
     }
 }

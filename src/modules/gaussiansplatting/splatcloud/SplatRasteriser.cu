@@ -40,9 +40,11 @@ namespace Enso
     __device__ void SplatRasteriserObjects::Validate() const
     {
         CudaAssert(frameBuffer);
-        if (splatList && projectedSplatList)
+        CudaAssert(numSplatRefs);
+
+        if (splatList && projectedSplats)
         {
-            CudaAssert(splatList->size() == projectedSplatList->size());
+            CudaAssert(splatList->size() == projectedSplats->size());
         }
       
         if (tileRanges) { CudaAssert(tileRanges->size() > 0); }
@@ -69,17 +71,14 @@ namespace Enso
     {
         if (kKernelIdx == 0)
         {
-            int badUnsorted = 0, badSorted = 0;
-            for (int idx = 0; idx < m_objects.sortedRefs->size(); ++idx)
+            for (int idx = 0; idx < m_objects.projectedSplats->size(); ++idx)
             {
-                uint32_t hi = uint32_t((*m_objects.sortedKeys)[idx].key >> 32);
-                uint32_t lo = uint32_t((*m_objects.sortedKeys)[idx].key & 0xffffffff);
-                printf("%i: %i, %i\n", (*m_objects.sortedRefs)[idx], hi, lo);
-                if ((*m_objects.unsortedRefs)[idx] >= m_objects.projectedSplatList->size()) badUnsorted++;
-                if ((*m_objects.sortedRefs)[idx] >= m_objects.projectedSplatList->size()) badSorted++;
-            }
-            printf("Bad unsorted: %i\n", badUnsorted);
-            printf("Bad sorted: %i\n", badSorted);            
+                const uint32_t b = (*m_objects.projectedSplats)[idx].bounds;
+                
+                //uint32_t hi = uint32_t((*m_objects.sortedKeys)[idx].key >> 32);
+                //uint32_t lo = uint32_t((*m_objects.sortedKeys)[idx].key & 0xffffffff);
+                printf("%i: %i, %i, %i, %i\n", idx, (b & 255), (b >> 8) & 255, (b >> 16) & 255, (b >> 24) & 255);
+            }          
         }
     }
     DEFINE_KERNEL_PASSTHROUGH(Verify);
@@ -97,9 +96,8 @@ namespace Enso
         if (kThreadIdx == 0)
         {
             // Sanity check
-            CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.projectedSplatList->size(), "Splat lists size mismatch");
-            CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.unsortedKeys->size(), "Key list size mismatch");
-            CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.unsortedRefs->size(), "Ref list size mismatch");
+            CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.projectedSplats->size(), "Splat lists size mismatch");
+            CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.splatPMF->size(), "PMF size mismatch");
             
             const auto& params = m_objects.activeCamera->GetCameraParams();
             W = params.inv;
@@ -111,7 +109,7 @@ namespace Enso
         __syncthreads();
 
         const auto& splatWorld = (*m_objects.splatList)[kKernelIdx];
-        auto& splatCamera = (*m_objects.projectedSplatList)[kKernelIdx];
+        auto& splatCamera = (*m_objects.projectedSplats)[kKernelIdx];
 
         // Project the position of the splat into camera space
         const vec3 pCam = W * (splatWorld.p - camPos);
@@ -132,11 +130,11 @@ namespace Enso
         vec3 pView = vec3(pCam.xy / (pCam.z * -tanf(toRad(camFov))), -pCam.z);
 
         // Initialise the splat hashes
-        (*m_objects.unsortedRefs)[kKernelIdx] = kKernelIdx;
         if (pView.z <= 0.f || pView.x < -1.f || pView.x > 1.f || pView.y < -screenRatio || pView.y > screenRatio)
         {
             // Objects outside of the view frustum are set to zero
-            (*m_objects.unsortedKeys)[kKernelIdx] = 0;
+            splatCamera.key = 0;
+            (*m_objects.splatPMF)[kKernelIdx] = 0;
         }
         else
         {
@@ -145,24 +143,145 @@ namespace Enso
 
             // Project covariance matrix
             const mat3 sigma3 = J * W * cov * transpose(W) * transpose(J);
+            const mat2 sigma2(sigma3[0].xy, sigma3[1].xy);
+
+            constexpr float kSplatEigenBound = 3.0f;
+            const float tr = 0.5 * trace(sigma2);
+            const float bound = (sqrtf((tr + sqrtf(tr * tr - det(sigma2)))) * kSplatEigenBound) * m_params.viewport.dims.x;
 
             // Compose the projected splat
-            splatCamera.sigma = inverse(mat2(sigma3[0].xy, sigma3[1].xy));
+            splatCamera.sigma = inverse(sigma2);
             splatCamera.p = pView;
             splatCamera.rgba = splatWorld.rgba;
 
             // Populate the key-value pairs ready for sorting
-            const ivec2 ijTile = ivec2(NormalisedScreenToPixel(pView.xy, m_params.viewport.dims)) / int(kSplatRasteriserTileSize);
+            const vec2 pScreen = NormalisedScreenToPixel(pView.xy, m_params.viewport.dims);
+            const ivec2 ijTile = ivec2(pScreen) / int(kSplatRasteriserTileSize);
+
+            constexpr int32_t kMaxTileBounds = 1;
+            /*const int32_t uPlus = min3(kMaxTileBounds, m_params.tileGrid.dims.x - ijTile.x, int32_t(pScreen.x + bound) / kSplatRasteriserTileSize - ijTile.x);
+            const int32_t uMinus = min3(kMaxTileBounds, ijTile.x, ijTile.x - int32_t(pScreen.x - bound) / kSplatRasteriserTileSize);
+            const int32_t vPlus = min3(kMaxTileBounds, m_params.tileGrid.dims.y - ijTile.y, int32_t(pScreen.y + bound) / kSplatRasteriserTileSize - ijTile.y);
+            const int32_t vMinus = min3(kMaxTileBounds, ijTile.y, ijTile.y - int32_t(pScreen.y - bound) / kSplatRasteriserTileSize);*/
+            const int32_t uPlus = 0, uMinus = 0, vPlus = 0, vMinus = 0;
+
+            splatCamera.bounds = vMinus | (vPlus << 8) | (uMinus << 16) | (uPlus << 24);
+
             const uint32_t tileIdx = ijTile.y * m_params.tileGrid.dims.x + ijTile.x;          
 
             //printf("%i: %i: %f, %f, %f\n", kKernelIdx, tileIdx + 1, pView.x, pView.y, pView.z);
+            //printf("%i: %i, %i, %i, %i\n", kKernelIdx, uPlus, uMinus, vPlus, vMinus);
 
             // Set the key as the concatenation of the grid index and the splat depth
             // We add 1 so that culled splats are all sorted to bucket zero
-            (*m_objects.unsortedKeys)[kKernelIdx].key = (uint64_t(tileIdx + 1) << 32) | uint64_t(FloatBits(pView.z));
+            splatCamera.key = (uint64_t(1 + tileIdx) << 32) | uint64_t(FloatBits(pView.z));
+
+            // Set the tile coverage of this splat ready so we can duplicate it before sorting
+            (*m_objects.splatPMF)[kKernelIdx] = (1 + uPlus + uMinus) * (1 + vPlus + vMinus);
         }
     }
     DEFINE_KERNEL_PASSTHROUGH(ProjectSplats);
+
+    __device__ void Device::SplatRasteriser::Debug(const uint32_t op)
+    {
+        if (op == 0)
+        {
+            for (int i = 0; i < m_objects.splatPMF->size(); ++i)
+            {
+                printf("%i: %i\n", i, (*m_objects.splatPMF)[i]);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < m_objects.splatCMF->size(); ++i)
+            {
+                printf("%i: %i\n", i, (*m_objects.splatCMF)[i]);
+            }
+        }
+    }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(Debug);
+
+    // Finds the highest set bit for a value of a given integral type
+    template<typename T>
+    __device__ __forceinline__ int8_t HighestBitSet(const T& v)
+    {
+        int8_t a = 0, b = sizeof(T) * 8 - 1;
+        while (b - a > 1)
+        {
+            const uint8_t h = a + ((b - a) >> 1);
+            if (v >> h) { a = h; }
+            else { b = h; }
+        }
+        return (v >> b) ? a : b;
+    }
+    
+    __device__ void Device::SplatRasteriser::MapCMF(uint32_t level)
+    {
+        const uint32_t span = 1 << level;
+        const uint32_t idx = uint32_t(kKernelIdx) << level;
+        if (idx + span - 1 < m_objects.splatPMF->size())
+        {
+            (*m_objects.splatPMF)[idx + span - 1] += (*m_objects.splatPMF)[idx + (span >> 1) - 1];
+        }      
+    }
+    DEFINE_KERNEL_PASSTHROUGH_ARGS(MapCMF);
+
+    __device__ void Device::SplatRasteriser::ReduceCMF()
+    {
+        if (kKernelIdx < m_objects.splatCMF->size())
+        {
+            const int8_t highBit = HighestBitSet<uint32_t>(kKernelIdx + 1) - 1;
+            uint32_t sum = 0, idx = 0;
+            for (int8_t bit = highBit; bit >= 0; --bit)
+            {
+                if (((kKernelIdx + 1) >> bit) & 1)
+                {
+                    idx += 1 << bit;
+                    sum += (*m_objects.splatPMF)[idx - 1];
+                }
+            }
+            (*m_objects.splatCMF)[kKernelIdx] = sum;
+
+            // Make a note of the cumulative number of overlapped tiles
+            if (kKernelIdx == m_objects.splatCMF->size() - 1) { *m_objects.numSplatRefs = sum; }
+        }        
+    }
+    DEFINE_KERNEL_PASSTHROUGH(ReduceCMF);
+
+    __device__ void Device::SplatRasteriser::PopulateKeyRefPairs()
+    {
+        if (kKernelIdx >= m_objects.splatCMF->size()) { return; }
+
+        const uint32_t start = (kKernelIdx == 0) ? 0 : (*m_objects.splatCMF)[kKernelIdx - 1];
+        const uint32_t end = (*m_objects.splatCMF)[kKernelIdx];
+        if (start != end)
+        {
+            const ProjectedGaussianPoint& splat = (*m_objects.projectedSplats)[kKernelIdx];
+            const uint64_t depth = splat.key & 0xffffffffull;
+            const int32_t tileIdx = (splat.key >> 32) - 1;
+            int32_t refIdx = start;
+            CudaAssertDebug(tileIdx >= 0);
+
+            const int32_t uTile = tileIdx % m_params.tileGrid.dims.x, vTile = tileIdx / m_params.tileGrid.dims.x;
+
+            for (int v = vTile - (splat.bounds & 0xff); v <= vTile + ((splat.bounds >> 8) & 0xff); ++v)
+            {
+                for (int u = uTile - ((splat.bounds >> 16) & 0xff); u <= uTile + ((splat.bounds >> 24) & 0xff); ++u, ++refIdx)
+                {
+                    // This should never happen
+                    if (refIdx == end)
+                    {
+                        const uint32_t splatArea = (1 + (splat.bounds & 0xff) + ((splat.bounds >> 8) & 0xff)) * (1 + ((splat.bounds >> 16) & 0xff) + ((splat.bounds >> 24) & 0xff));
+                        CudaAssertFmt(refIdx < end, "Out of bounds! %i -> %i", splatArea, end - start);
+                    }
+
+                    (*m_objects.unsortedRefs)[refIdx] = kKernelIdx;
+                    (*m_objects.unsortedKeys)[refIdx] = (uint64_t(v * m_params.tileGrid.dims.x + u) << 32) | depth;
+                }
+            }
+        }
+    }
+    DEFINE_KERNEL_PASSTHROUGH(PopulateKeyRefPairs);
 
     __device__ void Device::SplatRasteriser::ClearTileRanges()
     {
@@ -175,16 +294,16 @@ namespace Enso
 
     __device__ void Device::SplatRasteriser::DetermineTileRanges()
     {
-        if (kKernelIdx >= m_objects.splatList->size()) { return; }
+        if (kKernelIdx >= *m_objects.numSplatRefs) { return; }
 
-        CudaAssertDebugMsg(m_objects.splatList->size() == m_objects.sortedKeys->size(), "Splat lists size mismatch");
+        CudaAssertDebugMsg(*m_objects.numSplatRefs <= m_objects.sortedKeys->size(), "Num refs exceeds key array size");
         CudaAssertDebugFmt(m_objects.tileRanges->size() == m_params.tileGrid.numTiles + 1, "Tile grid memory error (%i, %i)", m_objects.tileRanges->size(), m_params.tileGrid.numTiles + 1);
 
         if (kKernelIdx == 0)
         {
             (*m_objects.tileRanges)[(*m_objects.sortedKeys)[0].key >> 32][0] = 0;
         }
-        else if (kKernelIdx == m_objects.splatList->size() - 1)
+        else if (kKernelIdx == m_objects.sortedRefs->size() - 1)
         {
             (*m_objects.tileRanges)[(*m_objects.sortedKeys)[kKernelIdx].key >> 32][1] = kKernelIdx;
         }
@@ -211,7 +330,7 @@ namespace Enso
         if (xyViewport.x < 0 || xyViewport.x >= m_params.viewport.dims.x || xyViewport.y < 0 || xyViewport.y >= m_params.viewport.dims.y) { return; }
 
         __syncthreads();
-        
+
         CudaAssertDebug(m_params.tileGrid.numTiles + 1 == m_objects.tileRanges->size()); // Sanity check      
         const uint32_t tileIdx = 1 + (xyViewport.y / kSplatRasteriserTileSize) * m_params.tileGrid.dims.x + (xyViewport.x / kSplatRasteriserTileSize);
         CudaAssertDebug(tileIdx < m_objects.tileRanges->size());
@@ -227,10 +346,10 @@ namespace Enso
                 CudaAssertDebugFmt(refIdx < m_objects.sortedRefs->size(), "refIdx < m_objects.sortedRefs->size(): %i -> %i", refIdx, m_objects.sortedRefs->size());
                 const int splatIdx = (*m_objects.sortedRefs)[refIdx];
 
-                if (splatIdx > m_objects.projectedSplatList->size()) { continue; }
+                if (splatIdx > m_objects.projectedSplats->size()) { continue; }
 
-                CudaAssertDebugFmt(splatIdx < m_objects.projectedSplatList->size(), "splatIdx < m_objects.projectedSplatList->size(): %i (%i-%i): %i -> %i", refIdx, range[0], range[1], splatIdx, m_objects.projectedSplatList->size());
-                const auto& splat = (*m_objects.projectedSplatList)[splatIdx];
+                CudaAssertDebugFmt(splatIdx < m_objects.projectedSplats->size(), "splatIdx < m_objects.projectedSplats->size(): %i (%i-%i): %i -> %i", refIdx, range[0], range[1], splatIdx, m_objects.projectedSplats->size());
+                const auto& splat = (*m_objects.projectedSplats)[splatIdx];
 
                 // Gaussian PDF
                 const vec2 mu = uvView - splat.p.xy;
@@ -298,7 +417,7 @@ namespace Enso
         __syncthreads();
 
         const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport), vec2(m_params.viewport.dims));
-        vec3 L = kZero;       
+        vec3 L = kZero;
 
         for (int idx = 0; idx < m_objects.splatList->size(); ++idx)
         {
@@ -310,15 +429,15 @@ namespace Enso
 
             // Create rotation and transpose product of scale matrices
             const mat3 R = splat.rot.RotationMatrix();
-            const mat3 ST(vec3(splat.sca.x * splat.sca.x, 0.0f, 0.0f), 
-                          vec3(0., splat.sca.y* splat.sca.y, 0.0), 
-                          vec3(0., 0.0, splat.sca.z* splat.sca.z));
+            const mat3 ST(vec3(splat.sca.x * splat.sca.x, 0.0f, 0.0f),
+                vec3(0., splat.sca.y * splat.sca.y, 0.0),
+                vec3(0., 0.0, splat.sca.z * splat.sca.z));
 
             // Jacobian of projective approximation (Zwicker et al)
             const float lenPCam = length(pCam);
             const mat3 J = mat3(vec3(1. / pCam.z, 0.0, pCam.x / lenPCam),
-                           vec3(0., 1. / pCam.z, pCam.y / lenPCam),
-                           vec3(-pCam.x / (pCam.z * pCam.z), -pCam.y / (pCam.z * pCam.z), pCam.z / lenPCam));
+                vec3(0., 1. / pCam.z, pCam.y / lenPCam),
+                vec3(-pCam.x / (pCam.z * pCam.z), -pCam.y / (pCam.z * pCam.z), pCam.z / lenPCam));
 
             // Build covariance matrix
             const mat3 cov = R * ST * transpose(R);
@@ -356,8 +475,8 @@ namespace Enso
         }
         else if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
         {
-            return m_objects.frameBuffer->At(pPixel);  
-        }      
+            return m_objects.frameBuffer->At(pPixel);
+        }
 #else
         return vec4(1.);
 #endif
@@ -373,10 +492,10 @@ namespace Enso
     __host__ Host::SplatRasteriser::SplatRasteriser(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects) :
         DrawableObject(initCtx, &m_hostInstance),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::SplatRasteriser>(*this))
-    {                        
+    {        
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
         RenderableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::RenderableObject>(cu_deviceInstance));
-        
+
         constexpr int kViewportWidth = 1200;
         constexpr int kViewportHeight = 675;
 
@@ -389,40 +508,49 @@ namespace Enso
         m_params.tileGrid.dims = uvec2(ceil(vec2(m_params.viewport.dims) / float(kSplatRasteriserTileSize)));
         m_params.tileGrid.numTiles = Area(m_params.viewport.dims);
         m_wallTime.Reset();
-        
+
         // Create some Cuda objects
         m_hostFrameBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "framebuffer", kViewportWidth, kViewportHeight, nullptr);
-        m_hostProjectedSplatList = AssetAllocator::CreateChildAsset<Host::Vector<ProjectedGaussianPoint>>(*this, "projectedpointlist", 0u, kVectorDeviceOnly);
-        m_hostUnsortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "unsortedkeys", 0u, kVectorDeviceOnly);
-        m_hostSortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "sortedkeys", 0u, kVectorDeviceOnly);
-        m_hostUnsortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "unsortedrefs", 0u, kVectorDeviceOnly);
-        m_hostSortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "sortedrefs", 0u, kVectorDeviceOnly);
+        m_hostProjectedSplats = AssetAllocator::CreateChildAsset<Host::Vector<ProjectedGaussianPoint>>(*this, "projectedpointlist", 0u, kVectorDeviceOnly);
+        m_hostUnsortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "unsortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
+        m_hostSortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "sortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
+        m_hostUnsortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "unsortedrefs", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
+        m_hostSortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "sortedrefs", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
         m_radixSortTempStorage = AssetAllocator::CreateChildAsset<Host::Vector<uint8_t>>(*this, "radixsorttemp", 0u, kVectorDeviceOnly);
         m_hostTileRanges = AssetAllocator::CreateChildAsset<Host::Vector<uvec2>>(*this, "tileranges", 1 + m_params.tileGrid.numTiles, kVectorDeviceOnly);
+        m_hostSplatPMF = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "maptileoverlapcdf", 0u, kVectorDeviceOnly);
+        m_hostSplatCMF = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "rerducetileoverlapcdf", 0u, kVectorDeviceOnly);
 
         m_objects.frameBuffer = m_hostFrameBuffer->GetDeviceInstance();
-        m_objects.projectedSplatList = m_hostProjectedSplatList->GetDeviceInstance();
+        m_objects.projectedSplats = m_hostProjectedSplats->GetDeviceInstance();
         m_objects.unsortedKeys = m_hostUnsortedKeys->GetDeviceInstance();
         m_objects.sortedKeys = m_hostSortedKeys->GetDeviceInstance();
         m_objects.unsortedRefs = m_hostUnsortedRefs->GetDeviceInstance();
         m_objects.sortedRefs = m_hostSortedRefs->GetDeviceInstance();
         m_objects.tileRanges = m_hostTileRanges->GetDeviceInstance();
+        m_objects.splatPMF = m_hostSplatPMF->GetDeviceInstance();
+        m_objects.splatCMF = m_hostSplatCMF->GetDeviceInstance();
+        m_objects.numSplatRefs = m_numSplatRefs.GetDevicePtr();
 
         Synchronise(kSyncObjects | kSyncParams);
 
         Cascade({ kDirtySceneObjectChanged });
+
+        IsOk(cudaDeviceSynchronize());
     }
 
     __host__ Host::SplatRasteriser::~SplatRasteriser() noexcept
     {
         m_hostFrameBuffer.DestroyAsset();
-        m_hostProjectedSplatList.DestroyAsset();
+        m_hostProjectedSplats.DestroyAsset();
         m_hostUnsortedKeys.DestroyAsset();
         m_hostSortedKeys.DestroyAsset();
         m_hostUnsortedRefs.DestroyAsset();
         m_hostSortedRefs.DestroyAsset();
         m_radixSortTempStorage.DestroyAsset();
         m_hostTileRanges.DestroyAsset();
+        m_hostSplatPMF.DestroyAsset();
+        m_hostSplatCMF.DestroyAsset();
 
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
@@ -448,7 +576,7 @@ namespace Enso
         Log::Debug("Building splat cloud...");
 
         auto& tracables = m_hostSceneContainer->Tracables();
-        constexpr int kTotalSplats = 10000;
+        constexpr int kTotalSplats = 20000;
         float totalSurfaceArea = 0.f;
         int numGeneratedSplats = 0;
 
@@ -477,11 +605,9 @@ namespace Enso
 
         // Allocate data for the projections
         const size_t numSplats = m_gaussianPointCloud->GetSplatList().size();
-        m_hostProjectedSplatList->resize(numSplats);
-        m_hostUnsortedKeys->resize(numSplats);
-        m_hostSortedKeys->resize(numSplats);
-        m_hostUnsortedRefs->resize(numSplats);
-        m_hostSortedRefs->resize(numSplats);
+        m_hostProjectedSplats->resize(numSplats);
+        m_hostSplatPMF->resize(numSplats);
+        m_hostSplatCMF->resize(numSplats);
 
         // Pre-allocate sorting data
         SortSplats(true);
@@ -523,11 +649,70 @@ namespace Enso
         {
             Log::Warning("Warning! Splat rasteriser '%s' could not bind to a valid GaussianPointCloud object.", GetAssetID());
             m_objects.splatList = nullptr;
-            m_objects.projectedSplatList = nullptr;
+            m_objects.projectedSplats = nullptr;
             m_params.hasValidSplatCloud = false;
         }
 
         Synchronise(kSyncParams | kSyncObjects);
+    }
+
+    __host__ void Host::SplatRasteriser::ComputeTileOverlaps()
+    {
+        // Splats often overlap their tiles, so we need to duplicate references to them across any tiles they overlap.
+        // The projection step determines the extent to which a splat spills over on adjacent tiles. Here, we define the cumulative mass 
+        // per splat that can then be used to index the reference list.
+
+        //KernelDebug << <1, 1 >> > (cu_deviceInstance, 0u);
+        //IsOk(cudaDeviceSynchronize());
+
+        // First, build an in-place summed value table by mapping successive iterations of the mass. Complexity O(n log n) for n splats.
+        // If the array looks like { 1, 1, 1, 1, 1, 1, 1, 1 } then its map looks like { 1, 2, 1, 4, 1, 2, 1, 8 }
+        for (int range = m_hostSplatPMF->size() >> 1, interval = 0;
+            range >= 1;
+            range >>= 1, ++interval)
+        {
+            //Log::Debug("Range: %i, interval: %i", range, interval);
+            const int numBlocks = (range + 255) >> 8;
+            KernelMapCMF << <numBlocks, 256 >> > (cu_deviceInstance, interval + 1);
+        }
+
+        // Reduce the value table data to build the final CMF.  The reduced array is a running sum of the values in the ref table. 
+        // For the example about, this looks like { 1, 2, 3, 4, 5, 6, 7, 8 }. Complexity O(n log n)
+        const int numSplatBlocks = (m_hostSplatPMF->size() + 255) >> 8;
+        KernelReduceCMF << < numSplatBlocks, 256 >> > (cu_deviceInstance);
+
+        //KernelDebug << <1, 1 >> > (cu_deviceInstance, 1u);
+        IsOk(cudaDeviceSynchronize());        
+
+        // The total number of references is stored in the last entry of m_hostSplatPMF
+        const uint32_t numSplatRefs = m_numSplatRefs;
+
+        // Limit to ten million referenced splats
+        constexpr uint32_t kMaxSplatRefs = 1e8;
+        AssertMsgFmt(numSplatRefs <= kMaxSplatRefs, "Total number of refs %i exceeds hard upper limit %i", numSplatRefs, kMaxSplatRefs);
+        
+        // If necessary, grow the key/ref arrays to accommodate the number of duplicated splats
+        const auto delta = m_hostUnsortedKeys->grow(numSplatRefs);
+        m_hostSortedKeys->grow(numSplatRefs);
+        m_hostUnsortedRefs->grow(numSplatRefs);
+        m_hostSortedRefs->grow(numSplatRefs);
+
+        if (delta > 0)
+        {
+            Log::Debug("Grew key/ref arrays by %i elements", delta);
+        }
+
+        // Populate the key/ref pairs by 
+        KernelPopulateKeyRefPairs <<< numSplatBlocks, 256>>>(cu_deviceInstance);
+
+        IsOk(cudaDeviceSynchronize());
+
+        // If the data used for sorting has changed
+        //if (delta > 0)
+        {
+            SortSplats(true);
+        }
+        //KernelDebug << <1, 1 >> > (cu_deviceInstance, 1u);
     }
 
     __host__ void Host::SplatRasteriser::SortSplats(const bool allocTempStorage)
@@ -578,7 +763,7 @@ namespace Enso
     __host__ void Host::SplatRasteriser::Render()
     {        
         if (!m_hostSceneContainer || !m_hostActiveCamera) { return; }
-        if (m_hostProjectedSplatList->size() == 0) { return; }
+        if (m_hostProjectedSplats->size() == 0) { return; }
                 
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
 
@@ -591,12 +776,15 @@ namespace Enso
             dim3 blockSize, gridSize;
             KernelParamsFromImage(m_hostFrameBuffer, blockSize, gridSize);   
             
-            const uint kNumSplatBlocks = (m_hostProjectedSplatList->size() + 255) / 256;
-            const uint kNumTileBlocks = (m_hostTileRanges->size() + 255) / 256;
+            const uint numSplatBlocks = (m_hostProjectedSplats->size() + 255) / 256;
+            const uint numTileBlocks = (m_hostTileRanges->size() + 255) / 256;
 
             // Project the splats into camera space and assign keys
             Log::Warning("Projecting...");
-            KernelProjectSplats<<< kNumSplatBlocks, 256>>>(cu_deviceInstance);
+            KernelProjectSplats<<< numSplatBlocks, 256>>>(cu_deviceInstance);
+
+            Log::Warning("Computing overlapping tiles...");
+            ComputeTileOverlaps();
 
             IsOk(cudaDeviceSynchronize());
 
@@ -606,10 +794,14 @@ namespace Enso
 
             IsOk(cudaDeviceSynchronize());
 
-            // Determine which 
+            // Determine the ranges for the sorted values for each tile
             Log::Warning("Finding ranges...");
-            KernelClearTileRanges<<< kNumTileBlocks, 256>>>(cu_deviceInstance);
-            KernelDetermineTileRanges<<< kNumSplatBlocks, 256 >>>(cu_deviceInstance);
+            KernelClearTileRanges<<< numTileBlocks, 256>>>(cu_deviceInstance);
+
+            IsOk(cudaDeviceSynchronize());
+
+            const uint numRefBlocks = (m_hostSortedRefs->size() + 255) / 256;
+            KernelDetermineTileRanges<<< numRefBlocks, 256 >>>(cu_deviceInstance);
 
             //KernelVerify<< <1, 1 >> > (cu_deviceInstance);
 

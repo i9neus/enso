@@ -11,7 +11,7 @@ namespace Enso
 	__host__ void Host::VectorBase<HostType, DeviceType>::DestructiveResizeImpl(const size_t newSize)
 	{
 		// Deallocate the old device memory
-		AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceData.capacity, &m_deviceData.mem);
+		AssetAllocator::GuardedFreeDevice1DArray(*this, m_deviceData.capacity, &m_deviceData.mem);
 
 		if (newSize == 0)
 		{
@@ -21,7 +21,7 @@ namespace Enso
 		}
 		else
 		{
-			AssetAllocator::GuardedAllocDeviceArray(*this, newSize, &m_deviceData.mem, 0u);
+			AssetAllocator::GuardedAllocDevice1DArray(*this, newSize, &m_deviceData.mem, 0u);
 			m_deviceData.capacity = newSize;
 			m_deviceData.size = newSize;
 		}

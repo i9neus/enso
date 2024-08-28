@@ -104,6 +104,8 @@ namespace Enso
         return pt;
     }
 
+    constexpr float kSplatAreaGain = 1.f;
+
     template<>
     __host__ std::vector<GaussianPoint> Host::Primitive<PlaneParams>::GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng)
     {
@@ -113,7 +115,7 @@ namespace Enso
             return std::vector<GaussianPoint>();
         }
 
-        const float gaussSigma = 0.5f * std::sqrt(CalculateSurfaceArea() / numPoints);
+        const float gaussSigma = kSplatAreaGain * std::sqrt(CalculateSurfaceArea() / numPoints);
 
         std::vector<GaussianPoint> points(numPoints);
         const vec3 n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f));
@@ -130,7 +132,7 @@ namespace Enso
     template<>
     __host__ std::vector<GaussianPoint> Host::Primitive<UnitSphereParams>::GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng)
     {
-        const float gaussSigma = 0.5f * std::sqrt(CalculateSurfaceArea() / numPoints);
+        const float gaussSigma = kSplatAreaGain * std::sqrt(CalculateSurfaceArea() / numPoints);
 
         std::vector<GaussianPoint> points(numPoints);
         for (auto& pt : points)

@@ -12,6 +12,7 @@
 #include "Integrator.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
 #include "Geometry.cuh"
+#include "core/math/samplers/MersenneTwister.cuh"
 
 #include "../scene/SceneContainer.cuh"
 #include "../scene/cameras/Camera.cuh"
@@ -69,6 +70,7 @@ namespace Enso
 
         // Get pointers to the object transforms
         const auto& transforms = *m_objects.transforms;
+        const auto& textures = *m_objects.textures;
         const auto& emitterTrans = transforms.back();
 
         // Create a render context
@@ -101,13 +103,15 @@ namespace Enso
 
             if (ray.depth >= kMaxPathDepth) { continue; }
 
-            if (TraceGeo(ray, hit, transforms) == kMatInvalid && !ray.IsDirectSample())
+            if (TraceGeo(ray, hit, transforms, textures) == kMatInvalid && !ray.IsDirectSample())
             //if (Trace(ray, hit) == kMatInvalid && !ray.IsDirectSample())
             {
                 //if(depth > 0)
                 {
-                    L += kOne * ray.weight * 0.2;
-                    //L += kOne * 0.5 * luminance(texture(iChannel1, ray.od.d).xyz);
+                    //L += kOne * ray.weight * 0.2;
+                    const float env = luminance(textures[1]->Evaluate(DirToEquirect(ray.od.d)).xyz);
+                    L += ray.weight * powf(clamp(env, 0.f, 10.0f), 1 / 1.8f);
+
                 }
                 break;
             }
@@ -124,7 +128,7 @@ namespace Enso
             }
             else if ((genFlags & kGeneratedIndirect) != 0)
             {
-                genFlags = Shade(ray, indirectRay, directRay, hit, renderCtx, emitterTrans, renderMode, L);
+                genFlags = ShadeIndirectSample(ray, indirectRay, directRay, hit, renderCtx, emitterTrans, renderMode, L);
             }
         }
 
@@ -171,8 +175,11 @@ namespace Enso
             //if (xyAccum.x < m_params.viewport.dims.x / 2)
             {
                 //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
-                const vec4& meanL = m_objects.meanAccumBuffer->At(xyAccum);
-                deviceOutputImage->At(xyViewport) = vec4(meanL.xyz / fmaxf(1.f, meanL.w), 1.0f);
+                const vec4& texel = m_objects.meanAccumBuffer->At(xyAccum);
+                vec3 L = texel.xyz / fmaxf(1.f, texel.w);
+                L = pow(L, 0.7f);
+
+                deviceOutputImage->At(xyViewport) = vec4(L, 1.0f);
 
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
@@ -208,9 +215,11 @@ namespace Enso
         {
             //if (pPixel.x < m_params.viewport.dims.x / 2)
             {
-                //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
-                const vec4& meanL = m_objects.meanAccumBuffer->At(pPixel);
-                return vec4(meanL.xyz / fmaxf(1.f, meanL.w), 1.0f);
+                const vec4& texel = m_objects.meanAccumBuffer->At(pPixel);
+                vec3 L = texel.xyz / fmaxf(1.f, texel.w);
+                L = pow(L, 0.7f);
+                
+                return vec4(L, 1.0f);
 
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
                 //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
@@ -280,17 +289,19 @@ namespace Enso
     {
         m_hostTransforms->clear();
 
+        MersenneTwister rng(0u);
+
 #define kNumSpheres 7        
         for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
         {
             float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
-            m_hostTransforms->push_back(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f));
+            m_hostTransforms->push_back(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, vec3(kHalfPi, kPi * rng.Rand(), kPi * rng.Rand()), 0.2f));
         }
 
         m_hostTransforms->push_back(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
         m_hostTransforms->push_back(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
 
-        m_hostTransforms->Synchronise(kVectorSyncUpload);
+        m_hostTransforms->Upload();
 
         Synchronise(kSyncObjects | kSyncParams);
     }
@@ -381,7 +392,7 @@ namespace Enso
 
         if (m_renderTimer.Get() > 1.)
         {
-            Log::Debug("Frame: %i", RenderableObject::m_params.frameIdx);
+            //Log::Debug("Frame: %i", RenderableObject::m_params.frameIdx);
             m_renderTimer.Reset();
         }
     }

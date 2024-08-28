@@ -20,7 +20,8 @@ namespace Enso
 		kVectorSyncUpload = 1,
 		kVectorSyncDownload = 2,
 
-		kVectorDeviceOnly = 4
+		kVectorDeviceOnly = 4,
+		kVectorNoShrinkDeviceCapacity = 8
 	};
 
 	namespace Host
@@ -78,6 +79,7 @@ namespace Enso
 #define GuardNotEmpty CudaAssertDebugMsg(m_data.size != 0, "Device::Vector: can't access empty array.")
 
 			__device__ __forceinline__ size_t size() const { return m_data.size; }
+			__device__ __forceinline__ size_t capacity() const { return m_data.capacity; }
 			__device__ __forceinline__ Type& operator[](const size_t idx) { GuardSize; return m_data.mem[idx]; }
 			__device__ __forceinline__ const Type& operator[](const size_t idx) const { GuardSize; return m_data.mem[idx]; }
 
@@ -158,10 +160,10 @@ namespace Enso
 				if (newCapacity != m_deviceData.capacity)
 				{
 					// Deallocate the old device memory
-					AssetAllocator::GuardedFreeDeviceArray(*this, m_deviceData.capacity, &m_deviceData.mem);
+					AssetAllocator::GuardedFreeDevice1DArray(*this, m_deviceData.capacity, &m_deviceData.mem);
 					if (newCapacity != 0)
 					{
-						AssetAllocator::GuardedAllocDeviceArray(*this, newCapacity, &m_deviceData.mem, 0u);
+						AssetAllocator::GuardedAllocDevice1DArray(*this, newCapacity, &m_deviceData.mem, 0u);
 					}
 				}
 
@@ -175,8 +177,11 @@ namespace Enso
 			{
 				if (m_flags & kVectorDeviceOnly)
 				{
-					// If memory has only been allocated on the device, immediately allocate and sync it here.
-					DeviceResizeImpl(newSize, newSize);
+					// Memory in shrinkless vectors isn't reallocated when the data get smaller
+					const size_t newCapacity = (m_flags & kVectorNoShrinkDeviceCapacity && newSize < m_deviceData.capacity) ? m_deviceData.capacity : newSize;
+					
+					 // If memory has only been allocated on the device, immediately allocate and sync it here.
+					DeviceResizeImpl(newSize, newCapacity);
 				}
 				else
 				{
@@ -203,11 +208,16 @@ namespace Enso
 			__host__ __forceinline__ void clear() { ResizeImpl(0u); }
 			__host__ void resize(const size_t newSize) { ResizeImpl(newSize); }
 
-			__host__ void grow(const int deltaSize)
+			// Grow the array so that it's at least as big as newSize
+			__host__ size_t grow(const size_t newSize)
 			{
-				const int newSize = int(size()) + deltaSize;
-				AssertMsgFmt(newSize >= 0, "Growing vector '%s' by %i elements results in negative size.", GetAssetID(), deltaSize);
-				ResizeImpl(newSize);				
+				if (newSize > size())
+				{
+					const size_t delta = newSize - size();
+					ResizeImpl(newSize);
+					return delta;
+				}
+				return 0;
 			}
 
 			__host__  void reserve(const size_t capacity)
@@ -267,7 +277,7 @@ namespace Enso
 		class Vector : public VectorBase<CommonType, CommonType>
 		{
 		public:
-			__host__ Vector(const Asset::InitCtx& initCtx, const size_t size = 0, const uint flags = 0) : 
+			__host__ Vector(const Asset::InitCtx& initCtx, const size_t size = 0, const uint flags = 0) :
 				VectorBase<CommonType, CommonType>(initCtx, size, flags)
 			{
 			}
@@ -276,18 +286,15 @@ namespace Enso
 			__host__ Vector(Vector&&) = delete;
 			__host__ virtual ~Vector() = default;
 
-			__host__ void Synchronise(const uint syncFlags)
+			__host__ void Upload()
 			{
-				if (m_flags & kVectorDeviceOnly)
+				if (!(m_flags & kVectorDeviceOnly))
 				{
-					//Log::DebugOnce("Warning: Can't synchronise host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
-					return;
-				}
-				
-				if (syncFlags == kVectorSyncUpload)
-				{
+					// Memory in shrinkless vectors isn't reallocated when the data get smaller
+					const size_t newCapacity = (m_flags & kVectorNoShrinkDeviceCapacity && m_hostVector.size() < m_deviceData.capacity) ? m_deviceData.capacity : m_hostVector.size();
+
 					// Make sure the device data matches the host size
-					DeviceResizeImpl(m_hostVector.size(), m_hostVector.size());
+					DeviceResizeImpl(m_hostVector.size(), newCapacity);
 
 					if (!m_hostVector.empty())
 					{
@@ -295,15 +302,32 @@ namespace Enso
 						IsOk(cudaMemcpy(m_deviceData.mem, m_hostVector.data(), sizeof(CommonType) * m_hostVector.size(), cudaMemcpyHostToDevice));
 					}
 				}
-				else
+			}
+
+			__host__ void Download()
+			{
+				if (m_deviceData.size > 0)
 				{
-					if (m_deviceData.size > 0)
-					{
-						// We're assuming that the host content is already initialised
-						Assert(m_deviceData.mem);
-						Assert(m_hostVector.size() == m_deviceData.size);
-						IsOk(cudaMemcpy(m_hostVector.data(), m_deviceData.mem, sizeof(CommonType) * m_deviceData.size, cudaMemcpyDeviceToHost));
-					}
+					// We're assuming that the host content is already initialised
+					Assert(m_deviceData.mem);
+					Assert(m_hostVector.size() == m_deviceData.size);
+					IsOk(cudaMemcpy(m_hostVector.data(), m_deviceData.mem, sizeof(CommonType) * m_deviceData.size, cudaMemcpyDeviceToHost));
+				}
+			}
+
+			// Resizes the vector to bufferSize and copies data into it
+			__host__ void SetData(const CommonType* data, const size_t bufferSize)
+			{
+				AssertMsg(data, "Invalid buffer pointer.");
+				ResizeImpl(bufferSize);
+
+				// Upload the data and synchronise with the device object
+				IsOk(cudaMemcpy(m_deviceData.mem, data, sizeof(CommonType) * m_deviceData.size, cudaMemcpyHostToDevice));
+
+				// Copy the data into the 
+				if (!(m_flags & kVectorDeviceOnly))
+				{
+					std::memcpy(m_hostVector.data(), data, sizeof(CommonType) * m_hostVector.size());
 				}
 			}
 		};
@@ -319,32 +343,26 @@ namespace Enso
 			}
 			__host__ virtual ~AssetVector() = default;
 
-			__host__ void Synchronise(const uint syncFlags)
+			__host__ void Upload()
 			{
-				if (m_flags & kVectorDeviceOnly)
+				if (!(m_flags & kVectorDeviceOnly))
 				{
-					//Log::DebugOnce("Warning: Can't synchronise host vector '%s' because it was initialised with kVectorDeviceOnly.", GetAssetID());
-					return;
-				}
+					// Memory in shrinkless vectors isn't reallocated when the data get smaller
+					const size_t newCapacity = (m_flags & kVectorNoShrinkDeviceCapacity && m_hostVector.size() < m_deviceData.capacity) ? m_deviceData.capacity : m_hostVector.size();
 
-				if (syncFlags != kVectorSyncUpload)
-				{
-					Log::DebugOnce("Using kVectorSyncDownload on AssetVector '%s' is meaningless.", GetAssetID());
-					return;
-				}
+					// Make sure the device data matches the host size
+					DeviceResizeImpl(m_hostVector.size(), newCapacity);
 
-				// Make sure the device data matches the host size
-				DeviceResizeImpl(m_hostVector.size(), m_hostVector.size());
-
-				if (!m_hostVector.empty())
-				{
-					std::vector<DeviceType*> devicePtrs(m_hostVector.size());
-					for (uint idx = 0; idx < m_hostVector.size(); ++idx)
+					if (!m_hostVector.empty())
 					{
-						devicePtrs[idx] = m_hostVector[idx]->GetDeviceInstance();
-					}
+						std::vector<DeviceType*> devicePtrs(m_hostVector.size());
+						for (uint idx = 0; idx < m_hostVector.size(); ++idx)
+						{
+							devicePtrs[idx] = m_hostVector[idx]->GetDeviceInstance();
+						}
 
-					IsOk(cudaMemcpy(m_deviceData.mem, devicePtrs.data(), sizeof(DeviceType*) * devicePtrs.size(), cudaMemcpyHostToDevice));
+						IsOk(cudaMemcpy(m_deviceData.mem, devicePtrs.data(), sizeof(DeviceType*) * devicePtrs.size(), cudaMemcpyHostToDevice));
+					}
 				}
 			}
 

@@ -135,7 +135,7 @@ namespace Enso
         }
     }
 
-    __device__ int Shade(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const BidirectionalTransform& emitterTrans, int renderMode, vec3& L)
+    __device__ int ShadeIndirectSample(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const BidirectionalTransform& emitterTrans, int renderMode, vec3& L)
     {
         // Emitters don't reflect light...
         if (hit.matID == kMatEmitter)
@@ -157,7 +157,7 @@ namespace Enso
         if (hit.matID == kMatCompound)
         {
             hit.matID = (xi.w < xiSplit) ? kMatPerfectSpecular : kMatLambertian;
-        }
+        }       
 
         if (hit.matID == kMatPerfectSpecular || hit.matID == kMatPerfectDielectric) { renderMode = kModePathTraced; }
 
@@ -179,12 +179,14 @@ namespace Enso
                     genFlags |= kGeneratedDirect;
                 }
             }
+            directRay.weight *= hit.albedo;
         }
 
         // Sample the BxDF for the indirect contribution
         if (SampleBxDF(incidentRay, indirectRay, hit, emitterTrans, xi.zw, false) > 0)
         {
             genFlags |= kGeneratedIndirect;
+            indirectRay.weight *= hit.albedo;
         }
 
         return genFlags;

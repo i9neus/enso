@@ -39,6 +39,9 @@ namespace Enso
         __host__ __device__ __forceinline__ __vec_swizzle(const vec2& v, const float& z_) : x(v.x), y(v.y), z(z_) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const float& x_, const vec2& v) : x(x_), y(v.x), z(v.y) {}
 
+        // Cast from built-in float3 type
+        __host__ __device__ __forceinline__ __vec_swizzle(const float3& v) : x(v.x), y(v.y), z(v.z) {}
+
         // Cast from other vec3 types
         template<typename OtherType, int OtherSize, int I0, int I1, int I2, int... In>
         __host__ __device__ __vec_swizzle(const __vec_swizzle<OtherType, OtherSize, 3, I0, I1, I2, In...>& v) :
@@ -222,6 +225,11 @@ namespace Enso
     __host__ __device__ __forceinline__ vec3 pow(__vec_swizzle<float, LS, 3, L0, L1, L2>& a, const __vec_swizzle<float, RS, 3, R0, R1, R2>& b)
     {
         return { powf(a.data[L0], b.data[R0]), powf(a.data[L1], b.data[R1]), powf(a.data[L2], b.data[R2]) };
+    }
+    template<int LS, int L0, int L1, int L2>
+    __host__ __device__ __forceinline__ vec3 pow(__vec_swizzle<float, LS, 3, L0, L1, L2>& a, const float b)
+    {
+        return { powf(a.data[L0], b), powf(a.data[L1], b), powf(a.data[L2], b) };
     }
     template<int LS, int L0, int L1, int L2>
     __host__ __device__ __forceinline__ vec3 exp(__vec_swizzle<float, LS, 3, L0, L1, L2>& a)

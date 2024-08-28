@@ -233,7 +233,7 @@ namespace Enso
         // Rebuild the bounding interval hierarchy
         RebuildBIH(*m_hostDrawableBIH, *m_hostDrawableObjects);     
 
-        m_hostDrawableObjects->Synchronise(kVectorSyncUpload);
+        m_hostDrawableObjects->Upload();
         Summarise();
     }
 

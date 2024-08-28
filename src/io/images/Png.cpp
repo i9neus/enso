@@ -1,19 +1,14 @@
-#include "ImageIO.h"
+#include "Png.h"
 #include "io/Log.h"
 #include "io/FilesystemUtils.h"
 
 #include "thirdparty/lodepng/lodepng.h"
 
-namespace tinyexr
-{
-    #include "thirdparty/tinyexr/tinyexr.h"
-}
-
 namespace Enso
 {
     namespace ImageIO
     {
-        void WriteAccumulationBufferPNG(const std::vector<vec4>& rawData, const ivec2& dimensions, std::string filePath, const float exposure, const float gamma)
+        void WritePNG(const std::vector<vec4>& rawData, const ivec2& dimensions, std::string filePath, const float exposure, const float gamma)
         {
             if (!ReplaceExtension(filePath, "png"))
             {
@@ -59,38 +54,6 @@ namespace Enso
             else
             {
                 Log::Write("Wrote PNG to '%s'\n", filePath);
-            }
-        }
-
-        void ReadEXR(const std::string& path, std::vector<float>& data, int& width, int& height, int& depth)
-        {
-            if (!FileExists(path))
-            {
-                Log::Error("Error: texture file '%s' does not exist.", path);
-                return;
-            }
-            if (GetExtension(path) != ".exr")
-            {
-                Log::Error("Error: texture file '%s' is invalid - can only load .exr files", path);
-                return;
-            }
-
-            float* rawData; // width * height * RGBA
-            int width, height;
-            char* err = nullptr; // or nullptr in C++11
-
-            int rValue = tinyexr::LoadEXR(&out, &width, &height, path.c_str(), &err);
-
-            if (rValue != TINYEXR_SUCCESS)
-            {
-                if (err)
-                {
-                    Log::Error(stderr, "ERR : %s\n", err);
-                    tinyexr::FreeEXRErrorMessage(err); // release memory of error message.
-                }
-            }
-            else {
-                std::free(out); // release memory of image data
             }
         }
     }

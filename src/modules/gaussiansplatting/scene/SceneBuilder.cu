@@ -4,7 +4,7 @@
 #include "cameras/PinholeCamera.cuh"
 #include "materials/Material.cuh"
 #include "lights/QuadLight.cuh"
-#include "textures/Texture2D.cuh"
+#include "textures/TextureMap.cuh"
 #include "tracables/Primitives.cuh"
 
 #include "core/containers/Vector.cuh"
@@ -29,15 +29,17 @@ namespace Enso
         
         auto& cameras = scene->Cameras();
         auto& tracables = scene->Tracables();
+        auto& textures = scene->Textures();
 
         // Create the primary camera
         const float cameraPhi = -kPi;
-        const vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2.;
-        const vec3 cameraLookAt = vec3(0., -0., -0.);
+        const vec3 cameraLookAt = vec3(0., 0.1, -0.);
+        const vec3 cameraPos = vec3(cos(cameraPhi), 0.5, sin(cameraPhi)) * 2. + cameraLookAt;
         cameras.push_back(AssetAllocator::CreateChildAsset<Host::PinholeCamera>(*scene, "pinholecamera", cameraPos, cameraLookAt, 35.f));
 
-        // Create some materials
-
+        // Create some textures
+        textures.push_back(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "floortexture", "C:\\projects\\enso\\data\\Texture1.exr"));
+        textures.push_back(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "grace", "C:\\projects\\enso\\data\\Grace.exr"));
 
         constexpr int kNumSpheres = 7;
         BidirectionalTransform transform;

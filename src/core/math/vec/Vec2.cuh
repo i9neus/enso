@@ -24,6 +24,9 @@ namespace Enso
         __host__ __device__ __forceinline__ explicit __vec_swizzle(const float v) : x(v), y(v) {}
         __host__ __device__ __forceinline__ __vec_swizzle(const float& x_, const float& y_) : x(x_), y(y_) {}
 
+        // Cast from built-in float4 type
+        __host__ __device__ __forceinline__ __vec_swizzle(const float2& v) : x(v.x), y(v.y) {}
+
         // Cast from other vec types
         template<typename OtherType, int OtherSize, int I0, int I1, int... In>
         __host__ __device__ __forceinline__ __vec_swizzle(const __vec_swizzle<OtherType, OtherSize, 2, I0, I1, In...>& v) :

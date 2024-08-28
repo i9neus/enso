@@ -64,4 +64,10 @@ namespace Enso
         float sinTheta = sqrt(1.0 - xi.x * xi.x);
         return vec3(cos(xi.y) * sinTheta, sin(xi.y) * sinTheta, xi.x);
     }
+
+    // Converts a normalised direction into normalised lat-long coordinates (used by HDRI probes)
+    __host__ __device__ __forceinline__ vec2 DirToEquirect(const vec3& n)
+    {
+        return vec2((atan2f(n.z, n.x) + kPi) / kTwoPi, acosf(clamp(n.y, -1.f, 1.f)) / kPi);
+    }
 }

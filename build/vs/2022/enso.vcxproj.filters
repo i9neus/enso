@@ -163,6 +163,12 @@
     <Filter Include="core\assets">
       <UniqueIdentifier>{2705964b-1623-40ff-9d2d-41a5feb25bdd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="thirdparty\tinyexr">
+      <UniqueIdentifier>{39e2d2b5-4b22-4e13-87a7-80e84362ce51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="io\images">
+      <UniqueIdentifier>{e22e0311-0f64-443b-83bd-259a74f6b2ea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -171,9 +177,6 @@
     <Text Include="..\..\..\BUILD_NOTES.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\io\ImageIO.cpp">
-      <Filter>io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\win\D3DContainer.cpp">
       <Filter>win</Filter>
     </ClCompile>
@@ -270,11 +273,20 @@
     <ClCompile Include="..\..\..\src\core\singletons\GlobalStateAuthority.cpp">
       <Filter>core\singletons</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\tinyexr\tinyexr.cc">
+      <Filter>thirdparty\tinyexr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\thirdparty\tinyexr\miniz.c">
+      <Filter>thirdparty\tinyexr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\images\Exr.cpp">
+      <Filter>io\images</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\io\images\Png.cpp">
+      <Filter>io\images</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\io\ImageIO.h">
-      <Filter>io</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\win\D3DContainer.h">
       <Filter>win</Filter>
     </ClInclude>
@@ -800,6 +812,24 @@
     <ClInclude Include="..\..\..\src\core\assets\GenericObjectContainer.cuh">
       <Filter>core\assets</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\Unified.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\tinyexr\tinyexr.h">
+      <Filter>thirdparty\tinyexr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\tinyexr\miniz.h">
+      <Filter>thirdparty\tinyexr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\TextureMap.cuh">
+      <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\images\Exr.h">
+      <Filter>io\images</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\io\images\Png.h">
+      <Filter>io\images</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -915,6 +945,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\Camera.cu">
       <Filter>modules\gaussiansplatting\scene\cameras</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\textures\TextureMap.cu">
+      <Filter>modules\gaussiansplatting\scene\textures</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

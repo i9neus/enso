@@ -11,7 +11,8 @@ namespace Enso
         class Texture2D : public Device::SceneObject
         {
         public:
-            __device__ virtual vec3                 Evaluate(const HitCtx& hit) const = 0;
+            __device__ virtual vec4             Evaluate(const vec2& uv) const = 0;
+            __device__ __forceinline__ vec4     Evaluate(const HitCtx& hit) const { return Evaluate(hit.uv); }
         };
     }
 
@@ -23,7 +24,7 @@ namespace Enso
             __host__ Device::Texture2D* GetDeviceInstance() { return cu_deviceInstance; }
 
         protected:
-            __host__ Texture2D(const Asset::InitCtx& initCtx) : SceneObject(initCtx) {}
+            __host__                    Texture2D(const Asset::InitCtx& initCtx) : SceneObject(initCtx) {}
             __host__ void               SetDeviceInstance(Device::Texture2D* deviceInstance) { cu_deviceInstance = deviceInstance; }
 
         protected:
