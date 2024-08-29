@@ -360,7 +360,9 @@ namespace Enso
         if (range[0] <= range[1])
         {
             const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport), vec2(m_params.viewport.dims));
-            for (uint32_t refIdx = range[0]; refIdx <= range[1]; ++refIdx)
+            float alpha = 1;
+
+            for (uint32_t refIdx = range[0]; refIdx <= range[1] && alpha > 1e-3f; ++refIdx)
             {                
                 CudaAssertDebugFmt(refIdx < m_objects.sortedRefs->size(), "refIdx < m_objects.sortedRefs->size(): %i -> %i", refIdx, m_objects.sortedRefs->size());
                 const int splatIdx = (*m_objects.sortedRefs)[refIdx];
@@ -372,12 +374,16 @@ namespace Enso
 
                 // Gaussian PDF
                 const vec2 mu = uvView - splat.p.xy;
-                const float G = expf(-0.5 * dot(mu * splat.sigma, mu));
-                //const float G = (length(mu) < 0.001f) ? 1.0 : 0.0f;
+                const float G = expf(-0.5 * dot(mu * splat.sigma, mu)) * splat.rgba.w;
+                //const float G = (length(mu) < 0.001f) ? 1.0 : 0.0f;    
 
                 // Splat 
-                L = mix(L, splat.rgba.xyz, G * splat.rgba.w);
+                //L = mix(L, splat.rgba.xyz, G * splat.rgba.w);                
                 //L += kGreen * 0.5;
+                L += splat.rgba.xyz * G  * alpha;
+
+                // Attenuate alpha 
+                alpha *= 1 - G;
             }
         }
 
