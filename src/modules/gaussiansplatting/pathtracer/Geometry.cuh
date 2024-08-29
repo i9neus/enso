@@ -82,8 +82,8 @@ namespace Enso
             {
                 if (fabsf(localRay.d[dim]) > 1e-10)
                 {
-                    float t0 = (size[dim] - localRay.o[dim]) / localRay.d[dim];
-                    float t1 = (-size[dim] - localRay.o[dim]) / localRay.d[dim];
+                    float t0 = (size[dim] * 0.5f - localRay.o[dim]) / localRay.d[dim];
+                    float t1 = (-size[dim] * 0.5f - localRay.o[dim]) / localRay.d[dim];
                     if (t0 < t1) { tNearPlane[dim] = t0;  tFarPlane[dim] = t1; }
                     else { tNearPlane[dim] = t1;  tFarPlane[dim] = t0; }
                 }

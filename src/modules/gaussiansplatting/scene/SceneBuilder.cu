@@ -41,15 +41,26 @@ namespace Enso
         textures.push_back(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "floortexture", "C:\\projects\\enso\\data\\Texture1.exr"));
         textures.push_back(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "grace", "C:\\projects\\enso\\data\\Grace.exr"));
 
-        constexpr int kNumSpheres = 7;
+        constexpr int kNumPrims = 7;
         BidirectionalTransform transform;
         tracables.resize(7);
-        for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
+        for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
         {
-            float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
+            float phi = kTwoPi * (0.75f + float(primIdx) / float(kNumPrims));
             transform = BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, kZero, 0.2f);
             
-            tracables[sphereIdx] = AssetAllocator::CreateChildAsset<Host::Primitive<UnitSphereParams>>(*scene, tfm::format("sphere%i", sphereIdx), transform, 5, UnitSphereParams{});
+            switch (primIdx % 3)
+            {
+            case 0:
+                tracables[primIdx] = AssetAllocator::CreateChildAsset<Host::Primitive<UnitSphereParams>>(*scene, tfm::format("sphere%i", primIdx), transform, 5, UnitSphereParams());
+                break;
+            case 1:
+                tracables[primIdx] = AssetAllocator::CreateChildAsset<Host::Primitive<BoxParams>>(*scene, tfm::format("box%i", primIdx), transform, 5, BoxParams(vec3(1.0f)));
+                break;
+            case 2:
+                tracables[primIdx] = AssetAllocator::CreateChildAsset<Host::Primitive<CylinderParams>>(*scene, tfm::format("cylinder%i", primIdx), transform, 5, CylinderParams(1.f));
+                break;
+            }       
         }
 
         // Ground plane        

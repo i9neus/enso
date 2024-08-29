@@ -8,13 +8,40 @@ namespace Enso
 
     struct PlaneParams
     {
+        __host__ __device__ PlaneParams() : isBounded(true) {}
+        __host__ __device__  PlaneParams(const bool b) : isBounded(b) {}
         __device__ void Validate() const {}
+
         bool isBounded;
     };
 
     struct UnitSphereParams
     {
         __device__ void Validate() const {}
+    };
+
+    struct CylinderParams
+    {
+        __host__ __device__ CylinderParams() : height(1) {}
+        __host__ __device__ CylinderParams(const float h) : height(h) {}
+        __device__ void Validate() const 
+        {
+            CudaAssert(height > 0.);
+        } 
+
+        float height;
+    };
+
+    struct BoxParams
+    {
+        __host__ __device__ BoxParams() : dims(1) {}
+        __host__ __device__ BoxParams(const vec3& d) : dims(d) {}
+        __device__ void Validate() const
+        {
+            CudaAssert(Volume(dims) > 0.f);
+        }
+
+        vec3 dims;
     };
 
     namespace Device
@@ -62,5 +89,7 @@ namespace Enso
 
         template class Primitive<PlaneParams>;
         template class Primitive<UnitSphereParams>;
+        template class Primitive<CylinderParams>;
+        template class Primitive<BoxParams>;
     }
 }
