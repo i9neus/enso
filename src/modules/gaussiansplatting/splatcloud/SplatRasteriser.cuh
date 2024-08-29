@@ -29,6 +29,8 @@ namespace Enso
         vec4        rgba;
         uint32_t    bounds;
         uint64_t    key;
+
+        uint32_t    tileIdx;  // Remove this!!!
     };
 
     struct RadixSortKey
@@ -145,8 +147,8 @@ namespace Enso
             }
 
         protected:
-            __host__ void               SortSplats(const bool allocTempStorage);
-            __host__ void               ComputeTileOverlaps();
+            __host__ void               SortSplats();
+            __host__ bool               ComputeTileOverlaps();
             __host__ virtual void       OnSynchroniseDrawableObject(const uint syncFlags) override final;
             __host__ virtual bool       OnCreateDrawableObject(const std::string& stateID, const UIViewCtx& viewCtx, const vec2& mousePosObject) override final;
             __host__ virtual bool       OnRebuildDrawableObject() override final;
@@ -187,7 +189,8 @@ namespace Enso
             AssetHandle<Host::Vector<uint32_t>>                 m_hostSplatPMF;
             AssetHandle<Host::Vector<uint32_t>>                 m_hostSplatCMF;
 
-            Unified<uint32_t>                                   m_numSplatRefs;
+            Unified<uint32_t>                                   m_unifiedNumSplatRefs;
+            uint32_t                                            m_hostNumSplatRefs;
         };
     }
 }

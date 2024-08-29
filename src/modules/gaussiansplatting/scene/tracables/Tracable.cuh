@@ -88,7 +88,7 @@ namespace Enso
                 OnSynchroniseTracable(syncFlags);
             }
 
-            __host__ virtual std::vector<GaussianPoint> GenerateGaussianPointCloud(const int numPoints, MersenneTwister& rng) = 0;
+            __host__ virtual std::vector<GaussianPoint> GenerateGaussianPointCloud(const int numPoints, const float areaGain, MersenneTwister& rng) = 0;
             __host__ virtual float CalculateSurfaceArea() const  = 0;
 
         protected:
