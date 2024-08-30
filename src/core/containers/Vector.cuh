@@ -358,6 +358,7 @@ namespace Enso
 						std::vector<DeviceType*> devicePtrs(m_hostVector.size());
 						for (uint idx = 0; idx < m_hostVector.size(); ++idx)
 						{
+							AssertMsgFmt(m_hostVector[idx], "AssetVector '%s' has invalid asset handle at index %i", GetAssetID(), idx);
 							devicePtrs[idx] = m_hostVector[idx]->GetDeviceInstance();
 						}
 

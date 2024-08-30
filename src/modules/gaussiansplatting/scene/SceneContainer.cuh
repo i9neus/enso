@@ -49,7 +49,7 @@ namespace Enso
             __host__                            SceneContainer(const Asset::InitCtx& initCtx);
             __host__ virtual                    ~SceneContainer() noexcept;     
 
-            __host__ void                       Clean();
+            __host__ void                       Clean();            
 
             __host__ void                       DestroyManagedObjects();
             __host__ Device::SceneContainer*    GetDeviceInstance() const { return cu_deviceInstance; }
@@ -72,6 +72,8 @@ namespace Enso
             __host__ void                       Emplace(AssetHandle<Host::Material> newMaterial);
             __host__ void                       Emplace(AssetHandle<Host::Texture2D> newTexture);
             __host__ void                       Emplace(AssetHandle<Host::Camera> newCamera);
+
+            __host__ void                       SetEnvironmentTexture(const std::string& id);
 
             template<typename ObjectType>
             __host__ AssetHandle<ObjectType> Find(const std::string& id) const

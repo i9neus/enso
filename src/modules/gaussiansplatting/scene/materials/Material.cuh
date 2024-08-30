@@ -2,30 +2,29 @@
 
 #include "../SceneObject.cuh"
 #include "core/3d/Ctx.cuh"
+#include "core/3d/Ray.cuh"
+#include "../../scene/SceneContainer.cuh"
 
 namespace Enso
-{
-    struct MaterialParams
-    {
-        __device__ void Validate() const {}
-
-        int textureIdx = -1;
-    };
-
+{   
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
         class Material : public Device::SceneObject
         {
         public:
-            __device__ virtual float    Sample(const vec2& xi, const vec3& i, const vec3& n, vec3& o, float& weight) const = 0;
-            __device__ virtual float    Evaluate(const vec3& i, const vec3& o, const vec3& n) const = 0;
+            __device__ Material();
+            __device__ virtual float    Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, vec3& o, vec3& weight) const = 0;
+            __device__ virtual float    Evaluate(const Ray& incident, const Ray& extant, const HitCtx& hit, vec3& weight) const = 0;
             __device__ virtual bool     IsPerfectSpecular() const = 0;
 
-            __device__ void             Synchronise(const MaterialParams& params) { m_params = params; }
+            __device__ void             Synchronise(const Device::Vector<Device::Texture2D*>* textures) { m_textures = textures; }
 
         protected:
-            MaterialParams              m_params;
+            __device__ vec3             EvaluateTexture(const vec2& uv, const int idx) const;
+
+        protected:
+            const Device::Vector<Device::Texture2D*>* m_textures;
         };
     }
 
@@ -37,26 +36,19 @@ namespace Enso
             __host__ Device::Material* GetDeviceInstance() { return cu_deviceInstance; }
 
         protected:
-            __host__ Material(const Asset::InitCtx& initCtx, const int textureIdx) :
-                SceneObject(initCtx)
-            {
-                m_params.textureIdx = textureIdx;
-            }
+            __host__ Material(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene);
             
             __host__ void               SetDeviceInstance(Device::Material* deviceInstance) { cu_deviceInstance = deviceInstance; }
+            __host__ void               Bind(AssetHandle<Host::SceneContainer>& scene);
 
-            __host__ void Synchronise(const int syncFlags)
-            {
-                if (syncFlags & kSyncParams)
-                {
-                    SynchroniseObjects<Device::Material>(cu_deviceInstance, m_params);
-                }
-            }
+            __host__ virtual void       Synchronise(const uint syncFlags) override final;
+
+        protected:
+            __host__ virtual void       OnSynchroniseMaterial(const uint) = 0;
 
         protected:
             Device::Material*           cu_deviceInstance = nullptr;
-
-            MaterialParams              m_params;
+            Device::Vector<Device::Texture2D*>* cu_textures;
         };
     }
 }

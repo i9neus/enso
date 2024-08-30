@@ -25,7 +25,7 @@ namespace Enso
 
             __host__ virtual ~SceneObject() noexcept {}
 
-            __host__ virtual void Bind(AssetHandle<Host::SceneContainer>& scene) {}   
+            __host__ virtual void Bind(Host::SceneContainer& scene) {}   
         };
     }
 }

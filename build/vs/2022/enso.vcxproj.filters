@@ -698,9 +698,6 @@
     <ClInclude Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cuh">
       <Filter>core\2d\sdf</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Lambertian.cuh">
-      <Filter>modules\gaussiansplatting\scene\materials</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\splatcloud\SplatRasteriser.cuh">
       <Filter>modules\gaussiansplatting\splatcloud</Filter>
     </ClInclude>
@@ -820,6 +817,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\ProceduralTexture.cuh">
       <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cuh">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cuh">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -948,6 +951,15 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\textures\ProceduralTexture.cu">
       <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cu">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cu">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cu">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

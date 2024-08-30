@@ -6,11 +6,23 @@ namespace Enso
 {
     struct SolidTextureParams
     {
-        __host__ __device__ SolidTextureParams() : colour(kOne * 0.3f) {}
-        __host__ __device__ SolidTextureParams(const vec3& c) : colour(c) {}
+        __host__ __device__ SolidTextureParams();
+        __host__ __device__ SolidTextureParams(const vec3& c);
         __device__ void Validate() const {}
 
         vec3 colour;
+    };
+
+    struct GridTextureParams
+    {
+        __host__ __device__ GridTextureParams();
+        __host__ __device__ GridTextureParams(const vec3& base, const vec3& line, const float thickness, const float sca);
+        __device__ void Validate() const {}
+
+        vec3 baseColour;
+        vec3 lineColour;
+        float lineThickness;
+        float scale;
     };
     
     namespace Device

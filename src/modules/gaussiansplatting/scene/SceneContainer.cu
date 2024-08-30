@@ -156,4 +156,16 @@ namespace Enso
         Log::Debug("  - %i textures", m_hostTextures->size());
     }
 
+    __host__ void Host::SceneContainer::SetEnvironmentTexture(const std::string& id)
+    {
+        auto obj = Find<Host::Texture2D>(id);
+        if (!obj)
+        {
+            Log::Error("Error: couldn't set environment map to '%s'; texture not found.", id);
+        }
+        else
+        {
+            m_deviceObjects.envTexture = obj->GetDeviceInstance();
+        }
+    }
 }

@@ -2,7 +2,7 @@
 
 namespace Enso
 {    
-    __host__  Host::LightSampler::LightSampler(const InitCtx& initCtx) : 
+    __host__  Host::LightSampler::LightSampler(const InitCtx& initCtx) :
         SceneObject(initCtx), 
         cu_deviceInstance(nullptr) 
     {

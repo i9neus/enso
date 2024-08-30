@@ -65,41 +65,48 @@ namespace Enso
         return saturatef(sqr(pdf1) / fmaxf(1e-10, sqr(pdf1) + sqr(pdf2)));
     }
 
-    __device__ float Device::PathTracer::SampleEmitter(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const
+    __device__ float Device::PathTracer::SampleEmitter(const Ray& incident, RayStack& extantStack, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const
     {
-        vec3 i = -incident.od.d;
+        auto& extant = extantStack.Push();
         float emitterPdf = lightSampler->Sample(incident, extant, hit, xi);
-        if (emitterPdf > 0.)
+        if (emitterPdf <= 0.)
         {
-            float bxdfPdf = material.Evaluate(i, extant.od.d, hit.n);
-
-            // Lambert cosine factor
-            bxdfPdf *= dot(extant.od.d, hit.n);
-
-            // Apply power heuristic up-weighted by a factor to two to account for stochastic branching
-            extant.weight *= 2. * bxdfPdf * PowerHeuristic(emitterPdf, bxdfPdf);
+            extantStack.Pop();
+            return 0.;
         }
+ 
+        //float bxdfPdf = material.Evaluate(-incident.od.d, extant.od.d, hit.n);
+        vec3 materialWeight = kOne;
+        float bxdfPdf = material.Evaluate(incident, extant, hit, materialWeight);
+
+        // Lambert cosine factor
+        bxdfPdf *= dot(extant.od.d, hit.n);
+
+        // Apply power heuristic up-weighted by a factor to two to account for stochastic branching
+        extant.weight *= 2. * bxdfPdf * materialWeight * PowerHeuristic(emitterPdf, bxdfPdf);
 
         return emitterPdf;
     }
 
-    __device__ float Device::PathTracer::SampleBxDF(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool useMis) const
+    __device__ float Device::PathTracer::SampleBxDF(const Ray& incident, RayStack& extantStack, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool isDirectSample) const
     {
         vec3 o;
         vec3 kickoff = hit.n * 1e-4;
         
         // Sample the BxDF
-        float brdfWeight = 1.f;
-        float bxdfPdf = material.Sample(xi, -incident.od.d, hit.n, o, brdfWeight);      
+        vec3 materialWeight = kOne;
+        //float bxdfPdf = material.Sample(xi, -incident.od.d, hit.n, o, materialWeight);      
+        float bxdfPdf = material.Sample(xi, incident, hit, o, materialWeight);
 
         // Create the ray
-        extant.Construct(incident.Point(), o, kickoff, incident.weight * brdfWeight, incident.depth + 1, incident.InheritedFlags());
+        auto& extant = extantStack.Push();
+        extant.Construct(incident.Point(), o, kickoff, incident.weight * materialWeight, incident.depth + 1, incident.InheritedFlags());
 
         // If this isn't a perfect specular BxDF, flag the ray as scattered
         if (!material.IsPerfectSpecular()) { extant.flags |= kRayScattered; }
 
         // If this is a light samaple, compute the PDF of the emitter and apply the power heuristic
-        if (useMis)
+        if (isDirectSample)
         {
             CudaAssertDebug(lightSampler);
             const float emitterPdf = lightSampler->Evaluate(extant, hit);
@@ -110,7 +117,7 @@ namespace Enso
         return bxdfPdf;
     }
 
-    __device__ int Device::PathTracer::ShadeIndirectSample(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const
+    __device__ void Device::PathTracer::Shade(const Ray& incidentRay, RayStack& extantStack, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const
     {
         // Generate some random numbers
         //vec4 xi = Rand(renderCtx.rng);
@@ -121,38 +128,28 @@ namespace Enso
         if (material.IsPerfectSpecular()) { renderMode = kModePathTraced; }
 
         int genFlags = 0;
+
+        // Sample the BxDF for the indirect contribution
+        SampleBxDF(incidentRay, extantStack, hit, material, nullptr, xi.zw, false);
+
         // If we're in next-event estimation mode, stochastically sample either the emitter or the BxDF
+        // IMPORTANT: Direct rays must be the last on the stack to prevent it overflowing
         if (renderMode == kModeNEE)
         {
             const LightSampler* light = (*m_objects.scene.lightSamplers)[0];
             
             if (xiSplit < 0.5)
             {
-                if (SampleBxDF(incidentRay, directRay, hit, material, light, xi.xy, true) > 0)
-                {
-                    genFlags |= kGeneratedDirect;
-                }
+                SampleBxDF(incidentRay, extantStack, hit, material, light, xi.xy, true);
             }
             else
             {
-                if (SampleEmitter(incidentRay, directRay, hit, material, light, xi.xy) > 0)
-                {
-                    genFlags |= kGeneratedDirect;
-                }
+                SampleEmitter(incidentRay, extantStack, hit, material, light, xi.xy);
             }
-            directRay.weight *= hit.albedo;
         }
-
-        // Sample the BxDF for the indirect contribution
-        if (SampleBxDF(incidentRay, indirectRay, hit, material, nullptr, xi.zw, false) > 0)
-        {
-            genFlags |= kGeneratedIndirect;
-            indirectRay.weight *= hit.albedo;
-        }
-
-        return genFlags;
     }
 
+    // Trace scene geometry and return a pointer to the closest hit object
     __device__ const Device::Tracable* Device::PathTracer::Trace(Ray& ray, HitCtx& hitCtx) const
     {
         const Tracable* hitTracable = nullptr;
@@ -189,8 +186,8 @@ namespace Enso
         const vec4 xi = renderCtx.Rand(0);
         const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
         
-        Ray directRay, indirectRay;
-        m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
+        RayStack extantStack;
+        m_objects.activeCamera->CreateRay(uvView, xi.zw, extantStack.Push());
 
         int genFlags = kGeneratedIndirect;
         HitCtx hitCtx;
@@ -200,36 +197,27 @@ namespace Enso
 
         constexpr int kMaxPathDepth = 5;
         constexpr int kMaxIterations = 10;
-        for (int rayIdx = 0; rayIdx < kMaxIterations && genFlags != kGenerateNothing; ++rayIdx)
+        for (int rayIdx = 0; rayIdx < kMaxIterations && !extantStack.IsEmpty(); ++rayIdx)
         {
-            Ray ray = ((genFlags & kGeneratedDirect) != 0) ? directRay : indirectRay;
+            // Pop the stack
+            Ray ray = extantStack.Pop();         
 
-            // If we're at depth, skip this evaluation
-            if (ray.depth >= kMaxPathDepth) 
-            { 
-                genFlags &= ~(((genFlags & kGeneratedDirect) != 0) ? kGeneratedDirect : kGeneratedIndirect);
-                continue; 
-            }
-
+            // Trace the ray
             const auto* hitTracable = Trace(ray, hitCtx);
             if (!hitTracable)
             {
                 // Only accumulate environment contribution on indirect samples
-                if(ray.IsDirectSample() && m_objects.scene.envTexture)
+                if(!ray.IsDirectSample() && m_objects.scene.envTexture)
                 {
                     //L += kOne * ray.weight * 0.2;
                     const float env = luminance(m_objects.scene.envTexture->Evaluate(DirToEquirect(ray.od.d)).xyz);
                     L += ray.weight * powf(clamp(env, 0.f, 10.0f), 1 / 1.8f);
-
                 }
                 continue;
             }
 
-            L += hitCtx.n * 0.5 + 0.5;
-            break;
-
             // Evaluate a direct ray
-            if ((genFlags & kGeneratedDirect) != 0)
+            if (ray.IsDirectSample())
             {
                 // If we're hit a light, 
                 if (hitTracable->IsLight() && !ray.IsBackfacing())
@@ -238,9 +226,8 @@ namespace Enso
                     // If it did, just accumulate the weight which contains the radiant energy from the light sample. 
                     L += ray.weight;
                 }
-                genFlags &= ~kGeneratedDirect;
             }
-            else if ((genFlags & kGeneratedIndirect) != 0)
+            else
             {
                 // Emitters don't reflect light so we don't need to shade them. Simply accumulate the emitted radiance and we're done.
                 if (hitTracable->IsLight())
@@ -249,12 +236,12 @@ namespace Enso
                     {
                         L += hitTracable->GetRadiance() * ray.weight;
                     }
-                    genFlags = 0;
                 }
-                else
+                // If we're at depth, skip this evaluation
+                else if (ray.depth < kMaxPathDepth) 
                 {
                     const Material& material = *(*m_objects.scene.materials)[hitTracable->GetMaterialIdx()];
-                    genFlags = ShadeIndirectSample(ray, indirectRay, directRay, hitCtx, renderCtx, material, renderMode, L);
+                    Shade(ray, extantStack, hitCtx, renderCtx, material, renderMode, L);
                 }
             }
         }

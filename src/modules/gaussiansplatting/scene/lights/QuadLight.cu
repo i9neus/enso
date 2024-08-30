@@ -82,6 +82,7 @@ namespace Enso
     {
         LightSampler::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::LightSampler>(cu_deviceInstance));
 
+        m_params.radiance = radiance;
         BindTracable(tracable);
 
         Synchronise(kSyncParams);

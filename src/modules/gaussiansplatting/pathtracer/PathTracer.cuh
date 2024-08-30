@@ -4,6 +4,7 @@
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/RenderableObject.cuh"
 #include "core/3d/Ctx.cuh"
+#include "core/3d/Ray.cuh"
 
 #include "core/assets/DirtinessFlags.cuh"
 #include "core/containers/Image.cuh"
@@ -63,6 +64,31 @@ namespace Enso
         {
             friend Host::PathTracer;
 
+            class RayStack
+            {
+            private:
+                Ray m_stack[2];
+                int m_top;
+
+            public:
+                __device__ RayStack() : m_top(-1) {}
+                __device__ __forceinline__ Ray& Push() 
+                { 
+                    CudaAssertDebug(m_top < 1, "Extant ray stack overflow");
+                    return m_stack[++m_top]; 
+                }
+                __device__ __forceinline__ void Push(const Ray& ray) 
+                { 
+                    CudaAssertDebug(m_top < 1, "Extant ray stack overflow");
+                    m_stack[++m_top] = ray; 
+                }
+                __device__ __forceinline__ Ray& Pop() { return m_stack[m_top--]; }
+                __device__ __forceinline__ Ray& Top() { return m_stack[m_top]; }
+
+                __device__ __forceinline__ bool IsEmpty() const { return m_top < 0; }
+                __device__ __forceinline__ operator bool() const { return m_top >= 0; }
+            };
+
         public:
             __host__ __device__ PathTracer() {}
             
@@ -79,10 +105,9 @@ namespace Enso
 
         private:
             __device__ const Device::Tracable*  Trace(Ray& ray, HitCtx& hit) const;
-            __device__ float                    SampleEmitter(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const;
-            __device__ float                    SampleBxDF(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool useMis) const;
-            __device__ void                     ShadeDirectSample(const Ray& ray, const HitCtx& hit, vec3& L) const;
-            __device__ int                      ShadeIndirectSample(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const;
+            __device__ float                    SampleEmitter(const Ray& incident, RayStack& extantStack, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const;
+            __device__ float                    SampleBxDF(const Ray& incident, RayStack& extantStack, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool isDirectSample) const;
+            __device__ void                     Shade(const Ray& incidentRay, RayStack& extantStack, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const;
 
         private:
             PathTracerParams            m_params;

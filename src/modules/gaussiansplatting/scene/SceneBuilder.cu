@@ -7,7 +7,7 @@
 #include "textures/ProceduralTexture.cuh"
 #include "textures/TextureMap.cuh"
 #include "tracables/Primitives.cuh"
-#include "materials/Lambertian.cuh"
+#include "materials/Diffuse.cuh"
 
 #include "core/containers/Vector.cuh"
 
@@ -48,9 +48,10 @@ namespace Enso
         // Create some materials
         for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
         {
-            scene->Emplace(AssetAllocator::CreateChildAsset<Host::Lambertian>(*scene, tfm::format("lambert%i", primIdx), primIdx));
+            auto newMaterial = AssetAllocator::CreateChildAsset<Host::Diffuse>(*scene, tfm::format("lambert%i", primIdx), scene, primIdx);
+            scene->Emplace(newMaterial);
         }
-        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Lambertian>(*scene, "floorlambert", kNumPrims));
+        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Diffuse>(*scene, "floorlambert", scene, kNumPrims));
 
         BidirectionalTransform transform;
         for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
@@ -83,6 +84,9 @@ namespace Enso
         // Light sampler
         auto emitterTracable = scene->Find<Host::Tracable>("emitterplane");
         scene->Emplace(AssetAllocator::CreateChildAsset<Host::QuadLight>(*scene, "emittersampler", kOne, emitterTracable));
+
+        // Set the environment light
+        scene->SetEnvironmentTexture("grace");
 
         // Finalise the scene
         //scene->Finalise();         

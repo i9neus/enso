@@ -171,7 +171,8 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\PinholeCamera.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\LightSampler.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Lambertian.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
@@ -287,6 +288,9 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\Camera.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\lights\LightSampler.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu" />
