@@ -4,9 +4,13 @@
 #include "core/3d/Ctx.cuh"
 #include "core/3d/Ray.cuh"
 #include "../../scene/SceneContainer.cuh"
+#include "../textures/Texture2D.cuh"
+#include "core/containers/Vector.cuh"
 
 namespace Enso
 {   
+    enum MaterialAttrs : int { kInvalidMaterial = -1 };
+    
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
@@ -14,14 +18,22 @@ namespace Enso
         {
         public:
             __device__ Material();
-            __device__ virtual float    Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, vec3& o, vec3& weight) const = 0;
+            __device__ virtual float    Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, Ray& extant) const = 0;
             __device__ virtual float    Evaluate(const Ray& incident, const Ray& extant, const HitCtx& hit, vec3& weight) const = 0;
             __device__ virtual bool     IsPerfectSpecular() const = 0;
 
             __device__ void             Synchronise(const Device::Vector<Device::Texture2D*>* textures) { m_textures = textures; }
 
         protected:
-            __device__ vec3             EvaluateTexture(const vec2& uv, const int idx) const;
+            __device__ __forceinline__ vec3 EvaluateTexture(const vec2& uv, const vec3& def, const int idx) const
+            {
+                return (idx == -1) ? def : (def * (*m_textures)[idx]->Evaluate(uv).xyz);
+            }
+
+            __device__ __forceinline__ float EvaluateTextureLuminance(const vec2& uv, const float def, const int idx) const
+            {
+                return (idx == -1) ? def : (def * luminance((*m_textures)[idx]->Evaluate(uv).xyz));
+            }
 
         protected:
             const Device::Vector<Device::Texture2D*>* m_textures;

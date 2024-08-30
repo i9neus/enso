@@ -90,17 +90,15 @@ namespace Enso
 
     __device__ float Device::PathTracer::SampleBxDF(const Ray& incident, RayStack& extantStack, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool isDirectSample) const
     {
-        vec3 o;
-        vec3 kickoff = hit.n * 1e-4;
+        RayBasic outgoing;
         
         // Sample the BxDF
-        vec3 materialWeight = kOne;
-        //float bxdfPdf = material.Sample(xi, -incident.od.d, hit.n, o, materialWeight);      
-        float bxdfPdf = material.Sample(xi, incident, hit, o, materialWeight);
+        auto& extant = extantStack.Push();
+        extant.weight = kOne;
+        float bxdfPdf = material.Sample(xi, incident, hit, extant);
 
         // Create the ray
-        auto& extant = extantStack.Push();
-        extant.Construct(incident.Point(), o, kickoff, incident.weight * materialWeight, incident.depth + 1, incident.InheritedFlags());
+        extant.Finalise(incident.weight, incident.depth + 1, incident.InheritedFlags());
 
         // If this isn't a perfect specular BxDF, flag the ray as scattered
         if (!material.IsPerfectSpecular()) { extant.flags |= kRayScattered; }
@@ -194,6 +192,7 @@ namespace Enso
         vec3 L = kZero;
         //int renderMode = (xyViewport.x < m_params.viewport.dims.x * 0.5f) ? kModePathTraced : kModeNEE;
         const int renderMode = kModePathTraced;
+        //const int renderMode = kModeNEE;
 
         constexpr int kMaxPathDepth = 5;
         constexpr int kMaxIterations = 10;

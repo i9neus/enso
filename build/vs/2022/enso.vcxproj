@@ -174,6 +174,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cuh" />
@@ -291,6 +292,7 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\GlossyConductor.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\pointclouds\GaussianPointCloud.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneBuilder.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\SceneContainer.cu" />

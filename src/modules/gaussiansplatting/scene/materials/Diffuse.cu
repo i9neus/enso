@@ -10,31 +10,29 @@
 
 namespace Enso
 {
-    __device__ Device::Diffuse::Diffuse()
+    __device__ float Device::Diffuse::Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, Ray& extant) const
     {
-    }
+        extant.weight = EvaluateTexture(hit.uv, m_params.albedo, m_params.albedoTextureIdx);
 
-    __device__ float Device::Diffuse::Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, vec3& o, vec3& weight) const
-    {
-        weight = EvaluateTexture(hit.uv, m_params.albedoIdx);
-
-        return BxDF::SampleLambertian(xi, hit.n, o);
+        // Construct the outgoing ray
+        extant.od.o = incident.Point() + hit.n * 1e-4;
+        return BxDF::SampleLambertian(xi, hit.n, extant.od.d);
     }
 
     __device__ float Device::Diffuse::Evaluate(const Ray& incident, const Ray& extant, const HitCtx& hit, vec3& weight) const
     {
-        weight = EvaluateTexture(hit.uv, m_params.albedoIdx);
+        weight = EvaluateTexture(hit.uv, m_params.albedo, m_params.albedoTextureIdx);
 
         return BxDF::EvaluateLambertian();
     }
 
-    __host__ Host::Diffuse::Diffuse(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene, const int albedoIdx) :
+    __host__ Host::Diffuse::Diffuse(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene, const DiffuseParams& params) :
         Material(initCtx, scene),
+        m_params(params),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::Diffuse>(*this))
     {
         Material::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Material>(cu_deviceInstance));
 
-        m_params.albedoIdx = albedoIdx;
         Synchronise(kSyncParams | kSyncObjects);
     }
 

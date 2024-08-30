@@ -2,12 +2,17 @@
 #include "SceneContainer.cuh"
 
 #include "cameras/PinholeCamera.cuh"
-#include "materials/Material.cuh"
+
 #include "lights/QuadLight.cuh"
+
 #include "textures/ProceduralTexture.cuh"
 #include "textures/TextureMap.cuh"
+
 #include "tracables/Primitives.cuh"
+
 #include "materials/Diffuse.cuh"
+#include "materials/GlossyConductor.cuh"
+#include "materials/SpecularDielectric.cuh"
 
 #include "core/containers/Vector.cuh"
 
@@ -38,20 +43,25 @@ namespace Enso
         constexpr int kNumPrims = 7;
 
         // Create some textures
-        for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
-        {
-            scene->Emplace(AssetAllocator::CreateChildAsset<Host::SolidTexture>(*scene, tfm::format("hue%i", primIdx), Hue(float(primIdx) / float(kNumPrims))));
-        }
         scene->Emplace(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "floortexture", "C:\\projects\\enso\\data\\Texture1.exr"));
         scene->Emplace(AssetAllocator::CreateChildAsset<Host::TextureMap>(*scene, "grace", "C:\\projects\\enso\\data\\Grace.exr"));
 
         // Create some materials
         for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
         {
-            auto newMaterial = AssetAllocator::CreateChildAsset<Host::Diffuse>(*scene, tfm::format("lambert%i", primIdx), scene, primIdx);
-            scene->Emplace(newMaterial);
+            vec3 colour = Hue((0.5f + float(primIdx)) / float(kNumPrims));
+            if (primIdx >= kNumPrims - 2)
+            {
+                scene->Emplace(AssetAllocator::CreateChildAsset<Host::SpecularDielectric>(*scene, tfm::format("primmaterial%i", primIdx), scene, SpecularDielectricParams(1.5f, 5.f, kOne - colour)));
+            }
+            else
+            {
+                const float alpha = mix(0.01f, 0.5f, sqr(float(primIdx) / float(kNumPrims - 2)));
+                scene->Emplace(AssetAllocator::CreateChildAsset<Host::GlossyConductor>(*scene, tfm::format("primmaterial%i", primIdx), scene, GlossyConductorParams(colour, alpha)));
+            }
+
         }
-        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Diffuse>(*scene, "floorlambert", scene, kNumPrims));
+        scene->Emplace(AssetAllocator::CreateChildAsset<Host::GlossyConductor>(*scene, "floormaterial", scene, GlossyConductorParams(vec3(0.5f), 0.5f, vec2(0.01, 0.5f), kInvalidMaterial, scene->FindAssetIdx("floortexture"))));
 
         BidirectionalTransform transform;
         for (int primIdx = 0; primIdx < kNumPrims; ++primIdx)
@@ -75,11 +85,11 @@ namespace Enso
 
         // Ground plane        
         transform = BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f);
-        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "groundplane", transform, kNumPrims, PlaneParams(true)));
+        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "groundplane", transform, kNumPrims, PlaneParams(true, false)));
 
         // Emitter plane
         transform = BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca);
-        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "emitterplane", transform, -1, PlaneParams(true)));
+        scene->Emplace(AssetAllocator::CreateChildAsset<Host::Primitive<PlaneParams>>(*scene, "emitterplane", transform, kInvalidMaterial, PlaneParams(true, true)));
 
         // Light sampler
         auto emitterTracable = scene->Find<Host::Tracable>("emitterplane");

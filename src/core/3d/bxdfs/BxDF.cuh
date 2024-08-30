@@ -22,7 +22,7 @@ namespace Enso
             return (k < 0.0f) ? kZero : (eta * i - (eta * nDoti + sqrt(k)) * n);
         }
         
-        __host__ __device__ float Fresnel(const float cosI, const float eta1, const float eta2)
+        __host__ __device__ __forceinline__ float Fresnel(const float cosI, const float eta1, const float eta2)
         {
             const float sinI = sqrt(1.0f - cosI * cosI);
             float beta = 1.0f - sqr(sinI * eta1 / eta2);
@@ -35,7 +35,7 @@ namespace Enso
         }
 
         // Schlick's approximation of the Fresnel term
-        __host__ __device__ float Schlick(float cosI, float eta1, float eta2)
+        __host__ __device__ __forceinline__ float Schlick(float cosI, float eta1, float eta2)
         {
             float alpha = 1.0f - cosI;
             alpha *= alpha;

@@ -17,7 +17,7 @@ namespace Enso
             return kMaxPDF;
         }
 
-        __device__ float SamplePerfectDielectric(const float& xi, const vec3& i, vec3 n, const float& ior, vec3& o, vec3& kickoff)
+        __device__ bool SamplePerfectDielectric(const float& xi, const vec3& i, vec3 n, const float& ior, vec3& o, vec3& kickoff)
         {
             // Figure out what kind of intersection we're doing
             vec2 eta;
@@ -37,13 +37,14 @@ namespace Enso
             {
                 o = Refract(-i, n, eta.x / eta.y);
                 kickoff = -n * 1e-4;
+                return true;
             }
             else
             {
                 o = Reflect(-i, n);
                 kickoff = n * 1e-4;
+                return false;
             }
-            return kMaxPDF;
         }
     }
 }

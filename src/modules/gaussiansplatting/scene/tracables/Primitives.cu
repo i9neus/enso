@@ -14,6 +14,9 @@ namespace Enso
     __device__ bool Device::Primitive<PlaneParams>::IntersectRay(Ray& ray, HitCtx& hit) const
     {
         const RayBasic localRay = Tracable::m_params.transform.RayToObjectSpace(ray.od);
+
+        if (m_params.hideBackfacing && localRay.o.z < 0.f) { return 0.; }
+
         const float t = Intersector::RayPlane(localRay);
         if (t <= 0.0 || t >= ray.tNear)
         {

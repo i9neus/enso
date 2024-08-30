@@ -13,11 +13,6 @@ namespace Enso
     {
     }
 
-    __device__ vec3 Device::Material::EvaluateTexture(const vec2& uv, const int idx) const
-    {
-        return (idx >= 0 && idx < m_textures->size()) ? (*m_textures)[idx]->Evaluate(uv).xyz : kPink;
-    }
-
     __host__ Host::Material::Material(const Asset::InitCtx& initCtx, AssetHandle<Host::SceneContainer>& scene) :
         SceneObject(initCtx),
         cu_textures(scene->Textures().GetDeviceInstance())

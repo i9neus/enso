@@ -824,6 +824,9 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Diffuse.cuh">
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cuh">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -959,6 +962,9 @@
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\Material.cu">
+      <Filter>modules\gaussiansplatting\scene\materials</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cu">
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </CudaCompile>
   </ItemGroup>

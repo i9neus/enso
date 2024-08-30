@@ -8,11 +8,12 @@ namespace Enso
 
     struct PlaneParams
     {
-        __host__ __device__ PlaneParams() : isBounded(true) {}
-        __host__ __device__  PlaneParams(const bool b) : isBounded(b) {}
+        __host__ __device__ PlaneParams() : isBounded(true), hideBackfacing(false) {}
+        __host__ __device__  PlaneParams(const bool bounded, const bool hide) : isBounded(bounded), hideBackfacing(hide) {}
         __device__ void Validate() const {}
 
         bool isBounded;
+        bool hideBackfacing;
     };
 
     struct UnitSphereParams

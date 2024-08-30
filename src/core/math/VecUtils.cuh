@@ -20,6 +20,7 @@ namespace Enso
 	__host__ __device__ __forceinline__ int		sum(ivec2 a) { return a.x + a.y; }
 	__host__ __device__ __forceinline__ float	luminance(vec3 v) { return v.x * 0.17691f + v.y * 0.8124f + v.z * 0.01063f; }
 	__host__ __device__ __forceinline__ float	mean(vec3 v) { return (v.x + v.y + v.z) / 3; }
+	__host__ __device__ __forceinline__ float   mix(const vec2& ab, const float t) { return ab[0] * (1 - t) + ab[1] * t; }
 
 	__host__ __device__ __forceinline__ float	Volume(const vec3& v) { return v.x * v.y * v.z; }
 	__host__ __device__ __forceinline__ int		Volume(const ivec3& v) { return v.x * v.y * v.z; }

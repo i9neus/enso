@@ -31,6 +31,5 @@ namespace Enso
         vec3            n;
         vec2            uv;
         vec3            albedo;
-        float           alpha;
     };
 }

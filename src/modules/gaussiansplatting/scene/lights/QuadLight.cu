@@ -34,13 +34,10 @@ namespace Enso
         float solidAngle = cosPhi * sqr(LightSampler::m_params.transform.sca) / fmaxf(1e-10f, sqr(lightDist));
 
         // Create the ray from the sampled BRDF direction
-        extant.Construct(hitPos,
-            outgoing,
-            //(IsBackfacing(ray) ? hit.n : hit.n) * hit.kickoff,
-            hit.n * 1e-4f,
-            incident.weight * LightSampler::m_params.radiance * solidAngle,
-            incident.depth + 1,
-            kRayDirectSampleLight);
+        extant.Construct(RayBasic(hitPos + hit.n * 1e-4f, outgoing),
+                         incident.weight * LightSampler::m_params.radiance * solidAngle,
+                         incident.depth + 1,
+                         kRayDirectSampleLight);
 
         return 1.0f / fmaxf(1e-10f, solidAngle);
     }
