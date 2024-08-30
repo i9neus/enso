@@ -108,6 +108,8 @@ namespace Enso
 
             __host__ void               SetDirty(const DirtinessEvent& event);
             __host__ void               SetDirty(const std::vector<DirtinessEvent>& eventList);
+            __host__ void               UnsetDirty(const DirtinessEvent& event);
+            __host__ void               UnsetDirty(const std::vector<DirtinessEvent>& eventList);
 
             //__host__ void               SignalDirty();
             __host__ void               SignalDirty(const DirtinessEvent& event);
@@ -122,9 +124,13 @@ namespace Enso
                 DirtinessGraph::EventDeligate functor(std::bind(deligate, &super, std::placeholders::_1, std::placeholders::_2));
                 DirtinessGraph::Get().AddListener(GetAssetID(), GetAssetHandle(), event, kListenerDelegate, functor);
             }
+        private:
+            __host__ void               LockDirtyMutex();
+            __host__ void               UnlockDirtyMutex();
 
         private:
-            std::set<DirtinessEvent>      m_dirtyEvents;
+            std::set<DirtinessEvent>        m_dirtyEvents;
+            static std::recursive_mutex     m_dirtyMutex;
         }; 
     }
 }

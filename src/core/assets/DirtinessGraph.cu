@@ -2,9 +2,12 @@
 
 namespace Enso
 {           
+    std::recursive_mutex Host::Dirtyable::m_dirtyMutex;
+    
     __host__ Host::Dirtyable::Dirtyable(const Asset::InitCtx& initCtx) :
         Asset(initCtx)
     {
+
     }
 
     __host__ Host::Dirtyable::~Dirtyable()
@@ -15,12 +18,30 @@ namespace Enso
 
     __host__ void Host::Dirtyable::SetDirty(const DirtinessEvent& event)
     {
-        m_dirtyEvents.emplace(event);
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
+        m_dirtyEvents.insert(event);
     }
 
     __host__ void Host::Dirtyable::SetDirty(const std::vector<DirtinessEvent>& eventList)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
         m_dirtyEvents.insert(eventList.begin(), eventList.end());
+    }
+
+    __host__ void Host::Dirtyable::UnsetDirty(const DirtinessEvent& event)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
+
+        m_dirtyEvents.erase(event);
+    }
+
+    __host__ void Host::Dirtyable::UnsetDirty(const std::vector<DirtinessEvent>& eventList)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
+        for (auto event : eventList)
+        {
+            m_dirtyEvents.erase(event);
+        }
     }
 
     /*__host__ void Host::Dirtyable::SignalDirty()
@@ -75,11 +96,13 @@ namespace Enso
 
     __host__ bool Host::Dirtyable::IsDirty(const DirtinessEvent& id) const
     {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
         return m_dirtyEvents.count(id);
     }
 
     __host__ bool Host::Dirtyable::IsAnyDirty(const std::vector<DirtinessEvent>& eventList) const
     {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
         for (const auto& event : eventList)
         {
             if (m_dirtyEvents.count(event)) return true;
@@ -89,6 +112,7 @@ namespace Enso
 
     __host__ bool Host::Dirtyable::IsAllDirty(const std::vector<DirtinessEvent>& eventList) const
     {
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
         for (const auto& event : eventList)
         {
             if (!m_dirtyEvents.count(event)) return false;
@@ -100,6 +124,8 @@ namespace Enso
     {
         // NOTE: Clearing events does not trigger a signal to listeners
         OnClean();
+
+        std::lock_guard<std::recursive_mutex> lock(m_dirtyMutex);
         m_dirtyEvents.clear();
     }
 

@@ -13,7 +13,7 @@
 #include "../scene/SceneContainer.cuh"
 #include "../scene/cameras/Camera.cuh"
 #include "../scene/materials/Material.cuh"
-#include "../scene/lights/Light.cuh"
+#include "../scene/lights/LightSampler.cuh"
 #include "../scene/textures/Texture2D.cuh"
 #include "../scene/tracables/Tracable.cuh"
 #include "../scene/pointclouds/GaussianPointCloud.cuh"

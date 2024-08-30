@@ -11,7 +11,7 @@ namespace Enso
         {
         public:
             __device__ SceneObject() {}
-            __device__ virtual ~SceneObject() {}
+            __device__ virtual ~SceneObject() noexcept {}
         };
     }
     
@@ -25,7 +25,7 @@ namespace Enso
 
             __host__ virtual ~SceneObject() noexcept {}
 
-            __host__ virtual void Bind(AssetHandle<Host::SceneContainer>& scene) {}
+            __host__ virtual void Bind(AssetHandle<Host::SceneContainer>& scene) {}   
         };
     }
 }

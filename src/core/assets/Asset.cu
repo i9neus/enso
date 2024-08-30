@@ -31,5 +31,11 @@ namespace Enso
             return GetAssetID();
         }
     }
+
+    __host__ std::string Host::Asset::GetAssetStem() const
+    {
+        const size_t delimPos = m_assetId.find_last_of(GetDAGPathDelimeter());
+        return (delimPos == std::string::npos) ? m_assetId : m_assetId.substr(delimPos + 1);
+    }
 }
 

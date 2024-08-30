@@ -34,7 +34,7 @@ namespace Enso
     {
         class BIH2DAsset;
         class Tracable;
-        class Light;
+        class LightSampler;
         class Material;
         class Texture2D;
         class DrawableObject;
@@ -54,7 +54,7 @@ namespace Enso
         class Asset;
         class BIH2DAsset;
         class DrawableObject;
-        class Light;
+        class LightSampler;
         class Material;
         class Tracable;
         class Texture2D;

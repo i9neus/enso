@@ -80,7 +80,7 @@ namespace Enso
 			AssertMsg(!newId.empty(), "ID cannot be empty");
 
 			// Concatenate new asset ID with its parent ID 
-			const std::string& concatId = parentAsset.GetAssetID() + "/" + newId;
+			const std::string& concatId = parentAsset.GetAssetID() + Host::Asset::GetDAGPathDelimeter() + newId;
 
 			auto& registry = GlobalResourceRegistry::Get();
 			AssertMsgFmt(!registry.Exists(concatId), "Object '%s' is already in asset registry!", newId.c_str());

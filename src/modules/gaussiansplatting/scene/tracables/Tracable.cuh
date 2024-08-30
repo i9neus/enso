@@ -17,6 +17,12 @@
 
 namespace Enso
 {
+    namespace Host 
+    { 
+        class Tracable; 
+        class LightSampler;
+    }
+    
     enum TracableFlags : int
     {
         kTracableNotALight = -1
@@ -25,34 +31,36 @@ namespace Enso
     struct TracableParams
     {
         __host__ __device__ TracableParams() :
-            lightIdx(kTracableNotALight),
-            materialIdx(-1)
+            materialIdx(-1),
+            radiance(0.)
         {}
 
         __device__ void Validate() const {}
 
         BidirectionalTransform      transform;
         int                         materialIdx;
-        int                         lightIdx;
+        vec3                        radiance;
+        bool                        isLight;
     };
      
-    namespace Host { class Tracable; }
-
     namespace Device
     {
         // This class provides an interface for querying the tracable via geometric operations
         class Tracable : public Device::SceneObject
         {
-            friend class Host::Tracable;
         public:
+            __device__ virtual ~Tracable() noexcept {}
+
             __device__ virtual bool                 IntersectRay(Ray& ray, HitCtx& hit) const = 0;
             //__host__ __device__ virtual bool      InteresectPoint(const vec2& p, const float& thickness) const { return false; }
             //__host__ __device__ virtual bool      IntersectBBox(const BBox2f& bBox) const;
 
             //__host__ __device__ virtual vec2      PerpendicularPoint(const vec2& p) const { return vec2(0.0f); }
          
-            __device__ int                          GetLightIdx() const { return m_params.lightIdx; }
-            __device__ int                          GetMaterialIdx() const { return m_params.materialIdx; }
+            __device__ __forceinline__ bool         IsLight() const { return m_params.isLight; }
+            __device__ __forceinline__ int          GetMaterialIdx() const { return m_params.materialIdx; }
+            __device__ __forceinline__ const vec3&  GetRadiance() const { return m_params.radiance; }
+
             __device__ void                         Synchronise(const TracableParams& params) { m_params = params; }
 
         protected:
@@ -73,8 +81,11 @@ namespace Enso
     {        
         class Tracable : public Host::SceneObject
         {
+            friend class LightSampler;
+
         public:
-            __host__ void       SetLightIdx(const int idx) { m_params.lightIdx = idx; }
+            __host__ virtual ~Tracable() {}
+           
             __host__ void       SetMaterialIdx(const int idx) { m_params.materialIdx = idx; }
 
             __host__ Device::Tracable* GetDeviceInstance() { return cu_deviceInstance; }
@@ -84,18 +95,19 @@ namespace Enso
                 if (syncFlags & kSyncParams)
                 {
                     SynchroniseObjects<Device::Tracable>(cu_deviceInstance, m_params);
-                }
+                }              
                 OnSynchroniseTracable(syncFlags);
             }
 
             __host__ virtual std::vector<GaussianPoint> GenerateGaussianPointCloud(const int numPoints, const float areaGain, MersenneTwister& rng) = 0;
             __host__ virtual float CalculateSurfaceArea() const  = 0;
+            __host__ inline const BidirectionalTransform& GetTransform() const { return m_params.transform; }
 
         protected:
-            __host__ Tracable(const Asset::InitCtx& initCtx) : SceneObject(initCtx) {}
+            __host__ Tracable(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx);
 
-            __host__ void               SetDeviceInstance(Device::Tracable* deviceInstance) { cu_deviceInstance = deviceInstance; }
-            
+            __host__ void               MakeLight(const vec3& radiance);
+            __host__ void               SetDeviceInstance(Device::Tracable* deviceInstance) { cu_deviceInstance = deviceInstance; }            
             __host__ virtual void       OnSynchroniseTracable(const uint syncFlags) = 0;
         protected:
             Device::Tracable*               cu_deviceInstance;

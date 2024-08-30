@@ -28,7 +28,6 @@ namespace Enso
     
     struct HitCtx
     {
-        int             matID;
         vec3            n;
         vec2            uv;
         vec3            albedo;

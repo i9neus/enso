@@ -3,21 +3,22 @@
 #include "PathTracer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
-#include "core/3d/Ctx.cuh"
 #include "core/assets/AssetContainer.cuh"
 #include "core/3d/Transform.cuh"
 #include "core/containers/Vector.cuh"
 #include "core/3d/Cameras.cuh"
-#include "Scene.cuh"
-#include "Integrator.cuh"
+//#include "Scene.cuh"
+//#include "Integrator.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
-#include "Geometry.cuh"
+//#include "Geometry.cuh"
 #include "core/math/samplers/MersenneTwister.cuh"
+#include "core/math/samplers/Dither.cuh"
 
 #include "../scene/SceneContainer.cuh"
 #include "../scene/cameras/Camera.cuh"
 #include "../scene/materials/Material.cuh"
-#include "../scene/lights/Light.cuh"
+#include "../scene/lights/LightSampler.cuh"
+#include "../scene/lights/QuadLight.cuh"
 #include "../scene/textures/Texture2D.cuh"
 #include "../scene/tracables/Tracable.cuh"
 
@@ -26,6 +27,15 @@
 
 namespace Enso
 {        
+    #define kMatInvalid -1
+
+    #define kModePathTraced 0
+    #define kModeNEE 1
+
+    #define kGenerateNothing 0
+    #define kGeneratedDirect 1
+    #define kGeneratedIndirect 2
+    
     __host__ __device__ PathTracerParams::PathTracerParams()
     {
         viewport.dims = ivec2(0);  
@@ -50,28 +60,122 @@ namespace Enso
         m_nlm.Initialise(m_objects.meanAccumBuffer, m_objects.varAccumBuffer);
     }
 
-    __device__ int Device::PathTracer::Trace(Ray& ray, HitCtx& hit) const
+    __device__ __forceinline__ float PowerHeuristic(float pdf1, float pdf2)
     {
-        hit.matID = kMatInvalid;
-        for (int idx = 0; idx < m_objects.tracables->size(); ++idx)
+        return saturatef(sqr(pdf1) / fmaxf(1e-10, sqr(pdf1) + sqr(pdf2)));
+    }
+
+    __device__ float Device::PathTracer::SampleEmitter(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const
+    {
+        vec3 i = -incident.od.d;
+        float emitterPdf = lightSampler->Sample(incident, extant, hit, xi);
+        if (emitterPdf > 0.)
         {
-            if ((*m_objects.tracables)[idx]->IntersectRay(ray, hit)) hit.matID = 5;
+            float bxdfPdf = material.Evaluate(i, extant.od.d, hit.n);
+
+            // Lambert cosine factor
+            bxdfPdf *= dot(extant.od.d, hit.n);
+
+            // Apply power heuristic up-weighted by a factor to two to account for stochastic branching
+            extant.weight *= 2. * bxdfPdf * PowerHeuristic(emitterPdf, bxdfPdf);
         }
 
-        return hit.matID;
+        return emitterPdf;
+    }
+
+    __device__ float Device::PathTracer::SampleBxDF(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool useMis) const
+    {
+        vec3 o;
+        vec3 kickoff = hit.n * 1e-4;
+        
+        // Sample the BxDF
+        float brdfWeight = 1.f;
+        float bxdfPdf = material.Sample(xi, -incident.od.d, hit.n, o, brdfWeight);      
+
+        // Create the ray
+        extant.Construct(incident.Point(), o, kickoff, incident.weight * brdfWeight, incident.depth + 1, incident.InheritedFlags());
+
+        // If this isn't a perfect specular BxDF, flag the ray as scattered
+        if (!material.IsPerfectSpecular()) { extant.flags |= kRayScattered; }
+
+        // If this is a light samaple, compute the PDF of the emitter and apply the power heuristic
+        if (useMis)
+        {
+            CudaAssertDebug(lightSampler);
+            const float emitterPdf = lightSampler->Evaluate(extant, hit);
+            extant.weight *= 2. * PowerHeuristic(bxdfPdf, emitterPdf);
+            extant.flags |= kRayDirectSampleBxDF;
+        }
+
+        return bxdfPdf;
+    }
+
+    __device__ int Device::PathTracer::ShadeIndirectSample(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const
+    {
+        // Generate some random numbers
+        //vec4 xi = Rand(renderCtx.rng);
+        vec4 xi = renderCtx.Rand(1 + incidentRay.depth);
+        float xiSplit = fract(OrderedDither(renderCtx.viewport.xy) + float(renderCtx.frameIdx) / 16.);
+
+        // Perfect specular BxDFs don't need light sampling
+        if (material.IsPerfectSpecular()) { renderMode = kModePathTraced; }
+
+        int genFlags = 0;
+        // If we're in next-event estimation mode, stochastically sample either the emitter or the BxDF
+        if (renderMode == kModeNEE)
+        {
+            const LightSampler* light = (*m_objects.scene.lightSamplers)[0];
+            
+            if (xiSplit < 0.5)
+            {
+                if (SampleBxDF(incidentRay, directRay, hit, material, light, xi.xy, true) > 0)
+                {
+                    genFlags |= kGeneratedDirect;
+                }
+            }
+            else
+            {
+                if (SampleEmitter(incidentRay, directRay, hit, material, light, xi.xy) > 0)
+                {
+                    genFlags |= kGeneratedDirect;
+                }
+            }
+            directRay.weight *= hit.albedo;
+        }
+
+        // Sample the BxDF for the indirect contribution
+        if (SampleBxDF(incidentRay, indirectRay, hit, material, nullptr, xi.zw, false) > 0)
+        {
+            genFlags |= kGeneratedIndirect;
+            indirectRay.weight *= hit.albedo;
+        }
+
+        return genFlags;
+    }
+
+    __device__ const Device::Tracable* Device::PathTracer::Trace(Ray& ray, HitCtx& hitCtx) const
+    {
+        const Tracable* hitTracable = nullptr;
+        for (int idx = 0; idx < m_objects.scene.tracables->size(); ++idx)
+        {
+            const Tracable* testTracable = (*m_objects.scene.tracables)[idx];
+            if (testTracable->IntersectRay(ray, hitCtx))
+            {
+                hitTracable = testTracable;
+            }
+        }
+
+        return hitTracable;
     }
 
     __device__ void Device::PathTracer::Render()
     {        
-        CudaAssertDebug(m_objects.transforms->size() == 9);
-
         const ivec2 xyViewport = kKernelPos<ivec2>();
         if (xyViewport.x < 0 || xyViewport.x >= m_params.viewport.dims.x || xyViewport.y < 0 || xyViewport.y >= m_params.viewport.dims.y) { return; }        
 
         // Get pointers to the object transforms
-        const auto& transforms = *m_objects.transforms;
-        const auto& textures = *m_objects.textures;
-        const auto& emitterTrans = transforms.back();
+        const auto& tracables = *m_objects.scene.tracables;
+        const auto& textures = *m_objects.scene.textures;
 
         // Create a render context
         RenderCtx renderCtx;
@@ -89,7 +193,7 @@ namespace Enso
         m_objects.activeCamera->CreateRay(uvView, xi.zw, indirectRay);
 
         int genFlags = kGeneratedIndirect;
-        HitCtx hit;
+        HitCtx hitCtx;
         vec3 L = kZero;
         //int renderMode = (xyViewport.x < m_params.viewport.dims.x * 0.5f) ? kModePathTraced : kModeNEE;
         const int renderMode = kModePathTraced;
@@ -98,37 +202,60 @@ namespace Enso
         constexpr int kMaxIterations = 10;
         for (int rayIdx = 0; rayIdx < kMaxIterations && genFlags != kGenerateNothing; ++rayIdx)
         {
-            Ray ray;
-            if ((genFlags & kGeneratedDirect) != 0) ray = directRay; else ray = indirectRay;
+            Ray ray = ((genFlags & kGeneratedDirect) != 0) ? directRay : indirectRay;
 
-            if (ray.depth >= kMaxPathDepth) { continue; }
+            // If we're at depth, skip this evaluation
+            if (ray.depth >= kMaxPathDepth) 
+            { 
+                genFlags &= ~(((genFlags & kGeneratedDirect) != 0) ? kGeneratedDirect : kGeneratedIndirect);
+                continue; 
+            }
 
-            if (TraceGeo(ray, hit, transforms, textures) == kMatInvalid && !ray.IsDirectSample())
-            //if (Trace(ray, hit) == kMatInvalid && !ray.IsDirectSample())
+            const auto* hitTracable = Trace(ray, hitCtx);
+            if (!hitTracable)
             {
-                //if(depth > 0)
+                // Only accumulate environment contribution on indirect samples
+                if(ray.IsDirectSample() && m_objects.scene.envTexture)
                 {
                     //L += kOne * ray.weight * 0.2;
-                    const float env = luminance(textures[1]->Evaluate(DirToEquirect(ray.od.d)).xyz);
+                    const float env = luminance(m_objects.scene.envTexture->Evaluate(DirToEquirect(ray.od.d)).xyz);
                     L += ray.weight * powf(clamp(env, 0.f, 10.0f), 1 / 1.8f);
 
                 }
-                break;
+                continue;
             }
 
-            //EvaluateMaterial(ray, hit);
+            L += hitCtx.n * 0.5 + 0.5;
+            break;
 
-            //L = hit.n * 0.5 + 0.5;
-            //break;
-
+            // Evaluate a direct ray
             if ((genFlags & kGeneratedDirect) != 0)
             {
-                ShadeDirectSample(ray, hit, L);
+                // If we're hit a light, 
+                if (hitTracable->IsLight() && !ray.IsBackfacing())
+                {
+                    // If this sample is a light ray, all we need to know is whether or not it hit the light. 
+                    // If it did, just accumulate the weight which contains the radiant energy from the light sample. 
+                    L += ray.weight;
+                }
                 genFlags &= ~kGeneratedDirect;
             }
             else if ((genFlags & kGeneratedIndirect) != 0)
             {
-                genFlags = ShadeIndirectSample(ray, indirectRay, directRay, hit, renderCtx, emitterTrans, renderMode, L);
+                // Emitters don't reflect light so we don't need to shade them. Simply accumulate the emitted radiance and we're done.
+                if (hitTracable->IsLight())
+                {
+                    if (!ray.IsBackfacing())
+                    {
+                        L += hitTracable->GetRadiance() * ray.weight;
+                    }
+                    genFlags = 0;
+                }
+                else
+                {
+                    const Material& material = *(*m_objects.scene.materials)[hitTracable->GetMaterialIdx()];
+                    genFlags = ShadeIndirectSample(ray, indirectRay, directRay, hitCtx, renderCtx, material, renderMode, L);
+                }
             }
         }
 
@@ -271,8 +398,6 @@ namespace Enso
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
 
         Cascade({ kDirtySceneObjectChanged });        
-
-        CreateScene();
     }
 
     __host__ Host::PathTracer::~PathTracer() noexcept
@@ -283,27 +408,6 @@ namespace Enso
         m_hostTransforms.DestroyAsset();
 
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
-    }
-
-    __host__ void Host::PathTracer::CreateScene()
-    {
-        m_hostTransforms->clear();
-
-        MersenneTwister rng(0u);
-
-#define kNumSpheres 7        
-        for (int sphereIdx = 0; sphereIdx < kNumSpheres; ++sphereIdx)
-        {
-            float phi = kTwoPi * (0.75f + float(sphereIdx) / float(kNumSpheres));
-            m_hostTransforms->push_back(BidirectionalTransform(vec3(cos(phi), 0.f, sin(phi)) * 0.7f, vec3(kHalfPi, kPi * rng.Rand(), kPi * rng.Rand()), 0.2f));
-        }
-
-        m_hostTransforms->push_back(BidirectionalTransform(vec3(0.f, -0.2f, 0.f), vec3(-kHalfPi, 0.f, 0.f), 2.f));   // Ground plane
-        m_hostTransforms->push_back(BidirectionalTransform(kEmitterPos, kEmitterRot, kEmitterSca));                  // Emitter plane
-
-        m_hostTransforms->Upload();
-
-        Synchronise(kSyncObjects | kSyncParams);
     }
 
     __host__ void Host::PathTracer::OnSynchroniseDrawableObject(const uint syncFlags)
@@ -330,10 +434,8 @@ namespace Enso
         }
         else
         {
-            m_deviceObjects.tracables = m_hostSceneContainer->Tracables().GetDeviceInstance();
-            m_deviceObjects.lights = m_hostSceneContainer->Lights().GetDeviceInstance();
-            m_deviceObjects.textures = m_hostSceneContainer->Textures().GetDeviceInstance();
-            m_deviceObjects.materials = m_hostSceneContainer->Materials().GetDeviceInstance();
+            // Copy the structure containing the scene object pointers 
+            m_deviceObjects.scene = m_hostSceneContainer->GetDeviceObjects();
 
             if (m_hostSceneContainer->Cameras().empty())
             {

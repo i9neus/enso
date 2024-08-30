@@ -617,25 +617,13 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Geometry.cuh">
-      <Filter>modules\gaussiansplatting\pathtracer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\3d\Ctx.cuh">
       <Filter>core\3d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\3d\Transform.cuh">
       <Filter>core\3d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Integrator.cuh">
-      <Filter>modules\gaussiansplatting\pathtracer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh">
-      <Filter>modules\gaussiansplatting\pathtracer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\Scene.cuh">
-      <Filter>modules\gaussiansplatting\pathtracer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\QuadLight.cuh">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh">
@@ -674,7 +662,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Tracable.cuh">
       <Filter>modules\gaussiansplatting\scene\tracables</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\Light.cuh">
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\LightSampler.cuh">
       <Filter>modules\gaussiansplatting\scene\lights</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\lights\QuadLight.cuh">
@@ -830,6 +818,9 @@
     <ClInclude Include="..\..\..\src\io\images\Png.h">
       <Filter>io\images</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\textures\ProceduralTexture.cuh">
+      <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -947,6 +938,15 @@
       <Filter>modules\gaussiansplatting\scene\cameras</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\textures\TextureMap.cu">
+      <Filter>modules\gaussiansplatting\scene\textures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\tracables\Tracable.cu">
+      <Filter>modules\gaussiansplatting\scene\tracables</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\lights\LightSampler.cu">
+      <Filter>modules\gaussiansplatting\scene\lights</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\textures\ProceduralTexture.cu">
       <Filter>modules\gaussiansplatting\scene\textures</Filter>
     </CudaCompile>
   </ItemGroup>

@@ -30,7 +30,6 @@ namespace Enso
             {
                 ray.tNear = t;
                 ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
-                hit.matID = Tracable::m_params.materialIdx;
                 hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
                 hit.uv = uv;
                 return true;
@@ -69,7 +68,6 @@ namespace Enso
             ray.tNear = tNear;
             ray.SetFlag(kRayBackfacing, dot(localRay.o, localRay.o) < 1.0);
             hit.n = Tracable::m_params.transform.NormalToWorldSpace(n);
-            hit.matID = Tracable::m_params.materialIdx;
 
             return true;
         }
@@ -164,20 +162,13 @@ namespace Enso
     }
 
     template<typename ParamsType>
-    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx) :
-        Tracable(initCtx),
+    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params) :
+        Tracable(initCtx, transform, materialIdx),
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<DeviceType>(*this))
     {
         Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
-    }
-
-    template<typename ParamsType>
-    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params) :
-        Primitive(initCtx)
-    {
+        
         m_params = params;
-        Tracable::m_params.transform = transform;
-        Tracable::m_params.materialIdx = materialIdx;
         Synchronise(kSyncParams);
     }
 

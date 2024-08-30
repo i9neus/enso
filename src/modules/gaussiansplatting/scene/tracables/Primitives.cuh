@@ -52,6 +52,7 @@ namespace Enso
         public:
             __device__                      Primitive() {}
             __device__ virtual              ~Primitive() {}
+
             __device__ virtual bool         IntersectRay(Ray& ray, HitCtx& hit) const override final; 
             __device__ void                 Synchronise(const ParamsType& params) { m_params = params; }
 
@@ -67,7 +68,6 @@ namespace Enso
         {
             using DeviceType = Device::Primitive<ParamsType>;
         public:
-            __host__                Primitive(const InitCtx& initCtx);
             __host__                Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params);
             __host__ virtual        ~Primitive();
 
@@ -76,8 +76,17 @@ namespace Enso
 
             __host__ virtual void   OnSynchroniseTracable(const uint syncFlags) override final
             {
-                SynchroniseObjects<DeviceType>(cu_deviceInstance, m_params);
+                if (syncFlags & kSyncParams)
+                {
+                    SynchroniseObjects<DeviceType>(cu_deviceInstance, m_params);
+                }
+                OnSynchronisePrimitive(syncFlags);
             }
+
+        protected:
+            __host__ void           SetDeviceInstance(Device::Primitive<ParamsType>* deviceInstance) { cu_deviceInstance = deviceInstance; }
+            __host__ virtual void   OnSynchronisePrimitive(const uint syncFlags) {};
+
 
         private:
             __host__ GaussianPoint GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const;
@@ -91,5 +100,10 @@ namespace Enso
         template class Primitive<UnitSphereParams>;
         template class Primitive<CylinderParams>;
         template class Primitive<BoxParams>;
+
+        using PlanePrimitive = Primitive<PlaneParams>; 
+        using SpherePrimitive = Primitive<UnitSphereParams>;
+        using CylinderPrimitive = Primitive<CylinderParams>;
+        using BoxPrimitive = Primitive<BoxParams>;
     }
 }

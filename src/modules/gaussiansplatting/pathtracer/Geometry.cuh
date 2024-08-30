@@ -10,7 +10,7 @@
 
 namespace Enso
 {
-    namespace Device
+    namespace Geometry
     {
         // Ray-plane intersection test
         __device__  bool RayPlane(Ray& ray, HitCtx& hit, const BidirectionalTransform& transform, const bool isBounded)

@@ -3,10 +3,12 @@
 #include "core/2d/Ctx.cuh"
 #include "core/2d/DrawableObject.cuh"
 #include "core/2d/RenderableObject.cuh"
+#include "core/3d/Ctx.cuh"
 
 #include "core/assets/DirtinessFlags.cuh"
 #include "core/containers/Image.cuh"
 #include "core/assets/GenericObject.cuh"
+#include "../scene/SceneContainer.cuh"
 
 #include "../FwdDecl.cuh"
 #include "NLM.cuh"
@@ -49,10 +51,8 @@ namespace Enso
         Device::Vector<BidirectionalTransform>* transforms = nullptr;
 
         Device::Camera*                     activeCamera = nullptr;
-        Device::Vector<Device::Tracable*>*  tracables = nullptr;
-        Device::Vector<Device::Light*>*     lights = nullptr;
-        Device::Vector<Device::Texture2D*>* textures = nullptr;
-        Device::Vector<Device::Material*>*  materials = nullptr;
+
+        Device::SceneContainer              scene;
     };
 
     namespace Host { class PathTracer; }
@@ -78,8 +78,13 @@ namespace Enso
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
 
         private:
-            __device__ int Trace(Ray& ray, HitCtx& hit) const;
+            __device__ const Device::Tracable*  Trace(Ray& ray, HitCtx& hit) const;
+            __device__ float                    SampleEmitter(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi) const;
+            __device__ float                    SampleBxDF(const Ray& incident, Ray& extant, const HitCtx& hit, const Material& material, const LightSampler* lightSampler, const vec2& xi, const bool useMis) const;
+            __device__ void                     ShadeDirectSample(const Ray& ray, const HitCtx& hit, vec3& L) const;
+            __device__ int                      ShadeIndirectSample(const Ray& incidentRay, Ray& indirectRay, Ray& directRay, HitCtx& hit, RenderCtx& renderCtx, const Material& material, int renderMode, vec3& L) const;
 
+        private:
             PathTracerParams            m_params;
             PathTracerObjects           m_objects;
 

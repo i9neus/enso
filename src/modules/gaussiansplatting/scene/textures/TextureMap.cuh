@@ -51,7 +51,6 @@ namespace Enso
         private:
             TextureMapParams                    m_textureParams;
             cudaArray_t                         cu_textureArray;
-
         };
     }
 }

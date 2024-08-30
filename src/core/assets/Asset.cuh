@@ -62,10 +62,12 @@ namespace Enso
             __host__ virtual uint               FromJson(const Json::Node& jsonNode, const uint flags) { return 0u; }
             __host__ virtual std::string        GetAssetClass() const { return ""; }
             __host__ const inline std::string&  GetAssetID() const { return m_assetId; }
+            __host__ std::string                GetAssetStem() const;
             __host__ std::string                GetParentAssetID() const;
             __host__ std::string                GetAssetDAGPath() const;
             __host__ void                       SetHostStream(cudaStream_t& hostStream) { m_hostStream = hostStream; }
             __host__ bool                       IsPendingDestuction() const { return m_isPendingDestruction; }
+            __host__ static char                GetDAGPathDelimeter() { return '/'; }
 
             __host__ static std::string         MakeTemporaryID();
 
@@ -123,9 +125,6 @@ namespace Enso
         __host__ explicit AssetHandle(const WeakAssetHandle<OtherType>& weakHandle)
         {
             static_assert(std::is_convertible<OtherType*, AssetType*>::value, "Cannot construct AssetHandle with WeakAssetHandle of incompatible type.");
-
-            // FIXME: Const casting here to get around the fact that AssetHandle sheilds us from const traits whereas std::weak_ptr does not
-            AssertMsg(!weakHandle.expired(), "Trying to a convert an expired weak asset handle to a strong one.");
             m_ptr = weakHandle.lock();
         }        
 
@@ -182,6 +181,19 @@ namespace Enso
         __host__ inline bool operator!() const { return !m_ptr; }
         __host__ inline bool operator==(const AssetHandle& rhs) const { return m_ptr == rhs.m_ptr; }
         __host__ inline bool operator!=(const AssetHandle& rhs) const { return m_ptr != rhs.m_ptr; }
+        
+        __host__ inline bool operator==(const WeakAssetHandle<AssetType>& rhs) const
+        { 
+            if (rhs.expired())
+            {
+                return false;
+            }
+            else
+            {
+                return m_ptr == rhs.lock().get();
+            }
+        }
+        __host__ inline bool operator!=(const WeakAssetHandle<AssetType>& rhs) const { return !this->operator==(rhs); }
 
         __host__ inline AssetType* operator->() { return &operator*(); }
         __host__ inline const AssetType* operator->() const { return &operator*(); }
