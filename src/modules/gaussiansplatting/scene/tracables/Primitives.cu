@@ -10,6 +10,49 @@
 
 namespace Enso
 {
+    template<typename ParamsType>
+    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params) :
+        Tracable(initCtx, transform, materialIdx),
+        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<DeviceType>(*this))
+    {
+        Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
+        
+        m_params = params;
+        Synchronise(kSyncParams);
+    }
+
+    template<typename ParamsType>
+    __host__ Host::Primitive<ParamsType>::~Primitive()
+    {
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
+    }
+
+    template<typename ParamsType>
+    __host__ GaussianPoint Host::Primitive<ParamsType>::GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const
+    {
+        GaussianPoint pt;
+        pt.p = p;
+        pt.rot = normalize(mix(vec4(-1.f), vec4(1.f), rng.Rand4()));
+        pt.sca = gaussSigma * mix(vec3(0.1f), vec3(1.0f), rng.Rand3());
+        pt.rgba = vec4(rng.Rand3(), 1.0f);
+        return pt;
+    }
+
+    template<typename ParamsType>
+    __host__ GaussianPoint Host::Primitive<ParamsType>::GenerateNormalAlignedGaussianPoint(const vec3& p, const vec3& n, float gaussSigma, MersenneTwister& rng) const
+    {   
+        // Deduce the unit quarternion that rotates a z-aligned normal so that it aligns with the surface normal
+        const float theta = fmodf(acosf(-n.z) / kHalfPi + 1, 2.f) - 1;
+        const vec3 tangent = (fabsf(dot(n, kZAxis)) > 0.999f) ? kXAxis : normalize(cross(n, kZAxis));
+        
+        GaussianPoint pt;
+        pt.rot = normalize(vec4(tangent, theta));
+        pt.p = p;        
+        pt.sca = vec3(1.f, 1.f, 0.1f) * gaussSigma;
+        pt.rgba = vec4(rng.Rand3(), 1.0f);
+        return pt;
+    }
+
     template<>
     __device__ bool Device::Primitive<PlaneParams>::IntersectRay(Ray& ray, HitCtx& hit) const
     {
@@ -164,34 +207,6 @@ namespace Enso
         return true;
     }
 
-    template<typename ParamsType>
-    __host__ Host::Primitive<ParamsType>::Primitive(const InitCtx& initCtx, const BidirectionalTransform& transform, const int materialIdx, const ParamsType& params) :
-        Tracable(initCtx, transform, materialIdx),
-        cu_deviceInstance(AssetAllocator::InstantiateOnDevice<DeviceType>(*this))
-    {
-        Tracable::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::Tracable>(cu_deviceInstance));
-        
-        m_params = params;
-        Synchronise(kSyncParams);
-    }
-
-    template<typename ParamsType>
-    __host__ Host::Primitive<ParamsType>::~Primitive()
-    {
-        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
-    }
-
-    template<typename ParamsType>
-    __host__ GaussianPoint Host::Primitive<ParamsType>::GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const
-    {
-        GaussianPoint pt;
-        pt.p = p;
-        pt.rot = normalize(mix(vec4(-1.f), vec4(1.f), rng.Rand4()));
-        pt.sca = gaussSigma * mix(vec3(0.1f), vec3(1.0f), rng.Rand3());
-        pt.rgba = vec4(rng.Rand3(), 1.0f);
-        return pt;
-    }
-
     template<>
     __host__ std::vector<GaussianPoint> Host::Primitive<PlaneParams>::GenerateGaussianPointCloud(const int numPoints, const float areaGain, MersenneTwister& rng)
     {
@@ -205,11 +220,12 @@ namespace Enso
 
         std::vector<GaussianPoint> points(numPoints);
         const vec3 n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f));
+        const auto& trans = Tracable::m_params.transform;
 
         for (auto& pt : points)
         {
             const vec3 p = vec3(mix(vec2(-.5f, -.5f), vec2(.5f, .5f), rng.Rand2()), 0.f);
-            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);
+            pt = GenerateNormalAlignedGaussianPoint(trans.PointToWorldSpace(p), trans.NormalToWorldSpace(vec3(0.0f, 0.0f, 1.0f)), gaussSigma, rng);
         }
 
         return points;
@@ -221,13 +237,21 @@ namespace Enso
         const float gaussSigma = areaGain * std::sqrt(CalculateSurfaceArea() / numPoints);
 
         std::vector<GaussianPoint> points(numPoints);
+        const auto& trans = Tracable::m_params.transform;
+
         for (auto& pt : points)
         {
             const vec3 p = SampleUnitSphere(rng.Rand2());
-            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);
+            pt = GenerateNormalAlignedGaussianPoint(trans.PointToWorldSpace(p), trans.NormalToWorldSpace(p), gaussSigma, rng);
         }
 
         return points;
+    }
+
+    std::array<float, 2> BuildCMF3(const float v0, const float v1, const float v2)
+    {
+        const float sum = v0 + v1 + v2;
+        return { v0 / sum, (v0 + v1) / sum };
     }
 
     template<>
@@ -236,35 +260,35 @@ namespace Enso
         const float gaussSigma = areaGain * std::sqrt(CalculateSurfaceArea() / numPoints);
 
         std::vector<GaussianPoint> points(numPoints);
+        const auto& trans = Tracable::m_params.transform;
 
         // Build a small CMF to sample the caps or the side
-        float cmf[3] = { kPi, kPi, 2 * kPi * m_params.height };
-        const float sum = cmf[0] + cmf[1] + cmf[2];
-        cmf[0] /= sum;
-        cmf[1] /= sum;
+        auto cmf = BuildCMF3(kPi, kPi, 2 * kPi * m_params.height);
 
         for (auto& pt : points)
         {
             // Sample the PMF to determine which face we're creating a splat point on
             vec3 xi = rng.Rand3();
             const int faceIdx = (xi.z < cmf[0]) ? 0 : ((xi.z < cmf[1]) ? 1 : 2);
-            vec3 p;
+            vec3 p, n;
 
             if (faceIdx < 2)
             {
                 // Sample the caps
                 vec2 uv = SampleUnitDisc(xi.xy);
                 p = vec3(uv, m_params.height * (faceIdx * 2 - 1) * 0.5f);
+                n = vec3(0.0f, 0.0f, float(faceIdx * 2 - 1));
             }
             else
             {
                 // Sample the side
                 const float theta = kTwoPi * xi.x;
                 p = vec3(vec2(cos(theta), sin(theta)), mix(-1., 1., xi.y) * m_params.height * 0.5f);
+                n = vec3(p.xy, 0.f);
             }
 
             // Create the splat
-            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);
+            pt = GenerateNormalAlignedGaussianPoint(trans.PointToWorldSpace(p), trans.NormalToWorldSpace(n), gaussSigma, rng);
         }
 
         return points;
@@ -276,12 +300,10 @@ namespace Enso
         const float gaussSigma = areaGain * std::sqrt(CalculateSurfaceArea() / numPoints);
 
         std::vector<GaussianPoint> points(numPoints);
+        const auto& trans = Tracable::m_params.transform;
 
         // Build a small CMF based on the face area of each dimension
-        float cmf[3] = { m_params.dims[1] * m_params.dims[2], m_params.dims[2] * m_params.dims[0], m_params.dims[0] * m_params.dims[1] };
-        const float sum = cmf[0] + cmf[1] + cmf[2];
-        cmf[0] /= sum;
-        cmf[1] /= sum;
+        auto cmf = BuildCMF3(m_params.dims[1] * m_params.dims[2], m_params.dims[2] * m_params.dims[0], m_params.dims[0] * m_params.dims[1]);         
 
         for (auto& pt : points)
         {
@@ -294,8 +316,12 @@ namespace Enso
             p[(faceIdx + 1) % 3] = mix(-1.f, 1.f, xi.x) * m_params.dims[(faceIdx + 1) % 3] * 0.5f;
             p[(faceIdx + 2) % 3] = mix(-1.f, 1.f, xi.y) * m_params.dims[(faceIdx + 2) % 3] * 0.5f;
 
+            vec3 n = kZero;
+            n[faceIdx] = 2. * float(xi.w < 0.5f) - 1;
+
             // Create the splat
-            pt = GenerateRandomGaussianPoint(Tracable::m_params.transform.PointToWorldSpace(p), gaussSigma, rng);
+            pt = GenerateNormalAlignedGaussianPoint(trans.PointToWorldSpace(p), trans.NormalToWorldSpace(n), gaussSigma, rng);
+
         }
 
         return points;

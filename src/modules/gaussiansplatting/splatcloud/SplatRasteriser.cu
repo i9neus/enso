@@ -123,8 +123,8 @@ namespace Enso
         // Jacobian of projective approximation (Zwicker et al)
         const float lenPCam = length(pCam);
         const mat3 J = mat3(vec3(1. / pCam.z, 0.0, pCam.x / lenPCam),
-                       vec3(0., 1. / pCam.z, pCam.y / lenPCam),
-                       vec3(-pCam.x / (pCam.z * pCam.z), -pCam.y / (pCam.z * pCam.z), pCam.z / lenPCam));
+                            vec3(0., 1. / pCam.z, pCam.y / lenPCam),
+                            vec3(-pCam.x / (pCam.z * pCam.z), -pCam.y / (pCam.z * pCam.z), pCam.z / lenPCam));
 
         // Homogenise the projected camera position
         vec3 pView = vec3(pCam.xy / (pCam.z * -tanf(toRad(camFov))), -pCam.z);
@@ -159,7 +159,7 @@ namespace Enso
             const vec2 pScreen = NormalisedScreenToPixel(pView.xy, m_params.viewport.dims);
             const ivec2 ijTile = ivec2(pScreen) / int(kSplatRasteriserTileSize);
 
-            constexpr int32_t kMaxTileBounds = 1;
+            constexpr int32_t kMaxTileBounds = 0xff;
             const int32_t uPlus = min3(kMaxTileBounds, m_params.tileGrid.dims.x - ijTile.x, int32_t(pScreen.x + bound) / kSplatRasteriserTileSize - ijTile.x);
             const int32_t uMinus = min3(kMaxTileBounds, ijTile.x, ijTile.x - int32_t(pScreen.x - bound) / kSplatRasteriserTileSize);
             const int32_t vPlus = min3(kMaxTileBounds, m_params.tileGrid.dims.y - ijTile.y, int32_t(pScreen.y + bound) / kSplatRasteriserTileSize - ijTile.y);
@@ -619,7 +619,7 @@ namespace Enso
         Log::Debug("Building splat cloud...");
 
         auto& tracables = m_hostSceneContainer->Tracables();
-        constexpr int kTotalSplats = 50000;
+        constexpr int kTotalSplats = 150000;
         constexpr float kSplatAreaGain = 1.f;
         float totalSurfaceArea = 0.f;
         int numGeneratedSplats = 0;

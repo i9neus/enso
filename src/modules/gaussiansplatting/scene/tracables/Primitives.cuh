@@ -91,6 +91,7 @@ namespace Enso
 
         private:
             __host__ GaussianPoint GenerateRandomGaussianPoint(const vec3& p, float gaussSigma, MersenneTwister& rng) const;
+            __host__ GaussianPoint GenerateNormalAlignedGaussianPoint(const vec3& p, const vec3& n, float gaussSigma, MersenneTwister& rng) const;
 
         private:
             DeviceType*           cu_deviceInstance;

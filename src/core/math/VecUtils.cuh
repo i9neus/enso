@@ -54,8 +54,12 @@ namespace Enso
 		return (l2 < kSafeNormEpsilon) ? VecType(0.f) : v / sqrtf(l2);
 	}
 
-	#define kOne vec3(1.0f)
-	#define kZero vec3(0.0f)
+	#define kOne    vec3(1.0f)
+	#define kZero   vec3(0.0f)
+
+	#define kXAxis  vec3(1.0f, 0.0f, 0.0f)
+	#define kYAxis  vec3(0.0f, 1.0f, 0.0f)
+	#define kZAxis  vec3(0.0f, 0.0f, 1.0f)
 
 	#define kZero4f vec4(0.0f)
 	#define kZero3f vec3(0.0f)
