@@ -114,7 +114,7 @@ namespace Enso
         const uint seed = hash_combine(m_seed, dim);
         const uint index = nested_uniform_scramble_base2(m_sampleIdx, seed);
         vec4 xi;
-        for (uint d = 0u; d < 5u; ++d)
+        for (uint d = 0u; d < 4u; ++d)
         {
             xi[d] = float(nested_uniform_scramble_base2(sobol(index, d), hash_combine(seed, d))) / float(0xffffffffu);
         }       

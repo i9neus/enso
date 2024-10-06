@@ -109,9 +109,6 @@
     <Filter Include="modules\gaussiansplatting\pathtracer">
       <UniqueIdentifier>{a9024a80-dc6a-445f-b733-5547af7209c9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="thirdparty\owenscrambling">
-      <UniqueIdentifier>{c9a5d209-14f8-4d59-8c3a-b4b695f276e7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="core\math\samplers\owensobol">
       <UniqueIdentifier>{0e96254e-e6cf-4972-ae4f-0c055dd1ae3c}</UniqueIdentifier>
     </Filter>
@@ -251,18 +248,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp">
       <Filter>ui\elements\types</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\genpoints.cpp">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\main.cpp">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\sobol.cpp">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\faure05.cpp">
-      <Filter>thirdparty\owenscrambling</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ui\modules\gi2d\GI2DModule.cpp">
       <Filter>ui\modules\gi2d</Filter>
@@ -635,24 +620,6 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh">
       <Filter>modules\gaussiansplatting\pathtracer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\genpoints.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\owenhash.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\pcg.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\radicalinverse.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\sobol.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\faure05.h">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cuh">
       <Filter>core\math\samplers\owensobol</Filter>
     </ClInclude>
@@ -980,15 +947,6 @@
     </None>
     <None Include="..\..\..\src\core\math\samplers\Resources.md">
       <Filter>core\math\samplers</Filter>
-    </None>
-    <None Include="..\..\..\src\thirdparty\owenscrambling\Makefile">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </None>
-    <None Include="..\..\..\src\thirdparty\owenscrambling\README">
-      <Filter>thirdparty\owenscrambling</Filter>
-    </None>
-    <None Include="..\..\..\src\thirdparty\owenscrambling\viewpoints.py">
-      <Filter>thirdparty\owenscrambling</Filter>
     </None>
     <None Include="..\..\..\bin\win64\Release\GaussianSplattingSchema.json">
       <Filter>config</Filter>

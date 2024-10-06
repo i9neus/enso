@@ -72,8 +72,8 @@ namespace Enso
         Device::Vector<GaussianPoint>*      splatList = nullptr;
         Device::Vector<ProjectedGaussianPoint>* projectedSplats = nullptr;
         Device::Camera*                     activeCamera = nullptr;
-        Device::Vector<RadixSortKey>*       unsortedKeys = nullptr;
-        Device::Vector<RadixSortKey>*       sortedKeys = nullptr;
+        Device::Vector<uint64_t>*           unsortedKeys = nullptr;
+        Device::Vector<uint64_t>*           sortedKeys = nullptr;
         Device::Vector<uint32_t>*           unsortedRefs = nullptr;
         Device::Vector<uint32_t>*           sortedRefs = nullptr;
         Device::Vector<uvec2>*              tileRanges = nullptr;
@@ -179,9 +179,9 @@ namespace Enso
             AssetHandle<Host::GaussianPointCloud>               m_gaussianPointCloud;
 
             AssetHandle<Host::Vector<ProjectedGaussianPoint>>   m_hostProjectedSplats;
-            AssetHandle<Host::Vector<RadixSortKey>>             m_hostUnexpandedKeys;
-            AssetHandle<Host::Vector<RadixSortKey>>             m_hostUnsortedKeys;
-            AssetHandle<Host::Vector<RadixSortKey>>             m_hostSortedKeys;
+            AssetHandle<Host::Vector<uint64_t>>                 m_hostUnexpandedKeys;
+            AssetHandle<Host::Vector<uint64_t>>                 m_hostUnsortedKeys;
+            AssetHandle<Host::Vector<uint64_t>>                 m_hostSortedKeys;
             AssetHandle<Host::Vector<uint32_t>>                 m_hostUnsortedRefs;
             AssetHandle<Host::Vector<uint32_t>>                 m_hostSortedRefs;
             AssetHandle<Host::Vector<uint8_t>>                  m_radixSortTempStorage;

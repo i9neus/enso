@@ -214,7 +214,7 @@ namespace Enso
             {
                 printf("  - %i: %i\n", i, (*m_objects.splatCMF)[i]);
             }*/
-            const uint32_t sortedMaxTile = uint32_t((*m_objects.sortedKeys)[m_objects.sortedKeys->size() - 1].key >> 32);
+            const uint32_t sortedMaxTile = uint32_t((*m_objects.sortedKeys)[m_objects.sortedKeys->size() - 1] >> 32);
             printf("%i -> %i:\n", sortedMaxTile, actualMaxTile);
         }       
     }
@@ -320,17 +320,17 @@ namespace Enso
 
         if (kKernelIdx == 0)
         {
-            (*m_objects.tileRanges)[(*m_objects.sortedKeys)[0].key >> 32][0] = 0;
+            (*m_objects.tileRanges)[(*m_objects.sortedKeys)[0] >> 32][0] = 0;
         }
         else if (kKernelIdx == m_objects.sortedRefs->size() - 1)
         {
-            (*m_objects.tileRanges)[(*m_objects.sortedKeys)[kKernelIdx].key >> 32][1] = kKernelIdx;
+            (*m_objects.tileRanges)[(*m_objects.sortedKeys)[kKernelIdx] >> 32][1] = kKernelIdx;
         }
         else
         {
-            const uint32_t prevTile = (*m_objects.sortedKeys)[kKernelIdx - 1].key >> 32;
-            const uint32_t thisTile = (*m_objects.sortedKeys)[kKernelIdx].key >> 32;
-            const uint32_t nextTile = (*m_objects.sortedKeys)[kKernelIdx + 1].key >> 32;
+            const uint32_t prevTile = (*m_objects.sortedKeys)[kKernelIdx - 1] >> 32;
+            const uint32_t thisTile = (*m_objects.sortedKeys)[kKernelIdx] >> 32;
+            const uint32_t nextTile = (*m_objects.sortedKeys)[kKernelIdx + 1] >> 32;
             if (prevTile != thisTile)
             {
                 (*m_objects.tileRanges)[thisTile][0] = kKernelIdx;
@@ -555,8 +555,8 @@ namespace Enso
         // Create some Cuda objects
         m_hostFrameBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "framebuffer", kViewportWidth, kViewportHeight, nullptr);
         m_hostProjectedSplats = AssetAllocator::CreateChildAsset<Host::Vector<ProjectedGaussianPoint>>(*this, "projectedpointlist", 0u, kVectorDeviceOnly);
-        m_hostUnsortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "unsortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
-        m_hostSortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<RadixSortKey>>(*this, "sortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
+        m_hostUnsortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<uint64_t>>(*this, "unsortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
+        m_hostSortedKeys = AssetAllocator::CreateChildAsset<Host::Vector<uint64_t>>(*this, "sortedkeys", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
         m_hostUnsortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "unsortedrefs", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
         m_hostSortedRefs = AssetAllocator::CreateChildAsset<Host::Vector<uint32_t>>(*this, "sortedrefs", 0u, kVectorDeviceOnly | kVectorNoShrinkDeviceCapacity);
         m_radixSortTempStorage = AssetAllocator::CreateChildAsset<Host::Vector<uint8_t>>(*this, "radixsorttemp", 0u, kVectorDeviceOnly);
@@ -759,21 +759,21 @@ namespace Enso
     }
 
     __host__ void Host::SplatRasteriser::SortSplats()
-    {
+    {        
         Assert(m_hostUnsortedKeys->size() == m_hostSortedKeys->size());
         Assert(m_hostUnsortedRefs->size() == m_hostSortedRefs->size());
         Assert(m_hostUnsortedRefs->size() == m_hostUnsortedKeys->size());
         Assert(m_hostNumSplatRefs > 0);
 
-        const RadixSortKey* keysInPtr = m_hostUnsortedKeys->GetDeviceData();
-        RadixSortKey* keyOutPtr = m_hostSortedKeys->GetDeviceData();
+        const uint64_t* keysInPtr = m_hostUnsortedKeys->GetDeviceData();
+        uint64_t* keyOutPtr = m_hostSortedKeys->GetDeviceData();
         const uint32_t* valInPtr = m_hostUnsortedRefs->GetDeviceData();
         uint32_t* valsOutPtr = m_hostSortedRefs->GetDeviceData();
 
         HighResolutionTimer timer;        
         size_t tempStorageBytes = 0u;
 
-        cub::DeviceRadixSort::SortPairs(
+        IsOk(cub::DeviceRadixSort::SortPairs(
                 nullptr,
                 tempStorageBytes,
                 keysInPtr,
@@ -781,9 +781,8 @@ namespace Enso
                 valInPtr,
                 valsOutPtr,
                 m_hostNumSplatRefs,
-                RadixSortDecomposer{},
                 0,
-                64);   
+                64));
 
         if (m_radixSortTempStorage->size() != tempStorageBytes)
         {
@@ -791,9 +790,10 @@ namespace Enso
             Log::Debug("Resized temp storage to %i bytes.", tempStorageBytes);
         }
 
-        uint8_t* tempStorage = m_radixSortTempStorage->GetDeviceData();
+        auto t = m_radixSortTempStorage->GetDeviceData();
+        void* tempStorage = AssetAllocator::StaticCastOnDevice<void>(t);
 
-        cub::DeviceRadixSort::SortPairs(
+        IsOk(cub::DeviceRadixSort::SortPairs(
             tempStorage,
             tempStorageBytes,
             keysInPtr,
@@ -801,9 +801,8 @@ namespace Enso
             valInPtr,
             valsOutPtr,
             m_hostNumSplatRefs,
-            RadixSortDecomposer{},
             0,
-            64);
+            64));
 
         IsOk(cudaDeviceSynchronize());
     }

@@ -34,18 +34,6 @@
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\src\thirdparty\lodepng\lodepng.cpp" />
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\faure05.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\genpoints.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\thirdparty\owenscrambling\sobol.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\thirdparty\tinyexr\miniz.c" />
     <ClCompile Include="..\..\..\src\thirdparty\tinyexr\tinyexr.cc" />
     <ClCompile Include="..\..\..\src\ui\elements\types\UIAttributeNumeric.cpp" />
@@ -200,24 +188,6 @@
     <ClInclude Include="..\..\..\src\thirdparty\lodepng\lodepng.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_string.h" />
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\faure05.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\genpoints.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\owenhash.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\pcg.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\radicalinverse.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\thirdparty\owenscrambling\sobol.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\allocators.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\cursorstreamwrapper.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\document.h" />
@@ -318,15 +288,6 @@
     <None Include="..\..\..\docs\FixMe.md" />
     <None Include="..\..\..\docs\protocols\Messages.json" />
     <None Include="..\..\..\src\core\math\samplers\Resources.md" />
-    <None Include="..\..\..\src\thirdparty\owenscrambling\Makefile">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
-    <None Include="..\..\..\src\thirdparty\owenscrambling\README">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
-    <None Include="..\..\..\src\thirdparty\owenscrambling\viewpoints.py">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C7C394F-0E38-4D75-9BB4-65A7C106F4B5}</ProjectGuid>
@@ -349,7 +310,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.4.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.6.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -396,6 +357,7 @@
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Include>./;../../common/inc</Include>
       <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
     </CudaCompile>
     <CudaLink>
       <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
@@ -418,7 +380,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;cublas.lib;cublasLt.lib;zlibwapi.lib;$(LIBTORCH_ROOT)\lib\caffe2_nvrtc.lib;$(LIBTORCH_ROOT)\lib\c10.lib;$(LIBTORCH_ROOT)\lib\c10_cuda.lib;$(LIBTORCH_ROOT)\lib\kineto.lib;$(LIBTORCH_ROOT)\lib\torch.lib;$(LIBTORCH_ROOT)\lib\torch_cpu.lib;$(LIBTORCH_ROOT)\lib\torch_cuda.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;d3d12.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;cublas.lib;cublasLt.lib;zlibwapi.lib;$(LIBTORCH_ROOT)\lib\caffe2_nvrtc.lib;$(LIBTORCH_ROOT)\lib\c10.lib;$(LIBTORCH_ROOT)\lib\c10_cuda.lib;$(LIBTORCH_ROOT)\lib\kineto.lib;$(LIBTORCH_ROOT)\lib\torch.lib;$(LIBTORCH_ROOT)\lib\torch_cpu.lib;$(LIBTORCH_ROOT)\lib\torch_cuda.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(BOOST_LIBRARYDIR);$(ZLIB_ROOT)\;$(CUDNN_ROOT)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
@@ -428,6 +390,7 @@
       <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
       <HostDebugInfo>true</HostDebugInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
     </CudaCompile>
     <CudaLink>
       <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>
@@ -435,7 +398,7 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.4.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.6.targets" />
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>

@@ -21,6 +21,9 @@ namespace Enso
 	{
 	}
 
+	template <typename T>
+	__global__ void EmptyKernel() { }
+
 	void CudaObjectManager::InitialiseCuda(const LUID& dx12DeviceLUID, const UINT clientWidth, const UINT clientHeight)
 	{
 		Log::NL();
@@ -56,13 +59,29 @@ namespace Enso
 				m_cudaDeviceID = devId;
 				m_nodeMask = m_deviceProp.luidDeviceNodeMask;
 				checkCudaErrors(cudaStreamCreateWithPriority(&m_D3DStream, cudaStreamNonBlocking, pHigh));
+
+				typedef void (*EmptyKernelPtr)();
+				cudaFuncAttributes attrs;
+				EmptyKernelPtr emptyKernel = EmptyKernel<void>;
+
+				IsOk(cudaFuncGetAttributes(&attrs, emptyKernel));
+
 				//checkCudaErrors(cudaStreamCreate(&m_renderStream)); 
 				m_renderStream = nullptr;
 				Log::Write("CUDA Device Used [%d] %s\n", devId, m_deviceProp.name);
 				{
 					Log::Indent indent2;
-					Log::Debug("- sharedMemPerMultiprocessor: %i bytes\n", m_deviceProp.sharedMemPerMultiprocessor);
-					Log::Debug("- sharedMemPerBlock: %i bytes\n", m_deviceProp.sharedMemPerBlock);
+					Log::Debug("- Shared memory per multiprocessor:   %i bytes\n", m_deviceProp.sharedMemPerMultiprocessor);
+					Log::Debug("- Shared memory per block:            %i bytes\n", m_deviceProp.sharedMemPerBlock);
+					Log::Debug("- Available global memory:            %i bytes\n", m_deviceProp.totalGlobalMem);
+					Log::Debug("- Warp size:                          %i\n", m_deviceProp.warpSize);
+					Log::Debug("- Mappable host memory:               %s\n", m_deviceProp.canMapHostMemory ? "YES" : "NO");
+					Log::Debug("- Compute capability:                 %i.%i\n", m_deviceProp.major, m_deviceProp.minor);
+					Log::Debug("- Compiled PTX version:			      %i\n", attrs.ptxVersion);
+
+					AssertMsgFmt(m_deviceProp.major * 10 + m_deviceProp.minor == attrs.ptxVersion,
+						"Error: device compute version (%i.%i) does not match the compiled version (%i.%i). This may cause undefined behaviour in third-party libraries.",
+						m_deviceProp.major, m_deviceProp.minor, attrs.ptxVersion / 10, attrs.ptxVersion % 10);				
 				}
 				break;
 			}
@@ -70,7 +89,7 @@ namespace Enso
 
 		constexpr size_t kCudaHeapSizeLimit = 128 * 1024 * 1024;
 
-		IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
+		//IsOk(cudaDeviceSetLimit(cudaLimitMallocHeapSize, kCudaHeapSizeLimit));
 
 		size_t stackSize;
 		IsOk(cudaDeviceGetLimit(&stackSize, cudaLimitStackSize));
