@@ -75,8 +75,12 @@ namespace Enso
             else
             {
                 ray.tNear = t;
-                ray.SetFlag(kRayBackfacing, localRay.o.z < 0.0f);
                 hit.n = Tracable::m_params.transform.NormalToWorldSpace(vec3(0.0, 0.0, 1.0));
+                if (localRay.o.z < 0.0f)
+                {
+                    hit.n = -hit.n;
+                    ray.SetFlag(kRayBackfacing, true);
+                }
                 hit.uv = uv;
                 return true;
             }
@@ -112,8 +116,12 @@ namespace Enso
             else { return false; }
 
             ray.tNear = tNear;
-            ray.SetFlag(kRayBackfacing, dot(localRay.o, localRay.o) < 1.0);
             hit.n = Tracable::m_params.transform.NormalToWorldSpace(n);
+            if (length2(localRay.o) < 1.0)
+            {
+                hit.n = -hit.n;
+                ray.SetFlag(kRayBackfacing, true);
+            }
 
             return true;
         }
@@ -157,9 +165,14 @@ namespace Enso
 
         ray.tNear = tNear;
         hit.n = Tracable::m_params.transform.NormalToWorldSpace(hitCap ? vec3(0.0, 0.0, sign(i.z)) : vec3(i.xy, 0.));
+        hit.kickoff = 1e-3f;
         // TODO: Computing this here is expensive. Ideally we should only do it after all the primitives have been intersected.
         hit.uv = hitCap ? vec2(i.xy) : vec2((atan2f(i.y, i.x) + kPi) / kTwoPi, (i.z + m_params.height * 0.5) / m_params.height);
-        ray.SetFlag(kRayBackfacing, dot(localRay.o, localRay.o) < 1.0);
+        if (dot(localRay.o, localRay.o) < 1.0)
+        {
+            hit.n = -hit.n;
+            ray.SetFlag(kRayBackfacing, true);
+        }
 
         return true;
     }
@@ -202,7 +215,11 @@ namespace Enso
 
         ray.tNear = fmaxf(0.0f, tNear);
         hit.n = Tracable::m_params.transform.NormalToWorldSpace(n);
-        ray.SetFlag(kRayBackfacing, cwiseMax(abs(localRay.o)) < m_params.dims[normPlane]);
+        if (cwiseMax(abs(localRay.o)) < m_params.dims[normPlane])
+        {
+            hit.n = -hit.n;
+            ray.SetFlag(kRayBackfacing, true);
+        }
 
         return true;
     }

@@ -69,7 +69,8 @@ namespace Enso
 				__device__ __forceinline__ Iterator& operator--() { --m_m_idx; return *this; }
 				__device__ __forceinline__ bool operator!=(const Iterator& other) const { return m_idx != other.m_idx; }
 				__device__ __forceinline__ ItType& operator*() { return m_mem[m_idx]; }
-				__device__ __forceinline__ ItType* operator->() { return &m_mem[idx]; }			};
+				__device__ __forceinline__ ItType* operator->() { return &m_mem[idx]; }			
+			};
 
 		public:
 			__device__ Vector() {}

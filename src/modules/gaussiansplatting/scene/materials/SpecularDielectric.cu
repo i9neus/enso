@@ -12,10 +12,11 @@ namespace Enso
 {
     __device__ float Device::SpecularDielectric::Sample(const vec2& xi, const Ray& incident, const HitCtx& hit, Ray& extant) const
     {
-        const bool isSubsurface = BxDF::SamplePerfectDielectric(xi.y, -incident.od.d, hit.n, m_params.ior, extant.od.d, extant.od.o);
+        float kickoff = hit.kickoff;
+        const bool isSubsurface = BxDF::SamplePerfectDielectric(xi.y, -incident.od.d, hit.n, m_params.ior, incident.IsBackfacing(), extant.od.d, kickoff);
 
         extant.flags = kRaySubsurface * uint(isSubsurface);
-        extant.od.o += incident.Point();        
+        extant.od.o = incident.Point() + hit.n * kickoff;
 
         // If this is a subsurface ray, attenuate it based upon its length
         if (incident.IsSubsurface())

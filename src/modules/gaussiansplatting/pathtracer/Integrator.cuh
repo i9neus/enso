@@ -77,7 +77,7 @@ namespace Enso
             float bxdfPdf = 0.f;
             float brdfWeight = 1.f;
             vec3 o;
-            vec3 kickoff = hit.n * 1e-4;
+            float kickoff = hit.kickoff;
 
             // Sample the BxDF
             switch (hit.matID)
@@ -94,7 +94,7 @@ namespace Enso
             }
             case kMatPerfectDielectric:
             {
-                bxdfPdf = BxDF::SamplePerfectDielectric(xi.y, -incident.od.d, hit.n, hit.alpha, o, kickoff);
+                bxdfPdf = BxDF::SamplePerfectDielectric(xi.y, -incident.od.d, hit.n, hit.alpha, incident.IsBackfacing(), o, kickoff);
                 break;
             }
             case kMatRoughSpecular:
@@ -105,7 +105,7 @@ namespace Enso
             }
 
             // Create the ray
-            extant.Construct(incident.Point(), o, kickoff, incident.weight * brdfWeight, incident.depth + 1, incident.InheritedFlags());
+            extant.Construct(incident.Point(), o, hit.n * kickoff, incident.weight * brdfWeight, incident.depth + 1, incident.InheritedFlags());
 
             // If this isn't a perfect specular BxDF, flag the ray as scattered
             if (hit.matID != kMatPerfectSpecular && hit.matID != kMatPerfectDielectric) { extant.flags |= kRayScattered; }

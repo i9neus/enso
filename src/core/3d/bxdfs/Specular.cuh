@@ -17,32 +17,22 @@ namespace Enso
             return kMaxPDF;
         }
 
-        __device__ bool SamplePerfectDielectric(const float& xi, const vec3& i, vec3 n, const float& ior, vec3& o, vec3& kickoff)
+        __device__ bool SamplePerfectDielectric(const float& xi, const vec3& i, vec3 n, const float& ior, const bool isBackfacing, vec3& o, float& kickoff)
         {
             // Figure out what kind of intersection we're doing
-            vec2 eta;
-            if (dot(i, n) > 0.0)
-            {
-                eta = vec2(1., ior);
-            }
-            else
-            {
-                eta = vec2(ior, 1.);
-                n = -n;
-            }
+            const vec2 eta = isBackfacing ? vec2(ior, 1.) : vec2(1., ior);           
 
             // Calculate the Fresnel coefficient and associated vectors. 
             float F = Fresnel(dot(i, n), eta.x, eta.y);
             if (xi > F)
             {
                 o = Refract(-i, n, eta.x / eta.y);
-                kickoff = -n * 1e-4;
+                kickoff = -kickoff;
                 return true;
             }
             else
             {
                 o = Reflect(-i, n);
-                kickoff = n * 1e-4;
                 return false;
             }
         }
