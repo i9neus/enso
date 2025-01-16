@@ -152,6 +152,8 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />
@@ -186,6 +188,44 @@
     <ClInclude Include="..\..\..\src\thirdparty\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\..\src\thirdparty\imgui\imstb_truetype.h" />
     <ClInclude Include="..\..\..\src\thirdparty\lodepng\lodepng.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaObject.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaUtils.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaVector.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\helper_cuda.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\helper_string.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\image\Image.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\image\ImageOps.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Half.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Halton.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Hash.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Hilbert2D.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\MathUtils.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Tensor1D.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Tensor2D.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\TensorOps.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\ConsoleUtils.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\HighResTimer.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\IOUtils.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\TemplateUtils.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\ThreadUtils.h" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Ctx.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Inference.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\LinearSequential.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\LinearSequentialCPU.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\MLP.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Optimiser.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Training.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\TrainingCPU.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\Model.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Activation.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ContinuousRandomVariable.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ListUtils.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Loss.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\NNUtils.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ParameterInitialiser.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Permute.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\tests\TensorTests.cuh" />
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\thirdparty\tinyformat\tinyformat.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_cuda.h" />
     <ClInclude Include="..\..\..\src\thirdparty\nvidia\helper_string.h" />
     <ClInclude Include="..\..\..\src\thirdparty\rapidjson\allocators.h" />
@@ -254,6 +294,8 @@
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\cameras\Camera.cu" />
@@ -275,6 +317,7 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\viewport\ViewportRenderer.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleBase.cu" />
     <CudaCompile Include="..\..\..\src\modules\ModuleManager.cu" />
+    <CudaCompile Include="..\..\..\src\thirdparty\nnano\src\tests\TensorTests.cu" />
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -282,6 +325,7 @@
     <CudaCompile Include="..\..\..\src\utils\CudaTests.cu" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\.gitmodules" />
     <None Include="..\..\..\bin\win64\Release\GaussianSplattingSchema.json" />
     <None Include="..\..\..\bin\win64\Release\GI2DSchema.json" />
     <None Include="..\..\..\docs\CodeStructure.md" />
@@ -391,6 +435,7 @@
       <HostDebugInfo>true</HostDebugInfo>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <AdditionalOptions>%(AdditionalOptions) -std=c++17</AdditionalOptions>
     </CudaCompile>
     <CudaLink>
       <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>

@@ -12,6 +12,7 @@
 #include "pathtracer/PathTracer.cuh"
 #include "splatcloud/SplatRasteriser.cuh"
 #include "splatcloud/SplatOptimiser.cuh"
+#include "nnano/NNanoSDF.cuh"
 
 #include "scene/pointclouds/GaussianPointCloud.cuh"
 #include "scene/SceneBuilder.cuh"
@@ -56,9 +57,10 @@ namespace Enso
 
     __host__ void Host::GaussianSplattingModule::RegisterInstantiators()
     {
+        // NOTE: Remember to add the corresponding entry to the transition graph using the code below!
         m_componentFactory.RegisterInstantiator<Host::PathTracer>(VirtualKeyMap({ {'Q', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }).HashOf());
         m_componentFactory.RegisterInstantiator<Host::SplatRasteriser>(VirtualKeyMap({ {'W', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }).HashOf());
-
+        m_componentFactory.RegisterInstantiator<Host::NNanoSDF>(VirtualKeyMap({ {'A', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }).HashOf());
 
         //m_componentFactory.RegisterInstantiator<Host::ViewportRenderer>();
         //m_componentFactory.RegisterInstantiator<Host::VoxelProxyGrid>();
@@ -75,6 +77,7 @@ namespace Enso
         m_uiGraph.DeclareState("kCreateDrawableObjectClose", this, &GaussianSplattingModule::OnCreateViewportObject);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'Q', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'W', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }), 0);
+        m_uiGraph.DeclareDeterministicTransition("kIdleState", "kCreateDrawableObjectOpen", VirtualKeyMap({ {'A', kOnButtonDepressed}, {KEY_CONTROL, kButtonDown} }), 0);
         m_uiGraph.DeclareDeterministicAutoTransition("kCreateDrawableObjectOpen", "kCreateDrawableObjectHover");
         m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectHover", VirtualKeyMap::Nothing(), kUITriggerOnMouseMove);
         m_uiGraph.DeclareDeterministicTransition("kCreateDrawableObjectHover", "kCreateDrawableObjectAppend", VirtualKeyMap(KEY_LBUTTON, kOnButtonDepressed), 0);

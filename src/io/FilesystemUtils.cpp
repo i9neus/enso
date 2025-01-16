@@ -66,8 +66,12 @@ namespace Enso
 
     std::string GetFilename(const std::string& absolutePath)
     {
-        fs::path fsPath(absolutePath);
-        return fsPath.filename().string();
+        return fs::path(absolutePath).filename().string();
+    }
+
+    std::string GetFileExtension(const std::string& absolutePath)
+    {
+        return std::filesystem::path(absolutePath).extension().string();
     }
 
     std::string GetParentDirectory(const std::string& absolutePath)

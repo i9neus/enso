@@ -166,6 +166,45 @@
     <Filter Include="io\images">
       <UniqueIdentifier>{e22e0311-0f64-443b-83bd-259a74f6b2ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="thirdparty\nnano">
+      <UniqueIdentifier>{ea2bbca6-caf3-4df1-9497-a3b6b14f9639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\core">
+      <UniqueIdentifier>{947af371-2b66-4de2-b6f4-19904d84e75c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\core\cuda">
+      <UniqueIdentifier>{725edd01-8ad8-4714-a80e-acbcf226423a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\core\image">
+      <UniqueIdentifier>{7ca1d6a6-d822-4a4e-aa06-ed31779c559e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\core\math">
+      <UniqueIdentifier>{958049f2-a4e5-4ebe-80d5-ec5611c091ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\nn">
+      <UniqueIdentifier>{1d12c0a5-5276-4bd8-9b1f-10837ff003bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\tests">
+      <UniqueIdentifier>{483663b4-60d6-4daf-ad7e-0085ec5b1af9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\thirdparty">
+      <UniqueIdentifier>{2d4129f6-45b8-4087-95a3-cb2496be4185}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\thirdparty\tinyformat">
+      <UniqueIdentifier>{e86c6ff3-725d-49ad-bdcf-1ad447f770bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\gaussiansplatting\nnano">
+      <UniqueIdentifier>{e044a99b-f5bb-486d-ac42-acbe30cc341e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\core\utils">
+      <UniqueIdentifier>{877c46df-0c7b-4d7c-a9f1-ef4737fd89cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\models">
+      <UniqueIdentifier>{bf3b66c1-eeee-43ee-91fc-d9aaf0f25cee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\nnano\models\mlp">
+      <UniqueIdentifier>{d5f369b8-b503-4840-91c3-dda027149733}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -794,6 +833,126 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cuh">
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaUtils.cuh">
+      <Filter>thirdparty\nnano\core\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaVector.cuh">
+      <Filter>thirdparty\nnano\core\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\helper_cuda.h">
+      <Filter>thirdparty\nnano\core\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\helper_string.h">
+      <Filter>thirdparty\nnano\core\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\cuda\CudaObject.cuh">
+      <Filter>thirdparty\nnano\core\cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\image\Image.h">
+      <Filter>thirdparty\nnano\core\image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\image\ImageOps.h">
+      <Filter>thirdparty\nnano\core\image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Halton.h">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Hash.h">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Hilbert2D.h">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\MathUtils.h">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Tensor1D.cuh">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Tensor2D.cuh">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\TensorOps.cuh">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\math\Half.h">
+      <Filter>thirdparty\nnano\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ContinuousRandomVariable.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ListUtils.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Loss.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\NNUtils.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\ParameterInitialiser.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Permute.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\nn\Activation.cuh">
+      <Filter>thirdparty\nnano\nn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\tests\TensorTests.cuh">
+      <Filter>thirdparty\nnano\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\thirdparty\tinyformat\tinyformat.h">
+      <Filter>thirdparty\nnano\thirdparty\tinyformat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cuh">
+      <Filter>modules\gaussiansplatting\nnano</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cuh">
+      <Filter>modules\gaussiansplatting\nnano</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\HighResTimer.h">
+      <Filter>thirdparty\nnano\core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\IOUtils.h">
+      <Filter>thirdparty\nnano\core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\TemplateUtils.h">
+      <Filter>thirdparty\nnano\core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\ThreadUtils.h">
+      <Filter>thirdparty\nnano\core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\ConsoleUtils.h">
+      <Filter>thirdparty\nnano\core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\LinearSequential.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\LinearSequentialCPU.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\MLP.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Optimiser.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Training.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\TrainingCPU.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Ctx.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\mlp\Inference.cuh">
+      <Filter>thirdparty\nnano\models\mlp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\Model.cuh">
+      <Filter>thirdparty\nnano\models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -934,6 +1093,15 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\scene\materials\SpecularDielectric.cu">
       <Filter>modules\gaussiansplatting\scene\materials</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\..\src\thirdparty\nnano\src\tests\TensorTests.cu">
+      <Filter>thirdparty\nnano\tests</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cu">
+      <Filter>modules\gaussiansplatting\nnano</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cu">
+      <Filter>modules\gaussiansplatting\nnano</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\docs\CodeStructure.md">
@@ -954,5 +1122,6 @@
     <None Include="..\..\..\bin\win64\Release\GI2DSchema.json">
       <Filter>config</Filter>
     </None>
+    <None Include="..\..\..\.gitmodules" />
   </ItemGroup>
 </Project>

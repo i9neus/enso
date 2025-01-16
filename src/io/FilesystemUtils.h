@@ -29,6 +29,9 @@ namespace Enso
     // Get the filename for the path
     std::string GetFilename(const std::string& path);
 
+    // Get the file extension for the path
+    std::string GetFileExtension(const std::string& absolutePath);
+
     // Get the file stem for the path
     std::string GetFileStem(const std::string& path);
 

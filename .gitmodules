@@ -1,0 +1,3 @@
+[submodule "src/thirdparty/nnano"]
+	path = src/thirdparty/nnano
+	url = git@github.cds.internal.unity3d.com:ben-spencer/nnano.git
