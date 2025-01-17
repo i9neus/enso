@@ -61,6 +61,7 @@
     <ClInclude Include="..\..\..\src\core\2d\primitives\GenericIntersector.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\LineSegment.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\Primitive2D.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\Ray2D.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\DrawableObject.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\RenderableObject.cuh" />
@@ -112,6 +113,7 @@
     <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Mappings.cuh" />
     <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\Polynomial.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Quarternion.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Halton.cuh" />
@@ -276,6 +278,7 @@
     <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\DrawableObject.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\sdf\SDF2DRenderer.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\ui\UIHandle.cu" />

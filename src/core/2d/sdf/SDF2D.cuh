@@ -48,6 +48,80 @@ namespace Enso
         {
             const float dist = length(p - v0);
             return vec3(dist, (p - v0) / dist);
-        }            
+        } 
+
+        __host__ __device__ static bool QuadradicSplinePerpPointApprox(const vec2& p, const vec3& abcX, const vec3& abcY, const float margin, float& tPerp, vec2& xyPerp)
+        {
+            float a0 = abcX.x, b0 = abcX.y, c0 = abcX.z;
+            float d0 = abcY.x, e0 = abcY.y, f0 = abcY.z;
+            float n0 = p.x, m0 = p.y;
+
+            const vec4 P(-2.0 * a0 * a0 - 2.0 * d0 * d0,
+                         -3.0 * a0 * b0 - 3.0 * d0 * e0,
+                         -b0 * b0 - 2.0 * a0 * c0 - e0 * e0 - 2.0 * d0 * f0 + 2.0 * d0 * m0 + 2.0 * a0 * n0,
+                         -b0 * c0 - e0 * f0 + e0 * m0 + b0 * n0);
+
+            vec3 t, f;
+            float b2ac4 = sqr(2. * P.y) - 4.0 * (3. * P.x) * P.z;
+            if (b2ac4 <= 1e-3 || fabsf(P.x) / fmaxf(1e-10, fabsf(P.y)) < 1.)
+            {
+                t.xz = vec2(-margin, 1. + margin);
+                t.y = mix(t.x, t.z, 0.5);
+            }
+            else
+            {
+                b2ac4 = sqrt(b2ac4);
+                float t0 = (-(2. * P.y) + b2ac4) / (2.0 * (3. * P.x));
+                float t1 = (-(2. * P.y) - b2ac4) / (2.0 * (3. * P.x));
+
+                t.x = t0 - (t1 - t0) * 0.5;
+                t.y = (t0 + t1) * 0.5;
+                t.z = t1 + (t1 - t0) * 0.5;
+            }
+
+#define Cubic(P, t) (P.w + (t) * (P.z + (t) * (P.y + (t) * P.x)))
+#define DCubic(P, t) (P.z + (t) * (2. * P.y + (t) * 3. * P.x))
+
+            constexpr int kNewtonIters = 5;
+            for (int i = 0; i < kNewtonIters; ++i)
+            {
+                f = Cubic(P, t);
+                t -= f / DCubic(P, t);
+            }
+            f = Cubic(P, t);
+
+#undef Cubic
+#undef DCubic
+
+            xyPerp = vec2(kFltMax);
+            float nearest = kFltMax;
+            for (int idx = 0; idx < 3; ++idx)
+            {
+                if (fabsf(f[idx]) < 1e-5)
+                {
+                    const float td = clamp(t[idx], -margin, 1.0 + margin);
+                    vec2 perp = vec2(abcX.x * td * td + abcX.y * td + abcX.z,
+                                     abcY.x * td * td + abcY.y * td + abcY.z);
+             
+                    const float dist = length2(p - perp);
+                    if (dist < nearest)
+                    {
+                        nearest = dist;
+                        xyPerp = perp;
+                        tPerp = td;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // SDF for a quadratic spline
+        __host__ __device__ __forceinline__ vec3 QuadradicSpline(const vec2& p, const vec3& abcX, const vec3& abcY)
+        {
+            vec2 pPerp;
+            float tPerp;
+            return QuadradicSplinePerpPointApprox(p, abcX, abcY, 0., tPerp, pPerp) ? vec3(length(pPerp - p), p - pPerp) : vec3(0.);
+        }
     }  
 }

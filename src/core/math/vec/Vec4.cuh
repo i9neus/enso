@@ -259,6 +259,21 @@ namespace Enso
         return lhs;
     }
 
+// Arithmetic operator with left-hand scalar to vec4
+#define ARITHMETIC_OPERATOR_SCALAR_VEC4(op) \
+    template<int R0, int R1, int R2, int R3> \
+    __host__ __device__ __forceinline__ vec4 operator ##op(const float lhs, __vec_swizzle<float, 4, 4, R0, R1, R2, R3>& rhs) \
+    { \
+        return vec4(lhs ##op rhs[R0], lhs ##op rhs[R1], lhs ##op rhs[R2], lhs ##op rhs[R3]); \
+    }
+
+    ARITHMETIC_OPERATOR_SCALAR_VEC4(+)
+    ARITHMETIC_OPERATOR_SCALAR_VEC4(-)
+    ARITHMETIC_OPERATOR_SCALAR_VEC4(*)
+    ARITHMETIC_OPERATOR_SCALAR_VEC4(/)
+
+#undef ARITHMETIC_OPERATOR_SCALAR_VEC4(op)
+
     // Vector functions
     template<int L0, int L1, int L2, int L3, int R0, int R1, int R2, int R3>
     __host__ __device__ __forceinline__ float dot(__vec_swizzle<float, 4, 4, L0, L1, L2, L3>& lhs, const __vec_swizzle<float, 4, 4, R0, R1, R2, R3>& rhs)

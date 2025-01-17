@@ -24,8 +24,8 @@ namespace Enso
 	template<typename T>
 	__host__ __device__ __forceinline__ T	min3(const T& a, const T& b, const T& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
 
-	__host__ __device__ __forceinline__ float	clamp(const float& v, const float& a, const float& b) noexcept { return fmaxf(a, fminf(v, b)); }
-	template<typename T> __host__ __device__ __forceinline__ T clamp(const T& v, const T& a, const T& b) noexcept { return fmaxf(a, fminf(v, b)); }
+	__host__ __device__ __forceinline__ float	clamp(const float v, const float a, const float b) noexcept { return fmaxf(a, fminf(v, b)); }
+	//template<typename T> __host__ __device__ __forceinline__ T clamp(const T v, const T a, const T b) noexcept { return fmaxf(a, fminf(v, b)); }
 	__host__ __device__ __forceinline__ float	fract(const float& v) noexcept { return v - floorf(v); }
 	__host__ __device__ __forceinline__ float	sign(const float& v) noexcept { return copysign(1.0f, v); }
 	__host__ __device__ __forceinline__ float	cubrt(float a) { return copysignf(1.0f, a) * powf(fabs(a), 1.0f / 3.0f); }

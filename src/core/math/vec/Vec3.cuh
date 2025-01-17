@@ -70,6 +70,10 @@ namespace Enso
         __host__ __device__ __forceinline__ __vec_swizzle& operator-=(const float& rhs) { x -= rhs; y -= rhs; z -= rhs; return *this; }
         __host__ __device__ __forceinline__ __vec_swizzle& operator*=(const float& rhs) { x *= rhs; y *= rhs; z *= rhs; return *this; }
         __host__ __device__ __forceinline__ __vec_swizzle& operator/=(const float& rhs) { x /= rhs; y /= rhs; z /= rhs; return *this; }
+        __host__ __device__ __forceinline__ __vec_swizzle operator+(const float& rhs) { __vec_swizzle r(x + rhs, y + rhs, z + rhs); return r; }
+        __host__ __device__ __forceinline__ __vec_swizzle operator-(const float& rhs) { __vec_swizzle r(x - rhs, y - rhs, z - rhs); return r; }
+        __host__ __device__ __forceinline__ __vec_swizzle operator*(const float& rhs) { __vec_swizzle r(x * rhs, y * rhs, z * rhs); return r; }
+        __host__ __device__ __forceinline__ __vec_swizzle operator/(const float& rhs) { __vec_swizzle r(x / rhs, y / rhs, z / rhs); return r; }
 
         // Assign from swizzled types
         template<int RS, int R0, int R1, int R2>
@@ -166,22 +170,26 @@ namespace Enso
         lhs.data[L0] *= rhs.data[R0]; lhs.data[L1] *= rhs.data[R1]; lhs.data[L2] *= rhs.data[R2];
         return lhs;
     }
-    template<int LS, int L0, int L1, int L2>
-    __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 3, L0, L1, L2>& operator *=(__vec_swizzle<float, LS, 3, L0, L1, L2>& lhs, const float& rhs)
-    {
-        lhs.data[L0] *= rhs; lhs.data[L1] *= rhs; lhs.data[L2] *= rhs;
-        return lhs;
+
+ // Arithmetic operator with left-hand scalar to vec4
+#define ARITHMETIC_OPERATOR_SCALAR_VEC3(op) \
+    template<int RS, int R0, int R1, int R2> \
+    __host__ __device__ __forceinline__ vec3 operator ##op(const float lhs, __vec_swizzle<float, RS, 3, R0, R1, R2>& rhs) \
+    { \
+        return vec3(lhs ##op rhs[R0], lhs ##op rhs[R1], lhs ##op rhs[R2]); \
     }
+
+    ARITHMETIC_OPERATOR_SCALAR_VEC3(+)
+    ARITHMETIC_OPERATOR_SCALAR_VEC3(-)
+    ARITHMETIC_OPERATOR_SCALAR_VEC3(*)
+    ARITHMETIC_OPERATOR_SCALAR_VEC3(/ )
+
+#undef ARITHMETIC_OPERATOR_SCALAR_VEC3(op)
+
     template<int LS, int L0, int L1, int L2, int RS, int R0, int R1, int R2>
     __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 3, L0, L1, L2>& operator /=(__vec_swizzle<float, LS, 3, L0, L1, L2>& lhs, const __vec_swizzle<float, RS, 3, R0, R1, R2>& rhs)
     {
         lhs.data[L0] /= rhs.data[R0]; lhs.data[L1] /= rhs.data[R1]; lhs.data[L2] /= rhs.data[R2];
-        return lhs;
-    }
-    template<int LS, int L0, int L1, int L2>
-    __host__ __device__ __forceinline__ __vec_swizzle<float, LS, 3, L0, L1, L2>& operator /=(__vec_swizzle<float, LS, 3, L0, L1, L2>& lhs, const float& rhs)
-    {
-        lhs.data[L0] /= rhs; lhs.data[L1] /= rhs; lhs.data[L2] /= rhs;
         return lhs;
     }
 

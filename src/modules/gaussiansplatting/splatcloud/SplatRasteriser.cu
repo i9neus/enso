@@ -3,6 +3,7 @@
 #include "core/math/Hash.cuh"
 #include "core/3d/Ctx.cuh"
 #include "core/assets/AssetContainer.cuh"
+#include "core/2d/Transform2D.cuh"
 #include "core/3d/Transform.cuh"
 #include "core/containers/Vector.cuh"
 #include "core/3d/Cameras.cuh"

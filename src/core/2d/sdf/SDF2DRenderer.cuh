@@ -32,8 +32,17 @@ namespace Enso
             return saturatef(((dPdXY * thickness * 0.5f) - fabsf(fabs(length(p - origin)) - radius)) / dPdXY);
         }
 
+        // Render a quadratic spline
+        __host__ __device__  __forceinline__ float QuadraticSpline(vec2 p, const vec3& abcX, const vec3& abcY, const float& thickness, const float& dPdXY)
+        {
+            float tPerp;
+            vec2 pPerp;
+            return SDF2D::QuadradicSplinePerpPointApprox(p, abcX, abcY, 0., tPerp, pPerp) ?
+                (saturatef(1.0f - (length(p - pPerp) - dPdXY * thickness * 0.5f) / dPdXY)) : 0.;
+        }
+
         // Render an arc
-        __host__ __device__  float Arc(vec2 p, const vec2& o, const float& r, const vec2& range, const float& thickness, const float& dXYdP);
+        __host__ __device__  float Arc(vec2 p, const vec2& o, const float& r, const vec2& range, const float& thickness, const float& dPdXY);
 
         // Render an activity indicator
         __host__ __device__ float ActivityIndicator(const vec2& uvView, const vec2& origin, const float radius, const float alpha, const float& dPdXY);

@@ -134,7 +134,7 @@ namespace Enso
             lower -= delta; upper -= delta;
             return *this;
         }
-
+      
         // Union operator
         __host__ __device__ __forceinline__ BBox2& operator|=(const BBox2& other)
         {

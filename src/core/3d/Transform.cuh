@@ -101,18 +101,4 @@ namespace Enso
 			return (inv * p) * sca + trans;
 		}
 	};	
-
-	__host__ __device__ __forceinline__ vec2 PixelToNormalisedScreen(const vec2& p, const vec2& viewportRes)
-	{
-		// Normalisation happens relative to screen width. The final range is:
-		// [ [-1, -viewportRes.y/viewportRes.x], [1, viewportRes.y/viewportRes.x] ] or
-		// [ [-1, -0.5625], [1, 0.5625]] for 1200x675
-
-		return 2.f * (p - viewportRes * 0.5f) / float(viewportRes.x);
-	}
-
-	__host__ __device__ __forceinline__ vec2 NormalisedScreenToPixel(const vec2& p, const vec2& viewportRes)
-	{
-		return (p * float(viewportRes.x) * 0.5f) + viewportRes * 0.5f;
-	}
 }

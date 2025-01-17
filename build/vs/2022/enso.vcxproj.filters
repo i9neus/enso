@@ -953,6 +953,12 @@
     <ClInclude Include="..\..\..\src\thirdparty\nnano\src\models\Model.cuh">
       <Filter>thirdparty\nnano\models</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cuh">
+      <Filter>core\2d\primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\Polynomial.cuh">
+      <Filter>core\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -1101,6 +1107,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cu">
       <Filter>modules\gaussiansplatting\nnano</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cu">
+      <Filter>core\2d\primitives</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
