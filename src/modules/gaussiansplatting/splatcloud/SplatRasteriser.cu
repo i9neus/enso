@@ -157,7 +157,7 @@ namespace Enso
             splatCamera.rgba = splatWorld.rgba;
 
             // Populate the key-value pairs ready for sorting
-            const vec2 pScreen = NormalisedScreenToPixel(pView.xy, m_params.viewport.dims);
+            const vec2 pScreen = TransformViewToPixel(pView.xy, m_params.viewport.dims);
             const ivec2 ijTile = ivec2(pScreen) / int(kSplatRasteriserTileSize);
 
             constexpr int32_t kMaxTileBounds = 0xff;
@@ -360,7 +360,7 @@ namespace Enso
         CudaAssertFmt(range.y < m_objects.sortedRefs->size(), "range.y < m_objects.sortedRefs->size(): %i -> %i", range.y, m_objects.sortedRefs->size());
         if (range[0] <= range[1])
         {
-            const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport), vec2(m_params.viewport.dims));
+            const vec2 uvView = TransformPixelToView(vec2(xyViewport), vec2(m_params.viewport.dims));
             float alpha = 1;
 
             for (uint32_t refIdx = range[0]; refIdx <= range[1] && alpha > 1e-3f; ++refIdx)
@@ -400,7 +400,7 @@ namespace Enso
 
         CudaAssertDebug(m_params.tileGrid.numTiles + 1 == m_objects.tileRanges->size()); // Sanity check      
 
-        const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport), vec2(m_params.viewport.dims));
+        const vec2 uvView = TransformPixelToView(vec2(xyViewport), vec2(m_params.viewport.dims));
         const uint32_t tileIdx = 1 + (xyViewport.y / kSplatRasteriserTileSize) * m_params.tileGrid.dims.x + (xyViewport.x / kSplatRasteriserTileSize);
         CudaAssertDebug(tileIdx < m_objects.tileRanges->size());
 
@@ -445,7 +445,7 @@ namespace Enso
         }
         __syncthreads();
 
-        const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport), vec2(m_params.viewport.dims));
+        const vec2 uvView = TransformPixelToView(vec2(xyViewport), vec2(m_params.viewport.dims));
         vec3 L = kZero;
         
         ////////////////
@@ -741,10 +741,10 @@ namespace Enso
         AssertMsgFmt(m_hostNumSplatRefs <= kMaxSplatRefs, "Total number of refs %i exceeds hard upper limit %i", m_hostNumSplatRefs, kMaxSplatRefs);
 
         // If necessary, grow the key/ref arrays to accommodate the number of duplicated splats
-        const auto delta = m_hostUnsortedKeys->grow(m_hostNumSplatRefs);
-        m_hostSortedKeys->grow(m_hostNumSplatRefs);
-        m_hostUnsortedRefs->grow(m_hostNumSplatRefs);
-        m_hostSortedRefs->grow(m_hostNumSplatRefs);
+        const auto delta = m_hostUnsortedKeys->AtLeast(m_hostNumSplatRefs);
+        m_hostSortedKeys->AtLeast(m_hostNumSplatRefs);
+        m_hostUnsortedRefs->AtLeast(m_hostNumSplatRefs);
+        m_hostSortedRefs->AtLeast(m_hostNumSplatRefs);
 
         if (delta > 0)
         {

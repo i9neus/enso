@@ -1,11 +1,16 @@
 #define CUDA_DEVICE_GLOBAL_ASSERTS
 
 #include "NNanoSDF.cuh"
+#include "Beziers.h"
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
 #include "core/assets/AssetContainer.cuh"
 #include "core/containers/Vector.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
+#include "core/2d/Transform2D.cuh"
+#include "core/2d/primitives/QuadraticSpline.cuh"
+#include "core/2d/primitives/Ellipse.cuh"
+#include "core/2d/bih/BIH2DAsset.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -15,7 +20,6 @@ namespace Enso
     __host__ __device__ NNanoSDFParams::NNanoSDFParams()
     {
         viewport.dims = ivec2(0);
-        hasValidScene = false;
     }
 
     __host__ __device__ void NNanoSDFParams::Validate() const
@@ -31,53 +35,8 @@ namespace Enso
     __device__ void Device::NNanoSDF::Synchronise(const NNanoSDFObjects& objects)
     {
         objects.Validate();
-        m_objects = objects;
-    }    
-
-    __device__ void Device::NNanoSDF::Render()
-    {
-        const ivec2 xyViewport = kKernelPos<ivec2>();
-        if (xyViewport.x < 0 || xyViewport.x >= m_params.viewport.dims.x || xyViewport.y < 0 || xyViewport.y >= m_params.viewport.dims.y) { return; }
-
-        
+        m_objects = objects;        
     }
-    DEFINE_KERNEL_PASSTHROUGH(Render);
-
-    __device__ void Device::NNanoSDF::Composite(Device::ImageRGBA* deviceOutputImage)
-    {
-        CudaAssertDebug(deviceOutputImage);
-
-        // TODO: Make alpha compositing a generic operation inside the Image class.
-        const ivec2 xyAccum = kKernelPos<ivec2>();
-        const ivec2 xyViewport = xyAccum + deviceOutputImage->Dimensions() / 2 - m_objects.meanAccumBuffer->Dimensions() / 2;
-
-        /*BBox2i border(0, 0, m_params.viewport.dims.x, m_params.viewport.dims.y);
-        if(border.PointOnPerimiter(xyAccum, 2))
-        {
-            deviceOutputImage->At(xyViewport) = vec4(1.0f);
-        }*/
-        if (xyAccum.x < m_params.viewport.dims.x && xyAccum.y < m_params.viewport.dims.y)
-        {
-            //if (xyAccum.x < m_params.viewport.dims.x / 2)
-            {
-                //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
-                const vec4& texel = m_objects.meanAccumBuffer->At(xyAccum);
-                vec3 L = texel.xyz / fmaxf(1.f, texel.w);
-                L = pow(L, 0.7f);
-
-                deviceOutputImage->At(xyViewport) = vec4(L, 1.0f);
-
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
-            }
-            /*else
-            {
-                const vec3& denoisedL = m_objects.denoisedBuffer->At(xyAccum);
-                deviceOutputImage->At(xyViewport) = vec4(denoisedL, 1.f);
-            }*/
-        }
-    }
-    DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     __host__ __device__ bool Device::NNanoSDF::IsClickablePoint(const UIViewCtx& viewCtx) const
     {
@@ -86,36 +45,44 @@ namespace Enso
 
     __host__ __device__ vec4 Device::NNanoSDF::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
-        if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
+        if (!GetWorldBBox().Contains(pWorld) || !m_objects.bih) { return vec4(0.0f); }        
 
 #ifdef __CUDA_ARCH__
         const vec2 pObject = ToObjectSpace(pWorld);
-        const ivec2 pPixel = ivec2(vec2(m_params.viewport.dims) * (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions());
-
-        if (!m_params.hasValidScene)
+        const vec2 pScreen = (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions();
+        const vec2 pView = TransformNormalisedScreenToView(pScreen, m_params.viewport.dims);
+        
+        vec4 L(0.0f);
+        const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
+        const auto& splineList = *m_objects.splines;
+        auto onLeaf = [&](const uint* idxRange, const uint* primIdxs) -> bool
         {
-            const float hatch = step(0.8f, fract(0.05f * dot(pWorld / viewCtx.dPdXY, vec2(1.f))));
-            return vec4(kOne * hatch * 0.1f, 1.f);
-        }
-        else if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
-        {
-            //if (pPixel.x < m_params.viewport.dims.x / 2)
+            for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
             {
-                const vec4& texel = m_objects.meanAccumBuffer->At(pPixel);
-                vec3 L = texel.xyz / fmaxf(1.f, texel.w);
-                L = pow(L, 0.7f);
-
-                return vec4(L, 1.0f);
-
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
+                const auto& spline = splineList[primIdxs[idx]];
+                const vec4 line = spline.EvaluateOverlay(pView, overlayCtx);
+                if (line.w > 0.f) { L = Blend(L, line); }
             }
-            /*else
-            {
-                const vec3& denoisedL = m_objects.denoisedBuffer->At(pPixel);
-                return vec4(denoisedL, 1.f);
-            }*/
-        }
+
+            return false;
+        };
+        /*auto onInner = [&, this](const BBox2f& bBox, const int depth) -> void
+        {
+            if (bBox.PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
+                L = vec4(kRed, 1.0f);
+        };*/
+        m_objects.bih->TestPoint(pView, onLeaf, nullptr);
+
+        /*for (int idx = 0; idx < splineList.size(); ++idx)
+        {
+            const auto& spline = splineList[idx];
+            //const vec4 line = spline.EvaluateOverlay(pView, overlayCtx);
+            if (spline.GetBoundingBox().PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
+                L = vec4(Hue(float(idx) / 10), 1.0);
+            //if (line.w > 0.f) { L = Blend(L, line); }
+        }*/
+
+        return L;
 #else
         return vec4(1.);
 #endif
@@ -133,15 +100,9 @@ namespace Enso
         cu_deviceInstance(AssetAllocator::InstantiateOnDevice<Device::NNanoSDF>(*this))
     {
         DrawableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::DrawableObject>(cu_deviceInstance));
-        RenderableObject::SetDeviceInstance(AssetAllocator::StaticCastOnDevice<Device::RenderableObject>(cu_deviceInstance));
 
         constexpr int kViewportWidth = 1200;
         constexpr int kViewportHeight = 675;
-
-        // Create some Cuda objects
-        m_hostAccumBuffer = AssetAllocator::CreateChildAsset<Host::ImageRGBW>(*this, "meanAccumBufferMean", kViewportWidth, kViewportHeight, nullptr);
-
-        m_deviceObjects.meanAccumBuffer = m_hostAccumBuffer->GetDeviceInstance();
 
         const vec2 boundHalf = 0.25 * ((kViewportHeight > kViewportWidth) ?
             vec2(1.f, float(kViewportHeight) / float(kViewportWidth)) :
@@ -150,14 +111,48 @@ namespace Enso
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
 
+        constexpr uint kMinTreePrims = 0;
+        m_hostBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "bih", kMinTreePrims);
+        m_hostSplines = AssetAllocator::CreateChildAsset<Host::Vector<QuadraticSpline>>(*this, "splines");
+
+        // Set the host parameters so we can query the primitive on the host
+        m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.splines = m_hostSplines->GetDeviceInstance();
+
+        // Populate the splines from the embedded data
+        auto& splines = *m_hostSplines;       
+        using namespace FlowBeziers;
+        splines.resize(kNumSplines);
+        for (int i = 0; i < kNumSplines; ++i)
+        {
+            splines[i] = QuadraticSpline(kPoints[i * 2], kPoints[i * 2 + 1]);
+        }
+        splines.Upload();
+
+        // Create a primitive list ready for building
+        // TODO: It's probably faster if we build on the already-sorted index list
+        auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
+        primIdxs.resize(splines.size());
+        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
+
+        // Construct the BIH
+        std::function<BBox2f(uint)> getPrimitiveBBox = [&splines](const uint& idx) -> BBox2f
+        {
+            return Scale(splines[idx].GetBoundingBox(), 1.01f);
+        };
+        m_hostBIH->Build(getPrimitiveBBox, true);
+
+        Synchronise(kSyncObjects | kSyncParams);
+
         Cascade({ kDirtySceneObjectChanged });
     }
 
     __host__ Host::NNanoSDF::~NNanoSDF() noexcept
     {
-        m_hostAccumBuffer.DestroyAsset();
+        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance); 
 
-        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
+        m_hostBIH.DestroyAsset();
+        m_hostSplines.DestroyAsset();
     }
 
     __host__ void Host::NNanoSDF::OnSynchroniseDrawableObject(const uint syncFlags)
@@ -174,66 +169,10 @@ namespace Enso
         }
     }
 
-    __host__ void Host::NNanoSDF::Bind(GenericObjectContainer& objects)
-    {
-
-
-    }
-
-    __host__ void Host::NNanoSDF::Render()
-    {
-        if (IsDirty(kDirtySceneObjectChanged))
-        {
-            m_hostAccumBuffer->Clear(vec4(0.f));
-            SignalDirty(kDirtyViewportRedraw);
-        }
-
-        //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
-
-        //if (RenderableObject::m_params.frameIdx > 10) return;
-
-        dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
-
-        // Accumulate the frame
-        KernelRender << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
-
-        // Denoise if necessary
-        /*if (m_params.frameIdx % 500 == 0)
-        {
-            KernelDenoise << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance);
-        }*/
-
-        IsOk(cudaDeviceSynchronize());
-
-        // If there's no user interaction, signal the viewport to update intermittently to save compute
-        constexpr float kViewportUpdateInterval = 1. / 2.f;
-        if (m_redrawTimer.Get() > kViewportUpdateInterval)
-        {
-            SignalDirty(kDirtyViewportRedraw);
-            m_redrawTimer.Reset();
-        }
-
-        if (m_renderTimer.Get() > 1.)
-        {
-            //Log::Debug("Frame: %i", RenderableObject::m_params.frameIdx);
-            m_renderTimer.Reset();
-        }
-    }
-
-    __host__ void Host::NNanoSDF::Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const
-    {
-        dim3 blockSize, gridSize;
-        KernelParamsFromImage(m_hostAccumBuffer, blockSize, gridSize);
-
-        KernelComposite << < gridSize, blockSize, 0, m_hostStream >> > (cu_deviceInstance, hostOutputImage->GetDeviceInstance());
-        IsOk(cudaDeviceSynchronize());
-    }
-
+    __host__ void Host::NNanoSDF::Bind(GenericObjectContainer& objects) {}
+   
     __host__ void Host::NNanoSDF::Clear()
     {
-        m_hostAccumBuffer->Clear(vec4(0.f));
-
         Synchronise(kSyncParams);
     }
 

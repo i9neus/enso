@@ -405,6 +405,7 @@
       <Include>./;../../common/inc</Include>
       <CompileOut>enso\$(Platform)\$(Configuration)\%(Filename)%(Extension).obj</CompileOut>
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <AdditionalOptions>%(AdditionalOptions) -std=c++17</AdditionalOptions>
     </CudaCompile>
     <CudaLink>
       <LinkOut>enso\$(Platform)\$(Configuration)\$(TargetName).device-link.obj</LinkOut>

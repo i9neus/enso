@@ -85,18 +85,18 @@ namespace Enso
             return fmaxf(lower.x, other.lower.x) < fminf(upper.x, other.upper.x) && fmaxf(lower.y, other.lower.y) < fminf(upper.y, other.upper.y);
         }
 
-        __host__ __device__ __forceinline__ BBox2& Grow(const ScalarType & ammount)
+        __host__ __device__ __forceinline__ BBox2& Grow(const ScalarType & amount)
         {
-            lower.x -= ammount; lower.y -= ammount;
-            upper.x += ammount; upper.y += ammount;
+            lower.x -= amount; lower.y -= amount;
+            upper.x += amount; upper.y += amount;
             return *this;
         }
 
         // Grows the bounding box by a vector accmount
-        __host__ __device__ __forceinline__ BBox2& Grow(const VecType & ammount)
+        __host__ __device__ __forceinline__ BBox2& Grow(const VecType & amount)
         {
-            lower.x -= ammount.x; lower.y -= ammount.y;
-            upper.x += ammount.x; upper.y += ammount.y;
+            lower.x -= amount.x; lower.y -= amount.y;
+            upper.x += amount.x; upper.y += amount.y;
             return *this;
         }
 
@@ -118,9 +118,9 @@ namespace Enso
         }
 
         // Grows the bounding box by a vector accmount
-        __host__ __device__ __forceinline__ BBox2& Scale(const float& ammount)
+        __host__ __device__ __forceinline__ BBox2& Scale(const float& amount)
         {
-            return this->operator*=(ammount);
+            return this->operator*=(amount);
         }
 
         __host__ __device__ __forceinline__ BBox2& operator+=(const VecType& delta)
@@ -237,16 +237,23 @@ namespace Enso
         return Union(a, b);
     }
 
-    template<typename T>
-    __host__ __device__ __forceinline__ BBox2<T> Grow(const BBox2<T>& bBox, const typename BBox2<T>::ScalarType& ammount)
+    template<typename VecType>
+    __host__ __device__ __forceinline__ BBox2<VecType> Grow(const BBox2<VecType>& bBox, const typename BBox2<VecType>::ScalarType amount)
     {
-        return BBox2<T>(bBox.lower.x - ammount, bBox.lower.y - ammount, bBox.upper.x + ammount, bBox.upper.y + ammount);
+        return BBox2<VecType>(bBox.lower.x - amount, bBox.lower.y - amount, bBox.upper.x + amount, bBox.upper.y + amount);
     }
 
     template<typename VecType>
-    __host__ __device__ __forceinline__ BBox2<VecType> Grow(const BBox2<VecType>& bBox, const VecType& ammount)
+    __host__ __device__ __forceinline__ BBox2<VecType> Grow(const BBox2<VecType>& bBox, const BBox2<VecType>& amount)
     {
-        return BBox2<VecType>(bBox.lower.x - ammount.x, bBox.lower.y - ammount.y, bBox.upper.x + ammount.x, bBox.upper.y + ammount.y);
+        return BBox2<VecType>(bBox.lower.x - amount.x, bBox.lower.y - amount.y, bBox.upper.x + amount.x, bBox.upper.y + amount.y);
+    }
+
+    template<typename VecType>
+    __host__ __device__ __forceinline__ BBox2<VecType> Scale(BBox2<VecType> bBox, const typename BBox2<VecType>::ScalarType amount)
+    {
+        bBox *= amount;
+        return bBox;
     }
 
     template<typename VecType>

@@ -209,16 +209,23 @@ namespace Enso
 			__host__ __forceinline__ void clear() { ResizeImpl(0u); }
 			__host__ void resize(const size_t newSize) { ResizeImpl(newSize); }
 
-			// Grow the array so that it's at least as big as newSize
-			__host__ size_t grow(const size_t newSize)
+			// Ensures that the vector is at least as big as newSize. Returns the number of new elements added (if any)
+			__host__ size_t AtLeast(const size_t targetSize)
 			{
-				if (newSize > size())
+				if (targetSize > size())
 				{
-					const size_t delta = newSize - size();
-					ResizeImpl(newSize);
+					const size_t delta = targetSize - size();
+					ResizeImpl(targetSize);
 					return delta;
 				}
 				return 0;
+			}
+
+			// Grows the vector by a fixed number of elements
+			__host__ void Grow(const int delta)
+			{
+				Assert(delta > 0);
+				ResizeImpl(size() + delta);
 			}
 
 			__host__  void reserve(const size_t capacity)

@@ -66,17 +66,23 @@ namespace Enso
 
     __host__ mat3 ConstructViewMatrix(const vec2& trans, const float rotate, const float scale);    
 
-    __host__ __device__ __forceinline__ vec2 PixelToNormalisedScreen(const vec2& p, const vec2& viewportRes)
+    // Maps the logical pixel to to view space. The final range is:
+    // [ [-viewportRes.x/viewportRes.y, -1], [viewportRes.x/viewportRes.y, 1] ] 
+    __host__ __device__ __forceinline__ vec2 TransformPixelToView(const vec2& p, const vec2& viewportRes)
     {
-        // Normalisation happens relative to screen width. The final range is:
-        // [ [-1, -viewportRes.y/viewportRes.x], [1, viewportRes.y/viewportRes.x] ] or
-        // [ [-1, -0.5625], [1, 0.5625]] for 1200x675
 
-        return 2.f * (p - viewportRes * 0.5f) / float(viewportRes.x);
+        return 2.f * (p - viewportRes * 0.5f) / float(viewportRes.y);
     }
 
-    __host__ __device__ __forceinline__ vec2 NormalisedScreenToPixel(const vec2& p, const vec2& viewportRes)
+    __host__ __device__ __forceinline__ vec2 TransformViewToPixel(const vec2& p, const vec2& viewportRes)
     {
-        return (p * float(viewportRes.x) * 0.5f) + viewportRes * 0.5f;
+        return (p * float(viewportRes.y) * 0.5f) + viewportRes * 0.5f;
     }
+
+    // Maps from normalised screen space in the range [0, 1) to [ [-viewportRes.x/viewportRes.y, -1], [viewportRes.x/viewportRes.y, 1] ] 
+    __host__ __device__ __forceinline__ vec2 TransformNormalisedScreenToView(const vec2& p, const vec2& viewportRes)
+    {
+        return 2 * (p - 0.5) * vec2(viewportRes.x / viewportRes.y, 1.);
+    }
+
 }

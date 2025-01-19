@@ -167,7 +167,7 @@ namespace Enso
         
         Synchronise(kSyncObjects | kSyncParams);
 
-        Dirtyable::Listen({ kDirtyViewportRedraw, kDirtyParams, kDirtyObjectExistence });
+        Dirtyable::Listen({ kDirtyViewportRedraw, kDirtyParams, kDirtyObjectExistence, kDirtyViewportObjectBBox });
     }
 
     Host::ViewportRenderer::~ViewportRenderer() noexcept

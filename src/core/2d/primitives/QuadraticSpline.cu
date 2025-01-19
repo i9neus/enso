@@ -52,8 +52,8 @@ namespace Enso
             if (t > 0 && t < 1)
             {
                 p = Poly::Quadratic::Evaluate(m_abc[dim], t);
-                bBox[0][dim] = fminf(bBox[dim][0], p);
-                bBox[1][dim] = fmaxf(bBox[dim][0], p);
+                bBox[0][dim] = fminf(bBox[0][dim], p);
+                bBox[1][dim] = fmaxf(bBox[1][dim], p);
             }
         } 
 

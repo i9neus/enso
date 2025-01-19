@@ -14,8 +14,8 @@
 
 namespace Enso
 {
-    namespace Device { class Tracable; }
-
+    class QuadraticSpline;
+    
     struct NNanoSDFParams
     {
         __host__ __device__ NNanoSDFParams();
@@ -27,44 +27,30 @@ namespace Enso
             BBox2f objectBounds;
         }
         viewport;
-
-        bool hasValidScene;
     };
 
     struct NNanoSDFObjects
     {
-        __host__ __device__ void Validate() const
+        __device__ void Validate() const
         {
-            CudaAssert(transforms);
-            CudaAssert(meanAccumBuffer);
-            CudaAssert(varAccumBuffer);
-            CudaAssert(denoisedBuffer);
+            CudaAssert(bih);
+            CudaAssert(splines);
         }
 
-        Device::ImageRGBW* meanAccumBuffer = nullptr;
-        Device::ImageRGBW* varAccumBuffer = nullptr;
-        Device::ImageRGB* denoisedBuffer = nullptr;
-        Device::Vector<BidirectionalTransform>* transforms = nullptr;
-
-        Device::Camera* activeCamera = nullptr;
-
-        Device::SceneContainer              scene;
+        BIH2D<BIH2DFullNode>* bih = nullptr;
+        Device::Vector<QuadraticSpline>* splines = nullptr;
     };
 
     namespace Host { class NNanoSDF; }
 
     namespace Device
     {
-        class NNanoSDF : public Device::DrawableObject, public Device::RenderableObject
+        class NNanoSDF : public Device::DrawableObject
         {
             friend Host::NNanoSDF;
 
         public:
             __host__ __device__ NNanoSDF() {}
-
-            //__device__ void Prepare(const uint dirtyFlags);
-            __device__ void Render();
-            __device__ void Composite(Device::ImageRGBA* outputImage);
 
             __host__ __device__ void Synchronise(const NNanoSDFParams& params);
             __device__ void Synchronise(const NNanoSDFObjects& objects);
@@ -83,14 +69,12 @@ namespace Enso
 
     namespace Host
     {
-        class NNanoSDF : public Host::DrawableObject, public Host::RenderableObject
+        class NNanoSDF : public Host::DrawableObject
         {
         public:
             __host__                    NNanoSDF(const Asset::InitCtx& initCtx, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
             __host__ virtual            ~NNanoSDF() noexcept;
 
-            __host__ virtual void       Render() override final;
-            __host__ void               Composite(AssetHandle<Host::ImageRGBA>& hostOutputImage) const;
             __host__ void               Clear();
 
             __host__ static AssetHandle<Host::GenericObject> Instantiate(const std::string& id, const Host::Asset& parentAsset, const AssetHandle<const Host::GenericObjectContainer>& genericObjects);
@@ -131,10 +115,12 @@ namespace Enso
             Device::NNanoSDF                m_hostInstance;
             NNanoSDFObjects                 m_deviceObjects;
             NNanoSDFParams                  m_params;
+
+            AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
+            AssetHandle<Host::Vector<QuadraticSpline>>      m_hostSplines;
+
             HighResolutionTimer               m_renderTimer;
             HighResolutionTimer               m_redrawTimer;
-
-            AssetHandle<Host::ImageRGBW>      m_hostAccumBuffer;
 
         };
     }

@@ -182,7 +182,7 @@ namespace Enso
 
         // Transform into normalised sceen space
         const vec4 xi = renderCtx.Rand(0);
-        const vec2 uvView = PixelToNormalisedScreen(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
+        const vec2 uvView = TransformPixelToView(vec2(xyViewport) + xi.xy, vec2(m_params.viewport.dims));
         
         RayStack extantStack;
         m_objects.activeCamera->CreateRay(uvView, xi.zw, extantStack.Push());
@@ -278,30 +278,13 @@ namespace Enso
         const ivec2 xyAccum = kKernelPos<ivec2>();
         const ivec2 xyViewport = xyAccum + deviceOutputImage->Dimensions() / 2 - m_objects.meanAccumBuffer->Dimensions() / 2;
         
-        /*BBox2i border(0, 0, m_params.viewport.dims.x, m_params.viewport.dims.y);
-        if(border.PointOnPerimiter(xyAccum, 2))
-        {
-            deviceOutputImage->At(xyViewport) = vec4(1.0f);
-        }*/
         if (xyAccum.x < m_params.viewport.dims.x && xyAccum.y < m_params.viewport.dims.y)
         {
-            //if (xyAccum.x < m_params.viewport.dims.x / 2)
-            {
-                //const vec4& varL = m_objects.varAccumBuffer->At(xyAccum);
-                const vec4& texel = m_objects.meanAccumBuffer->At(xyAccum);
-                vec3 L = texel.xyz / fmaxf(1.f, texel.w);
-                L = pow(L, 0.7f);
+            const vec4& texel = m_objects.meanAccumBuffer->At(xyAccum);
+            vec3 L = texel.xyz / fmaxf(1.f, texel.w);
+            L = pow(L, 0.7f);
 
-                deviceOutputImage->At(xyViewport) = vec4(L, 1.0f);
-
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / fmaxf(1.f, varL.w) - sqr(meanL.xyz / fmaxf(1.f, meanL.w)), 1.f);
-                //deviceOutputImage->At(xyViewport) = vec4(varL.xyz / sqr(fmaxf(1.f, varL.w)), 1.f);
-            }
-            /*else
-            {
-                const vec3& denoisedL = m_objects.denoisedBuffer->At(xyAccum);
-                deviceOutputImage->At(xyViewport) = vec4(denoisedL, 1.f);
-            }*/
+            deviceOutputImage->At(xyViewport) = vec4(L, 1.0f);
         }
     }
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
