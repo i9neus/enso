@@ -12,6 +12,7 @@ namespace Enso
         m_treeBBox = data.bBox;
         m_isConstructed = data.isConstructed;
         m_testAsList = data.testAsList;
+        m_treeDepth = data.treeDepth;
     }
 
     __host__ Host::BIH2DAsset::BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims) :
@@ -33,7 +34,7 @@ namespace Enso
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
-    __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor)
+    __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor, const bool printStats)
     {
         Assert(m_hostNodes);
         //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
@@ -41,7 +42,7 @@ namespace Enso
         // Resize and reset pointers
         BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, *m_hostIndices, m_minBuildablePrims, functor);
         builder.m_debugFunctor = m_debugFunctor;
-        builder.Build();
+        builder.Build(printStats);
 
         //CheckTreeNodes();
 
@@ -55,6 +56,7 @@ namespace Enso
         m_data.nodes = m_hostNodes->GetDeviceInstance();
         m_data.indices = m_hostIndices->GetDeviceInstance();
         m_data.numPrims = uint(m_hostIndices->size());
+        m_data.treeDepth = m_treeDepth;
 
         SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_data);
     }

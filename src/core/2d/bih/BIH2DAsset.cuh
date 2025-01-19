@@ -26,7 +26,7 @@ namespace Enso
             __host__ virtual ~BIH2DAsset() noexcept;
 
             __host__ inline Host::Vector<uint>&     GetPrimitiveIndices() { Assert(m_hostIndices); return *m_hostIndices; }
-            __host__ void                           Build(std::function<BBox2f(uint)>& functor);
+            __host__ void                           Build(std::function<BBox2f(uint)>& functor, const bool printStats = false);
             __host__ Device::BIH2DAsset*            GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ const BIH2DStats&              GetTreeStats() const { return m_stats; }

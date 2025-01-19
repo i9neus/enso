@@ -66,6 +66,7 @@ namespace Enso
         m_bih.m_indices = m_hostIndices.data();
         m_bih.m_numNodes = m_hostNodes.size();
         m_bih.m_numPrims = m_hostIndices.size();
+        m_bih.m_treeDepth = m_stats.maxDepth;
         m_bih.m_isConstructed = m_bih.m_treeBBox.IsValid() && !m_bih.m_treeBBox.IsInfinite();
 
         if (printStats)
@@ -107,7 +108,7 @@ namespace Enso
             else if (i1 - i0 == 1)
             {
                 m_stats.numLeafNodes++;
-                m_hostNodes[thisIdx].MakeLeaf(m_hostIndices[i0], m_hostIndices[i1 - 1]);
+                m_hostNodes[thisIdx].MakeLeaf(i0, i1);
                 //return;
             }
 
@@ -165,14 +166,14 @@ namespace Enso
         // If we've got a bunch of overlapping primitives that we can't effectively partition, just convert this node to a leaf
         if (j == i0 || j == i1)
         {
-            m_hostNodes[thisIdx].MakeLeaf(m_hostIndices[i0], m_hostIndices[i1 - 1]);
+            m_hostNodes[thisIdx].MakeLeaf(i0, i1);
             return;
         }
 
         // Grow the node vector by two
         const int leftIdx = m_hostNodes.size();
         const int rightIdx = leftIdx + 1;
-        m_hostNodes.grow(2);
+        m_hostNodes.Grow(2);
 
         // Refresh the reference and build the inner node          
         m_hostNodes[thisIdx].MakeInner(leftIdx, axis, leftBBox[1][axis], rightBBox[0][axis], i0, i1);

@@ -25,6 +25,7 @@ namespace Enso
         Device::Vector<NodeDataType>* nodes = nullptr;
         Device::Vector<uint>*       indices = nullptr;
         uint                        numPrims = 0;
+        int                         treeDepth = -1;
     };
 
     struct BIH2DStats
@@ -66,7 +67,8 @@ namespace Enso
             m_isConstructed(false),
             m_testAsList(false),
             m_numNodes(0),
-            m_numPrims(0)
+            m_numPrims(0),
+            m_treeDepth(-1)
         {
 
         }
@@ -108,11 +110,14 @@ namespace Enso
             NodeType* node = &m_nodes[0];
             int stackIdx = -1;
             uchar depth = 0;
+            bool trace = false;
 
             CudaAssertDebug(node);
 
             do
             {                
+                CudaAssertDebug(depth <= m_treeDepth);
+                
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
@@ -418,6 +423,7 @@ namespace Enso
         uint                        m_numNodes;
         uint                        m_numPrims;
         BBox2f                      m_treeBBox;
+        int                         m_treeDepth;
         bool                        m_isConstructed;
         bool                        m_testAsList;
 
