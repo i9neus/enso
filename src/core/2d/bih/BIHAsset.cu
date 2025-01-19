@@ -1,27 +1,11 @@
-#include "BIH2DAsset.cuh"
+#include "BIHAsset.cuh"
 
 namespace Enso
 {
-    __device__ void Device::BIH2DAsset::Synchronise(const BIH2DData<BIH2DFullNode>& data)
-    {
-        m_nodes = data.nodes->data();
-        m_indices = data.indices->data();
-
-        m_numNodes = data.nodes->size();
-        m_numPrims = data.numPrims;
-        m_treeBBox = data.bBox;
-        m_isConstructed = data.isConstructed;
-        m_testAsList = data.testAsList;
-        m_treeDepth = data.treeDepth;
-    }
-
     __host__ Host::BIH2DAsset::BIH2DAsset(const Asset::InitCtx& initCtx, const uint& minBuildablePrims) :
         Asset(initCtx),
-        cu_deviceInstance(nullptr),
         m_minBuildablePrims(minBuildablePrims)
     {
-        cu_deviceInstance = AssetAllocator::InstantiateOnDevice<Device::BIH2DAsset>(*this);
-
         m_hostNodes = AssetAllocator::CreateChildAsset<Host::Vector<NodeType>>(*this, "nodes");
         m_hostIndices = AssetAllocator::CreateChildAsset<Host::Vector<uint>>(*this, "indices");
     }
@@ -30,8 +14,6 @@ namespace Enso
     {
         m_hostNodes.DestroyAsset();
         m_hostIndices.DestroyAsset();
-
-        AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance);
     }
 
     __host__ void Host::BIH2DAsset::Build(std::function<BBox2f(uint)>& functor, const bool printStats)
@@ -40,7 +22,7 @@ namespace Enso
         //AssertMsg(!m_primitiveIdxs.empty(), "BIH builder does not contain any primitives.");
 
         // Resize and reset pointers
-        BIH2DBuilder<NodeType> builder(*this, *m_hostNodes, *m_hostIndices, m_minBuildablePrims, functor);
+        BIH2D::Builder<NodeType> builder(m_hostBIH, *m_hostNodes, *m_hostIndices, m_minBuildablePrims, functor);
         builder.m_debugFunctor = m_debugFunctor;
         builder.Build(printStats);
 
@@ -50,22 +32,17 @@ namespace Enso
         m_hostNodes->Upload();
         m_hostIndices->Upload();
 
-        m_data.isConstructed = m_isConstructed;
-        m_data.testAsList = m_testAsList;
-        m_data.bBox = m_treeBBox;
-        m_data.nodes = m_hostNodes->GetDeviceInstance();
-        m_data.indices = m_hostIndices->GetDeviceInstance();
-        m_data.numPrims = uint(m_hostIndices->size());
-        m_data.treeDepth = m_treeDepth;
-
-        SynchroniseObjects<Device::BIH2DAsset>(cu_deviceInstance, m_data);
+        m_deviceBIH = m_hostBIH;
+        m_deviceBIH->nodes = m_hostNodes->GetDeviceData();
+        m_deviceBIH->indices = m_hostIndices->GetDeviceData();          
+        m_deviceBIH.Upload();
     }
 
     __host__ void Host::BIH2DAsset::CheckTreeNodes() const
     {
         for (int nodeIdx = 0; nodeIdx < m_hostNodes->size(); ++nodeIdx)
         {
-            const BIH2DFullNode& node = (*m_hostNodes)[nodeIdx];
+            const BIH2D::FullNode& node = (*m_hostNodes)[nodeIdx];
             if (node.IsLeaf())
             {
             }
@@ -83,9 +60,9 @@ namespace Enso
                         Log::Error("Plane %i at node %i is denormalised: %f", planeIdx, nodeIdx, plane);
                     }
                     const uchar axis = node.GetAxis();
-                    if (plane < m_treeBBox.lower[axis] || plane > m_treeBBox.upper[axis])
+                    if (plane < m_hostBIH.bBox.lower[axis] || plane > m_hostBIH.bBox.upper[axis])
                     {
-                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_treeBBox.lower[axis], m_treeBBox.upper[axis]);
+                        Log::Error("Plane %i at node %i lies outside the tree bounding box: %f -> [%f, %f]", planeIdx, nodeIdx, plane, m_hostBIH.bBox.lower[axis], m_hostBIH.bBox.upper[axis]);
                     }
                 }
             }

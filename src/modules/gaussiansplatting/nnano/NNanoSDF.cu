@@ -10,7 +10,7 @@
 #include "core/2d/Transform2D.cuh"
 #include "core/2d/primitives/QuadraticSpline.cuh"
 #include "core/2d/primitives/Ellipse.cuh"
-#include "core/2d/bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -71,7 +71,7 @@ namespace Enso
             if (bBox.PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
                 L = vec4(kRed, 1.0f);
         };*/
-        m_objects.bih->TestPoint(pView, onLeaf, nullptr);
+        BIH2D::TestPoint(*m_objects.bih, pView, onLeaf, nullptr);
 
         /*for (int idx = 0; idx < splineList.size(); ++idx)
         {
@@ -116,7 +116,7 @@ namespace Enso
         m_hostSplines = AssetAllocator::CreateChildAsset<Host::Vector<QuadraticSpline>>(*this, "splines");
 
         // Set the host parameters so we can query the primitive on the host
-        m_deviceObjects.bih = m_hostBIH->GetDeviceInstance();
+        m_deviceObjects.bih = m_hostBIH->GetDeviceData();
         m_deviceObjects.splines = m_hostSplines->GetDeviceInstance();
 
         // Populate the splines from the embedded data

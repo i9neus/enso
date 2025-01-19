@@ -2,13 +2,16 @@
 
 namespace Enso
 {
-    // BIH
-    template<typename> class BIH2D;
-    template<typename> class BIH2DNodeBase;
-    struct BIH2DNodeDataCompact;
-    struct BIH2DNodeDataFull;
-    using BIH2DCompactNode = BIH2DNodeBase<BIH2DNodeDataCompact>;
-    using BIH2DFullNode = BIH2DNodeBase<BIH2DNodeDataFull>;
+    namespace BIH2D
+    {
+        template<typename> class BIHData;
+        template<typename> class NodeBase;
+        struct NodeDataCompact;
+        struct NodeDataFull;
+        using CompactNode = NodeBase<NodeDataCompact>;
+        using FullNode = NodeBase<NodeDataFull>;
+    }
+
     class BidirectionalTransform;
     class MersenneTwister; 
     class GaussianPoint;

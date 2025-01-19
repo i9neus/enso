@@ -45,7 +45,7 @@ namespace Enso
         }
 
         const Device::Vector<Device::DrawableObject*>*  viewportObjects = nullptr;
-        const BIH2D<BIH2DFullNode>*                     viewportBIH = nullptr;
+        const BIH2D::BIHData<BIH2D::FullNode>*          viewportBIH = nullptr;
         
         Device::ImageRGBW*                              accumBuffer = nullptr;
     };

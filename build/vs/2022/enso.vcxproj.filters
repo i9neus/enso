@@ -205,6 +205,9 @@
     <Filter Include="thirdparty\nnano\models\mlp">
       <UniqueIdentifier>{d5f369b8-b503-4840-91c3-dda027149733}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core\2d\bih\traversal">
+      <UniqueIdentifier>{43584fda-ace2-4889-ae82-e9500d61d1b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -574,18 +577,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\primitives\Ellipse.cuh">
       <Filter>core\2d\primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DAsset.cuh">
-      <Filter>core\2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cuh">
-      <Filter>core\2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DNode.cuh">
-      <Filter>core\2d\bih</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2D.cuh">
-      <Filter>core\2d\bih</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\core\2d\Ctx.cuh">
       <Filter>core\2d</Filter>
@@ -959,6 +950,33 @@
     <ClInclude Include="..\..\..\src\core\math\Polynomial.cuh">
       <Filter>core\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\RayTraverser.cuh">
+      <Filter>core\2d\bih\traversal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\Traverser.cuh">
+      <Filter>core\2d\bih\traversal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\BBoxTraverser.cuh">
+      <Filter>core\2d\bih\traversal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\PointTraverser.cuh">
+      <Filter>core\2d\bih\traversal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\Object.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIHData.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\Builder.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIHAsset.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH.cuh">
+      <Filter>core\2d\bih</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -993,12 +1011,6 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu">
       <Filter>core\2d\primitives</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cu">
-      <Filter>core\2d\bih</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DAsset.cu">
-      <Filter>core\2d\bih</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\Transform2D.cu">
       <Filter>core\2d</Filter>
@@ -1110,6 +1122,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cu">
       <Filter>core\2d\primitives</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\bih\Builder.cu">
+      <Filter>core\2d\bih</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIHAsset.cu">
+      <Filter>core\2d\bih</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

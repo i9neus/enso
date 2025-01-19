@@ -37,7 +37,7 @@ namespace Enso
             CudaAssert(splines);
         }
 
-        BIH2D<BIH2DFullNode>* bih = nullptr;
+        const BIH2D::BIHData<BIH2D::FullNode>* bih = nullptr;
         Device::Vector<QuadraticSpline>* splines = nullptr;
     };
 

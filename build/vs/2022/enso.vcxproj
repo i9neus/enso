@@ -52,10 +52,14 @@
     <ClCompile Include="..\..\..\src\win\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2D.cuh" />
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DAsset.cuh" />
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cuh" />
-    <ClInclude Include="..\..\..\src\core\2d\bih\BIH2DNode.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIH.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIHAsset.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\BIHData.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\Builder.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\BBoxTraverser.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\PointTraverser.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\RayTraverser.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\Traverser.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\Ctx.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\Ellipse.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\primitives\GenericIntersector.cuh" />
@@ -91,6 +95,7 @@
     <ClInclude Include="..\..\..\src\core\assets\GenericObjectFactory.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\AccumulationBuffer.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Image.cuh" />
+    <ClInclude Include="..\..\..\src\core\containers\Object.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Unified.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Vector.cuh" />
     <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh" />
@@ -273,8 +278,8 @@
     <ClInclude Include="..\..\..\src\win\WindowsHeaders.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DAsset.cu" />
-    <CudaCompile Include="..\..\..\src\core\2d\bih\BIH2DBuilder.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\bih\BIHAsset.cu" />
+    <CudaCompile Include="..\..\..\src\core\2d\bih\Builder.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\primitives\Ellpise.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\primitives\LineSegment.cu" />
     <CudaCompile Include="..\..\..\src\core\2d\DrawableObject.cu" />

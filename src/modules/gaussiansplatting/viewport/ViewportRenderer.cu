@@ -8,7 +8,7 @@
 #include "core/2d/sdf/SDF2DRenderer.cuh"
 #include "core/math/ColourUtils.cuh"
 #include "core/2d/DrawableObject.cuh"
-#include "core/2d/bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
 #include "core/math/ColourUtils.cuh"
 
@@ -42,7 +42,7 @@ namespace Enso
     DEFINE_KERNEL_PASSTHROUGH_ARGS(Composite);
 
     template<typename ContainerType>
-    __device__ void DrawOverlayElements(const vec2& xyView, const UIViewCtx& viewCtx, const BIH2D<BIH2DFullNode>* bih, const ContainerType* elementListPtr, vec4& L)
+    __device__ void DrawOverlayElements(const vec2& xyView, const UIViewCtx& viewCtx, const BIH2D::BIHData<BIH2D::FullNode>* bih, const ContainerType* elementListPtr, vec4& L)
     {
         if (!bih || !elementListPtr) { return; }
 
@@ -66,7 +66,7 @@ namespace Enso
             }
             return false;
         };
-        bih->TestPoint(xyView, onPointIntersectLeaf);
+        BIH2D::TestPoint(*bih, xyView, onPointIntersectLeaf);
         
         /*for (int idx = 0; idx < elementList.Size(); ++idx)
         {
@@ -159,7 +159,7 @@ namespace Enso
 
         m_hostInstance.m_objects.accumBuffer = m_hostAccumBuffer->GetDeviceInstance();
         m_hostInstance.m_objects.viewportObjects = m_hostDrawableObjects->GetDeviceInstance();
-        m_hostInstance.m_objects.viewportBIH = m_hostDrawableBIH->GetDeviceInstance();
+        m_hostInstance.m_objects.viewportBIH = m_hostDrawableBIH->GetDeviceData();
 
         const auto& meta = m_hostAccumBuffer->GetMetadata();
         m_blockSize = dim3(16, 16, 1);

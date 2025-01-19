@@ -7,7 +7,7 @@
 #include "core/utils/Tuple.cuh"
 #include "viewport/ViewportRenderer.cuh"
 
-#include "core/2d/bih/BIH2DAsset.cuh"
+#include "core/2d/bih/BIH.cuh"
 
 #include "pathtracer/PathTracer.cuh"
 #include "splatcloud/SplatRasteriser.cuh"
@@ -390,7 +390,7 @@ namespace Enso
                 }
                 return false;
             };          
-            m_viewportRenderer->DrawableBIH().TestPoint(m_viewCtx.mousePos, onContainsPrim);
+            BIH2D::TestPoint(m_viewportRenderer->DrawableBIH().GetHostData(), m_viewCtx.mousePos, onContainsPrim);
 
             // If we've intersected something...
             if (hitIdx != kInvalidHit)
@@ -523,7 +523,7 @@ namespace Enso
                         }
                     }
                 };
-                m_viewportRenderer->DrawableBIH().TestBBox(m_selectionCtx.lassoBBox, onIntersectPrim);
+                BIH2D::TestBox(m_viewportRenderer->DrawableBIH().GetHostData(), m_selectionCtx.lassoBBox, onIntersectPrim);
 
                 // Only if the number of selected primitives has changed
                 if (lastNumSelected != m_selectionCtx.selectedObjects.size())
