@@ -10,7 +10,7 @@ namespace Enso
     {
         float tPerp;
         vec2 xyPerp;
-        return (SDF2D::QuadradicSplinePerpPointApprox(p, m_abc[0], m_abc[1], 0., tPerp, xyPerp)) ? xyPerp : vec2(0.);
+        return (SDF2D::QuadradicSplinePerpendicularPoint(p, m_abc[0], m_abc[1], 0., tPerp, xyPerp)) ? xyPerp : vec2(-kFltMax);
     }
 
     __host__ __device__ vec4 QuadraticSpline::EvaluateOverlay(const vec2& p, const OverlayCtx& ctx) const

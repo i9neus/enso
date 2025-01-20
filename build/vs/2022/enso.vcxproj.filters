@@ -977,6 +977,9 @@
     <ClInclude Include="..\..\..\src\core\2d\bih\BIH.cuh">
       <Filter>core\2d\bih</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\NearestTraverser.cuh">
+      <Filter>core\2d\bih\traversal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

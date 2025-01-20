@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/math/Math.cuh"
+#include "core/math/Polynomial.cuh"
 
 namespace Enso
 {
@@ -49,6 +50,43 @@ namespace Enso
             const float dist = length(p - v0);
             return vec3(dist, (p - v0) / dist);
         } 
+
+        // Calculates the closest point on the quadratic curve to position xy
+        __host__ __device__ static bool QuadradicSplinePerpendicularPoint(const vec2& p, const vec3& abcX, const vec3& abcY, const float margin, float& tPerp, vec2& xyPerp)
+        {
+            float a0 = abcX.x, b0 = abcX.y, c0 = abcX.z;
+            float d0 = abcY.x, e0 = abcY.y, f0 = abcY.z;
+            float n0 = p.x, m0 = p.y;
+
+            float a = -2.0 * a0 * a0 - 2.0 * d0 * d0;
+            float b = -3.0 * a0 * b0 - 3.0 * d0 * e0;
+            float c = -b0 * b0 - 2.0 * a0 * c0 - e0 * e0 - 2.0 * d0 * f0 + 2.0 * d0 * m0 + 2.0 * a0 * n0;
+            float d = -b0 * c0 - e0 * f0 + e0 * m0 + b0 * n0;
+
+            vec3 solutions;
+            const int numSolutions = Poly::Cubic::Solve(vec4(a, b, c, d), solutions);
+
+            if (numSolutions == 0) { return false; }
+
+            xyPerp = vec2(kFltMax);
+            float nearest = kFltMax;
+            for (int idx = 0; idx < numSolutions; ++idx)
+            {
+                float t = clamp(solutions[idx], -margin, 1.0 + margin);
+                vec2 perp = vec2(abcX.x * t * t + abcX.y * t + abcX.z,
+                    abcY.x * t * t + abcY.y * t + abcY.z);
+
+                float dist = length2(p - perp);
+                if (dist < nearest)
+                {
+                    nearest = dist;
+                    xyPerp = perp;
+                    tPerp = t;
+                }
+            }
+
+            return true;
+        }
 
         __host__ __device__ static bool QuadradicSplinePerpPointApprox(const vec2& p, const vec3& abcX, const vec3& abcY, const float margin, float& tPerp, vec2& xyPerp)
         {

@@ -16,13 +16,13 @@ namespace Enso
 
         private:
             template<typename InnerLambda>
-            __host__ __device__ __forceinline__ static void OnRayIntersectInner(const BBox2f& bBox, const RayRange2D& t, const bool& isLeaf, InnerLambda onIntersectInner) { onIntersectInner(bBox, t, isLeaf); }
+            __host__ __device__ __forceinline__ static void OnIntersectInner(const BBox2f& bBox, const RayRange2D& t, const bool& isLeaf, InnerLambda onIntersectInner) { onIntersectInner(bBox, t, isLeaf); }
             template<>
-            __host__ __device__ __forceinline__ static void OnRayIntersectInner(const BBox2f&, const RayRange2D& t, const bool&, nullptr_t) { }
+            __host__ __device__ __forceinline__ static void OnIntersectInner(const BBox2f&, const RayRange2D& t, const bool&, nullptr_t) { }
 
             template<typename NodeType, uint kPlaneIdx0>
-            __host__ __device__ __forceinline__ void RayTraverseInnerNode(const BIHData<NodeType>& bih, const RayBasic2D& ray, NodeType*& node, const uchar& axis,
-                                                                          RayRange2D& range, BBox2f& bBox, RayStackElement* stack, int& stackIdx) const
+            __host__ __device__ __forceinline__ static void TraverseInnerNode(const BIHData<NodeType>& bih, const RayBasic2D& ray, NodeType*& node, const uchar& axis,
+                                                                                 RayRange2D& range, BBox2f& bBox, RayStackElement* stack, int& stackIdx)
             {
                 constexpr uint kPlaneIdx1 = (kPlaneIdx0 + 1) & 1;
                 constexpr float kPlane0Sign = 1.0f - kPlaneIdx0 * 2.0f;
@@ -119,7 +119,9 @@ namespace Enso
                         CudaAssertDebug(stackIdx >= 0);
                         const RayStackElement& element = stack[stackIdx--];
 
+                        // If the pushed node now lies behind tNear because the ray hit something closer, discard it and continue
                         if (range.tFar < element.range.tNear) { continue; }
+
                         range = element.range;
                         bBox = element.bBox;
                         node = &bih.nodes[element.nodeIdx];
@@ -130,7 +132,7 @@ namespace Enso
                     const uchar axis = node->GetAxis();
                     if (axis == kBIHLeaf)
                     {
-                        OnRayIntersectInner(bBox, range, true, onIntersectInner);
+                        OnIntersectInner(bBox, range, true, onIntersectInner);
                         if (node->IsValidLeaf())
                         {
                             onIntersectLeaf(node->GetPrimIdxs(), bih.indices, range);
@@ -140,17 +142,17 @@ namespace Enso
                     // ...or an inner node.
                     else
                     {
-                        OnRayIntersectInner(bBox, range, false, onIntersectInner);
+                        OnIntersectInner(bBox, range, false, onIntersectInner);
 
                         // Left-hand node is likely closer, so traverse that one first
                         if (ray.o[axis] < node->data.planes[NodeType::kLeft])
                         {
-                            RayTraverseInnerNode<0>(ray, node, axis, range, bBox, stack, stackIdx);
+                            TraverseInnerNode<0>(ray, node, axis, range, bBox, stack, stackIdx);
                         }
                         // ...otherwise traverse right-hand node first
                         else
                         {
-                            RayTraverseInnerNode<1>(ray, node, axis, range, bBox, stack, stackIdx);
+                            TraverseInnerNode<1>(ray, node, axis, range, bBox, stack, stackIdx);
                         }
                     }
 

@@ -131,12 +131,8 @@ namespace Enso
 
             const uint axis = centroidBBox.MaxAxis();
             const float split = centroidBBox.Centroid(axis);
-            BBox2f leftBBox = parentBBox, rightBBox = parentBBox;
-            BBox2f leftCentroidBBox = centroidBBox, rightCentroidBBox = centroidBBox;
-            leftBBox[1][axis] = parentBBox[0][axis];
-            rightBBox[0][axis] = parentBBox[1][axis];
-            leftCentroidBBox[1][axis] = centroidBBox[0][axis];
-            rightCentroidBBox[0][axis] = centroidBBox[1][axis];
+            BBox2f leftBBox = BBox2f::Invalid(), rightBBox = BBox2f::Invalid();
+            BBox2f leftCentroidBBox = BBox2f::Invalid(), rightCentroidBBox = BBox2f::Invalid();           
 
             // Sort the primitive indices along the dominant axis
             int j = i0;
@@ -144,13 +140,13 @@ namespace Enso
             for (int i = i0; i < i1; ++i)
             {
                 const BBox2f primBBox = m_getPrimitiveBBox(m_hostIndices[i]);
-                const vec2 centroid = primBBox.Centroid();
+                const vec2 primCentroid = primBBox.Centroid();
 
-                if (centroid[axis] < split)
+                if (primCentroid[axis] < split)
                 {
                     // Update the left partition position and the moment
-                    leftBBox[1][axis] = fmaxf(leftBBox[1][axis], primBBox[1][axis]);
-                    leftCentroidBBox[1][axis] = fmaxf(leftCentroidBBox[1][axis], centroid[axis]);
+                    leftBBox = Union(leftBBox, primBBox);
+                    leftCentroidBBox = Union(leftCentroidBBox, primCentroid);
                     // Swap the element into the left-hand partition
                     sw = m_hostIndices[j]; m_hostIndices[j] = m_hostIndices[i]; m_hostIndices[i] = sw;
                     // Increment the partition index
@@ -158,9 +154,9 @@ namespace Enso
                 }
                 else
                 {
-                    // Update the right partition position and centroid
-                    rightBBox[0][axis] = fminf(rightBBox[0][axis], primBBox[0][axis]);
-                    rightCentroidBBox[0][axis] = fminf(rightCentroidBBox[0][axis], centroid[axis]);
+                    // Update the right partition position and primCentroid
+                    rightBBox = Union(rightBBox, primBBox);
+                    rightCentroidBBox = Union(rightCentroidBBox, primCentroid);
                 }
             }
 

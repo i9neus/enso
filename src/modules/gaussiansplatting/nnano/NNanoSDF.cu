@@ -4,6 +4,7 @@
 #include "Beziers.h"
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
+#include "core/math/MathUtils.cuh"
 #include "core/assets/AssetContainer.cuh"
 #include "core/containers/Vector.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
@@ -52,9 +53,36 @@ namespace Enso
         const vec2 pScreen = (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions();
         const vec2 pView = TransformNormalisedScreenToView(pScreen, m_params.viewport.dims);
         
+        // Evaluate the SDF
         vec4 L(0.0f);
-        const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
+
         const auto& splineList = *m_objects.splines;
+        float distNear = kFltMax;
+        int numTests = 0;
+        
+        auto onLeaf = [&](const uint* idxRange, const uint* primIdxs) -> float
+        {
+            for (int idx = idxRange[0]; idx < idxRange[1]; ++idx, ++numTests)
+            {
+                distNear = fmin(distNear, length(splineList[primIdxs[idx]].PerpendicularPoint(pView) - pView));
+            }
+            return distNear;
+        };
+        BIH2D::TestNearest(*m_objects.bih, pView, onLeaf);
+
+        //for (int idx = 0; idx < splineList.size(); ++idx)
+        //{
+        //    const float dist = length(splineList[idx].PerpendicularPoint(pView) - pView);
+        //    if (dist < distNear) { distNear = dist; }
+        //}
+        if (distNear != kFltMax)
+        {
+            //vec3 h = Hue(0.5 * (1 - float(numTests) / splineList.size()));
+            L = Blend(L, vec4(kOne, saturatef(1 - distNear)));
+        }
+
+        // Visualise the spline BVH
+        /*const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
         auto onLeaf = [&](const uint* idxRange, const uint* primIdxs) -> bool
         {
             for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
@@ -62,25 +90,19 @@ namespace Enso
                 const auto& spline = splineList[primIdxs[idx]];
                 const vec4 line = spline.EvaluateOverlay(pView, overlayCtx);
                 if (line.w > 0.f) { L = Blend(L, line); }
+
+                if (Scale(spline.GetBoundingBox(), 0.95).PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
+                    L = vec4(kYellow, 1.0f);
             }
 
             return false;
         };
-        /*auto onInner = [&, this](const BBox2f& bBox, const int depth) -> void
+        auto onInner = [&, this](const BBox2f& bBox, const int depth, const bool isLeaf) -> void
         {
-            if (bBox.PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
+            if (isLeaf && bBox.PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
                 L = vec4(kRed, 1.0f);
-        };*/
-        BIH2D::TestPoint(*m_objects.bih, pView, onLeaf, nullptr);
-
-        /*for (int idx = 0; idx < splineList.size(); ++idx)
-        {
-            const auto& spline = splineList[idx];
-            //const vec4 line = spline.EvaluateOverlay(pView, overlayCtx);
-            if (spline.GetBoundingBox().PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
-                L = vec4(Hue(float(idx) / 10), 1.0);
-            //if (line.w > 0.f) { L = Blend(L, line); }
-        }*/
+        };
+        BIH2D::TestPoint(*m_objects.bih, pView, onLeaf, onInner);*/
 
         return L;
 #else
@@ -111,7 +133,7 @@ namespace Enso
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
 
-        constexpr uint kMinTreePrims = 0;
+        constexpr uint kMinTreePrims = 5;
         m_hostBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "bih", kMinTreePrims);
         m_hostSplines = AssetAllocator::CreateChildAsset<Host::Vector<QuadraticSpline>>(*this, "splines");
 

@@ -36,8 +36,6 @@ namespace Enso
 
             do
             {
-                CudaAssertDebug(depth <= bih.treeDepth);
-
                 // If there's no node in place, pop the stack
                 if (!node)
                 {
@@ -52,7 +50,7 @@ namespace Enso
                 const uchar axis = node->GetAxis();
                 if (axis == kBIHLeaf)
                 {
-                    Traverser::OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
+                    Traverser::OnPrimitiveIntersectInner(bBox, depth, true, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
                         if (onIntersectLeaf(node->GetPrimIdxs(), bih.indices)) { return true; }
@@ -62,7 +60,7 @@ namespace Enso
                 // ...or an inner node.
                 else
                 {
-                    Traverser::OnPrimitiveIntersectInner(bBox, depth, onIntersectInner);
+                    Traverser::OnPrimitiveIntersectInner(bBox, depth, false, onIntersectInner);
 
                     // Left box hit?
                     if (p[axis] < node->data.planes[NodeType::kLeft])

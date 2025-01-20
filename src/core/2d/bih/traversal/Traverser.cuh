@@ -25,9 +25,9 @@ namespace Enso
             using Stack = StackElement[kStackSize];
 
             template<typename InnerLambda>
-            __host__ __device__ inline static void OnPrimitiveIntersectInner(const BBox2f& bBox, const uchar& depth, InnerLambda onIntersectInner) { onIntersectInner(bBox, depth); }
+            __host__ __device__ inline static void OnPrimitiveIntersectInner(const BBox2f& bBox, const uchar& depth, const bool isLeaf, InnerLambda onIntersectInner) { onIntersectInner(bBox, depth, isLeaf); }
             template<>
-            __host__ __device__ inline static void OnPrimitiveIntersectInner(const BBox2f&, const uchar&, nullptr_t) { }
+            __host__ __device__ inline static void OnPrimitiveIntersectInner(const BBox2f&, const uchar&, const bool, nullptr_t) { }
         };
     }
 }

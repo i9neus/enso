@@ -47,7 +47,7 @@ namespace Enso
                 const uchar axis = node->GetAxis();
                 if (axis == kBIHLeaf)
                 {
-                    Traverser::OnPrimitiveIntersectInner(nodeBBox, depth, onIntersectInner);
+                    Traverser::OnPrimitiveIntersectInner(nodeBBox, depth, true, onIntersectInner);
                     if (node->IsValidLeaf())
                     {
                         onIntersectLeaf(node->GetPrimIdxs(), bih.indices, false);
@@ -57,7 +57,7 @@ namespace Enso
                 // ...or an inner node.
                 else
                 {
-                    Traverser::OnPrimitiveIntersectInner(nodeBBox, depth, onIntersectInner);
+                    Traverser::OnPrimitiveIntersectInner(nodeBBox, depth, false, onIntersectInner);
 
                     // If the entire node is contained within p, don't traverse the tree any further. Instead, just invoke the functor for all primitives contained by the node
                     if (p.Contains(nodeBBox))

@@ -57,6 +57,7 @@
     <ClInclude Include="..\..\..\src\core\2d\bih\BIHData.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\bih\Builder.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\bih\traversal\BBoxTraverser.cuh" />
+    <ClInclude Include="..\..\..\src\core\2d\bih\traversal\NearestTraverser.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\bih\traversal\PointTraverser.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\bih\traversal\RayTraverser.cuh" />
     <ClInclude Include="..\..\..\src\core\2d\bih\traversal\Traverser.cuh" />
