@@ -980,6 +980,9 @@
     <ClInclude Include="..\..\..\src\core\2d\bih\traversal\NearestTraverser.cuh">
       <Filter>core\2d\bih\traversal</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\SDFQuadraticSpline.cuh">
+      <Filter>modules\gaussiansplatting\nnano</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">

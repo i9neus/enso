@@ -162,6 +162,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\SDFQuadraticSpline.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\TextureShader.cuh" />

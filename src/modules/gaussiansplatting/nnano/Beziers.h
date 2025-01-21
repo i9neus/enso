@@ -1,3 +1,5 @@
+#pragma once
+
 #include "core/math/Math.cuh"
 
 namespace Enso

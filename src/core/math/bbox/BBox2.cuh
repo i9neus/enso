@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../VecUtils.cuh"
+#include <cuda/std/limits>
  
 namespace Enso
 {
@@ -27,8 +28,8 @@ namespace Enso
             lower(OtherType(other.lower.x), OtherType(other.lower.y)), 
             upper(OtherType(other.upper.x), OtherType(other.upper.y)) {}
 
-        __host__ __device__ __forceinline__ static BBox2 Infinite() { return BBox2(-kFltMax, -kFltMax, kFltMax, kFltMax); }
-        __host__ __device__ __forceinline__ static BBox2 Invalid() { return BBox2(kFltMax, kFltMax, -kFltMax, -kFltMax); }
+        __host__ __device__ __forceinline__ static BBox2 Infinite() { return BBox2(-::cuda::std::numeric_limits<float>::max(), -::cuda::std::numeric_limits<float>::max(), ::cuda::std::numeric_limits<float>::max(), ::cuda::std::numeric_limits<float>::max()); }
+        __host__ __device__ __forceinline__ static BBox2 Invalid() { return BBox2(::cuda::std::numeric_limits<float>::max(), ::cuda::std::numeric_limits<float>::max(), -::cuda::std::numeric_limits<float>::max(), -::cuda::std::numeric_limits<float>::max()); }
         __host__ __device__ __forceinline__ static BBox2 ZeroArea() { return BBox2(); }
 
         __host__ __device__ __forceinline__ void MakeInfinite() {  *this = Infinite(); }
