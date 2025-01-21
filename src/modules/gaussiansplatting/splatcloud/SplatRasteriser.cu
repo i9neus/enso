@@ -104,7 +104,7 @@ namespace Enso
             W = params.inv;
             camPos = params.cameraPos;
             camFov = params.cameraFov;
-            screenRatio = float(m_params.viewport.dims.y) / float(m_params.viewport.dims.x);
+            screenRatio = float(m_params.viewport.dims.x) / float(m_params.viewport.dims.y);
             gridDims = m_params.tileGrid.dims;
         }
         __syncthreads();
@@ -131,7 +131,7 @@ namespace Enso
         vec3 pView = vec3(pCam.xy / (pCam.z * -tanf(toRad(camFov))), -pCam.z);
 
         // Initialise the splat hashes
-        if (pView.z <= 0.f || pView.x < -1.f || pView.x > 1.f || pView.y < -screenRatio || pView.y > screenRatio)
+        if (pView.z <= 0.f || pView.x < -screenRatio || pView.x > screenRatio || pView.y < -1.f || pView.y > 1.f)
         {
             // Objects outside of the view frustum are set to zero
             splatCamera.key = 0;
@@ -441,7 +441,7 @@ namespace Enso
             W = params.inv;
             camPos = params.cameraPos;
             camFov = params.cameraFov;
-            screenRatio = float(m_params.viewport.dims.y) / float(m_params.viewport.dims.x);
+            screenRatio = float(m_params.viewport.dims.x) / float(m_params.viewport.dims.y);
         }
         __syncthreads();
 
@@ -460,7 +460,7 @@ namespace Enso
             const vec3 pCam = W * (splat.p - camPos);
             const vec3 pView = vec3(pCam.xy / (pCam.z * -tanf(toRad(camFov))), -pCam.z);
 
-            if (pView.z > 0.f && pView.x > -1.f && pView.x < 1.f && pView.y > -screenRatio && pView.y < screenRatio)
+            if (pView.z > 0.f && pView.x > -screenRatio && pView.x < screenRatio && pView.y > -1.f && pView.y < 1.f)
             {
                 // Create rotation and transpose product of scale matrices
                 const mat3 R = splat.rot.RotationMatrix();
