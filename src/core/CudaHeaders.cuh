@@ -22,6 +22,19 @@
 template<typename T> __device__ __forceinline__ T kKernelPos() { return T(typename T::kType(kKernelX), typename T::kType(kKernelY)); }
 template<typename T> __device__ __forceinline__ T kKernelDims() { return T(typename T::kType(kKernelWidth), typename T::kType(kKernelHeight)); }
 
+// Deduces the grid and block dimensions from the number of elements and specified block edge size
+__host__ inline std::pair<unsigned int, unsigned int> Get1DLaunchParams(const int n, const int blockSize = 256)
+{
+    return { (n + (blockSize - 1)) / blockSize, blockSize  };
+}
+
+// Deduces the grid and block dimensions for a 2D grid of height w,h and a block edge length of blockEdge
+__host__ inline std::pair<dim3, dim3> Get2DLaunchParams(const int w, const int h, const int blockEdge = 16)
+{
+    return { dim3((w + (blockEdge - 1)) / blockEdge, (w + (blockEdge - 1)) / blockEdge, 1),
+             dim3(blockEdge, blockEdge, 1) };
+}
+
 //#define CUDA_DEVICE_GLOBAL_ASSERTS
 #define CUDA_DEVICE_DEBUG_ASSERTS
 

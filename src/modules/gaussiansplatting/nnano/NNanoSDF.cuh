@@ -5,7 +5,7 @@
 #include "core/2d/RenderableObject.cuh"
 
 #include "core/assets/DirtinessFlags.cuh"
-#include "core/containers/Image.cuh"
+#include "core/containers/DualImage.cuh"
 #include "core/assets/GenericObject.cuh"
 #include "../scene/SceneContainer.cuh"
 
@@ -14,7 +14,18 @@
 
 namespace Enso
 {
-    class QuadraticSpline;
+    class NNanoEvaluator;
+
+    namespace Host 
+    { 
+        class NNanoSDF; 
+        class SDFQuadraticSpline;
+    }
+
+    namespace Device
+    {
+        class SDFQuadraticSpline;
+    }
     
     struct NNanoSDFParams
     {
@@ -33,15 +44,13 @@ namespace Enso
     {
         __device__ void Validate() const
         {
-            CudaAssert(bih);
-            CudaAssert(splines);
+            CudaAssert(sdf);
+            CudaAssert(evalBuffer);
         }
 
-        const BIH2D::BIHData<BIH2D::FullNode>* bih = nullptr;
-        Device::Vector<QuadraticSpline>* splines = nullptr;
+        Device::SDFQuadraticSpline* sdf = nullptr;
+        Device::DualImage3f*        evalBuffer = nullptr;
     };
-
-    namespace Host { class NNanoSDF; }
 
     namespace Device
     {
@@ -57,9 +66,6 @@ namespace Enso
 
             __host__ __device__ bool            IsClickablePoint(const UIViewCtx& viewCtx) const;
             __host__ __device__ virtual vec4    EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const override final;
-
-        private:
-
 
         private:
             NNanoSDFParams            m_params;
@@ -101,23 +107,15 @@ namespace Enso
             __host__ virtual bool       OnRebuildDrawableObject() override final;
 
         private:
-            __host__ void               CreateScene();
-
-            template<typename T>
-            __host__ void           KernelParamsFromImage(const AssetHandle<Host::Image<T>>& image, dim3& blockSize, dim3& gridSize) const
-            {
-                const auto& meta = image->GetMetadata();
-                blockSize = dim3(16, 16, 1);
-                gridSize = dim3((meta.Width() + 15) / 16, (meta.Height() + 15) / 16, 1);
-            }
-
-            Device::NNanoSDF* cu_deviceInstance = nullptr;
+            Device::NNanoSDF*               cu_deviceInstance = nullptr;
             Device::NNanoSDF                m_hostInstance;
             NNanoSDFObjects                 m_deviceObjects;
+            NNanoSDFObjects                 m_hostObjects;
             NNanoSDFParams                  m_params;
 
-            AssetHandle<Host::BIH2DAsset>                   m_hostBIH;
-            AssetHandle<Host::Vector<QuadraticSpline>>      m_hostSplines;
+            AssetHandle<Host::SDFQuadraticSpline>   m_hostSDF;
+            AssetHandle<Host::DualImage3f>          m_hostEvalBuffer;
+            std::unique_ptr<NNanoEvaluator>         m_evaluator;
 
             HighResolutionTimer               m_renderTimer;
             HighResolutionTimer               m_redrawTimer;

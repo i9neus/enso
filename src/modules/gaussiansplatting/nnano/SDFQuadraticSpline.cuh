@@ -90,7 +90,7 @@ namespace Enso
 
                 return L;
             }
-        };       
+        };      
     }
 
     namespace Host

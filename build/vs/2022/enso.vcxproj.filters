@@ -899,7 +899,7 @@
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cuh">
       <Filter>modules\gaussiansplatting\nnano</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cuh">
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoEvaluator.cuh">
       <Filter>modules\gaussiansplatting\nnano</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\thirdparty\nnano\src\core\utils\HighResTimer.h">
@@ -982,6 +982,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\SDFQuadraticSpline.cuh">
       <Filter>modules\gaussiansplatting\nnano</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\DualImage.cuh">
+      <Filter>core\containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1123,7 +1126,7 @@
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cu">
       <Filter>modules\gaussiansplatting\nnano</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cu">
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoEvaluator.cu">
       <Filter>modules\gaussiansplatting\nnano</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\primitives\QuadraticSpline.cu">

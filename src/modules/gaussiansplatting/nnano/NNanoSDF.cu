@@ -1,7 +1,9 @@
 #define CUDA_DEVICE_GLOBAL_ASSERTS
 
 #include "NNanoSDF.cuh"
-#include "Beziers.h"
+#include "NNanoEvaluator.cuh"
+#include "SDFQuadraticSpline.cuh"
+
 #include "core/math/ColourUtils.cuh"
 #include "core/math/Hash.cuh"
 #include "core/math/MathUtils.cuh"
@@ -9,8 +11,6 @@
 #include "core/containers/Vector.cuh"
 #include "core/assets/GenericObjectContainer.cuh"
 #include "core/2d/Transform2D.cuh"
-#include "core/2d/primitives/QuadraticSpline.cuh"
-#include "core/2d/primitives/Ellipse.cuh"
 #include "core/2d/bih/BIH.cuh"
 
 #include "io/json/JsonUtils.h"
@@ -46,68 +46,33 @@ namespace Enso
 
     __host__ __device__ vec4 Device::NNanoSDF::EvaluateOverlay(const vec2& pWorld, const UIViewCtx& viewCtx, const bool isMouseTest) const
     {
-        if (!GetWorldBBox().Contains(pWorld) || !m_objects.bih) { return vec4(0.0f); }        
+        if (!GetWorldBBox().Contains(pWorld)) { return vec4(0.0f); }
 
-#ifdef __CUDA_ARCH__
+        if (isMouseTest) { return vec4(0.); } // Mouse testing disabled for now
+
         const vec2 pObject = ToObjectSpace(pWorld);
         const vec2 pScreen = (pObject - m_params.viewport.objectBounds.lower) / m_params.viewport.objectBounds.Dimensions();
-        const vec2 pView = TransformNormalisedScreenToView(pScreen, m_params.viewport.dims);
-        
-        // Evaluate the SDF
         vec4 L(0.0f);
 
-        const auto& splineList = *m_objects.splines;
-        float distNear = kFltMax;
-        int numTests = 0;
-        
-        auto onLeaf = [&](const uint* idxRange, const uint* primIdxs) -> float
-        {
-            for (int idx = idxRange[0]; idx < idxRange[1]; ++idx, ++numTests)
-            {
-                distNear = fmin(distNear, length(splineList[primIdxs[idx]].PerpendicularPoint(pView) - pView));
-            }
-            return distNear;
-        };
-        BIH2D::TestNearest(*m_objects.bih, pView, onLeaf);
+#ifdef __CUDA_ARCH__
 
-        //for (int idx = 0; idx < splineList.size(); ++idx)
-        //{
-        //    const float dist = length(splineList[idx].PerpendicularPoint(pView) - pView);
-        //    if (dist < distNear) { distNear = dist; }
-        //}
-        if (distNear != kFltMax)
+        // Sample the evaluation buffer
+        const ivec2 pPixel = ivec2(vec2(m_params.viewport.dims) * pScreen);
+        if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
         {
-            //vec3 h = Hue(0.5 * (1 - float(numTests) / splineList.size()));
-            L = Blend(L, vec4(kOne, saturatef(1 - distNear)));
+            L = vec4(*reinterpret_cast<const vec3*>(m_objects.evalBuffer->At(pPixel)), 1);         
         }
+#endif
 
-        // Visualise the spline BVH
-        /*const OverlayCtx overlayCtx = OverlayCtx::MakeStroke(viewCtx, vec4(1.f), 3.f);
-        auto onLeaf = [&](const uint* idxRange, const uint* primIdxs) -> bool
+        // Evaluate the SDF
+        /*const vec2 pView = TransformNormalisedScreenToView(pScreen, m_params.viewport.dims);
+        if (m_objects.sdf)
         {
-            for (int idx = idxRange[0]; idx < idxRange[1]; ++idx)
-            {
-                const auto& spline = splineList[primIdxs[idx]];
-                const vec4 line = spline.EvaluateOverlay(pView, overlayCtx);
-                if (line.w > 0.f) { L = Blend(L, line); }
-
-                if (Scale(spline.GetBoundingBox(), 0.95).PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
-                    L = vec4(kYellow, 1.0f);
-            }
-
-            return false;
-        };
-        auto onInner = [&, this](const BBox2f& bBox, const int depth, const bool isLeaf) -> void
-        {
-            if (isLeaf && bBox.PointOnPerimiter(pView, viewCtx.dPdXY * 10.))
-                L = vec4(kRed, 1.0f);
-        };
-        BIH2D::TestPoint(*m_objects.bih, pView, onLeaf, onInner);*/
+            const vec3 f = m_objects.sdf->Evaluate(pView);
+            L = Blend(L, vec4(kOne, cosf(10. * kTwoPi * f.x) * 0.5 + 0.5));
+        }*/
 
         return L;
-#else
-        return vec4(1.);
-#endif
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,39 +98,16 @@ namespace Enso
         m_params.viewport.dims = ivec2(kViewportWidth, kViewportHeight);
         m_params.viewport.objectBounds = BBox2f(-boundHalf, boundHalf);
 
-        constexpr uint kMinTreePrims = 5;
-        m_hostBIH = AssetAllocator::CreateChildAsset<Host::BIH2DAsset>(*this, "bih", kMinTreePrims);
-        m_hostSplines = AssetAllocator::CreateChildAsset<Host::Vector<QuadraticSpline>>(*this, "splines");
+        // Create some objects
+        m_hostSDF = AssetAllocator::CreateChildAsset<Host::SDFQuadraticSpline>(*this, "spline");
+        m_hostEvalBuffer = AssetAllocator::CreateChildAsset<Host::DualImage3f>(*this, "evalBuffer", kViewportWidth, kViewportHeight, nullptr);
 
-        // Set the host parameters so we can query the primitive on the host
-        m_deviceObjects.bih = m_hostBIH->GetDeviceData();
-        m_deviceObjects.splines = m_hostSplines->GetDeviceInstance();
+        m_deviceObjects.sdf = m_hostSDF->GetDeviceInstance(); 
+        m_deviceObjects.evalBuffer = m_hostEvalBuffer->GetDeviceInstance();
 
-        // Populate the splines from the embedded data
-        auto& splines = *m_hostSplines;       
-        using namespace FlowBeziers;
-        splines.resize(kNumSplines);
-        for (int i = 0; i < kNumSplines; ++i)
-        {
-            splines[i] = QuadraticSpline(kPoints[i * 2], kPoints[i * 2 + 1]);
-        }
-        splines.Upload();
-
-        // Create a primitive list ready for building
-        // TODO: It's probably faster if we build on the already-sorted index list
-        auto& primIdxs = m_hostBIH->GetPrimitiveIndices();
-        primIdxs.resize(splines.size());
-        for (uint idx = 0; idx < primIdxs.size(); ++idx) { primIdxs[idx] = idx; }
-
-        // Construct the BIH
-        std::function<BBox2f(uint)> getPrimitiveBBox = [&splines](const uint& idx) -> BBox2f
-        {
-            return Scale(splines[idx].GetBoundingBox(), 1.01f);
-        };
-        m_hostBIH->Build(getPrimitiveBBox, true);
-
+        m_evaluator.reset(new NNanoEvaluator(m_hostSDF, m_params.viewport.objectBounds, m_params.viewport.dims, m_hostEvalBuffer));
+        
         Synchronise(kSyncObjects | kSyncParams);
-
         Cascade({ kDirtySceneObjectChanged });
     }
 
@@ -173,8 +115,8 @@ namespace Enso
     {
         AssetAllocator::DestroyOnDevice(*this, cu_deviceInstance); 
 
-        m_hostBIH.DestroyAsset();
-        m_hostSplines.DestroyAsset();
+        m_hostSDF.DestroyAsset();
+        m_hostEvalBuffer.DestroyAsset();
     }
 
     __host__ void Host::NNanoSDF::OnSynchroniseDrawableObject(const uint syncFlags)
@@ -183,6 +125,9 @@ namespace Enso
         if (syncFlags & kSyncObjects)
         {
             SynchroniseObjects<Device::NNanoSDF>(cu_deviceInstance, m_deviceObjects);
+            
+            // Synchronise the host copy so we can query it
+            m_hostInstance.m_objects.sdf = &m_hostSDF->GetHostInstance();
         }
         if (syncFlags & kSyncParams)
         {

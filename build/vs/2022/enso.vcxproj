@@ -98,6 +98,7 @@
     <ClInclude Include="..\..\..\src\core\containers\Image.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Object.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Unified.cuh" />
+    <ClInclude Include="..\..\..\src\core\containers\DualImage.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Vector.cuh" />
     <ClInclude Include="..\..\..\src\core\CudaHeaders.cuh" />
     <ClInclude Include="..\..\..\src\core\debug\Assert.h" />
@@ -160,7 +161,7 @@
     <ClInclude Include="..\..\..\src\modules\CudaObjectManager.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\FwdDecl.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cuh" />
-    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cuh" />
+    <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoEvaluator.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\nnano\SDFQuadraticSpline.cuh" />
     <ClInclude Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cuh" />
@@ -304,7 +305,7 @@
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
     <CudaCompile Include="..\..\..\src\modules\CudaObjectManager.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\GaussianSplattingModule.cu" />
-    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoManager.cu" />
+    <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoEvaluator.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\nnano\NNanoSDF.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\NLM.cu" />
     <CudaCompile Include="..\..\..\src\modules\gaussiansplatting\pathtracer\PathTracer.cu" />
