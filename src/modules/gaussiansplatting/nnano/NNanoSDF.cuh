@@ -115,7 +115,7 @@ namespace Enso
 
             AssetHandle<Host::SDFQuadraticSpline>   m_hostSDF;
             AssetHandle<Host::DualImage3f>          m_hostEvalBuffer;
-            std::unique_ptr<NNanoEvaluator>         m_evaluator;
+            AssetHandle<NNanoEvaluator>             m_evaluator;
 
             HighResolutionTimer               m_renderTimer;
             HighResolutionTimer               m_redrawTimer;

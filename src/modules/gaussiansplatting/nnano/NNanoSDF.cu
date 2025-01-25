@@ -25,6 +25,7 @@ namespace Enso
 
     __host__ __device__ void NNanoSDFParams::Validate() const
     {
+        printf("VALIDATING... %i x %i\n", viewport.dims.x, viewport.dims.y);
         CudaAssert(viewport.dims.x != 0 && viewport.dims.y != 0);
     }
 
@@ -57,8 +58,8 @@ namespace Enso
 #ifdef __CUDA_ARCH__
 
         // Sample the evaluation buffer
-        const ivec2 pPixel = ivec2(vec2(m_params.viewport.dims) * pScreen);
-        if (pPixel.x >= 0 && pPixel.x < m_params.viewport.dims.x && pPixel.y >= 0 && pPixel.y < m_params.viewport.dims.y)
+        const ivec2 pPixel = ivec2(vec2(m_objects.evalBuffer->Dimensions()) * pScreen);
+        if (pPixel.x >= 0 && pPixel.x < m_objects.evalBuffer->Width() && pPixel.y >= 0 && pPixel.y < m_objects.evalBuffer->Height())
         {
             L = vec4(*reinterpret_cast<const vec3*>(m_objects.evalBuffer->At(pPixel)), 1);         
         }
@@ -100,12 +101,12 @@ namespace Enso
 
         // Create some objects
         m_hostSDF = AssetAllocator::CreateChildAsset<Host::SDFQuadraticSpline>(*this, "spline");
-        m_hostEvalBuffer = AssetAllocator::CreateChildAsset<Host::DualImage3f>(*this, "evalBuffer", kViewportWidth, kViewportHeight, nullptr);
+        m_hostEvalBuffer = AssetAllocator::CreateChildAsset<Host::DualImage3f>(*this, "evalBuffer", 1200, 675, nullptr);
 
         m_deviceObjects.sdf = m_hostSDF->GetDeviceInstance(); 
         m_deviceObjects.evalBuffer = m_hostEvalBuffer->GetDeviceInstance();
 
-        m_evaluator.reset(new NNanoEvaluator(m_hostSDF, m_params.viewport.objectBounds, m_params.viewport.dims, m_hostEvalBuffer));
+        m_evaluator = AssetAllocator::CreateChildAsset<NNanoEvaluator>(*this, "evaluator", m_hostSDF, m_params.viewport.objectBounds, ivec2(1200, 675), m_hostEvalBuffer);
         
         Synchronise(kSyncObjects | kSyncParams);
         Cascade({ kDirtySceneObjectChanged });

@@ -54,6 +54,7 @@ namespace Enso
             __host__ __device__ __forceinline__ int Width() const { return m_width; }
             __host__ __device__ __forceinline__ int Height() const { return m_height; }
             __host__ __device__ __forceinline__ int Area() const { return m_area; }
+            __host__ __device__ __forceinline__ ivec2 Dimensions() const { return ivec2(m_width, m_height); }
             __host__ __device__ __forceinline__ int Size() const { return m_area * Channels; }
             __host__ __device__ __forceinline__ DualImageRect Rect() const { return DualImageRect(0, 0, m_width, m_height); }
 
