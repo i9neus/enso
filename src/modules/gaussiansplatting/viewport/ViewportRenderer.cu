@@ -255,6 +255,8 @@ namespace Enso
         //KernelPrepare << <1, 1 >> > (cu_deviceInstance, m_dirtyFlags);
         if (IsDirty(kDirtyViewportRedraw))
         {
+            //m_hostDrawableObjects->
+            
             KernelRender << < m_gridSize, m_blockSize, 0, m_hostStream >> > (cu_deviceInstance);
             IsOk(cudaDeviceSynchronize());
 

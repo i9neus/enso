@@ -12,7 +12,7 @@ namespace Enso
         uvec4   m_state;
 
     public:
-        __host__ __device__ PCG() {}
+        __host__ __device__ PCG() { Initialise(0); }
         __host__ __device__ PCG(const uint& seed) { Initialise(seed); }
 
         // Permuted congruential generator from "Hash Functions for GPU Rendering" (Jarzynski and Olano) http://jcgt.org/published/0009/03/02/paper.pdf

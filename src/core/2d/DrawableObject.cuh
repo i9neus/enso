@@ -95,6 +95,7 @@ namespace Enso
             __host__ virtual bool       OnMove(const std::string& stateID, const UIViewCtx& viewCtx, const UISelectionCtx& selectionCtx);
             __host__ virtual bool       OnSelect(const bool isSelected);
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) { return false; }
+            __host__ virtual void       OnPreDraw(const UIViewCtx& viewCtx) {}
             __host__ virtual bool       HasBoundingBox() const { return true; }
 
             __host__ virtual bool       IsFinalised() const { return m_isFinalised; }

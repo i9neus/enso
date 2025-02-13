@@ -12,6 +12,7 @@
 #include "core/assets/GenericObjectContainer.cuh"
 #include "core/2d/Transform2D.cuh"
 #include "core/2d/bih/BIH.cuh"
+#include "core/math/pdf/PDF2.cuh"
 
 #include "io/json/JsonUtils.h"
 //#include "core/AccumulationBuffer.cuh"
@@ -217,7 +218,11 @@ namespace Enso
         const auto& bBox = GetWorldSpaceBoundingBox();
         const vec2 mouseNorm = (viewCtx.mousePos - bBox.Centroid()) / bBox.Dimensions();
 
-
         return true;
+    }
+
+    __host__ void Host::NNanoSDF::OnPreDraw(const UIViewCtx& viewCtx)
+    {
+
     }
 }

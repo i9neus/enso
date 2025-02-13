@@ -48,7 +48,7 @@ namespace Enso
                 BIH2D::TestNearest(*bih, p, onLeaf);
 
                 // Brute-force testing
-                /*for (int idx = 0; idx < splineList->size(); ++idx)
+                 /*for (int idx = 0; idx < splineList->size(); ++idx)
                 {
                     const vec2 pSpline = (*splineList)[idx].PerpendicularPoint(p);
                     const float dist = length(pSpline - p);
@@ -60,6 +60,18 @@ namespace Enso
                 }*/
 
                 return vec3(distNear, pNear);
+            }
+
+            // Finite difference evaluation of the Hessian matrix based on the specified delta value
+            __host__ __device__ mat2 Hessian(const vec2& p, const float delta) const
+            {
+                const vec2 dx0 = normalize(Evaluate(vec2(p.x - delta * 0.5f, p.y)).yz - p);
+                const vec2 dx1 = normalize(Evaluate(vec2(p.x + delta * 0.5f, p.y)).yz - p);
+                const vec2 dy0 = normalize(Evaluate(vec2(p.x, p.y - delta * 0.5f)).yz - p);
+                const vec2 dy1 = normalize(Evaluate(vec2(p.x, p.y + delta * 0.5f)).yz - p);
+
+                return mat2((dx1.x - dx0.x) / delta, (dy1.x - dy0.x) / delta, 
+                            (dx1.y - dx0.y) / delta, (dy1.y - dy0.y) / delta);
             }
              
             __host__ __device__ vec4 DebugBIH(const vec2& pView, const UIViewCtx& viewCtx) const

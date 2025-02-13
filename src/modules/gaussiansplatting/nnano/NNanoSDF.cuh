@@ -95,6 +95,7 @@ namespace Enso
             __host__ virtual bool       IsClickablePoint(const UIViewCtx& viewCtx) const override final;
             __host__ virtual bool       IsDelegatable() const override final { return true; }
             __host__ virtual bool       OnDelegateAction(const std::string& stateID, const VirtualKeyMap& keyMap, const UIViewCtx& viewCtx) override final;
+            __host__ virtual void       OnPreDraw(const UIViewCtx& viewCtx) override final;
 
             __host__ virtual Device::NNanoSDF* GetDeviceInstance() const override final
             {
