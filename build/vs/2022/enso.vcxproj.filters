@@ -208,6 +208,9 @@
     <Filter Include="core\2d\bih\traversal">
       <UniqueIdentifier>{43584fda-ace2-4889-ae82-e9500d61d1b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core\math\pdf">
+      <UniqueIdentifier>{18d1de8b-4101-4574-a669-24e09891307a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\docs\BugChecklist.md">
@@ -986,6 +989,12 @@
     <ClInclude Include="..\..\..\src\core\containers\DualImage.cuh">
       <Filter>core\containers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\core\math\pdf\PDF2.cuh">
+      <Filter>core\math\pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\core\containers\DualImageOps.cuh">
+      <Filter>core\containers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\..\src\utils\CompileTest.cu">
@@ -1137,6 +1146,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\..\src\core\2d\bih\BIHAsset.cu">
       <Filter>core\2d\bih</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\math\pdf\PDF2.cu">
+      <Filter>core\math\pdf</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\..\src\core\containers\DualImageOps.cu">
+      <Filter>core\containers</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

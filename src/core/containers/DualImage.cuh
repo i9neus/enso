@@ -58,12 +58,21 @@ namespace Enso
             __host__ __device__ __forceinline__ int Size() const { return m_area * Channels; }
             __host__ __device__ __forceinline__ DualImageRect Rect() const { return DualImageRect(0, 0, m_width, m_height); }
 
+            __host__ __device__ __forceinline__ void Set(const int x, const int y, const float* data) { memcpy(&m_data[(y * m_width + x) * Channels], data, sizeof(Type) * Channels); }
+
             __host__ __device__ __forceinline__ Type* operator()(const int x, const int y) { return &m_data[(y * m_width + x) * Channels]; }
             __host__ __device__ __forceinline__ const Type* operator()(const int x, const int y) const { return &m_data[(y * m_width + x) * Channels]; }
+
             __host__ __device__ __forceinline__ Type* At(const int x, const int y) { return &m_data[(y * m_width + x) * Channels]; }
             __host__ __device__ __forceinline__ const Type* At(const int x, const int y) const { return &m_data[(y * m_width + x) * Channels]; }
             __host__ __device__ __forceinline__ Type* At(const ivec2& p) { return &m_data[(p.y * m_width + p.x) * Channels]; }
-            __host__ __device__ __forceinline__ const Type* At(const ivec2& p) const { return &m_data[(p.y * m_width + p.x) * Channels]; }            
+            __host__ __device__ __forceinline__ const Type* At(const ivec2& p) const { return &m_data[(p.y * m_width + p.x) * Channels]; }   
+            
+            template<typename CastT> __host__ __device__ __forceinline__ CastT& As(const int x, const int y) { return *reinterpret_cast<CastT*>(&m_data[(y * m_width + x) * Channels]); }
+            template<typename CastT> __host__ __device__ __forceinline__ const CastT& As(const int x, const int y) const { return *reinterpret_cast<const CastT*>(&m_data[(y * m_width + x) * Channels]); }
+            template<typename CastT> __host__ __device__ __forceinline__ CastT& As(const ivec2& p) { return *reinterpret_cast<CastT*>(&m_data[(p.y * m_width + p.x) * Channels]); }
+            template<typename CastT> __host__ __device__ __forceinline__ const CastT& As(const ivec2& p) const { return *reinterpret_cast<const CastT*>(&m_data[(p.y * m_width + p.x) * Channels]); }
+
             __host__ __device__ __forceinline__ Type& operator[](const int i) { return m_data[i]; }
             __host__ __device__ __forceinline__ Type operator[](const int i) const { return m_data[i]; }
 
@@ -143,6 +152,7 @@ namespace Enso
 
         using DualImage4f = DualImage<float, 4>;
         using DualImage3f = DualImage<float, 3>;
+        using DualImage2f = DualImage<float, 2>;
         using DualImage1f = DualImage<float, 1>;
     }
 
@@ -189,6 +199,7 @@ namespace Enso
             __host__ DualImage& operator=(DualImage&& other) = delete;
 
             __host__ inline DeviceType* GetDeviceInstance() { return cu_deviceInstance; }
+            __host__ inline const DeviceType* GetDeviceInstance() const { return cu_deviceInstance; }
 
             __host__ void Resize(const int width, const int height)
             {
@@ -354,13 +365,14 @@ namespace Enso
 
         private:
             std::vector<Type>   m_vector;
-            int                 m_width;
+            /*int                 m_width;
             int                 m_height;
-            int                 m_area;
+            int                 m_area;*/
         };
 
         using DualImage4f = DualImage<float, 4>;
         using DualImage3f = DualImage<float, 3>;
+        using DualImage2f = DualImage<float, 2>;
         using DualImage1f = DualImage<float, 1>;
     }
 }

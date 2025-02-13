@@ -201,6 +201,8 @@ namespace Enso
         __host__ inline AssetType* GetRawPtr() { return m_ptr.get(); }
         __host__ inline const AssetType* GetRawPtr() const { return m_ptr.get(); }
 
+        __host__ inline const std::shared_ptr<AssetType>& GetSharedPtr() const { return m_ptr; }
+
         __host__ WeakAssetHandle<AssetType> GetWeakHandle() const { return WeakAssetHandle<AssetType>(m_ptr); }
 
         __host__ inline const AssetType& operator*() const

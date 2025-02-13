@@ -95,6 +95,7 @@
     <ClInclude Include="..\..\..\src\core\assets\GenericObjectContainer.cuh" />
     <ClInclude Include="..\..\..\src\core\assets\GenericObjectFactory.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\AccumulationBuffer.cuh" />
+    <ClInclude Include="..\..\..\src\core\containers\DualImageOps.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Image.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Object.cuh" />
     <ClInclude Include="..\..\..\src\core\containers\Unified.cuh" />
@@ -120,6 +121,7 @@
     <ClInclude Include="..\..\..\src\core\math\mat\Mat4.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Mappings.cuh" />
     <ClInclude Include="..\..\..\src\core\math\mat\MatMul.cuh" />
+    <ClInclude Include="..\..\..\src\core\math\pdf\PDF2.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Polynomial.cuh" />
     <ClInclude Include="..\..\..\src\core\math\Quarternion.cuh" />
     <ClInclude Include="..\..\..\src\core\math\samplers\Dither.cuh" />
@@ -295,11 +297,13 @@
     <CudaCompile Include="..\..\..\src\core\assets\GenericObject.cu" />
     <CudaCompile Include="..\..\..\src\core\assets\GenericObjectContainer.cu" />
     <CudaCompile Include="..\..\..\src\core\containers\AccumulationBuffer.cu" />
+    <CudaCompile Include="..\..\..\src\core\containers\DualImageOps.cu" />
     <CudaCompile Include="..\..\..\src\core\containers\Image.cu" />
     <CudaCompile Include="..\..\..\src\core\containers\Vector.cu" />
     <CudaCompile Include="..\..\..\src\core\debug\Profiler.cu" />
     <CudaCompile Include="..\..\..\src\core\math\ColourUtils.cu" />
     <CudaCompile Include="..\..\..\src\core\math\Geodesics.cu" />
+    <CudaCompile Include="..\..\..\src\core\math\pdf\PDF2.cu" />
     <CudaCompile Include="..\..\..\src\core\math\samplers\owensobol\OwenSobol.cu" />
     <CudaCompile Include="..\..\..\src\core\singletons\GlobalResourceRegistry.cu" />
     <CudaCompile Include="..\..\..\src\io\SerialisableObjectSchema.cpp" />
